@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
-!  aerosol simulations 
+!  aerosol simulations
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED ppsf(ndustspec); pp
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -44,24 +44,24 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
 !  use Dustdensity
   use EquationOfState
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
   ! input parameters
   logical :: lbuoyancy_x=.false.
   logical :: lbuoyancy_z=.false.,lbuoyancy_z_model=.false.
-
+!
   character (len=labellen) :: initstream='default'
   real, dimension(ndustspec) :: dsize, init_distr,init_distr2
   real, dimension(ndustspec0) :: Ntot_i
@@ -73,11 +73,11 @@ module Special
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
   logical :: llog_distribution=.true.
-
+!
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
- 
-   
+
+
 ! Keep some over used pencils
 !
 ! start parameters
@@ -85,7 +85,7 @@ module Special
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
-         
+
 ! run parameters
   namelist /atmosphere_run_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma,dYw
@@ -95,7 +95,7 @@ module Special
   integer :: idiag_dtchi=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -116,7 +116,7 @@ module Special
 !
       if (.not. first) call stop_it('register_special called twice')
       first = .false.
-
+!
 !!
 !! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
@@ -162,7 +162,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState
-     
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
       integer :: k,i
@@ -175,7 +175,7 @@ module Special
         Rgas_unit_sys = k_B_cgs/m_u_cgs
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
       endif
-!      
+!
       do k=1,nchemspec
       !  if (trim(varname(ichemspec(k)))=='CLOUD') then
       !    ind_cloud=k
@@ -186,19 +186,19 @@ module Special
         if (trim(varname(ichemspec(k)))=='N2') then
           ind_N2=k
         endif
-!        
+!
       enddo
-!    
+!
       print*,'special: water index', ind_H2O
       print*,'special: N2 index', ind_N2
 !
-
+!
       call set_init_parameters(Ntot,BB0,dsize,init_distr,init_distr2)
-
+!
 !print*,'Ntot_',Ntot_,'BB0',BB0_
-
-
-
+!
+!
+!
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -216,7 +216,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       intent(inout) :: f
-
+!
 !!
 !      select case (initstream)
 !        case ('flame_spd')
@@ -231,9 +231,9 @@ module Special
 !          call stop_it("")
 !      endselect
 !
+!
 
-       
-
+!
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -271,7 +271,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -290,52 +290,52 @@ module Special
         if (idiag_dtchi/=0) &
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
-
+!
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=atmosphere_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=atmosphere_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=atmosphere_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=atmosphere_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=atmosphere_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=atmosphere_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -354,7 +354,7 @@ module Special
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -397,7 +397,7 @@ module Special
       use Cdata
       ! use Viscosity
       use EquationOfState
-
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -430,7 +430,7 @@ module Special
       real    :: dt1, bs,Ts,dels
       logical :: lzone_left, lzone_right
 !
-       const_tmp=4./3.*PI*rho_water 
+       const_tmp=4./3.*PI*rho_water
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
@@ -443,7 +443,7 @@ module Special
         TT=(p%TT(:)-290.)/(293.-290.)
         dels=100.*0.1/Lxyz(1)
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-             - bs*TT/Ts + bs/(1.-Ts)/Ts*dels*log(exp((TT-Ts)/dels)+1.) 
+             - bs*TT/Ts + bs/(1.-Ts)/Ts*dels*log(exp((TT-Ts)/dels)+1.)
       elseif (lbuoyancy_x) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
              + gg*((p%TT(:)-TT0)/TT0 &
@@ -458,20 +458,20 @@ module Special
 !
          lzone_left=.false.
          lzone_right=.false.
-
+!
          sz_r_x=l2-int(del*nxgrid)
          sz_l_x=int(del*nxgrid)+l1
          sz_x=int(del*nxgrid)
-
+!
         if (lbuffer_zone_uy .and. (nxgrid/=1)) then
         do j=1,2
-
+!
          if (j==1) then
 !           ll1=sz_r_x
 !           ll2=l2
             ll1=nxgrid-sz_x
             ll2=nxgrid
-
+!
            do i = l1,l2
            if ((x(i) >= xgrid(ll1)) .and. (x(i) <= xgrid(ll2))) lzone_right=.true.
 !           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
@@ -506,7 +506,7 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
       use Cdata
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
@@ -525,16 +525,16 @@ module Special
 !
          lzone_left=.false.
          lzone_right=.false.
-
+!
          sz_r_x=l1+nxgrid-int(del*nxgrid)
          sz_l_x=int(del*nxgrid)+l1
 !
          ll1=l1
          ll2=l2
-
+!
         if (lbuffer_zone_T) then
         do j=1,2
-
+!
          if (j==1) then
            lzone=.false.
            ll1=sz_r_x
@@ -572,8 +572,8 @@ module Special
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
-    endsubroutine special_calc_entropy
+!
+    endsubroutine special_calc_energy
 !***********************************************************************
    subroutine special_calc_chemistry(f,df,p)
 !
@@ -600,12 +600,12 @@ module Special
          if ((j==1) .and. (x(l2)==xyz0(1)+Lxyz(1))) then
            sz_r_x=l2-int(del*nxgrid)
            ll1=sz_r_x;  ll2=l2
-           lll1=ll1-3; lll2=ll2-3  
+           lll1=ll1-3; lll2=ll2-3
            lzone_right=.true.
 !              df(ll1:ll2,m,n,iuy)=  &
  !               df(ll1:ll2,m,n,iuy) &
  !              +(f(ll1:ll2,m,n,iuy) -0.)*dt1/5.
-
+!
          elseif ((j==2) .and. ((x(l1)==xyz0(1)))) then
            sz_l_x=int(del*nxgrid)+l1
            ll1=l1;  ll2=sz_l_x
@@ -614,7 +614,7 @@ module Special
 !               df(ll1:ll2,m,n,iuy)=  &
 !                df(ll1:ll2,m,n,iuy) &
 !               +(f(ll1:ll2,m,n,iuy) -0.)*dt1
-
+!
          endif
 !
          if ((lzone .and. lzone_right)) then
@@ -622,7 +622,7 @@ module Special
 !                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll2,ind_H2O)/p%pp(lll2))*dt1
-   
+
 !           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
 !                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
 !               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
@@ -638,7 +638,7 @@ module Special
                -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1)*dYw)*dt1
                -p%ppsf(lll1:lll2,ind_H2O)/pp_init)*dt1
-
+!
           else
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
@@ -649,9 +649,9 @@ module Special
 !                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
 !               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+!
 
-          
-
+!
          endif
 !
         enddo
@@ -660,7 +660,7 @@ module Special
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine special_calc_chemistry
 !***********************************************************************
     subroutine special_calc_pscalar(f,df,p)
@@ -676,7 +676,7 @@ module Special
 !      real :: ff_tmp_sum
 !      logical :: lstop
       integer :: k,i
-
+!
         if (lpscalar) then
            do i=1,nx
 !            ff_tmp_sum=0.
@@ -692,7 +692,7 @@ module Special
            df(l1+i-1,m,n,ilncc) = df(l1+i-1,m,n,ilncc) &
                - p%rho(i)/Ntot*(Dwater*m_w/Rgas/p%TT(i)/rho_w) &
                *ttt(ndustspec)
-!                *ff_tmp_sum 
+!                *ff_tmp_sum
           enddo
 !
         endif
@@ -714,8 +714,8 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
-
-
+!
+!
       select case (bc%bcname)
          case ('stm')
          select case (bc%location)
@@ -766,11 +766,11 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-
+!
       use General, only: spline_integral, spline
-      
-!      use Dustdensity
 
+!      use Dustdensity
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -784,46 +784,46 @@ module Special
       integer :: file_id=123
       integer :: j
       real, dimension (ndustspec) :: S,x2
-! 
+!
       j1=1
       j2=2
       j3=3
-      
 
+!
       if (.not. ldustdensity_log) then
       do i1=l1,l2
       do i2=m1,m2
       do i3=n1,n2
 !
-         do k=1,ndustspec 
+         do k=1,ndustspec
 !
             if (f(i1,i2,i3,ind(k))<1.) f(i1,i2,i3,ind(k))=1.
-
+!
 !             if (f(i1,i2,i3,ind(k))<0.) then
-!               j=k  
-          
+!               j=k
+
 !               do while (f(i1,i2,i3,ind(j))<0.)
 !                 j=j-1
-!                 ff_tmp2(2)=f(i1,i2,i3,ind(j)) 
+!                 ff_tmp2(2)=f(i1,i2,i3,ind(j))
 !                 ds_tmp(2)=dsize(j)
-!                 ff_tmp2(1)=f(i1,i2,i3,ind(j-1)) 
+!                 ff_tmp2(1)=f(i1,i2,i3,ind(j-1))
 !                ds_tmp(1)=dsize(j-1)
-!               enddo 
+!               enddo
 !               do while (f(i1,i2,i3,ind(j))<0.)
 !                 j=j+1
-!                 ff_tmp2(3)=f(i1,i2,i3,ind(j))  
+!                 ff_tmp2(3)=f(i1,i2,i3,ind(j))
 !                 ds_tmp(3)=dsize(j)
-!                 ff_tmp2(4)=f(i1,i2,i3,ind(j+1))  
+!                 ff_tmp2(4)=f(i1,i2,i3,ind(j+1))
 !                 ds_tmp(4)=dsize(j+1)
-!               enddo 
+!               enddo
 !
-
+!
 !               x2(1)=ds_tmp(1); x2(2)=dsize(k); x2(3)=ds_tmp(4)
 !               call  spline(ds_tmp,ff_tmp2,x2,S,4,3)
-!                
+!
 !               f(i1,i2,i3,ind(k))=(ff_tmp2(2)+ff_tmp2(3))/2.
 !             endif
-
+!
 !
             if (ldcore) then
               do i=1, ndustspec0
@@ -831,14 +831,14 @@ module Special
               enddo
             endif
           enddo
-!         
+!
 !         f(i1,i2,i3,ind(j3))=f(i1,i2,i3,ind(j3+2))
 !         f(i1,i2,i3,ind(j2))=f(i1,i2,i3,ind(j3+3))
 !         f(i1,i2,i3,ind(j1))=f(i1,i2,i3,ind(j3+4))
-           
 
+!
       enddo
-      enddo  
+      enddo
       enddo
       endif
 !
@@ -866,48 +866,48 @@ module Special
         if (ldcore) then
 !
          do k=1,ndustspec
-             ff_tmp(k)=f(i1,i2,i3,ind(k)) 
+             ff_tmp(k)=f(i1,i2,i3,ind(k))
          enddo
            ttt2= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
         do i=1,ndustspec0
           do k=1,ndustspec
-            ff_tmp(k)=f(i1,i2,i3,idcj(k,i)) 
-          enddo       
+            ff_tmp(k)=f(i1,i2,i3,idcj(k,i))
+          enddo
             ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
           do k=1,ndustspec
            Ntot_i(i)=Ntot/ndustspec0
-           f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i))*Ntot_i(i)/ttt(ndustspec)  
+           f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i))*Ntot_i(i)/ttt(ndustspec)
 !            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
-!             *(ttt2(ndustspec)*dds0(i)/(dsize0_max-dsize0_min)) /ttt(ndustspec)  
+!             *(ttt2(ndustspec)*dds0(i)/(dsize0_max-dsize0_min)) /ttt(ndustspec)
           enddo
         enddo
-!         
+!
           do i=1,ndustspec0
           do k=1,ndustspec
 !            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
-!                   *Ntot_i(i)/(ttt(ndustspec)*dds0(i)/(dsize0_max-dsize0_min))  
+!                   *Ntot_i(i)/(ttt(ndustspec)*dds0(i)/(dsize0_max-dsize0_min))
 !
           enddo
           enddo
-! 
+!
          do k=1,ndustspec
-           f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)  
+           f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)
          enddo
- !       
+ !
         else
           if (.not. ldustdensity_log) then
             do k=1,ndustspec
-              ff_tmp(k)=f(i1,i2,i3,ind(k)) 
+              ff_tmp(k)=f(i1,i2,i3,ind(k))
             enddo
               ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
             do k=1,ndustspec
-              f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)  
+              f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)
             enddo
           endif
         endif
 !
       enddo
-      enddo  
+      enddo
       enddo
 !
     endsubroutine dustspec_normalization_
@@ -918,7 +918,7 @@ module Special
 !   writing the results in 0d case
 !
       use General, only: spline_integral
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: ff_tmp, ttt
       integer :: k,i
@@ -952,7 +952,7 @@ module Special
           endif
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec) 
+!        print*,ttt(ndustspec)
       endif
       if (it == 200) then
         open(file_id,file=output_file2)
@@ -963,7 +963,7 @@ module Special
              write(file_id,'(7E15.8)') dsize(k), &
                f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
           enddo
-
+!
          elseif (ldcore) then
            do k=1,ndustspec
              write(file_id,'(7E15.8)') dsize(k), &
@@ -1005,7 +1005,7 @@ module Special
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-
+!
       if (it == 100000) then
         open(file_id,file=output_file4)
             write(file_id,'(7E12.4)') t
@@ -1032,7 +1032,7 @@ module Special
 !        print*,ttt(ndustspec)
       endif
       endif
-!  
+!
       endsubroutine  write_0d_result
 !***********************************************************************
 !-----------------------------------------------------------------------
@@ -1105,7 +1105,7 @@ module Special
       endif
 !
     endsubroutine bc_stream_x
-!******************************************************************** 
+!********************************************************************
   subroutine bc_cos_ux(f,bc)
 !
 ! Natalia
@@ -1135,14 +1135,14 @@ module Special
       ! top boundary
         f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
         do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
-
+!
       else
         print*, "bc_cos_ux: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
       endif
 !
     endsubroutine bc_cos_ux
-!******************************************************************** 
+!********************************************************************
  subroutine bc_cos_uy(f,bc)
 !
 ! Natalia
@@ -1197,13 +1197,13 @@ module Special
 !
       if (bc%location==iBC_X_BOT) then
 ! bottom boundary
-        if (vr==ind(1)) then 
+        if (vr==ind(1)) then
           do k=1,ndustspec
             f(l1,m1:m2,n1:n2,ind(k))= init_distr(k)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
-   !     if (vr==imd(1)) then 
+   !     if (vr==imd(1)) then
    !      f(l1,m1:m2,n1:n2,imd)=value1
    !!       do k=1,ndustspec
    !        f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
@@ -1212,13 +1212,13 @@ module Special
    !                *nd0*exp(-((dsize(k)-r0)/delta)**2)
    !       enddo
    !     endif
-!       if (vr==ichemspec(ind_H2O)) then 
+!       if (vr==ichemspec(ind_H2O)) then
 !          psat=6.035e12*exp(-5938./exp(f(l1,m1:m2,n1:n2,ilnTT)))
 !          f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=psat/PP*dYw
 !          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
 !       endif
-
-
+!
+!
 !      if (vr==iuud(1)+3) then
 !        f(l1-1,:,:,ind)=0.2*(9*f(l1,:,:,ind)-4*f(l1+2,:,:,ind)  &
 !                       -3*f(l1+3,:,:,ind)+3*f(l1+4,:,:,ind))
@@ -1235,20 +1235,20 @@ module Special
 !        f(l1-3,:,:,imd)=1./35.*(157*f(l1,:,:,imd)-33*f(l1+1,:,:,imd)-108*f(l1+2,:,:,imd)  &
 !                     -68*f(l1+3,:,:,imd)+87*f(l1+4,:,:,imd))
 !      endif
-
+!
       elseif (bc%location==iBC_X_TOP) then
 ! top boundary
-        if (vr==ind(1)) then 
+        if (vr==ind(1)) then
 !        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
 !                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
 !        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
 !                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
 !        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
 !                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
-
+!
         do i=1,nghost; f(l2+i,:,:,ind)=2*f(l2,:,:,ind)-f(l2-i,:,:,ind); enddo
         endif
-        if (vr==imd(1)) then 
+        if (vr==imd(1)) then
         f(l2+1,:,:,imd)=0.2   *(  9*f(l2,:,:,imd)-  4*f(l2-2,:,:,imd) &
                        - 3*f(l2-3,:,:,imd)+ 3*f(l2-4,:,:,imd))
         f(l2+2,:,:,imd)=0.2   *( 15*f(l2,:,:,imd)- 2*f(l2-1,:,:,imd)  &
@@ -1282,10 +1282,10 @@ module Special
       if (bc%location==iBC_Y_BOT) then
         m1m1=m1-1; m1m2=m1-2; m1m3=m1-3; m1m4=m1-4
         m1p1=m1+1; m1p2=m1+2; m1p3=m1+3; m1p4=m1+4
-
+!
 ! bottom boundary
-        if (vr>=iuud(1)+3) then 
-        
+        if (vr>=iuud(1)+3) then
+
         f(:,m1m1,:,ind)=0.2   *(  9*f(:,m1,:,ind)-  4*f(:,m1p2,:,ind) &
                        - 3*f(:,m1p3,:,ind)+ 3*f(:,m1p4,:,ind))
         f(:,m1m2,:,ind)=0.2   *( 15*f(:,m1,:,ind)- 2*f(:,m1+1,:,ind)  &
@@ -1293,19 +1293,19 @@ module Special
         f(:,m1m3,:,ind)=1./35.*(157*f(:,m1,:,ind)-33*f(:,m1p1,:,ind)  &
                        -108*f(:,m1p2,:,ind) -68*f(:,m1p3,:,ind)+87*f(:,m1p4,:,ind))
         endif
-        if (vr==iuud(1)+4) then 
+        if (vr==iuud(1)+4) then
         f(:,m1m1,:,imd)=0.2   *(  9*f(:,m1,:,imd)-  4*f(:,m1p2,:,imd) &
                        - 3*f(:,m1p3,:,imd)+ 3*f(:,m1p4,:,imd))
         f(:,m1m2,:,imd)=0.2   *( 15*f(:,m1,:,imd)- 2*f(:,m1p1,:,imd)  &
                  -  9*f(:,m1p2,:,imd)- 6*f(:,m1p3,:,imd)+ 7*f(:,m1p4,:,imd))
         f(:,m1m3,:,imd)=1./35.*(157*f(:,m1,:,imd)-33*f(:,m1p1,:,imd)  &
-                       -108*f(:,m1p2,:,imd) -68*f(:,m1p3,:,imd)+87*f(:,m1p4,:,imd))      
+                       -108*f(:,m1p2,:,imd) -68*f(:,m1p3,:,imd)+87*f(:,m1p4,:,imd))
         endif
       elseif (bc%location==iBC_Y_TOP) then
         m2m1=m2-1; m2m2=m2-2; m2m3=m2-3; m2m4=m2-4
         m2p1=m2+1; m2p2=m2+2; m2p3=m2+3; m2p4=m2+4
 ! top boundary
-        if (vr>=iuud(1)+3) then 
+        if (vr>=iuud(1)+3) then
         f(:,m2p1,:,ind)=0.2   *(  9*f(:,m2,:,ind)-  4*f(:,m2m2,:,ind) &
                        - 3*f(:,m2m3,:,ind)+ 3*f(:,m2m4,:,ind))
         f(:,m2p2,:,ind)=0.2   *( 15*f(:,m2,:,ind)- 2*f(:,m2m1,:,ind)  &
@@ -1313,7 +1313,7 @@ module Special
         f(:,m2p3,:,ind)=1./35.*(157*f(:,m2,:,ind)-33*f(:,m2m1,:,ind)  &
                        -108*f(:,m2m2,:,ind) -68*f(:,m2m3,:,ind)+87*f(:,m2m4,:,ind))
         endif
-        if (vr==iuud(1)+4) then 
+        if (vr==iuud(1)+4) then
         f(:,m2p1,:,imd)=0.2   *(  9*f(:,m2,:,imd)-  4*f(:,m2m2,:,imd) &
                        - 3*f(:,m2m3,:,imd)+ 3*f(:,m2m4,:,imd))
         f(:,m2p2,:,imd)=0.2   *( 15*f(:,m2,:,imd)- 2*f(:,m2m1,:,imd)  &
@@ -1334,7 +1334,7 @@ subroutine bc_satur_x(f,bc)
 !
     use Cdata
     use Mpicomm, only: stop_it
-
+!
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
@@ -1357,20 +1357,20 @@ subroutine bc_satur_x(f,bc)
       if (bc%location==iBC_X_BOT) then
 !
 ! bottom boundary
-!        
+!
 !
      call stop_it('something is wrong. check carefully')
-
+!
      if ((vr==ichemspec(ind_H2O)) .or. (vr==ichemspec(ind_N2))) then
-
+!
        do j=1,nchemspec
          init_Yk_1(j)=f(l1,m1,n1,ichemspec(j))
          init_Yk_2(j)=f(l1,m1,n1,ichemspec(j))
        enddo
-
+!
 !       psat1=6.035e12*exp(-5938./TT1)
 !       psat2=6.035e12*exp(-5938./TT2)
-! 
+!
          T_tmp=TT1-273.15
          psat1=(aa0 + aa1*T_tmp  + aa2*T_tmp**2  &
                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
@@ -1386,18 +1386,18 @@ subroutine bc_satur_x(f,bc)
       else
        psf_2=psat2 !*exp(AA/TT2/2./r0-BB0/(8.*r0**3))
       endif
-
+!
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-
+!
            air_mass_1=0
            do k=1,nchemspec
              air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
            enddo
            air_mass_1=1./air_mass_1
-
+!
            air_mass_2=0
            do k=1,nchemspec
              air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
@@ -1414,12 +1414,12 @@ subroutine bc_satur_x(f,bc)
 !
 !           init_Yk_1(ind_H2O)=psf_1/(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*TT1/18.)*dYw1
 !           init_Yk_2(ind_H2O)=psf_2/(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*TT2/18.)*dYw2
-
+!
            init_Yk_1(ind_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
            init_Yk_2(ind_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
-
 !
-
+!
+!
            sum1=0.
            sum2=0.
            do k=1,nchemspec
@@ -1431,21 +1431,21 @@ subroutine bc_satur_x(f,bc)
 !
            init_Yk_1(ind_N2)=1.-sum1
            init_Yk_2(ind_N2)=1.-sum2
+!
 
-           
            tmp=0.
            do k=1,nchemspec
              tmp=tmp+init_Yk_1(k)/species_constants(k,imass)
            enddo
            air_mass_1=1./tmp
-
+!
            tmp=0.
            do k=1,nchemspec
              tmp=tmp+init_Yk_2(k)/species_constants(k,imass)
            enddo
            air_mass_2=1./tmp
-
-! 
+!
+!
 !
 !print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
 !
@@ -1457,13 +1457,13 @@ subroutine bc_satur_x(f,bc)
 ! End of Recalculation of the air_mass for different boundary conditions
 !
         endif
-
-        if (vr==ichemspec(ind_H2O)) then 
+!
+        if (vr==ichemspec(ind_H2O)) then
           f(l1,:,:,ichemspec(ind_H2O))=init_water_1
-        elseif (vr==ichemspec(ind_N2)) then 
+        elseif (vr==ichemspec(ind_N2)) then
           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ind_N2)
         elseif ((vr>=ind(1)) .and. (vr<=ind(ndustspec))) then
-!    
+!
       do k=1,ndustspec
            f(l1,:,:,ind(k))=Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
@@ -1473,7 +1473,7 @@ subroutine bc_satur_x(f,bc)
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
       elseif (bc%location==iBC_X_TOP) then
 ! top boundary
-
+!
       else
         print*, "bc_satur_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
@@ -1501,7 +1501,7 @@ subroutine bc_satur_x(f,bc)
 !
 !********************************************************************
    subroutine set_init_parameters(Ntot_,BB0_,dsize,init_distr, init_distr2)
-!    
+!
       real, dimension (ndustspec), intent(out) :: dsize,init_distr, init_distr2
       real, dimension (ndustspec) ::  lnds
        real :: Ntot_, BB0_
@@ -1522,16 +1522,16 @@ subroutine bc_satur_x(f,bc)
           if (r02 /= 0.) then
             init_distr2(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
             *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))+10.
-          endif             
+          endif
         enddo
-
+!
         Ntot_=Ntot
         BB0_=BB0
 !
      endsubroutine set_init_parameters
 !***********************************************************************
 !********************************************************************
-
+!
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
@@ -1540,6 +1540,5 @@ subroutine bc_satur_x(f,bc)
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
