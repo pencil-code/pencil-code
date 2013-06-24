@@ -21,7 +21,7 @@ global accretion disk simulations. This tutorial is useful for general informati
 
 <div class="centerdivider"></div>
 <div class="centcolumnpad">
-<h2>Samples</h2>
+<h2>Examples</h2>
 See <a href="/tests.php#samples">test results</a> from sample applications, as well as this <a href="/samples/">overview on documented samples</a>.
 </div>
 
@@ -43,7 +43,7 @@ exercises is available through the
 <div class="centerdivider"></div>
 <div class="centcolumnpad">
 <h2>FAQ</h2>
-For code problems, <a href="/faq.html">here</a> an automatically generated excerpt from the manual with FAQs.
+For code problems, <a href="/doc/faq.php">here</a> an automatically generated excerpt from the manual with FAQs.
 </div>
 
 <div class="centerdivider"></div>
