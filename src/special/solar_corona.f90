@@ -931,7 +931,7 @@ module Special
 !
     endsubroutine special_calc_density
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
 !   entropy (or temperature) equation.
@@ -1017,7 +1017,7 @@ module Special
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_before_boundary(f,lfinalize)
 !
