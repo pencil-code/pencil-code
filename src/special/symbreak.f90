@@ -183,12 +183,13 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Lreal,Limag,Rreal,Rimag,ddphi_phi4
+      real, dimension (nx) :: Lreal,Limag,Rreal,Rimag
       type (pencil_case) :: p
-!
 !
       intent(in) :: f,p
       intent(inout) :: df
+!
+      call keep_compiler_quiet(p)
 !
 !  identify module and boundary conditions
 !
