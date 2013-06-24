@@ -16,8 +16,8 @@ samples/2d-tests/conv-slab-2d and conv-slab-2d2).
     <th>with B-field</th>
   </tr>
   <tr>
-    <td align="center"><A href="/samples/2d-tests/conv-slab-2d.gif"><img src="/samples/2d-tests/conv-slab-2d_thumb.jpg" width="75" height="130" border="0" alt="no B-field"></a></td>
-    <td align="center"><A href="/samples/2d-tests/conv-slab-2d2.gif"><img src="/samples/2d-tests/conv-slab-2d2_thumb.jpg" width="75" height="130" border="0" alt="with B-field"></a></td>
+    <td align="center"><A href="/samples/2d-tests/conv-slab-2d.png"><img src="/samples/2d-tests/conv-slab-2d_thumb.jpg" width="75" height="130" border="0" alt="no B-field"></a></td>
+    <td align="center"><A href="/samples/2d-tests/conv-slab-2d2.png"><img src="/samples/2d-tests/conv-slab-2d2_thumb.jpg" width="75" height="130" border="0" alt="with B-field"></a></td>
   </tr>
   <tr>
     <td>(<i>t</i>=920)</td>
