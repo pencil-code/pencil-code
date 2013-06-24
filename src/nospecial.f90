@@ -24,7 +24,7 @@
 !                                                  |
 !  Special term in the mass (density) equation     | special_calc_density
 !  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the entropy equation            | special_calc_entropy
+!  Special term in the energy equation             | special_calc_energy
 !  Special term in the induction (magnetic)        | special_calc_magnetic
 !     equation                                     |
 !                                                  |
@@ -419,29 +419,6 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_dustdensity
-!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  entropy equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
