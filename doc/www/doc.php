@@ -23,7 +23,7 @@ global accretion disk simulations. This tutorial is useful for general informati
 <div class="centcolumnpad">
 <h2>Examples</h2>
 We have prepared an <a href="/highlights/">overview on highlighted samples</a>.
-Please also see the <a href="/tests.php#samples">test results</a> from sample applications.
+Please also see the <a href="/samples/">test results from sample applications</a>.
 </div>
 
 <div class="centerdivider"></div>
