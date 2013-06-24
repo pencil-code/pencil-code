@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
 !
@@ -22,7 +22,7 @@
 !                                                   |
 !   Special term in the mass (density) equation     | special_calc_density
 !   Special term in the momentum (hydro) equation   | special_calc_hydro
-!   Special term in the entropy equation            | special_calc_entropy
+!   Special term in the energy equation             | special_calc_energy
 !   Special term in the induction (magnetic)        | special_calc_magnetic
 !      equation                                     |
 !                                                   |
@@ -39,18 +39,18 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
 !
 ! Sphere geometry
 !
@@ -98,9 +98,9 @@ module Special
 !
 ! Other variables (needs to be consistent with reset list below)
 !
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -174,16 +174,16 @@ module Special
       use Initcond,    only:set_thermodynamical_quantities,gaussian3d
       use EquationOfState, only: cs20
       use FArrayManager, only: farray_use_global
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       intent(inout) :: f
-      
+!
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
       real :: wall_smoothing_temp
       integer i,j,k,cyl
-
+!
       select case (initspecial)
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
@@ -199,7 +199,7 @@ module Special
           sph_nx = sph_l2-sph_l1
           sph_n1 = n1
           sph_n2 = n2
-
+!
           print*,'sphere center: x=',x(sph_center_x)
           print*,'spere edge: x=',x(sph_l2)
           print*,'grid resolution at x=',x(sph_l1),':  dx_1=',dx_1(sph_l1)
@@ -214,7 +214,7 @@ module Special
               trim(initspecial)
           call stop_it("")
       endselect
-
+!
       select case (special_inituu)
 !
 !   This overrides any initial conditions set in the Hydro module.
@@ -222,7 +222,7 @@ module Special
         case ('nothing')
           if (lroot) print*,'special_inituu: nothing'
         case ('cylinderstream')
-!   Stream functions for flow around a cylinder as initial condition. 
+!   Stream functions for flow around a cylinder as initial condition.
           a2 = sph_rad**2
           do i=l1,l2
             if (x(i) < sph_rad) cycle
@@ -236,7 +236,7 @@ module Special
             end do
           end do
   case ('cylinderstream_nils_x')
-!   Stream functions for flow around a cylinder as initial condition. 
+!   Stream functions for flow around a cylinder as initial condition.
           a2 = sph_rad**2
           f(:,:,:,iux:iuz)=0
           shiftx=0
@@ -283,7 +283,7 @@ module Special
             end do
           end do
   case ('cylinderstream_nils_y')
-!   Stream functions for flow around a cylinder as initial condition. 
+!   Stream functions for flow around a cylinder as initial condition.
           a2 = sph_rad**2
           f(:,:,:,iux:iuz)=0
           shifty=0
@@ -306,7 +306,7 @@ module Special
                              +cylinder_temp*(1-wall_smoothing_temp)
                         f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                       endif
-
+!
                     else
                       shiftx=cyl*Lxyz(1)
                       rr2_low =(x(i)+shiftx)**2+(y(j)+shifty)**2
@@ -320,7 +320,7 @@ module Special
                            +2*(x(i)+shiftx)*(y(j)+shifty)&
                            *a2/rr2_low**2)
                     endif
-                  enddo  
+                  enddo
                 else
                   if (ilnTT .ne. 0) then
                     f(i,j,k,ilnTT) = cylinder_temp
@@ -362,7 +362,7 @@ module Special
               trim(special_inituu)
           call stop_it("")
       endselect
-
+!
       select case (sphere_type)
         case ('none')
           if (lroot) print*,'sphere_type: none'
@@ -434,11 +434,11 @@ module Special
       use Cdata
       use Mpicomm
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       intent(inout) :: f,p
       intent(inout) :: df
 !
@@ -447,7 +447,7 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
@@ -516,147 +516,6 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
-!
-!  Write slices for animation of special variables.
-!
-!  26-jun-06/tony: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
     subroutine special_boundtreat(f,df)
 !
 !   Special boundary treatment.
@@ -664,21 +523,21 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       integer i,j
-
+!
       intent(inout) :: f,df
-
+!
       if (sphere_type == 'freeze') then
 !   Set df to zero inside sphere
         df(sph_l1:sph_l2-1,:,sph_n1:sph_n2,:) = 0.
       end if
-
+!
       if (sphere_type == 'ghosts') then
 !   Set up ghosts points: Antisymmetric for velocities, symmetric for density.
         call sph_ghosts(f)
 !   Set df to zero inside sphere.
         df(sph_l1:sph_l2-1,:,sph_n1:sph_n2,:) = 0.
       endif
-
+!
       if (sphere_type == 'nscbc_wall') then
 !   Do characteristic wall treatment.
         call bc_nscbc_wall(f,df,sph_l2)
@@ -720,7 +579,7 @@ module Special
 !   Misc. functions and subroutines
 !
 !***********************************************************************
-
+!
 !***********************************************************************
     subroutine bc_nscbc_prf_r(f,df,lll)
 !
@@ -732,7 +591,7 @@ module Special
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(ny,nz) :: dur_dr,duphi_dr,dlnrho_dr,&
@@ -742,10 +601,10 @@ module Special
       integer lll,i,nnn,mmm
       real, parameter :: sigma = 1.
       real :: u_T
-
+!
       intent(in) :: f
       intent(out) :: df
-  
+!
       !lll = l2
       call der_onesided_yzslice(f,-1,ilnrho,dlnrho_dr,lll,1)
       call der_onesided_yzslice(f,-1,iux,dur_dr,lll,1)
@@ -753,21 +612,21 @@ module Special
       call der_onesided_yzslice(f,-1,ilnrho,dlnrho_dphi,lll,3)
       call der_onesided_yzslice(f,-1,iux,dur_dphi,lll,3)
       call der_onesided_yzslice(f,-1,iuz,duphi_dphi,lll,3)
-
+!
       ! ``dp = cs20*rho0*dlnrho''
       r_1 = 1./x(lll)
       u_r = f(lll,m1:m2,n1:n2,iux)
       u_phi = f(lll,m1:m2,n1:n2,iuz)
       rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
       u_T = special_infuu
-
+!
       ! It would be better to insert the expression for L_1 into the eqs. for
       ! df below, but it is more convenient to set L_1 explicitly for testing
       ! purposes.
       L_5 = (u_r + cs0)*(cs20*rho0*dlnrho_dr + rho0*cs0*dur_dr)
       !L_1 = 0 ! This one causes drift...
       !L_1 = -cs20*rho0*(2*u_r*r_1) ! This one reflects!!
-      L_1 = -cs20*rho0*(2*u_r*r_1 + duphi_dphi*r_1) ! Chrashes around phi=0 and pi 
+      L_1 = -cs20*rho0*(2*u_r*r_1 + duphi_dphi*r_1) ! Chrashes around phi=0 and pi
                                                      ! after some time. Best sofar.
       !L_1 = -cs0*rho0*r_1*u_phi**2 - cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Drift
       !L_1 = -cs0*rho0*r_1*u_phi**2 - cs20*rho0*r_1*(2*u_r) ! Drift and reflection!
@@ -775,8 +634,8 @@ module Special
       !      - cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Nix
       !L_1 = cs0*rho0*r_1*(u_phi*dur_dphi - u_phi**2) &
       !      -u_phi*rho0*r_1*dlnrho_dphi- cs20*rho0*r_1*(2*u_r + duphi_dphi) ! Nix
-      
-      
+!
+!
       where (u_r < 0)
         !L_4 = -u_phi*r_1*duphi_dphi
         L_4 = 0
@@ -784,20 +643,20 @@ module Special
       elsewhere
         L_4 = u_r*duphi_dr
       endwhere
-
+!
       if (linlet_northern .and. northern) then
         do mmm=1,ny
           L_1(mmm,1:nequator-1-nghost) = L_1(mmm,1:nequator-1-nghost)&
             -sigma*cs20*rho0(mmm,1:nequator-1-nghost)&
             *(u_r(mmm,1:nequator-1-nghost)-sin(z(n1:nequator-1))*(u_T))
-
+!
           L_4(mmm,1:nequator-1-nghost) = L_4(mmm,1:nequator-1-nghost)&
             +sigma*cs20*rho0(mmm,1:nequator-1-nghost)&
             *(u_phi(mmm,1:nequator-1-nghost)-cos(z(n1:nequator-1))*(u_T))
         enddo
       endif
-
-      df(lll,m1:m2,n1:n2,ilnrho) =    & 
+!
+      df(lll,m1:m2,n1:n2,ilnrho) =    &
           itsub*(                     &
           -1./(2.*cs20*rho0)*(L_5+L_1)&
           - u_phi*r_1*dlnrho_dphi     &
@@ -829,7 +688,7 @@ module Special
 !
       use MpiComm, only: stop_it
       use EquationOfState, only: cs0, cs20
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(ny,nz) :: dur_dr,dlnrho_dr,&
@@ -837,25 +696,25 @@ module Special
                                 r_1,u_r,u_phi,rho0,&
                                 L_1
       integer pos,lll,i
-
+!
       intent(in) :: f,pos
       intent(inout) :: df
-  
+!
       lll = pos
       call der_onesided_yzslice(f,+1,ilnrho,dlnrho_dr,lll,1)
       call der_onesided_yzslice(f,+1,iux,dur_dr,lll,1)
       call der_onesided_yzslice(f,-1,iuz,duphi_dphi,lll,3)
       call der_onesided_yzslice(f,-1,iuz,duphi_dphi,lll,3)
-
+!
       ! ``dp = cs20*rho0*dlnrho''
       r_1 = 1./x(lll)
       u_r = f(lll,m1:m2,n1:n2,iux)
       u_phi = f(lll,m1:m2,n1:n2,iuz)
       rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
-
+!
       L_1 = (u_r - cs0)*(cs20*rho0*dlnrho_dr - rho0*cs0*dur_dr)
       ! L_5 = L_1
-
+!
       df(lll,m1:m2,n1:n2,ilnrho) = &
           -1./(cs20*rho0)*L_1      &
           !- u_phi*r_1*dlnrho_dphi  &
@@ -872,7 +731,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: val
-
+!
       call sph_set(f,val,iux)
       call sph_set(f,val,iuy)
       call sph_set(f,val,iuz)
@@ -886,7 +745,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, optional :: j
       real, intent(in) :: val
-
+!
       if (present(j)) then
         f(sph_l1:sph_l2,:,sph_n1:sph_n2,j) = val
       else
@@ -901,7 +760,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer sgn,i
-
+!
       do i=1,nghost
         f(sph_l2-i,:,sph_n1:sph_n2,iux:iuz) = &
             -f(sph_l2+i,:,sph_n1:sph_n2,iux:iuz)
@@ -919,7 +778,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer sgn,i,k
-
+!
       do i=1,2
         k = sph_l2-i
         f(k,:,sph_n1:sph_n2,:) = &
@@ -931,7 +790,7 @@ module Special
             -  7*f(k+6,:,sph_n1:sph_n2,:)&
             +  1*f(k+7,:,sph_n1:sph_n2,:)
       enddo
-
+!
     endsubroutine
 !***********************************************************************
     subroutine sph_ghosts_s1s(f)
@@ -943,7 +802,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer sgn,i
-
+!
       f(sph_l2-1,:,sph_n1:sph_n2,:) = &
           +  7*f(sph_l2  ,:,sph_n1:sph_n2,:)&
           - 21*f(sph_l2+1,:,sph_n1:sph_n2,:)&
@@ -952,7 +811,7 @@ module Special
           + 21*f(sph_l2+4,:,sph_n1:sph_n2,:)&
           -  7*f(sph_l2+5,:,sph_n1:sph_n2,:)&
           +  1*f(sph_l2+6,:,sph_n1:sph_n2,:)
-
+!
       f(sph_l2-2,:,sph_n1:sph_n2,:) = &
           + 28*f(sph_l2  ,:,sph_n1:sph_n2,:)&
           -112*f(sph_l2+1,:,sph_n1:sph_n2,:)&
@@ -971,10 +830,10 @@ module Special
       real, dimension (:) :: vector
       integer :: lowstart,highstart
       integer :: low,high,mid
-
+!
       low = lowstart
       high = highstart
-
+!
       do while(high>low)
         mid = (low+high)/2
         if (value > vector(mid)) then
@@ -985,7 +844,7 @@ module Special
           exit
         end if
       end do
-
+!
       binary_search = low
     endfunction
 !***********************************************************************
@@ -1007,10 +866,10 @@ module Special
       real :: fac,r_1
       integer :: pos,k,sgn,j
       integer :: nnn
-
+!
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1040,7 +899,7 @@ module Special
       endif
     endsubroutine
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -1050,6 +909,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
 endmodule Special
-
