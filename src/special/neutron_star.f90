@@ -69,6 +69,8 @@ module Special
 !
   real :: uu_init=0.
 !
+  integer :: l  ! bing 24/jun/13: added this to at least be able to compile
+                !                 please check !
 !
   real :: R_star=1.
   real :: M_star=1.
@@ -256,7 +258,6 @@ module Special
       use Diagnostics
       use Mpicomm
       use Sub
-      use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -333,6 +334,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Sub
+      use Diagnostics, only: parse_name
 !
 !  define diagnostics variable
 !
@@ -520,8 +522,8 @@ module Special
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
+!      call keep_compiler_quiet(df)
+!      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -713,27 +715,7 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-!  SAMPLE IMPLEMENTATION
-!     (remember one must ALWAYS add to df)
-!
-!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -877,10 +859,7 @@ module Special
 !
       endif
 !
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -1386,23 +1365,6 @@ module Special
 !
     endsubroutine bc_BL_z
 !***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!
-!********************************************************************
 !
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -1412,5 +1374,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-!
 endmodule Special
