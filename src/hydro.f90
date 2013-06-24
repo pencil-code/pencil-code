@@ -15,10 +15,13 @@
 !
 ! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3); curlo(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
+! PENCILS PROVIDED d2uidxj(3,3), uijk(3,3,3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
+! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
+! PENCILS PROVIDED ugu(3)
 !
 !***************************************************************
 !
@@ -87,6 +90,7 @@ module Hydro
   integer :: neddy=0
   real, dimension (5) :: om_rings=0.
   integer :: N_modes_uu=0
+  logical :: llinearized_hydro=.false.
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
@@ -125,7 +129,7 @@ module Hydro
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
-      amp_factor,kx_uu_perturb
+      amp_factor,kx_uu_perturb,llinearized_hydro
 !
 !  Run parameters.
 !
@@ -184,7 +188,7 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range, Ra, Pr
+      hydro_xaver_range, Ra, Pr, llinearized_hydro
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -533,6 +537,10 @@ module Hydro
 !
       call farray_register_pde('uu',iuu,vector=3)
       iux = iuu; iuy = iuu+1; iuz = iuu+2
+      if (llinearized_hydro) then
+        call farray_register_auxiliary('uu0',iuu0,vector=3)
+        iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
+      endif
 !
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
@@ -1664,11 +1672,30 @@ module Hydro
 !***********************************************************************
     subroutine calc_pencils_hydro(f,p)
 !
+! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is 
+! selected or not. 
+! 
+! 24-jun-13/dhruba: coded
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if(llinearized_hydro) then
+        call calc_pencils_hydro_linearized(f,p)
+      else
+        call calc_pencils_hydro_nonlinear(f,p)
+      endif
+      endsubroutine calc_pencils_hydro
+!***********************************************************************
+    subroutine calc_pencils_hydro_nonlinear(f,p)
+!
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  08-nov-04/tony: coded
 !  26-mar-07/axel: started using the gij_etc routine
+!  24-jun-13/dhruba: the earlier calc_pencils_hydro routine is copied here.
 !
       use Deriv
       use Sub
@@ -1802,6 +1829,17 @@ module Hydro
         endif
       endif
 !
+!del2uj, d^u/dx^2 etc
+!
+      if (lpencil(i_d2uidxj)) &
+        call d2fi_dxj(f,iuu,p%d2uidxj)
+!
+! deluidxjk
+!
+      if(lpencil(i_uijk)) then
+        call del2fi_dxjk(f,iuu,p%uijk)
+      endif
+!
 ! grad5divu
 !
       if (lpencil(i_grad5divu)) then
@@ -1822,7 +1860,149 @@ module Hydro
         call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
       endif
 !
-    endsubroutine calc_pencils_hydro
+    endsubroutine calc_pencils_hydro_nonlinear
+!***********************************************************************
+    subroutine calc_pencils_hydro_linearized(f,p)
+!
+!  Calculate linearized hydro pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  24-jun-13/dhruba: aped from calc_pencils_hydro from previous version
+!
+      use Deriv
+      use Sub
+      use WENO_transport
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: tmp, tmp2
+      real, dimension (nx,3) :: ugu0,u0gu
+      integer :: i, j, ju
+!
+      intent(in) :: f
+      intent(inout) :: p
+! uu
+      if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      if (lpencil(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
+! u2, should not be calculated
+      if (lpencil(i_u2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate u2 pencil')
+! uij
+      if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
+      if (lpencil(i_u0ij)) call gij(f,iuu0,p%u0ij,1)
+! divu
+      if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      if (lpencil(i_divu0)) call div_mn(p%u0ij,p%divu0,p%uu0)
+! sij
+      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+! sij2
+      if (lpencil(i_sij2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate sij2 pencil')
+! uij5
+      if (lpencil(i_uij5)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate uij5 pencil')
+! oo (=curlu)
+      if (lpencil(i_oo)) then
+        call curl_mn(p%uij,p%oo,p%uu)
+      endif
+! o2
+      if (lpencil(i_o2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 pencil')
+! ou
+      if (lpencil(i_ou)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou pencil')
+! ugu
+      if (lpencil(i_ugu)) then
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
+!        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+        call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
+        call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
+        p%ugu = ugu0+u0gu
+      endif
+! ugu2
+      if (lpencil(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu2 pencil')
+! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
+      if (lpencil(i_u3u21).or.lpencil(i_u1u32).or.lpencil(i_u2u13)  & 
+        .or.lpencil(i_u2u31).or.lpencil(i_u3u12).or.lpencil(i_u1u23) ) then 
+        call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
+      endif
+! del4u and del6u
+      if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
+      if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+! del6u_bulk
+      if (lpencil(i_del6u_bulk)) then
+        call der6(f,iux,tmp,1)
+        p%del6u_bulk(:,1)=tmp
+        call der6(f,iuy,tmp,2)
+        p%del6u_bulk(:,2)=tmp
+        call der6(f,iuz,tmp,3)
+        p%del6u_bulk(:,3)=tmp
+      endif
+!
+! del2u, graddivu
+!
+      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+        if (lpencil(i_graddivu)) then
+          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+        endif
+        if (lpencil(i_del2u)) then
+          call curl_mn(p%oij,p%curlo,p%oo)
+          p%del2u=p%graddivu-p%curlo
+        endif
+      else
+!
+!  all 3 together
+!
+        if (lpencil(i_del2u).and.lpencil(i_graddivu).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 possible pairs
+!
+        elseif (lpencil(i_del2u).and.lpencil(i_graddivu)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
+        elseif (lpencil(i_del2u).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
+        elseif (lpencil(i_graddivu).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 individually
+!
+        elseif (lpencil(i_del2u)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u)
+        elseif (lpencil(i_graddivu)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+        elseif (lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,CURLCURL=p%curlo)
+        endif
+      endif
+!
+!del2uj, d^u/dx^2 etc
+!
+      if (lpencil(i_d2uidxj)) &
+        call d2fi_dxj(f,iuu,p%d2uidxj)
+!
+! deluidxjk
+!
+      if(lpencil(i_uijk)) then
+        call del2fi_dxjk(f,iuu,p%uijk)
+      endif
+!
+! grad5divu
+!
+      if (lpencil(i_grad5divu)) then
+        do i=1,3
+          tmp=0.0
+          do j=1,3
+            ju=iuu+j-1
+            call der5i1j(f,ju,tmp2,i,j)
+            tmp=tmp+tmp2
+          enddo
+          p%grad5divu(:,i)=tmp
+        enddo
+      endif
+! transpurho
+      if (lpencil(i_transpurho)) then
+        call fatal_error('calc_pencils_hydro_linearized:','no linearized weno transport ')
+      endif
+!
+    endsubroutine calc_pencils_hydro_linearized
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !

@@ -249,6 +249,7 @@ module Cdata
   integer :: ip31=0,ip32=0,ip33=0
   integer :: ipoly_fr=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
+  integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: iox=0,ioy=0,ioz=0
   integer :: ispecialvar=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0

@@ -47,7 +47,7 @@ module Sub
   public :: u_dot_grad_alt
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
-  public :: del2, del2v, del2v_etc, del2fj
+  public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
@@ -1772,6 +1772,91 @@ module Sub
       endif
 !
     endsubroutine del2fj
+!***********************************************************************
+    subroutine del2fi_dxjk(f,k,del2fkdxij)
+!
+!  Calculate \partial^2f/\partial x_j\partial x_k of a vector, get a 9 dimensional object
+!
+!
+      use Deriv, only: der2,derij
+!
+      intent(in) :: f,k
+      intent(out) :: del2fkdxij
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3,3) :: del2fkdxij
+      real, dimension(nx) :: tmp
+      integer :: k
+      integer :: i,j,kincrement
+!      
+!
+      if (.not. lcartesian_coords) &
+        call fatal_error('sub','del2fi_dxjk implemented only in cartesian')
+!
+      do kincrement=0,2
+       do i=1,3; do j=i,3
+         tmp=0.
+         if (i.eq.j) then
+           call der2(f,k+kincrement,tmp,i)
+           del2fkdxij(:,k+kincrement,i,i)=tmp
+         else
+           call derij(f,k+kincrement,tmp,i,j)
+           del2fkdxij(:,k+kincrement,i,j)=tmp
+           del2fkdxij(:,k+kincrement,j,i)=tmp
+         endif
+       enddo;enddo
+     enddo
+!
+   endsubroutine del2fi_dxjk
+!***********************************************************************
+    subroutine d2fi_dxj(f,k,d2fidxj)
+!
+!  Calculate d^2f_i/dx^2_j of a vector, get a six dimensional object
+!
+      use Deriv, only: derij
+!
+      intent(in) :: f,k
+      intent(out) :: d2fidxj
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3) :: d2fidxj
+      real, dimension(nx,3) :: tmp
+      integer :: k
+!
+      if (.not. lcartesian_coords) &
+        call fatal_error('sub','d2fidxj implemented only in cartesian')
+!
+      call d2f_dxj(f,k,tmp)
+      d2fidxj(:,1,:) = tmp
+      call d2f_dxj(f,k+1,tmp)
+      d2fidxj(:,2,:) = tmp
+      call d2f_dxj(f,k+2,tmp)
+      d2fidxj(:,3,:) = tmp
+!
+    endsubroutine d2fi_dxj
+!***********************************************************************
+    subroutine d2f_dxj(f,k,d2fdxj)
+!
+!  Calculate d^2f/dx^2_j of a scalar, get a three dimensional object
+!
+      use Deriv, only: der,der2
+!
+      intent(in) :: f,k
+      intent(out) :: d2fdxj
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: d2fdx,d2fdy,d2fdz,tmp
+      real, dimension (nx,3) :: d2fdxj
+      integer :: k
+!
+      if (.not. lcartesian_coords) &
+        call fatal_error('sub','d2f_dxj implemented only in cartesian')
+!
+      call der2(f,k,d2fdxj(:,1),1)
+      call der2(f,k,d2fdxj(:,2),2)
+      call der2(f,k,d2fdxj(:,3),3)
+!
+    endsubroutine d2f_dxj
 !***********************************************************************
     subroutine symmetrise3x3_ut2lt (matrix_ut3x3)
 !

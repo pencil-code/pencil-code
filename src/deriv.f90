@@ -1060,6 +1060,11 @@ module Deriv
       intent(in) :: f,k,i,j
       intent(out) :: df
 !
+! 
+! crash if this is called with i=j
+!
+!      if (i.eq.j) call fatal_error('derij_main','i=j, no derivative calculated')
+!
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !

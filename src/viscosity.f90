@@ -42,6 +42,9 @@ module Viscosity
   real :: lambda_jump=0.,roffset_lambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
+  real :: nu_infinity,nu0,non_newton_lambda,carreau_exponent
+  character (len=labellen) :: nnewton_type
+  real :: nnewton_tscale,nnewton_step_width
   real, dimension(nx) :: xmask_vis=0
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
@@ -52,6 +55,7 @@ module Viscosity
   real, pointer :: Pr ! get Prandtl number from hydro
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
+  logical :: lvisc_nu_non_newtonian=.false.
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_rho_nu_const_bulk=.false.
   logical :: lvisc_sqrtrho_nu_const=.false.
@@ -96,7 +100,9 @@ module Viscosity
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2
+      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
+      nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
+      nnewton_tscale,nnewton_step_width
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -105,6 +111,7 @@ module Viscosity
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
   integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
                                 ! DIAG_DOC: for the vis_xaver_range
+  integer :: idiag_num=0        ! DIAG_DOC: Mean value of viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
@@ -138,6 +145,8 @@ module Viscosity
   integer :: idiag_fviscmx=0    ! YZAVG_DOC: $\left<2\nu\varrho u_i
                                 ! YZAVG_DOC: \mathcal{S}_{ix} \right>_{yz}$
                                 ! YZAVG_DOC: ($x$-component of viscous flux)
+  integer :: idiag_numx=0       ! YZAVG_DOC: $\left< \nu \right>_{yz}$
+                                ! YZAVG_DOC: ($yz$-averaged viscosity)
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -213,6 +222,9 @@ module Viscosity
         case ('nu-simplified','simplified', '0')
           if (lroot) print*,'viscous force: nu*del2v'
           lvisc_simplified=.true.
+        case ('nu-non-newtonian')
+          if (lroot) print*,'viscous force: div(nu*Sij)'
+          lvisc_nu_non_newtonian=.true.
         case ('rho-nu-const','rho_nu-const', '1')
           if (lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
@@ -647,7 +659,7 @@ module Viscosity
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0 
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
-        idiag_epsKmz=0
+        idiag_epsKmz=0; idiag_numx=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -660,6 +672,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'qfviscm',idiag_qfviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
         call parse_name(iname,cname(iname),cform(iname),'fviscrmsx',idiag_fviscrmsx)
+        call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
         call parse_name(iname,cname(iname),cform(iname),'nusmagm',idiag_nusmagm)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
@@ -685,6 +698,7 @@ module Viscosity
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fviscmx',idiag_fviscmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'numx',idiag_numx)
       enddo
 !
 !  Check for those quantities for which we want z-averages
@@ -748,6 +762,13 @@ module Viscosity
           lpenc_requested(i_rcyl_mn)=.true.
           if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn1)=.true.
         endif
+      endif
+      if (lvisc_nu_non_newtonian) then
+        lpenc_requested(i_nu)=.true.
+        lpenc_requested(i_del2u)=.true.
+        lpenc_requested(i_sij)=.true.
+        lpenc_requested(i_sij2)=.true.
+        lpenc_requested(i_uijk)=.true.
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. &
@@ -850,6 +871,9 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij)=.true.
       endif
+      if (idiag_numx/=0) then
+        lpenc_diagnos(i_nu) = .true.
+      endif
       if (idiag_fviscmxy/=0) then
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
@@ -888,8 +912,10 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
+      real, dimension (nx) :: gdot, grad_gdot,gdotsqr,nu_effective,gradnu_effective
+      real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
-      integer :: i,j,ju
+      integer :: i,j,ju,ii,jj,kk,ll
 !
       intent(inout) :: f,p
 !
@@ -920,6 +946,42 @@ module Viscosity
             endif
           endif
         endif
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
+      endif
+!
+! Non-newtonian viscosity
+!
+      if (lvisc_nu_non_newtonian) then
+!            print*,'viscous force: div(nu*Sij); with'
+!            print*,'nu a function of square of strain rate'
+! fvisc_i = \partial_j \nu(S_{kl}S_{kl}) S_{ij}
+!         = \nu(S_{kl}S_{kl}) \partial_j S_{ij} + S_{ij}\partial_j \nu(S_{kl}S_{kl})
+!         = \nu(S_{kl}S_{kl}) \partial_j (uij+uji) + S_{ij}\nu^{\prime} \partial_j [S_{kl}S_{kl}]
+!         = \nu(S_{kl}S_{kl}) \partial_jj (ui) + S_{ij}\nu^{\prime} \partial_j [(ukl+ulk)(ukl+ulk)]
+!         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} \partial_j [ukl ukl +ulk ukl + ukl ulk + ulk ulk]
+!         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} [(uklj ukl + ukl uklj) + (ulkj ukl + ulk uklj) 
+!                                                  +(uklj ulk + ukl ulkj) + (ulkj ulk + ulk ulkj)]
+!         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} 2[uklj S_{lk}+  ulkj S_{kl}]
+!       
+        deljskl2=0.
+        gradnu_effective=0.
+        do jj=1,3
+          do kk=1,3; do ll=1,3
+            deljskl2 (:,jj) = deljskl2 (:,jj) + &
+              p%uijk(:,kk,ll,jj)*p%sij(:,ll,kk) + p%uijk(:,ll,kk,jj)*p%sij(:,kk,ll) 
+          enddo;enddo
+        enddo
+        fvisc_nnewton2 = 0.
+        do ii=1,3
+          do jj=1,3
+            fvisc_nnewton2(:,ii) = fvisc_nnewton2(:,ii) + p%sij(:,ii,jj)*deljskl2(:,jj)
+          enddo
+        enddo
+        call getnu_non_newtonian(p%sij2,p%nu,gradnu_effective)
+       do ii=1,3
+          p%fvisc(:,ii)=p%nu(:)*p%del2u(:,ii) + gradnu_effective(:)*fvisc_nnewton2(:,ii)
+        enddo
+!
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
 !
@@ -1568,6 +1630,7 @@ module Viscosity
         if (idiag_nusmagm/=0)   call sum_mn_name(nu_smag,idiag_nusmagm)
         if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
         if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
+        if (idiag_num/=0) call sum_mn_name(p%nu,idiag_num)
         if (idiag_qfviscm/=0) then
           call dot(p%curlo,p%fvisc,qfvisc)
           call sum_mn_name(qfvisc,idiag_qfviscm)
@@ -1575,6 +1638,30 @@ module Viscosity
       endif
 !
     endsubroutine calc_pencils_viscosity
+!***********************************************************************
+    subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
+!
+! Outputs non-newtonian viscosity for an input strain-rate squared 
+!
+      use Sub, only : step,der_step
+      real, dimension(nx) :: gdotsqr
+      real,dimension(nx) :: nu_effective,gradnu_effective
+!
+      select case(nnewton_type)
+        case('carreau')
+          nu_effective= nu_infinity+ &
+            (nu0-nu_infinity)/(1+(non_newton_lambda**2)*gdotsqr)**((1.-carreau_exponent)/2.)
+          gradnu_effective= (non_newton_lambda**2)*0.5*(carreau_exponent-1.)* &
+            (nu0-nu_infinity)/(1+(non_newton_lambda**2)*gdotsqr)**(1.5-carreau_exponent/2.)
+        case('step')
+          nu_effective=nu0+(nu_infinity-nu0)*step(gdotsqr,nnewton_tscale**2,nnewton_step_width)
+          gradnu_effective=(nu_infinity-nu0)*der_step(gdotsqr,nnewton_tscale**2,nnewton_step_width)
+        case default
+          write(*,*) 'nnewton_type=',nnewton_type
+          call fatal_error('viscosity,getnu_non_newtonian:','select nnewton_type')
+      endselect
+
+    endsubroutine getnu_non_newtonian
 !***********************************************************************
     subroutine calc_viscosity(f)
 !
@@ -1768,6 +1855,8 @@ module Viscosity
             p%uu(:,1)*p%sij(:,1,1)+ &
             p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmx)
+        if (idiag_numx/=0) &
+            call yzsum_mn_name_x(p%nu,idiag_numx)
       endif
 !
 !  2D-averages.
