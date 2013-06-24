@@ -1,13 +1,13 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>How to do benchmarks and timings</h2>
 
 <h3>pencil-code/samples/helical-MHDturb</h3>
 
-<p>Most of the timings reported in the <a href="doc/manual.pdf">manual</a>
+<p>Most of the timings reported in the <a href="/doc/manual.pdf">manual</a>
 of the <a href="http://pencil-code.nordita.com/">Pencil Code</a>
 (currently page 68) are based on the run checked in under
 <i>pencil-code/samples/helical-MHDturb</i>.</p>
@@ -43,6 +43,6 @@ doesn't produce NaNs, of course...)</p>
 <p align="center"><img src="/pics/ptimings.png" border="0" width="510" height="340" alt="timings"></p>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

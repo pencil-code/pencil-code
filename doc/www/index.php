@@ -1,7 +1,7 @@
 <!-- $Id$ -->
 <?
 	$right_column = "home_right";
-	include "header.inc";
+	include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <p>The <a href="http://pencil-code.nordita.org/" target="_top"> Pencil Code</a> is a high-order finite-difference code
@@ -34,6 +34,6 @@ Examples are</p>
 Available as open source: <a href="http://pencil-code.googlecode.com/" target="_top">Pencil-Code.googlecode.com</a>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

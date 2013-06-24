@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>Contact</h2>
@@ -27,6 +27,6 @@ The current core-development team consists of:
 All the people involved in this project are <a href="http://code.google.com/p/pencil-code/people/list">listed here</a>.
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

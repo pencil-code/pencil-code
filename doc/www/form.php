@@ -1,10 +1,10 @@
 <!-- $Id$ -->
 <?
-	include "header.inc";
+	include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h1>
-    <img src="pics/pencils_65x30.png">
+    <img src="/pics/pencils_65x30.png">
     Obtaining the <em>Pencil Code</em></h1>
 
 <!-- Form -->
@@ -122,6 +122,6 @@
 </form>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

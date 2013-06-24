@@ -40,7 +40,7 @@
 <div id="leftcolumn">
 <!-- Navigation Bar -->
 <?
-	include "menu.inc";
+	include "inc/menu.inc";
  ?>
 </div>
 

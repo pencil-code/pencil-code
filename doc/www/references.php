@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 
@@ -44,6 +44,6 @@ de Val-Borro, M. and 22 coauthors (incl. Lyra, W.):&nbsp;2006, ``A comparative s
 
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

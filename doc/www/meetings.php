@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	include "header.inc";
+	include "inc/header.inc";
 
 	$meetings = array (
 		array ( title => "10th meeting", date => "summer 2014", link => "", notes => "", city => "?", venue => "", country => "" ),
@@ -42,6 +42,6 @@
 </p>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

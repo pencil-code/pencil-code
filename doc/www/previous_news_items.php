@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>News archive</h2>
@@ -30,6 +30,6 @@ that converts from the old files to the new ones.</li>
 
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

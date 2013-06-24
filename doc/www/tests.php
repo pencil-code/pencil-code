@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>Automatic tests</h2>
@@ -250,6 +250,6 @@ Shearing box simulation, 256<sup>3</sup> meshpoints, 32 processors.
 
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

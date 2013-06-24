@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>News</h2>
@@ -14,6 +14,6 @@ Welcome to the new Pencil Code homepage, designed and implemented during the Pen
 </ul>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 

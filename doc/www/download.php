@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <?
-	 include "header.inc";
+	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>Download</h2>
@@ -19,6 +19,6 @@ The Pencil Code can also be obtained from a <a href="http://code.google.com/p/pe
 Available as open source at our project page: <a href="http://pencil-code.googlecode.com/" target="_top">Pencil-Code.googlecode.com</a>
 </div>
 <?
-	include "footer.inc";
+	include "inc/footer.inc";
  ?>
 
