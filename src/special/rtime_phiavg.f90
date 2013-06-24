@@ -43,19 +43,19 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
 ! input parameters
   real, dimension(nrcylrun)  :: rho_tmp
   real, dimension(nrcylrun,3) :: u_tmp,b_tmp
@@ -95,7 +95,7 @@ module Special
 !
 ! hydro diagnostics
 !
-  integer :: idiag_urm=0  ,idiag_upm=0  ,idiag_uzzm=0 
+  integer :: idiag_urm=0  ,idiag_upm=0  ,idiag_uzzm=0
   integer :: idiag_ur2m=0 ,idiag_up2m=0 ,idiag_uzz2m=0
   integer :: idiag_urupm=0,idiag_uzupm=0,idiag_uruzm=0
 !
@@ -106,11 +106,11 @@ module Special
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0
 !
 ! 1D average diagnostics
-! 
+!
   integer :: idiag_brbpmr=0,idiag_urupmr=0,idiag_mdotmr=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -185,7 +185,7 @@ module Special
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded                                                         
+!  18-07-06/tony: coded
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -208,8 +208,8 @@ module Special
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
       endif
-!      
-      if (llarge_scale_Bz) then 
+!
+      if (llarge_scale_Bz) then
         lpenc_requested(i_uxb)=.true.
         lpenc_requested(i_phix)=.true.
         lpenc_requested(i_phiy)=.true.
@@ -217,11 +217,11 @@ module Special
         lpenc_requested(i_pomy)=.true.
         lpenc_requested(i_rcyl_mn1)=.true.
       endif
-        
+!
 !      if (lmagnetic) lpenc_requested(i_bavg)=.true.
 !      if (lhydro)    lpenc_requested(i_uavg)=.true.
 !      if (ldensity)  lpenc_requested(i_rhoavg)=.true.
-
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -244,7 +244,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -263,7 +263,7 @@ module Special
       !  if (idiag_dtchi/=0) &
       !    call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       !endif
-
+!
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -302,29 +302,29 @@ module Special
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=special_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -349,7 +349,7 @@ module Special
 !
       if (lreset) then
         !hydro
-        idiag_urm=0  ;idiag_upm=0  ;idiag_uzzm=0 
+        idiag_urm=0  ;idiag_upm=0  ;idiag_uzzm=0
         idiag_ur2m=0 ;idiag_up2m=0 ;idiag_uzz2m=0
         idiag_urupm=0;idiag_uzupm=0;idiag_uruzm=0
         !magnetic
@@ -430,7 +430,7 @@ module Special
 !
 ! expand it onto the pencil with spline interpolation
 !
-      if (lcalc_density_pars) & 
+      if (lcalc_density_pars) &
            call spline(rcyl_coarse,rhoavg_coarse,p%rcyl_mn,rhoavg,nrcylrun,nx,err)
       do j=1,nd
         if (lhydro) &
@@ -474,17 +474,6 @@ module Special
 !
     endsubroutine calc_lspecial_pars
 !***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
 !   16-jul-06/wlyra: coded
@@ -502,12 +491,12 @@ module Special
       ur=urad      - uavg(:,1)
       up=uphi      - uavg(:,2)
       uz=p%uu(:,3) - uavg(:,3)
-      if (nzgrid/=1) then 
+      if (nzgrid/=1) then
         fac=Lxyz(3)
       else
         fac=1.
       endif
-
+!
       if (ldiagnos) then
         if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm,p)
         if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm,p)
@@ -520,7 +509,7 @@ module Special
         if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm,p)
       endif
 !
-      if (l1davgfirst) then 
+      if (l1davgfirst) then
         if (idiag_urupmr/=0) &
              call phizsum_mn_name_r(p%rho*ur*up,idiag_urupmr)
         if (idiag_mdotmr/=0) &
@@ -537,7 +526,7 @@ module Special
 !
      use Diagnostics
      use Mpicomm
-
+!
      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
      real, dimension (mx,my,mz,mvar), intent(inout) :: df
      type (pencil_case), intent(in) :: p
@@ -546,7 +535,7 @@ module Special
      integer :: i
 !
 ! Remove mean electromotive force from induction equation.
-! Activated only when large Bz fields and are present 
+! Activated only when large Bz fields and are present
 ! keplerian advection
 !
      if (llarge_scale_Bz) then
@@ -555,14 +544,14 @@ module Special
        endif
 !smooth a rapidly varying function - median box size=5
        if (lmedian_smooth) then
-         do i=3,nx-2 
-           puxb(i,:)=1./35*( -3*p%uxb(i-2,:)& 
+         do i=3,nx-2
+           puxb(i,:)=1./35*( -3*p%uxb(i-2,:)&
                 +12*p%uxb(i-1,:)&
                 +17*p%uxb(i  ,:)&
                 +12*p%uxb(i+1,:)&
                 -3*p%uxb(i+2,:))
          enddo
-         puxb(1,:)=p%uxb(1,:) ;  puxb(nx,:)=p%uxb(nx,:)    
+         puxb(1,:)=p%uxb(1,:) ;  puxb(nx,:)=p%uxb(nx,:)
          puxb(2,:)=p%uxb(2,:) ;  puxb(nx-1,:)=p%uxb(nx-1,:)
        elseif (laverage_smooth) then
          !use averages
@@ -599,18 +588,6 @@ module Special
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are
@@ -620,7 +597,7 @@ module Special
 !   others may be calculated directly from the f array
 !
 !   Called from equ, but before the evolving loop that calls the dynamical equations.
-!   Set the 1D coarse average here. This average is LOCAL to this special module   
+!   Set the 1D coarse average here. This average is LOCAL to this special module
 !
 !   calculate the averages
 !
@@ -646,7 +623,7 @@ module Special
 !
       do m=m1,m2
         do n=n1,n2
-!           
+!
           lfp=((m==m1).and.(n==n1))
           llp=((m==m2).and.(n==n2))
           k=0;s_u=0;s_b=0;s_rho=0
@@ -739,6 +716,5 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
