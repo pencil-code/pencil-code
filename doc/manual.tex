@@ -3676,7 +3676,7 @@ one of the many \cmd{pc_read_var}-variants (\cmd{pc_read_var_raw} is
 recommended for large datasets because of its high efficiency regarding
 computation and memory usage) for reading the data. With that, one can make
 use of \cmd{pc_get_quantity} to derive any implemented physical quantity.
-Packed in a script, this is the recommended way to get reproducable results,
+Packed in a script, this is the recommended way to get reproducible results,
 without any chance for accidental errors on the interactive IDL command-line.
 
 Alternatively, by using the command-line to see the time evolution of e.g.
@@ -3802,7 +3802,7 @@ An efficient and still scriptable way would look like the following:
   \prompt{IDL> } bb = pc_get_quantity ('B', var, tags)
   \prompt{IDL> } jj = pc_get_quantity ('j', var, tags)
 \end{alltt}
-This reads the data into an array `var' and the array indices of the
+This reads the data into an array `var', as well as the array indices of the
 contained physical variables into a separate structure `tags'.
 To use a caching mechanism withhin \cmd{pc_get_quantity}, please refer to
 the documentation and the examples contained in `pencil-code/idl/pc_get_quantity.pro',
