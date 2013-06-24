@@ -9,7 +9,7 @@
 !  One-dimensional problems along the disc and perpendicular to it
 !  can also be considered.
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -20,7 +20,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -49,41 +49,41 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
+!
 module Special
-
+!
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
 !  use Density, only: rho_up
   use EquationOfState
-
-
+!
+!
   implicit none
-
+!
   include '../special.h'
-
+!
   ! input parameters
   !logical :: left_buffer_zone=.false.
-
+!
   character (len=labellen) :: initstream='default'
-
+!
   real, dimension (mx,my,mz,3) :: divtau=0.
   real, dimension (mx,my,mz) :: pres=0., mmu1=0.
   logical :: ldivtau=.false.
   logical :: lT_prof1=.true., lT_prof2=.false.,lT_tanh=.false.
   real :: test, H_max
   real :: Rgas, Rgas_unit_sys=1.
-
+!
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1., ux_init=0.
-
+!
   integer :: index_H2=0, index_O2=0, index_H2O=0, index_N2=0
   real :: init_x1=-0.2,init_x2=0.2, init_lnrho, init_ux
   real :: init_TT1=400.,init_TT2=2400.,init_lnTT1=5.7,init_p2=1.013e6
   real :: str_thick=0.
 ! Keep some over used pencils
 !
-
+!
 ! start parameters
   namelist /chem_stream_init_pars/ &
    initstream,rho_init, T_init, Y1_init, Y2_init, Y3_init, H_max, ux_init, &
@@ -104,7 +104,7 @@ module Special
   integer :: idiag_dtchi=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -125,7 +125,7 @@ module Special
 !
       if (.not. first) call stop_it('register_special called twice')
       first = .false.
-
+!
 !!
 !! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
@@ -209,7 +209,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       intent(inout) :: f
-
+!
 !!
       select case (initstream)
          case ('bomb_x')
@@ -271,7 +271,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -290,52 +290,52 @@ module Special
         if (idiag_dtchi/=0) &
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
-
+!
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=chem_stream_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=chem_stream_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=chem_stream_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=chem_stream_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=chem_stream_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=chem_stream_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -354,7 +354,7 @@ module Special
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -397,14 +397,14 @@ module Special
       use Cdata
       ! use Viscosity
       use EquationOfState
-
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: rho_prf
       type (pencil_case), intent(in) :: p
       integer :: l_sz
+!
 
-     
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -428,47 +428,14 @@ module Special
 !      do i=1,3
 !        divtau(l1:l2,m,n,i)=p%fvisc(:,i)*p%rho(:)
 !      enddo
-
+!
         pres(l1:l2,m,n)=p%pp(:)!/p%mu1(:)
         mmu1(l1:l2,m,n)=p%mu1(:)
      !    print*,'Natalia',p%pp(l1+1), p%fvisc(l1+1,1),mmu1(l1+1,4,4)
         ldivtau=.true.
-
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!
-!   06-oct-03/tony: coded
-!
-      use Cdata
-
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-
-! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-      use Cdata
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-      integer :: l_sz
-
-
-! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-
-    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -511,7 +478,7 @@ module Special
          endselect
          bc%done=.true.
       endselect
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(bc%bcname)
 !
@@ -549,24 +516,24 @@ module Special
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
 !
-
+!
 ! use Chemistry
-
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i,direction
-       
+
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
-
+!
       mH=1.00794
       mC=12.0107
       mN=14.00674
       mO=15.9994
       mAr=39.948
       mHe=4.0026
-      !     
+      !
       ! Initialize some indexes
       !
       if (index_H2==0) &
@@ -581,10 +548,10 @@ module Special
       i_O2=ichemspec(index_O2)
       i_N2=ichemspec(index_N2)
       i_H2O=ichemspec(index_H2O)
-
+!
       select case (direction)
        case (1)
-        do k=1,mx 
+        do k=1,mx
          if (abs(x(k))<0.2) then
           f(k,:,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(x(k)))/0.2)**2
          else
@@ -595,7 +562,7 @@ module Special
           f(k,:,:,ilnrho)=log(init_p2)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
         enddo
        case (2)
-        do k=1,my 
+        do k=1,my
          if (abs(y(k))<0.2) then
           f(:,k,:,ilnTT)=log(T_init)+log(2.)*((0.2-abs(y(k)))/0.2)**2
          else
@@ -606,7 +573,7 @@ module Special
           f(:,k,:,ilnrho)=log(init_p2)-log(Rgas)-f(:,k,:,ilnTT)-log(mu1(:,k,:))
         enddo
        case (3)
-        do k=1,mz 
+        do k=1,mz
          if (abs(z(k))<0.2) then
           f(:,:,k,ilnTT)=log(T_init)+log(2.)*((0.2-abs(z(k)))/0.2)**2
          else
@@ -617,20 +584,20 @@ module Special
           f(:,:,k,ilnrho)=log(init_p2)-log(Rgas)-f(:,:,k,ilnTT)-log(mu1(:,:,k))
         enddo
       endselect
-
+!
 !print*,'nat'
     !  call calc_for_chem_mixture(f)
 !print*,'nat2'
-
+!
       f(:,:,:,iux)=ux_init
-
+!
      print*,'bomb_field'
-
+!
    endsubroutine bomb_field
 !**************************************************************************
 !**************************************************************************
 subroutine flame_spd(f)
-
+!
 !
 ! Natalia
 ! Initialization of chem. species  in a case of the stream
@@ -638,7 +605,7 @@ subroutine flame_spd(f)
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i
-
+!
       real :: x1_front,x2_front, del, beta=10.
       real :: rho1_front=1e-3, rho2_front=10./3.*1e-3
       real :: TT1_front, TT2_front!=2400.
@@ -647,20 +614,20 @@ subroutine flame_spd(f)
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
-
+!
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
       x1_front=init_x1
       x2_front=init_x2
       p2_front=init_p2
-
+!
       mH=1.00794
       mC=12.0107
       mN=14.00674
       mO=15.9994
       mAr=39.948
       mHe=4.0026
-      !     
+      !
       ! Initialize some indexes
       !
       if (index_H2==0) &
@@ -679,7 +646,7 @@ subroutine flame_spd(f)
       !
       f(l1,:,:,iux)=ux_init
       !
-      do k=1,mx 
+      do k=1,mx
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !       Temperature
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -704,21 +671,21 @@ subroutine flame_spd(f)
                         +(TT2_front-TT1_front)*(1.-1./beta*exp(-x(k)/del)))
         endif
        elseif(lT_tanh) then
-
+!
         del=x2_front-x1_front
-
+!
          f(k,:,:,ilnTT)=log((TT2_front+TT1_front)*0.5  &
              +((TT2_front-TT1_front)*0.5)  &
              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-
+!
        endif
         !
-
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !         Species
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32. 
-
+       f(l2,:,:,i_O2)=(f(l1,:,:,i_O2)/32.-f(l1,:,:,i_H2)/4.)*32.
+!
        if (nygrid == 1) then
         if (lT_tanh) then
          del=(x2_front-x1_front)/3.
@@ -806,11 +773,11 @@ subroutine flame_spd_test(f)
 !
 ! This is the initial conditions for the 1step_test case
 !
-
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) ::  mu1
       integer :: k,j,i
-
+!
       real :: x1_front,x2_front,del
       real :: TT1_front, TT2_front!=2400.
       real :: p2_front!=10.13e5
@@ -818,18 +785,18 @@ subroutine flame_spd_test(f)
       real :: mH,mC,mN,mO,mAr,mHe
       real :: YH2,YO2,YN2
       integer :: i_H2, i_O2, i_H2O, i_N2
+!
 
-     
-
+!
       TT1_front=exp(init_lnTT1)
       TT2_front=init_TT2
-
+!
       x1_front=init_x1
       x2_front=init_x2
-
+!
       del=x2_front-x1_front
+!
 
-      
       mH=1.00794
       mC=12.0107
       mN=14.00674
@@ -843,13 +810,13 @@ subroutine flame_spd_test(f)
            call fatal_error('flame_spd','set index for H2 in start.in')
       if (index_O2==0) &
            call fatal_error('flame_spd','set index for O2 in start.in')
-
+!
       i_H2=index_H2
       i_O2=index_O2
-
-
-      do k=1,mx 
-
+!
+!
+      do k=1,mx
+!
       if (lT_prof1) then
         if (x(k)<x1_front) then
           f(k,:,:,ilnTT)=log(TT1_front)
@@ -865,12 +832,12 @@ subroutine flame_spd_test(f)
           f(k,:,:,ilnTT)=log((TT2_front+TT1_front)*0.5  &
            +((TT2_front-TT1_front)*0.5)  &
            *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-
+!
       endif
       enddo
-      
+
      !
-      do k=1,mx 
+      do k=1,mx
        if (lT_prof1) then
         if (x(k)<x1_front) then
           f(k,:,:,ichemspec(i_H2))=1.
@@ -893,16 +860,16 @@ subroutine flame_spd_test(f)
         mu1(k,:,:)=f(k,:,:,i_H2)/(2.*mH)+f(k,:,:,i_O2)/(2.*mO)
       enddo
       !
-
+!
       do k=1,mx
         f(k,:,:,ilnrho)=init_lnrho!log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
         f(k,:,:,iux)=f(k,:,:,iux)+init_ux!f(l1,:,:,iux)
       !   f(k,:,:,ilnTT)=f(l1,:,:,ilnTT)
       !  f(k,:,:,ichemspec(1))=1.
       !  f(k,:,:,ichemspec(2))=0.
-    
-      enddo
 
+      enddo
+!
 endsubroutine flame_spd_test
 !**************************************************************************
 !**************************************************************************
@@ -920,32 +887,32 @@ endsubroutine flame_spd_test
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
       real :: value1, value2
-
+!
       vr=bc%ivar
-
+!
       value1=bc%value1
       value2=bc%value2
-
-
+!
+!
     if (bc%location==iBC_X_BOT) then
       ! bottom boundary
-
+!
        if (vr==1) then
         do k=1,my
             if (abs(y(k)) .lt. str_thick) then
            !   do i=0,nghost
-                   f(l1-i*0,k,:,vr)=ux_init*(1.-(y(k)/str_thick)**2); 
+                   f(l1-i*0,k,:,vr)=ux_init*(1.-(y(k)/str_thick)**2);
           !    enddo
             else
-            !  do i=0,nghost; 
-                f(l1-i*0,k,:,vr)=0.; 
+            !  do i=0,nghost;
+                f(l1-i*0,k,:,vr)=0.;
              !   enddo
             endif
         enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
        endif
-
-
+!
+!
        if (vr==5) then
          !  if (abs(y(k)) .lt. yy0) then
             do i=0,nghost;  f(l1-i,m1:my,:,vr)=log(value1);  enddo
@@ -957,15 +924,15 @@ endsubroutine flame_spd_test
           !   enddo
           ! endif
        endif
-
-
+!
+!
        if (vr==4 ) then
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
        endif
-
-
+!
+!
        if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
+         do i=0,nghost;
           do k=1,my
              if (abs(y(k)) .lt. str_thick) then
                 if (vr < ichemspec(nchemspec))  f(l1-i,k,:,vr)=value1
@@ -975,13 +942,13 @@ endsubroutine flame_spd_test
              endif
           enddo
          enddo
-
+!
        endif
-
+!
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
         do i=1,nghost
-        f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); 
+        f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr);
         enddo
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
@@ -989,7 +956,7 @@ endsubroutine flame_spd_test
       endif
 !
     endsubroutine bc_stream_x
- !******************************************************************** 
+ !********************************************************************
   subroutine bc_stream_y(f,sgn,bc)
 !
 ! Natalia
@@ -1001,19 +968,19 @@ endsubroutine flame_spd_test
       type (boundary_condition) :: bc
       integer :: i, vr
       real :: value1, value2
-
-
+!
+!
       vr=bc%ivar
-
+!
       value1=bc%value1
       value2=bc%value2
-
-
+!
+!
     if (bc%location==iBC_Y_BOT) then
       ! bottom boundary
         do i=1,nghost
-         f(:,m2-i,:,vr)=f(:,m2,:,vr) 
-      !   f(:,m2-i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2+i,:,vr); 
+         f(:,m2-i,:,vr)=f(:,m2,:,vr)
+      !   f(:,m2-i,:,vr)=2*f(:,m2,:,vr)+sgn*f(:,m2+i,:,vr);
         enddo
       elseif (bc%location==iBC_Y_TOP) then
       ! top boundary
@@ -1039,23 +1006,23 @@ endsubroutine flame_spd_test
       type (boundary_condition) :: bc
       integer :: i, vr
       real :: value1, value2
-
-
+!
+!
       vr=bc%ivar
-
+!
       value1=bc%value1
       value2=bc%value2
-
-
+!
+!
     if (bc%location==iBC_Z_BOT) then
       ! bottom boundary
         do i=1,nghost
-         f(:,:,n2-i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2-i,:,vr); 
+         f(:,:,n2-i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2-i,:,vr);
         enddo
       elseif (bc%location==iBC_Z_TOP) then
       ! top boundary
         do i=1,nghost
-        f(:,:,n2+i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2+i,:,vr); 
+        f(:,:,n2+i,vr)=f(:,:,n2,vr)!+2*f(:,m2,:,vr)*0.!+sgn*f(:,m2+i,:,vr);
         enddo
       else
         print*, "bc_BL_z: ", bc%location, " should be `top(", &
@@ -1080,94 +1047,94 @@ endsubroutine flame_spd_test
       type (boundary_condition) :: bc
       integer :: i,i1,j,vr,k
       real :: value1, value2
-
+!
       vr=bc%ivar
-
+!
       value1=bc%value1
       value2=bc%value2
-
-
-
+!
+!
+!
     if (bc%location==iBC_X_BOT) then
       ! bottom boundary
-
+!
        if (vr==1) then
               do i=0,nghost;   f(l1-i,:,:,vr)=value1;  enddo
        endif
-
+!
  !     if (vr==4) then
  !          do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
  !     endif
-
+!
       if (vr==5) then
-
+!
        if (.not. ldivtau) then
            do i=0,nghost
             f(l1-i,:,:,4)=f(l1,:,:,4)
             f(l1-i,:,:,5)=f(l1,:,:,5)
-
-           enddo 
+!
+           enddo
        else
-         do i=0,nghost;   f(l1-i,:,:,5)=log(value1); enddo 
-
+         do i=0,nghost;   f(l1-i,:,:,5)=log(value1); enddo
+!
          do i=0,nghost
            pres(l1-i,:,:)=pres(l1-i+1,:,:)-divtau(l1-i,:,:,1)*dx
          enddo
-
+!
          do i=0,nghost
-           f(l1-i,:,:,4)=log(pres(l1,:,:)/value1/mmu1(l1,:,:)/Rgas); 
-         enddo 
-
+           f(l1-i,:,:,4)=log(pres(l1,:,:)/value1/mmu1(l1,:,:)/Rgas);
+         enddo
+!
        endif
-
+!
      endif
-
+!
        if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
+         do i=0,nghost;
            f(l1-i,:,:,vr)=2*f(l1-i+1,:,:,vr)-f(l1-i+2,:,:,vr)
           enddo
        endif
-
+!
       elseif (bc%location==iBC_X_TOP) then
-
+!
        if (vr==1) then
               do i=0,nghost;   f(l2+i,:,:,vr)=value1;  enddo
        endif
-
+!
  !     if (vr==4) then
  !          do i=0,nghost;  f(l1-i,:,:,vr)=log(value1);  enddo
  !     endif
-
+!
       if (vr==5) then
-
+!
        if (.not. ldivtau) then
            do i=0,nghost
             f(l2+i,:,:,4)=f(l2,:,:,4)
             f(l2+i,:,:,5)=f(l2,:,:,5)
-           enddo 
+           enddo
        else
-         do i=0,nghost;   f(l2+i,:,:,5)=log(value1); enddo 
-
+         do i=0,nghost;   f(l2+i,:,:,5)=log(value1); enddo
+!
          do i=0,nghost
            pres(l2+i,:,:)=pres(l2+i-1,:,:)+divtau(l2+i,:,:,1)*dx
          enddo
-
+!
          do i=0,nghost
-           f(l2+i,:,:,4)=log(pres(l2,:,:)/value1/mmu1(l2,:,:)/Rgas); 
-         enddo 
-
-
+           f(l2+i,:,:,4)=log(pres(l2,:,:)/value1/mmu1(l2,:,:)/Rgas);
+         enddo
+!
+!
       endif
-
+!
      endif
-
+!
        if (vr >= ichemspec(1)) then
-         do i=0,nghost; 
+         do i=0,nghost;
            f(l2+i,:,:,vr)=2*f(l2+i-1,:,:,vr)-f(l2+i-2,:,:,vr)
           enddo
        endif
-
-
+!
+!
       ! top boundary
       !  do i=1,nghost
       !    f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)!+sgn*f(l2-i,:,:,vr);
@@ -1179,9 +1146,9 @@ endsubroutine flame_spd_test
 !
     endsubroutine bc_gpress_wall
 !***********************************************************************
- !******************************************************************** 
- !******************************************************************** 
-
+ !********************************************************************
+ !********************************************************************
+!
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are
@@ -1201,7 +1168,7 @@ endsubroutine flame_spd_test
     endsubroutine special_before_boundary
 !
 !********************************************************************
-
+!
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
@@ -1210,6 +1177,5 @@ endsubroutine flame_spd_test
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
