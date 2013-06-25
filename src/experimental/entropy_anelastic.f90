@@ -1,5 +1,5 @@
 ! $Id: entropy.f90 11900 2009-10-13 23:02:31Z boris.dintrans $
-! 
+!
 !  This module takes care of energy (initial condition
 !  and time advance)
 !
@@ -109,7 +109,7 @@ module Energy
   double precision, parameter, dimension(6) ::  &
        lnH_2 = (/-102.811, -99.01, -111.296, -70.804, -90.934, -80.572 /),   &
        B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
-
+!
   ! input parameters
   namelist /entropy_init_pars/ &
       initss,     &
@@ -147,11 +147,11 @@ module Energy
       lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
       tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
       chit_aniso,xbot
-
+!
   ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
-                                ! DIAG_DOC:   \quad(time step relative to 
+                                ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   acoustic time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
@@ -208,10 +208,10 @@ module Energy
   integer :: idiag_uxTTmxy=0    ! DIAG_DOC:
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
-
-
+!
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_energy()
 !
@@ -276,7 +276,7 @@ module Energy
           call select_eos_variable('lnTT',iss)
         else
           if (gamma_m1==0.) then
-            call fatal_error('initialize_energy',& 
+            call fatal_error('initialize_energy',&
                  'Use experimental/noenergy for isothermal case')
           else
             call select_eos_variable('ss',iss)
@@ -399,7 +399,7 @@ module Energy
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                    'initialize_energy: Calculated Fbot = ', Fbot
-
+!
               Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
               FbotKbot=gamma/gamma_m1/(mpoly+1.)
               if (lroot) print*,'initialize_energy: Calculated Fbot,Kbot=', &
@@ -430,7 +430,7 @@ module Energy
 !
         endif
       endif
-
+!
 !   make sure all relevant parameters are set for spherical shell problems
 !
       call get_cp1(cp1)
@@ -487,18 +487,18 @@ module Energy
           if (rcool==0.) rcool=r_ext
           ! only compute the gravity profile
           call star_heat(f,lcompute_grav)
-
+!
         case ('cylind_layers')
           if (bcx1(iss)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif
           cs2cool=cs2top
-
+!
         case ('single_polytrope')
           if (cool/=0.) cs2cool=cs0**2
           mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
-
+!
       endselect
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
@@ -565,7 +565,7 @@ module Energy
       call put_shared_variable('hcond0',hcond0,ierr)
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting hcond0")
-
+!
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
@@ -578,13 +578,13 @@ module Energy
     subroutine read_energy_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_energy_init_pars
 !***********************************************************************
@@ -598,19 +598,19 @@ module Energy
     subroutine read_energy_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_energy_run_pars
 !***********************************************************************
     subroutine write_energy_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_run_pars)
 !
     endsubroutine write_energy_run_pars
@@ -649,7 +649,7 @@ module Energy
 !
       save_pretend_lnTT=pretend_lnTT
       pretend_lnTT=.false.
-
+!
       do j=1,ninit
 !
         if (initss(j)=='nothing') cycle
@@ -671,8 +671,8 @@ module Energy
          case ('polytropic_simple')
            f(:,:,:,iss)=0.0
            print *, 'init_energy: Base entropy defined in density module'
-
- 
+!
+!
           case default
 !
 !  Catch unknown values
@@ -902,7 +902,7 @@ module Energy
 !
       use EquationOfState, only: eoscalc,ilnrho_ss
       use Gravity, only: gravz
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2_,lnrho,lnrho_m
@@ -910,7 +910,7 @@ module Energy
       if (.not. lgravz) then
         call fatal_error("hydrostatic_isentropic","Currently only works for vertical gravity field")
       endif
-
+!
       !
       ! In case this processor is not located at the very bottom
       ! perform integration through lower lying processors
@@ -922,7 +922,7 @@ module Energy
         call eoscalc(ilnrho_ss,lnrho_m,ss_const,cs2=cs2_)
         lnrho=lnrho+dz*gravz/cs2_
       enddo
-
+!
       !
       ! Do the integration on this processor
       !
@@ -934,12 +934,12 @@ module Energy
         lnrho=lnrho+dz*gravz/cs2_
         f(:,:,n,ilnrho)=lnrho
       enddo
-
+!
       !
       ! Entropy is simply constant
       !
       f(:,:,:,iss)=ss_const
-
+!
     endsubroutine hydrostatic_isentropic
 !***********************************************************************
     subroutine mixinglength(mixinglength_flux,f)
@@ -1000,7 +1000,7 @@ module Energy
       rhotop=rt_new
       call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
       rb_new=rhobot
-
+!
       do 10 iter=1,10
 !
 !  new estimate
@@ -1023,7 +1023,7 @@ module Energy
    10 continue
    20 if (ipz==0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
-! redefine rho0 and lnrho0 as we don't have rho0=1 at the top 
+! redefine rho0 and lnrho0 as we don't have rho0=1 at the top
 ! (important for eoscalc!)
 ! put density and entropy into f-array
 ! write the initial stratification in data/proc*/stratMLT.dat
@@ -1037,7 +1037,7 @@ module Energy
       do n=1,nz
         iz=n+ipz*nz
         zm=xyz0(3)+(iz-1)*dz
-        lnrho=lnrhom(nzgrid-iz+1) 
+        lnrho=lnrhom(nzgrid-iz+1)
         lnTT=log(tempm(nzgrid-iz+1))
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(:,:,n+nghost,ilnrho)=lnrho
@@ -1061,7 +1061,7 @@ module Energy
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
       use Mpicomm, only:stop_it
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
       real :: beta1,cp1
@@ -1162,7 +1162,7 @@ module Energy
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-
+!
       real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
       real :: beta1,cp1
 !
@@ -1235,7 +1235,7 @@ module Energy
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature
       T_h=T_h_cgs/unit_temperature
-
+!
 !      pp0=6.0*k_B*(rho0/1.38) *                                               &
 !       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
 !      pp0=k_B*unit_length**3*                                               &
@@ -1264,7 +1264,7 @@ module Energy
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
-
+!
 !  define entropy via pressure, assuming fixed T for each component
         if (lentropy) then
 !  thermal pressure (eq 15)
@@ -1295,7 +1295,7 @@ module Energy
 !   with the galactic-hs-gravity profile set in gravity_simple.
 !   Parameters cs0hs and H0hs need to be set consistently
 !   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. 
+!   equilibrium.
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eosperturb
@@ -1307,14 +1307,14 @@ module Energy
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
-
-      do n=n1,n2            
+!
+      do n=n1,n2
       do m=m1,m2
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
         lnrho=log(rho)
-        f(l1:l2,m,n,ilnrho)=lnrho        
+        f(l1:l2,m,n,ilnrho)=lnrho
         if (lentropy) then
-!  Isothermal 
+!  Isothermal
           pp=rho*cs0hs**2
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
@@ -1427,7 +1427,7 @@ module Energy
 !
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0) lpenc_requested(i_cp1)=.true.
-      if (ladvection_entropy) then 
+      if (ladvection_entropy) then
         lpenc_requested(i_ugss)=.true.
         lpenc_requested(i_ugss_b)=.true.
       end if
@@ -1456,7 +1456,7 @@ module Energy
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT1)=.true.
       endif
-      if (lgravr) then 
+      if (lgravr) then
 ! spherical case (cylindrical case also included)
         if (lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
@@ -1533,7 +1533,7 @@ module Energy
         lpencil_in(i_grho)=.true.
         lpencil_in(i_gss_b)=.true.
       endif
-
+!
       if (lpencil_in(i_uglnTT)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnTT)=.true.
@@ -1559,7 +1559,7 @@ module Energy
 !
 !  Calculate all energy pencils except the pressure gradient
 !
-!  08-dec-2009/piyali:adapted 
+!  08-dec-2009/piyali:adapted
 !
       use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
       use Sub
@@ -1570,9 +1570,9 @@ module Energy
 ! ss
 !
       if (lpencil(i_ss)) p%ss = f(l1:l2,m,n,iss)
-      if (lpencil(i_gss)) call grad(f,iss,p%gss) 
-      if (lpencil(i_gss_b)) call grad(f,iss_b,p%gss_b) 
-      if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss) 
+      if (lpencil(i_gss)) call grad(f,iss,p%gss)
+      if (lpencil(i_gss_b)) call grad(f,iss_b,p%gss_b)
+      if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss)
 !
 ! Ma2
 !
@@ -1588,8 +1588,8 @@ module Energy
           p%glnTTb(:,1)=gamma*p%gss_b(:,1)*cp1+gamma_m1*p%grho(:,1)*p%rho1
           p%glnTTb(:,2)=gamma*p%gss_b(:,2)*cp1+gamma_m1*p%grho(:,2)*p%rho1
           p%glnTTb(:,3)=gamma*p%gss_b(:,3)*cp1+gamma_m1*p%grho(:,3)*p%rho1
-
-!    
+!
+!
     endsubroutine calc_pencils_energy
 !**********************************************************************
     subroutine denergy_dt(f,df,p)
@@ -1600,7 +1600,7 @@ module Energy
 !   08-dec-09/piyali: adapted from entropy.f90
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma1, cs0
-      use Special, only: special_calc_entropy
+      use Special, only: special_calc_energy
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1666,7 +1666,7 @@ module Energy
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
-
+!
 !
 !  Possibility of entropy relaxation in exterior region.
 !
@@ -1821,7 +1821,7 @@ module Energy
       case ('constant')
          f_target=ss_const
       case ('power-law')
-        call get_ptlaw(ptlaw) 
+        call get_ptlaw(ptlaw)
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
@@ -1985,8 +1985,8 @@ module Energy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
-           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + & 
-            chi_hyper3_aniso(2)*dy_1(  m  )**6 + & 
+           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
+            chi_hyper3_aniso(2)*dy_1(  m  )**6 + &
             chi_hyper3_aniso(3)*dz_1(  n  )**6)
 !
     endsubroutine calc_heatcond_hyper3_aniso
@@ -2121,7 +2121,7 @@ module Energy
       intent(out) :: df
 !
       chix = p%rho1*hcond0*p%cp1
-      
+!
       call dot(p%gss,p%glnTTb,g2)
       thdiff = chix*(p%del2ss + g2)
 !
@@ -2223,19 +2223,19 @@ module Energy
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines
-!  
+!
 !
 !  24-aug-09/bing: moved from denergy_dt to here
 !
       use Diagnostics
       use Sub, only: tensor_diffusion_coef,dot,dot2
-
+!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: cosbgT,gT2,b2,rhs
       real, dimension (nx) :: vKpara,vKperp
 !
       type (pencil_case) :: p
-!      
+!
       vKpara(:) = Kgpara
       vKperp(:) = Kgperp
 !
@@ -2249,7 +2249,7 @@ module Energy
 !
       where ((gT2<=tini).or.(b2<=tini))
          cosbgT=0.
-      elsewhere 
+      elsewhere
          cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
@@ -2266,7 +2266,7 @@ module Energy
 !
 !  Vertically integrated heat flux from a thin globaldisc.
 !  Taken from D'Angelo et al. 2003, ApJ, 599, 548, based on
-!  the grey analytical model of Hubeny 1990, ApJ, 351, 632 
+!  the grey analytical model of Hubeny 1990, ApJ, 351, 632
 !
 !  07-feb-07/wlad+heidar : coded
 !
@@ -2276,21 +2276,21 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
-
+!
       type (pencil_case) :: p
 !
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'enter heatcond hubeny' 
+      if (headtt) print*,'enter heatcond hubeny'
 !
       if (pretend_lnTT) call fatal_error("calc_heatcond_hubeny","not implemented when pretend_lnTT = T")
 !
       kappa0_cgs=2e-6  !cm2/g
       kappa0=kappa0_cgs*unit_density/unit_length
       kappa=kappa0*p%TT**2
-! 
-!  Optical Depth tau=kappa*rho*H 
+!
+!  Optical Depth tau=kappa*rho*H
 !  If we are using 2D, the pencil value p%rho is actually
 !   sigma, the column density, sigma=rho*2*H
 !
@@ -2301,12 +2301,12 @@ module Energy
       endif
 !
 ! Analytical gray description of Hubeny (1990)
-! a1 is the optically thick contribution, 
-! a3 the optically thin one. 
+! a1 is the optically thick contribution,
+! a3 the optically thin one.
 !
       a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
-      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)      
+      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
 !
@@ -2450,7 +2450,7 @@ module Energy
         endselect
       endif
 !
-!  Spherical gravity in spherical coordinate case: 
+!  Spherical gravity in spherical coordinate case:
 !           heat at centre, cool outer layers.
 !
       if (lgravx.and.lspherical_coords) then
@@ -2472,7 +2472,7 @@ module Energy
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         if (rcool==0.) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
- 
+!
 !
 !  pick type of cooling
 !
@@ -2857,7 +2857,7 @@ module Energy
 !
 !
       endselect
-!   
+!
     endsubroutine get_slices_energy
 !***********************************************************************
     subroutine fill_farray_pressure(f)
@@ -3197,12 +3197,12 @@ module Energy
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
                                  mpoly1, lnrho0, get_cp1
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
       real :: beta0,beta1,TT_crit,cp1
       real :: lnrho_int,lnrho_ext,lnrho_crit
-
+!
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  beta is the temperature gradient
@@ -3267,12 +3267,12 @@ module Energy
     use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
     use Sub, only: step, interp1, erfunc
-
+!
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer, parameter   :: nr=100
     integer              :: i,l,iter
     real, dimension (nr) :: r,lnrho,temp,hcond
-    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g 
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g
     real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
 ! variables for the gravity profile
     logical, optional    :: lcompute_grav
@@ -3307,28 +3307,28 @@ module Energy
      deallocate(rr_mn,u_mn,lumi_mn,g_r)
      return
     endif
-
+!
 ! uncomment to force rhotop=rho0 and just compute the corresponding setup
 !   rhotop=rho0
 !   call strat_heat(lnrho,temp,rhotop,rhobot)
 !   goto 20
-
+!
 !  the bottom value that we want for density at r=r_bcz, actually given by rho0
     rbot=rho0
     rt_old=0.1*rbot
     rt_new=0.12*rbot
-
+!
 !  need to iterate for rhobot=1
 !  produce first estimate
     rhotop=rt_old
     call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_old=rhobot
-
+!
 !  next estimate
     rhotop=rt_new
     call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_new=rhobot
-
+!
     do 10 iter=1,10
 !  new estimate
       rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
@@ -3336,7 +3336,7 @@ module Energy
       crit=abs(rhotop/rt_new-1.)
       if (crit<=1e-4) goto 20
       call strat_heat(lnrho,temp,rhotop,rhobot)
-
+!
 !  update new estimates
       rt_old=rt_new
       rb_old=rb_new
@@ -3344,13 +3344,13 @@ module Energy
       rb_new=rhobot
  10 continue
  20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
-
+!
 !  redefine rho0 and lnrho0 (important for eoscalc!)
     rho0=rhotop
     lnrho0=log(rhotop)
     T0=cs20/gamma_m1
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
-    
+!
 ! define the radial grid r=[0,r_max]
     if (nzgrid == 1) then
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
@@ -3360,7 +3360,7 @@ module Energy
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
-
+!
     do imn=1,ny*nz
       n=nn(imn)
       m=mm(imn)
@@ -3393,7 +3393,7 @@ module Energy
         else
           lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
         endif
-        if (r(i) /= 0.) then 
+        if (r(i) /= 0.) then
           if (nzgrid == 1) then
             g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
           else
@@ -3408,7 +3408,7 @@ module Energy
       enddo
       close(11)
     endif
-
+!
     endsubroutine star_heat
 !***********************************************************************
     subroutine strat_heat(lnrho,temp,rhotop,rhobot)
@@ -3420,12 +3420,12 @@ module Energy
 !
     use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
     use Sub, only: step, erfunc, interp1
-
+!
     integer, parameter   :: nr=100
     integer              :: i
     real, dimension (nr) :: r,lumi,hcond,g,lnrho,temp
     real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
-
+!
 ! define the radial grid r=[0,r_max]
     if (nzgrid == 1) then
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
@@ -3435,7 +3435,7 @@ module Energy
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
-
+!
 ! luminosity and gravity radial profiles
     lumi(1)=0. ; g(i)=0.
     do i=2,nr
@@ -3448,14 +3448,14 @@ module Energy
         g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
       endif
     enddo
-
+!
 ! radiative conductivity profile
     hcond1=(mpoly1+1.)/(mpoly0+1.)
     hcond2=(mpoly2+1.)/(mpoly0+1.)
     hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
             +(hcond2-1.)*step(r,r_ext,widthss)
     hcond=hcond0*hcond
-
+!
 ! start from surface values for rho and temp
     temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
     dr=r(2)
@@ -3495,18 +3495,18 @@ module Energy
     lnrhobot=interp1(r,lnrho,nr,r_bcz)
     rhobot=exp(lnrhobot)
     print*,'find rhobot=',rhobot
-
+!
     endsubroutine strat_heat
 !***********************************************************************
     subroutine cylind_layers(f)
 !
 !  17-mar-07/dintrans: coded
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
-!  
+!
       use Gravity, only: gravz, g0
       use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_TT
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
