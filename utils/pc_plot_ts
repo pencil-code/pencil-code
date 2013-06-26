@@ -167,7 +167,7 @@ use strict;
 #
 my $out = 'ascii';                 # Default.
 my $file = 'data/time_series.dat'; # Default.
-my ($help, $title, $fun, $xlog, $ylog);
+my ($help, $title, $fun, $gui, $xlog, $ylog);
 my ($xrange, $yrange, $xlabel, $ylabel, $sqrt, $gnuplot);
 my $result = GetOptions(
                  "help"     => \$help,   # Print help.
@@ -175,6 +175,7 @@ my $result = GetOptions(
                  "file=s"   => \$file,   # Time series data file.
                  "fun=s"    => \$fun,    # Custom function in (x,y).
                  "out=s"    => \$out,    # Output format [+ file]
+		 "gui"      => \$gui,    # Same as '--out gui'.
                  "xlog"     => \$xlog,   # set logscale x
                  "ylog"     => \$ylog,   # set logscale y
                  "xrange=s" => \$xrange, # Range of X values.
@@ -205,15 +206,16 @@ if ($help) {
     exit 0;
 }
 
+
 #
 #  Get variables from command line.
 #
 my ($var1, $var2);
 
-@ARGV >  0 or die "Please specify variables to plot.";
+@ARGV >  0 or die "Please specify variables too plot.\nType pc_plot_ts --help for more info.";
 @ARGV == 1 and ($var1, $var2) = ('t', $ARGV[0]);
 @ARGV == 2 and ($var1, $var2) = @ARGV;
-@ARGV >  2 and die "This program only takes two parameters.";
+@ARGV >  2 and die "This program only takes two parameters.\nType pc_plot_ts --help for more info.";
 
 
 ########################
@@ -229,6 +231,10 @@ my ($var1, $var2);
 $gnuplot ? open (GNUPLOT, ">-")  # Print to STDOUT.
          : open (GNUPLOT, "|-", "gnuplot --persist");
 
+#
+# GUI selected?
+#
+$gui and $out = 'gui';
 
 #
 #  Output format.
