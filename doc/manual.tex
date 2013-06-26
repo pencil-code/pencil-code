@@ -1128,7 +1128,7 @@ from any trouble.
 You may find that the latest \name{svn} version of the code produces errors.
 If you have reasons to believe that this is due to changes introduced on
 27 November 2008 (to give an example), you can check out the version prior to
-this by specifying a revision number with \cmd{svn update -r number}.
+this by specifying a revision number with \cmd{svn update -r \#\#\#\#\#}.
 One reason why one cannot always reproduce exactly the same situation too far
 back in time is connected with the fact that processor architecture and the
 compiler were different, resulting e.g. in different rounding errors.
@@ -2942,6 +2942,7 @@ output.
 \label{RERUN}
 \index{RERUN file}
 \index{NEWDIR file}
+\index{pc\_jobtransfer}
 
 After the code finishes (e.g., when the final timestep number is reached
 or when a \file{STOP} file is found), the \file{run.csh} script checks
@@ -11176,7 +11177,7 @@ the latest set of parameters, you need to look at the code.
                  added, since otherwise the vector potential $\Av$ has a
                  linear $\xv$-dependence which is incompatible with
                  periodicity). \\
-  \var{luse_Bext_in_b2} [F]
+  \var{lignore_Bext_in_b2} [F] or \var{luse_Bext_in_b2} [T]
                & add uniform background magnetic field when computing
                $\bv^2$ pencils\\
   \var{eta} [$0.$]
