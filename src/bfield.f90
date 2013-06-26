@@ -263,7 +263,10 @@ module Magnetic
 !
       if (lpencil(i_bij)) call gij(f, ibb, p%bij, 1)
 !
-      if (lpencil(i_jj)) call curl_mn(p%bij, p%jj, p%bb)
+      jj: if (lpencil(i_jj)) then
+        call curl_mn(p%bij, p%jj, p%bb)
+        p%jj = mu01 * p%jj
+      endif jj
 !
       if (lpencil(i_divb)) call div_mn(p%bij, p%divb, p%bb)
 !
