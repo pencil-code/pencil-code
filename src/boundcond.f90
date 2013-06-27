@@ -1423,7 +1423,7 @@ module Boundcond
     subroutine bc_spr_x(f,topbot,j)
 !
 !  This condition sets values for A_phi and A_theta at the radial boundary.
-!  It solves  A"+2/RA'=0 and A=0 at the boundary.
+!  It solves  A"+2A'/R=0 and A=0 at the boundary.
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
@@ -1442,29 +1442,29 @@ module Boundcond
         tmp=x(l1)*dx_1(l1)
 !
         f(l1,:,:,j)  =0
-        f(l1-1,:,:,j)=(f(l1,:,:,j)*(tmp+1))/(tmp-1)
+        f(l1-1,:,:,j)=(f(l1+1,:,:,j)*(-tmp+1))/(tmp+1)
         f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
                       +f(l1+1,:,:,j)*16*(tmp+1) &
-                      +f(l1+2,:,:,j)*(-1*tmp-1))/(tmp-2)
-        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27/2*(tmp-2) &
-                      +f(l1-1,:,:,j)*270/2*(-tmp+1) &
-                      +f(l1+1,:,:,j)*270/2*(-tmp-1) &
-                      +f(l1+2,:,:,j)*27/2*(tmp+2) &
-                      +f(l1+3,:,:,j)*(-1*tmp-3))/(tmp-3)
+                      +f(l1+2,:,:,j)*(-tmp-2))/(tmp-2)
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(0.5*tmp-1) &
+                      +f(l1-1,:,:,j)*135*(-tmp+1) &
+                      +f(l1+1,:,:,j)*135*(-tmp-1) &
+                      +f(l1+2,:,:,j)*27*(0.5*tmp+1) &
+                      +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
 !
       case ('top')               ! top boundary
         tmp=x(l2)*dx_1(l2)  
 !
         f(l2,:,:,j)  =0
-        f(l2+1,:,:,j)=(f(l2,:,:,j)*(tmp+1))/(tmp-1)
-        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp-1) &
-                      +f(l2-1,:,:,j)*16*(tmp+1) &
-                      +f(l2-2,:,:,j)*(-1*tmp-1))/(tmp-2)
-        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27/2*(tmp-2) &
-                      +f(l2+1,:,:,j)*270/2*(-tmp+1) &
-                      +f(l2-1,:,:,j)*270/2*(-tmp-1) &
-                      +f(l2-2,:,:,j)*27/2*(tmp+2) &
-                      +f(l2-3,:,:,j)*(-1*tmp-3))/(tmp-3)
+        f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
+        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp+1) &
+                      +f(l2-1,:,:,j)*16*(tmp-1) &
+                      +f(l2-2,:,:,j)*(tmp-2))/(-tmp-2)
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(0.5*tmp+1) &
+                      +f(l2+1,:,:,j)*135*(-tmp-1) &
+                      +f(l2-1,:,:,j)*135*(-tmp+1) &
+                      +f(l2-2,:,:,j)*27*(0.5*tmp-1) &
+                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
 !
       case default
         print*, "bc_spr_x: ", topbot, " should be 'top' or 'bot'"
