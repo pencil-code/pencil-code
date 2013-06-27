@@ -115,7 +115,6 @@ my %tests = (
                          implicit_resistivity
                          debris-photoelectric-fluid
                          2d-tests/debris-photoeletric-streaming
-                         spherical-globaldisk
                          2d-tests/Kelvin-Helmholtz
                     )],
              # Level 3 for now contains all non-canonical tests that run
