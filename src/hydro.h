@@ -21,5 +21,5 @@
 ! WL: SHOULDN'T BE PUBLIC!
 !
   public :: uumz, guumz, lcalc_uumean, lupw_uu
-  public :: uumxy, lcalc_uumeanxy
+  public :: uumxy, uumxz, lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
