@@ -200,7 +200,7 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  26-jun-13/ccyang: coded.
+!  27-jun-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts
       use Sub, only: cross
@@ -210,28 +210,36 @@ module Magnetic
       real, dimension(nx,3) :: bb, ee
       integer :: imn, m, n
 !
-      efield: if (iuu /= 0) then
-!
 !  Update ghost cells of the velocity and the magnetic fields.
 !
-        call update_ghosts(f, iux, iuz)
-        call update_ghosts(f, ibx, ibz)
+      if (iuu /= 0) call update_ghosts(f, iux, iuz)
+      call update_ghosts(f, ibx, ibz)
 !
-!  Calculate the effective electric field.
+!  Calculate the effective electric field along each pencil.
 !
-        mn_loop: do imn = 1, ny * nz
-          n = nn(imn)
-          m = mm(imn)
-          bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
+      mn_loop: do imn = 1, ny * nz
+        n = nn(imn)
+        m = mm(imn)
+!
+!  Add uu cross bb.
+!
+        uxb: if (iuu /= 0) then
+          if (lbext) then
+            bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
+          else
+            bb = f(l1:l2,m,n,ibx:ibz)
+          endif
           call cross(f(l1:l2,m,n,iux:iuz), bb, ee)
-          f(l1:l2,m,n,ieex:ieez) = ee
-        enddo mn_loop
+        else uxb
+          ee = 0.0
+        endif uxb
+!
+        f(l1:l2,m,n,ieex:ieez) = ee
+      enddo mn_loop
 !
 !  Communicate the E field.
 !
-        call update_ghosts(f, ieex, ieez)
-!
-      endif efield
+      call update_ghosts(f, ieex, ieez)
 !
     endsubroutine calc_lmagnetic_pars
 !***********************************************************************
