@@ -43,7 +43,7 @@ module Viscosity
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real :: nu_infinity,nu0,non_newton_lambda,carreau_exponent
-  character (len=labellen) :: nnewton_type=''
+  character (len=labellen) :: nnewton_type='none'
   real :: nnewton_tscale,nnewton_step_width
   real, dimension(nx) :: xmask_vis=0
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
