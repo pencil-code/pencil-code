@@ -20,7 +20,7 @@
 /
 &initial_condition_pars
   temperature_power_law=1
-  density_power_law=0.5
+  density_power_law=0.0
   lcorrect_selfgravity=T
   gravitational_const=8.9e-4
 /
@@ -46,7 +46,7 @@
 /
 &particles_init_pars
   initxxp='random-cylindrical', initvvp='Keplerian'
-  pdlaw=0.0
+  pdlaw=0.5
 !  bcpx='flk',bcpy='out',bcpz='p'
   bcpx='rmv',bcpy='out',bcpz='p'
   lparticlemesh_tsc=T
