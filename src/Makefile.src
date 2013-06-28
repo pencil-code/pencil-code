@@ -68,6 +68,7 @@ SHOCK             = noshock
 SPECIAL           = nospecial
 STREAMLINES       = nostreamlines
 TESTFIELD_GENERAL = test_methods/testfield_general
+TESTFIELD_GENERAL = notestfield
 TESTFIELD         = notestfield
 TESTFLOW          = notestflow
 TESTPERTURB       = notestperturb
