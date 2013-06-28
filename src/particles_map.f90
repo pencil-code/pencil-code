@@ -646,40 +646,40 @@ module Particles_map
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
       if (lsort_particles) then 
-      t_sp = t
+        t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
 !
-      call particle_pencil_index(ineargrid)
+        call particle_pencil_index(ineargrid)
 !
 !  Choose sort algorithm.
 !  WARNING - choosing the wrong one might make the code unnecessarily slow.
 !
-      if ( lstart .or. &
-          (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
-        isorttype=3
-        lrunningsort=.false.
-      else
-        isorttype=1
-        lrunningsort=.true.
-      endif
-      ncount=0
+        if ( lstart .or. &
+             (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
+          isorttype=3
+          lrunningsort=.false.
+        else
+          isorttype=1
+          lrunningsort=.true.
+        endif
+        ncount=0
 !
 !  Calculate integer value to sort after.
 !
-      do k=1,npar_loc
+        do k=1,npar_loc
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
           ipark_sorted(k)=k
-      enddo
+        enddo
 !
 !  Sort using either straight insertion (1), shell sorting (2) or counting
 !  sort (3).
 !
-      select case (isorttype)
+        select case (isorttype)
 !  Straight insertion.
-      case (1)
-        do k=2,npar_loc
+        case (1)
+          do k=2,npar_loc
 !
             j=k
 !
@@ -717,14 +717,14 @@ module Particles_map
                 ipar(j+1:k)=ipar(j:k-1)
                 ipar(j)=ipar_tmp
 !
+              endif
             endif
-          endif
-        enddo
+          enddo
 !  Shell sort.
-      case (2)
+        case (2)
 !
-        do ih=1,21
-          do k=1+hshellsort(ih),npar_loc
+          do ih=1,21
+            do k=1+hshellsort(ih),npar_loc
               ilmn_par_tmp=ilmn_par(k)
               ipark_sorted_tmp=ipark_sorted(k)
               j=k
@@ -737,15 +737,15 @@ module Particles_map
                 j=j-hshellsort(ih)
                 if (j-hshellsort(ih)<1) exit
               enddo
+            enddo
           enddo
-        enddo
 !  Counting sort.
-      case (3)
-        kk=k1_imn
-        do k=1,npar_loc
-             ipark_sorted(kk(ilmn_par(k)))=k
-             kk(ilmn_par(k))=kk(ilmn_par(k))+1
-        enddo
+        case (3)
+          kk=k1_imn
+          do k=1,npar_loc
+            ipark_sorted(kk(ilmn_par(k)))=k
+            kk(ilmn_par(k))=kk(ilmn_par(k))+1
+          enddo
         ncount=npar_loc
       endselect
 !
@@ -1272,8 +1272,8 @@ module Particles_map
 !  Calculate the number of particles in each pencil.
 !
       do k=1,npar_loc
-           iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-           npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
+        iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
       enddo
 !
 !  Calculate beginning and ending particle index for each pencil.
