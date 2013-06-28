@@ -1,0 +1,61 @@
+! -*-f90-*-
+!  Initialisation parameters for dust particles moving in a random 
+!  velocity field.
+!
+&run_pars
+  cvsid='$Id: run.in 12078 2009-11-14 16:52:27Z ajohan@strw.leidenuniv.nl $',
+  nt=10,it1=1
+  cdt=0.4, cdtv=0.4, isave=100, itorder=3
+  dsnap=1.0, dvid=0.1, ip=20
+  lbidiagonal_derij=F
+  wfreeze_int=0
+  wfreeze_ext=0
+  wborder_int=0.05
+  wborder_ext=0.1   
+  lpencil_check=T
+  ip=10
+/
+&eos_run_pars
+/
+&hydro_run_pars
+ lfreeze_uint=T, lfreeze_uext=T
+ borderuu='initial-condition'
+/
+&density_run_pars
+ lfreeze_lnrhoint=T, lfreeze_lnrhoext=T
+ diffrho_hyper3=5e-9, idiff='hyper3'
+ borderlnrho='initial-condition'	
+/
+&grav_run_pars
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/
+&viscosity_run_pars
+  nu_hyper3=5e-9,nu=2.5e-5
+  nu_jump=0
+  xnu=0.6
+  xnu2=1.2
+  widthnu=1e-2
+  ivisc='hyper3_nu-const','nu-profr'
+/
+&shock_run_pars
+/
+&particles_run_pars	
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  lmigration_redo=T
+  ldraglaw_variable=T
+  ldraglaw_eps_stk_transonic=T
+  mean_free_path_gas=0.63
+  lcheck_exact_frontier=T
+  luse_tau_ap=T
+/
+&particles_selfgrav_run_pars
+  lselfgravity_particles=T
+/
+&particles_nbody_run_pars
+  lfollow_particle=T,T
+  lnogravz_star=T
+  laccretion=T,T
+/

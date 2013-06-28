@@ -1,0 +1,73 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialisation parameters for dust particles moving in a random
+!  velocity field.
+!
+&init_pars
+  cvsid='$Id: start.in 12078 2009-11-14 16:52:27Z ajohan@strw.leidenuniv.nl $',
+  xyz0  = -2.1, -2.1, -0.26
+  xyz1  =  2.1,  2.1,  0.26
+  lperi =    T,    T,    T
+  r_int=0.4
+  r_ext=2.0
+  lcylinder_in_a_box=T
+  llocal_iso=T
+  lcylindrical_gravity=T
+  lwrite_ic=T
+  lwrite_aux=T
+  r_ref=1
+  seed0=1
+/
+&initial_condition_pars
+  temperature_power_law=1
+  density_power_law=0.5
+  lcorrect_selfgravity=T
+  gravitational_const=8.9e-4
+/
+&eos_init_pars
+  cs0=0.05
+  rho0=1
+  gamma=1
+/
+&hydro_init_pars
+/
+&density_init_pars
+  lnrho_const=0
+  ldensity_nolog=T
+  density_floor=-100
+/
+&selfgrav_init_pars
+  gravitational_const=8.9e-4
+  lselfgravity_gas=T
+/
+&poisson_init_pars
+  lrazor_thin=T
+  lexpand_grid=T
+/
+&particles_init_pars
+  initxxp='random-cylindrical', initvvp='Keplerian'
+  pdlaw=0.0
+!  bcpx='flk',bcpy='out',bcpz='p'
+  bcpx='rmv',bcpy='out',bcpz='p'
+  lparticlemesh_tsc=T
+  tausp_species=0.01,0.1,0.3,1.
+  lmigration_real_check=T
+  rhopmat=1.0
+  eps_dtog=0.01
+  lsort_particles=F
+  lcheck_exact_frontier=T
+/
+&particles_selfgrav_init_pars
+  lselfgravity_particles=F !for start time
+/
+&particles_nbody_init_pars
+  initxxsp='fixed-cm'
+  initvvsp='fixed-cm'
+  GNewton=1.0
+  pmass=1e-3, 1.
+  xsp0=1,0
+  r_smooth=0.07,0.
+  lcylindrical_gravity_nbody=T,T
+  istar=2
+  bcspx='out',bcspy='out'
+/
