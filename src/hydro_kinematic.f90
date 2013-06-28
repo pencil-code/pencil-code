@@ -35,6 +35,7 @@ module Hydro
   real, dimension (mz,3) :: uumzg=0.
   real, dimension (nz,3) :: guumz=0.
   real, dimension (mx,my,3) :: uumxy=0.
+  real, dimension (mx,mz,3) :: uumxz=0.
 !
   real, dimension(nx) :: profx_kinflow1=1., profx_kinflow2=1., profx_kinflow3=1.
   real, dimension(my) :: profy_kinflow1=1., profy_kinflow2=1., profy_kinflow3=1.
@@ -45,7 +46,7 @@ module Hydro
   real ::  dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lcalc_uumean=.false.,lupw_uu=.false.
-  logical :: lcalc_uumeanxy=.false.
+  logical :: lcalc_uumeanxy=.false., lcalc_uumeanxz=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
