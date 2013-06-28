@@ -35,6 +35,7 @@
 &particles_init_pars
   initxxp='random', initvvp='random'
   eps_dtog=0.01
+  lsort_particles=F
 /
 &particles_nbody_init_pars
   initxxsp='fixed-cm'
