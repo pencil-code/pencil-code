@@ -746,48 +746,48 @@ module Particles_map
             ipark_sorted(kk(ilmn_par(k)))=k
             kk(ilmn_par(k))=kk(ilmn_par(k))+1
           enddo
-        ncount=npar_loc
-      endselect
+          ncount=npar_loc
+        endselect
 !
 !  Sort particle data according to sorting index.
 !
-      if (lrunningsort .and. isorttype/=1) then
-        if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
-            'allowed for straight insertion sort.'
-        call fatal_error('sort_particles_imn','')
-      endif
+        if (lrunningsort .and. isorttype/=1) then
+          if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
+               'allowed for straight insertion sort.'
+          call fatal_error('sort_particles_imn','')
+        endif
 !
-      if ( (.not. lrunningsort) .and. (ncount/=0) ) then
-        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
-        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
-        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
-        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
-      endif
+        if ( (.not. lrunningsort) .and. (ncount/=0) ) then
+          fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+          if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+          ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+          ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+        endif
 !
-      if (lroot.and.ldiagnos) then
-        call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
-        lun=1
-        open(lun,file=trim(filename),action='write',position='append')
-        write(lun,'(A15,f7.3)') '------------ t=', t_sp
-        write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
-            iproc, ncount, isorttype, lrunningsort
-        close (lun)
-      endif
+        if (lroot.and.ldiagnos) then
+          call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
+          lun=1
+          open(lun,file=trim(filename),action='write',position='append')
+          write(lun,'(A15,f7.3)') '------------ t=', t_sp
+          write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
+               iproc, ncount, isorttype, lrunningsort
+          close (lun)
+        endif
 !
-      if (ip<=8) print '(A,i4,i8,i4,l4)', &
-          'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
-          iproc, ncount, isorttype, lrunningsort
+        if (ip<=8) print '(A,i4,i8,i4,l4)', &
+             'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
+             iproc, ncount, isorttype, lrunningsort
 !
 !  Possible to randomize particles inside each pencil. This screws with the
 !  pencil consistency check, so we turn it off when the test is running.
 !
-      if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
-        if (present(dfp)) then
-          call random_particle_pencils(fp,ineargrid,ipar,dfp)
-        else
-          call random_particle_pencils(fp,ineargrid,ipar)
+        if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
+          if (present(dfp)) then
+            call random_particle_pencils(fp,ineargrid,ipar,dfp)
+          else
+            call random_particle_pencils(fp,ineargrid,ipar)
+          endif
         endif
-      endif
 !
       endif
 !
