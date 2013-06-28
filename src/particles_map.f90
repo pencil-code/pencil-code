@@ -642,10 +642,10 @@ module Particles_map
                         367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
       logical, save :: lrunningsort=.false.
       character (len=fnlen) :: filename
-      logical :: lnbody
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
+      if (lsort_particles) then 
       t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
@@ -668,14 +668,9 @@ module Particles_map
 !  Calculate integer value to sort after.
 !
       do k=1,npar_loc
-        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (.not.lnbody) then
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
           ipark_sorted(k)=k
-        else
-          ipark_sorted(k)=ipar_nbody(k)
-        endif
       enddo
 !
 !  Sort using either straight insertion (1), shell sorting (2) or counting
@@ -685,8 +680,6 @@ module Particles_map
 !  Straight insertion.
       case (1)
         do k=2,npar_loc
-          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then
 !
             j=k
 !
@@ -724,7 +717,6 @@ module Particles_map
                 ipar(j+1:k)=ipar(j:k-1)
                 ipar(j)=ipar_tmp
 !
-              endif
             endif
           endif
         enddo
@@ -733,8 +725,6 @@ module Particles_map
 !
         do ih=1,21
           do k=1+hshellsort(ih),npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then
               ilmn_par_tmp=ilmn_par(k)
               ipark_sorted_tmp=ipark_sorted(k)
               j=k
@@ -747,18 +737,14 @@ module Particles_map
                 j=j-hshellsort(ih)
                 if (j-hshellsort(ih)<1) exit
               enddo
-            endif
           enddo
         enddo
 !  Counting sort.
       case (3)
         kk=k1_imn
         do k=1,npar_loc
-          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then
              ipark_sorted(kk(ilmn_par(k)))=k
              kk(ilmn_par(k))=kk(ilmn_par(k))+1
-          endif
         enddo
         ncount=npar_loc
       endselect
@@ -801,6 +787,8 @@ module Particles_map
         else
           call random_particle_pencils(fp,ineargrid,ipar)
         endif
+      endif
+!
       endif
 !
     endsubroutine sort_particles_imn
@@ -1276,7 +1264,6 @@ module Particles_map
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       integer :: k, iy0, iz0
-      logical :: lnbody
 !
       intent(in)  :: ineargrid
 !
@@ -1285,11 +1272,8 @@ module Particles_map
 !  Calculate the number of particles in each pencil.
 !
       do k=1,npar_loc
-        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (.not.lnbody) then
            iy0=ineargrid(k,2); iz0=ineargrid(k,3)
            npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
-        endif
       enddo
 !
 !  Calculate beginning and ending particle index for each pencil.
