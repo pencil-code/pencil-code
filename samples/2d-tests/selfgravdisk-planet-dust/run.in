@@ -23,7 +23,8 @@
 /
 &density_run_pars
  lfreeze_lnrhoint=T, lfreeze_lnrhoext=T
- diffrho_hyper3=5e-9, idiff='hyper3'
+ diffrho_hyper3=5e-9, idiff='hyper3','shock'
+ diffrho_shock=1e-2
  borderlnrho='initial-condition'	
 /
 &grav_run_pars
@@ -33,12 +34,8 @@
 &poisson_run_pars
 /
 &viscosity_run_pars
-  nu_hyper3=5e-9,nu=2.5e-5
-  nu_jump=0
-  xnu=0.6
-  xnu2=1.2
-  widthnu=1e-2
-  ivisc='hyper3_nu-const','nu-profr'
+  nu_hyper3=5e-9,nu_shock=1.0
+  ivisc='hyper3_nu-const','nu-shock'
 /
 &shock_run_pars
 /
