@@ -1486,6 +1486,7 @@ module Particles_mpicomm
       integer :: iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
+      integer :: i
 !
       if (ip<=6) then
         print*, 'load_balance_particles: iproc, it, npar_loc (before) =', &
@@ -2113,8 +2114,10 @@ module Particles_mpicomm
         k2_send=k2_iblock(iblock)
         if (iproc_send/=iproc .and. iproc_send/=-1) then
           nblock_send=k2_send-k1_send+1
-          fp(k1_send:npar_loc-nblock_send,:)=fp(k2_send+1:npar_loc,:)
-          ipar(k1_send:npar_loc-nblock_send)=ipar(k2_send+1:npar_loc)
+          shift: do i = 1, npar_loc - k2_send
+            fp(k1_send+i-1,:) = fp(k2_send+i,:)
+            ipar(k1_send+i-1) = ipar(k2_send+i)
+          enddo shift
           npar_loc=npar_loc-nblock_send
           k1_iblock(iblock)=0
           k2_iblock(iblock)=0
