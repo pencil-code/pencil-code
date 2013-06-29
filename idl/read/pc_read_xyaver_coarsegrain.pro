@@ -1,5 +1,5 @@
 ;$Id$
-common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0,nghostx,nghosty,nghostz
 ;
 ;  Read xyaver content and write coarsegrain data to save file
 ;
