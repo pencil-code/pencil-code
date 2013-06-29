@@ -54,7 +54,7 @@ pro rvid_box, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip, axes=axes, ct=ct
+  quiet_skip=quiet_skip, axes=axes, ct=ct, neg=neg
 ;
 common pc_precision, zero, one
 ;
@@ -288,6 +288,13 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     readu, 2, xy, t, slice_zpos
     readu, 3, xz, t, slice_ypos
     readu, 4, yz, t, slice_xpos
+;
+    if (keyword_set(neg)) then begin
+      xy2=-xy2
+      xy=-xy
+      xz=-xz
+      yz=-yz
+    endif
 ;
     if massage then begin
       xy  = interpolate(xy,  iix, iiy, /grid)
