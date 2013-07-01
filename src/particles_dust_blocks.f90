@@ -1475,6 +1475,10 @@ k_loop:   do while (.not. (k>npar_loc))
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
 !
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz
+!
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
