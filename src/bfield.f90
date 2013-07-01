@@ -35,6 +35,8 @@ module Magnetic
 !
   real, dimension(3) :: b_ext = 0.0
   logical :: lbext = .false.
+  logical :: lresis_const = .false.
+  real :: eta = 0.0
 !
 !  Initialization parameters
 !
@@ -42,7 +44,7 @@ module Magnetic
 !
 !  Runtime parameters
 !
-  namelist /magnetic_run_pars/ b_ext
+  namelist /magnetic_run_pars/ b_ext, lresis_const, eta
 !
 !  Diagnostic variables
 !
@@ -112,7 +114,7 @@ module Magnetic
 !
 !  Conducts post-parameter-read initialization for Magnetic.
 !
-!  20-jun-13/ccyang: coded.
+!  28-jun-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
@@ -128,9 +130,16 @@ module Magnetic
 !
       mu01 = 1.0 / mu0
 !
-!  Calculates variables that are public and currently used by other module(s).
+!  B_ext_inv: currently required by test_methods, unfortunately a public variable.
 !
       if (lbext) b_ext_inv = b_ext / sum(b_ext**2)
+!
+!  Check the switches for resistivities.
+!
+      if (eta /= 0.0) lresis_const = .true.
+      resis: if (lroot) then
+        if (lresis_const) print *, 'initialize_magnetic: constant resistivity, eta = ', eta
+      endif resis
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -204,15 +213,15 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  27-jun-13/ccyang: coded.
+!  01-jul-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts
-      use Sub, only: cross
+      use Sub, only: cross, gij, curl_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx,3) :: bb, ee
-      integer :: imn, m, n
+      real, dimension(nx,3,3) :: bij
+      real, dimension(nx,3) :: bb, jj, ee
 !
 !  Update ghost cells of the velocity and the magnetic fields.
 !
@@ -225,18 +234,32 @@ module Magnetic
         n = nn(imn)
         m = mm(imn)
 !
-!  Add uu cross bb.
+!  Get the magnetic field.
 !
-        uxb: if (iuu /= 0) then
+        get_bb: if (iuu /= 0 .or. lresis_const) then
           if (lbext) then
             bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
           else
             bb = f(l1:l2,m,n,ibx:ibz)
           endif
+        endif get_bb
+!
+!  Add uu cross bb.
+!
+        uxb: if (iuu /= 0) then
           call cross(f(l1:l2,m,n,iux:iuz), bb, ee)
         else uxb
           ee = 0.0
         endif uxb
+!
+!  Add normal resistivities.
+!
+        resis: if (lresis_const) then
+          call gij(f, ibb, bij, 1)
+          call curl_mn(bij, jj, bb)
+          jj = mu01 * jj
+          call add_resistivity(jj, ee)
+        endif resis
 !
         f(l1:l2,m,n,ieex:ieez) = ee
       enddo mn_loop
@@ -559,6 +582,21 @@ module Magnetic
       endif
 !
     endsubroutine set_advec_va2
+!***********************************************************************
+    subroutine add_resistivity(jj, ee)
+!
+!  Adds the normal resistivities to the effective electric field.
+!
+!  28-jun-13/ccyang: coded.
+!
+      real, dimension(nx,3), intent(in) :: jj
+      real, dimension(nx,3), intent(inout) :: ee
+!
+!  Constant resistivity
+!
+      if (lresis_const) ee = ee - eta * jj
+!
+    endsubroutine add_resistivity
 !***********************************************************************
 !
 !  DUMMY BUT PUBLIC ROUTINES GO BELOW HERE.
