@@ -54,7 +54,8 @@ pro rvid_box, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip, axes=axes, ct=ct, neg=neg
+  quiet_skip=quiet_skip, axes=axes, ct=ct, neg=neg, scale=scale, $
+  colorbarpos=colorbarpos
 ;
 common pc_precision, zero, one
 ;
@@ -98,6 +99,8 @@ default,nobottom,0.0
 default,monotonous_scaling,0.0
 default,oversaturate,1.0
 default,tunit,1.0
+default,scale,1.0
+default,colorbarpos,[.80,.15,.82,.85]
 default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
@@ -388,7 +391,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       if (not keyword_set(shell)) then begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
                      amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
-                     xpos=xpos,magnify=magnify,zmagnify=zmagnify, $
+                     xpos=xpos,magnify=magnify,zmagnify=zmagnify,scale=scale, $
                      nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin
@@ -421,7 +424,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
           endif
           boxbotex_scl,xy2s,xys,xzs,yzs,1.,1.,zof=.36,zpos=.25,ip=3,$
               amin=amin,amax=amax,dev=dev,$
-              shell=shell,centred=centred,scale=1.4,$
+              shell=shell,centred=centred,scale=scale,$
               r_int=r_int,r_ext=r_ext,zrr1=zrr1,zrr2=zrr2,yrr=rrxz,xrr=rryz,$
               nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
           xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
@@ -449,7 +452,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         default, divbar, 2
         default, blabel, ''
         !p.title=blabel
-        colorbar, pos=[.80,.15,.82,.85], color=1, div=divbar,$
+        ;colorbar, pos=[.80,.15,.82,.85], color=1, div=divbar,$
+        colorbar, pos=colorbarpos, color=1, div=divbar,$
             range=[amin,amax]/bnorm, /right, /vertical, $
             format=bformat, charsize=bsize, title=title
         !p.title=''
