@@ -56,9 +56,9 @@ module Magnetic_meanfield
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
-  real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0
-  real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
-  real :: meanfield_qp1, meanfield_qs1, meanfield_qe1
+  real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0, meanfield_qa=0.0
+  real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0, meanfield_Ba=1.0
+  real :: meanfield_qp1, meanfield_qs1, meanfield_qe1, meanfield_qa1
   real :: meanfield_etaB=0.0
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
@@ -110,8 +110,8 @@ module Magnetic_meanfield
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lchit_Bext2_equil, &
       lturb_temp_diff, lignore_gradB2_inchiB, &
-      meanfield_qs, meanfield_qp, meanfield_qe, &
-      meanfield_Bs, meanfield_Bp, meanfield_Be, &
+      meanfield_qs, meanfield_qp, meanfield_qe, meanfield_qa, &
+      meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_Ba, &
       lqpcurrent,mf_qJ2, lNEMPI_correction, &
       alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
@@ -127,6 +127,7 @@ module Magnetic_meanfield
   integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$,
                                 ! DIAG_DOC: in the paper referred to as
                                 ! DIAG_DOC: $\left<q_g(\overline{B})\right>$
+  integer :: idiag_qam=0        ! DIAG_DOC: $\left<q_a(\overline{B})\right>$
   integer :: idiag_alpm=0       ! DIAG_DOC: $\left<\alpha\right>$
   integer :: idiag_etatm=0      ! DIAG_DOC: $\left<\eta_{\rm t}\right>$
   integer :: idiag_EMFmz1=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_x$
@@ -375,6 +376,14 @@ module Magnetic_meanfield
         meanfield_qe1=1./meanfield_qe
       endif
 !
+!  define inverse of meanfield_qa
+!
+      if (meanfield_qa==0.) then
+        meanfield_qa1=0.
+      else
+        meanfield_qa1=1./meanfield_qa
+      endif
+!
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
@@ -592,13 +601,13 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_etat_tmp
       real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
       real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact, Beq21
-      real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
-      real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
+      real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func, meanfield_qa_func
+      real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der, meanfield_qa_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
-      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
+      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21, meanfield_Ba21
       real, dimension (nx) :: meanfield_etaB2, g2, chit_prof !, quench_chiB
-      real, dimension (nx) :: oneQbeta02, oneQbeta2
-      real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit
+      real, dimension (nx) :: oneQbeta02, oneQbeta2, XXj_BBj, BjBzj
+      real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho, glnchit2
       real :: kx,fact
       integer :: j,l
@@ -645,7 +654,7 @@ module Magnetic_meanfield
             Beq21=1./meanfield_Beq**2*exp(z(n)/meanfield_Beq2_height)
           case ('uturbconst');
 !           allows to take into account a shifted equilibrium solution caused by the additional pressure contribution
-            Beq21=p%rho1/(uturb**2)
+            Beq21=mu01*p%rho1/(uturb**2)
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
@@ -653,6 +662,7 @@ module Magnetic_meanfield
           meanfield_Bs21=Beq21/meanfield_Bs**2
           meanfield_Bp21=Beq21/meanfield_Bp**2
           meanfield_Be21=Beq21/meanfield_Be**2
+          meanfield_Ba21=Beq21/meanfield_Ba**2
 !
 !  Compute qp(B^2), qs(B^2), qe(B^2), and their derivatives for 2 different parameterizations
 !  qp=qp0/(1+B^2*meanfield_Bp21)
@@ -662,9 +672,11 @@ module Magnetic_meanfield
             meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)
             meanfield_qs_func=meanfield_qs/(1.+p%b2*meanfield_Bs21)
             meanfield_qe_func=meanfield_qe/(1.+p%b2*meanfield_Be21)
+            meanfield_qa_func=meanfield_qa/(1.+p%b2*meanfield_Ba21)
             meanfield_qp_der=-meanfield_qp_func**2*meanfield_Bp21*meanfield_qp1
             meanfield_qs_der=-meanfield_qs_func**2*meanfield_Bs21*meanfield_qs1
             meanfield_qe_der=-meanfield_qe_func**2*meanfield_Be21*meanfield_qe1
+            meanfield_qa_der=-meanfield_qa_func**2*meanfield_Ba21*meanfield_qa1
           else
             meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
             meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
@@ -679,9 +691,7 @@ module Magnetic_meanfield
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
           if (lqpcurrent) then
-!--         call multmv_transp(p%jij,p%jj,Jk_Jki) !=1/2 grad J^2
             call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
-!--         call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
           else
             call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
             if (lNEMPI_correction) then
@@ -698,6 +708,29 @@ module Magnetic_meanfield
 !  Add e_z*grad(qe*B^2). This has not yet been found to promote instability.
 !
           p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
+!
+!  Add div[qa*Bz*(Bi*gj+Bj*gi)]
+!  Begin by initializing auxiliary vector X_j (see notes)
+!
+          XXj=2.*Bk_Bki
+          call multsv_mn_add(-p%rho1*p%b2,p%grho,XXj)
+!
+!  Do dqa/dB2 * Bz * (BiX3+z3B.X) term
+!
+          call dot(XXj,p%bb,XXj_BBj)
+          p%jxb_mf(:,3)=p%jxb_mf(:,3)+meanfield_qa_der*p%bb(:,3)*XXj_BBj
+          call multsv_mn_add(meanfield_qa_der*p%bb(:,3)*XXj(:,3),p%bb,p%jxb_mf)
+!
+!  Do qa*[Bz,z*(Bi+Bj*Bz,j*zi)] term
+!
+          call dot(p%bb,p%bij(:,3,:),BjBzj)
+          p%jxb_mf(:,3)=p%jxb_mf(:,3)+meanfield_qa_func*p%bij(:,3,3)*BjBzj
+          call multsv_mn_add(meanfield_qa_func*p%bij(:,3,3),p%bb,p%jxb_mf)
+!
+!  Do qa*Bz*B_i,z
+!
+          call multsv_mn_add(meanfield_qa_func*p%bb(:,3),p%bij(:,:,3),p%jxb_mf)
+!
 !        endif
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
       endif
