@@ -29,6 +29,7 @@
 
 ! Boundary conditions
   public :: bc_ss_flux,bc_ss_flux_turb,bc_ss_flux_turb_x
+!
   public :: bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x, bc_ss_temp_y, bc_ss_temp_z
   public :: bc_ss_temp2_z, bc_ss_temp3_z

@@ -64,7 +64,8 @@ module Magnetic_meanfield
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
-  logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.true.
+  logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.false.
+  logical :: lturb_temp_diff=.false.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -108,7 +109,7 @@ module Magnetic_meanfield
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lchit_Bext2_equil, &
-      lignore_gradB2_inchiB, &
+      lturb_temp_diff, lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, lNEMPI_correction, &
@@ -167,10 +168,12 @@ module Magnetic_meanfield
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
+      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
+      character (len=linelen) :: dummy
       logical :: lstarting
       integer :: ierr
 !
@@ -219,8 +222,39 @@ module Magnetic_meanfield
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
 !
-      if (lmagn_mf .and. lrun) then
+      !if (lmagn_mf .and. lrun) then
+      if (lrun) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
+        if (ierr/=0) call fatal_error('initialize_magn_mf', &
+            'there was a problem when putting meanfield_etat')
+!
+!  Quenching parameters: lmeanfield_chitB and chi_t0.
+!
+        call put_shared_variable('lmeanfield_chitB',lmeanfield_chitB,ierr)
+        if (ierr/=0) call fatal_error('initialize_magn_mf', &
+            'there was a problem when putting lmeanfield_chitB')
+        if (lmeanfield_chitB) then
+        call put_shared_variable('chi_t0',chi_t0,ierr)
+        if (ierr/=0) call fatal_error('initialize_magn_mf', &
+            'there was a problem when putting chi_t0')
+        endif
+!
+!  chit_quenching for flux boundary condition
+!
+        !dummy=meanfield_Beq_profile
+        !call put_shared_variable('meanfield_Beq_profile',dummy,ierr)
+        !if (ierr/=0) call stop_it("meanfield_Beq_profile: "//&
+        !     "there was a problem when putting meanfield_Beq_profile")
+        call put_shared_variable('meanfield_Beq',meanfield_Beq,ierr)
+        if (ierr/=0) call stop_it("meanfield_Beq: "//&
+             "there was a problem when putting meanfield_Beq")
+        call put_shared_variable('chit_quenching',chit_quenching,ierr)
+        if (ierr/=0) call stop_it("chit_quenching: "//&
+             "there was a problem when putting chit_quenching")
+        call put_shared_variable('uturb',uturb,ierr)
+        if (ierr/=0) call stop_it("uturb: "//&
+             "there was a problem when putting uturb")
+!
       endif
 !
 !  Compute etat profile and share with other routines.
@@ -430,10 +464,17 @@ module Magnetic_meanfield
 !
       if (lmeanfield_chitB) then
         lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_del2ss)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_chiB_mf)=.true.
         if (lrho_chit) lpenc_requested(i_rho1)=.true.
+        if (lturb_temp_diff) then
+          lpenc_requested(i_cp)=.true.
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
+        else
+          lpenc_requested(i_gss)=.true.
+          lpenc_requested(i_del2ss)=.true.
+        endif
       endif
 !
 !  Turbulent diffusivity
@@ -750,6 +791,7 @@ module Magnetic_meanfield
           if (meanfield_etaB/=0.0) then
             meanfield_etaB2=meanfield_etaB**2
             meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
+!           call quench_simple(p%b2,meanfield_etaB2,meanfield_etat_tmp)
           endif
 !
 !  Here we initialize alpha_total.
@@ -945,7 +987,8 @@ module Magnetic_meanfield
 !
 !  The lrho_chit option corresponds to solving the equation
 !  Ds/Dt = (calKt/rho)*(glncalKt.grads + del2s). Otherwise we have
-!  Ds/Dt = chit*[(glnrho+glncalKt).grads + del2s]. Otherwise we have
+!  Ds/Dt = chit*[(glnrho+glncalKt).grads + del2s].
+!  This corresponds to turbulent diffusion with entropy gradient.
 !
           if (lrho_chit) then
             call dot(glnchit_prof+glnchit,p%gss,g2)
@@ -954,6 +997,21 @@ module Magnetic_meanfield
             else
               p%chiB_mf=p%rho1*chi_t0/oneQbeta2*(g2+p%del2ss)
             endif
+!
+!  turbulent diffusion with temperature gradient
+!
+          elseif (lturb_temp_diff) then
+            call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%glnTT,g2)
+            if (lchit_Bext2_equil) then
+              p%chiB_mf=p%cp*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2lnTT)
+            else
+              p%chiB_mf=p%cp*chi_t0/oneQbeta2*(g2+p%del2lnTT)
+!if (n==120) print*,'AXEL n,chi=',n,p%cp*chi_t0/oneQbeta2
+            endif
+!
+!  Turbulent diffusion with entropy gradient and coefficient
+!  proportional to chi_t*rho, without temperature factor.
+!
           else
             call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
             if (lchit_Bext2_equil) then
@@ -1112,6 +1170,30 @@ module Magnetic_meanfield
       if (lmagn_mf_demfdt) call demf_dt_meanfield(f,df,p)
 !
     endsubroutine daa_dt_meanfield
+!***********************************************************************
+    subroutine meanfield_chitB(rho,b2,quench)
+!
+!  Calculate magnetic properties needed for z boundary conditions.
+!  This routine contails calls to more specialized routines.
+!
+!   8-jun-13/axel: coded
+!
+      real, dimension (nx) :: rho,b2,Beq21,quench
+!
+!  compute Beq21 = 1/Beq^2
+!
+      select case (meanfield_Beq_profile)
+      case ('uturbconst');
+        Beq21=mu01/(rho*uturb**2)
+      case default;
+        Beq21=1./meanfield_Beq**2
+      endselect
+!
+!  compute chit_quenching
+!
+      quench=1./(1.+chit_quenching*b2*Beq21)
+!
+    endsubroutine meanfield_chitB
 !***********************************************************************
     subroutine Omega_effect(f,df,p)
 !

@@ -2246,7 +2246,7 @@ module Energy
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       use EquationOfState, only: beta_glnrho_scaled
 !
@@ -2384,6 +2384,7 @@ module Energy
         lpenc_requested(i_bij)=.true.
       endif
       if (lheatc_chiconst) then
+        lpenc_requested(i_cp)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -3243,9 +3244,7 @@ module Energy
         endif
       else
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-        !thdiff=cp*chi*(p%del2lnTT+g2)
-!AB:  divide by p%cp1, since we don't have cp here.
-        thdiff=chi*(p%del2lnTT+g2)/p%cp1
+        thdiff=chi*p%cp*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call chit_profile(chit_prof)
           call gradlogchit_profile(glnchit_prof)

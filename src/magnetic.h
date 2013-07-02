@@ -18,7 +18,6 @@
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
   public :: lcalc_aamean, aamz, bbmz, jjmz
-! public :: pert_aa
   public :: rescaling_magnetic
   public :: B_ext_inv
   public :: bb_unitvec_shock

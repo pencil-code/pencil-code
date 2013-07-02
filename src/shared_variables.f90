@@ -31,6 +31,7 @@
 module SharedVariables
 !
   use Messages
+  use Cparam, only: linelen
 !
   implicit none
 !
@@ -50,6 +51,7 @@ module SharedVariables
     module procedure get_variable_int1d
     module procedure get_variable_logical0d
     module procedure get_variable_logical1d
+    module procedure get_variable_char0d
   endinterface
 !
   interface put_shared_variable
@@ -60,6 +62,7 @@ module SharedVariables
     module procedure put_variable_int1d
     module procedure put_variable_logical0d
     module procedure put_variable_logical1d
+    module procedure put_variable_char0d
   endinterface
 !
 ! Used internally to keep track ot the type of data
@@ -104,7 +107,7 @@ module SharedVariables
     integer, dimension(:), pointer :: int1d
     logical,               pointer :: log0d
     logical, dimension(:), pointer :: log1d
-!    character (len=*),     pointer :: char0D
+    character(len=linelen),pointer :: char0D
 !
 ! Linked list link to next list element
 !
@@ -503,6 +506,59 @@ module SharedVariables
 !
     endsubroutine get_variable_logical1d
 !***********************************************************************
+    subroutine get_variable_char0d(varname,variable,ierr)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      character (len=linelen), pointer :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          if (item%vartype==iSHVAR_TYPE_LOG0D) then
+            variable=>item%char0D
+            if (.not.associated(item%char0D)) then
+              if (present(ierr)) then
+                ierr=iSHVAR_ERR_NOTASSOCIATED
+                return
+              endif
+              print*, 'Getting shared variable: ', varname
+              call fatal_error('get_variable', 'Data pointer is not associated.')
+            endif
+            return
+          else
+            nullify(variable)
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*, 'Getting shared variable: ', varname
+            call fatal_error('get_variable', 'Shared variable has the wrong type!')
+          endif
+        endif
+        item=>item%next
+      enddo
+!
+      nullify(variable)
+!
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+!
+      print*, 'Getting shared variable: ' ,varname
+      call fatal_error('get_variable', 'Shared variable does not exist!')
+!
+    endsubroutine get_variable_char0d
+!***********************************************************************
     subroutine put_variable_int0d(varname,variable,ierr)
 !
 !  Comment me.
@@ -726,6 +782,38 @@ module SharedVariables
       new%log1D=>variable
 !
     endsubroutine put_variable_logical1d
+!***********************************************************************
+    subroutine put_variable_char0d(varname,variable,ierr)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      character (len=linelen), target :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%char0D,target=variable)) return
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*, 'Setting shared variable: ',varname
+        call fatal_error('get_variable', 'Shared variable name already exists!')
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_LOG0D
+      new%char0D=>variable
+!
+    endsubroutine put_variable_char0d
 !***********************************************************************
     function find_variable(varname)
 !

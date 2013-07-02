@@ -12,3 +12,4 @@
   public :: read_magn_mf_init_pars, write_magn_mf_init_pars
   public :: read_magn_mf_run_pars, write_magn_mf_run_pars
   public :: rprint_magn_mf
+!- public :: meanfield_chitB

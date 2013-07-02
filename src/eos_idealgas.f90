@@ -73,6 +73,10 @@ module EquationOfState
   logical :: lanelastic_lin=.false.
   character (len=labellen) :: ieos_profile='nothing'
 !
+  character (len=labellen) :: meanfield_Beq_profile
+  real, pointer :: meanfield_Beq, chit_quenching, uturb
+  real, dimension(:), pointer :: B_ext
+!
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
   real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
@@ -273,7 +277,7 @@ module EquationOfState
         if (ierr/=0) call stop_it("cv: "//&
              "there was a problem when sharing cv")
 !
-     if (lanelastic) then
+      if (lanelastic) then
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
@@ -1502,7 +1506,7 @@ module EquationOfState
 !
 !   Calculate thermodynamical quantities
 !
-!   2-feb-03/axel: simple example coded
+!    2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
@@ -1894,131 +1898,6 @@ module EquationOfState
 !
     endsubroutine Hminus_opacity
 !***********************************************************************
-    subroutine bc_ss_flux_orig(f,topbot)
-!
-!  constant flux boundary condition for entropy (called when bcz='c1')
-!
-!  23-jan-2002/wolf: coded
-!  11-jun-2002/axel: moved into the entropy module
-!   8-jul-2002/axel: split old bc_ss into two
-!  26-aug-2003/tony: distributed across ionization modules
-!
-      use Mpicomm, only: stop_it
-      use SharedVariables, only: get_shared_variable
-!
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr
-!
-      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-!  Get the shared variables
-!
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond1")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Ftop")
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FbotKbot")
-      call get_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FtopKtop")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lmultilayer")
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lheatc_chiconst")
-!
-      select case (topbot)
-!
-!  bottom boundary
-!  ===============
-!
-      case ('bot')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
-!
-!  calculate Fbot/(K*cs2)
-!
-        rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!AB: are here any cp factors?
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
-        enddo
-!
-!  top boundary
-!  ============
-!
-      case ('top')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
-        endif
-!
-!  calculate Ftop/(K*cs2)
-!
-        rho_xy=exp(f(:,:,n2,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FtopKtop/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
-        enddo
-      case default
-        call fatal_error('bc_ss_flux','invalid argument')
-      endselect
-!
-    endsubroutine bc_ss_flux_orig
-!***********************************************************************
     subroutine get_average_pressure(init_average_density,average_density,&
                                     average_pressure)
 !
@@ -2037,292 +1916,102 @@ module EquationOfState
 !
     endsubroutine get_average_pressure
 !***********************************************************************
-    subroutine bc_ss_flux_tmp(f,topbot)
+    subroutine bdry_magnetic(f,quench,task)
 !
-!  constant flux boundary condition for entropy (called when bcz='c1')
+!  Calculate magnetic properties needed for z boundary conditions.
+!  This routine contails calls to more specialized routines.
 !
-!  23-jan-2002/wolf: coded
-!  11-jun-2002/axel: moved into the entropy module
-!   8-jul-2002/axel: split old bc_ss into two
-!  26-aug-2003/tony: distributed across ionization modules
+!   8-jun-13/axel: coded, originally in magnetic, but cyclic dependence
 !
-      use Mpicomm, only: stop_it
+      use Sub, only: curl, dot2
       use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
+      !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      !use Magnetic_meanfield, only: meanfield_chitB
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (nx,3) :: bb
+      real, dimension (nx) :: rho,b2,quench
+      character (len=*), intent(in) :: task
+      integer :: j
 !
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy,lnrho_xy,ss_xy
-      real, dimension (mx,my) :: cs2_xy1,cs2_xy2,T_xy,T_xy1,T_xy2
-      real :: eps
-      integer :: i,ierr,iter,j,k
-      integer,parameter :: niter=4
+      character (len=linelen), pointer :: dummy
+      integer :: ierr
 !
-      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+      if (lrun .and. lmagn_mf) then
+        !call get_shared_variable('meanfield_Beq_profile',dummy,ierr)
+        !if (ierr/=0) call stop_it("meanfield_Beq_profile: "//&
+        !     "there was a problem when getting meanfield_Beq_profile")
+        !meanfield_Beq_profile=dummy
+        call get_shared_variable('meanfield_Beq',meanfield_Beq,ierr)
+        if (ierr/=0) call stop_it("meanfield_Beq: "//&
+             "there was a problem when getting meanfield_Beq")
+        call get_shared_variable('chit_quenching',chit_quenching,ierr)
+        if (ierr/=0) call stop_it("chit_quenching: "//&
+             "there was a problem when getting chit_quenching")
+        call get_shared_variable('uturb',uturb,ierr)
+        if (ierr/=0) call stop_it("uturb: "//&
+             "there was a problem when getting uturb")
+        call get_shared_variable('B_ext',B_ext,ierr)
+        if (ierr/=0) call stop_it("B_ext: "//&
+             "there was a problem when getting B_ext")
+      endif
 !
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
+      select case (task)
 !
-!  Get the shared variables
+      case ('meanfield_chitB')
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond1")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Ftop")
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FbotKbot")
-      call get_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FtopKtop")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lmultilayer")
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lheatc_chiconst")
+        !call boundconds_x(f,iax,iaz)
+        !call initiate_isendrcv_bdry(f,iax,iaz)
+        !call finalize_isendrcv_bdry(f,iax,iaz)
+        !call boundconds_y(f,iax,iaz)
+        !call boundconds_z(f,iax,iaz)
 !
-      select case (topbot)
+!  Add the external field.
 !
-!  bottom boundary
-!  ===============
-!
-      case ('bot')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
-!
-!  calculate Fbot/(K*cs2)
-!
-        rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!AB: are here any cp factors?
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+        call curl(f,iaa,bb)
+        do j=1,3
+          bb(:,j)=bb(:,j)!+B_ext(j)
         enddo
+        call dot2(bb,b2)
+        rho=exp(f(l1:l2,m,n,ilnrho))
 !
-!  top boundary
-!  ============
+!  Call mean-field routine.
 !
-      case ('top')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
-        endif
+        call meanfield_chitB(rho,b2,quench)
 !
-!  Compute Temperature at the first 3 levels inward
-!
-        lnrho_xy=f(:,:,n2,ilnrho)
-        cs2_xy =cs20*exp(gamma_m1*(f(:,:,n2  ,ilnrho)-lnrho0)+cv1*f(:,:,n2  ,iss))
-        cs2_xy1=cs20*exp(gamma_m1*(f(:,:,n2-1,ilnrho)-lnrho0)+cv1*f(:,:,n2-1,iss))
-        cs2_xy2=cs20*exp(gamma_m1*(f(:,:,n2-2,ilnrho)-lnrho0)+cv1*f(:,:,n2-2,iss))
-        T_xy=cs2_xy/(cp*gamma_m1)
-        T_xy1=cs2_xy1/(cp*gamma_m1)
-        T_xy2=cs2_xy2/(cp*gamma_m1)
-!
-!  calculate Ftop/(K*cs2)
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Ftop/(exp(lnrho_xy)*chi*cs2_xy)
-        else
-          tmp_xy=FtopKtop/cs2_xy
-        endif
-!
-!  iterate
-!
-        eps=2.*dz/1.5**4/3.
-        do iter=1,niter
-          T_xy=(4*T_xy1-T_xy2)/3.-eps*(T_xy/1.5)**4
-          if (ip<8) print*,'iter, T_xy(l1,m1)=',iter,T_xy(l1,m1)
-        enddo
-!
-!  use EOS to work out ss on the boundary
-!
-        call eoscalc_pencil(ilnrho_TT,lnrho_xy,T_xy,ss=ss_xy)
-        f(:,:,n2,iss)=ss_xy
-!
-!  apply to ghost zones
-!
-          j=iss
-          k=n2+1
-          f(:,:,k,j)=7*f(:,:,k-1,j) &
-                   -21*f(:,:,k-2,j) &
-                   +35*f(:,:,k-3,j) &
-                   -35*f(:,:,k-4,j) &
-                   +21*f(:,:,k-5,j) &
-                    -7*f(:,:,k-6,j) &
-                      +f(:,:,k-7,j)
-          k=n2+2
-          f(:,:,k,j)=9*f(:,:,k-1,j) &
-                   -35*f(:,:,k-2,j) &
-                   +77*f(:,:,k-3,j) &
-                  -105*f(:,:,k-4,j) &
-                   +91*f(:,:,k-5,j) &
-                   -49*f(:,:,k-6,j) &
-                   +15*f(:,:,k-7,j) &
-                    -2*f(:,:,k-8,j)
-          k=n2+3
-          f(:,:,k,j)=9*f(:,:,k-1,j) &
-                   -45*f(:,:,k-2,j) &
-                  +147*f(:,:,k-3,j) &
-                  -315*f(:,:,k-4,j) &
-                  +441*f(:,:,k-5,j) &
-                  -399*f(:,:,k-6,j) &
-                  +225*f(:,:,k-7,j) &
-                   -72*f(:,:,k-8,j) &
-                   +10*f(:,:,k-9,j)
+!  capture undefined entries
 !
       case default
-        call fatal_error('bc_ss_flux','invalid argument')
+        call fatal_error('bdry_magnetic','invalid argument')
       endselect
 !
-    endsubroutine bc_ss_flux_tmp
+    endsubroutine bdry_magnetic
 !***********************************************************************
-    subroutine bc_ss_flux_tmp2(f,topbot)
+    subroutine meanfield_chitB(rho,b2,quench)
 !
-!  constant flux boundary condition for entropy (called when bcz='c1')
+!  Calculate magnetic properties needed for z boundary conditions.
+!  This routine contails calls to more specialized routines.
 !
-!  23-jan-2002/wolf: coded
-!  11-jun-2002/axel: moved into the entropy module
-!   8-jul-2002/axel: split old bc_ss into two
-!  26-aug-2003/tony: distributed across ionization modules
+!   8-jun-13/axel: coded
 !
-      use Mpicomm, only: stop_it
-      use SharedVariables, only: get_shared_variable
+      real, dimension (nx) :: rho,b2,Beq21,quench
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
+!  compute Beq21 = 1/Beq^2
+!XX
+!     select case (meanfield_Beq_profile)
+!     case ('uturbconst');
+        Beq21=mu01/(rho*uturb**2)
+!     case default;
+!       Beq21=1./meanfield_Beq**2
+!     endselect
 !
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr
+!  compute chit_quenching
 !
-      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+      quench=1./(1.+chit_quenching*b2*Beq21)
 !
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-!  Get the shared variables
-!
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond1")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Ftop")
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FbotKbot")
-      call get_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FtopKtop")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lmultilayer")
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lheatc_chiconst")
-!
-      select case (topbot)
-!
-!  bottom boundary
-!  ===============
-!
-      case ('bot')
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
-!
-!  calculate Fbot/(K*cs2)
-!
-        rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!AB: are here any cp factors?
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
-        enddo
-!
-!  top boundary
-!  ============
-!
-      case ('top')
-!
-!  Set (dcs2/dz) / (dcs2/dz)_ini = (cs2/cs2top_ini)^4
-!  Note that (dcs2/dz) = cs20*[(gamma-1)*dlnrho/dz + gamma*d(s/cp)/dz]
-!  So, ds/dz = - (cp-cv)*dlnrho/dz + cv*(dcs2/dz)/cs20
-!  calculate tmp_xy
-!
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-        tmp_xy=cv*dcs2top_ini/cs20*(cs2_xy/cs2top_ini)**4
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss) &
-              -(cp-cv)*(f(:,:,n2+i,ilnrho)-f(:,:,n2-i,ilnrho)) &
-              +2*i*dz*tmp_xy
-        enddo
-      case default
-        call fatal_error('bc_ss_flux','invalid argument')
-      endselect
-!
-    endsubroutine bc_ss_flux_tmp2
+    endsubroutine meanfield_chitB
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
 !
@@ -2332,6 +2021,7 @@ module EquationOfState
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
+!  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
@@ -2492,11 +2182,13 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: chi,chi_t,hcondzbot,hcondztop
+      logical, pointer :: lmeanfield_chitB
+      real, pointer :: chi, chi_t, chi_t0, hcondzbot, hcondztop
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy
+      real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
+      real, dimension (nx) :: quench
       real :: fac
       integer :: i,ierr
 !
@@ -2505,7 +2197,10 @@ module EquationOfState
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
-!  Get the shared variables
+!  Get the shared variables for magnetic quenching effect in a
+!  mean-field description of a radiative boundary condition.
+!  Ideally, one would like this to reside in magnetic/meanfield,
+!  but this leads currently to circular dependencies.
 !
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
@@ -2519,6 +2214,21 @@ module EquationOfState
       call get_shared_variable('hcondztop',hcondztop,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting hcondztop")
+!
+!  lmeanfield_chitB and chi_t0
+!
+      if (lmagnetic) then
+        call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+             "there was a problem when getting lmeanfield_chitB")
+        if (lmeanfield_chitB) then
+          call get_shared_variable('chi_t0',chi_t0,ierr)
+          if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+               "there was a problem when getting chi_t0")
+        else
+          lmeanfield_chitB=.false.
+        endif
+      endif
 !
       select case (topbot)
 !
@@ -2561,14 +2271,31 @@ module EquationOfState
         dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                          -  9.0*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                          +      (f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho)))
+!
+!  chi_xy consists of molecular and possibly turbulent values.
+!  The turbulent value can be quenched.
+!
+      chi_xy=chi+chi_t0
+      if (lmeanfield_chitB) then
+        n=n2
+        do m=m1,m2
+          call bdry_magnetic(f,quench,'meanfield_chitB')
+        enddo
+        chi_xy(l1:l2,m)=chi+chi_t0*quench
+      endif
+!
+!  Select to use either sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
+!      or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
+!
         if (hcondztop==impossible) then
-          dsdz_xy=-(sigmaSBt*TT_xy**3+chi*rho_xy*cp*(gamma_m1)*dlnrhodz_xy)/ &
-              (chi_t*rho_xy+chi*rho_xy*cp/cv)
+          dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*(gamma_m1)*dlnrhodz_xy)/ &
+              (chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
         else
           dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
               (chi_t*rho_xy+hcondztop/cv)
         endif
 !
+!  Apply condition;
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost

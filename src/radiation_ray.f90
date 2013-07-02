@@ -471,6 +471,7 @@ module Radiation
         call opacity(f)
 !
 !  Do the rest only if we do not do diffusion approximation.
+!  If *either* lrad_cool_diffus *or* lrad_pres_diffus, no rays are computed.
 !
         if (lrad_cool_diffus.or.lrad_pres_diffus) then
           if (headt) print*, 'radtransfer: do diffusion approximation, no rays'
