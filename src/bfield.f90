@@ -31,20 +31,21 @@ module Magnetic
 !
   include 'magnetic.h'
 !
-!  Module variables
+!  Initialization parameters
 !
   real, dimension(3) :: b_ext = 0.0
-  logical :: lbext = .false.
-  logical :: lresis_const = .false.
-  real :: eta = 0.0
-!
-!  Initialization parameters
 !
   namelist /magnetic_init_pars/ b_ext
 !
 !  Runtime parameters
 !
-  namelist /magnetic_run_pars/ b_ext, lresis_const, eta
+  logical :: lbext = .false.
+  logical :: lresis_const = .false.
+  logical :: lresis_shock = .false.
+  real :: eta = 0.0
+  real :: eta_shock = 0.0
+!
+  namelist /magnetic_run_pars/ b_ext, lresis_const, eta, lresis_shock, eta_shock
 !
 !  Diagnostic variables
 !
@@ -57,6 +58,10 @@ module Magnetic
   integer :: idiag_dbymax = 0   ! DIAG_DOC: $\max|\Delta B_y|$
   integer :: idiag_dbzmax = 0   ! DIAG_DOC: $\max|\Delta B_z|$
   integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\mathbf{B}|$
+!
+!  Module variables
+!
+  logical :: lresistivity_normal = .false.
 !
 !  Dummy but public variables (unfortunately)
 !
@@ -114,7 +119,7 @@ module Magnetic
 !
 !  Conducts post-parameter-read initialization for Magnetic.
 !
-!  28-jun-13/ccyang: coded.
+!  02-jul-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
@@ -137,8 +142,14 @@ module Magnetic
 !  Check the switches for resistivities.
 !
       if (eta /= 0.0) lresis_const = .true.
+      if (eta_shock /= 0.0) lresis_shock = .true.
+      if (lresis_shock .and. .not. lshock) &
+        call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
+      lresistivity_normal = lresis_const .or. lresis_shock
+!
       resis: if (lroot) then
         if (lresis_const) print *, 'initialize_magnetic: constant resistivity, eta = ', eta
+        if (lresis_shock) print *, 'initialize_magnetic: shock resistivity, eta_shock = ', eta_shock
       endif resis
 !
     endsubroutine initialize_magnetic
@@ -213,7 +224,7 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  01-jul-13/ccyang: coded.
+!  02-jul-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts
       use Sub, only: cross, gij, curl_mn
@@ -222,6 +233,7 @@ module Magnetic
 !
       real, dimension(nx,3,3) :: bij
       real, dimension(nx,3) :: bb, jj, ee
+      real, dimension(nx) :: eta_penc
 !
 !  Update ghost cells of the velocity and the magnetic fields.
 !
@@ -254,11 +266,13 @@ module Magnetic
 !
 !  Add normal resistivities.
 !
-        resis: if (lresis_const) then
+        resis: if (lresistivity_normal) then
+          call get_resistivity(f, eta_penc)
           call gij(f, ibb, bij, 1)
           call curl_mn(bij, jj, bb)
-          jj = mu01 * jj
-          call add_resistivity(jj, ee)
+          ee = ee - spread(mu01 * eta_penc, 2, 3) * jj
+!         Time-step constraint
+          if (lfirst .and. ldt) diffus_eta = eta_penc * dxyz_2
         endif resis
 !
         f(l1:l2,m,n,ieex:ieez) = ee
@@ -583,20 +597,28 @@ module Magnetic
 !
     endsubroutine set_advec_va2
 !***********************************************************************
-    subroutine add_resistivity(jj, ee)
+    subroutine get_resistivity(f, eta_penc)
 !
-!  Adds the normal resistivities to the effective electric field.
+!  Gets the total normal resistivity along one pencil.
 !
-!  28-jun-13/ccyang: coded.
+!  02-jul-13/ccyang: coded.
 !
-      real, dimension(nx,3), intent(in) :: jj
-      real, dimension(nx,3), intent(inout) :: ee
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: eta_penc
 !
 !  Constant resistivity
 !
-      if (lresis_const) ee = ee - eta * jj
+      if (lresis_const) then
+        eta_penc = eta
+      else
+        eta_penc = 0.0
+      endif
 !
-    endsubroutine add_resistivity
+!  Shock resistivity
+!
+      if (lresis_shock) eta_penc = eta_penc + eta_shock * f(l1:l2,m,n,ishock)
+!
+    endsubroutine get_resistivity
 !***********************************************************************
 !
 !  DUMMY BUT PUBLIC ROUTINES GO BELOW HERE.
