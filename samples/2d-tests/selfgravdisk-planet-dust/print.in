@@ -1,6 +1,7 @@
 it(F10.0)
 t(F10.3)
 dt(E10.2)
+dtdrag(E10.2)
 rhom(E13.3)
 rhomax(E13.3)
 rhomin(E13.3)
