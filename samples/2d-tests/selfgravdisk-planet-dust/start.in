@@ -54,7 +54,7 @@
   lmigration_real_check=T
   rhopmat=1.0
   eps_dtog=0.01
-  lsort_particles=F
+  lsort_particles=T
   lcheck_exact_frontier=T
 /
 &particles_selfgrav_init_pars
