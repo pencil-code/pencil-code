@@ -13,7 +13,6 @@
 /
 &particles_init_pars
   rhop_swarm=1.0
-  lsort_particles=F
 /
 &particles_nbody_init_pars
   initxxsp='fixed-cm'
