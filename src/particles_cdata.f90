@@ -56,7 +56,6 @@ module Particles_cdata
   logical :: linsert_particle=.false.
   logical :: lcommunicate_rhop=.false.
   logical :: lcommunicate_np=.false.
-  logical :: lsort_particles=.true.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'

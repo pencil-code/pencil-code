@@ -491,7 +491,7 @@ module Particles_map
       double precision, save :: dx1, dy1, dz1
       integer :: k, k1, k2, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
-      logical :: lspecial_boundx,lnbody
+      logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent(in)  :: fp
@@ -555,14 +555,21 @@ module Particles_map
 !
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
 !
-!  Small fix for the fact that we have some special particles that ARE
-!  allowed to be outside of the box (a star in cylindrical coordinates,
-!  for instance).
+!  Small fix for nbody particles. Some are allowed to be out of box; plus, 
+!  because they are kept by the root processor, they are not bound by the grid. 
+!  If they are not within the bounds of the processor, the closest grid point
+!  if the first physical point. Perhaps the n-body module should be moved to a 
+!  dedicated code (e.g. independent of fp). 
 !
-        lspecial_boundx=.false.
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (lnbody.and.bcspx=='out') lspecial_boundx=.true.
-        if (.not.lspecial_boundx) then
+        if (lnbody) then
+          if (ineargrid(k,1)<=l1-1) ineargrid(k,1)=l1
+          if (ineargrid(k,1)<=l2-1) ineargrid(k,1)=l2
+          if (ineargrid(k,2)<=m1-1) ineargrid(k,2)=m1
+          if (ineargrid(k,2)<=m2-1) ineargrid(k,2)=m2
+          if (ineargrid(k,3)<=n1-1) ineargrid(k,3)=n1
+          if (ineargrid(k,3)<=n2-1) ineargrid(k,3)=n2
+        else
 !
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
@@ -645,7 +652,6 @@ module Particles_map
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
-      if (lsort_particles) then 
         t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
@@ -788,8 +794,6 @@ module Particles_map
             call random_particle_pencils(fp,ineargrid,ipar)
           endif
         endif
-!
-      endif
 !
     endsubroutine sort_particles_imn
 !***********************************************************************

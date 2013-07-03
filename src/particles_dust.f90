@@ -161,7 +161,7 @@ module Particles
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom, lsort_particles
+      lreassign_strat_rhom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -195,7 +195,7 @@ module Particles
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
       lcommunicate_np, lcylindrical_gravity_par, &
-      l_shell, k_shell, lsort_particles
+      l_shell, k_shell
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
