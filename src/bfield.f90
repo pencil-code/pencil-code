@@ -4,6 +4,9 @@
 !  the vector potential; special care needs to be taken to
 !  guarantee the divergence of the field remains zero.
 !
+!  REFERENCE:
+!    Maron, J. L., Mac Low, M.-M., & Oishi, J. S. 2008, ApJ, 677, 520
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
