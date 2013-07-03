@@ -652,148 +652,148 @@ module Particles_map
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
-        t_sp = t
+      t_sp = t
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
 !
-        call particle_pencil_index(ineargrid)
+      call particle_pencil_index(ineargrid)
 !
 !  Choose sort algorithm.
 !  WARNING - choosing the wrong one might make the code unnecessarily slow.
 !
-        if ( lstart .or. &
-             (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
-          isorttype=3
-          lrunningsort=.false.
-        else
-          isorttype=1
-          lrunningsort=.true.
-        endif
-        ncount=0
+      if ( lstart .or. &
+           (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
+        isorttype=3
+        lrunningsort=.false.
+      else
+        isorttype=1
+        lrunningsort=.true.
+      endif
+      ncount=0
 !
 !  Calculate integer value to sort after.
 !
-        do k=1,npar_loc
-          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-          ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
-          ipark_sorted(k)=k
-        enddo
+      do k=1,npar_loc
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
+        ipark_sorted(k)=k
+      enddo
 !
 !  Sort using either straight insertion (1), shell sorting (2) or counting
 !  sort (3).
 !
-        select case (isorttype)
+      select case (isorttype)
 !  Straight insertion.
-        case (1)
-          do k=2,npar_loc
+      case (1)
+        do k=2,npar_loc
 !
-            j=k
+          j=k
 !
-            do while ( ilmn_par(k)<ilmn_par(j-1) )
-              j=j-1
-              if (j==1) exit
-            enddo
+          do while ( ilmn_par(k)<ilmn_par(j-1) )
+            j=j-1
+            if (j==1) exit
+          enddo
 !
-            if (j/=k) then
-              ncount=ncount+k-j
+          if (j/=k) then
+            ncount=ncount+k-j
 !
-              ilmn_par_tmp=ilmn_par(k)
-              ilmn_par(j+1:k)=ilmn_par(j:k-1)
-              ilmn_par(j)=ilmn_par_tmp
-              ipark_sorted_tmp=ipark_sorted(k)
-              ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
-              ipark_sorted(j)=ipark_sorted_tmp
+            ilmn_par_tmp=ilmn_par(k)
+            ilmn_par(j+1:k)=ilmn_par(j:k-1)
+            ilmn_par(j)=ilmn_par_tmp
+            ipark_sorted_tmp=ipark_sorted(k)
+            ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
+            ipark_sorted(j)=ipark_sorted_tmp
 !  Sort particle data on the fly (practical for almost ordered arrays).
-              if (lrunningsort) then
-                fp_tmp=fp(k,:)
-                fp(j+1:k,:)=fp(j:k-1,:)
-                fp(j,:)=fp_tmp
+            if (lrunningsort) then
+              fp_tmp=fp(k,:)
+              fp(j+1:k,:)=fp(j:k-1,:)
+              fp(j,:)=fp_tmp
 !
-                if (present(dfp)) then
-                  dfp_tmp=dfp(k,:)
-                  dfp(j+1:k,:)=dfp(j:k-1,:)
-                  dfp(j,:)=dfp_tmp
-                endif
-!
-                ineargrid_tmp=ineargrid(k,:)
-                ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
-                ineargrid(j,:)=ineargrid_tmp
-!
-                ipar_tmp=ipar(k)
-                ipar(j+1:k)=ipar(j:k-1)
-                ipar(j)=ipar_tmp
-!
+              if (present(dfp)) then
+                dfp_tmp=dfp(k,:)
+                dfp(j+1:k,:)=dfp(j:k-1,:)
+                dfp(j,:)=dfp_tmp
               endif
-            endif
-          enddo
-!  Shell sort.
-        case (2)
 !
-          do ih=1,21
-            do k=1+hshellsort(ih),npar_loc
-              ilmn_par_tmp=ilmn_par(k)
-              ipark_sorted_tmp=ipark_sorted(k)
-              j=k
-              do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
-                ncount=ncount+1
-                ilmn_par(j)=ilmn_par(j-hshellsort(ih))
-                ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
-                ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
-                ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
-                j=j-hshellsort(ih)
-                if (j-hshellsort(ih)<1) exit
-              enddo
+              ineargrid_tmp=ineargrid(k,:)
+              ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
+              ineargrid(j,:)=ineargrid_tmp
+!
+              ipar_tmp=ipar(k)
+              ipar(j+1:k)=ipar(j:k-1)
+              ipar(j)=ipar_tmp
+!
+            endif
+          endif
+        enddo
+!  Shell sort.
+      case (2)
+!
+        do ih=1,21
+          do k=1+hshellsort(ih),npar_loc
+            ilmn_par_tmp=ilmn_par(k)
+            ipark_sorted_tmp=ipark_sorted(k)
+            j=k
+            do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
+              ncount=ncount+1
+              ilmn_par(j)=ilmn_par(j-hshellsort(ih))
+              ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
+              ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
+              ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
+              j=j-hshellsort(ih)
+              if (j-hshellsort(ih)<1) exit
             enddo
           enddo
+        enddo
 !  Counting sort.
-        case (3)
-          kk=k1_imn
-          do k=1,npar_loc
-            ipark_sorted(kk(ilmn_par(k)))=k
-            kk(ilmn_par(k))=kk(ilmn_par(k))+1
-          enddo
-          ncount=npar_loc
-        endselect
+      case (3)
+        kk=k1_imn
+        do k=1,npar_loc
+          ipark_sorted(kk(ilmn_par(k)))=k
+          kk(ilmn_par(k))=kk(ilmn_par(k))+1
+        enddo
+        ncount=npar_loc
+      endselect
 !
 !  Sort particle data according to sorting index.
 !
-        if (lrunningsort .and. isorttype/=1) then
-          if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
-               'allowed for straight insertion sort.'
-          call fatal_error('sort_particles_imn','')
-        endif
+      if (lrunningsort .and. isorttype/=1) then
+        if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
+             'allowed for straight insertion sort.'
+        call fatal_error('sort_particles_imn','')
+      endif
 !
-        if ( (.not. lrunningsort) .and. (ncount/=0) ) then
-          fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
-          if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
-          ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
-          ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
-        endif
+      if ( (.not. lrunningsort) .and. (ncount/=0) ) then
+        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+      endif
 !
-        if (lroot.and.ldiagnos) then
-          call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
-          lun=1
-          open(lun,file=trim(filename),action='write',position='append')
-          write(lun,'(A15,f7.3)') '------------ t=', t_sp
-          write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
-               iproc, ncount, isorttype, lrunningsort
-          close (lun)
-        endif
-!
-        if (ip<=8) print '(A,i4,i8,i4,l4)', &
-             'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
+      if (lroot.and.ldiagnos) then
+        call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
+        lun=1
+        open(lun,file=trim(filename),action='write',position='append')
+        write(lun,'(A15,f7.3)') '------------ t=', t_sp
+        write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
              iproc, ncount, isorttype, lrunningsort
+        close (lun)
+      endif
+!
+      if (ip<=8) print '(A,i4,i8,i4,l4)', &
+           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
+           iproc, ncount, isorttype, lrunningsort
 !
 !  Possible to randomize particles inside each pencil. This screws with the
 !  pencil consistency check, so we turn it off when the test is running.
 !
-        if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
-          if (present(dfp)) then
-            call random_particle_pencils(fp,ineargrid,ipar,dfp)
-          else
-            call random_particle_pencils(fp,ineargrid,ipar)
-          endif
+      if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
+        if (present(dfp)) then
+          call random_particle_pencils(fp,ineargrid,ipar,dfp)
+        else
+          call random_particle_pencils(fp,ineargrid,ipar)
         endif
+      endif
 !
     endsubroutine sort_particles_imn
 !***********************************************************************
