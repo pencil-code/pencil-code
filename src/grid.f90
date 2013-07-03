@@ -31,6 +31,7 @@ module Grid
   public :: pencil_interdep_grid
   public :: calc_pencils_grid
   public :: initialize_grid
+  public :: get_grid_mn
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -1764,5 +1765,48 @@ module Grid
       call mpibcast_real(zglobal(mzgrid-nghost+1:mzgrid), nghost, iproc_last)
 !
     endsubroutine construct_serial_arrays
+!***********************************************************************
+    subroutine get_grid_mn()
+!
+!  Gets the geometry of the pencil at each (m,n) in the mn-loop.
+!
+!  03-jul-13/ccyang: extracted from Equ.
+!
+      obsolete: if (old_cdtv) then
+!       The following is only kept for backwards compatibility. Will be deleted in the future.
+        dxyz_2 = max(dx_1(l1:l2)**2, dy_1(m)**2, dz_1(n)**2)
+!
+      else obsolete
+        dline: if (lspherical_coords) then
+          dline_1(:,1) = dx_1(l1:l2)
+          dline_1(:,2) = r1_mn * dy_1(m)
+          dline_1(:,3) = r1_mn * sin1th(m) * dz_1(n)
+        else if (lcylindrical_coords) then dline
+          dline_1(:,1) = dx_1(l1:l2)
+          dline_1(:,2) = rcyl_mn1 * dy_1(m)
+          dline_1(:,3) = dz_1(n)
+        else if (lcartesian_coords) then dline
+          dline_1(:,1) = dx_1(l1:l2)
+          dline_1(:,2) = dy_1(m)
+          dline_1(:,3) = dz_1(n)
+        endif dline
+!
+        dxmax_pencil = 0.
+        if (nxgrid /= 1) dxmax_pencil = 1.0 / dx_1(l1:l2)
+        if (nygrid /= 1) dxmax_pencil = max(1.0 / dy_1(m), dxmax_pencil)
+        if (nzgrid /= 1) dxmax_pencil = max(1.0 / dz_1(n), dxmax_pencil)
+!
+        dxmin_pencil = 0.
+        if (nxgrid /= 1) dxmin_pencil = 1.0 / dx_1(l1:l2)
+        if (nygrid /= 1) dxmin_pencil = min(1.0 / dy_1(m), dxmin_pencil)
+        if (nzgrid /= 1) dxmin_pencil = min(1.0 / dz_1(n), dxmin_pencil)
+!
+        dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+        dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+        dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+!
+      endif obsolete
+!
+    endsubroutine get_grid_mn
 !***********************************************************************
 endmodule Grid
