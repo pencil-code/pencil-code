@@ -151,7 +151,7 @@ module Energy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      rcool1, rcool2, deltaT, cs2cool2, cool2,wcool, wcool2, Fbot, &
+      rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, wcool, wcool2, Fbot, &
       lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -2279,8 +2279,10 @@ module Energy
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-      if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) &
-          lpenc_requested(i_cs2)=.true.
+      if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) then
+        lpenc_requested(i_cs2)=.true.
+        if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
+      endif
       if (lgravz .and. (luminosity/=0.0 .or. cool/=0.0)) &
           lpenc_requested(i_cs2)=.true.
       if (luminosity/=0 .or. cool/=0 .or. tau_cor/=0 .or. &
@@ -4339,7 +4341,8 @@ module Energy
 !
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
-      if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) &
+      if (lgravz .and. (.not.lcooling_general) .and. &
+          ( (luminosity/=0.) .or. (cool/=0.) ) ) &
           call get_heat_cool_gravz(heat,p)
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
@@ -4515,6 +4518,8 @@ module Energy
 !  Subroutine to do volume heating and cooling in a layer independent of
 !  gravity.
 !
+      use Sub, only: erfunc
+!
       real, dimension (nx) :: heat
       type (pencil_case) :: p
 !
@@ -4537,6 +4542,12 @@ module Energy
 !
       case ('sin-z')
         prof=spread(sin(z(n)/wcool),1,l2-l1+1)
+!
+!  Sinusoidal cooling profile (periodic).
+!
+      case ('surface_z')
+        prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
+!
       endselect
 !
 !  Note: the cooltype 'Temp' used below was introduced by Axel for the
@@ -4553,6 +4564,8 @@ module Energy
        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
      case('Temp2')
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+     case('rho_cs2')
+       heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
      case('plain')
        heat=heat-cool*prof
      case default
