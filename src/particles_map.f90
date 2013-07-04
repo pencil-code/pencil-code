@@ -564,11 +564,11 @@ module Particles_map
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (lnbody) then
           if (ineargrid(k,1)<=l1-1) ineargrid(k,1)=l1
-          if (ineargrid(k,1)<=l2-1) ineargrid(k,1)=l2
+          if (ineargrid(k,1)>=l2-1) ineargrid(k,1)=l2
           if (ineargrid(k,2)<=m1-1) ineargrid(k,2)=m1
-          if (ineargrid(k,2)<=m2-1) ineargrid(k,2)=m2
+          if (ineargrid(k,2)>=m2-1) ineargrid(k,2)=m2
           if (ineargrid(k,3)<=n1-1) ineargrid(k,3)=n1
-          if (ineargrid(k,3)<=n2-1) ineargrid(k,3)=n2
+          if (ineargrid(k,3)>=n2-1) ineargrid(k,3)=n2
         else
 !
 !  Round off errors may put a particle closer to a ghost point than to a
