@@ -50,14 +50,11 @@
 ; EXAMPLES:
 ;
 ; * Load a sub-volume and display it in a GUI:
-;       pc_read_subvol_raw, obj=vars, tags=tags, var_list=["lnrho","uu"], xs=10, xe=14, ys=11, ye=49, /addghosts
-;       cslice, vars
-;   or equivalently with already included ghost cells for derivatives:
-;       pc_read_subvol_raw, obj=vars, tags=tags, var_list=["lnrho","uu"], xs=10, xe=20, ys=11, ye=55
+;       pc_read_subvol_raw, obj=vars, tags=tags, var_list=["lnrho","uu"], xs=10, xe=14, ys=11, ye=49
 ;       cmp_cslice, { uz:vars[*,*,*,tags.uz], lnrho:vars[*,*,*,tags.lnrho] }
 ;
-; * Load a sub-volume including ghosts and compute some physical quantity:
-;       pc_read_subvol_raw, obj=vars, tags=tags, sub_dim=dim, xs=10, xe=14, ys=11, ye=49, /addghosts
+; * Load a sub-volume including ghost cells and compute some physical quantity:
+;       pc_read_subvol_raw, obj=vars, tags=tags, sub_dim=dim, sub_grid=grid, xs=10, xe=14, ys=11, ye=49, /addghosts
 ;       HR_ohm = pc_get_quantity ('HR_ohm', vars, tags, dim=dim)
 ;       tvscl, HR_ohm[*,*,0]          ; Display lowest physical z-layer.
 ;       tvscl, HR_ohm[dim.nx-1,*,*]   ; Display rightmost physical yz-cut.
@@ -84,14 +81,18 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	default, swap_endian, 0
 	if (keyword_set (name)) then name += "_" else name = "pc_read_subvol_raw_"
 	if (keyword_set (reduced)) then allprocs = 1
-	if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
-	default, f77, 1
 
 	; Default data directory.
-	if (not keyword_set (datadir)) then datadir=pc_get_datadir()
+	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 
 	; Name and path of varfile to read.
 	if (not keyword_set (varfile)) then varfile = 'var.dat'
+
+	; Automatically switch to allprocs, if necessary.
+	if (not keyword_set (allprocs) and not file_test (datadir+'/proc0/'+varfile, /regular)) then allprocs = 1
+
+	if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
+	default, f77, 1
 
 	; Get necessary dimensions quietly.
 	if (n_elements (dim) eq 0) then pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
@@ -142,11 +143,11 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	gz_delta = ze - zs + 1
 
 	if (any ([xs, xne-xns, ys, yne-yns, zs, zne-zns] lt 0) or any ([xe, ye, ze] ge [mxgrid, mygrid, mzgrid])) then $
-			message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
+		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
 
 	; Get necessary parameters quietly.
 	if (n_elements (param) eq 0) then $
-			pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+		pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
 	if (n_elements (run_param) eq 0) then begin
 		if (file_test (datadir+'/param2.nml')) then begin
 			pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
@@ -156,7 +157,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	endif
 
 	if (n_elements (grid) eq 0) then $
-			pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
+		pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 
 	; Set the coordinate system.
 	coord_system = param.coord_system
@@ -230,7 +231,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Read meta data and set up variable/tag lists.
 	if (n_elements (varcontent) eq 0) then $
-			varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 	totalvars = (size(varcontent))[1]
 	if (n_elements (var_list) eq 0) then begin
 		var_list = varcontent[*].idlvar
@@ -409,8 +410,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	tags.time = t
 	name += strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
 	sub_grid = create_struct (name=name, $
-			['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
-			t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+		t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
 
 	if (addghosts) then begin
 		xs = xns - nghostx
