@@ -261,6 +261,8 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
+          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+          if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then 
             if (lparticlemesh_cic) then
               if (lparticles_blocks) then
                 call interpolate_linear(f,igpotselfx,igpotselfz, &
@@ -293,12 +295,6 @@ module Particles_selfgravity
             else
               gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
             endif
-!
-!  Possibility of switching off self-gravity for the massive n-body particles.
-!
-            if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (lnbody) gpotself=0
             endif
 !
 !  Add gravitational acceleration to particles
