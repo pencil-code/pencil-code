@@ -227,9 +227,10 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  02-jul-13/ccyang: coded.
+!  04-jul-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts
+      use Grid, only: get_grid_mn
       use Sub, only: cross, gij, curl_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -275,7 +276,10 @@ module Magnetic
           call curl_mn(bij, jj, bb)
           ee = ee - spread(mu01 * eta_penc, 2, 3) * jj
 !         Time-step constraint
-          if (lfirst .and. ldt) diffus_eta = eta_penc * dxyz_2
+          timestep: if (lfirst .and. ldt) then
+            if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
+            diffus_eta = eta_penc * dxyz_2
+          endif timestep
         endif resis
 !
         f(l1:l2,m,n,ieex:ieez) = ee
