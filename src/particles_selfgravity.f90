@@ -261,40 +261,40 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then 
-            if (lparticlemesh_cic) then
-              if (lparticles_blocks) then
-                call interpolate_linear(f,igpotselfx,igpotselfz, &
-                    fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
-              else
-                call interpolate_linear(f,igpotselfx,igpotselfz, &
-                    fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
-              endif
-            elseif (lparticlemesh_tsc) then
-              if (linterpolate_spline) then
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+            if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then 
+              if (lparticlemesh_cic) then
                 if (lparticles_blocks) then
-                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                  call interpolate_linear(f,igpotselfx,igpotselfz, &
                       fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
                 else
-                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                  call interpolate_linear(f,igpotselfx,igpotselfz, &
                       fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
                 endif
-              else
+              elseif (lparticlemesh_tsc) then
+                if (linterpolate_spline) then
+                  if (lparticles_blocks) then
+                    call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                        fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
+                  else
+                    call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
+                        fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
+                  endif
+                else
 !
 !  Polynomial interpolation can lead to self acceleration of isolated particle,
 !  since one must use the same assignment and interpolation function.
 !
-                if (lroot) then
-                  print*, 'dvvp_dt_selfgrav: polynomial interpolation not '// &
-                          'allowed'
-                  print*, '                  for interpolating self-gravity'
+                  if (lroot) then
+                    print*, 'dvvp_dt_selfgrav: polynomial interpolation not '// &
+                            'allowed'
+                    print*, '                  for interpolating self-gravity'
+                  endif
+                  call fatal_error('dvvp_dt_selfgrav','')
                 endif
-                call fatal_error('dvvp_dt_selfgrav','')
+              else
+                gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
               endif
-            else
-              gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
-            endif
             endif
 !
 !  Add gravitational acceleration to particles
