@@ -25,24 +25,26 @@
 ;	DAMPED_ALFVEN_WAVES, /DOUBLE, VARFILE='VAR10'
 ;
 ; MODIFICATION HISTORY:
-; 	Written by:	Chao-Chin Yang, October 17, 2012.
+; 	Written by:	Chao-Chin Yang, June 26, 2013.
 ;-
 
 pro damped_alfven_waves, double=double, varfile=varfile
   compile_opt idl2
 
 ; Read the data.
-  pc_read_var, obj=f, varfile=varfile, /bb, /trimall, /quiet
+  pc_read_var, obj=f, varfile=varfile, /trimall, /quiet
   pc_read_dim, obj=dim, /quiet
   pc_read_param, obj=par1, /quiet
   pc_read_param, obj=par2, /param2, /quiet
 
 ; Calculate relevant parameters.
-  ki = [par1.kx_ux[0], par1.ky_ux[0], par1.kz_ux[0]]
+  ki = par1.k0
+  nu = par2.nu
+  eta = par2.eta
   omega = transpose(ki) # par2.b_ext / sqrt(par1.mu0 * par1.rho0)
   ot = omega * f.t
-  decay = exp(-0.5 * total(ki^2, double=double) * (par2.nu + par2.eta) * f.t)
-  du = [par1.ampl_ux[0], par1.ampl_uy[0], par1.ampl_uz[0]] * decay
+  decay = exp(-0.5 * total(ki^2, double=double) * (nu + eta) * f.t)
+  du = [par1.amp0[0], par1.amp0[1], par1.amp0[2]] * decay
   db = du * sqrt(par1.mu0 * par1.rho0)
 
 ; Allocate memory.
@@ -65,7 +67,7 @@ pro damped_alfven_waves, double=double, varfile=varfile
 ; Find the exact solution for the velocity and magnetic field.
   for k = 0, dim.nzgrid - 1 do begin
     for j = 0, dim.nygrid - 1 do begin
-      phase = ki[0] * f.x + (ki[1] * f.y[j] + ki[2] * (f.z)[k] + ot)[0]
+      phase = ki[0] * f.x + (ki[1] * (f.y)[j] + ki[2] * (f.z)[k] + ot)[0]
       a = sin(phase)
       uex[*,j,k] = du[0] * a
       uey[*,j,k] = du[1] * a
@@ -75,28 +77,28 @@ pro damped_alfven_waves, double=double, varfile=varfile
       bez[*,j,k] = db[2] * a
     endfor
   endfor
+  help, phase
 
 ; Compare the solutions.
   ix = fix(dim.nxgrid * randomu(seed))
   iy = fix(dim.nygrid * randomu(seed))
   iz = fix(dim.nzgrid * randomu(seed))
-  plot, f.x, bex[*,iy,iz]
+  bmax = max([max(bex), max(bey), max(bez)])
+  plot, f.x, bex[*,iy,iz], yrange=[-bmax,bmax]
   oplot, f.x, bey[*,iy,iz], color=100
   oplot, f.x, bez[*,iy,iz], color=200
   oplot, f.x, f.bb[*,iy,iz,0], psym=1
   oplot, f.x, f.bb[*,iy,iz,1], psym=1, color=100
   oplot, f.x, f.bb[*,iy,iz,2], psym=1, color=200
 
-; Find the 2-norm error.
+; Evaluate the errors.
   vol = f.dx * f.dy * f.dz
-  error_uu = [sqrt(vol * total((f.uu[*,*,*,0] - uex)^2, double=double)), $
-              sqrt(vol * total((f.uu[*,*,*,1] - uey)^2, double=double)), $
-              sqrt(vol * total((f.uu[*,*,*,2] - uez)^2, double=double))]
-  error_bb = [sqrt(vol * total((f.bb[*,*,*,0] - bex)^2, double=double)), $
-              sqrt(vol * total((f.bb[*,*,*,1] - bey)^2, double=double)), $
-              sqrt(vol * total((f.bb[*,*,*,2] - bez)^2, double=double))]
+  err2 = (f.uu[*,*,*,0] - uex)^2 + (f.uu[*,*,*,1] - uey)^2 + (f.uu[*,*,*,2] - uez)^2 + $
+         (f.bb[*,*,*,0] - bex)^2 + (f.bb[*,*,*,1] - bey)^2 + (f.bb[*,*,*,2] - bez)^2
+  two_norm = sqrt(vol * total(err2, double=double))
+  max_norm = sqrt(max(err2))
   print, 'dx = ', f.dx
-  print, 'uu error = ', error_uu
-  print, 'bb error = ', error_bb
+  print, 'Two-norm error = ', two_norm
+  print, 'Max-norm error = ', max_norm
 
 end

@@ -8,6 +8,8 @@ MPICOMM   =   mpicomm
 
 DENSITY   = nodensity
 HYDRO     =   hydro
-MAGNETIC  =   magnetic
+MAGNETIC  =   bfield
 
-#REAL_PRECISION = double
+INITIAL_CONDITION =   alfven_waves
+
+REAL_PRECISION = double

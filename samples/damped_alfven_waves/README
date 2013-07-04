@@ -9,7 +9,7 @@ Added:
 Status:
     succeeds
 Recommended resolution:
-    64x64x64
+    32x32x32
 Comments:
     Test for 3D damped Alfven waves.
 References:
