@@ -316,6 +316,7 @@ sub mpi_run_cmd {
         my $mpiexec = $runtime_params{'mpiexec'}
           or die "No mpiexec setting. Please fix your configuration.\n";
         my $mpiexec_opts = $runtime_params{'mpiexec_opts'} || '';
+        my $mpiexec_opts2 = $runtime_params{'mpiexec_opts2'} || '';
 
         my ($np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node)
           = get_mpiexec_opts($mpiexec, $Ncpus, $n_procs_per_node);
@@ -325,10 +326,11 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec);
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts);
         push @mpiexec_cmd_line, @$np_opts_ref;
+        push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
         dump_parameters(
-            $mpiexec, $mpiexec_opts, $extra_opts,
+            $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
             $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
         ) if $debug;
         time_system_cmd(@mpiexec_cmd_line);
@@ -347,7 +349,7 @@ sub mpi_run_cmd {
 sub dump_parameters {
 # Print all(?) relevant parameters
 
-    my ($mpiexec, $mpiexec_opts, $extra_opts,
+    my ($mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
         $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node) = @_;
 
     my $fmt = "\%-17s = <\%s>\n";
@@ -368,6 +370,7 @@ sub dump_parameters {
         printf $fmt, '$local_binary',       $local_binary;
         printf $fmt, '$mpiexec',            $mpiexec;
         printf $fmt, '$mpiexec_opts',       $mpiexec_opts;
+        printf $fmt, '$mpiexec_opts2',      $mpiexec_opts2;
         printf $fmt, '$extra_opts',         $extra_opts; # duplicate, but handy
         printf $fmt, '$master_node',        $master_node || '';
         printf $fmt, '$NODELIST',           $ENV{NODELIST};
