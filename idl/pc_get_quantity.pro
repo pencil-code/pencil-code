@@ -88,8 +88,10 @@
 
 
 ; Computation of physical quantities.
+; =============================================================================
 ; PLEASE ADD MORE PHYSICAL QUANTITIES IN THIS FUNCTION.
 ; And update the availability and dependency list in "pc_check_quantities.pro".
+; =============================================================================
 function pc_compute_quantity, vars, index, quantity
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz

@@ -162,7 +162,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		lnTT:'ln_Temp' $
 	}
 
-	; List of available overplot quantities.
+	; List of available vector field quantities.
 	available_vectorfields = { $
 		u:'velocities', $
 		j:'current density', $
@@ -192,9 +192,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	}
 
 	; List of dependencies.
-	; Arrays list a set of mandatory dependencies (e.g. 'HR_viscous').
+	; Arrays list a set of mandatory dependencies (see 'HR_viscous').
 	; The elements of structures are all mandatory dependencies,
-	; while contained arrays list alternative data sources (e.g. 'Temp').
+	; while contained arrays list alternative quantities (see 'Temp').
+	; If a structure element has the same name as the quantity itself,
+	; the contained elements are required to be data sources (see 'TT').
 	depend = { $
 		TT:{ TT:['lnTT', 'TT'] }, $
 		Temp:{ Temp_alternatives:['TT', 'S_rho'] }, $
