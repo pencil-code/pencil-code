@@ -216,7 +216,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_Lorentz_z:'F_Lorentz', $
 		F_Lorentz_abs:'F_Lorentz', $
 		HR_ohm:'j', $
-		HR_ohm_particle:['HR_ohm','n_rho'], $
+		HR_ohm_particle:['HR_ohm', 'n_rho'], $
 		HR_viscous:['u', 'rho'], $
 		HR_viscous_particle:['HR_viscous', 'n_rho'], $
 		A_x:'A', $
