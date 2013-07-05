@@ -624,8 +624,9 @@ module Dustdensity
               'init_nd: Distribution of the water droplets in the atmosphere'
         case ('atm_drop_gauss')
           do k=1,ndustspec
+!Natalia
             f(:,:,:,ind(k)) = init_distr(k)/exp(f(:,:,:,ilnrho))
-!print*,k,f(4,4,4,ind(k))
+print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
           enddo
           if (ldcore) then
             do i=1,ndustspec0; do k=1,ndustspec
