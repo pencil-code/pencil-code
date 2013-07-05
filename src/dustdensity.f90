@@ -216,7 +216,7 @@ module Dustdensity
       use Special, only: set_init_parameters
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!      real, dimension (ndustspec) :: Ntot_tmp, lnds
+      real, dimension (ndustspec) :: Ntot_tmp!, lnds
       integer :: i,j,k
 !      real :: ddsize, ddsize0
       logical :: lnothing
@@ -624,9 +624,8 @@ module Dustdensity
               'init_nd: Distribution of the water droplets in the atmosphere'
         case ('atm_drop_gauss')
           do k=1,ndustspec
-!Natalia
             f(:,:,:,ind(k)) = init_distr(k)/exp(f(:,:,:,ilnrho))
-print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
+!print*,k,f(4,4,4,ind(k))
           enddo
           if (ldcore) then
             do i=1,ndustspec0; do k=1,ndustspec
@@ -1325,7 +1324,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat or p%ppsf has zero value(s)')
           else
-           Imr= 1. !Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
+           Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
            do i=1,nx
             if (lnoaerosol .or. lnocondens_term) then
               p%ccondens(i)=0.
@@ -1356,7 +1355,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
               p%dndr=0.
             else
               if (.not. ldcore) then
-                Imr=1. !Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,0)
                 do k=1,ndustspec
                   p%dndr(:,k)=-Imr*dndr_tmp(:,k)
@@ -1464,7 +1463,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
 !  Redistribution over the size in the atmospheric physics case
 !
           if (ldcore) then
-            Imr=1.!Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+            Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
             do i=1, ndustspec0
              do k=1, ndustspec
                ppsf_full(:,k,i)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
@@ -2523,7 +2522,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp, ff_tmp0
+      real, dimension (nx,ndustspec) :: dndr_dr,  dndr_dr2, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i
       integer :: k, i !, ind_tmp=6
 !
@@ -2531,7 +2530,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
       intent(out) :: dndr_dr
 !
       if (ndustspec<3) then
-        dndr_dr=0.  ! Initialize the "out" array
+        dndr_dr=0.  ! Initialize the "out" array 
         call fatal_error('droplet_redistr', &
              'Number of dust species is smaller than 3')
       else
@@ -2554,20 +2553,20 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
                   *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            endif
          enddo
-           call deriv_size(ff_tmp,dndr_dr,p)
+           call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
 !
        endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************
-    subroutine deriv_size_(ff,dff_dr, p)
+    subroutine deriv_size_(ff,ff0, dff_dr, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
       use Mpicomm, only: stop_it
       use General, only: spline
 
-      real, dimension (nx,ndustspec) ::  ff, dff_dr
+      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
       type (pencil_case) :: p
       real, dimension (60) ::  x2, S
       integer :: k,i1=1,i2=2,i3=3
@@ -2575,6 +2574,7 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
       integer :: jmax=20, i,j
       real :: rr1=0.,rr2=0.,rr3=0., ff_km1,ff_k,ff_kp1
       real :: nd_km1,nd_k,nd_kp1, maxnd1, maxnd2
+      intent(in) ::  ff0
       intent(out) :: dff_dr
       logical :: case1=.false., case2=.false.
 !
@@ -2663,21 +2663,17 @@ print*,k,f(31,31,4,ind(k)),'init_distr=',init_distr(k)
 !
     endsubroutine deriv_size_
 !***********************************************************************
-    subroutine deriv_size(ff,dff_dr, p)
+    subroutine deriv_size(ff,ff0, dff_dr, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
-      use General, only: keep_compiler_quiet
-!
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) ::  ff, dff_dr
+      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
       integer :: k,i1=1,i2=2,i3=3
       integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ff
+      intent(in) :: ff, ff0
       intent(out) :: dff_dr
-!
-      call keep_compiler_quiet(p)
 !
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
