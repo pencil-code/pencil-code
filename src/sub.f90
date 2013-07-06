@@ -1845,7 +1845,6 @@ module Sub
       intent(out) :: d2fdxj
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: d2fdx,d2fdy,d2fdz,tmp
       real, dimension (nx,3) :: d2fdxj
       integer :: k
 !
