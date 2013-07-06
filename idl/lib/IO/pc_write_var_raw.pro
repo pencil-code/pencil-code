@@ -37,7 +37,7 @@
 ;       pc_write_var_raw, vars, time=time, /allprocs               ;; write to data/allprocs/var.dat
 ;
 ; MODIFICATION HISTORY:
-;       Adapted from: pc_write_var_raw.pro, 6th July 2013 (Bourdin.KIS)
+;       Adapted from: pc_read_var_raw.pro, 6th July 2013 (Bourdin.KIS)
 
 pro pc_write_var_raw, vars, time=time, dim=dim, grid=grid, param=param, datadir=datadir, varfile=varfile, allprocs=allprocs, f77=f77, swap_endian=swap_endian, quiet=quiet
 
