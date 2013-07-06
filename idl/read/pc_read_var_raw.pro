@@ -180,7 +180,6 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   mvar_io = mvar
   if (param.lwrite_aux) then mvar_io += dim.maux
   precision = dim.precision
-  if (precision eq 'D') then bytes = 8 else bytes = 4
 ;
 ; Initialize cdat_grid variables.
 ;
