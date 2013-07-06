@@ -91,7 +91,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	; Automatically switch to allprocs, if necessary.
 	if (not keyword_set (allprocs) and not file_test (datadir+'/proc0/'+varfile, /regular)) then allprocs = 1
 
-	if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
+	; Set f77 keyword according to allprocs.
+	if (keyword_set (allprocs)) then default, f77, 0
 	default, f77, 1
 
 	; Get necessary dimensions quietly.

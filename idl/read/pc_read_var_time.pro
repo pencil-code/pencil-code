@@ -48,19 +48,16 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings.
 ;
+  default, allprocs, 0
   default, reduced, 0
+  default, quiet, 0
   if (keyword_set(reduced)) then allprocs=1
   if (arg_present(exit_status)) then exit_status=0
 ;
-; Check if allprocs and/or f77 keyword is set.
+; Set f77 keyword according to allprocs.
 ;
-  if (keyword_set(allprocs)) then begin
-    if (not keyword_set(f77)) then f77=0
-  endif else begin
-    allprocs = 0
-  endelse
+  if (keyword_set (allprocs)) then default, f77, 0
   default, f77, 1
-  default, quiet, 0
 ;
 ; Default data directory.
 ;

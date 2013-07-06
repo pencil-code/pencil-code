@@ -109,6 +109,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
+  default, allprocs, 0
   default, reduced, 0
   if (keyword_set(reduced)) then allprocs=1
 ;
@@ -124,14 +125,13 @@ COMPILE_OPT IDL2,HIDDEN
 if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     message, "pc_read_var: /reduced and 'proc' cannot be set both."
 ;
-; Check if allprocs and/or f77 keyword is set.
+; Check if allprocs is set.
 ;
-  if (keyword_set(allprocs)) then begin
-    if (n_elements(proc) ne 0) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
-    if (not keyword_set(f77)) then f77=0
-  endif else begin
-    allprocs = 0
-  endelse
+  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
+;
+; Set f77 keyword according to allprocs.
+;
+  if (keyword_set (allprocs)) then default, f77, 0
   default, f77, 1
 ;
 ; Default data directory.

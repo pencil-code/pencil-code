@@ -57,8 +57,8 @@ pro pc_write_var_raw, vars, time=time, dim=dim, grid=grid, param=param, datadir=
 	end
 
 	default, time, zero
-	if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
 	default, allprocs, 0
+	if (keyword_set (allprocs)) then default, f77, 0
 	default, f77, 1
 
 	nx = dim.nx
