@@ -912,7 +912,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
-      real, dimension (nx) :: gdot, grad_gdot,gdotsqr,nu_effective,gradnu_effective
+      real, dimension (nx) :: gradnu_effective
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
