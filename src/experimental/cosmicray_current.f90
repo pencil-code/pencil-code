@@ -26,14 +26,14 @@ module Cosmicrayflux
   include 'cosmicrayflux.h'
 !
   character (len=labellen) :: initfcr='zero'
-  real :: amplfcr=0., omegahat=0.
+  real :: amplfcr=0., omegahat=0., fcr_const=0., J_param=0., Ma_param=1.
   logical :: lupw_ucr=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       omegahat
+       omegahat, initfcr, fcr_const
 !
   namelist /cosmicrayflux_run_pars/ &
-       omegahat,lupw_ucr
+       omegahat, lupw_ucr, J_param, Ma_param
 !
   contains
 !***********************************************************************
@@ -100,7 +100,8 @@ module Cosmicrayflux
       select case (initfcr)
 
       case ('zero', '0'); f(:,:,:,ifcrx:ifcrz) = 0.
-! probably no more cases needed for fcr
+      case ('const_fcr'); f(:,:,:,ifcrz) = fcr_const
+!
       case default
 !
 !  Catch unknown values
@@ -182,7 +183,7 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: delucrxbb
+      real, dimension (nx,3) :: delucrxbb, ucrxbb, jcrxbr
       real, dimension (nx)   :: b2, b21
       real, dimension (nx)   :: tmp
       integer :: i,j
@@ -206,6 +207,14 @@ module Cosmicrayflux
 !
       df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
         +omegahat*delucrxbb
+!
+!  Add Lorentz force
+!
+      if (lhydro) then
+        call cross(p%ucr,p%bb,ucrxbb)
+        call multsv_mn(-(J_param/Ma_param**2)*p%ecr,ucrxbb,jcrxbr)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+jcrxbr
+      endif
 !
 !  Calculate diagnostic quantities.
 !
