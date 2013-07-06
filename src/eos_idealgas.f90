@@ -1936,7 +1936,7 @@ module EquationOfState
       character (len=*), intent(in) :: task
       integer :: j
 !
-      character (len=linelen), pointer :: dummy
+      !character (len=linelen), pointer :: dummy
       integer :: ierr
 !
       if (lrun .and. lmagn_mf) then
