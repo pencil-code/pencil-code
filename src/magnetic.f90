@@ -2664,7 +2664,7 @@ module Magnetic
       use Sub
 !
       real, dimension (nx) :: chi_diamag
-      real, dimension (nx,3) :: gchi_diamag, Bk_Bki, jj_diamag
+      real, dimension (nx,3) :: gchi_diamag, Bk_Bki, jj_diamag, tmp
       type (pencil_case) :: p
 !
       intent(inout)  :: p
@@ -2678,7 +2678,8 @@ module Magnetic
       call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
       call multsv(-.5*chi_diamag/p%b2,Bk_Bki,gchi_diamag)
       call cross(gchi_diamag,p%bb,jj_diamag)
-      call multsv_add(jj_diamag,chi_diamag,p%jj,jj_diamag)
+      call multsv_add(jj_diamag,chi_diamag,p%jj,tmp)
+      jj_diamag=tmp
 !
 !  update current density
 !
