@@ -133,7 +133,8 @@ function pc_compute_quantity, vars, index, quantity
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				Temp = vars[l1:l2,m1:m2,n1:n2,index.TT] * unit.temperature
 			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
-				cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+				cp = pc_get_parameter ('cp', label=quantity)
+				cp_SI = cp * (unit.velocity^2 / unit.temperature)
 				cs0 = pc_get_parameter ('cs0', label=quantity)
 				gamma = pc_get_parameter ('gamma', label=quantity)
 				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
@@ -141,7 +142,7 @@ function pc_compute_quantity, vars, index, quantity
 				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
 				S = pc_compute_quantity (vars, index, 'S')
 				ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
-				Temp = exp (ln_Temp_0 + gamma/cp * S + (gamma-1) * ln_rho)
+				Temp = exp (ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho)
 			end
 		end
 		return, Temp
@@ -184,7 +185,7 @@ function pc_compute_quantity, vars, index, quantity
 		if (any (strcmp (sources, 'ss', /fold_case))) then begin
 			return, vars[l1:l2,m1:m2,n1:n2,index.ss] * (unit.velocity^2 * unit.mass / unit.temperature)
 		end else begin
-			cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+			cp = pc_get_parameter ('cp', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
 			gamma = pc_get_parameter ('gamma', label=quantity)
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
@@ -305,23 +306,23 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'P_therm', /fold_case)) then begin
 		; Thermal pressure
-		cp = pc_get_parameter ('cp', label=quantity)
+		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		if (n_elements (P_therm) eq 0) then P_therm = cp * (gamma - 1.0) / gamma * rho * Temp * unit.density * unit.velocity^2
+		if (n_elements (P_therm) eq 0) then P_therm = cp * (gamma - 1.0) / gamma * rho * Temp
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
 		; Gradient of thermal pressure
-		cp = pc_get_parameter ('cp', label=quantity)
+		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (n_elements (grad_rho) eq 0) then grad_rho = pc_compute_quantity (vars, index, 'grad_rho')
 		if (n_elements (grad_Temp) eq 0) then grad_Temp = pc_compute_quantity (vars, index, 'grad_Temp')
 		if (n_elements (grad_P_therm) eq 0) then begin
-			fact = cp * (gamma - 1.0) / gamma * unit.density * unit.temperature / unit.length
+			fact = cp * (gamma - 1.0) / gamma
 			grad_P_therm = grad_rho
 			for pa = 0, 2 do grad_P_therm[*,*,*,pa] = fact * (grad_rho[*,*,*,pa] * Temp + rho * grad_Temp[*,*,*,pa])
 		end
