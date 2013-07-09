@@ -45,10 +45,12 @@ module Magnetic
   logical :: lbext = .false.
   logical :: lresis_const = .false.
   logical :: lresis_shock = .false.
+  logical :: lresis_hyper3_mesh = .false.
   real :: eta = 0.0
   real :: eta_shock = 0.0
+  real :: eta_hyper3_mesh = 0.0
 !
-  namelist /magnetic_run_pars/ b_ext, lresis_const, eta, lresis_shock, eta_shock
+  namelist /magnetic_run_pars/ b_ext, lresis_const, eta, lresis_shock, eta_shock, lresis_hyper3_mesh, eta_hyper3_mesh
 !
 !  Diagnostic variables
 !
@@ -122,7 +124,7 @@ module Magnetic
 !
 !  Conducts post-parameter-read initialization for Magnetic.
 !
-!  02-jul-13/ccyang: coded.
+!  09-jul-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
@@ -150,9 +152,12 @@ module Magnetic
         call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
       lresistivity_normal = lresis_const .or. lresis_shock
 !
+      if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
+!
       resis: if (lroot) then
         if (lresis_const) print *, 'initialize_magnetic: constant resistivity, eta = ', eta
         if (lresis_shock) print *, 'initialize_magnetic: shock resistivity, eta_shock = ', eta_shock
+        if (lresis_hyper3_mesh) print *, 'initialize_magnetic: mesh hyper-resistivity, eta_hyper3_mesh = ', eta_hyper3_mesh
       endif resis
 !
     endsubroutine initialize_magnetic
@@ -346,13 +351,11 @@ module Magnetic
 !
 !  Evaluates the time derivative of the magnetic field.
 !
-!  25-jun-13/ccyang: coded.
+!  09-jul-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(f)
 !
 !  dB/dt = curl(E).
 !
@@ -361,6 +364,10 @@ module Magnetic
 !  Lorentz force
 !
       if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%jxbr
+!
+!  Mesh hyper-resistivity
+!
+      if (lresis_hyper3_mesh) call add_resis_hyper3_mesh(f, df)
 !
 !  Constrain the time step.
 !
@@ -552,6 +559,20 @@ module Magnetic
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
+    subroutine dynamical_resistivity(umax)
+!
+!  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
+!
+!  09-jul-13/ccyang: coded
+!
+      real, intent(in) :: umax
+!
+!  Mesh hyper-resistivity coefficient
+!
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh
+!
+    endsubroutine dynamical_resistivity
+!***********************************************************************
 !***********************************************************************
 !
 !  LOCAL ROUTINES GO BELOW HERE.
@@ -626,6 +647,48 @@ module Magnetic
       if (lresis_shock) eta_penc = eta_penc + eta_shock * f(l1:l2,m,n,ishock)
 !
     endsubroutine get_resistivity
+!***********************************************************************
+    subroutine add_resis_hyper3_mesh(f, df)
+!
+!  Adds the mesh hyper-resistivity.
+!
+!  09-jul-13/ccyang: coded
+!
+      use Deriv, only: der6
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+!
+      real, dimension(nx) :: penc
+      integer :: i, j, jvar
+!
+!  Add the mesh hyper-resistivity to the derivatives.
+!
+      comp: do j = 1, 3
+        jvar = ibb + j - 1
+        dir: do i = 1, 3
+          call der6(f, jvar, penc, i, ignoredx=.true.)
+          if (ldynamical_diffusion) then
+            df(l1:l2,m,n,jvar) = df(l1:l2,m,n,jvar) + eta_hyper3_mesh * penc * dline_1(:,i)
+          else
+            df(l1:l2,m,n,jvar) = df(l1:l2,m,n,jvar) + eta_hyper3_mesh * pi5_1 / 60.0 * penc * dline_1(:,i)
+          endif
+        enddo dir
+      enddo comp
+!
+!  Time-step constraint
+!
+      timestep: if (lfirst .and. ldt) then
+        dynamic: if (ldynamical_diffusion) then
+          diffus_eta3 = diffus_eta3 + eta_hyper3_mesh
+          advec_hypermesh_aa = 0.0
+        else dynamic
+          advec_hypermesh_aa = eta_hyper3_mesh * pi5_1 * sqrt(dxyz_2)
+        endif dynamic
+      endif timestep
+!
+    endsubroutine add_resis_hyper3_mesh
+!***********************************************************************
 !***********************************************************************
 !
 !  DUMMY BUT PUBLIC ROUTINES GO BELOW HERE.
@@ -708,16 +771,6 @@ module Magnetic
       output_persistent_magnetic = .false.
 !
     endfunction output_persistent_magnetic
-!***********************************************************************
-    subroutine dynamical_resistivity(umax)
-!
-!  dummy
-!
-      real, intent(in) :: umax
-!     
-      call keep_compiler_quiet(umax)
-!
-    endsubroutine dynamical_resistivity
 !***********************************************************************
     subroutine split_update_magnetic(f)
 !
