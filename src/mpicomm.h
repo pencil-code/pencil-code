@@ -3,6 +3,8 @@
 !
   private
 
+  public :: remap_to_pencil_xy_2D_other, unmap_from_pencil_xy_2D_other
+
   public :: mpicomm_init, initialize_mpicomm, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
