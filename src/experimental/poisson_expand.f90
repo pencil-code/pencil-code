@@ -42,8 +42,9 @@ module Poisson
 !  Variables of the expanded grid are global to this file. 
 !
   real :: r2_ext, r2_int
-  real, dimension(2*nx)     :: xc,kkx_fft
+  real, dimension(2*nx)     :: xc
   real, dimension(2*ny)     :: yc
+  real, dimension(2*nxgrid) :: kkx_fft
   real, dimension(2*nygrid) :: kky_fft
   integer :: nnx,nny,iroot,nslice
   real    :: xc0,yc0,dxc1,dyc1
@@ -167,12 +168,6 @@ module Poisson
       if (lshear) call fatal_error('inverse_laplacian_expandgrid',&
           'not implemented for external shear')
 !
-!  Break if nprocx>1
-!
-      if (nprocx>1) &
-           call fatal_error("inverse_laplacian_expandgrid",&
-           "Not yet implemented for nprocx > 1")
-!
       if (lroot.and.lfirstcall) print*,'Entered inverse_laplacian_expandgrid'
 !
 !  Shortcuts. The 'iroot' variable is of course for the root processor. 
@@ -187,7 +182,7 @@ module Poisson
                  lproc_comm_send,lproc_comm_recv)
       call calc_potential(nphi)
       call copy_potential_small_grid(nphi,phi, &
-                 lproc_comm_send,lproc_comm_recv)
+           lproc_comm_send,lproc_comm_recv)
 !      
       if (lfirstcall) lfirstcall=.false.
 !
@@ -195,41 +190,55 @@ module Poisson
 !***********************************************************************
     subroutine construct_large_grid
 !
-!  Define the expanded Cartesian axes. The x-axis is serial.
+!  Define the expanded Cartesian axes.
 !
 !  23-apr-10/wlad: coded
+!  09-jul-13/wlad: parallelized x
 !
-      real    :: xcn,ycn,dxc,dyc,Lxn,Lyn
+      real    :: xcn,ycn,dxc,dyc,Lxn,Lyn,xlast,xlength
       integer :: i,nnxgrid,nnygrid
 !
+      if (nprocx==1) then 
+        !backward compatibility
+        xlast=x(l2)
+      else
+        xlast=xyz1(1)
+      endif
+!
       nnx=2*nx               ; nny=2*ny
-      xcn=2*x(l2)+0.5*dx     ; xc0=-xcn
+      xcn=2*xlast+0.5*dx     ; xc0=-xcn
       ycn=xcn                ; yc0=-ycn
       nnxgrid=2*nxgrid       ; nnygrid=2*nygrid
 !
       do i=1,nnx
-        xc(i)=1.0*(i-1)        /(nnxgrid-1)*(xcn-xc0)+xc0
+        xc(i)=1.0*(i-1+ipx*nnx)/(nnxgrid-1)*(xcn-xc0)+xc0
       enddo
       do m=1,nny
         yc(m)=1.0*(m-1+ipy*nny)/(nnygrid-1)*(ycn-yc0)+yc0
       enddo      
 !
       if (ip<=8) print*,'inverse_laplacian_expandgrid: ', & 
-           'x-limits of the expanded grid',xc(1),xc(nnx)
+           'local x-limits of the expanded grid',xc(1),xc(nnx)
       if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
            'local y-limits of the expanded grid',yc(1),yc(nny)
 !
 !  Define the wavelengths of the expanded grid
 ! 
+      if (nprocx==1) then 
+        xlength=2*xc(nnx)
+      else
+        xlength=2*Lxyz(1)
+      endif
+!
       dxc=xc(2)-xc(1)  ; dyc=dxc
       dxc1=1/dxc       ; dyc1=1/dyc
-      Lxn=2*xc(nnx)    ; Lyn=Lxn
+      Lxn=xlength      ; Lyn=Lxn
 !
       kkx_fft = &
           cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
       kky_fft = &
           cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
-
+!
     endsubroutine construct_large_grid
 !***********************************************************************
     subroutine copy_density_large_grid(phi,nphi,&
@@ -247,8 +256,8 @@ module Poisson
       logical, dimension(0:ncpus-1) :: lproc_comm_loc
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_recv
-      integer :: iy_serial, iproc_send
-      integer :: i,j, mm
+      integer :: ix_serial, iy_serial, iproc_send, ipx_send, ipy_send
+      integer :: i,j, l, mm, ll, jx, jy 
       real :: rr2
 !
       if (lmpicomm) then 
@@ -259,16 +268,25 @@ module Poisson
 !  local processor iproc has to send its density field. Store
 !  that in phi_send(:,:,iproc_send).
 !
-        do m=1,ny
-          mm=m+m1-1
-          iy_serial=nint((y(mm)-yc0)*dyc1)+1
-          iproc_send=(iy_serial-1)/nny
-          if (iproc_send/=iproc) then
-            if (.not.lproc_comm_loc(iproc_send)) then
-              lproc_comm_loc(iproc_send)=.true.
+        do i=1,nx
+          ll=i+l1-1
+          ! serial indices of the local x and y in the large grid
+          ix_serial=nint((x(ll)-xc0)*dxc1)+1
+          ! processor index in the large grid
+          ipx_send=(ix_serial-1)/nnx
+          do m=1,ny
+            mm=m+m1-1
+            iy_serial=nint((y(mm)-yc0)*dyc1)+1
+            ipy_send=(iy_serial-1)/nny      
+            ! processor index 
+            iproc_send=ipx_send+(nprocx*ipy_send)
+            if (iproc_send/=iproc) then
+              if (.not.lproc_comm_loc(iproc_send)) then
+                lproc_comm_loc(iproc_send)=.true.
+              endif
+              phi_send(i,m,iproc_send)=phi(i,m,nslice)
             endif
-            phi_send(:,m,iproc_send)=phi(:,m,nslice)
-          endif
+          enddo
         enddo
 !
 !  In parallel we need first to get the processors' send/recv matrices. 
@@ -301,6 +319,7 @@ module Poisson
 !  processor are simply copied from phi to phi_recv. 
 !
             phi_recv(:,:,iproc)=phi(:,:,nslice)     
+!
           endif
         enddo
 ! 
@@ -333,13 +352,22 @@ module Poisson
 !  This is inside the domain of the small grid. Copy the 
 !  density corresponding to matching (x,y) positions. 
 !
-            ix=i-nx/2
+            ix=i+nnx*ipx-nxgrid/2
+            jx=(ix-1)/nx
+            do while (ix>nx)
+              ix=ix-nx
+            enddo
+!
             iy=m+nny*ipy-nygrid/2
-            j=(iy-1)/ny
+            jy=(iy-1)/ny
             do while (iy>ny)
               iy=iy-ny
             enddo
+!
+            j=jx+nprocx*jy
+!
             nphi(i,m)=phi_recv(ix,iy,j)
+!
           endif
         enddo
       enddo
@@ -367,7 +395,7 @@ module Poisson
 !
       do iky=1,nny
         do ikx=1,nnx
-          if ((kkx_fft(ikx)==0.0) .and. (kky_fft(iky+ipy*nny)==0.0)) then
+          if ((kkx_fft(ikx+ipx*nnx)==0.0) .and. (kky_fft(iky+ipy*nny)==0.0)) then
             nphi(ikx,iky) = 0.0
             nb1(ikx,iky) = 0.0
           else
@@ -380,7 +408,7 @@ module Poisson
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-            k_abs = sqrt(kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
+            k_abs = sqrt(kkx_fft(ikx+ipx*nnx)**2+kky_fft(iky+ipy*nny)**2)
             nphi(ikx,iky) = -0.5*nphi(ikx,iky) / k_abs
             nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / k_abs
 !
@@ -421,16 +449,12 @@ module Poisson
       real, dimension (nx,ny,0:ncpus-1) :: phi_send,phi_recv
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_recv
-      integer :: xdo,xup,mdo,mup, j
+      integer :: xdo,xup,mdo,mup, j, jx, jy
 !
       intent (in) :: lproc_comm_send,lproc_comm_recv
 !
 !  Start by defining the limits of the small grid in the large grid 
 !  axes. 
-!
-      xdo=nx/2+1 ; xup=3*nx/2
-      if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
-           'x-limits of large grid to be copied', xc(xdo),xc(xup)
 !
       if (lmpicomm) then 
 !
@@ -440,51 +464,76 @@ module Poisson
 !  it sent. It was just transformed by the large grid from density into 
 !  gravitational potential. 
 !
-        do j=0,ncpus-1
-          if (iproc/=j) then
+        do jx=0,nprocx-1
+          do jy=0,nprocy-1
+            j=jx + (nprocx*jy)
+            if (iproc/=j) then
 !
 !  All processors in the large grid send their chunks of the potential 
 !  to the corresponding processor in the small grid. 
 !
-            if (lproc_comm_recv(iproc,j)) then
-              if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
-                   'large to small grid: sending from proc ',iproc,' to ',j
-              mdo=(    j*ny+1+nygrid/2)-iproc*nny
-              mup=((j+1)*ny  +nygrid/2)-iproc*nny
-              if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
-                   'y-limits of large grid to be copied', yc(mdo),yc(mup)
-              phi_send(:,:,j)=nphi(xdo:xup,mdo:mup)
-              call mpisend_real(phi_send(:,:,j),(/nx,ny/),j,222)
-            endif
+              if (lproc_comm_recv(iproc,j)) then
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'large to small grid: sending from proc ',iproc,' to ',j
+!
+                xdo=(    jx*nx+1+nxgrid/2)-ipx*nnx
+                xup=((jx+1)*nx  +nxgrid/2)-ipx*nnx
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'x-limits of large grid to be copied', xc(xdo),xc(xup)
+!
+                mdo=(    jy*ny+1+nygrid/2)-ipy*nny
+                mup=((jy+1)*ny  +nygrid/2)-ipy*nny
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'y-limits of large grid to be copied', yc(mdo),yc(mup)
+!
+                phi_send(:,:,j)=nphi(xdo:xup,mdo:mup)
+                call mpisend_real(phi_send(:,:,j),(/nx,ny/),j,222)
+              endif
 !
 !  The small grid receives all data and builds its potential array phi. 
 !
-            if (lproc_comm_send(iproc,j)) then
-              if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
-                   'large to small grid: proc ',iproc,' receiving from proc ',j
-              call mpirecv_real(phi_recv(:,:,j),(/nx,ny/),j,222)
-              phi(:,:,nslice)=phi_recv(:,:,j)
-            endif
-          else
+              if (lproc_comm_send(iproc,j)) then
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'large to small grid: proc ',iproc,' receiving from proc ',j
+                call mpirecv_real(phi_recv(:,:,j),(/nx,ny/),j,222)
+                phi(:,:,nslice)=phi_recv(:,:,j)
+              endif
+            else
+!
 !
 !  Same processor small/large grid. Copy the potential from 
 !  nphi (in the large grid) to phi (in the small grid) if (x,y) overlap
 !
-            if ( (yc(1)<=y(m1+1)) .and. (yc(nny)>=y(m2-1)) ) then
-              mdo=(    j*ny+1+nygrid/2)-iproc*nny
-              mup=((j+1)*ny  +nygrid/2)-iproc*nny
-              if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
-                   'y-limits of large grid to be copied', yc(mdo),yc(mup)
-              phi(:,:,nslice)=nphi(xdo:xup,mdo:mup)
+              if ( (yc(1)<=y(m1+1)) .and. (yc(nny)>=y(m2-1)) .and. (xc(1)<=x(l1+1)) .and. (xc(nnx)>=x(l2-1)) ) then
+!
+                xdo=(    jx*nx+1+nxgrid/2)-ipx*nnx
+                xup=((jx+1)*nx  +nxgrid/2)-ipx*nnx
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'y-limits of large grid to be copied', xc(xdo),xc(xup)
+!
+                mdo=(    jy*ny+1+nygrid/2)-ipy*nny
+                mup=((jy+1)*ny  +nygrid/2)-ipy*nny
+!
+                if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+                     'y-limits of large grid to be copied', yc(mdo),yc(mup)
+                phi(:,:,nslice)=nphi(xdo:xup,mdo:mup)
+              endif
             endif
-          endif
+          enddo
         enddo
       else 
 !
 !  Non-parallel. Just copy the central square of nphi in 
 !  the large grid to phi in the small grid 
 !
+        xdo=nx/2+1 ; xup=3*nx/2
+        if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+             'x-limits of large grid to be copied', xc(xdo),xc(xup)
+!
         mdo=ny/2+1 ; mup=3*ny/2
+        if (ip<=8) print*,'inverse_laplacian_expandgrid: ', &
+             'y-limits of large grid to be copied', yc(mdo),yc(mup)
+!
         phi(:,:,nslice)=nphi(xdo:xup,mdo:mup)
       endif !if mpicomm
 !
