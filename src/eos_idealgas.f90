@@ -2228,6 +2228,8 @@ module EquationOfState
         else
           lmeanfield_chitB=.false.
         endif
+      else
+        chi_t0=0.
       endif
 !
       select case (topbot)
@@ -2276,12 +2278,14 @@ module EquationOfState
 !  The turbulent value can be quenched.
 !
       chi_xy=chi+chi_t0
-      if (lmeanfield_chitB) then
-        n=n2
-        do m=m1,m2
-          call bdry_magnetic(f,quench,'meanfield_chitB')
-        enddo
-        chi_xy(l1:l2,m)=chi+chi_t0*quench
+      if (lmagnetic) then
+        if (lmeanfield_chitB) then
+          n=n2
+          do m=m1,m2
+            call bdry_magnetic(f,quench,'meanfield_chitB')
+          enddo
+          chi_xy(l1:l2,m)=chi+chi_t0*quench
+        endif
       endif
 !
 !  Select to use either sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
