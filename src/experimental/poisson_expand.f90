@@ -393,7 +393,7 @@ module Poisson
 !
 !  Forward transform (to k-space).
 !
-      if (nxgrid==1) then 
+      if (nprocx==1) then 
         call fourier_transform_xy_xy_other(nphi,nb1)
       else
         call fft_xy_parallel_2D_other(nphi,nb1)
@@ -430,7 +430,7 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      if (nxgrid==1) then
+      if (nprocx==1) then
         call fourier_transform_xy_xy_other(nphi,nb1,linv=.true.)
       else
         call fft_xy_parallel_2D_other(nphi,nb1,linv=.true.)
