@@ -5388,6 +5388,72 @@ module Mpicomm
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
+    subroutine remap_to_pencil_xy_2D_other(in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 2D arrays in x and y only for nprocx>1.
+!
+!   04-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      integer :: nnx,nny,inx, iny, onx, ony, bnx, bny
+      integer :: ibox, partner, nbox, alloc_err
+      integer, parameter :: ltag=104, utag=105
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: send_buf, recv_buf
+
+!
+      nnx=size(in,1) ; nny=size(in,2)
+      inx=nnx        ; iny=nny
+      onx=nprocx*nnx ; ony=nny/nprocx
+      bnx=nnx        ; bny=nny/nprocx ! transfer box sizes
+!
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
+      nbox = bnx*bny
+!
+      if (mod (nny, nprocx) /= 0) &
+          call stop_fatal ('remap_to_pencil_xy_2D_other: nny needs to be an integer multiple of nprocx', lfirst_proc_xy)
+!
+      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
+          call stop_fatal ('remap_to_pencil_xy_2D_other: input array size mismatch /= nx,ny', lfirst_proc_xy)
+      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
+          call stop_fatal ('remap_to_pencil_xy_2D_other: output array size mismatch /= nxgrid,ny/nprocx', lfirst_proc_xy)
+!
+      allocate (send_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D_other: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D_other: not enough memory for recv_buf!', .true.)
+!
+      do ibox = 0, nprocx-1
+        partner = ipz*nprocxy + ipy*nprocx + ibox
+        if (iproc == partner) then
+          ! data is local
+          out(bnx*ibox+1:bnx*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1))
+        else
+          ! communicate with partner
+          send_buf = in(:,bny*ibox+1:bny*(ibox+1))
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
+        endif
+      enddo
+!
+      deallocate (send_buf, recv_buf)
+!
+    endsubroutine remap_to_pencil_xy_2D_other
+!***********************************************************************
     subroutine remap_to_pencil_xy_3D(in, out)
 !
 !  Remaps data distributed on several processors into pencil shape.
@@ -5590,6 +5656,72 @@ module Mpicomm
       deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_xy_2D
+!***********************************************************************
+    subroutine unmap_from_pencil_xy_2D_other(in, out)
+!
+!  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocx>1.
+!
+!   4-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      integer :: nnx,nny,inx, iny, onx, ony, bnx, bny,nxgrid_other
+      integer :: ibox, partner, nbox, alloc_err
+      integer, parameter :: ltag=106, utag=107
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: send_buf, recv_buf
+!
+      nxgrid_other=size(in,1)
+      nnx=nxgrid_other/nprocx ; nny=nxgrid_other/nprocy
+      inx=nxgrid_other        ; iny=nny/nprocx
+      onx=nnx                 ; ony=nny
+      bnx=nnx                 ; bny=nny/nprocx ! transfer box sizes
+!
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
+      nbox = bnx*bny
+!
+      if (mod (nny, nprocx) /= 0) &
+          call stop_fatal ('unmap_from_pencil_xy_2D_other: nny needs to be an integer multiple of nprocx', lfirst_proc_xy)
+!
+      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
+          call stop_fatal ('unmap_from_pencil_xy_2D_other: input array size mismatch /= nxgrid_other,nny/nprocx', lfirst_proc_xy)
+      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
+          call stop_fatal ('unmap_from_pencil_xy_2D_other: output array size mismatch /= nnx,nny', lfirst_proc_xy)
+!
+      allocate (send_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D_other: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D_other: not enough memory for recv_buf!', .true.)
+!
+      do ibox = 0, nprocx-1
+        partner = ipz*nprocxy + ipy*nprocx + ibox
+        if (iproc == partner) then
+          ! data is local
+          out(:,bny*ibox+1:bny*(ibox+1)) = in(bnx*ibox+1:bnx*(ibox+1),:)
+        else
+          ! communicate with partner
+          send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
+        endif
+      enddo
+!
+      deallocate (send_buf, recv_buf)
+!
+    endsubroutine unmap_from_pencil_xy_2D_other
 !***********************************************************************
     subroutine unmap_from_pencil_xy_3D(in, out)
 !

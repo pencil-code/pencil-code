@@ -2786,6 +2786,154 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
+    subroutine fft_xy_parallel_2D_other(a_re,a_im,linv)
+!
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
+!  Attention: input data will be overwritten.
+!
+!  09-jul-2013/wlad: adpated from fft_xy_parallel
+!
+      use Mpicomm, only: remap_to_pencil_xy_2D_other, transp_pencil_xy, unmap_from_pencil_xy_2D_other
+!
+      real, dimension (:,:) :: a_re, a_im
+      logical, optional :: linv
+!
+      integer :: pnx,pny,tnx,tny,nx_other,ny_other,nxgrid_other,nygrid_other
+      real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
+      real, dimension (:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+!
+      complex, dimension (nprocx*size(a_re,1)) :: ax_other
+      complex, dimension (nprocy*size(a_re,2)) :: ay_other
+      real, dimension (4*nprocx*size(a_re,1)+15) :: wsavex_other
+      real, dimension (4*nprocy*size(a_re,2)+15) :: wsavey_other
+
+      integer :: l, m, stat
+      logical :: lforward
+!
+! pencil shaped data sizes
+!
+      nx_other=size(a_re,1); ny_other=size(a_re,2)
+      nxgrid_other=nx_other*nprocx
+      nygrid_other=ny_other*nprocy
+!     
+      pnx=nxgrid_other
+      pny=nygrid_other/nprocxy 
+!
+! pencil shaped transposed data sizes
+!
+      tnx=nprocy*size(a_re,2)
+      tny=nprocx*size(a_re,1)/nprocxy
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not. linv
+!
+      ! Check for degenerate cases.
+      if (nxgrid == 1) then
+        call fft_y_parallel(a_re(1,:),a_im(1,:),.not.lforward)
+        return
+      endif
+      if (nygrid == 1) then
+        call fft_x_parallel(a_re(:,1), a_im(:,1),.not.lforward)
+        return
+      endif
+!
+      if (mod (nxgrid_other, nprocxy) /= 0) &
+          call fatal_error('fft_xy_parallel_2D_other',&
+          'nxgrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
+      if (mod (nygrid_other, nprocxy) /= 0) &
+          call fatal_error('fft_xy_parallel_2D_other',&
+          'nygrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
+!
+      ! Allocate memory for large arrays.
+      allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate memory for p/t', .true.)
+!
+      call cffti(nxgrid_other,wsavex)
+      call cffti(nygrid_other,wsavey)
+!
+      if (lforward) then
+!
+!  Forward FFT:
+!
+        ! Remap the data we need into pencil shape.
+        call remap_to_pencil_xy_2D_other(a_re,p_re)
+        call remap_to_pencil_xy_2D_other(a_im,p_im)
+!
+        ! Transform x-direction.
+        do m=1,pny
+          ax_other = cmplx(p_re(:,m),p_im(:,m))
+          call cfftf(nxgrid_other,ax_other,wsavex_other)
+          p_re(:,m) = real(ax_other)
+          p_im(:,m) = aimag(ax_other)
+        enddo
+!
+        call transp_pencil_xy(p_re,t_re)
+        call transp_pencil_xy(p_im,t_im)
+!
+        ! Transform y-direction.
+        do l=1,tny
+          ay_other = cmplx(t_re(:,l), t_im(:,l))
+          call cfftf(nygrid_other,ay_other,wsavey_other)
+          t_re(:,l) = real(ay_other)
+          t_im(:,l) = aimag(ay_other)
+        enddo
+!
+        call transp_pencil_xy(t_re,p_re)
+        call transp_pencil_xy(t_im,p_im)
+!
+        ! Unmap the results back to normal shape.
+        call unmap_from_pencil_xy_2D_other(p_re,a_re)
+        call unmap_from_pencil_xy_2D_other(p_im,a_im)
+!
+        ! Apply normalization factor to fourier coefficients.
+        a_re = a_re/(nxgrid_other*nygrid_other)
+        a_im = a_im/(nxgrid_other*nygrid_other)
+!
+      else
+!
+!  Inverse FFT:
+!
+        ! Remap the data we need into transposed pencil shape.
+        call remap_to_pencil_xy_2D_other(a_re, p_re)
+        call remap_to_pencil_xy_2D_other(a_im, p_im)
+!
+        call transp_pencil_xy(p_re, t_re)
+        call transp_pencil_xy(p_im, t_im)
+!
+        do l=1,tny
+          ! Transform y-direction back.
+          ay_other = cmplx(t_re(:,l),t_im(:,l))
+          call cfftb(nygrid_other,ay_other,wsavey_other)
+          t_re(:,l) = real(ay_other)
+          t_im(:,l) = aimag(ay_other)
+        enddo
+!
+        call transp_pencil_xy(t_re,p_re)
+        call transp_pencil_xy(t_im,p_im)
+!
+        do m=1,pny
+          ! Transform x-direction back.
+          ax_other = cmplx(p_re(:,m),p_im(:,m))
+          call cfftb(nxgrid_other,ax_other,wsavex_other)
+          p_re(:,m) = real(ax_other)
+          p_im(:,m) = aimag(ax_other)
+        enddo
+!
+        ! Unmap the results back to normal shape.
+        call unmap_from_pencil_xy_2D_other(p_re,a_re)
+        call unmap_from_pencil_xy_2D_other(p_im,a_im)
+!
+      endif
+!
+      deallocate (p_re, p_im, t_re, t_im)
+!
+    endsubroutine fft_xy_parallel_2D_other
+!***********************************************************************
     subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 3D data in the x- and y-direction.

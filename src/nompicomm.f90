@@ -2052,6 +2052,20 @@ module Mpicomm
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
+    subroutine remap_to_pencil_xy_2D_other(in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 2D arrays in x and y only for nprocx>1.
+!
+!   4-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine remap_to_pencil_xy_2D_other
+!***********************************************************************
     subroutine remap_to_pencil_xy_3D(in, out)
 !
 !  Remaps data distributed on several processors into pencil shape.
@@ -2093,6 +2107,20 @@ module Mpicomm
       out = in
 !
     endsubroutine unmap_from_pencil_xy_2D
+!***********************************************************************
+    subroutine unmap_from_pencil_xy_2D_other(in, out)
+!
+!  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocx>1.
+!
+!   4-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine unmap_from_pencil_xy_2D_other
 !***********************************************************************
     subroutine unmap_from_pencil_xy_3D(in, out)
 !

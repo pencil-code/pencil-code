@@ -247,6 +247,7 @@ module Poisson
 !  Copy the small grid to the large one
 !
 !  23-apr-10/wlad: coded
+!  09-jul-13/wlad: parallelized x
 !
       use Mpicomm
 !
@@ -380,6 +381,7 @@ module Poisson
 !  calculate the potential by solving the Poisson equation. 
 !
 !  23-apr-10/wlad: coded
+!  09-jul-13/wlad: parallelized x
 !
       integer :: ikx, iky
       real, dimension (2*nx,2*ny) :: nphi,nb1
@@ -391,7 +393,11 @@ module Poisson
 !
 !  Forward transform (to k-space).
 !
-      call fourier_transform_xy_xy_other(nphi,nb1)
+      if (nxgrid==1) then 
+        call fourier_transform_xy_xy_other(nphi,nb1)
+      else
+        call fft_xy_parallel_2D_other(nphi,nb1)
+      endif
 !
       do iky=1,nny
         do ikx=1,nnx
@@ -424,7 +430,11 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      call fourier_transform_xy_xy_other(nphi,nb1,linv=.true.)
+      if (nxgrid==1) then
+        call fourier_transform_xy_xy_other(nphi,nb1,linv=.true.)
+      else
+        call fft_xy_parallel_2D_other(nphi,nb1,linv=.true.)
+      endif
 !
 !  The same send/recv logicals define the pairs of processors involved 
 !  in this communication. This is obvious, since what is happening now 
@@ -441,6 +451,7 @@ module Poisson
 !  the smaller grid. It is the opposite of the operations done before. 
 !
 !  23-apr-10/wlad: coded
+!  09-jul-13/wlad: parallelized x
 !
       use Mpicomm
 !
