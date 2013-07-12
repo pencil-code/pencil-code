@@ -33,6 +33,7 @@ module Dustdensity
   use Cdata
   use Cparam
   use Dustvelocity
+  use General, only : keep_compiler_quiet
   use Messages
 !
   implicit none
@@ -216,7 +217,7 @@ module Dustdensity
       use Special, only: set_init_parameters
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (ndustspec) :: Ntot_tmp!, lnds
+!      real, dimension (ndustspec) :: Ntot_tmp!, lnds
       integer :: i,j,k
 !      real :: ddsize, ddsize0
       logical :: lnothing
@@ -642,7 +643,7 @@ module Dustdensity
               /(exp(x(i)/del)+exp(-x(i)/del))
           enddo
           enddo
-
+!
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
         case default
@@ -1293,18 +1294,18 @@ module Dustdensity
           do k=1, ndustspec
           if (dsize(k)>0.) then
           if (.not. ldcore) then
-
+!
             if (dsize(k)>8e-6) then
               p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
                                 -BB0/(8.*dsize(k)**3))
             else
               p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
                                      -BB0/(8.*dsize(k)*8e-6**2))
-
+!
 !              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)) &
 !                                     -BB0*0.00001/(8.*dsize(k)**3))
-
-
+!
+!
             endif
           endif
           endif
@@ -1454,7 +1455,7 @@ module Dustdensity
           if (lmice)  df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - p%udgmi(:,k)
         enddo
       elseif (latm_chemistry) then
-
+!
 !!
 !  nata
 !
@@ -1494,19 +1495,19 @@ module Dustdensity
             do i=1,nx
               tmpl=p%dndr(i,k)
               if (k<-6) then
-
+!
                   df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
                      - p%udropgnd(i,k) + p%dndr(i,k) &
                      + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(5.*dt)
-
+!
               elseif (k<-11) then
-
+!
                   df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
                      - p%udropgnd(i,k) + p%dndr(i,k) &
                      + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(10.*dt)
-
+!
               else
-
+!
                 if (f(l1+i-1,m,n,ind(k))+tmpl*dt<10.) then
                   df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
                      - p%udropgnd(i,k) &
@@ -1516,7 +1517,7 @@ module Dustdensity
                      - p%udropgnd(i,k) + p%dndr(i,k)
                 endif
               endif
-
+!
             enddo
             enddo
           endif
@@ -2522,7 +2523,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,  dndr_dr2, ff_tmp, ff_tmp0
+      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i
       integer :: k, i !, ind_tmp=6
 !
@@ -2530,7 +2531,7 @@ module Dustdensity
       intent(out) :: dndr_dr
 !
       if (ndustspec<3) then
-        dndr_dr=0.  ! Initialize the "out" array 
+        dndr_dr=0.  ! Initialize the "out" array
         call fatal_error('droplet_redistr', &
              'Number of dust species is smaller than 3')
       else
@@ -2553,20 +2554,20 @@ module Dustdensity
                   *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            endif
          enddo
-           call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
+           call deriv_size(ff_tmp,dndr_dr,p)
 !
        endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************
-    subroutine deriv_size_(ff,ff0, dff_dr, p)
+    subroutine deriv_size_(ff,dff_dr,p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
       use Mpicomm, only: stop_it
       use General, only: spline
-
-      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
+!
+      real, dimension (nx,ndustspec) ::  ff,dff_dr
       type (pencil_case) :: p
       real, dimension (60) ::  x2, S
       integer :: k,i1=1,i2=2,i3=3
@@ -2574,7 +2575,6 @@ module Dustdensity
       integer :: jmax=20, i,j
       real :: rr1=0.,rr2=0.,rr3=0., ff_km1,ff_k,ff_kp1
       real :: nd_km1,nd_k,nd_kp1, maxnd1, maxnd2
-      intent(in) ::  ff0
       intent(out) :: dff_dr
       logical :: case1=.false., case2=.false.
 !
@@ -2663,17 +2663,19 @@ module Dustdensity
 !
     endsubroutine deriv_size_
 !***********************************************************************
-    subroutine deriv_size(ff,ff0, dff_dr, p)
+    subroutine deriv_size(ff,dff_dr, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
+      real, dimension (nx,ndustspec) ::  ff,dff_dr
       integer :: k,i1=1,i2=2,i3=3
       integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ff, ff0
+      intent(in) :: ff
       intent(out) :: dff_dr
+!
+      call keep_compiler_quiet(p)
 !
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
@@ -2751,7 +2753,7 @@ module Dustdensity
 !spot_posit(1,2)=4.
 !spot_posit(1,3)=7.
 !
-
+!
       iii=1
       do k=1,ndustspec
         do j1=1,mx; do j2=1,my; do j3=1,mz
