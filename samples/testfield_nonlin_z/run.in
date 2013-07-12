@@ -17,6 +17,7 @@
   lforcing_cont=T, iforcing_cont='RobertsFlow', ampl_ff=1.
 /
 &magnetic_run_pars
+  lignore_Bext_in_b2=T
   lforcing_cont_aa=T
   lcalc_aamean=T
   B_ext=1.,0,0
