@@ -174,7 +174,7 @@ module Magnetic_meanfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
-      character (len=linelen) :: dummy
+!      character (len=linelen) :: dummy
       logical :: lstarting
       integer :: ierr
 !
