@@ -657,7 +657,7 @@ module Viscosity
         idiag_dtnu=0; idiag_nu_LES=0; idiag_Sij2m=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
-        idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0 
+        idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0
       endif
@@ -730,7 +730,7 @@ module Viscosity
            lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
            lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
-           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. & 
+           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
            lvisc_nu_profr_twosteps .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
@@ -936,7 +936,7 @@ module Viscosity
 !
       if (lvisc_simplified) then
         p%fvisc=p%fvisc+nu*p%del2u
-        if (lpencil(i_visc_heat)) then 
+        if (lpencil(i_visc_heat)) then
           if (lboussinesq) then
             p%visc_heat=p%visc_heat+2.*nu*p%sij2
           else                                  ! Heating term not implemented
@@ -959,16 +959,16 @@ module Viscosity
 !         = \nu(S_{kl}S_{kl}) \partial_j (uij+uji) + S_{ij}\nu^{\prime} \partial_j [S_{kl}S_{kl}]
 !         = \nu(S_{kl}S_{kl}) \partial_jj (ui) + S_{ij}\nu^{\prime} \partial_j [(ukl+ulk)(ukl+ulk)]
 !         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} \partial_j [ukl ukl +ulk ukl + ukl ulk + ulk ulk]
-!         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} [(uklj ukl + ukl uklj) + (ulkj ukl + ulk uklj) 
+!         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} [(uklj ukl + ukl uklj) + (ulkj ukl + ulk uklj)
 !                                                  +(uklj ulk + ukl ulkj) + (ulkj ulk + ulk ulkj)]
 !         = \nu(.) \del2 (ui) + S_{ij}\nu^{\prime} 2[uklj S_{lk}+  ulkj S_{kl}]
-!       
+!
         deljskl2=0.
         gradnu_effective=0.
         do jj=1,3
           do kk=1,3; do ll=1,3
             deljskl2 (:,jj) = deljskl2 (:,jj) + &
-              p%uijk(:,kk,ll,jj)*p%sij(:,ll,kk) + p%uijk(:,ll,kk,jj)*p%sij(:,kk,ll) 
+              p%uijk(:,kk,ll,jj)*p%sij(:,ll,kk) + p%uijk(:,ll,kk,jj)*p%sij(:,kk,ll)
           enddo;enddo
         enddo
         fvisc_nnewton2 = 0.
@@ -1641,7 +1641,7 @@ module Viscosity
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !
-! Outputs non-newtonian viscosity for an input strain-rate squared 
+! Outputs non-newtonian viscosity for an input strain-rate squared
 !
       use Sub, only : step,der_step
       real, dimension(nx) :: gdotsqr
@@ -1660,7 +1660,7 @@ module Viscosity
           write(*,*) 'nnewton_type=',nnewton_type
           call fatal_error('viscosity,getnu_non_newtonian:','select nnewton_type')
       endselect
-
+!
     endsubroutine getnu_non_newtonian
 !***********************************************************************
     subroutine calc_viscosity(f)
