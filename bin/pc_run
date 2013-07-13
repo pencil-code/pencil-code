@@ -568,7 +568,7 @@ sub get_files_to_copy_to_local_disc {
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
-# Run a system command through `/usr/bin/time -p' or some such
+# Run a system command through `/usr/bin/time -p'
     my @cmd_line = @_;
 
     write_to_file('run_command.log', "@cmd_line");
