@@ -79,12 +79,19 @@ sub fix_file_or_dir {
 # directory
     my ($file_or_dir) = @_;
     if (-f $file_or_dir) {
+        # plain file
         return fix_file($file_or_dir);
     } elsif (-d $file_or_dir) {
+        # directory
         return fix_dir($file_or_dir);
-    } elsif (! -x $file_or_dir) {
+    } elsif (-l $file_or_dir) {
+        # symbolic link
+        return 0;
+    } elsif (! -e $file_or_dir) {
+        # nonexistent
         warn "No such file or directory: $file_or_dir\n";
     } else {
+        # other type
         warn "$file_or_dir is neither file, nor directory\n";
     }
     return 0;
