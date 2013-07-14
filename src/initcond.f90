@@ -36,7 +36,7 @@ module Initcond
   public :: powern, power_randomphase
   public :: planet, planet_hc
   public :: random_isotropic_KS
-  public :: htanh, vtube, htube, htube2, htube_x, hat, hat3d
+  public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
@@ -2929,11 +2929,14 @@ module Initcond
     subroutine vtube(ampl,f,i1,i2,radius)
 !
 !  Vertical flux tube (for vector potential)
+!  Note: in Cartesian coords this cannot used for periodic xy mesh
 !
-!   1-apr-13/axel+MR: coded for cylindrical
+!   1-apr-13/axel+MR: coded for cylindrical coordinates
+!  14-jul-13/axel: adapted for Cartesian coordinates
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rr,rr2,pp,Ap
       real :: ampl,radius
 !
 !  Aphi=[R^6-(R^2-r^2)^3]/6r, gives Bz=(R^2-r^2)^2
@@ -2943,7 +2946,7 @@ module Initcond
         if (lroot) print*,'vtube: set variable to zero; i1,i2=',i1,i2
       else
         if (lroot) then
-          print*,'vtube: r-dependent flux tube in z-direction; ampl,radius=',ampl,radius
+          print*,'vtube: r-dep tube in z-direction; ampl,radius=',ampl,radius
           if (i1==i2) then
             print*,'vtube: set scalar'
           else
@@ -2961,9 +2964,15 @@ module Initcond
           if (i1==i2) then
             f(l1:l2,m,n,i1)=0.
           elseif (i1+2==i2) then
-            f(l1:l2,m,n,i1  )=0.
-            f(l1:l2,m,n,i1+1)=ampl*rcyl_mn1/6.*(radius**6-max(radius**2-x(l1:l2)**2,0.)**3)
-            f(l1:l2,m,n,i1+2)=0.
+            if (lcartesian_coords) then
+              rr2=x(l1:l2)**2+y(m)**2; rr=sqrt(rr2); pp=atan2(y(m),x(l1:l2))
+              Ap=ampl/(6.*rr)*(radius**6-max(radius**2-rr2,0.)**3)
+              f(l1:l2,m,n,i1  )=f(l1:l2,m,n,i1  )-Ap*sin(pp)
+              f(l1:l2,m,n,i1+1)=f(l1:l2,m,n,i1+1)+Ap*cos(pp)
+            elseif (lcylindrical_coords) then
+              Ap=ampl*rcyl_mn1/6.*(radius**6-max(radius**2-x(l1:l2)**2,0.)**3)
+              f(l1:l2,m,n,i1+1)=f(l1:l2,m,n,i1+1)+Ap
+            endif
           else
             if (lroot) print*,'vtube: bad value of i2=',i2
           endif
@@ -2972,6 +2981,55 @@ module Initcond
       endif
 !
     endsubroutine vtube
+!***********************************************************************
+    subroutine vtube_peri(ampl,f,i1,i2,radius)
+!
+!  Vertical flux tube (for vector potential) for periodic xy mesh
+!
+!  14-jul-13/axel: coded
+!
+      integer :: i1,i2
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rr2,tmp
+      real :: ampl,radius
+!
+!  Aphi=[R^6-(R^2-r^2)^3]/6r, gives Bz=(R^2-r^2)^2
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'vtube: set variable to zero; i1,i2=',i1,i2
+      else
+        if (lroot) then
+          print*,'vtube: r-dep tube in z-direction; ampl,radius=',ampl,radius
+          if (i1==i2) then
+            print*,'vtube: set scalar'
+          else
+            print*,'vtube: set vector'
+          endif
+        endif
+!
+!  Start with n=1 to set ghost zone (for freeze-ghost condition).
+!  Br is close to zero.
+!
+        do n=1,n2; do m=m1,m2
+!
+!  check whether vector or scalar
+!
+          if (i1==i2) then
+            f(l1:l2,m,n,i1)=0.
+          elseif (i1+2==i2) then
+            rr2=x(l1:l2)**2+y(m)**2
+            tmp=ampl*exp(-.5*rr2/radius**2)/radius**2
+            f(l1:l2,m,n,i1  )=f(l1:l2,m,n,i1  )-tmp*y(m)
+            f(l1:l2,m,n,i1+1)=f(l1:l2,m,n,i1+1)+tmp*x(l1:l2)
+          else
+            if (lroot) print*,'vtube: bad value of i2=',i2
+          endif
+!
+        enddo; enddo
+      endif
+!
+    endsubroutine vtube_peri
 !***********************************************************************
     subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_z)
 !
@@ -3031,6 +3089,7 @@ module Initcond
 !  (for vector potential, or passive scalar)
 !
 !  14-apr-09/axel: adapted from htube, used in paper with Violaine Auger
+!                  in Vermersch & Brandenburg (2009, AN 330, 797–806).
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
