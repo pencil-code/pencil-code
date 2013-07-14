@@ -362,7 +362,13 @@ module Mpicomm
 !
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
-        if (lroot) write (*,*) "\nWARNING: using SINGLE PRECISION, you'd better know what you do!\n"
+        if (lroot) then
+          write (*,*) ""
+          write (*,*) "==============================================================="
+          write (*,*) "WARNING: using SINGLE PRECISION, you'd better know what you do!"
+          write (*,*) "==============================================================="
+          write (*,*) ""
+        endif
       else
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
