@@ -7276,31 +7276,36 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz, j, ierr
       real    :: kx
-      real, pointer :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
+      real, pointer, save :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
+      logical, save :: l1st=.true.
 !
       if (headtt) then
         if (iuz == 0) call stop_it("BC_FORCE_UX_TIME: Bad idea...")
         if (Lx  == 0) call stop_it("BC_FORCE_UX_TIME: Lx cannot be 0")
         if (j /= iux) call stop_it("BC_FORCE_UX_TIME: only valid for ux")
       endif
-      call get_shared_variable('ampl_forc', ampl_forc, ierr)
-      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting ampl_forc")
-      call get_shared_variable('k_forc', k_forc, ierr)
-      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting k_forc")
-      call get_shared_variable('w_forc', w_forc, ierr)
-      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting w_forc")
-      call get_shared_variable('x_forc', x_forc, ierr)
-      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting x_forc")
-      call get_shared_variable('dx_forc', dx_forc, ierr)
-      if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting dx_forc")
-      if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
-           'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
-           x_forc, dx_forc
+!
+      if (l1st) then
+        call get_shared_variable('ampl_forc', ampl_forc, ierr)
+        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+             "there was a problem when getting ampl_forc")
+        call get_shared_variable('k_forc', k_forc, ierr)
+        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+             "there was a problem when getting k_forc")
+        call get_shared_variable('w_forc', w_forc, ierr)
+        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+             "there was a problem when getting w_forc")
+        call get_shared_variable('x_forc', x_forc, ierr)
+        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+             "there was a problem when getting x_forc")
+        call get_shared_variable('dx_forc', dx_forc, ierr)
+        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
+             "there was a problem when getting dx_forc")
+        if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
+             'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
+             x_forc, dx_forc
+        l1st=.false.
+      endif
 !
       if (k_forc /= impossible) then
         kx=2*pi/Lx*k_forc
