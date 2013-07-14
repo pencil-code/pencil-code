@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #======================================================================#
-# Name:   summarize-state
+# Name:   pc_get_param_state
 # Author: Bourdin.KIS
 # Date:   02-Mar-2012
 # SVN:    $Id$
