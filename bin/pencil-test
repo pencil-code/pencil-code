@@ -245,9 +245,7 @@ sub build_remote_cmd {
 
     my $remcmd = "cd $pencil_home";
     if ($update)            { $remcmd .= "; svn -q update" };
-    if ($UPDATE)            { $remcmd .=
-                                "; svn -q update samples bin"
-                            };
+    if ($UPDATE)            { $remcmd .= "; svn -q update samples bin" };
     if ($use_build) {
         $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/pc_auto-test";
     } else {
