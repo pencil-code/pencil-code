@@ -15,12 +15,12 @@
 ;       Pencil Code, File I/O
 ;
 ; CALLING SEQUENCE:
-;       pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, $
-;           datadir=datadir, var_list=var_list, varcontent=varcontent, $
-;           param=param, run_param=run_param, /trimall, allprocs=allprocs, $
-;           /reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, $
-;           dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, $
-;           time=time, name=name, /quiet, /swap_endian, /f77
+;       pc_read_subvol_raw, object=object, varfile=varfile, tags=tags,       $
+;           datadir=datadir, var_list=var_list, varcontent=varcontent,       $
+;           start_param=start_param, run_param=run_param, allprocs=allprocs, $
+;           xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, /trimall,  $
+;           dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid,          $
+;           time=time, name=name, /quiet, /swap_endian, /f77, /reduced
 ;
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
@@ -65,7 +65,7 @@
 ;       Adapted from: pc_read_slice_raw.pro, 4th May 2012
 ;
 ;-
-pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, param=param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77
+pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -147,8 +147,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
 
 	; Get necessary parameters quietly.
-	if (n_elements (param) eq 0) then $
-		pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+	if (n_elements (start_param) eq 0) then $
+		pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 	if (n_elements (run_param) eq 0) then begin
 		if (file_test (datadir+'/param2.nml')) then begin
 			pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
@@ -158,10 +158,10 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	endif
 
 	if (n_elements (grid) eq 0) then $
-		pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
+		pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 
 	; Set the coordinate system.
-	coord_system = param.coord_system
+	coord_system = start_param.coord_system
 
 	; Read local dimensions.
 	ipx_start = 0
@@ -232,7 +232,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Read meta data and set up variable/tag lists.
 	if (n_elements (varcontent) eq 0) then $
-		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+		varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet)
 	totalvars = (size(varcontent))[1]
 	if (n_elements (var_list) eq 0) then begin
 		var_list = varcontent[*].idlvar
@@ -362,7 +362,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	undefine, buffer
 
 	; Read timestamp.
-	pc_read_var_time, time=t, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=param, /quiet
+	pc_read_var_time, time=t, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet
 
 	; Crop grid.
 	x = grid.x[xs:xe]

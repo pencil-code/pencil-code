@@ -70,16 +70,16 @@ if (not pc_gui_loaded) then BEGIN
 	default, addfile, crashfile
 
 	pc_read_dim, obj=orig_dim, datadir=datadir, reduced=reduced, /quiet
-	pc_read_param, obj=param, dim=orig_dim, datadir=datadir, /quiet
+	pc_read_param, obj=start_param, dim=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
-	pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	pc_units, obj=unit, datadir=datadir, param=start_param, dim=orig_dim, /quiet
 	unit = create_struct (unit, display_units)
 
 	; Scaling factor for visualisation
 	default, scaling, fix (min_display_size / max ([orig_dim.nx, orig_dim.ny, orig_dim.nz]))
 	if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
-	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, dim=orig_dim, scaling=scaling
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, start_param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, dim=orig_dim, scaling=scaling
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
 
 	if ((xe-xs lt orig_dim.nx-1) or (ye-ys lt orig_dim.ny-1) or (ze-zs lt orig_dim.nz-1)) then begin
@@ -143,13 +143,13 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	pc_gui_prepare_varset, num_files, unit, coords, varset, overplot, datadir, param, run_param, var_list
+	pc_gui_prepare_varset, num_files, unit, coords, varset, overplot, datadir, start_param, run_param, var_list
 	varset = 0
 	overplot = 0
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
-		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
+		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, start_param=start_param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
 	end
 	print, 'Ready.'
 

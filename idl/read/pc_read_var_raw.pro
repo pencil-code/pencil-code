@@ -47,12 +47,12 @@
 ;       Adapted from: pc_read_var.pro, 25th January 2012
 ;
 ;-
-pro pc_read_var_raw,                                                  $
-    object=object, varfile=varfile, datadir=datadir, tags=tags,       $
-    dim=dim, param=param, par2=par2, varcontent=varcontent, f77=f77,  $
-    proc=proc, allprocs=allprocs, trimall=trimall, quiet=quiet,       $
-    swap_endian=swap_endian, time=time, grid=grid, reduced=reduced,   $
-    var_list=var_list
+pro pc_read_var_raw,                                                      $
+    object=object, varfile=varfile, datadir=datadir, tags=tags,           $
+    start_param=start_param, run_param=run_param, varcontent=varcontent,  $
+    time=time, dim=dim, grid=grid, proc=proc, allprocs=allprocs,          $
+    var_list=var_list, trimall=trimall, quiet=quiet,                      $
+    swap_endian=swap_endian, f77=f77, reduced=reduced
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -98,21 +98,24 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
   if (n_elements (dim) eq 0) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
-  if (n_elements (param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-  if (n_elements (par2) eq 0) then begin
+;
+; Get necessary parameters.
+;
+  if (n_elements (start_param) eq 0) then $
+      pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
+  if (n_elements (run_param) eq 0) then begin
     if (file_test (datadir+'/param2.nml')) then begin
-      pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
+      pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
     end else begin
       print, 'Could not find '+datadir+'/param2.nml'
     end
   end
   if (n_elements (grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet
+      pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet
 ;
 ; Set the coordinate system.
 ;
-  coord_system = param.coord_system
+  coord_system = start_param.coord_system
 ;
 ; Read local dimensions.
 ;
@@ -178,7 +181,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   nghostz = dim.nghostz
   mvar = dim.mvar
   mvar_io = mvar
-  if (param.lwrite_aux) then mvar_io += dim.maux
+  if (run_param.lwrite_aux) then mvar_io += dim.maux
   precision = dim.precision
 ;
 ; Initialize cdat_grid variables.
@@ -200,7 +203,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;  Read meta data and set up variable/tag lists.
 ;
   if (n_elements (varcontent) eq 0) then $
-      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet)
   totalvars = (size(varcontent))[1]
   if (n_elements (var_list) eq 0) then begin
     var_list = varcontent[*].idlvar
@@ -338,7 +341,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
           if (iproc eq 0) then readu, lun, x, y, z, dx, dy, dz
         end else begin
           ; distributed files
-          if (param.lshear) then begin
+          if (start_param.lshear) then begin
             deltay = zero
             readu, lun, t_test, x_loc, y_loc, z_loc, dx, dy, dz, deltay
           end else begin

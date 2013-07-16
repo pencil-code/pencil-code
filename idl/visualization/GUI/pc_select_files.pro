@@ -334,7 +334,7 @@ pro select_files_event, event
 	end
 	'SHOW_TIME': begin
 		WIDGET_CONTROL, b_ts, SENSITIVE = 0
-		pc_show_ts, obj=ts, unit=units, param=start_par, run_param=run_par, datadir=data_dir
+		pc_show_ts, obj=ts, unit=units, start_param=start_par, run_param=run_par, datadir=data_dir
 		WIDGET_CONTROL, b_ts, SENSITIVE = 1
 		break
 	end
@@ -409,7 +409,7 @@ end
 
 
 ; File selection dialog GUI.
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, ys=ys, zs=zs, xe=xe, ye=ye, ze=ze, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, start_param=start_param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, ys=ys, zs=zs, xe=xe, ye=ye, ze=ze, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
@@ -436,8 +436,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Load needed objects
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir ()
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, reduced=reduced, /quiet
-	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, dim=dim, /quiet
-	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
+	if (not keyword_set (start_param)) then pc_read_param, obj=start_param, datadir=datadir, dim=dim, /quiet
+	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=start_param, /quiet)
 	all_quant = pc_check_quantities (sources=varcontent, /available)
 	quant = all_quant
 	if (keyword_set (quantities)) then begin
@@ -469,10 +469,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	ny = dim.ny
 	nz = dim.nz
 	nghost = max ([dim.nghostx, dim.nghosty, dim.nghostz])
-	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=dim, /quiet
+	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=start_param, dim=dim, /quiet
 	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
 	units = unit
-	start_par = param
+	start_par = start_param
 	if (keyword_set (run_param)) then run_par = run_param
 	f_comp = !VALUES.D_NAN
 	c_quant = !VALUES.D_NAN

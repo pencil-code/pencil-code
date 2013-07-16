@@ -60,24 +60,24 @@
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
 ;   Load varfile and calculate an array of quantities: (RECOMMENDED)
-;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, param=param, run_param=run_param)
+;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param
+;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param)
 ;   IDL> tvscl, result.HR_viscous[*,*,20]
 ;
 ;   Load varfile and separately calculate quantities, using the cache manually:
-;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
 ;  * Using 'pc_read_slice_raw':
 ;
 ;   Load 2D-slice and calculate separate quantities, using the cache manually:
-;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim, grid=grid, param=param, par2=run_param
-;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> B_z = pc_get_quantity ('B_z', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim, grid=grid, start_param=start_param, run_param=run_param
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', slice, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', slice, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', slice, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
 ;   IDL> tvscl, HR_viscous
 ;
 
@@ -685,7 +685,7 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
+function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -724,21 +724,21 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	end
 
 	; Setup 'start.in' and 'run.in' parameters
-	dummy = pc_get_parameter ('', start_param=param, run_param=run_param, dim=dim, datadir=datadir)
-	start_par = param
+	dummy = pc_get_parameter ('', start_param=start_param, run_param=run_param, dim=dim, datadir=datadir)
+	start_par = start_param
 	run_par = run_param
 
 	; Set default units
-	if (n_elements (units) eq 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=param, /quiet
+	if (n_elements (units) eq 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=start_param, /quiet
 	unit = units
 
 	if (size (vars, /type) eq 8) then begin
 		; Need to have a valid varcontent
 		if (size (index, /type) eq 8) then varcontent = index
-		if (n_elements (varcontent) eq 0) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param)
+		if (n_elements (varcontent) eq 0) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=start_param)
 		; Create array out of given structure and pass recursively computed results
 		array = pc_convert_vars_struct (vars, varcontent, index)
-		return, pc_get_quantity (quantity, array, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup)
+		return, pc_get_quantity (quantity, array, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup)
 	end
 
 	sources = tag_names (index)

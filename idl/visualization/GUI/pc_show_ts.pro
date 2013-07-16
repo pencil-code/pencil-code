@@ -532,7 +532,7 @@ end
 
 
 ; Show timeseries analysis window
-pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
+pro pc_show_ts, object=time_series, unit=unit, start_param=start_param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
 
 	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, orig_dim, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_sx, l_sy, r_sx, r_sy, plot_style
 	common timeseries_gui_common, l_x, l_y, r_x, r_y, lx_min, lx_max, ly_min, ly_max, rx_min, rx_max, ry_min, ry_max, lx_fr, rx_fr, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range, s_line
@@ -546,7 +546,7 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
-	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=start_param, dim=orig_dim, /quiet
 	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
 	units = unit
 
@@ -554,7 +554,7 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	if (n_elements (ts) le 0) then pc_read_ts, obj=ts, datadir=datadir, /quiet
 	time_series = ts
 
-	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, /quiet
+	if (not keyword_set (start_param)) then pc_read_param, obj=start_param, datadir=datadir, /quiet
 	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, datadir=datadir, /param2, /quiet
 	if (not keyword_set (start_time)) then start_time = min (ts.t) * unit.time
 	if (not keyword_set (end_time)) then end_time = max (ts.t) * unit.time
@@ -562,7 +562,7 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	time_start = start_time
 	time_end = end_time
 	run_par = run_param
-	start_par = param
+	start_par = start_param
 
 	plots = tag_names (ts)
 	num_plots = n_elements (plots)
