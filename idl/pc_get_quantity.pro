@@ -513,7 +513,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
-		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
+		; Ohming heating rate [W / m^3] = [kg/m^3 * (m/s)^3 / m]
 		mu0 = pc_get_parameter ('mu0', label=quantity)
 		eta = pc_get_parameter ('eta_total', label=quantity)
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
