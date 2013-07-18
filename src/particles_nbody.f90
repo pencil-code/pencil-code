@@ -32,6 +32,7 @@ module Particles_nbody
   real :: create_jeans_constant=0.25, GNewton1
   real :: GNewton=impossible, prhs_cte
   real :: cdtpnbody=0.1
+  real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5, mspar_orig=1
   integer :: iglobal_ggp=0, istar=1, imass=0
@@ -64,10 +65,12 @@ module Particles_nbody
       GNewton, bcspx, bcspy, bcspz,prhs_cte, lnoselfgrav_star, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
-      laccrete_when_create, ldt_nbody, cdtpnbody
+      laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction
 !
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
+  integer, dimension(nspar)   :: idiag_torqext_gas=0,idiag_torqext_par=0
+  integer, dimension(nspar)   :: idiag_torqint_gas=0,idiag_torqint_par=0
   integer                     :: idiag_totenergy=0,idiag_totangmom=0
 !
   contains
@@ -947,7 +950,8 @@ module Particles_nbody
             call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
             !add mass of the removed particle to the accreting particle
             if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
-            goto 99
+            return
+!            goto 99
           else
             r2_ij=r2_ij+r_smooth(ks)**2
             if (r2_ij > 0) then
@@ -984,7 +988,7 @@ module Particles_nbody
 !
       enddo !nbody loop
 !
-99    continue
+!99    continue
 !
     endsubroutine loop_through_nbodies
 !**********************************************************
@@ -1413,84 +1417,100 @@ module Particles_nbody
       use Diagnostics
 !
       type (pencil_case) :: p
-      real, dimension(nx) :: torque,torqint,torqext
+      real, dimension(nx) :: torque_gas,torqint_gas,torqext_gas
+      real, dimension(nx) :: torque_par,torqint_par,torqext_par
+      real, dimension(nx) :: torque_par_tmp,torque_gas_tmp
       real, dimension(nx) :: dist,rpre
       real :: rr,w2,smap,hills
       integer :: ks,i
 !
-      real, dimension(nx) :: rr_mn,dist2,tmp,tempering
+      real, dimension(nx) :: rr_mn,dist2,tempering
       real :: rp,phip,phi,pcut
 !
       if (ks==istar) call fatal_error('calc_torque', &
           'Nonsense to calculate torques for the star')
 !
       if (lcartesian_coords) then
-!
         rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
-        w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
-        smap  = 1./(2./rr - w2)
-        hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
-!
         rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
-        torque = GNewton*pmass(ks)*p%rho*rpre*&
-             (dist**2 + r_smooth(ks)**2)**(-1.5)
-!
-        torqext=0.
-        torqint=0.
-!
-        do i=1,nx
-!
-!  Exclude material from inside the Roche Lobe. Compute internal
-!  and external torques.
-!
-          if (dist(i)>=hills) then
-            if (p%rcyl_mn(i)>=rr) torqext(i) = torque(i)
-            if (p%rcyl_mn(i)<=rr) torqint(i) = torque(i)
-          endif
-!
-        enddo
-!
-        call sum_lim_mn_name(torqext,idiag_torqext(ks),p)
-        call sum_lim_mn_name(torqint,idiag_torqint(ks),p)
-!
-      else if (lcylindrical_coords) then
-        rp = fsp(ks,ixp)
-        hills = rp*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
-!
+      elseif (lcylindrical_coords) then 
         rr_mn = x(l1:l2)     ; phi  = y(m)
         rp    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
-        dist2 = rr_mn**2 + rp**2 - 2*rr_mn*rp*cos(phi-phip)
         rpre  = rr_mn*rp*sin(phi-phip)
-        tmp   = -GNewton*pmass(ks)*p%rho*rpre*&
-             (dist2 + r_smooth(ks)**2)**(-1.5)*rr_mn
+      elseif (lspherical_coords) then  
+        call fatal_error("calc_torque",&
+             "not yet implemented for spherical coordinates")
+      else
+        call fatal_error("calc_torque",&
+             "the world is flat and we should never gotten here")
+      endif
+
+      w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
+      smap  = 1./(2./rr - w2)
+      hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
 !
-        pcut=0.8 !*hills
-        tempering = 1./(exp(-(sqrt(dist2)/hills - pcut)/(.1*pcut))+1.)
+!  Define separate torques for gas and dust/particles
 !
-        torque = tmp * tempering
+      torque_gas_tmp = GNewton*pmass(ks)*p%rho*rpre*&
+           (dist**2 + r_smooth(ks)**2)**(-1.5)
 !
-        torqext=0.
-        torqint=0.
+      if (lparticles) then 
+        torque_par_tmp = GNewton*pmass(ks)*p%rhop*rpre*&
+             (dist**2 + r_smooth(ks)**2)**(-1.5)
+      endif
 !
-        do i=1,nx
+      if (ldustdensity) &
+           call fatal_error("calc_torque",&
+           "not implemented for the dust fluid approximation")
+!
+!  Zero torque outside r_int and r_ext in Cartesian coordinates
+!
+      do i=1,nx
+        if (p%rcyl_mn(i) > r_ext .or. p%rcyl_mn(i) < r_int) then 
+           torque_gas_tmp(i)=0.
+           torque_par_tmp(i)=0.
+        endif
+      enddo
+!
+!  Exclude region inside a fraction (hills_tempering_fraction) of the Hill sphere.
+!
+      pcut=hills_tempering_fraction*hills
+      tempering = 1./(exp(-(sqrt(dist2)/hills - pcut)/(.1*pcut))+1.)
+      torque_gas = torque_gas_tmp * tempering
+      torque_par = torque_par_tmp * tempering
+!
+!  Measure separetely the torques external and internal to the planet's orbit.
+!
+      torqext_gas=0.;torqint_gas=0.
+      torqext_par=0.;torqint_par=0.
+!
+      do i=1,nx
 !
 !  Exclude material from inside the Roche Lobe. Compute internal
 !  and external torques.
 !
-        !  if (dist2(i)>=hills**2) then
-            if (p%rcyl_mn(i)>=rp) torqext(i) = torque(i)
-            if (p%rcyl_mn(i)<=rp) torqint(i) = torque(i)
-        !  endif
+        if (p%rcyl_mn(i)>=rr) then 
+          torqext_gas(i) = torque_gas(i)
+          torqext_par(i) = torque_par(i)
+        endif
+        if (p%rcyl_mn(i)<=rr) then 
+          torqint_gas(i) = torque_gas(i)
+          torqint_par(i) = torque_par(i)
+        endif
 !
-        enddo
+      enddo
 !
-        call sum_mn_name(torqext,idiag_torqext(ks))
-        call sum_mn_name(torqint,idiag_torqint(ks))
+!  Sum the different torque contributions. 
+! 
+      call sum_mn_name(torqext_gas,idiag_torqext_gas(ks))
+      call sum_mn_name(torqext_par,idiag_torqext_par(ks))
+      call sum_mn_name(torqint_gas,idiag_torqint_gas(ks))
+      call sum_mn_name(torqint_par,idiag_torqint_par(ks))
 !
-      else
-        call fatal_error('calc_torque','calc_torque not yet '//&
-             'implemented for spherical coordinates.')
-      endif
+!  Backward compatibility
+!
+      call sum_mn_name(torqext_gas+torqext_par,idiag_torqext(ks))
+      call sum_mn_name(torqint_gas+torqint_par,idiag_torqint(ks))
 !
     endsubroutine calc_torque
 !***********************************************************************
@@ -2504,6 +2524,8 @@ module Particles_nbody
         idiag_xxspar=0;idiag_vvspar=0
         idiag_torqint=0;idiag_torqext=0
         idiag_totenergy=0;idiag_totangmom=0
+        idiag_torqext_gas=0;idiag_torqext_par=0
+        idiag_torqint_gas=0;idiag_torqint_par=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2539,11 +2561,23 @@ module Particles_nbody
                'torqint_'//trim(sks),idiag_torqint(ks))
           call parse_name(iname,cname(iname),cform(iname),&
                'torqext_'//trim(sks),idiag_torqext(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_gas_'//trim(sks),idiag_torqext_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_par_'//trim(sks),idiag_torqext_par(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_par_'//trim(sks),idiag_torqint_par(ks))
         enddo
 !
         if (lwr) then
           write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
           write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
+          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
+          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
         endif
       enddo
 !
@@ -2556,9 +2590,10 @@ module Particles_nbody
              'totangmom',idiag_totangmom)
       enddo
 !
-      if (lwr) then
-!
-      endif
+       if (lwr) then
+         write(3,*) 'i_totenergy=',idiag_totenergy
+         write(3,*) 'i_totangmom=',idiag_totangmom
+       endif
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************
