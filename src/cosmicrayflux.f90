@@ -25,11 +25,10 @@ module Cosmicrayflux
 !
   character (len=labellen) :: initfcr='zero'
   real :: amplfcr=0.,kpara=0.,kperp=0.
+  real :: tau=0.,tau1=0.
 !
   namelist /cosmicrayflux_init_pars/ &
        tau, kpara, kperp
-!
-  real :: tau=0.,tau1=0.
 !
   namelist /cosmicrayflux_run_pars/ &
        tau, kpara, kperp
