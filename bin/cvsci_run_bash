@@ -1,0 +1,110 @@
+#!/bin/bash
+#$Id: cvsci_run 20244 2013-03-12 22:07:45Z AxelBrandenburg $
+#
+#  This script adds a new run to the repository
+#  and checks in all *.in files as well as material
+#  from the data and src directories.
+#
+#  if this procedure is called with an argument,
+#  then first go into this directory and continue from there
+#
+#
+#
+if (("$#" >= 1)); then
+  dirlist=$@
+else
+  dirlist=$PWD
+fi
+
+for pdir in  $dirlist ; do
+  echo $pdir
+  cd "$pdir"
+
+#
+#  set directory
+#
+  CWD=$PWD
+  dir=$PWD
+#
+#  go one up add add our run directory to cvs
+#
+  cd ..
+  cvs add $dir
+  cd $dir
+#
+#  add directories and files to cvs
+#
+  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat *.sav data
+#
+  if [ -d "data" ]; then
+      cd data
+      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro
+  else
+      echo "no data directory found"
+  fi
+#
+#  add alpeta.sav, if it exists
+#
+  \ls | egrep 'alpeta.sav' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add alpeta.sav
+  fi
+#
+#  add power spectra, if they exist
+#  (for the time being, test existence only on a few such files)
+#
+  \ls | egrep 'power.*\.dat' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add power*.dat
+  fi
+#
+#  add structure functions, if they exist
+#  (for the time being, test existence only on a few such files)
+#
+  \ls | egrep 'sf.*\.dat' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add sf*.dat
+  fi
+#
+#  add testfield_info.dat file if it exists
+#
+  \ls | egrep 'testfield_info\.dat' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add testfield_info.dat
+  fi
+#
+#  add info about directory history
+#
+  if [ -f "new_from.dir" ]; then
+      cvs add new_from.dir
+  fi
+#
+  if [ -f "new_to.dir" ]; then
+      cvs add new_to.dir
+  fi
+#
+  if [ -f "remeshed_from.dir" ]; then
+      cvs add remeshed_from.dir
+  fi
+#
+#  check in everything
+#  need to take full path name, because we are still in data,
+#  which may only be a link.
+#
+  cd $CWD
+  cvs ci -l -m "added new run: `uname -n -s`" . data
+#
+#  add src stuff only if it is not a link
+#  Do this at the very end, in case this step fails.
+#
+  test -h src
+  if [ $status ]; then
+    cvs add src
+    cd src
+    cvs add *.local .build-history
+    cd ..
+    cvs ci -m "added new run: `uname -n -s`" src
+  fi
+
+  cd ..
+done
