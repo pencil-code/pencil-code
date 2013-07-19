@@ -49,6 +49,7 @@ module Particles_nbody
   logical :: linterpolate_quadratic_spline=.false.
   logical :: laccrete_when_create=.true.
   logical :: ldust=.false.
+  logical :: ltempering=.false.
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
   namelist /particles_nbody_init_pars/ &
@@ -65,7 +66,8 @@ module Particles_nbody
       GNewton, bcspx, bcspy, bcspz,prhs_cte, lnoselfgrav_star, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
-      laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction
+      laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction, &
+      ltempering
 !
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -296,9 +298,12 @@ module Particles_nbody
         lpenc_diagnos(i_rho)=.true.
       endif
 !
-      if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then
-        lpenc_diagnos(i_rcyl_mn)=.true.
-      endif
+      !if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then
+      !  lpenc_diagnos(i_rcyl_mn)=.true.
+      !endif
+!
+      lpenc_diagnos(i_rcyl_mn)=.true.
+      lpenc_diagnos(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_par_nbody
 !***********************************************************************
@@ -1419,13 +1424,9 @@ module Particles_nbody
       type (pencil_case) :: p
       real, dimension(nx) :: torque_gas,torqint_gas,torqext_gas
       real, dimension(nx) :: torque_par,torqint_par,torqext_par
-      real, dimension(nx) :: torque_par_tmp,torque_gas_tmp
-      real, dimension(nx) :: dist,rpre
-      real :: rr,w2,smap,hills
+      real, dimension(nx) :: dist,rpre,rr_mn,tempering
+      real :: rr,w2,smap,hills,phip,phi,pcut
       integer :: ks,i
-!
-      real, dimension(nx) :: rr_mn,dist2,tempering
-      real :: rp,phip,phi,pcut
 !
       if (ks==istar) call fatal_error('calc_torque', &
           'Nonsense to calculate torques for the star')
@@ -1435,8 +1436,8 @@ module Particles_nbody
         rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
       elseif (lcylindrical_coords) then 
         rr_mn = x(l1:l2)     ; phi  = y(m)
-        rp    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
-        rpre  = rr_mn*rp*sin(phi-phip)
+        rr    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
+        rpre  = rr_mn*rr*sin(phi-phip)
       elseif (lspherical_coords) then  
         call fatal_error("calc_torque",&
              "not yet implemented for spherical coordinates")
@@ -1451,12 +1452,14 @@ module Particles_nbody
 !
 !  Define separate torques for gas and dust/particles
 !
-      torque_gas_tmp = GNewton*pmass(ks)*p%rho*rpre*&
+      torque_gas = GNewton*pmass(ks)*p%rho*rpre*&
            (dist**2 + r_smooth(ks)**2)**(-1.5)
 !
-      if (lparticles) then 
-        torque_par_tmp = GNewton*pmass(ks)*p%rhop*rpre*&
+      if (ldust) then 
+        torque_par = GNewton*pmass(ks)*p%rhop*rpre*&
              (dist**2 + r_smooth(ks)**2)**(-1.5)
+      else
+        torque_par=0.
       endif
 !
       if (ldustdensity) &
@@ -1465,52 +1468,72 @@ module Particles_nbody
 !
 !  Zero torque outside r_int and r_ext in Cartesian coordinates
 !
-      do i=1,nx
-        if (p%rcyl_mn(i) > r_ext .or. p%rcyl_mn(i) < r_int) then 
-           torque_gas_tmp(i)=0.
-           torque_par_tmp(i)=0.
-        endif
-      enddo
+      if (lcartesian_coords) then
+        do i=1,nx
+          if (p%rcyl_mn(i) > r_ext .or. p%rcyl_mn(i) < r_int) then 
+            torque_gas(i)=0.
+            torque_par(i)=0.
+          endif
+        enddo
+      endif
 !
 !  Exclude region inside a fraction (hills_tempering_fraction) of the Hill sphere.
 !
-      pcut=hills_tempering_fraction*hills
-      tempering = 1./(exp(-(sqrt(dist2)/hills - pcut)/(.1*pcut))+1.)
-      torque_gas = torque_gas_tmp * tempering
-      torque_par = torque_par_tmp * tempering
+      if (ltempering) then 
+        pcut=hills_tempering_fraction*hills
+        tempering = 1./(exp(-(sqrt(dist**2)/hills - pcut)/(.1*pcut))+1.)
+        torque_gas = torque_gas * tempering
+        torque_par = torque_par * tempering
+      else
+        do i=1,nx
+          if (dist(i)<hills) then
+            torque_gas(i)=0.
+            torque_par(i)=0.
+          endif
+        enddo
+      endif
 !
-!  Measure separetely the torques external and internal to the planet's orbit.
-!
-      torqext_gas=0.;torqint_gas=0.
-      torqext_par=0.;torqint_par=0.
+!  Separate internal and external torques
 !
       do i=1,nx
-!
-!  Exclude material from inside the Roche Lobe. Compute internal
-!  and external torques.
-!
         if (p%rcyl_mn(i)>=rr) then 
           torqext_gas(i) = torque_gas(i)
           torqext_par(i) = torque_par(i)
+        else
+          torqext_gas(i)=0.;torqext_par(i)=0.
         endif
         if (p%rcyl_mn(i)<=rr) then 
           torqint_gas(i) = torque_gas(i)
           torqint_par(i) = torque_par(i)
+        else
+          torqint_gas(i)=0.;torqint_par(i)=0.         
         endif
-!
       enddo
 !
 !  Sum the different torque contributions. 
 ! 
-      call sum_mn_name(torqext_gas,idiag_torqext_gas(ks))
-      call sum_mn_name(torqext_par,idiag_torqext_par(ks))
-      call sum_mn_name(torqint_gas,idiag_torqint_gas(ks))
-      call sum_mn_name(torqint_par,idiag_torqint_par(ks))
+      if (lcartesian_coords) then 
+        call sum_lim_mn_name(torqext_gas,idiag_torqext_gas(ks),p)
+        call sum_lim_mn_name(torqext_par,idiag_torqext_par(ks),p)
+        call sum_lim_mn_name(torqint_gas,idiag_torqint_gas(ks),p)
+        call sum_lim_mn_name(torqint_par,idiag_torqint_par(ks),p)
 !
 !  Backward compatibility
 !
-      call sum_mn_name(torqext_gas+torqext_par,idiag_torqext(ks))
-      call sum_mn_name(torqint_gas+torqint_par,idiag_torqint(ks))
+        call sum_lim_mn_name(torqext_gas+torqext_par,idiag_torqext(ks),p)
+        call sum_lim_mn_name(torqint_gas+torqint_par,idiag_torqint(ks),p)
+      else
+        !
+        ! Hack for non-cartesian coordinates. sum_lim_mn_name is lagging
+        ! behind sum_mn_name, and whould be brought up to date. 
+        !
+        call integrate_mn_name(torqext_gas,idiag_torqext_gas(ks))
+        call integrate_mn_name(torqext_par,idiag_torqext_par(ks))
+        call integrate_mn_name(torqint_gas,idiag_torqint_gas(ks))
+        call integrate_mn_name(torqint_par,idiag_torqint_par(ks))
+        call integrate_mn_name(torqext_gas+torqext_par,idiag_torqext(ks))
+        call integrate_mn_name(torqint_gas+torqint_par,idiag_torqint(ks))
+      endif
 !
     endsubroutine calc_torque
 !***********************************************************************
