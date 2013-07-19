@@ -47,7 +47,7 @@ module Initcond
   public :: cosxz_cosz, cosyz_sinz
   public :: halfcos_x, halfcos_z, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
-  public :: vfluxlayer, hfluxlayer, hfluxlayer_y
+  public :: vfluxlayer, hfluxlayer, hfluxlayer_y, hfluxlayer_y_theta
   public :: vortex_2d
   public :: vfield2
   public :: hawley_etal99a
@@ -3333,6 +3333,31 @@ module Initcond
       endif
 !
     endsubroutine hfluxlayer_y
+!***********************************************************************
+    subroutine hfluxlayer_y_theta(ampl,f,i)
+!
+!  Horizontal flux layer (for vector potential)
+!
+!  19-jul-13/axel+illa: copied from hfluxlayer_y
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'hfluxlayer-y-theta: set variable to zero; i=',i
+      else
+        if (lroot) print*,'hfluxlayer-y-theta: horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'hfluxlayer-y-theta: ampl=',ampl
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=-ampl*max(-z(n),0.)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine hfluxlayer_y_theta
 !***********************************************************************
     subroutine vfluxlayer(ampl,f,i,xflayer,width)
 !
