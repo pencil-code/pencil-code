@@ -5680,8 +5680,8 @@ module Mpicomm
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      if (nxgrid/=nygrid) call fatal_error("unmap_from_pencil_xy_2D_other",&
-           "this subroutine works only for nxgrid==nygrid")
+      if (nxgrid/=nygrid) &
+           call stop_fatal("unmap_from_pencil_xy_2D_other: this subroutine works only for nxgrid==nygrid",lfirst_proc_xy)
 !
       nxgrid_other=size(in,1) ; nygrid_other=nxgrid_other
       nnx=nxgrid_other/nprocx ; nny=nygrid_other/nprocy
