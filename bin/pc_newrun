@@ -158,6 +158,7 @@ if [ $same_source ]; then
     ln -s `readlink $olddir/src/combine_videofiles.x` .
     ln -s `readlink $olddir/src/read_vectorfiles.x` .
     ln -s `readlink $olddir/src/read_videofiles.x` .
+    ln -s `readlink $olddir/src/read_all_videofiles.x` .
     ln -s `readlink $olddir/src/start.x` .
     ln -s `readlink $olddir/src/run.x` .
   else
