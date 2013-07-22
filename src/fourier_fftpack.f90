@@ -2853,8 +2853,8 @@ module Fourier
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
       if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate memory for p/t', .true.)
 !
-      call cffti(nxgrid_other,wsavex)
-      call cffti(nygrid_other,wsavey)
+      call cffti(nxgrid_other,wsavex_other)
+      call cffti(nygrid_other,wsavey_other)
 !
       if (lforward) then
 !
