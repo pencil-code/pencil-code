@@ -239,6 +239,11 @@ module Poisson
       kky_fft = &
           cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
 !
+      if (lroot) then 
+        if (ip<=8) print*,'construct large grid: minmax(kkx_fft)=',minval(kkx_fft),maxval(kkx_fft)
+        if (ip<=8) print*,'construct large grid: minmax(kky_fft)=',minval(kky_fft),maxval(kky_fft)
+      endif
+!
     endsubroutine construct_large_grid
 !***********************************************************************
     subroutine copy_density_large_grid(phi,nphi,&
@@ -385,7 +390,7 @@ module Poisson
 !
       integer :: ikx, iky
       real, dimension (2*nx,2*ny) :: nphi,nb1
-      real :: k_abs
+      real :: k_abs, kx, ky
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -400,8 +405,11 @@ module Poisson
       endif
 !
       do iky=1,nny
+        ky=kky_fft(iky+ipy*nny)
         do ikx=1,nnx
-          if ((kkx_fft(ikx+ipx*nnx)==0.0) .and. (kky_fft(iky+ipy*nny)==0.0)) then
+          kx=kkx_fft(ikx+ipx*nnx)
+!
+          if ((kx==0.0) .and. (ky==0.0)) then
             nphi(ikx,iky) = 0.0
             nb1(ikx,iky) = 0.0
           else
@@ -414,7 +422,7 @@ module Poisson
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-            k_abs = sqrt(kkx_fft(ikx+ipx*nnx)**2+kky_fft(iky+ipy*nny)**2)
+            k_abs = sqrt(kx**2+ky**2)
             nphi(ikx,iky) = -0.5*nphi(ikx,iky) / k_abs
             nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / k_abs
 !
