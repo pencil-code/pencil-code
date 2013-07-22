@@ -511,6 +511,12 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
 		return, sqrt (dot2 (F_Lorentz))
 	end
+	if (strcmp (quantity, 'W_Lorentz', /fold_case)) then begin
+		; Work done by the Lorentz force [J]
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		return, dot (uu, F_Lorentz)
+	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3 * (m/s)^3 / m]
