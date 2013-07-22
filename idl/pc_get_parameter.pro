@@ -51,9 +51,12 @@ function pc_generate_parameter_abbreviation, param, label=label
 	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
-	if (strcmp (param, 'mu0_4_pi', /fold_case)) then begin
+	if (any (strcmp (param, ['mu0_SI','mu0_4_pi'], /fold_case))) then begin
 		mu0 = pc_get_parameter ('mu0', label=label)
-		return, 4.0 * !DPi * mu0 ; Magnetic vacuum permeability * 4 pi [SI: V*s/(A*m)]
+		unit_magnetic = pc_get_parameter ('unit_magnetic', label=label)
+		unit_density = pc_get_parameter ('unit_density', label=label)
+		unit_velocity = pc_get_parameter ('unit_velocity', label=label)
+		return, mu0 * unit_magnetic^2/(unit_density*unit_velocity^2) ; Magnetic vacuum permeability [SI: 4*pi*10^-7 V*s/(A*m)]
 	end
 	if (strcmp (param, 'eta_total', /fold_case)) then begin
 		resistivities = pc_get_parameter ('iresistivity', label=label)
