@@ -5673,15 +5673,18 @@ module Mpicomm
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-      integer :: nnx,nny,inx, iny, onx, ony, bnx, bny,nxgrid_other
+      integer :: nnx,nny,inx, iny, onx, ony, bnx, bny, nxgrid_other, nygrid_other
       integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      nxgrid_other=size(in,1)
-      nnx=nxgrid_other/nprocx ; nny=nxgrid_other/nprocy
+      if (nxgrid/=nygrid) call fatal_error("unmap_from_pencil_xy_2D_other",&
+           "this subroutine works only for nxgrid==nygrid")
+!
+      nxgrid_other=size(in,1) ; nygrid_other=nxgrid_other
+      nnx=nxgrid_other/nprocx ; nny=nygrid_other/nprocy
       inx=nxgrid_other        ; iny=nny/nprocx
       onx=nnx                 ; ony=nny
       bnx=nnx                 ; bny=nny/nprocx ! transfer box sizes
