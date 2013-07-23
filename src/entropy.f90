@@ -1621,7 +1621,7 @@ module Energy
       use EquationOfState, only: gamma_m1, rho0, lnrho0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
       use General, only: safe_character_assign
-      use Gravity, only: z1
+      use Gravity, only: z1, z2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: tempm,lnrhom
@@ -1643,7 +1643,7 @@ module Energy
 !
       ztop=xyz0(3)+Lxyz(3)
       zbot=z1
-      rbot=1.
+      rbot=rho0
       rt_old=.1*rbot
       rt_new=.12*rbot
 !
