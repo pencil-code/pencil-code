@@ -337,3 +337,14 @@ class read_var:
                 else:
                     sys.exit("pb in magic!")
 
+            if (field == 'pp' and not hasattr(self, 'pp')):
+                cp = param.cp
+                gamma = param.gamma
+                cv = cp/gamma
+                if hasattr(self, 'ss'):
+                    self.pp = N.exp(gamma*(self.ss+self.lnrho))
+                elif hasattr(self, 'lntt'):
+                    self.pp = (cp-cv)*N.exp(self.lntt+self.lnrho)
+                else:
+                    sys.exit("pb in magic!")
+
