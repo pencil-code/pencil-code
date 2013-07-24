@@ -1440,7 +1440,7 @@ else if (($hostname =~ ip237*) || ($hostname =~ groovy.local)) then
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
 #----------------------------------------------------
-else if ($hostname =~ jj[0-9][0-9][a-z][0-9][0-9]*) then
+else if (($hostname =~ jj[0-9][0-9][a-z][0-9][0-9]*) || ($hostname =~ jf[0-9][0-9][a-z][0-9][0-9]*)) then
   echo "JuRoPA at Juelich"
   set mpirun = mpiexec
 #----------------------------------------------------
