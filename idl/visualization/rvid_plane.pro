@@ -259,6 +259,8 @@ slice_z2pos=0.0*one
 dev='x' ;(default)
 if (keyword_set(png)) then begin
   Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+  Nwy=Nwx*15/20
+  help,Nwx,Nwy
   resolution=[Nwx,Nwy] ; set window size
   print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
@@ -424,8 +426,13 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           pixID=!D.Window
         endif
         if (keyword_set(contourplot)) then begin
-            contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+          lev=grange(amin,amax,60)
+          ;contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
+          contourfill, plane2, x2, y2, lev=lev, $
+            tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+          colorbar,range=[min(lev),max(lev)],pos=[0.95,0.12,0.98,0.92],/vert, $
+            ytickformat='(f6.3)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
+            yaxis=0,char=1.5,col=255,ytit='!6',xtit='!8B!dz!n!6'
         end else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
             contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
