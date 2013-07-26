@@ -61,7 +61,8 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2
   real :: delta=1.2, delta0=1.2
-  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60.
+  real :: Rgas=8.31e7
+  real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  BB0, Ntot
   real :: nd_reuni,init_x1, init_x2
   integer :: ind_extra
@@ -389,7 +390,7 @@ module Dustdensity
 !
         if (unit_system == 'cgs') then
           Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys/unit_energy
+!          Rgas=Rgas_unit_sys/unit_energy
         else
           call fatal_error('initialize_dustdensity', &
               'this case works only for cgs units!')
