@@ -12,6 +12,7 @@
 %%   1D_loop.f90
 %%   advective_gauge.f90
 %%   anelastic.f90
+%%   bfield.f90
 %%   chemistry.f90
 %%   coronae.f90
 %%   entropy_anelastic.f90
@@ -548,6 +549,18 @@
   \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{bfield.f90}} \\
+\midrule
+  \var{bmax}      & $\max|\mathbf(B)|$ \\
+  \var{brms}      & $\left<B^2\right>^{1/2}$ \\
+  \var{bxmax}     & $\max|B_x|$ \\
+  \var{bymax}     & $\max|B_y|$ \\
+  \var{bzmax}     & $\max|B_z|$ \\
+  \var{dbxmax}    & $\max|\Delta B_x|$ \\
+  \var{dbymax}    & $\max|\Delta B_y|$ \\
+  \var{dbzmax}    & $\max|\Delta B_z|$ \\
+  \var{divbmax}   & $\max|\nabla\cdot\mathbf{B}|$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{Y1m}       & $\left<Y_1\right>$ \\
@@ -712,6 +725,7 @@
   \var{qem}       & $\left<q_e(\overline{B})\right>$,
                     in the paper referred to as
                     $\left<q_g(\overline{B})\right>$ \\
+  \var{qam}       & $\left<q_a(\overline{B})\right>$ \\
   \var{alpm}      & $\left<\alpha\right>$ \\
   \var{etatm}     & $\left<\eta_{\rm t}\right>$ \\
   \var{EMFmz1}    & $\left<{\cal E}\right>_{xy}|_x$ \\
@@ -1586,6 +1600,7 @@
   \var{fviscmax}  & Max value of viscous acceleration \\
   \var{fviscrmsx} & Rms value of viscous acceleration
                     for the vis_xaver_range \\
+  \var{num}       & Mean value of viscosity \\
   \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\
