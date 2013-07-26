@@ -2228,8 +2228,6 @@ module EquationOfState
         else
           lmeanfield_chitB=.false.
         endif
-      else
-        chi_t0=0.
       endif
 !
       select case (topbot)
@@ -2274,10 +2272,11 @@ module EquationOfState
                          -  9.0*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                          +      (f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho)))
 !
+!  Set chi_xy=chi, which sets also the ghost zones.
 !  chi_xy consists of molecular and possibly turbulent values.
-!  The turbulent value can be quenched.
+!  The turbulent value can be quenched (but not in ghost zones).
 !
-      chi_xy=chi+chi_t0
+      chi_xy=chi
       if (lmagnetic) then
         if (lmeanfield_chitB) then
           n=n2
