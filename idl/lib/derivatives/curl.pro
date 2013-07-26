@@ -53,7 +53,7 @@ function curlz,f
 ;
   if (any (coord_system eq ['cylindric','spherical'])) then begin
     corr = spread(1.0/x[l1:l2],1,ny)
-    for n = n1, n2 do curlz[l1:l2,m1:m2,n] -= f[l1:l2,m1:m2,n,1]*corr
+    for n = n1, n2 do curlz[l1:l2,m1:m2,n] += f[l1:l2,m1:m2,n,1]*corr
   end
 ;
   return, curlz
