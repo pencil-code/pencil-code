@@ -1719,7 +1719,7 @@ module Density
       type (pencil_case) :: p
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
-      real, dimension (nx) :: unitpencil=1.
+      real, dimension (nx) :: unitpencil=1., density_rhs
       integer :: j
 !
       intent(in)  :: p
@@ -1737,9 +1737,9 @@ module Density
           .not. lffree .and. .not. lreduced_sound_speed .and. &
           ieos_profile=='nothing') then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
+          density_rhs= - p%ugrho   - p%rho*p%divu
         else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+          density_rhs= - p%uglnrho - p%divu
         endif
       endif
 !
@@ -1747,7 +1747,7 @@ module Density
 !
       if (lcontinuity_gas .and. lweno_transport) then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%transprho
+          density_rhs= - p%transprho
         else
           call fatal_error('dlnrho_dt','can not do WENO transport for '// &
               'logarithmic density!')
@@ -1761,17 +1761,13 @@ module Density
 !
      if (lcontinuity_gas .and. ieos_profile=='surface_z') then
        if (ldensity_nolog) then
-         df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-             - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+         density_rhs= - profz_eos(n)*(p%ugrho + p%rho*p%divu)
          if (ldensity_profile_masscons) &
-             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-             -dprofz_eos(n)*p%rho*p%uu(:,3)
+             density_rhs= -dprofz_eos(n)*p%rho*p%uu(:,3)
        else
-         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-             - profz_eos(n)*(p%uglnrho + p%divu)
+         density_rhs= - profz_eos(n)*(p%uglnrho + p%divu)
          if (ldensity_profile_masscons) &
-             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-             -dprofz_eos(n)*p%uu(:,3)
+             density_rhs= -dprofz_eos(n)*p%uu(:,3)
        endif
      endif
 !
@@ -1779,23 +1775,19 @@ module Density
 !
       if (lcontinuity_gas .and. lffree) then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho) &
-              - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-              *(p%ugrho + p%rho*p%divu)
+          density_rhs= - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                       *(p%ugrho + p%rho*p%divu)
           if (ldensity_profile_masscons) &
-              df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-              -dprofx_ffree   *p%rho*p%uu(:,1) &
-              -dprofy_ffree(m)*p%rho*p%uu(:,2) &
-              -dprofz_ffree(n)*p%rho*p%uu(:,3)
+               density_rhs=-dprofx_ffree   *p%rho*p%uu(:,1) &
+                           -dprofy_ffree(m)*p%rho*p%uu(:,2) &
+                           -dprofz_ffree(n)*p%rho*p%uu(:,3)
         else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-              - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-              *(p%uglnrho + p%divu)
+          density_rhs= - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                       *(p%uglnrho + p%divu)
           if (ldensity_profile_masscons) &
-              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              -dprofx_ffree   *p%uu(:,1) &
-              -dprofy_ffree(m)*p%uu(:,2) &
-              -dprofz_ffree(n)*p%uu(:,3)
+               density_rhs=-dprofx_ffree   *p%uu(:,1) &
+                           -dprofy_ffree(m)*p%uu(:,2) &
+                           -dprofz_ffree(n)*p%uu(:,3)
         endif
       endif
 !
@@ -1804,12 +1796,18 @@ module Density
 !
       if (lcontinuity_gas .and. lreduced_sound_speed) then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho) &
-              - reduce_cs2*(p%ugrho + p%rho*p%divu)
+          density_rhs = - reduce_cs2*(p%ugrho + p%rho*p%divu)
         else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-              - reduce_cs2*(p%uglnrho + p%divu)
+          density_rhs = - reduce_cs2*(p%uglnrho + p%divu)
         endif
+      endif
+!
+!  Add the continuity equation terms to the RHS of the density df. 
+!
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
+      else 
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
       endif
 !
 !  Mass sources and sinks.
