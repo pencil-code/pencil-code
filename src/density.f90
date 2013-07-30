@@ -1741,6 +1741,8 @@ module Density
         else
           density_rhs= - p%uglnrho - p%divu
         endif
+      else
+        density_rhs=0.
       endif
 !
 !  WENO transport.
