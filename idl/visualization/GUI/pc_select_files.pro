@@ -560,6 +560,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Pre-defined slice settings
 	dimensionality = 0 + ((nx gt 1) + (ny gt 1) + (nz gt 1))
 	slice = 0
+	if ((subvol_xs gt 0) or (subvol_xe lt nx-1) or (subvol_ys gt 0) or (subvol_ye lt ny-1) or (subvol_zs gt 0) or (subvol_ze lt nz-1)) then slice = 4
 	max_pos = -1
 	cut_pos = -1
 	if (dimensionality eq 3) then begin
