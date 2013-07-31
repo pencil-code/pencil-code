@@ -261,7 +261,7 @@ module Equ
 !
 !  Dynamical (hyper-)diffusion coefficients
 !
-      if (lfirst .and. ldynamical_diffusion) then
+      if (ldynamical_diffusion) then
         call find_umax(f,umax)
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
