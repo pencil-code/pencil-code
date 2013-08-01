@@ -1,6 +1,6 @@
 function haver,f,xvertical=xvertical,yvertical=yvertical
 ;
-;  Horizontal average of 3-d or 2-d scalar
+;  Horizontal average of 3-d or 2-d scalar; and copy if 1-d scalar
 ;  $Id$
 ;
         sizef=size(f)
@@ -24,6 +24,8 @@ function haver,f,xvertical=xvertical,yvertical=yvertical
             h=dblarr(sizef[2])
             for n=0,sizef[2]-1 do h[n]=aver(f[*,n])
           endelse
+        endif else if dim eq 1 then begin
+          h=f
         endif else begin
           print,"% HAVER: size(f) = ", sizef
           message,"Don't know how to handle array"
