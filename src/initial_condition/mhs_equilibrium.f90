@@ -27,11 +27,15 @@ module InitialCondition
 !
   real :: density_power_law,temperature_power_law,plasma_beta
   logical :: lnumerical_mhsequilibrium=.true.
-  logical :: lintegrate_potential=.true.
+  logical :: lintegrate_potential=.true.,lcap_field=.false.
+  real :: rm_int=0.0,rm_ext=impossible
 !
   namelist /initial_condition_pars/ &
       density_power_law,temperature_power_law,plasma_beta,&
-      lnumerical_mhsequilibrium,lintegrate_potential
+      lnumerical_mhsequilibrium,lintegrate_potential,&
+      rm_int,rm_ext,lcap_field
+!
+  real :: ksi=1.
 !
   contains
 !***********************************************************************
@@ -49,6 +53,24 @@ module InitialCondition
 !
     endsubroutine register_initial_condition
 !***********************************************************************
+   subroutine initialize_initial_condition(f)
+!
+!  Initialize any module variables which are parameter dependent.
+!
+!  07-may-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+        if (lmagnetic) then 
+          ksi=(1.+plasma_beta)/plasma_beta
+        else
+          ksi=1.
+        endif
+!
+    endsubroutine initialize_initial_condition
+!***********************************************************************
     subroutine initial_condition_uu(f)
 !
 !  Initialize the velocity field.
@@ -61,8 +83,8 @@ module InitialCondition
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
-      real, dimension (mx) :: OOK2,OO2,tmp1,H2
-      real :: p,q,tmp2,ksi
+      real, dimension (mx) :: OOK2,OO2,tmp,H2
+      real :: p,q
       integer, pointer :: iglobal_cs2
       integer :: ics2
 !
@@ -83,26 +105,20 @@ module InitialCondition
 !
       if (.not.lnumerical_mhsequilibrium) then 
 !
-        if (lmagnetic) then 
-          ksi=(1.+plasma_beta)/plasma_beta
-        else
-          ksi=1.
-        endif
-!
         p=-density_power_law
         q=-temperature_power_law
 !
         do m=1,my;do n=1,mz
           call acceleration(g_r)
           call get_radial_distance(rr_sph,rr_cyl)
+          ! Cylindrical Keplerian velocity: GM/rr_cyl**3
           OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
 !
+          !H2 defined as in Fromang et al. 2011
           H2=f(:,m,n,ics2)/OOK2
 !
-          tmp1=H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
-          tmp2=ksi*(q+1.)*(1.-sinth(m))
-!
-          OO2=OOK2*(tmp1+tmp2+sinth(m))
+          tmp=1 + q*(1-sinth(m)) + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
+          OO2=OOK2*tmp
 !
           f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*sqrt(OO2)
         enddo;enddo
@@ -162,7 +178,7 @@ module InitialCondition
           cs2=f(:,m,n,ics2)
           call potential(POT=tmp1,RMN=rr_sph)
           call potential(POT=tmp2,RMN=rr_cyl)
-          strat=-(tmp1-tmp2)/cs2
+          strat=-(tmp1-tmp2)/(cs2*ksi)
           f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
 !
         enddo
@@ -189,7 +205,7 @@ module InitialCondition
       use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx) :: pressure,Bphi,Atheta
+      real, dimension(nx) :: pressure,Bphi,Atheta,BB
       real, dimension(mx) :: rr_sph,rr_cyl
       real, dimension(nx) :: tmp
       real, dimension(0:nx) :: tmp2
@@ -215,7 +231,12 @@ module InitialCondition
 !
 !  The following line assumes mu0=1
 !
-        Bphi = sqrt(2*pressure/plasma_beta)
+        BB = sqrt(2*pressure/plasma_beta)
+        if (lcap_field) then 
+          call cap_field(BB,Bphi)
+        else
+          Bphi=BB
+        endif
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
@@ -256,7 +277,8 @@ module InitialCondition
 !
 !  The following line assumes mu0=1
 !
-        Bphi = sqrt(2*pressure/plasma_beta)
+        BB = sqrt(2*pressure/plasma_beta)
+        call cap_field(BB,Bphi)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
@@ -301,6 +323,37 @@ module InitialCondition
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
+    subroutine cap_field(Bin,Bout)
+!                                                                                    
+      use Sub, only: step_scalar
+!                                                                                    
+      real, dimension(nx) :: Bin,Bout
+      real :: width
+      integer :: i
+!                                                                                    
+      do i=1,nx
+         width=5./dx_1(i-1+l1)
+         Bout(i) = Bin(i) * &
+             (step_scalar(x(i),rm_int,width)-&
+              step_scalar(x(i),rm_ext,width))
+      enddo
+!                                                                                    
+    endsubroutine cap_field
+!***********************************************************************
+    subroutine initial_condition_ss(f)
+!
+!  Initialize entropy.
+!
+!  07-may-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  SAMPLE IMPLEMENTATION
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_ss
+!***********************************************************************     
     subroutine set_sound_speed(f)
 !
 !  Set the thermo-related quantities. Illustrates that 
