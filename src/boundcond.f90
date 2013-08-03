@@ -486,6 +486,9 @@ module Boundcond
               case ('v')
                 ! BCY_DOC: vanishing third derivative
                 call bc_van_y(f,topbot,j)
+              case ('v3')
+                ! BCY_DOC: vanishing third derivative
+                call bc_van3rd_y(f,topbot,j)
               case ('1s')
                 ! BCY_DOC: onesided
                 call bc_onesided_y(f,topbot,j)
@@ -3080,6 +3083,60 @@ module Boundcond
 !
     endsubroutine bc_van_z
 !***********************************************************************
+    subroutine bc_van3rd_y(f,topbot,j)
+!
+!  Boundary condition with vanishing 3rd derivative
+!  (useful for vertical hydrostatic equilibrium in discs)
+!
+!  30-jul-13/wlad: copied from z
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
+      integer :: i,stat
+!
+!  Allocate memory for large arrays.
+!
+      allocate(cpoly0(mx,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_y', &
+          'Could not allocate memory for cpoly0')
+      allocate(cpoly1(mx,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_y', &
+          'Could not allocate memory for cpoly1')
+      allocate(cpoly2(mx,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_van3rd_y', &
+          'Could not allocate memory for cpoly2')
+!
+      select case (topbot)
+!
+      case ('bot')
+        cpoly0(:,:)=alog(f(:,m1,:,j))
+        cpoly1(:,:)=-(3*alog(f(:,m1,:,j))-4*alog(f(:,m1+1,:,j))+alog(f(:,m1+2,:,j)))/(2*dy)
+        cpoly2(:,:)=-(-alog(f(:,m1,:,j))+2*alog(f(:,m1+1,:,j))-alog(f(:,m1+2,:,j))) /(2*dy**2)
+        do i=1,nghost
+          f(:,m1-i,:,j) = exp(cpoly0(:,:) - cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
+        enddo
+!
+      case ('top')
+        cpoly0(:,:)=alog(f(:,m2,:,j))
+        cpoly1(:,:)=-(-3*alog(f(:,m2,:,j))+4*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy)
+        cpoly2(:,:)=-(-alog(f(:,m2,:,j))+2*alog(f(:,m2-1,:,j))-alog(f(:,m2-2,:,j)))/(2*dy**2)
+        do i=1,nghost
+          f(:,m2+i,:,j) = exp(cpoly0(:,:) + cpoly1(:,:)*i*dy + cpoly2(:,:)*(i*dy)**2)
+        enddo
+!
+      endselect
+!
+!  Deallocate arrays.
+!
+      if (allocated(cpoly0)) deallocate(cpoly0)
+      if (allocated(cpoly1)) deallocate(cpoly1)
+      if (allocated(cpoly2)) deallocate(cpoly2)
+!
+    endsubroutine bc_van3rd_y
+!***********************************************************************
     subroutine bc_van3rd_z(f,topbot,j)
 !
 !  Boundary condition with vanishing 3rd derivative
@@ -3842,40 +3899,41 @@ module Boundcond
     subroutine bcx_extrap_2_3(f,topbot,j)
 !
 !  Extrapolation boundary condition in logarithm:
-!  It maintains a power law
+!  It maintains a power law.
+!
+!  y_{b+i} = y_b + a * (x_{b+1} - x_b)
+! 
+!  where a = (y_b - y_{b-1})/(x_b-x_{b-1})
 !
 !  18-dec-08/wlad: coded
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
+      real :: yl1,ypi,ymi,xl1,xmi,xpi,yyi,xl2,yl2
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
         do i=1,nghost
-          do n=1,mz
-            do m=1,my
-              if (f(l1+i,m,n,j)/=0.) then
-                f(l1-i,m,n,j)=f(l1,m,n,j)**2/f(l1+i,m,n,j)
-              else
-                f(l1-i,m,n,j)=0.
-              endif
-            enddo
-          enddo
+          do n=1,mz;do m=1,my
+            yl1=alog(f(l1,m,n,j)) ; ypi=alog(f(l1+i,m,n,j))
+            xl1=alog(x(l1)) ; xmi=alog(x(l1-i)) ; xpi=alog(x(l1+i))
+!
+            yyi = yl1 - (ypi-yl1)*(xl1-xmi)/(xpi-xl1)
+            f(l1-i,m,n,j) = exp(yyi)
+          enddo;enddo
         enddo
 !
       case ('top')               ! top boundary
         do i=1,nghost
-          do n=1,mz
-            do m=1,my
-              if (f(l2-i,m,n,j)/=0.) then
-                f(l2+i,m,n,j)=f(l2,m,n,j)**2/f(l2-i,m,n,j)
-              else
-                f(l2+i,m,n,j)=0.
-              endif
-            enddo
-          enddo
+          do n=1,mz;do m=1,my
+            yl2=alog(f(l2,m,n,j)) ; ymi=alog(f(l2-i,m,n,j))
+            xpi=alog(x(l2+i)) ; xl2=alog(x(l2)) ; xmi=alog(x(l2-i))
+!
+            yyi = yl2 + (yl2-ymi)*(xpi-xl2)/(xl2-xmi)
+            f(l2+i,m,n,j) = exp(yyi)
+          enddo;enddo
         enddo
 !
       case default
