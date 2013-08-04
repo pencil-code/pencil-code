@@ -13,11 +13,13 @@
 ;
 ;  Parameters:
 ;   * in             1D or multi-dimensional data array
-;   * source         original grid structure
-;   * slice_gird     (optional) returns the grid coordinates of the slice
 ;   * anchor         anchor point grid coordinates [array of three components]
 ;   * theta          rotation angle around Z-axis (0°-360°)
 ;   * phi            rotation angle around the horizontal axis (0°-360°)
+;  Optional parameters:
+;   * dim            original dim structure
+;   * grid           original grid structure
+;   * slice_gird     (optional) returns the grid coordinates of the slice
 ;
 ;   The horizontal axis for phi-rotation is defined by the cut of the XZ-plane
 ;   after theta-rotation with the XY-plane going though the anchor point.
@@ -32,18 +34,18 @@
 ;   IDL> anchor = [ 1.2, 3.4, 5.6 ]
 ;   IDL> theta = 75.6
 ;   IDL> phi = 12.3
-;   IDL> Temp_slice = pc_slice_2d (Temp, grid, anchor, theta, phi, slice_grid=slice_grid, dim=dim)
+;   IDL> Temp_slice = pc_slice_2d (Temp, anchor, theta, phi, dim=dim, grid=grid, slice_grid=slice_grid)
 ;
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, grid=in_grid, dim=dim, zoom=zoom
+function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, dim=dim, zoom=zoom
 
-	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
+	if ((n_elements (in) eq 0) or (n_elements (in_grid) eq 0)) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
-		print, "slice = pc_slice_2d (data, source_grid, anchor, theta, phi, slice_grid=slice_grid)"
+		print, "slice = pc_slice_2d (data, anchor, theta, phi, grid=source_grid, slice_grid=target_grid)"
 		print, ""
 		return, -1
 	end
