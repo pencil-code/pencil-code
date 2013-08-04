@@ -56,11 +56,12 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, grid=in
 
 	in_size = size (in)
 	n_dim = in_size[0]
-	if (n_dim ne 3) then message, "ERROR: the input data must be 3-dimensional."
+	if ((n_dim lt 3) or (n_dim gt 4)) then message, "ERROR: the input data must be 3- or 4-dimensional."
 
 	x_size = in_size[1]
 	y_size = in_size[2]
 	z_size = in_size[3]
+	if (n_dim eq 4) then num_comp = in_size[4] else num_comp = 1
 
 	if (n_elements (in_grid) eq 0) then in_grid = { x:dindgen (x_size), y:dindgen (y_size), z:dindgen (z_size), lequidist:[1,1,1], lperi:[0,0,0], dx_1:1.0, dy_1:1.0, dz_1:1.0 }
 
@@ -81,7 +82,7 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, grid=in
 	d_min = max ([ mean (in_grid.dx), mean (in_grid.dy), mean (in_grid.dz) ]) / zoom
 	num_points = ceil (L_diagonal / d_min)
 	num_points += 1 - (num_points mod 2)
-	out = make_array (num_points, num_points, /double, value=NaN)
+	out = make_array (num_points, num_points, num_comp, /double, value=NaN)
 
 	; Construct equidistant grid coordinates of input data
 	Lx_i = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx]
@@ -155,45 +156,47 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, grid=in
 			fy = (target[ph,pv,1] - in_grid.y[py]) / (in_grid.y[py+1] - in_grid.y[py])
 			fz = (target[ph,pv,2] - in_grid.z[pz]) / (in_grid.z[pz+1] - in_grid.z[pz])
 
-			; Find interpolated values of the target projection to the 12 edges
-;			xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ] + fz * in[px  ,py  ,pz+1]
-;			xl_yu = (1.0 - fz) * in[px  ,py+1,pz  ] + fz * in[px  ,py+1,pz+1]
-;			xu_yl = (1.0 - fz) * in[px+1,py  ,pz  ] + fz * in[px+1,py  ,pz+1]
-;			xu_yu = (1.0 - fz) * in[px+1,py+1,pz  ] + fz * in[px+1,py+1,pz+1]
-			xl_zl = (1.0 - fy) * in[px  ,py  ,pz  ] + fy * in[px  ,py+1,pz  ]
-			xl_zu = (1.0 - fy) * in[px  ,py  ,pz+1] + fy * in[px  ,py+1,pz+1]
-			xu_zl = (1.0 - fy) * in[px+1,py  ,pz  ] + fy * in[px+1,py+1,pz  ]
-			xu_zu = (1.0 - fy) * in[px+1,py  ,pz+1] + fy * in[px+1,py+1,pz+1]
-;			yl_zl = (1.0 - fx) * in[px  ,py  ,pz  ] + fx * in[px+1,py  ,pz  ]
-;			yl_zu = (1.0 - fx) * in[px  ,py  ,pz+1] + fx * in[px+1,py  ,pz+1]
-;			yu_zl = (1.0 - fx) * in[px  ,py+1,pz  ] + fx * in[px+1,py+1,pz  ]
-;			yu_zu = (1.0 - fx) * in[px  ,py+1,pz+1] + fx * in[px+1,py+1,pz+1]
+			for pa = 0, num_comp-1 do begin
+				; Find interpolated values of the target projection to the 12 edges
+;				xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ,pa] + fz * in[px  ,py  ,pz+1,pa]
+;				xl_yu = (1.0 - fz) * in[px  ,py+1,pz  ,pa] + fz * in[px  ,py+1,pz+1,pa]
+;				xu_yl = (1.0 - fz) * in[px+1,py  ,pz  ,pa] + fz * in[px+1,py  ,pz+1,pa]
+;				xu_yu = (1.0 - fz) * in[px+1,py+1,pz  ,pa] + fz * in[px+1,py+1,pz+1,pa]
+				xl_zl = (1.0 - fy) * in[px  ,py  ,pz  ,pa] + fy * in[px  ,py+1,pz  ,pa]
+				xl_zu = (1.0 - fy) * in[px  ,py  ,pz+1,pa] + fy * in[px  ,py+1,pz+1,pa]
+				xu_zl = (1.0 - fy) * in[px+1,py  ,pz  ,pa] + fy * in[px+1,py+1,pz  ,pa]
+				xu_zu = (1.0 - fy) * in[px+1,py  ,pz+1,pa] + fy * in[px+1,py+1,pz+1,pa]
+;				yl_zl = (1.0 - fx) * in[px  ,py  ,pz  ,pa] + fx * in[px+1,py  ,pz  ,pa]
+;				yl_zu = (1.0 - fx) * in[px  ,py  ,pz+1,pa] + fx * in[px+1,py  ,pz+1,pa]
+;				yu_zl = (1.0 - fx) * in[px  ,py+1,pz  ,pa] + fx * in[px+1,py+1,pz  ,pa]
+;				yu_zu = (1.0 - fx) * in[px  ,py+1,pz+1,pa] + fx * in[px+1,py+1,pz+1,pa]
 
-			; Find interpolated values of the target projection to the 6 sides
-			; For the soap film, there are two identical solutions for interpolation (commented out duplicate ones)
-			xy_l = (1.0 - fx) * xl_zl + fx * xu_zl
-			xy_u = (1.0 - fx) * xl_zu + fx * xu_zu
-;			xy_l = (1.0 - fy) * yl_zl + fy * yu_zl
-;			xy_u = (1.0 - fy) * yl_zu + fy * yu_zu
-;			xz_l = (1.0 - fx) * xl_yl + fx * xu_yl
-;			xz_u = (1.0 - fx) * xl_yu + fx * xu_yu
-;			xz_l = (1.0 - fz) * yl_zl + fz * yl_zu
-;			xz_u = (1.0 - fz) * yu_zl + fz * yu_zu
-;			yz_l = (1.0 - fy) * xl_yl + fy * xu_yl
-;			yz_u = (1.0 - fy) * xl_yu + fy * xu_yu
-;			yz_l = (1.0 - fz) * xl_zl + fz * xl_zu
-;			yz_u = (1.0 - fz) * xl_zl + fz * xl_zu
+				; Find interpolated values of the target projection to the 6 sides
+				; For the soap film, there are two identical solutions for interpolation (commented out duplicate ones)
+				xy_l = (1.0 - fx) * xl_zl + fx * xu_zl
+				xy_u = (1.0 - fx) * xl_zu + fx * xu_zu
+;				xy_l = (1.0 - fy) * yl_zl + fy * yu_zl
+;				xy_u = (1.0 - fy) * yl_zu + fy * yu_zu
+;				xz_l = (1.0 - fx) * xl_yl + fx * xu_yl
+;				xz_u = (1.0 - fx) * xl_yu + fx * xu_yu
+;				xz_l = (1.0 - fz) * yl_zl + fz * yl_zu
+;				xz_u = (1.0 - fz) * yu_zl + fz * yu_zu
+;				yz_l = (1.0 - fy) * xl_yl + fy * xu_yl
+;				yz_u = (1.0 - fy) * xl_yu + fy * xu_yu
+;				yz_l = (1.0 - fz) * xl_zl + fz * xl_zu
+;				yz_u = (1.0 - fz) * xl_zl + fz * xl_zu
 
-			; Find interpolated value of the target point
-			out[ph,pv] = (1.0 - fz) * xy_l + fz * xy_u
-;			out[ph,pv] = (1.0 - fy) * xz_l + fy * xz_u
-;			out[ph,pv] = (1.0 - fx) * yz_l + fx * yz_u
-;			*** WORK HERE:
-;			*** Need to check if these three values really are identical (theoretically, they should).
+				; Find interpolated value of the target point
+				out[ph,pv,pa] = (1.0 - fz) * xy_l + fz * xy_u
+;				out[ph,pv,pa] = (1.0 - fy) * xz_l + fy * xz_u
+;				out[ph,pv,pa] = (1.0 - fx) * yz_l + fx * yz_u
+;	*** WORK HERE:
+;	*** Need to check if these three values really are identical (theoretically, they should).
+			end
 		end
 	end
 
-	return, out
+	return, out[*,*,0:num_comp-1]
 
 end
 
