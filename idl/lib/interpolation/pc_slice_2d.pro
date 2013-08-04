@@ -77,9 +77,9 @@ function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, d
 
 	; Construct output slice
 	max_size = max ([ x_size, y_size, z_size ])
-	Lx = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx] + in_grid.lperi[0] * mean (in_grid.dx)
-	Ly = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty] + in_grid.lperi[1] * mean (in_grid.dy)
-	Lz = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz] + in_grid.lperi[2] * mean (in_grid.dz)
+	Lx = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx] + in_grid.lperi[0] * mean (1/in_grid.dx_1)
+	Ly = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty] + in_grid.lperi[1] * mean (1/in_grid.dy_1)
+	Lz = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz] + in_grid.lperi[2] * mean (1/in_grid.dz_1)
 	L_diagonal = sqrt (Lx^2 + Ly^2 + Lz^2)
 	d_min = max ([ mean (in_grid.dx), mean (in_grid.dy), mean (in_grid.dz) ]) / zoom
 	num_points = ceil (L_diagonal / d_min)
