@@ -29,11 +29,12 @@ module Particles_adaptation
 !
   include 'particles_adaptation.h'
 !
-  integer :: npar_target=100, npar_deviation=50
+  integer :: npar_target = 8
+  integer :: npar_min = 4, npar_max = 16
   character (len=labellen) :: adaptation_method='random'
 !
   namelist /particles_adapt_run_pars/ &
-      npar_target, npar_deviation, adaptation_method
+      npar_target, npar_min, npar_max, adaptation_method
 !
   contains
 !***********************************************************************
@@ -70,126 +71,124 @@ module Particles_adaptation
 !  Adapt the number of particles in each grid cell to a desired value, under
 !  conservation of mass and momentum.
 !
-!  03-apr-13/anders: coded
+!  14-may-13/ccyang+anders: coded
 !
-      use General, only: random_number_wrapper
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mpvar), intent(inout) :: fp
+      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
+      integer, dimension(mpar_loc), intent(inout) :: ipar
+      integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc) :: ipar
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      real :: new_weight, vpxm, vpym, vpzm, vpxrms, vpyrms, vpzrms
-      real :: r, p
+      real, dimension(max(maxval(npar_imn),1),mpvar) :: fp1
+      real, dimension(npar_target,mpvar) :: fp2
       integer, dimension(nx) :: np, k1_l, k2_l
-      integer :: k, l, ix, iy, iz, ix1
+      integer :: npar_new
+      integer :: k, ix, iy, iz
 !
 !  Do particle adaptation pencil by pencil.
 !
-      do imn=ny*nz,1,-1
-        if (npar_imn(imn)/=0) then
-          iy=mm(imn)
-          iz=nn(imn)
+      npar_new = 0
+      pencil: do imn = 1, ny * nz
+        if (npar_imn(imn) <= 0) cycle pencil
+        iy = mm(imn)
+        iz = nn(imn)
 !
-!  Sort particles by the grid cell within each pencil.
+!  Count the number of particles in each cell along the pencil.
 !
-          np=0
-          do k=k1_imn(imn),k2_imn(imn)
-            ix=ineargrid(k,1)
-            ix1=ix-nghost
-            np(ix1)=np(ix1)+1
-          enddo
+        np = 0
+        count: do k = k1_imn(imn), k2_imn(imn)
+          ix = ineargrid(k,1) - nghost
+          if (ix < 1 .or. ix > nx) &
+            call fatal_error_local('particles_adaptation_pencils', 'a particle is detected outside the processor boundary. ')
+          np(ix) = np(ix) + 1
+        enddo count
 !
 !  Create the beginning index of particles in each cell.
 !
-          k1_l(1)=k1_imn(imn)
-          do ix1=2,nx
-            k1_l(ix1)=k1_l(ix1-1)+np(ix1-1)
-          enddo
+        k1_l(1) = 1
+        cumulate: do ix = 2, nx
+          k1_l(ix) = k1_l(ix-1) + np(ix-1)
+        enddo cumulate
 !
-!  Place sorted particles temporarily in the dfp array.
+!  Bin particles to each cell.
 !
-          k2_l=k1_l
-          do k=k1_imn(imn),k2_imn(imn)
-            ix=ineargrid(k,1)
-            ix1=ix-nghost
-            dfp(k2_l(ix1),:)=fp(k,:)
-            k2_l(ix1)=k2_l(ix1)+1
-          enddo
-          k2_l=k1_l+np-1
+        k2_l = k1_l - 1
+        bin: do k = k1_imn(imn), k2_imn(imn)
+          ix = ineargrid(k,1) - nghost
+          k2_l(ix) = k2_l(ix) + 1
+          fp1(k2_l(ix),:) = fp(k,:)
+        enddo bin
 !
-!  Put sorted particles back into the fp array.
+!  Check the number of particles in each cell.
 !
-          fp(k1_imn(imn):k2_imn(imn),:)=dfp(k1_imn(imn):k2_imn(imn),:)
+        scan: do ix = 1, nx
+          if (np(ix) <= 0) cycle scan
 !
-!  Particle adaptation can be done using several methods. The simplest one is
-!  'random' which removes particles randomly and creates particles with random
-!  positions and velocities.
+          adapt: if (np(ix) < npar_min .or. np(ix) > npar_max) then
 !
-          select case (adaptation_method)
+!           Too many or too little particles - apply adaptation.
 !
-          case ('random')
+            method: select case (adaptation_method)
+            case ('random') method
+              call new_population_random(np(ix), npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2)
+            case ('LBG') method ! to be implemented
+              call fatal_error('particles_adaptation_pencils', 'LBG method under construction')
+            case default method
+              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+            endselect method
 !
-!  We need to count backwards in the array of sorted particles in order to be
-!  able to remove particles without damaging the particle index arrays k1_l
-!  and k2_l.
+            dfp(npar_new+1:npar_new+npar_target,:) = fp2
+            npar_new = npar_new + npar_target
+          else adapt
 !
-            do ix=l2,l1,-1
-              ix1=ix-nghost
+!           No adaptation is needed.
 !
-!  Destroy particles if there are too many.
+            dfp(npar_new+1:npar_new+np(ix),:) = fp1(k1_l(ix):k2_l(ix),:)
+            npar_new = npar_new + np(ix)
+          endif adapt
+        enddo scan
+      enddo pencil
 !
-              if (np(ix1)>npar_target+npar_deviation) then 
-                new_weight=sum(fp(k1_l(ix1):k2_l(ix1),irhopswarm))/npar_target
-                do k=k2_l(ix1),k1_l(ix1)+npar_target,-1
-                  call remove_particle(fp,ipar,k)
-                enddo
-                fp(k1_l(ix1):k1_l(ix1)+npar_target-1,irhopswarm)=new_weight
-              endif
+!  Reconstruct the fp array.
 !
-!  Create particles if there are too few.
-!
-              if (np(ix1)<npar_target-npar_deviation) then 
-                new_weight=sum(fp(k1_l(ix1):k2_l(ix1),irhopswarm))/npar_target
-                fp(k1_l(ix1):k2_l(ix1),irhopswarm)=new_weight
-                vpxm=sum(fp(k1_l(ix1):k2_l(ix1),ivpx))/np(ix1)
-                vpym=sum(fp(k1_l(ix1):k2_l(ix1),ivpy))/np(ix1)
-                vpzm=sum(fp(k1_l(ix1):k2_l(ix1),ivpz))/np(ix1)
-                vpxrms=sqrt(sum((fp(k1_l(ix1):k2_l(ix1),ivpx)-vpxm)**2)/np(ix1))
-                vpyrms=sqrt(sum((fp(k1_l(ix1):k2_l(ix1),ivpy)-vpym)**2)/np(ix1))
-                vpzrms=sqrt(sum((fp(k1_l(ix1):k2_l(ix1),ivpz)-vpzm)**2)/np(ix1))
-                do k=npar_loc+1,npar_loc+npar_target-np(ix1)
-                  call random_number_wrapper(fp(k,ixp))
-                  call random_number_wrapper(fp(k,iyp))
-                  call random_number_wrapper(fp(k,izp))
-                  fp(k,ixp)=x(ix)+(fp(k,ixp)-0.5)*dx
-                  fp(k,iyp)=y(iy)+(fp(k,iyp)-0.5)*dy
-                  fp(k,izp)=z(iz)+(fp(k,izp)-0.5)*dz
-                  call random_number_wrapper(r)
-                  call random_number_wrapper(p)
-                  fp(k,ivpx)=vpxm+vpxrms*sqrt(-2*log(r))*sin(2*pi*p)
-                  call random_number_wrapper(r)
-                  call random_number_wrapper(p)
-                  fp(k,ivpy)=vpym+vpyrms*sqrt(-2*log(r))*sin(2*pi*p)
-                  call random_number_wrapper(r)
-                  call random_number_wrapper(p)
-                  fp(k,ivpz)=vpzm+vpzrms*sqrt(-2*log(r))*sin(2*pi*p)
-                  fp(k,irhopswarm)=new_weight
-                enddo
-                npar_loc=npar_loc+npar_target-np(ix1)
-              endif
-            enddo
-!
-          case ('LBG') ! to be implemented
-!
-          endselect
-!
-       endif
-!
-      enddo
+      fp(1:npar_new,:) = dfp(1:npar_new,:)
+      npar_loc = npar_new
 !
     endsubroutine particles_adaptation_pencils
+!***********************************************************************
+    subroutine new_population_random(npar_old, npar_new, fp_old, fp_new)
+!
+!  Randomly popoluates npar_new particles with approximately the same
+!  center of mass and total linear momentum.
+!
+!  14-may-13/ccyang: coded
+!
+      integer, intent(in) :: npar_old, npar_new
+      real, dimension(npar_old,mpvar), intent(in) :: fp_old
+      real, dimension(npar_new,mpvar), intent(out) :: fp_new
+!
+      integer, dimension(3) :: ipx, ipv
+      real :: mx, dmx, mv, dmv, mtot
+      real :: c1, c2
+!
+      integer :: i
+!
+      ipx = (/ ixp, iyp, izp /)
+      ipv = (/ ivpx, ivpy, ivpz /)
+!
+      mtot = sum(fp_old(:,irhopswarm))
+      fp_new(:,irhopswarm) = mtot / real(npar_new)
+      c1 = real(npar_old) / mtot
+      c2 = real(npar_new) / mtot
+!
+      dir: do i = 1, 3
+        call statistics(fp_old(:,irhopswarm) * fp_old(:,ipx(i)), mx, dmx)
+        call statistics(fp_old(:,irhopswarm) * fp_old(:,ipv(i)), mv, dmv)
+        call random_normal(c1 * mx, c1 * dmx, fp_new(:,ipx(i)))
+        call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
+      enddo dir
+!
+    endsubroutine new_population_random
 !***********************************************************************
     subroutine read_particles_adapt_run_pars(unit,iostat)
 !
@@ -237,5 +236,43 @@ module Particles_adaptation
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_adaptation
+!***********************************************************************
+    subroutine statistics(a, mean, stddev)
+!
+!  Find the mean and standard deviation of an array.
+!
+!  14-may-13/ccyang: coded
+!
+      real, dimension(:), intent(in) :: a
+      real, intent(out) :: mean, stddev
+!
+      real :: c
+!
+      c = 1.0 / real(size(a))
+!
+      mean = c * sum(a)
+      stddev = sqrt(c * sum(a**2) - mean**2)
+!
+    endsubroutine statistics
+!***********************************************************************
+    subroutine random_normal(mean, width, a)
+!
+!  Randomly assigns the elements of a array with a normal distribution
+!  of mean and width.
+!
+!  14-may-13/ccyang: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, intent(in) :: mean, width
+      real, dimension(:), intent(out) :: a
+!
+      real, dimension(size(a)) :: r, p
+!
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
+      a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
+!
+    endsubroutine random_normal
 !***********************************************************************
 endmodule Particles_adaptation
