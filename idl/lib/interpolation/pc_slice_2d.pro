@@ -9,16 +9,17 @@
 ;   and extends it from a 2D minimal bilinear surface solution to an
 ;   interpolation in 3D between source data points given on a cartesian grid.
 ;   Even though we cheat here a bit for simplicity, a real minimal bilinear
-;   surface would be more complicated than this edge-interpolation method.
+;   surface would be more complicated than this edge-interpolation method,
+;   still this tri-linear cuboid interpolation is a good approximation.
 ;
 ;  Parameters:
 ;   * in             1D or multi-dimensional data array
+;   * source         original grid structure
 ;   * anchor         anchor point grid coordinates [array of three components]
 ;   * theta          rotation angle around Z-axis (0°-360°)
 ;   * phi            rotation angle around the horizontal axis (0°-360°)
 ;  Optional parameters:
 ;   * dim            original dim structure
-;   * grid           original grid structure
 ;   * slice_gird     (optional) returns the grid coordinates of the slice
 ;
 ;   The horizontal axis for phi-rotation is defined by the cut of the XZ-plane
@@ -34,23 +35,22 @@
 ;   IDL> anchor = [ 1.2, 3.4, 5.6 ]
 ;   IDL> theta = 75.6
 ;   IDL> phi = 12.3
-;   IDL> Temp_slice = pc_slice_2d (Temp, anchor, theta, phi, dim=dim, grid=grid, slice_grid=slice_grid)
+;   IDL> Temp_slice = pc_slice_2d (Temp, grid, anchor, theta, phi, dim=dim, slice_grid=slice_grid)
 ;
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, dim=dim, zoom=zoom
+function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, nh=nh, nv=nv, slice_grid=target, dim=dim, datadir=datadir
 
-	if ((n_elements (in) eq 0) or (n_elements (in_grid) eq 0)) then begin
+	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
-		print, "slice = pc_slice_2d (data, anchor, theta, phi, grid=source_grid, slice_grid=target_grid)"
+		print, "slice = pc_slice_2d (data, source, anchor, theta, phi, slice_grid=target_grid)"
 		print, ""
 		return, -1
 	end
 
-	if (n_elements (dim) eq 0) then pc_read_dim, obj=dim
 	if (n_elements (zoom) eq 0) then zoom = 1
 
 	NaN = !Values.D_NaN
@@ -60,106 +60,116 @@ function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, d
 	n_dim = in_size[0]
 	if ((n_dim lt 3) or (n_dim gt 4)) then message, "ERROR: the input data must be 3- or 4-dimensional."
 
+	if (n_elements (dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir
+	if (in_size[1] eq dim.nxgrid) then nghostx = 0 else nghostx = dim.nghostx
+	if (in_size[2] eq dim.nygrid) then nghosty = 0 else nghosty = dim.nghosty
+	if (in_size[3] eq dim.nzgrid) then nghostz = 0 else nghostz = dim.nghostz
+
 	x_size = in_size[1]
 	y_size = in_size[2]
 	z_size = in_size[3]
 	if (n_dim eq 4) then num_comp = in_size[4] else num_comp = 1
 
-	if (n_elements (in_grid) eq 0) then in_grid = { x:dindgen (x_size), y:dindgen (y_size), z:dindgen (z_size), lequidist:[1,1,1], lperi:[0,0,0], dx_1:1.0, dy_1:1.0, dz_1:1.0 }
-
-	if (in_size[1] eq dim.nxgrid) then nghostx = 0 else nghostx = dim.nghostx
-	if (in_size[2] eq dim.nygrid) then nghosty = 0 else nghosty = dim.nghosty
-	if (in_size[3] eq dim.nzgrid) then nghostz = 0 else nghostz = dim.nghostz
-
-	ax = anchor[0]
-	ay = anchor[1]
-	az = anchor[2]
+	if (n_elements (source) eq 0) then begin
+		if (not keyword_set (dx)) then dx = 1.0
+		if (not keyword_set (dy)) then dy = 1.0
+		L_diagonal = sqrt ((x_size/dx)^2 + (y_size/dx)^2 + (z_size/dy)^2)
+	end else begin
+		if (not keyword_set (dx)) then dx = mean ([ source.dx, source.dy ])
+		if (not keyword_set (dy)) then dy = source.dz
+		L_diagonal = sqrt (source.Lx^2 + source.Ly^2 + source.Lz^2)
+	end
+	if (not keyword_set (nh)) then begin
+		nh = round (L_diagonal / dx)
+		dx = L_diagonal / nh
+	end
+	if (not keyword_set (nv)) then begin
+		nv = round (L_diagonal / dy)
+		dy = L_diagonal / nv
+	end
+	x = dx * dindgen (nh)
+	y = x
+	z = dy * dindgen (nv)
+	if (n_elements (source) eq 0) then begin
+		Lx = nh * dx
+		Lz = nv * dy
+		source = { x:x, y:y, z:z, lequidist:[1,1,1], lperi:[0,0,0], Lx:Lx, Ly:Lx, Lz:Lz, dx:dx, dy:dx, dz:dy, dx_1:1.0/dx, dy_1:1.0/dx, dz_1:1.0/dy }
+	end
 
 	; Construct output slice
-	max_size = max ([ x_size, y_size, z_size ])
-	Lx = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx] + in_grid.lperi[0] * mean (1/in_grid.dx_1)
-	Ly = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty] + in_grid.lperi[1] * mean (1/in_grid.dy_1)
-	Lz = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz] + in_grid.lperi[2] * mean (1/in_grid.dz_1)
-	L_diagonal = sqrt (Lx^2 + Ly^2 + Lz^2)
-	d_min = max ([ mean (in_grid.dx), mean (in_grid.dy), mean (in_grid.dz) ]) / zoom
-	num_points = ceil (L_diagonal / d_min)
-	num_points += 1 - (num_points mod 2)
-	out = make_array (num_points, num_points, num_comp, /double, value=NaN)
+	out = make_array ([ nh, nv, num_comp ], /double, value=NaN)
 
-	; Construct equidistant grid coordinates of input data
-	Lx_i = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx]
-	Ly_i = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty]
-	Lz_i = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz]
-	L_max = max ([ Lx_i, Ly_i, Lz_i ])
-	mid = (num_points - 1) / 2
-	grid = (dindgen (num_points) - mid) / (max_size-1) * L_max
+	if (n_elements (target) eq 0) then begin
+		; Construct grid coordinates of output slice
+		target = make_array ([ nh, nv, 3 ], /double, value=NaN)
 
-	; Construct grid coordinates of output slice
-	target = make_array ([ num_points, num_points, 3 ], /double, value=NaN)
+		; Rotate XZ-plane around Z-axis (theta)
+		theta_null = any (theta eq [-360,-180,0,180,360])
+		if (theta_null) then cos_theta = 1.0 else cos_theta = cos (theta * pi_180)
+		if (theta_null) then sin_theta = 0.0 else sin_theta = sin (theta * pi_180)
+		tx = x * cos_theta
+		ty = y * sin_theta
+		for pv = 0, nv-1 do begin
+			; X and Y coordinates
+			target[*,pv,0] = tx
+			target[*,pv,1] = ty
+		end
 
-	; Rotate XZ-plane around Z-axis (theta)
-	cos_theta = cos (theta * pi_180)
-	sin_theta = sin (theta * pi_180)
-	x = grid * cos_theta
-	y = grid * sin_theta
-	for pv = 0, num_points-1 do begin
-		; X and Y coordinates
-		target[*,pv,0] = x
-		target[*,pv,1] = y
+		; Rotate theta-rotated XZ-plane around theta-rotated x-axis (phi)
+		phi_null = any (phi eq [-360,-180,0,180,360])
+		if (phi_null) then cos_phi = 1.0 else cos_phi = cos (phi * pi_180)
+		if (phi_null) then sin_phi = 0.0 else sin_phi = sin (phi * pi_180)
+		add_x = source.x * sin_phi * sin_theta
+		add_y = source.y * sin_phi * cos_theta
+		tz = z * cos_phi
+		for ph = 0, nh-1 do begin
+			; X and Y coordinates
+			target[ph,*,0] -= add_x
+			target[ph,*,1] += add_y
+			; Z coordinates
+			target[ph,*,2] = tz
+		end
+
+		; Shift to the anchor position
+		target[*,*,0] += anchor[0]
+		target[*,*,1] += anchor[1]
+		target[*,*,2] += anchor[2]
 	end
 
-	; Rotate theta-rotated XZ-plane around theta-rotated x-axis (phi)
-	cos_phi = cos (phi * pi_180)
-	sin_phi = sin (phi * pi_180)
-	add_x = grid * sin_phi * sin_theta
-	add_y = grid * sin_phi * cos_theta
-	z = grid * cos_phi
-	for ph = 0, num_points-1 do begin
-		; X and Y coordinates
-		target[ph,*,0] -= add_x
-		target[ph,*,1] += add_y
-		; Z coordinates
-		target[ph,*,2] = z
-	end
-
-	; Shift to the anchor position
-	target[*,*,0] += ax
-	target[*,*,1] += ay
-	target[*,*,2] += az
-
-	; soap-film interpolation to the target slice grid coordinates
-	for ph = 0, num_points-1 do begin
-		for pv = 0, num_points-1 do begin
+	; Interpolation to the target slice grid coordinates
+	for ph = 0, nh-1 do begin
+		for pv = 0, nv-1 do begin
 
 			; Find grid coordinates closest to the target coordinate
-			px = pc_find_index (target[ph,pv,0], in_grid.x, num=x_size, /round)
-			py = pc_find_index (target[ph,pv,1], in_grid.y, num=y_size, /round)
-			pz = pc_find_index (target[ph,pv,2], in_grid.z, num=z_size, /round)
+			px = pc_find_index (target[ph,pv,0], source.x, num=x_size, /round)
+			py = pc_find_index (target[ph,pv,1], source.y, num=y_size, /round)
+			pz = pc_find_index (target[ph,pv,2], source.z, num=z_size, /round)
 
 			; Target position must still be inside the source data array
 			if ((px lt 0) or (py lt 0) or (pz lt 0)) then continue
 			if ((px ge x_size-1) or (py ge y_size-1) or (pz ge z_size-1)) then continue
 
 			; Find lower neighbouring grid coordinates of the target coordinate
-			if ((px ge 1) and (target[ph,pv,0] lt in_grid.x[px])) then px -= 1
-			if ((py ge 1) and (target[ph,pv,1] lt in_grid.y[py])) then py -= 1
-			if ((pz ge 1) and (target[ph,pv,2] lt in_grid.z[pz])) then pz -= 1
+			if ((px ge 1) and (target[ph,pv,0] lt source.x[px])) then px -= 1
+			if ((py ge 1) and (target[ph,pv,1] lt source.y[py])) then py -= 1
+			if ((pz ge 1) and (target[ph,pv,2] lt source.z[pz])) then pz -= 1
 
 			; Upper plane can be interpolated by using an inner grid cell
-			if (target[ph,pv,0] eq in_grid.z[x_size-1]) then px -= 1
-			if (target[ph,pv,1] eq in_grid.z[y_size-1]) then py -= 1
-			if (target[ph,pv,2] eq in_grid.z[z_size-1]) then pz -= 1
+			if (target[ph,pv,0] eq source.x[x_size-1]) then px -= 1
+			if (target[ph,pv,1] eq source.y[y_size-1]) then py -= 1
+			if (target[ph,pv,2] eq source.z[z_size-1]) then pz -= 1
 
 			; Target position must still be inside the source data array
 			if ((px lt 0) or (py lt 0) or (pz lt 0)) then continue
 
 			; Fraction of the target position to the side-length of the grid cell
-			fx = (target[ph,pv,0] - in_grid.x[px]) / (in_grid.x[px+1] - in_grid.x[px])
-			fy = (target[ph,pv,1] - in_grid.y[py]) / (in_grid.y[py+1] - in_grid.y[py])
-			fz = (target[ph,pv,2] - in_grid.z[pz]) / (in_grid.z[pz+1] - in_grid.z[pz])
+			fx = (target[ph,pv,0] - source.x[px]) / (source.x[px+1] - source.x[px])
+			fy = (target[ph,pv,1] - source.y[py]) / (source.y[py+1] - source.y[py])
+			fz = (target[ph,pv,2] - source.z[pz]) / (source.z[pz+1] - source.z[pz])
 
 			for pa = 0, num_comp-1 do begin
 				; Find interpolated values of the target projection to the 12 edges
+				; (Commented out duplicate definitions of the tri-linear interpolation)
 ;				xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ,pa] + fz * in[px  ,py  ,pz+1,pa]
 ;				xl_yu = (1.0 - fz) * in[px  ,py+1,pz  ,pa] + fz * in[px  ,py+1,pz+1,pa]
 ;				xu_yl = (1.0 - fz) * in[px+1,py  ,pz  ,pa] + fz * in[px+1,py  ,pz+1,pa]
@@ -174,7 +184,6 @@ function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, d
 ;				yu_zu = (1.0 - fx) * in[px  ,py+1,pz+1,pa] + fx * in[px+1,py+1,pz+1,pa]
 
 				; Find interpolated values of the target projection to the 6 sides
-				; For the soap film, there are two identical solutions for interpolation (commented out duplicate ones)
 				xy_l = (1.0 - fx) * xl_zl + fx * xu_zl
 				xy_u = (1.0 - fx) * xl_zu + fx * xu_zu
 ;				xy_l = (1.0 - fy) * yl_zl + fy * yu_zl
@@ -192,8 +201,6 @@ function pc_slice_2d, in, anchor, theta, phi, slice_grid=target, grid=in_grid, d
 				out[ph,pv,pa] = (1.0 - fz) * xy_l + fz * xy_u
 ;				out[ph,pv,pa] = (1.0 - fy) * xz_l + fy * xz_u
 ;				out[ph,pv,pa] = (1.0 - fx) * yz_l + fx * yz_u
-;	*** WORK HERE:
-;	*** Need to check if these three values really are identical (theoretically, they should).
 			end
 		end
 	end
