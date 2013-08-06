@@ -41,7 +41,7 @@
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, nh=nh, nv=nv, slice_grid=target, dim=dim, datadir=datadir, crop=crop
+function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dh=dh, dv=dv, nh=nh, nv=nv, slice_grid=target, dim=dim, datadir=datadir, crop=crop
 
 	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
 		; Print usage
@@ -70,33 +70,33 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, n
 	if (n_dim eq 4) then num_comp = in_size[4] else num_comp = 1
 
 	if (n_elements (source) eq 0) then begin
-		if (not keyword_set (dx)) then dx = 1.0
-		if (not keyword_set (dy)) then dy = 1.0
-		L_diagonal = sqrt ((x_size/dx)^2 + (y_size/dx)^2 + (z_size/dy)^2)
+		if (not keyword_set (dh)) then dh = 1.0
+		if (not keyword_set (dv)) then dv = 1.0
+		L_diagonal = sqrt ((x_size/dh)^2 + (y_size/dh)^2 + (z_size/dv)^2)
 	end else begin
-		if (not keyword_set (dx)) then dx = mean ([ source.dx, source.dy ])
-		if (not keyword_set (dy)) then dy = source.dz
+		if (not keyword_set (dh)) then dh = mean ([ source.dx, source.dy ])
+		if (not keyword_set (dv)) then dv = source.dz
 		L_diagonal = sqrt (source.Lx^2 + source.Ly^2 + source.Lz^2)
 	end
-	if (n_elements (zoom) ne 0) then begin
-		dx *= zoom
-		dy *= zoom
-	end
 	if (not keyword_set (nh)) then begin
-		nh = round (L_diagonal / dx)
-		dx = L_diagonal / nh
+		nh = round (L_diagonal / dh)
+		dh = L_diagonal / nh
 	end
 	if (not keyword_set (nv)) then begin
-		nv = round (L_diagonal / dy)
-		dy = L_diagonal / nv
+		nv = round (L_diagonal / dv)
+		dv = L_diagonal / nv
 	end
-	x = dx * (dindgen (nh) - 0.5*(nh-1))
+	if (n_elements (zoom) ne 0) then begin
+		dh /= zoom
+		dv /= zoom
+	end
+	x = dh * (dindgen (nh) - 0.5*(nh-1))
 	y = x
-	z = dy * (dindgen (nv) - 0.5*(nv-1))
+	z = dv * (dindgen (nv) - 0.5*(nv-1))
 	if (n_elements (source) eq 0) then begin
-		Lx = nh * dx
-		Lz = nv * dy
-		source = { x:x, y:y, z:z, lequidist:[1,1,1], lperi:[0,0,0], Lx:Lx, Ly:Lx, Lz:Lz, dx:dx, dy:dx, dz:dy, dx_1:1.0/dx, dy_1:1.0/dx, dz_1:1.0/dy }
+		Lx = nh * dh
+		Lz = nv * dv
+		source = { x:x, y:y, z:z, lequidist:[1,1,1], lperi:[0,0,0], Lx:Lx, Ly:Lx, Lz:Lz, dx:dh, dy:dh, dz:dv, dx_1:1.0/dh, dy_1:1.0/dh, dz_1:1.0/dv }
 	end
 
 	; Construct output slice
