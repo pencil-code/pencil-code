@@ -31,6 +31,7 @@ our $debug = 0;
 my $os_name = get_os_name();
 
 my @config_path = (
+            "./config",
             "$ENV{PENCIL_HOME}/config-local",
             "$ENV{HOME}/.pencil/config",
             "$ENV{PENCIL_HOME}/config"
