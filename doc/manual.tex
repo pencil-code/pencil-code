@@ -1867,8 +1867,8 @@ you to group related hosts by institution, owner, hardware, etc.
 \item \file{\$PENCIL_HOME/config}
 \end{enumerate}
 This allows you to override part of the \file{config/} tree globally on
-the given file system, or locally for the given copy of the
-\textsc{Pencil Code}.
+the given file system, or locally for a particular run directory, or for
+one given copy of the \textsc{Pencil Code}.
 This search path is used both, for locating the configuration file for
 your host ID, and for locating included files (see below).
 
@@ -1905,44 +1905,48 @@ configuration file is found), run
 
 \subsubsection{Structure of configuration files}
 
-Configuration files look like this simple example:
+It is strongly recommended to include in a users configuration file one of
+the preset compiler suite configuration files. Then, only minor options
+need to be set by a user, e.g. the optimization flags.
+One of those user configuration files looks rather simple:
 \begin{verbatim}
-  #
   # Simple config file. Most files don't need more.
-  #
-
-  %include os/GNU_Linux
-
-  %include compilers/g95
-  %include compilers/gcc
-
-  %include mpi/open-mpi-noib
+  %include compilers/GNU-GCC
 \end{verbatim}
-or this more complex one:
+or if you prefer a different compiler:
 \begin{verbatim}
-  #
-  # More complex config file.
-  #
+  # Simple Intel compiler suite config file.
+  %include compilers/Intel
+\end{verbatim}
 
-  %include os/GNU_Linux
+A more complex file (here using MPI) could include additional options:
+\begin{verbatim}
+  # More complex config file.
+  %include compilers/GNU-GCC_MPI
 
   %section Makefile
-    %include compilers/g95     # identify mpif90 backend
-    %include compilers/mpif90
-    %include compilers/gcc
-    CFLAGS += -Wall
+    MAKE_VAR1 = -j4   # joined compilation with four threads
+    FFLAGS += -O3 -Wall -fbacktrace   # don't redefine, but append with '+='
   %endsection Makefile
 
   %section runtime
-    mpiexec=/home/user/local/openmpi/bin/mpirun
+    mpiexec = mpirun   # some MPI backends need a redefinition of mpiexec
   %endsection runtime
 
   %section environment
     SCRATCH_DIR=/var/tmp/$USER
   %endsection environment
 \end{verbatim}
+Adding "_MPI" to a compiler suites name is usually sufficient to use MPI.
+Also the user is strongly discouraged to mix Fortran- and C-compilers across
+compiler suites by manually including separate compiler configuration files...
 
-They consist of the following elements:
+\subparagraph{Note 3:}
+We strongly advice to use at maximum the optimization level '-O2' for the
+Intel compiler and '-O3' for all other compilers. Higher optimization levels
+implicate an inadequate loss of precision.
+
+The .conf file consists of the following elements:
 \begin{description}
 
 \item[Comments:]
@@ -1951,10 +1955,9 @@ They consist of the following elements:
 \item[Sections:]
   There are three sections:
   \begin{description}
-  \item[environment]for setting environment variables for both,
-    compilation and running,
-  \item[Makefile] for setting \cmd{make} parameters, and
-  \item[runtime] for setting parameters for \cmd{pc_run}.
+  \item[Makefile] for setting \cmd{make} parameters
+  \item[runtime] for adding compiler flags used by \cmd{pc_run}
+  \item[environment] shell environment variables for compilation and running
   \end{description}
 
 \item[Include statements:]
@@ -1980,25 +1983,24 @@ They consist of the following elements:
 
 
 \item[Assignments:]
-  Statements like \code{FFLAGS = -O3} or \code{mpiexec=mpirun} are
+  Statements like \code{FFLAGS += -O3} or \code{mpiexec=mpirun} are
   assignments and will set parameters that are used by
   \cmd{pc_build}/\cmd{make} or \cmd{pc_run}.
 
   Lines ending with a backslash `\bs' are continuation lines.
 
-  For convenience, one can also use \emph{incremental assignment},
-  indicated by using a \code{+=} sign instead of \code{=}.
+  If possible, one should always use \emph{incremental assignments},
+  indicated by using a \code{+=} sign instead of \code{=}, instead of
+  redefining certain flags.
 
   Thus,
 \begin{verbatim}
-  CFLAGS = -O3 \
-         -ffast-math \
-         -fprefetch-loop-arrays \
+  CFLAGS += -O3
   CFLAGS += -I../include -Wall
 \end{verbatim}
   is the same as
 \begin{verbatim}
-  CFLAGS = -O3 -ffast-math -fprefetch-loop-arrays -I../include -Wall
+  CFLAGS = $(CFLAGS) -O3 -I../include -Wall
 \end{verbatim}
 
 \end{description}
@@ -2008,15 +2010,16 @@ They consist of the following elements:
 
 Use the \cmd{pc_build} command to compile the code:
 \begin{alltt}
-  \prompt{unix> } pc_build
+  \prompt{unix> } pc_build                               # use default compiler suite
+  \prompt{unix> } pc_build -f Intel_MPI                  # specify a compiler suite
   \prompt{unix> } pc_build -f os/GNU_Linux,mpi/open-mpi  # explicitly specify config files
-  \prompt{unix> } pc_build REAL_PRECISION=double         # compile for double precision
+  \prompt{unix> } pc_build VAR=something                 # set variables for the makefile
   \prompt{unix> } pc_build --cleanall                    # remove generated files
 \end{alltt}
-The second example circumvents the whole host ID mechanism by explicitly
+The third example circumvents the whole host ID mechanism by explicitly
 instructing \cmd{pc_build} which configuration files to use.
-The third example shows how to hand extra arguments
-(\code{REAL_PRECISION=double}) down to \cmd{make}.
+The fourth example shows how to define extra variables
+(\code{VAR=something}) for the execution of the \cmd{Makefile}.
 
 See \cmd{pc_build --help} for a complete list of options.
 
@@ -2067,26 +2070,14 @@ See \cmd{pencil-test --help} for a complete list of options.
 \label{adapt-mkfile}
 \index{Makefile}
 
-By default, one \file{Makefile} will only work on a given class of
-computers with identical (or at least similar) compilers.
-One aim when building the {\sc Pencil Code} was however to allow running the
-code on different machines without needing to modify any file.
-This, together with \name{svn} allows you for example to very quickly
-compare results for identical runs on different machines.
-
-Our mechanism for picking the right set of compiler flags is based on the
-\name{Perl} script \file{adapt-mkfile} in \file[bin/]{\$PENCIL_HOME/bin}, which
-processes the file \file{Makefile.src} to a (localized) \file{Makefile}.
-You can view the full documentation for \cmd{adapt-mkfile} with the
-command
-\begin{alltt}
-  \prompt{unix > } perldoc adapt-mkfile
-\end{alltt}
-provided \file[bin/]{\$PENCIL_HOME/bin} is in your path.
+By default, one should use the above described configuration mechanism for
+compilation. If for wathever reason one needs to work with a modified
+\file{Makefile}, there is a mechanism for picking the right set of compiler
+flags is based on the hostname.
 
 To give you an idea of how to add your own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
-\option{-O4 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
+\option{-O2 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
 which needs the flags \option{-O3} and requires the additional
 options \option[-lmpi]{-lmpi -llam} for \name{MPI}.
 
@@ -2102,7 +2093,7 @@ The \file{Makefile.src} you need will have the following section:
   ## Linux:
   {\sl{}[\ldots]   (leave everything from original Makefile and add:)}
   #FC=f95
-  #FFLAGS=-O4 -u
+  #FFLAGS=-O2 -u
   #FC=f90             #(Janus)
   #FFLAGS=-O3         #(Janus)
   #LDMPI=-lmpi -llam  #(Janus)
@@ -2121,9 +2112,7 @@ The \file{Makefile.src} you need will have the following section:
 
 
 \paragraph{Note 1}
-If you have trouble with \cmd{make} or \file{adapt-mkfile}, look at the
-\file{Makefile} written by \file{adapt-mkfile} and check that it has the
-entries for your machine activated.
+There is a script for adapting the Makefile: \file{adapt-mkfile}.
 In the example above, \code{\#(Janus)} is {\it not} a comment, but marks
 this line to be activated (uncommented) by \cmd{adapt-mkfile} if your
 hostname (\cmd[uname]{`uname -n`}) matches `Janus' or `janus'
@@ -2158,15 +2147,15 @@ Table~\ref{Tab-compiler-options} summarizes flags we use for common compilers.
   \midrule
     \emph{Unix/POSIX:}     &                   &                                     &                    & \\
     GNU                   & \texttt{gfortran} & \texttt{-O3}                        & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
-    Intel                 & \texttt{ifort}    & \texttt{-O3}                        & \texttt{icc}       & \texttt{-O3 -DFUNDERSC=1}\\
-    PGI                   & \texttt{pgf95}    & \texttt{-O4}                        & \texttt{pgcc}      & \texttt{-O3 -DFUNDERSC=1}\\
+    Intel                 & \texttt{ifort}    & \texttt{-O2}                        & \texttt{icc}       & \texttt{-O3 -DFUNDERSC=1}\\
+    PGI                   & \texttt{pgf95}    & \texttt{-O3}                        & \texttt{pgcc}      & \texttt{-O3 -DFUNDERSC=1}\\
     G95                   & \texttt{g95}      & \texttt{-O3 -fno-second-underscore} & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
     Absoft                & \texttt{f95}      & \texttt{-O3 -N15}                   & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
     IBM XL                & \texttt{xlf95}    & \texttt{-qsuffix=f=f90 -O3}         & \texttt{xlc}       & \texttt{-O3 -DFUNDERSC=1}\\
   \midrule
     \emph{outdated:}       &                   &                                     &                    & \\
     IRIX Mips             & \texttt{f90}      & \texttt{-64 -O3 -mips4}             & \texttt{cc}        & \texttt{-O3 -64 -DFUNDERSC=1}\\
-    Compaq                & \texttt{f90}      & \texttt{-fast -O5 }                 & \texttt{cc}        & \texttt{-O3 -DFUNDERSC=1}\\
+    Compaq                & \texttt{f90}      & \texttt{-fast -O3 }                 & \texttt{cc}        & \texttt{-O3 -DFUNDERSC=1}\\
   \bottomrule
   \end{tabular}
 \end{table}
@@ -5548,7 +5537,7 @@ What is the problem?
 \ldots there is a problem with \var{mvar}:
 \begin{Verbatim}
   make start.x run.x
-  f95 -O4 -u   -c cdata.f90
+  f95 -O3 -u   -c cdata.f90
   Error: cdata.f90, line 71: Implicit type for MVAR
          detected at MVAR@)
   [f95 terminated - errors found by pass 1]
@@ -5599,9 +5588,9 @@ The Dec Fortran optimizer has occasional problems with
 \file{nompicomm.f90}:
 \begin{Verbatim}
   make start.x run.x read_videofiles.x
-  f90  -fast -O5 -tune ev6 -arch ev6  -c cparam.f90
+  f90  -fast -O3 -tune ev6 -arch ev6  -c cparam.f90
   [...]
-  f90  -fast -O5 -tune ev6 -arch ev6  -c nompicomm.f90
+  f90  -fast -O3 -tune ev6 -arch ev6  -c nompicomm.f90
   otal vm  2755568      otal vm  2765296        otal vm  2775024
   otal vm  2784752      otal...
   Assertion failure:  Compiler internal error - please submit problem r...
@@ -5619,9 +5608,9 @@ The Dec Fortran optimizer has occasional problems with
 and the problem never seems to occur with \file{mpicomm.f90},
 except when \code{ncpus=1}.
 The problem can be avoided by switching off the loop transformation
-optimization (part of the \option{-O5} optimization), via:
+optimization (part of the \option{-O3} optimization), via:
 \begin{Verbatim}
-  #OPTFLAGS=-fast -O5 -notransform_loops
+  #OPTFLAGS=-fast -O3 -notransform_loops
 \end{Verbatim}
 % This has not been made standard in \file{Makefile},
 % as it can cause some slowdown: e.g.
