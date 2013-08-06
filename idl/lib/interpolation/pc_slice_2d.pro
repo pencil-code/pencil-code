@@ -21,6 +21,7 @@
 ;  Optional parameters:
 ;   * dim            original dim structure
 ;   * slice_gird     (optional) returns the grid coordinates of the slice
+;   * crop           crop parts of the slice that contain no data
 ;
 ;   The horizontal axis for phi-rotation is defined by the cut of the XZ-plane
 ;   after theta-rotation with the XY-plane going though the anchor point.
@@ -40,7 +41,7 @@
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, nh=nh, nv=nv, slice_grid=target, dim=dim, datadir=datadir
+function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, nh=nh, nv=nv, slice_grid=target, dim=dim, datadir=datadir, crop=crop
 
 	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
 		; Print usage
@@ -50,8 +51,6 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, n
 		print, ""
 		return, -1
 	end
-
-	if (n_elements (zoom) eq 0) then zoom = 1
 
 	NaN = !Values.D_NaN
 	pi_180 = double (!Pi) / 180
@@ -78,6 +77,10 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, n
 		if (not keyword_set (dx)) then dx = mean ([ source.dx, source.dy ])
 		if (not keyword_set (dy)) then dy = source.dz
 		L_diagonal = sqrt (source.Lx^2 + source.Ly^2 + source.Lz^2)
+	end
+	if (n_elements (zoom) ne 0) then begin
+		dx *= zoom
+		dy *= zoom
 	end
 	if (not keyword_set (nh)) then begin
 		nh = round (L_diagonal / dx)
@@ -203,6 +206,39 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, n
 ;				out[ph,pv,pa] = (1.0 - fx) * yz_l + fx * yz_u
 			end
 		end
+	end
+
+	if (keyword_set (crop)) then begin
+		for ph = 0L, nh-1 do begin
+			if (any (finite (out[ph,*,*]))) then begin
+				chs = ph
+				break
+			end
+		end
+		for ph = nh-1L, 0, -1 do begin
+			if (any (finite (out[ph,*,*]))) then begin
+				che = ph
+				break
+			end
+		end
+		if ((n_elements (chs) eq 0) or (n_elements (che) eq 0)) then return, !Values.D_NaN
+		for pv = 0L, nv-1 do begin
+			if (any (finite (out[*,pv,*]))) then begin
+				cvs = pv
+				break
+			end
+		end
+		for pv = nv-1L, 0, -1 do begin
+			if (any (finite (out[*,pv,*]))) then begin
+				cve = pv
+				break
+			end
+		end
+		if ((n_elements (cvs) eq 0) or (n_elements (cve) eq 0)) then return, !Values.D_NaN
+		nh = che - chs + 1
+		nv = cve - cvs + 1
+		out = reform (out[chs:che,cvs:cve,*], nh, nv, num_comp)
+		target = reform (target[chs:che,cvs:cve,*], nh, nv, 3)
 	end
 
 	return, out[*,*,0:num_comp-1]
