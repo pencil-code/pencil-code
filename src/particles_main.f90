@@ -413,7 +413,7 @@ module Particles_main
 !
 !  Adapt the number of particles in each grid cell to a desired number
 !
-      if (lparticles_adaptation) then
+      if (lparticles_adaptation .and. llast) then
         call sort_particles_imn(fp,ineargrid,ipar)
         call particles_adaptation_pencils(f,fp,dfp,ipar,ineargrid)
       endif
