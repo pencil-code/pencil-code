@@ -87,9 +87,9 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dx=dx, dy=dy, n
 		nv = round (L_diagonal / dy)
 		dy = L_diagonal / nv
 	end
-	x = dx * dindgen (nh)
+	x = dx * (dindgen (nh) - 0.5*(nh-1))
 	y = x
-	z = dy * dindgen (nv)
+	z = dy * (dindgen (nv) - 0.5*(nv-1))
 	if (n_elements (source) eq 0) then begin
 		Lx = nh * dx
 		Lz = nv * dy
