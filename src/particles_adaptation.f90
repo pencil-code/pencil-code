@@ -24,6 +24,7 @@ module Particles_adaptation
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Sub, only: notanumber
 !
   implicit none
 !
@@ -130,7 +131,7 @@ module Particles_adaptation
 !
             method: select case (adaptation_method)
             case ('random') method
-              call new_population_random(np(ix), npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2)
+              call new_population_random(ix, iy, iz, np(ix), npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2)
             case ('LBG') method ! to be implemented
               call fatal_error('particles_adaptation_pencils', 'LBG method under construction')
             case default method
@@ -156,20 +157,21 @@ module Particles_adaptation
 !
     endsubroutine particles_adaptation_pencils
 !***********************************************************************
-    subroutine new_population_random(npar_old, npar_new, fp_old, fp_new)
+    subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
 !
 !  Randomly popoluates npar_new particles with approximately the same
 !  center of mass and total linear momentum.
 !
 !  14-may-13/ccyang: coded
 !
+      integer, intent(in) :: ix, iy, iz
       integer, intent(in) :: npar_old, npar_new
       real, dimension(npar_old,mpvar), intent(in) :: fp_old
       real, dimension(npar_new,mpvar), intent(out) :: fp_new
 !
       integer, dimension(3) :: ipx, ipv
       real :: mx, dmx, mv, dmv, mtot
-      real :: c1, c2
+      real :: c1
 !
       integer :: i
 !
@@ -179,16 +181,86 @@ module Particles_adaptation
       mtot = sum(fp_old(:,irhopswarm))
       fp_new(:,irhopswarm) = mtot / real(npar_new)
       c1 = real(npar_old) / mtot
-      c2 = real(npar_new) / mtot
 !
       dir: do i = 1, 3
-        call statistics(fp_old(:,irhopswarm) * fp_old(:,ipx(i)), mx, dmx)
+        call random_cell(ix, iy, iz, i, fp_new(:,ipx(i)))
         call statistics(fp_old(:,irhopswarm) * fp_old(:,ipv(i)), mv, dmv)
-        call random_normal(c1 * mx, c1 * dmx, fp_new(:,ipx(i)))
         call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
       enddo dir
 !
     endsubroutine new_population_random
+!***********************************************************************
+    subroutine statistics(a, mean, stddev)
+!
+!  Find the mean and standard deviation of an array.
+!
+!  14-may-13/ccyang: coded
+!
+      real, dimension(:), intent(in) :: a
+      real, intent(out) :: mean, stddev
+!
+      real :: c
+!
+      c = 1.0 / real(size(a))
+!
+      mean = c * sum(a)
+      stddev = sqrt(c * sum(a**2) - mean**2)
+      if (.not. (stddev > 0.0)) stddev=0.0
+!
+    endsubroutine statistics
+!***********************************************************************
+    subroutine random_normal(mean, width, a)
+!
+!  Randomly assigns the elements of a array with a normal distribution
+!  of mean and width.
+!
+!  14-may-13/ccyang: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, intent(in) :: mean, width
+      real, dimension(:), intent(out) :: a
+!
+      real, dimension(size(a)) :: r, p
+!
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
+      a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
+!
+      if (notanumber(a)) then
+        print*, 'random_normal: NaN in distribution, mean, width=', &
+            mean, width
+        print*, 'random_normal: a=', a
+        print*, 'random_normal: r=', r
+        print*, 'random_normal: p=', p
+        call fatal_error('random_normal','')
+      endif
+!
+    endsubroutine random_normal
+!***********************************************************************
+    subroutine random_cell(ix, iy, iz, idir, a)
+!
+!  Randomly places the elements of an array inside the local cell.
+!
+!  06-aug-13/anders: coded
+!
+      use General, only: random_number_wrapper
+!
+      integer, intent(in) :: ix, iy, iz, idir
+      real, dimension(:), intent(out) :: a
+!
+      real, dimension(size(a)) :: r, p
+!
+      call random_number_wrapper(r)
+      if (idir==1) then
+        a = x(ix) - dx/2 + dx*r
+      elseif (idir==2) then
+        a = y(iy) - dy/2 + dy*r
+      elseif (idir==3) then
+        a = z(iz) - dz/2 + dz*r
+      endif
+!
+    endsubroutine random_cell
 !***********************************************************************
     subroutine read_particles_adapt_run_pars(unit,iostat)
 !
@@ -236,43 +308,5 @@ module Particles_adaptation
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_adaptation
-!***********************************************************************
-    subroutine statistics(a, mean, stddev)
-!
-!  Find the mean and standard deviation of an array.
-!
-!  14-may-13/ccyang: coded
-!
-      real, dimension(:), intent(in) :: a
-      real, intent(out) :: mean, stddev
-!
-      real :: c
-!
-      c = 1.0 / real(size(a))
-!
-      mean = c * sum(a)
-      stddev = sqrt(c * sum(a**2) - mean**2)
-!
-    endsubroutine statistics
-!***********************************************************************
-    subroutine random_normal(mean, width, a)
-!
-!  Randomly assigns the elements of a array with a normal distribution
-!  of mean and width.
-!
-!  14-may-13/ccyang: coded
-!
-      use General, only: random_number_wrapper
-!
-      real, intent(in) :: mean, width
-      real, dimension(:), intent(out) :: a
-!
-      real, dimension(size(a)) :: r, p
-!
-      call random_number_wrapper(r)
-      call random_number_wrapper(p)
-      a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
-!
-    endsubroutine random_normal
 !***********************************************************************
 endmodule Particles_adaptation
