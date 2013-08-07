@@ -415,6 +415,8 @@ module Particles_main
 !
       if (lparticles_adaptation .and. llast) then
         call sort_particles_imn(fp,ineargrid,ipar)
+        call map_xxp_grid(f,fp,ineargrid)
+        call map_vvp_grid(f,fp,ineargrid)
         call particles_adaptation_pencils(f,fp,dfp,ipar,ineargrid)
       endif
 !
