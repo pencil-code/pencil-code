@@ -23,6 +23,7 @@ module Particles_adaptation
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
+  use Particles_map
   use Particles_sub
   use Sub, only: notanumber
 !
@@ -131,7 +132,11 @@ module Particles_adaptation
 !
             method: select case (adaptation_method)
             case ('random') method
-              call new_population_random(ix, iy, iz, np(ix), npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2)
+              call new_population_random(ix, iy, iz, np(ix), npar_target, &
+                  fp1(k1_l(ix):k2_l(ix),:), fp2)
+            case ('interpolated') method
+              call new_population_interpolated(ix, iy, iz, np(ix), &
+                  npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
             case ('LBG') method ! to be implemented
               call fatal_error('particles_adaptation_pencils', 'LBG method under construction')
             case default method
@@ -159,8 +164,8 @@ module Particles_adaptation
 !***********************************************************************
     subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
 !
-!  Randomly popoluates npar_new particles with approximately the same
-!  center of mass and total linear momentum.
+!  Randomly populates npar_new particles with random positions and approximately
+!  the same total linear momentum.
 !
 !  14-may-13/ccyang: coded
 !
@@ -172,7 +177,6 @@ module Particles_adaptation
       integer, dimension(3) :: ipx, ipv
       real :: mx, dmx, mv, dmv, mtot
       real :: c1
-!
       integer :: i
 !
       ipx = (/ ixp, iyp, izp /)
@@ -183,12 +187,53 @@ module Particles_adaptation
       c1 = real(npar_old) / mtot
 !
       dir: do i = 1, 3
-        call random_cell(ix, iy, iz, i, fp_new(:,ipx(i)))
+        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
         call statistics(fp_old(:,irhopswarm) * fp_old(:,ipv(i)), mv, dmv)
         call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
       enddo dir
 !
     endsubroutine new_population_random
+!***********************************************************************
+    subroutine new_population_interpolated(ix, iy, iz, npar_old, npar_new, fp_old, fp_new, f)
+!
+!  Randomly populates npar_new particles with positions and velocities
+!  interpolated from the assigned particle density and velocity fields.
+!
+!  07-aug-13/anders: coded
+!
+      integer, intent(in) :: ix, iy, iz
+      integer, intent(in) :: npar_old, npar_new
+      real, dimension(npar_old,mpvar), intent(in) :: fp_old
+      real, dimension(npar_new,mpvar), intent(out) :: fp_new
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      real, dimension(3) :: vp_new
+      real ::mtot
+      integer, dimension(3) :: ipx
+      integer :: i, k, ipar=0
+!
+      ipx = (/ ixp, iyp, izp /)
+!
+      mtot = sum(fp_old(:,irhopswarm))
+      fp_new(:,irhopswarm) = mtot / real(npar_new)
+!
+      dir: do i = 1, 3
+        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
+      enddo dir
+!
+      do k=1,npar_new
+        call interpolate_linear(f,iupx,iupz,fp_new(k,ixp:izp),vp_new, &
+            (/ix+nghost,iy,iz/),0,0)
+        fp_new(k,ivpx:ivpz)=vp_new
+      enddo
+!
+      do i=0,2
+        fp_new(:,ivpx+i)=fp_new(:,ivpx+i)-(1/mtot)* &
+            (sum(fp_new(:,irhopswarm)*fp_new(:,ivpx+i),dim=1)- &
+            sum(fp_old(:,irhopswarm)*fp_old(:,ivpx+i),dim=1))
+      enddo
+!
+    endsubroutine new_population_interpolated
 !***********************************************************************
     subroutine statistics(a, mean, stddev)
 !
@@ -253,11 +298,23 @@ module Particles_adaptation
 !
       call random_number_wrapper(r)
       if (idir==1) then
-        a = x(ix) - dx/2 + dx*r
+        if (nxgrid/=1) then
+          a = x(ix) - dx/2 + dx*r
+        else
+          a = 0.0
+        endif
       elseif (idir==2) then
-        a = y(iy) - dy/2 + dy*r
+        if (nygrid/=1) then
+          a = y(iy) - dy/2 + dy*r
+        else
+          a = 0.0
+        endif
       elseif (idir==3) then
-        a = z(iz) - dz/2 + dz*r
+        if (nzgrid/=1) then
+          a = z(iz) - dz/2 + dz*r
+        else
+          a = 0.0
+        endif
       endif
 !
     endsubroutine random_cell
