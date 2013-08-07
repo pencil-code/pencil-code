@@ -89,17 +89,7 @@ pro pc_slicer_draw
 	if (win lt 0) then return
 	wset, win
 
-;	slice[*,*] = !Values.D_NaN
-;	slice_2D = pc_slice_2d (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, dim=dims)
-;	if ((size (slice_2D, /n_dimensions) eq 1) and (slice_2D[0] eq -1)) then begin
-;		print, "WARNING: Failed to create the slice for anchor:", x_anchor, y_anchor, z_anchor, " and theta,phi=", theta, phi
-;		return
-;	end
-;	if ((slice_sx le 0.0) or (slice_sy le 0.0)) then begin
-;		slice[0:slice_sx-1,0:slice_sy-1] = slice_2D
-;	end else begin
-;		slice[0:slice_sx-1,0:slice_sy-1] = congrid (slice_2D, slice_sx, slice_sy, 1, /center)
-;	end
+	undefine, slice_grid
 	slice = pc_slice_2d (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, dim=dims)
 	if ((slice_sx gt 0.0) or (slice_sy gt 0.0)) then slice = congrid (slice, slice_sx, slice_sy, 1, /center)
 	tvscl, slice, /NaN
@@ -182,6 +172,7 @@ pro pc_slicer, data, grid=grid, dim=dim, anchor=anchor, zoom=zoom
 	sl_width = 360
 
 	; Determine size of the produced slice
+	undefine, slice_grid
 	slice = pc_slice_2d (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, dim=dims)
 	s = size (slice)
 	slice_sx = s[1]
