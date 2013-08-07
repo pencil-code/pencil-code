@@ -93,6 +93,9 @@ if (not pc_gui_loaded) then BEGIN
 		x:grid.x * unit.length/unit.default_length, $
 		y:grid.y * unit.length/unit.default_length, $
 		z:grid.z * unit.length/unit.default_length, $
+		Lx:grid.Lx * unit.length, $
+		Ly:grid.Ly * unit.length, $
+		Lz:grid.Lz * unit.length, $
 		dx:1.0/grid.dx_1 * unit.length, $
 		dy:1.0/grid.dy_1 * unit.length, $
 		dz:1.0/grid.dz_1 * unit.length, $

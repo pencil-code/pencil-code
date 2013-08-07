@@ -1423,7 +1423,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		lequidist = indgen (dimensionality) ne -1
 		lperi = indgen (dimensionality) eq -1
 		ldegenerated = indgen (dimensionality) eq -1
-		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, dx:1.0, dy:1.0, dz:1.0, dx_1:replicate (1.0, num_x), dy_1:replicate (1.0, num_y), dz_1:replicate (1.0, num_z), nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, x_off:0, y_off:0, z_off:0, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated, nghost:0 }
+		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, Lx:(num_x-lperi[0])*unit.length, Ly:(num_y-lperi[1])*unit.length, Lz:(num_z-lperi[2])*unit.length, dx:unit.length, dy:unit.length, dz:unit.length, dx_1:replicate (1.0/unit.length, num_x), dy_1:replicate (1.0/unit.length, num_y), dz_1:replicate (1.0/unit.length, num_z), nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, x_off:0, y_off:0, z_off:0, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated, nghost:0 }
 	end
 
 	num_snapshots = n_elements (varfiles)
