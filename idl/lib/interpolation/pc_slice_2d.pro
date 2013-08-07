@@ -122,8 +122,8 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dh=dh, dv=dv, n
 		phi_null = any (phi eq [-360,-180,0,180,360])
 		if (phi_null) then cos_phi = 1.0 else cos_phi = cos (phi * pi_180)
 		if (phi_null) then sin_phi = 0.0 else sin_phi = sin (phi * pi_180)
-		add_x = source.x * sin_phi * sin_theta
-		add_y = source.y * sin_phi * cos_theta
+		add_x = x * sin_phi * sin_theta
+		add_y = y * sin_phi * cos_theta
 		tz = z * cos_phi
 		for ph = 0, nh-1 do begin
 			; X and Y coordinates
