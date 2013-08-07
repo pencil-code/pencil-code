@@ -125,10 +125,12 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dh=dh, dv=dv, n
 		add_x = x * sin_phi * sin_theta
 		add_y = y * sin_phi * cos_theta
 		tz = z * cos_phi
-		for ph = 0, nh-1 do begin
+		for pv = 0, nv-1 do begin
 			; X and Y coordinates
-			target[ph,*,0] -= add_x
-			target[ph,*,1] += add_y
+			target[*,pv,0] -= add_x
+			target[*,pv,1] += add_y
+		end
+		for ph = 0, nh-1 do begin
 			; Z coordinates
 			target[ph,*,2] = tz
 		end
