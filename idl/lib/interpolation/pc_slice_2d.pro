@@ -75,7 +75,7 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dh=dh, dv=dv, n
 		L_diagonal = sqrt ((x_size/dh)^2 + (y_size/dh)^2 + (z_size/dv)^2)
 	end else begin
 		if (not keyword_set (dh)) then dh = mean ([ source.dx, source.dy ])
-		if (not keyword_set (dv)) then dv = source.dz
+		if (not keyword_set (dv)) then dv = mean (source.dz)
 		L_diagonal = sqrt (source.Lx^2 + source.Ly^2 + source.Lz^2)
 	end
 	if (not keyword_set (nh)) then begin
