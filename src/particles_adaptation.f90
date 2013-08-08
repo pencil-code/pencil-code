@@ -23,6 +23,7 @@ module Particles_adaptation
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
+  use Particles_kmeans
   use Particles_map
   use Particles_sub
   use Sub, only: notanumber
