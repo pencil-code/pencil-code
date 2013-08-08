@@ -106,32 +106,43 @@ function pc_slice_2d, in, source, anchor, theta, phi, zoom=zoom, dh=dh, dv=dv, n
 		; Construct grid coordinates of output slice
 		target = make_array ([ nh, nv, 3 ], /double, value=NaN)
 
-		; Rotate XZ-plane around Z-axis (theta)
-		theta_null = any (theta eq [-360,-180,0,180,360])
-		if (theta_null) then cos_theta = 1.0 else cos_theta = cos (theta * pi_180)
-		if (theta_null) then sin_theta = 0.0 else sin_theta = sin (theta * pi_180)
+		; Rotate XZ-plane around X-axis (phi)
+		phi_par = any (phi eq [-360,-180,0,180,360])
+		phi_ort = any (phi eq [-270,-90,90,270])
+		if (phi_par or phi_ort) then begin
+			cos_phi = 1.0 - phi_ort - 2*any (phi eq [-180,180])
+			sin_phi = 0.0 + phi_ort - 2*any (phi eq [-90,270])
+		end else begin
+			cos_phi = cos (phi * pi_180)
+			sin_phi = sin (phi * pi_180)
+		end
+
+		; Rotate phi-rotated XZ-plane around Z-axis (theta)
+		theta_par = any (theta eq [-360,-180,0,180,360])
+		theta_ort = any (theta eq [-270,-90,90,270])
+		if (theta_par or theta_ort) then begin
+			cos_theta = 1.0 - theta_ort - 2*any (theta eq [-180,180])
+			sin_theta = 0.0 + theta_ort - 2*any (theta eq [-90,270])
+		end else begin
+			cos_theta = cos (theta * pi_180)
+			sin_theta = sin (theta * pi_180)
+		end
+
+		; Construct rotated slice grid
 		tx = x * cos_theta
-		ty = y * sin_theta
+		ty = x * sin_theta
 		for pv = 0, nv-1 do begin
 			; X and Y coordinates
 			target[*,pv,0] = tx
 			target[*,pv,1] = ty
 		end
-
-		; Rotate theta-rotated XZ-plane around theta-rotated x-axis (phi)
-		phi_null = any (phi eq [-360,-180,0,180,360])
-		if (phi_null) then cos_phi = 1.0 else cos_phi = cos (phi * pi_180)
-		if (phi_null) then sin_phi = 0.0 else sin_phi = sin (phi * pi_180)
-		add_x = x * sin_phi * sin_theta
-		add_y = y * sin_phi * cos_theta
+		add_x = z * sin_theta * sin_phi
+		add_y = z * cos_theta * sin_phi
 		tz = z * cos_phi
-		for pv = 0, nv-1 do begin
-			; X and Y coordinates
-			target[*,pv,0] -= add_x
-			target[*,pv,1] += add_y
-		end
 		for ph = 0, nh-1 do begin
-			; Z coordinates
+			; Y and Z coordinates
+			target[ph,*,0] += add_x
+			target[ph,*,1] -= add_y
 			target[ph,*,2] = tz
 		end
 
