@@ -268,7 +268,7 @@ module Particles
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
       if (lcalc_uup .or. ldragforce_stiff) then
-        call farray_register_auxiliary('uup',iuup,vector=3)
+        call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx=iuup; iupy=iuup+1; iupz=iuup+2
       endif
 !
