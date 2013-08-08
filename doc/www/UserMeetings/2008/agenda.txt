@@ -1,0 +1,92 @@
+$Id: agenda.txt,v 1.8 2008-08-17 10:56:44 brandenb Exp $
+
+Todo topics
+  turning off the lpencil_check in auto-test
+  writing of timings
+  ordering T-shirts in good time
+  change to SVN some time before the meeting
+  clean up and re-order IDL directory
+
+Discussion topics
+
+- Intro to using python instead of idl (at least for newcomers) [Boris]
+
+- Cleaning up the Makefile [Boris]
+
+- An experience database [Anders]
+
+- A discussion about Anders' problem regarding the conservation of mass in the
+code. For quite high compressible convection runs (both in local boxes and
+star-in-a-box ones), I also experienced bad mass conservation when
+applying the upwind scheme on lnrho and this discussion will certainly be
+useful for everybody (as Wolfgang's remarks following Anders' first
+email). [Boris]
+
+- A discussion about what the canonical list of tests would be. Actually,
+we check 30 tests while some tests share the same physics (e.g. the
+different convection ones). One can ask the question to restrict tests to
+really different physics and/or geometry. [Boris]
+
+- Discuss the future of initial conditions. The code is loaded with useless
+and obsolete initial conditions. Should we put those in a special
+initcond_XXX extension of each module?
+
+- Should we add gsl library to the pencil code source?
+
+- Is there a good way to avoid wrong names such as lncc for cc and lnTT for TT?
+
+- Help with VAPOR
+
++ remove all lbidiagonal_derij=F
+
+
+
+Preliminary programme:
+----------------------
+
+Tuesday
+
+09:00-10:00 : Registration, coffee
+10:00-10:45 : Welcome (Anders)
+10:45-12:00 : Discussion: "Changing from CVS to SVN" (Tobi/Axel)
+12:00-14:00 : Lunch
+14:00-18:00 : Discussion: "Postprocessing with Python" (Boris)
+
+Wednesday
+
+09:00-09:45 : "Chemistry modules" (Axel)
+09:45-10:30 : "Simulations of the geodynamo" (Graeme)
+10:30-11:15 : Coffee break
+11:15-12:00 : "The excitation of inertial-acoustic waves in turbulent
+              accretion disks" (Tobi)
+12:00-14:00 : Lunch
+14:00-16:00 : Discussion: various topics
+              - Clean up and re-order IDL directory (Anders)
+              - Turning off the lpencil_check in auto-test (Wolfgang)
+              - Should initial conditions be put in separate files?
+              - Mass conservation (Boris/Anders/Tobi/Wlad)
+              - Should we add gsl library to the pencil code source?
+              - Is there a good way to avoid wrong names such as lncc for cc
+                and lnTT for TT?
+              - Cleaning up the Makefile (Boris)
+              - An experience database (Anders)
+
+Thursday
+
+09:00-09:45 : "Simulations of transmagnetic accretion discs"/
+              "Particle modules in the Pencil Code" (Anders)
+09:45-10:30 : "Global models of planet formation" (Wlad)
+10:30-11:15 : Coffee break
+11:15-12:00 : "A Monte Carlo coagulation equation solver" (Andras/Andrej)
+12:00-14:00 : Lunch
+14:00-16:00 : New users ask questions
+16:00-18:00 : Discussion: "A Pencil Code paper" (Axel)
+
+Friday
+
+09:30-10:15 : "Long time steps for diffusive problems" (Wolfgang)
+10:15-11:00 : "Large scale dynamo in rotating shear flow" (Petri/Dhruba)
+11:30-12:00 : "The test field method" (Axel)
+12:00-14:00 : Lunch
+14:00-18:00 : Discussion: various topics continued
+

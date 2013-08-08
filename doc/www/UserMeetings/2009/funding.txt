@@ -1,0 +1,67 @@
+Introduction
+------------
+
+The Pencil Code Meeting 2009 will take place August 24-28 2009 at the
+Max Planck Institute for Astronomy (MPIA), in Heidelberg, Germany. 
+At the time of writing, the number of registrants is of 24, being 
+9 local (from MPIA), and 2 from outside Europe.
+
+The Pencil Code is a multipurpose code for massively parallel computing. 
+It includes optionally hydrodynamics, magnetic fields, radiation, ionization, 
+multi-species dust dynamics with coagulation, self-gravity and particles. It 
+is developed and maintained under Subversion (SVN) by around 25 people with 
+check-in permission and has been downloaded by around 500 registered users 
+(without check-in permission). The code is tested nightly on several platforms 
+and provides an excellent pedagogical tool for professional scientists as well 
+as students to implement new code within an organized framework.
+
+#The Pencil Code is a multipurpose magnetohydrodynamical (MHD) code for
+#massively parallel computing.
+
+About the meeting
+-----------------
+
+The Pencil Code User Meeting is an annual meeting dedicated to the Pencil 
+Code. The purpose of the meeting is to bring regular users and core developers 
+together to discuss scientific and technical progress since the last meeting, 
+to instigate collaborative projects and to allow new users to learn more 
+about the code and to interact with other users and developers.
+
+Here are some example topics that the meeting aims at covering:
+
+    * Recent science results obtained with the Pencil Code
+    * Physics recently added to the code, such as particle collisions
+    * Recently added visualization techniques, such as on-the-fly 
+        3D rendering and spherical slices
+    * Technical issues
+    * Future improvements to the code 
+
+Budget
+------
+
+Of the 15 non-local participants, 10 will eligible for travel 
+support, based on their junior positions (PhD students, young
+postdocs) or on positions in institutions that are not able to provide
+travel support. A conference dinner should also be included, for all 
+participants.
+
+The estimated costs are (in Euro)
+
+  Travel       : 3,000 (10 x 1 x 300)
+  Accomodation : 4,000 (10 x 5 x  80)
+  Per diem     : 1,000 (10 x 5 x  20)
+  Dinner       : 1,000 (25 x 1 x  40)
+
+MPIA has kindly offered a conference room free of charge.
+
+Co-funding
+----------
+
+Funding requests will be submitted to the following:
+
+  * Astrosim
+    http://www.astrosim.net/
+
+  * German Science Foundation (Deutsche Forschungsgemeinschaft)
+    http://
+

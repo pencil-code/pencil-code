@@ -1,0 +1,24 @@
+
+- Technical
+
+Babkovskaia, Natalia     - Current status of the combustion module
+Brandenburg, Axel        - Lightsabers with the Pencil Code
+Clark      , Dayton      - Pencil Code on many core architectures
+Dobler     , Wolfgang    - The new configuration scheme
+Gaburov    , Evghenii    - Lagrangian re-mapping on the Pencil code(?)
+Johansen   , Anders      - Particle collisions and particle discs
+Kragset    , Steinar     - Solid geometries with the immersed boundary method
+Mitra      , Dhrubaditya - MHD dynamos in spherical wedges : recent results
+Zsom       , Andras      - Fargo vs Pencil - A comparison study 
+Flock      , Mario       - Pluto 
+
+- Science
+
+Bingert    , Sven        - MHD simulations of the solar corona
+Dintrans   , Boris       - Star-in-a-box simulations of solar-like dynamos
+Haugen     , Nils        - Particle deposition on a cylinder in a cross flow
+Lyra       , Wladimir    - Dead zones in global models of protoplanetary disks
+Mac Low    , Mordecai    - Science with Pencil at AMNH - Current status
+Sundberg   , Mikaela     - Organizing simulation code collectives
+
+

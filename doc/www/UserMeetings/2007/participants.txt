@@ -1,0 +1,20 @@
+Steve Berukoff		12-18 Aug	H  (confirmed)
+Sven Bingert		13-19 Aug	H  (confirmed)
+Axel Brandenburg
+Boris Dintrans		13-17 Aug	H  (confirmed)
+Wolfgang Dobler		12-19 Aug	H  (confirmed)
+Marcus Gellert		13-19 Aug	H  (confirmed)
+Cristina Green		13-25 Aug	H  (confirmed)
+Tobias Heinemann	12-20 Aug	H  (confirmed)
+Anders Johansen		13-17 Aug	H  (confirmed)
+Petri Käpylä
+Anne Liljeström		14-17 Aug	H  (confirmed)
+Wladimir Lyra		13-17 Aug 	H  (confirmed)
+Lars Mattsson
+Dhruba Mitra		12-18 Aug          (Anpupam's apartment)
+Nathalie Toque		13-18 Aug	H  (confirmed)
+Mikaela Sundberg
+Miikka Väisälä		14-17 Aug	H  (confirmed)
+Chao-Chin Yang          13-19 Aug	H  (confirmed)
+
+$Id: participants.txt,v 1.15 2007-08-11 06:17:47 brandenb Exp $

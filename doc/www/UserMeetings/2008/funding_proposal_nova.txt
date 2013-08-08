@@ -1,0 +1,109 @@
+Motivation of request: provide the following information: for workshop request:
+title, dates, place, number of participants and a preliminary program;
+for foreign visitor; name, affiliation, period of visit, purpose of visit
+and other persons/institutes intended to visit plus a short cv of visitor 
+
+About the meeting
+-----------------
+
+The "Pencil Code Meeting 2008" will take place August 19-22 2008 at the Sterrewacht Leiden in The Netherlands. The meeting is organised by Anders Johansen.
+
+The Pencil Code (http://www.nordita.org/software/pencil-code/) is a
+highly versatile and modular code for massively parallel computations. The
+project is unique in the astrophysical community in that the code is
+continuously developed by a number of independent researchers. The development
+is kept in alignment through the use of a version control system (CVS) that
+allows the developers to work on different aspects of the code, while still
+working within a single branch. Automated nightly checks of a large number of
+physical standard problems ensures that no new development will break the
+code.
+
+The Pencil Code Meeting is an annual meeting dedicated to the Pencil Code. The purpose of the meeting is to bring regular users and core developers together to discuss scientific and technical progress since the last meeting, to instigate collaborative projects and to allow new users to learn more about the code and to interact with other users and developers.
+
+The website of the meeting can be found at
+http://www.strw.leidenuniv.nl/~ajohan/pencil2008/.
+
+Participants
+------------
+
+Currently 13 people have registred online or otherwise expressed that they are going to come:
+
+ Last name   & First    & Institution
+ ------------------------------------
+ Babkovskaia & Natalia  & University of Oulu
+ Bingert     & Sven     & Kiepenheuer Institute for Solar Physics
+ Brandenburg & Axel     & Nordita
+ Dintrans    & Boris    & Observatoire Midi-Pyrenees
+ Dobler      & Wolfgang & Private company
+ Heinemann   & Tobias   & DAMPT, Cambridge
+ Johansen    & Anders   & Sterrewacht Leiden
+ Kapyla      & Petri    & Helsinki University Observatory
+ Klahr       & Hubert   & Max Planck Institute for Astronomy
+ Lyra        & Wladimir & Uppsala University
+ Oishi       & Jeff     & UC Berkeley
+ Remacle     & Vincent  & Universite Libre de Bruxelles
+ Sundberg    & Mikaela  & Stockholm University
+
+Since there are still more than three months until the workshop, we expect the number of participants to rise to at least 15 (with 1-2 participants from outside of Europe). Last year's meeting in Stockholm (see http://agenda.albanova.se/conferenceDisplay.py?confId=185) had 19 participants.
+
+Meeting programme
+-----------------
+
+The Pencil Code Meeting 2008 will be focused on discussion sessions and exchange of ideas in an informal workshop environment. Talks will primarily be scheduled for morning sessions, while the afternoons are dedicated to
+predefined discussion topics.
+
+The preliminary programme is:
+
+Tuesday 19/08:
+  Morning  : Registration
+  Afternoon: Welcome (Johansen) 
+             Talk (Brandenburg) 
+             Discussion: 
+             "A Pencil Code paper", 
+             "An experience database"
+ 
+Wednesday 20/08:
+  Morning  : Talks (Dobler, Bingert, Lyra)
+  Afternoon: Discussion:
+             "Changing from CVS to SVN",
+             "Improving the Makefile"
+
+Thursday 21/08:
+  Morning  : Talks (Dintrans, Babkovskaia, Heinemann)
+  Afternoon: Discussion:
+             "Postprocessing with Python"
+
+Friday 22/08:
+  Morning  : Talks (Klahr, Kapyla, Johansen)
+  Afternoon: Discussion
+             "Miscellaneous topics"
+
+Budget
+------
+
+An estimated 10 of the 15 participants will be eligible for travel support, either because they hold junior positions (PhD students, young postdocs) or because they hold positions in institutions that are not able to provide travel support.
+
+The estimated costs of the workshop are (in Euro):
+
+  Travel        : 3000 (10 x 300)
+  Accommodation : 3200 (10 x 4 x 80)
+  Lunch         :  600 (15 x 4 x 10)
+  Total         : 6800
+
+Lunch would be provided for every participant, independently of whether they receive travel support.
+
+Sterrewacht Leiden has kindly offered to provide a conference room for the entire duration of the workshop, free of charge.
+
+Co-funding: NOVA will only provide part of the required funding. List the other
+sources of funding that are already obtained or requested.  To provide a
+guideline, the target of NOVA funding is of order 25-30% of the total costs
+with an upper limit for the NOVA grant of kfl. 10. 
+
+Funding requests will be submitted to the following organisations:
+
+  * Astrosim (3800 Euro)
+    http://www.astrosim.net/
+  * NOVA (1500 Euro)
+    http://www.strw.leidenuniv.nl/nova/
+  * Leids Kerkhoven-Bosscha Fonds (1500 Euro)
+    http://www.strw.leidenuniv.nl/lkbf/index.php?node=84

@@ -1,0 +1,50 @@
+preliminary program
+
+Monday
+10:00-10:45  Axel Brandenburg                   Pencil Code Tutorial
+10:45-11:30  Wlad Lyra                          The Crayon & the Code Commandments
+11:30-12:15  Colin McNally                      Gadget2+Phurba
+12:15-12:30  Questions from the Skype audience
+12:30-14:00  Lunch
+14:00-15:00  Discussion (Axel/Wlad)             Pencil paper / Tutorial 
+15:00-15:30  Coffee break
+15:30-17:00  Bug list/Miscell./Agenda  
+
+Tuesday
+10:00-10:45  Chao-Chin Yang                     Gravitational Potential for a Vertically Stratified Disk
+10:45-11:30  Jason Maron                        Folding of magnetic field lines
+11:30-12:15  Mordecai-Mark Mac Low              Discussion of the disk workshop
+12:15-12:30  Questions from the Skype audience
+12:30-14:00  Lunch
+14:00-15:00  Discussion (Wlad/Axel/Anders)      Initial conditions
+15:00-15:30  Museum Crawl                       Journey to the Stars
+15:00-15:30  Coffee Break 
+15:30-17:00  Bug list/Miscell./Agenda
+
+Wednesday
+10:00-10:45  Andreas Svedin                     Data assimilation and the Pencil-Code
+10:45-11:30  Mikaela Sundberg                   TBD
+11:30-12:15  Mordecai-Mark Mac Low              Varying Prandtl number MRI
+12:15-12:30  Questions from the Skype audience
+12:30-14:00  Lunch
+14:00-15:00  Discussion (Anders/Jeff via Skype) Massive parallelization
+15:00-15:30  Coffee Break
+15:30-17:00  Bug list/Miscell./Agenda
+
+Thursday
+10:00-10:45  Alex Hubbard                       Magnetic helicity
+10:45-11:30  Gustavo Guerrero                   Flux tubes
+11:30-12:15  Vincent Duez                       Dynamics of Radiation zones
+12:30-12:30  Questions from the Skype audience
+12:30-14:00  Lunch
+14:00-14:15  Piyali Chatterjee (via Skype)      The Anelastic Module
+14:15-14:30  Simon				Visualization
+14:30-15:00  Bug list/Miscell./Agenda
+15:00-15:30  Coffee break
+15:30-17:00  Bug list/Miscell./Agenda
+
+Friday 
+10:00-11:30  Hacking frenzy / Pencil paper
+11:30-12:30  Questions from the Skype audience
+12:30-14:00  Lunch
+14:00-17:00  Hacking frenzy / Pencil paper

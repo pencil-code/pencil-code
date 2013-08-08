@@ -1,0 +1,38 @@
+\begin{center}
+  \begin{tabular}{lll}
+    Last name   & First name   &  e-mail \\
+    \hline
+    Babkovskaia &  Natalia     &  nbabkovskaia@gmail.com                
+    Bingert     &  Sven        &  bingert@kis.uni-freiburg.de           
+    Brandenburg &  Axel        &  brandenb@nordita.org                 
+    Candelaresi &  Simon       &  iomsn@gmx.de
+    Chatterjee  &  Piyali      &  mppiyali@gmail.com             
+    Clark       &  Dayton      &  dayton@brooklyn.cuny.edu              
+    Del Sordo   &  Fabio       &  fabio@nordita.org
+    Dintrans    &  Boris       &  dintrans@ast.obs-mip.fr               
+    Dobler      &  Wolfgang    &  wdobler@gmail.com
+    DZYURKEVICH &  Natalia     &  natalia@mpia.de
+    FLOCK       &  Mario       &  flock@mpia.de
+    Gaburov     &  Evghenii    &  egaburov@strw.leidenuniv.nl           
+    Haugen      &  Nils        &  nils.e.haugen@sintef.no               
+    Johansen    &  Anders      &  ajohan@strw.leidenuniv.nl
+    kemel       &  koen        &  koen@nordita.org
+    KERN        &  Sebastian   &  skern@astro.uni-wuerzburg.de
+    KLAHR       &  Hubert      &  klahr@mpia.de
+    Kragset     &  Steinar     &  Steinar.Kragset@sintef.no             
+    KUIPER      &  Rolf        &  kuiper@mpia.de
+    Lyra        &  Wladimir    &  lyra@mpia.de
+    Mitra       &  Dhrubaditya &  dhruba.mitra@gmail.com                
+    Perkelar    &  Prasad      &  pperlekar@gmail.com                   
+    Plasson     &  Raphaël     &  rplasson@nordita.org
+    RAETTIG     &  Natalie     &  raettig@mpia.de
+    Sundberg    &  Mikaela     &  mikaela.sundberg@sociology.su.se      
+    VAIDYA      &  Bhargav     &  vaidya@mpia.de
+    Warnecke    &  Jorn        &  joern@kis.uni-freiburg.de
+    Yang        &  Chao-Chin   &  cyang@amnh.org
+    Zsom        &  Andras      &  zsom@mpia.de                                               
+  \end{tabular}
+\end{center}
+
+
+nbabkovskaia@gmail.com,bingert@kis.uni-freiburg.de,brandenb@nordita.org,iomsn@gmx.de,mppiyali@gmail.com,dayton@brooklyn.cuny.edu,fabio@nordita.org,dintrans@ast.obs-mip.fr,wdobler@gmail.com,natalia@mpia.de,flock@mpia.de,egaburov@strw.leidenuniv.nl,nils.e.haugen@sintef.no,ajohan@strw.leidenuniv.nl,koen@nordita.org,skern@astro.uni-wuerzburg.de,klahr@mpia.de,Steinar.Kragset@sintef.no,kuiper@mpia.de,lyra@mpia.de,dhruba.mitra@gmail.com,pperlekar@gmail.com,rplasson@nordita.org,raettig@mpia.de,mikaela.sundberg@sociology.su.se,vaidya@mpia.de,joern@kis.uni-freiburg.de,cyang@amnh.org,zsom@mpia.de                     

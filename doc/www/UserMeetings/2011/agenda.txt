@@ -1,0 +1,248 @@
+$Id: agenda.txt,v 1.1 2011-11-20 15:27:46 dintrans Exp $
+
+Topics:
+
+Notes: "-" means that this item is still open
+       "x" means that it has been dealt with
+
+New topics:
+
+  - Alex and perhaps other had questions regarding the particle module,
+    especially about collisions. More documentation seems to be desired.
+    * Skype with Anders on Wednesday
+
+  - need for a table to identify who entered whom as project member
+    ? or does this already exist under google wiki?/AB
+    * In progress
+
+  - should we make cdt=0.9 the default?/AB
+    * Done
+
+  - Pencil Code contract for new and old users, with list of rules and
+    good practices, to be signed and faxed to someone (AJ?)
+
+    + major commits should be discussed beforehand
+
+  - Should participation in mailing lists be mandatory?
+    * Who is *not* on the list
+    * Check who should be in the list, and send an email obliging them
+      to be on the list. 
+    * Remove spurious spammers that seem to have made to the list
+
+  - How should the mailing lists pencil-code-discuss, pencil-code-private,
+    pencil-code-core be used?
+    * pencil-code-private is only used for gossip and thus not needed
+    * pencil-code-core is not really needed since we are few, (do cc?)
+
+  - Redefine webpage? (under cvs: f90/pencil-www/index.html)
+
+  - List in the webpage all papers that were published using Pencil. 
+    *php script
+
+  - Define duties for all developers
+    
+  - Quarterly Pencil Code progress meeting (Skype)
+    Good for introducing new members, talking about plans, possibility
+    for new developers to discuss their ideas with more experienced
+    developers, ...
+    * Try monthly, schedule in advance, say, last Tuesday of the month, 
+      and let people organize themselves around it. 
+
+       7:30 AM - California 
+      10:30 AM - New York
+       4:30 PM - Central Europe
+       5:30 PM - Finland        
+
+    First on 29th November, Tuesday.
+
+  - Clear up the Makefile.depend, some of the dependencies do not match a 
+    "use" statement in the module. Should we have a script to create
+    Makefile.depend?
+
+    * Check if compiler flags can catch unused "use" statements, as 
+      with unused variables.
+      Tony coded mkdep 
+
+    Also, I think that *every* "use" statement should have a "only" 
+    list, save a few exceptions, like Cdata and Cparam.  
+
+    * Wlad shall do it. 
+
+  - (yes/no) spaces in function calls. 
+    * Have a doodle, lime survey, or whatever online voting stuff
+      in the pencil code page for voting
+    * Add the result of this particular voting to the style page
+      Owners:        legislators
+      Everyone else: parliament
+
+  - need more than 1 special module (examples??)
+    * Users can define extra modules and have them called from 
+      special, that's a possible workaround. 
+
+  - nomodules should *really* be NO modules. Examples: nohydro is 
+    doing some complicated stuff (probably useless, since the names
+    are Tony and Weezy). Also, noentropy is doing *a lot* of stuff. 
+    It is a full module that should be renamed to something like 
+    "entropy_isothermal", and a real, minimalistic, dummy, noentropy 
+    should be coded in its stead. 
+
+  - new discussion items:
+  
+    (These were not issues, but a wishlist for coding/scientific discussion.)
+
+    + status and checks of the anelastic module
+
+    + non-solar radiation transport
+      * CK
+
+    + shell models with the chemistry module
+      * Given to Alex/Axel
+
+
+Old topics:
+
+  - Avoid wrong names such as lncc for cc and lnTT for TT?
+    is ok in videos, but not in pc_read_var
+    * Fix later, slightly more involved procedure. Already fixed 
+      for python, not yet for the idl reading routines. 
+
+  - Move the LOCK file to the data directory (or perhaps both), because the
+    actual data are in the data tree and that may only be a link!
+    OK with Wlad.
+    -> Problem appears when two run directories share the same data dir.
+    -> Wolfgang will fix this (but hasn't done it yet)
+    I think it is better to keep the LOCK file as it is - Dhruba
+    (if Wolfgang then done else Axel)
+    * Axel will do it. Has done it partially already. 
+
+  - Conservativeness.
+    Need to check with Anders about status of WENO transport scheme
+    (Not working yet in multiple-dimension, move to special module, 
+    Given to Anders) 
+    * Ask Anders if that is still an issue. 
+      WENO works, shock tube tests. Still needs shock viscosity. 
+      If someone wants to work with WENO, they can. 
+
+  - cleaning up *.h files and check for breaks in modularity
+    (Given to Axel)
+    * They can be cleaned, for instance lnrho_bot, lnrho_top
+    ss_bot, ss_top are only defined in gravity, then shared. They 
+    shouldn't be in gravity. Also, qgshear, n_pot and r0_pot are 
+    shared but used in gravity only. Think of an automated way 
+    to capture all these. Check also politropic indices, in eos.h
+      
+  - advec_hyper3mesh_rho=diffrho_hyper3_mesh*pi5_1*dx_1(l1:l2) issue
+    (cf. Wlad's email of 18 July)
+    (Axel to work on this)
+
+  - What to do with the code that is unnecessary for most users? Instances are
+
+      * boundary conditions: lambda effect not needed for stress-free boundary 
+        in general. Should it go in a "leb" (lambda effect boundary) 
+        boundary condition 
+
+        (Dhruba: I would be against this one, because now it is easier to turn 
+         lambda off and on with just change in one place in start.in .
+        I do not see any harm in Lambda remaining in stress-free bc
+        because in case lambda effect is not being used most of the
+        lambda variables are not even being shared -Dhruba)
+	- It is not used but it is compiled, and it also compromises 
+	  readability. --Wlad
+
+      * Clearest example of code growing ad infinitum: Continuity equation has 
+        62 lines!
+
+      * Force-free equations in entropy
+
+  - What to do with the initial conditions? That's non-relevant code compiled 
+    thousands of times. Should users keep their ICs to themselves?
+    (Given to Wlad - add info on the InitialCondition module to the manual)
+    * we strongly support this idea of putting specific initial conditions
+    into separate files that are located in src/initial_condition (the
+    specific file must be then precised in Makefile.local, i.e.
+    INITIAL_CONDITION = initial_condition/something.f90
+
+  - automated diagnostic
+    (Axel: more important may now be to encapsulate 90% of the diagnostics
+    to a module called magnetic/diagnostics_advanced.f90)
+    * too many lines in the physics modules devoted to diagnostics! it may be
+    possible to move them somewhere else?
+
+  - some other point from Alex: to set diagnostics output in wall-clock times
+    * idea: to have an output every, say, 10mn
+    --> code idiag_something related to the it value (see L419 in run.f90)
+
+  - pencil-code/src/add-ons?
+    * there is already a special directory that seems to do this job?
+
+  - check who is on which google email list
+    http://groups.google.com/group/pencil-code-discuss/members
+    * we already discussed about that
+
+  - change the frequency of xyaverages through a new d1davg
+    and allow the time units to be changed to wall-clock hours.
+    (Axel to work on)
+
+  - A common data file (like cdata.f90) to be shared between density,
+    eos and entropy. We may call this cthermo.f90 (common thermodynamics).
+    This may solve some problems with modularity of the code.  
+    * Boris: is it really a good idea as we have now the put/getshared_variable 
+    system? so why doing that just for thermo? AXEL: the shared_variable
+    system is maybe too complicate for this stuff and a cthermo.f90 file can 
+    be useful
+    (?Wlad to work on this?)
+
+  - Organize src folder into subfolders. Grep problem with Wolfgang is 
+    inexistant (use grep -r)
+    [comment by wolfgang: Hei, no so fast. grep -r will grep not only in
+    the .f90 (and similar source) files, but also in .o and .x files, so
+    that's not a complete solution.
+    I personally don't mind, since I am using ack / ack-grep or `git grep'
+    which both give me what I need. But you others may need an extra
+    script] 
+    WL Mar 2011: "find -iname files | xargs grep string" should do.  
+    wolfgang Sep 2011: -iname is of no use here; I guess you meant
+        find src -type f | xargs grep string
+      -- but that isn't any better than `grep -r'.
+    * it is maybe a good idea and it is already begun with the magnetic
+    mean-field problem (src/magnetic). But two "problems": 
+      * the script issue for grep search that Wolfgang mentioned above (i.e.
+      if there are more than one directory level below src) --> it is maybe
+      not a problem as the "find -iname '*.f90' | xargs grep string" seems 
+      to work?): doing a pc_grep command? DONE
+      * we must be careful about the path of include files (include
+      '../eos.h' for example)
+    TODO: Axel is actually planing to move all the magnetic stuff in 
+    src/magnetic
+
+  - only *link* those modules that we need in pc_setupsrc
+    * clearly this is a very good idea but totally impossible today as the
+    calls to dummy subroutines enclosed in the noXXX.f90 files will be
+    still there! --> then we should still link all the noXXX.f90 files no?
+    WD 27 Oct 2011:
+      Yes, of course we need to link those, too. But instead of all of
+        magnetic.f90
+        magnetic/meanfield.f90
+        magnetic/meanfield_demfdt.f90
+        magnetic/nomeanfield.f90
+        magnetic/nomeanfield_demfdt.f90
+        magnetic_axisym.f90
+        nomagnetic.f90
+      (all of which implement the module Magnetic) your src/ directory
+      tree would contain only one file from this list -- exactly the one
+      that is really compiled and enters your run.x.
+
+  - nomodules compiles with syscalls instead of nosyscalls.... what is
+    syscalls and what is it doing in the code? Add it to the manual.
+
+  - syscalls messing up compilation (not found file_size_c in
+    syscalls.f90). Why is there a C wrapper syscall_ansi.c?
+
+  - diagnostics - encapsulate them?
+
+  - Do the Athena's Double Mach Reflection
+
+  - Code a routine to convert vector fields between geometries,
+    spherical/cartesian/cylindrical
+
+  - Write auxiliary variables to data/varname.dat. Maybe copy from index.pro?

@@ -1,0 +1,61 @@
+Introduction
+------------
+
+The Pencil Code Meeting 2008 will take place August 19-22 2008 at the
+Sterrewacht Leiden. The expected number of participants is around 15
+(with 1-2 participants from outside Europe).
+
+The Pencil Code is a multipurpose magnetohydrodynamical (MHD) code for
+massively parallel computing.
+
+About the meeting
+-----------------
+
+The Pencil Code Meeting is an annual meeting dedicated to the Pencil
+Code. The purpose of the meeting is to bring regular users and core
+developers together to discuss scientific and technical progress since
+the last meeting, to instigate collaborative projects and to allow new
+users to learn more about the code and to interact with other users
+and developers
+
+Here are some topics that the meeting aims at covering:
+
+  * Recent science results obtained with the Pencil Code
+  * Technical issues, such as transition from CVS to SVN version
+    control systems
+  * Future improvements to the code
+  * A Pencil Code paper
+
+Budget
+------
+
+An estimated 10 of the 15 participants will be eligible for travel
+support, based on their junior positions (PhD students, young
+postdocs) or on positions in institutions that are not able to provide
+travel support.
+
+The estimated costs are (in Euro)
+
+  Travel       : 3,000 (10 x 300)
+  Accomodation : 3,200 (10 x 4 x 80)
+  Lunch        :   600 (15 x 4 x 10)
+
+Lunch would be provided for every participant independently of travel
+support.
+
+Sterrewacht Leiden has kindly offered a conference room free of
+charge.
+
+Co-funding
+----------
+
+Funding requests will be submitted to the following:
+
+  * Astrosim
+    http://www.astrosim.net/
+
+  * NOVA 
+    http://www.strw.leidenuniv.nl/nova/
+
+  * Leids Kerkhoven-Bosscha Fonds (LKBF)
+    http://www.strw.leidenuniv.nl/lkbf/index.php?node=84

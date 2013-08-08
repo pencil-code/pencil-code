@@ -1,0 +1,198 @@
+$Id: agenda.txt,v 1.25 2009-08-28 13:32:07 dobler Exp $
+
+Topics:
+
+  - Pencil Code Lite - a minimalist cleaner version of 
+    the code for new users
+    -> may be a nice tool for teaching
+    -> should be _very_ stripped-down
+    -> will not be in sync with the main code
+    -> potential danger: users may use the toy version, hack it up
+       stupidly and then claim they did something with the Pencil Code
+    -> `crayon code?' `toy pencil code'
+    -> Wlad to hack together a crayon version
+
+  - collect talks and post them on a web page
+
+  - moving additional/experimental modules to subfolder
+    -> we will try to group .f90 files in subdirectories (timestep/,
+       physics/, ...)
+
+  - remesh procedure: discuss Nils, Wolfgang, Boris, Axel
+    -> Now checked in by Nils
+
+  - Pencil Code paper (discuss work plan for the week)
+    -> will contain fewer applications than planned so far (none?) 
+    -> write something specifically on high-order schemes
+    -> non-conservativeness <-> hybrid
+    -> shocks
+
+  - Clean up and re-order IDL directory
+    -> started, but work in progress
+
+  - The Pencil Code for teaching; auto-testing material and other
+    discussions
+    -> had tutorial presentation by Axel
+    
+  - Cleaning up the Makefile
+    [Can we be more specific and categorize the cruft here? The
+    machine-dependent part will eventually (with a long time constant) go
+    away with the new configuration scheme]
+    (Wolfgang?)
+    -> made a bit of progress, but there is certainly more to do
+
+  - What to do with the initial conditions? The code is 
+    loaded with useless and obsolete initial conditions.  
+    Should we put those in a special initcond_XXX extension 
+    of each module?
+    -> controversial discussionl ``result'': different people will handle
+       this differently
+
+  - Avoid wrong names such as lncc for cc and lnTT for TT?
+    -> Fixed by Anders (irho is alias to ilnrho when appropriate, etc.)
+
+  - Last year it was also suggested that we should have a more thorough
+    auto-test, with different levels of testing. I guess we should discuss
+    the strategies for that. (Boris/Wolfgang)
+    - This is prepared (in auto-test/pencil-test), but in order to do
+      different levels of tests periodically, we might want to use more
+      machines for auto-testing (?)
+    -> in place;
+    -> Wlad will set up a nightly test with gfortran
+
+  - Nested Pencil (Anders/Wlad)
+    - discussed this
+    -> is there a problem with the viscosity being discontinuous on the
+       boundary between coarser and finer mesh
+    -> the main remaining problem is bookkeeping for getting the
+       communication right 
+
+  - Polar coordinates - problems and directions. We have very few non-Cartesian
+    users, and there is some lack of communication between us. Some are 
+    using upwinding, some are using hyperviscosity. We lack a well-defined 
+    test for the whole scheme, and only a handful of samples test the several 
+    features implemented in polar coordinates. I suggest we have a session
+    devoted for it. The other people working on Cartesian coordinates might
+    find it interesting as well. Otherwise, the polar people can have a
+    sub-meeting. (Wlad/Dhruba/Axel/Boris)
+    -> didn't discuss this in detail
+    -> Nils found a bug: flow around cylinder goes wrong when scaling the
+       problem (forgot in which direction) such that it should be exactly
+       the same as the original problem
+ 
+  - Anelastic solver (Boris)
+    -> Boris sort of just finished parallelizing the parallelized ADI
+       solver (makeing heavy use of the tranpose_xyz functions we already
+       use for 3d FFTs
+
+  - Adding and improving the remesh facility to the main repository (Axel)
+    To be discussed with Tobi.
+    -> remesh/ is in trunk now. Wolfgang failed to move it together with
+       history
+
+  - Move the LOCK file to the data directory (or perhaps both), because the
+    actual data are in the data tree and that may only be a link!
+    OK with Wlad.
+    -> Problem appears when two run directories share the same data dir.
+    -> Wolfgang will fix this
+
+  - What determines whether a subroutine goes into sub.f90 or into general.f90?
+    (Anders)
+    -> Uses only cparam (or no module at all): general.f90
+    -> setup_mm_nn and a few other routines should probably move to
+       sub.f90
+    -> maybe, lroot can move to cparam, then error handling code doesn't
+       pull in cdata
+    -> some more re-shufflig needed
+    -> there might be three levels:
+       1. needs nothing
+       2. needs only cparam
+       3. needs only cparam, messages, mpicomm and cdata
+
+  - Take differential operators out of Sub and into independent module.
+    (Anders)
+    -> Anders will come up with a more detailed proposal
+
+  - Dependence file: Wolfgang to make it more automatic.
+    -> bug 44
+
+----------------------------------------------------------------------
+
+Further topics for discussion (added after the planning meeting, so don't
+expect those to really get discusion time assigned):
+
+- Should we make better use of the publicly visible forums/mailing lists?
+
+- Can we set up rules for how long a test may be failing?
+  - ... and for who is in charge of fixing it
+  - [encourage people to try `pc_debug' or run tests with g95-debug
+    settings]
+
+- FFT libraries:
+  - fftpack.f90 needs extra care when compiling (but certainly not more
+    than fftpack.f did)
+  - fftw3 claims to be faster, but
+    - we don't expect much of a difference because the transposition is
+      the expensive part
+    - setup is far from trivial (optimization for the given computer)
+  - alternatives? [ideally F90, well-tested, not too slow]
+
+- Try to analyze Pencil test timings (iirc, some tests [geodynamo?] show a
+  sudden increase in run time)
+  -> Write a bug?
+
+- We should define some Pencil Code standards for how to indent and capitalize
+  IDL code.
+
+- Communication:
+  - don't forget googletalk/Jabber
+  - make more use of public mailing lists? do we need a pencil-users list?
+
+  - Changing the names of gamma1 and gamma11? (Wlad)
+      gamma1  -> gamma_m1  ( = γ-1)
+      gamma11 -> gamma1    ( = 1/γ)
+    -> Suggestion: rename in two steps:
+       1. gamma1 -> gamma_m1, gamma11 -> inv_gamma
+       then, after, say 6 months (o at the next meeting)
+       2. inv_gamma -> gamma1
+ 
+  - Wlad suggests to have a separate heatcond or heating module.
+      
+----------------------------------------------------------------------
+
+Not discussed:
+
+  - Particle collisions. (Anders) 
+
+  - Conservativeness. Is it possible to make pencil conservative?
+    I'm getting tired of people not understanding that Pencil's
+    non-conservativeness is well compensated by its high-order
+    nature. Some people just never considered that a conservative
+    scheme is the only way to make their low-order codes not produce
+    garbage.
+
+  - Anders and Boris mentioned a problem with conservation of mass
+    with log density. Was it solved? (Anders/Boris)
+
+  - Other Poisson solvers - Multigrid solver, Iterative methods via inverse
+    problems (Wolfgang/Wlad)
+
+  - Full particle simulations. Stategies for non-ideal MHD.
+    Immediate application: capturing electron drift modes (Wlad).
+
+  - Discussion about the developers.txt file. Is there a simple way of
+    editing the data base and of displaying the relevant information
+    with a search facility? (Axel)
+    Question for Wolfgang
+    -> Please be more specific. Do you mean something like
+         pc_phonelist -m dhruba # return just Dhruba's email
+       ?
+
+  - Should we change the Makefile.src default to the following? (Axel)
+      EOS=noeos
+      VISCOSITY=noviscosity
+      could make VISCOSITY coupled to hydro
+    -> can you be more specific?
+
+  - Discussion about possible modifications of code style (Axel); see also
+      svn diff -r5207:8107 manual.tex
