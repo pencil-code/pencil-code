@@ -28,7 +28,7 @@ module Particles_kmeans
       call keep_compiler_quiet(trainv)
       call keep_compiler_quiet(weights)
       call keep_compiler_quiet(cb_size)
-      call keep_compiler_quiet(code_bk)
+      call keep_compiler_quiet(codebk)
       call keep_compiler_quiet(codew)
       call keep_compiler_quiet(do_split,do_norm,do_detail)
 !
