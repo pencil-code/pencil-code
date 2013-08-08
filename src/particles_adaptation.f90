@@ -23,7 +23,6 @@ module Particles_adaptation
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_kmeans
   use Particles_map
   use Particles_sub
   use Sub, only: notanumber
@@ -76,6 +75,8 @@ module Particles_adaptation
 !
 !  14-may-13/ccyang+anders: coded
 !
+      use Particles_kmeans, only: ppcvq
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mpvar), intent(inout) :: fp
       real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
@@ -84,6 +85,7 @@ module Particles_adaptation
 !
       real, dimension(max(maxval(npar_imn),1),mpvar) :: fp1
       real, dimension(npar_target,mpvar) :: fp2
+      real, dimension(mpvar,npar_target) :: fp3
       integer, dimension(nx) :: np, k1_l, k2_l
       integer :: npar_new
       integer :: k, ix, iy, iz
@@ -102,7 +104,8 @@ module Particles_adaptation
         count: do k = k1_imn(imn), k2_imn(imn)
           ix = ineargrid(k,1) - nghost
           if (ix < 1 .or. ix > nx) &
-            call fatal_error_local('particles_adaptation_pencils', 'a particle is detected outside the processor boundary. ')
+            call fatal_error_local('particles_adaptation_pencils', &
+                'a particle is detected outside the processor boundary. ')
           np(ix) = np(ix) + 1
         enddo count
 !
@@ -138,8 +141,13 @@ module Particles_adaptation
             case ('interpolated') method
               call new_population_interpolated(ix, iy, iz, np(ix), &
                   npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
-            case ('LBG') method ! to be implemented
-              call fatal_error('particles_adaptation_pencils', 'LBG method under construction')
+            case ('k-means') method
+              call ppcvq(1, 6, 1, 6, np(ix), &
+                  transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+                  fp1(k1_l(ix):k2_l(ix),irhopswarm), npar_target, &
+                  fp3(ixp:ivpz,:), fp3(irhopswarm,:), &
+                  np(ix) < npar_min, .false., .false.)
+              fp2=transpose(fp3)
             case default method
               call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
             endselect method
