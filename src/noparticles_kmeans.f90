@@ -5,6 +5,7 @@
 !
 module Particles_kmeans
 !
+  use General
   use Messages
 !
   contains
@@ -24,7 +25,8 @@ module Particles_kmeans
 !
       call fatal_error('ppcvq','you need to use the k-means module')
 !
-      call keep_compiler_quiet(measure,dims,dim1,dim2,no_tr_vec)
+      call keep_compiler_quiet(measure,dims,dim1,dim2)
+      call keep_compiler_quiet(no_tr_vec)
       call keep_compiler_quiet(trainv)
       call keep_compiler_quiet(weights)
       call keep_compiler_quiet(cb_size)
