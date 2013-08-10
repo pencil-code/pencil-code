@@ -24,13 +24,15 @@ module InitialCondition
 ! ampl = amplitude of the magnetic field
 ! width_ring = width of the flux tubes
 ! [xyz]scale = scale in each dimension
-
+! twist = internal twist of the flux tubes
+!
   real :: ampl=1.0, width_ring=0.6, n_rings = 3
   real :: xscale = 1.0, yscale = 1.0, zscale = 1.0
   character (len=labellen) :: prof='constant'
+  real :: twist = 0.
 !
   namelist /initial_condition_pars/ &
-      ampl,width_ring,prof,n_rings,xscale,yscale,zscale
+      ampl,width_ring,prof,n_rings,xscale,yscale,zscale,twist
 !
   contains
 !***********************************************************************
@@ -97,7 +99,9 @@ module InitialCondition
       integer :: l, j, ju, ring_idx
       ! The next 2 variables are used for the uncurling.
       real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
-      
+      real, dimension(3)  :: tmp ! temporary vector for computations
+      real, dimension(3)  :: B_dir  ! the direction of the magnetic field
+      real, dimension(3)  :: twist_dir ! difference vector of twisted and untwisted fiel line
 !
 !  Calculate the minimum step size of the curve parameters 
 !  to avoid discretisation issues, like mesh points without magnetic field
@@ -168,6 +172,21 @@ module InitialCondition
               (tangent(2)*tangent(3)*(1-cos(circle_param))+tangent(1)*sin(circle_param))*normal(2) + &
               (tangent(3)*tangent(3)*(1-cos(circle_param))+cos(circle_param))*normal(3))
 !
+!  If requested impose an internal twist.
+!
+              if ((twist > 0) .and. (circle_radius > 0.)) then
+                tmp = circle_pos - ellipse_pos
+                tmp(:) = tmp(:)/sqrt(tmp(1)**2 + tmp(2)**2 + tmp(3)**2)
+                twist_dir(1) = tangent(2)*tmp(3) - tangent(3)*tmp(2)
+                twist_dir(2) = tangent(3)*tmp(1) - tangent(1)*tmp(3)
+                twist_dir(3) = tangent(1)*tmp(2) - tangent(2)*tmp(1)
+                B_dir(:) = tangent(:) + circle_radius*twist*twist_dir(:)
+                B_dir(:) = B_dir(:)/sqrt(B_dir(1)**2 + B_dir(2)**2 + B_dir(3)**2)
+              else
+                B_dir = tangent
+              endif
+!
+!
 !  Find the corresponding mesh point to this position.
 !
               l = nint((circle_pos(1)*xscale - x(1))/dx) + 1
@@ -180,9 +199,9 @@ module InitialCondition
 !
               if ((l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) .eqv. .false.) then
                 if (prof == 'gaussian') then
-                  f(l,m,n,iax:iaz) = tangent*ampl*(exp(-(2*circle_radius/width_ring)**2)-exp(-1.)) / (1-exp(-1.))
+                  f(l,m,n,iax:iaz) = B_dir*ampl*(exp(-(2*circle_radius/width_ring)**2)-exp(-1.)) / (1-exp(-1.))
                 else if (prof == 'constant') then
-                  f(l,m,n,iax:iaz) = tangent*ampl
+                  f(l,m,n,iax:iaz) = B_dir*ampl
                 endif
               endif
               
