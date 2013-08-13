@@ -32,7 +32,7 @@ module Energy
   include 'energy.h'
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
-  real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
+  real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., cs_z=0.
@@ -64,7 +64,7 @@ module Energy
 !
   namelist /entropy_run_pars/ &
       lviscosity_heat, lupw_eth, &
-      chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
+      chi, chi_shock, chi_hyper3_mesh, &
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, lSD93, nu_z, cs_z, &
       lconst_cooling_time, TTref, tau_cool, &
@@ -383,15 +383,6 @@ module Energy
         lpenc_requested(i_geth)=.true.
         lpenc_requested(i_del2eth)=.true.
       endif
-      if (chi_shock_gradTT/=0.0) then
-        lpenc_requested(i_cp)=.true.
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_del2TT)=.true.
-        lpenc_requested(i_grho)=.true.
-        lpenc_requested(i_gTT)=.true.
-        lpenc_requested(i_gshock)=.true.
-      endif
 !
 !  Diagnostic pencils.
 !
@@ -532,12 +523,6 @@ module Energy
       if (chi_shock /= 0.) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock*p%del2eth + sum(p%gshock*p%geth, 2))
         if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock*p%shock*dxyz_2
-      endif
-!
-      if (chi_shock_gradTT/=0.0) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock_gradTT * p%cp * ( &
-            p%shock * (p%rho*p%del2TT + sum(p%grho*p%gTT, 2)) + p%rho * sum(p%gshock*p%gTT, 2))
-        if (lfirst .and. ldt) diffus_chi = diffus_chi + gamma*chi_shock_gradTT*p%shock*dxyz_2
       endif
 !
 !  Mesh hyper-diffusion
