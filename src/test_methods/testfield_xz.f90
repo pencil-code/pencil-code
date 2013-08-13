@@ -79,6 +79,7 @@ module Testfield
   real, dimension (nx)              :: cx,sx
   real, dimension (nz)              :: cz,sz
   real, dimension (nx,nz,3,3)       :: Minv
+  real, dimension (nx,nz,3,njtest)  :: uxbtestm
   logical, dimension(idiag_base_end):: twod_need_1d, twod_need_2d
   logical                           :: needed2d_1d, needed2d_2d
 !
@@ -156,40 +157,6 @@ module Testfield
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
-!***********************************************************************
-    subroutine init_aatest(f)
-!
-!  initialise testfield; called from start.f90
-!
-!   2-jun-05/axel: adapted from magnetic
-!
-      use Cdata
-      use Mpicomm
-      use Gravity, only: gravz
-      use Sub
-      use Initcond
-      use InitialCondition, only: initial_condition_aatest
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      select case (initaatest(1))
-!
-      case ('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-!
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(1))
-        call stop_it("")
-!
-      endselect
-!
-!  Interface for user's own subroutine
-!
-      if (linitial_condition) call initial_condition_aatest(f)
-!
-    endsubroutine init_aatest
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
 !
@@ -799,17 +766,6 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        do i=1,size(idiags)
-          write(3,*) 'idiag_'//trim(cdiags(i))//'=',idiags(i)
-        enddo
-!
-        do i=1,size(idiags_z)
-          write(3,*) 'idiag_'//trim(cdiags(i))//'z=',idiags_z(i)
-        enddo
-!
-        do i=1,size(idiags_xz)
-          write(3,*) 'idiag_'//trim(cdiags(i))//'xz=',idiags_xz(i)
-        enddo
 !
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
