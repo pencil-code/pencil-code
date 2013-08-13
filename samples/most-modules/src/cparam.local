@@ -10,3 +10,6 @@ integer, parameter :: lb_nxgrid=5
 integer, parameter :: nxgrid=2**lb_nxgrid,nygrid=nxgrid,nzgrid=nxgrid
 ! i.e. nxgrid=nygrid=32, nzgrid=16
 integer, parameter :: npar=1024,nspar=2
+
+integer, parameter :: njtest=9
+
