@@ -1280,8 +1280,6 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapPARAz',idiag_kapPARAz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'muz',idiag_muz)
       enddo
-
-!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
         write(3,*) 'iaatest=',iaatest
