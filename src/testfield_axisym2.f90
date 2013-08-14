@@ -1158,18 +1158,6 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alpPARA=',idiag_alpPARA
-        write(3,*) 'idiag_alpPERP=',idiag_alpPERP
-        write(3,*) 'idiag_gam=',idiag_gam
-        write(3,*) 'idiag_betPARA=',idiag_betPARA
-        write(3,*) 'idiag_betPERP=',idiag_betPERP
-        write(3,*) 'idiag_del=',idiag_del
-        write(3,*) 'idiag_kapPARA=',idiag_kapPARA
-        write(3,*) 'idiag_kapPERP=',idiag_kapPERP
-        write(3,*) 'idiag_mu=',idiag_mu
-        write(3,*) 'idiag_b1rms=',idiag_b1rms
-        write(3,*) 'idiag_b2rms=',idiag_b2rms
-        write(3,*) 'idiag_b3rms=',idiag_b3rms
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
