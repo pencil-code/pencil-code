@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM integer, parameter :: njtest=4
 !
 ! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 12
@@ -35,7 +36,6 @@ module Testfield
   real, dimension(nx) :: sx,cx
   real, dimension(my) :: sy,cy
   real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kxBx1,kyBx1,kxBz1,kyBz1,zmask
-  integer, parameter :: njtest=4
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
