@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM integer, parameter :: njtest=3
 !
 ! MVAR CONTRIBUTION 9
 ! MAUX CONTRIBUTION 9
@@ -35,7 +36,6 @@ module Testfield
   real, dimension(nx) :: sx,cx
   real, dimension(my) :: sy,cy
   real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kyBx1,kyBz1,bampz,bampz1
-  integer, parameter :: njtest=3
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
@@ -1277,8 +1277,6 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapPARAz',idiag_kapPARAz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'muz',idiag_muz)
       enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
         write(3,*) 'iaatest=',iaatest
