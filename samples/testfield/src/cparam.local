@@ -7,5 +7,3 @@
 !
 integer, parameter :: ncpus=4,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
-
-integer, parameter :: njtest=12
