@@ -43,7 +43,7 @@ endif
 ;
 ; Find out whether or not we stalk sink particles.
 ;
-if (n_elements(param.lstalk_sink_particles) eq 0) then begin
+if (max(tag_names(param) eq 'LSTALK_SINK_PARTICLES') eq 0) then begin
   lstalk_sink_particles=0
 endif else begin
   lstalk_sink_particles=param.lstalk_sink_particles
