@@ -4501,8 +4501,10 @@ module Energy
 !  condition is not the same as the power law. 
 !
       if (lborder_heat_variable) then 
-         pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT=1.) - &
-                 quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
+        pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT=1.) - &
+                quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
+      else 
+        pborder=1.
       endif
 !
 !  tau_cool = tau_cool_0 * Omega0/Omega
