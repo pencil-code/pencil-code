@@ -2,17 +2,11 @@
 !
 !  cparam.local
 !
-!  Local settings concerning grid size and number of CPUs.
-!  This file is included by cparam.f90
-!
-! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 0
-
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: lb_nxgrid=5
 integer, parameter :: nxgrid=2**lb_nxgrid,nygrid=nxgrid,nzgrid=nxgrid
 ! i.e. nxgrid=nygrid=32, nzgrid=16
 integer, parameter :: npar=1024,nspar=2
 
-integer, parameter :: njtest=4
+integer, parameter :: njtest=12
 
