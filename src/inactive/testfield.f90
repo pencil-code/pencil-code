@@ -41,7 +41,7 @@ module Testfield
   logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield=1.
-  integer, parameter :: njtest=12,mtestfield=3*njtest
+  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
 
   namelist /testfield_init_pars/ &
