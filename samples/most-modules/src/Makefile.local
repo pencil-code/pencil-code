@@ -21,7 +21,7 @@ COSMICRAY             =   cosmicray
 COSMICRAYFLUX         =   cosmicrayflux
 INTERSTELLAR          =   interstellar
 EOS                   =   eos_ionization
-TESTFIELD             =   test_methods/testfield_z
+TESTFIELD             =   inactive/testfield
 DUSTDENSITY           =   dustdensity
 DUSTVELOCITY          =   dustvelocity
 
