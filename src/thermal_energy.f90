@@ -307,6 +307,7 @@ module Energy
       use General, only: itoa
       use Initcond, only: jump
       use EquationOfState, only: rho0, cs20, gamma, gamma_m1
+      use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -350,6 +351,10 @@ module Energy
           endselect
         endif
       enddo
+!
+!  Call for the InitialCondition facility.
+!
+      call initial_condition_ss(f)
 !
     endsubroutine init_energy
 !***********************************************************************
