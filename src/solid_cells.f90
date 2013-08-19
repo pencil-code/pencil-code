@@ -1077,7 +1077,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if (interpolation_method=='mirror') then
 !
-!  For fluid points very close to the solid surface the value of the point
+!  For fluid points very close to the solid surface the velocity and temperature
 !  is set from interpolation between the value at the closest grid line
 !  and the value at the solid surface.
 !
@@ -2446,10 +2446,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  If this is a fluid point which has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the
-!  velocity components should be frozen.
+!  temperature and the velocity components should be frozen.
 !
           if (ba(i,m,n,1) == 10) then
             df(i,m,n,iux:iuz)=0
+            if (ilnTT>0) df(i,m,n,ilnTT)=0
           else
             df(i,m,n,:)=0
           endif
