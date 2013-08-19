@@ -1,5 +1,16 @@
 ! $Id$
 !
+!  Shock-Cloud Initial Condition
+!    sets up a 2D version similar to
+!    The Magnetohydrodynamics of Shock-Cloud Interaction in Three Dimensions
+!    Min-Su Shin, James M Stone, and Gregory F Snyder
+!    http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2008ApJ...680..336S&link_type=ABSTRACT
+! 
+!  19-aug-13/mcnallcp: Initial commit, created for an out-of-date version of thermal_energy.f90
+!    which is missing the call to the _ss init routine - need to remove the extra call after the school
+!
+! -------------------------------------
+!
 !  This module provide a way for users to specify custom initial
 !  conditions.
 !
