@@ -8,28 +8,29 @@
 # Default module settings: they can be overwritten by src/Makefile.local which
 # should be present in each local run directory.
 #
-BORDER_PROFILES   = noborder_profiles
-BOUNDCOND         =   boundcond
-DEBUG             = nodebug
-GHOST_CHECK       =   ghost_check
-SYSCALLS          =   syscalls
-DERIV             =   deriv
-FOURIER           = nofourier
-GHOSTFOLD         = noghostfold
-GRID              =   grid
-GSL               = nogsl
-INITIAL_CONDITION = noinitial_condition
-DEBUG_IO          =   debug_io_dist
-IO                =   io_dist
-MPICOMM           = nompicomm
-NSCBC             = noNSCBC
-POWER             = nopower_spectrum
-SOLID_CELLS       = nosolid_cells
-SLICES            =   slices
-SIGNAL_HANDLING   = nosignal_handling
-STRUCT_FUNC       = nostruct_func
-TIMEAVG           = notimeavg
-TIMESTEP          =   timestep
+BORDER_PROFILES    = noborder_profiles
+BOUNDCOND          =   boundcond
+DEBUG              = nodebug
+GHOST_CHECK        =   ghost_check
+SYSCALLS           =   syscalls
+DERIV              =   deriv
+FOURIER            = nofourier
+GHOSTFOLD          = noghostfold
+GRID               =   grid
+GSL                = nogsl
+IMPLICIT_DIFFUSION = noimplicit_diffusion
+INITIAL_CONDITION  = noinitial_condition
+DEBUG_IO           =   debug_io_dist
+IO                 =   io_dist
+MPICOMM            = nompicomm
+NSCBC              = noNSCBC
+POWER              = nopower_spectrum
+SOLID_CELLS        = nosolid_cells
+SLICES             =   slices
+SIGNAL_HANDLING    = nosignal_handling
+STRUCT_FUNC        = nostruct_func
+TIMEAVG            = notimeavg
+TIMESTEP           =   timestep
 #
 # Physics modules (alphabetical order).
 #
@@ -452,6 +453,9 @@ HYPERRESI_STRICT_SRC=$(HYPERRESI_STRICT).f90
 #
 HYPERVISC_STRICT_OBJ=$(HYPERVISC_STRICT).o
 HYPERVISC_STRICT_SRC=$(HYPERVISC_STRICT).f90
+#
+IMPLICIT_DIFFUSION_OBJ=$(IMPLICIT_DIFFUSION).o
+IMPLICIT_DIFFUSION_SRC=$(IMPLICIT_DIFFUSION).f90
 #
 IMPLICIT_PHYSICS_OBJ=$(IMPLICIT_PHYSICS).o
 IMPLICIT_PHYSICS_SRC=$(IMPLICIT_PHYSICS).f90
@@ -1932,7 +1936,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(C
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) syscalls_ansi.o $(SYSCALLS_OBJ) $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
