@@ -46,6 +46,7 @@ module Diagnostics
   public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
   public :: get_from_fname
   public :: init_xaver
+  public :: gen_form_legend
 !
   interface max_name
     module procedure max_name_int
@@ -120,13 +121,12 @@ module Diagnostics
 !   3-may-02/axel: coded
 !
       use General, only: safe_character_append
-      use Sub, only: noform
       use Cparam, only: max_col_width
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
-      character (len=1), parameter :: comma=','
       integer :: iname, iostat
+      real, dimension(nname) :: buffer
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -147,17 +147,8 @@ module Diagnostics
         do iname=1,nname
           if (itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
         enddo
-!
-!  Produce the format.
-!  Must set cform(1) explicitly, and then do iname>=2 in loop.
-!
-        fform = '(' // cform(1)
-        legend=noform(cname(1))
-        do iname=2,nname
-          call safe_character_append(fform,  comma // cform(iname))
-          call safe_character_append(legend, noform(cname(iname)))
-        enddo
-        call safe_character_append(fform, ')')
+
+        call gen_form_legend(fform,legend)
 !
         if (ldebug) then
           write(0,*) 'PRINTS.prints: format = ', trim(fform)
@@ -189,7 +180,9 @@ module Diagnostics
 !  Put output line into a string.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
-        write(line,trim(fform))fname(1:nname)
+        buffer = fname(1:nname)
+        where( fname_keep /= impossible ) buffer = buffer+fname_keep
+        write(line,trim(fform)) buffer
 !
         call clean_line(line)
 !
@@ -220,9 +213,36 @@ module Diagnostics
       if (ldebug) write(*,*) 'exit prints'
       first = .false.
 !
-      fname(1:nname)=0.0
+      where( fname_keep==0. ) fname(1:nname)=0.0
 !
     endsubroutine prints
+!***********************************************************************
+    subroutine gen_form_legend(fform,legend)
+!
+!  19-08-13/MR: outsourced from prints
+!
+      use General, only: safe_character_append
+      use Sub, only: noform
+! 
+      character (len=640)          ,intent(OUT) :: fform
+      character (len=640), optional,intent(OUT) :: legend
+!
+      character (len=1), parameter :: comma=','
+      integer :: iname
+!
+!  Produce the format.
+!  Must set cform(1) explicitly, and then do iname>=2 in loop.
+!
+        fform = '('//cform(1)
+        if (present(legend)) legend=noform(cname(1))
+
+        do iname=2,nname
+          call safe_character_append(fform, comma//cform(iname))
+          if (present(legend)) call safe_character_append(legend, noform(cname(iname)))
+        enddo
+        call safe_character_append(fform, ')')
+!
+    endsubroutine gen_form_legend
 !***********************************************************************
     subroutine clean_line(line)
 !
@@ -2492,8 +2512,12 @@ module Diagnostics
             'Could not allocate memory for fname')
         if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
             'fname   with nname   =', nnamel
+        allocate(fname_keep(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_fnames', &
+            'Could not allocate memory for fname_keep')
       endif
       fname=0.0
+      fname_keep=0.0
 !
       if (.not.allocated(cform)) then
         allocate(cform(nnamel),stat=stat)
