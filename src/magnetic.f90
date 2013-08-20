@@ -143,7 +143,7 @@ module Magnetic
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_strict=.false.
-  logical :: lresi_zdep=.false., lresi_xdep=.false., lresi_xydep=.false.
+  logical :: lresi_zdep=.false., lresi_ydep=.false., lresi_xdep=.false., lresi_xydep=.false.
   logical :: lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
@@ -200,7 +200,8 @@ module Magnetic
   real :: height_eta=0.0, eta_out=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
-  real :: eta_x0=1.0, eta_x1=1.0
+  real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
+  real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
@@ -217,6 +218,8 @@ module Magnetic
   real, dimension(mz,3) :: geta_z
   real, dimension(mx) :: eta_x
   real, dimension(mx,3) :: geta_x
+  real, dimension(my) :: eta_y
+  real, dimension(my,3) :: geta_y
   real, dimension(nx) :: va2max_beta
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
@@ -233,6 +236,7 @@ module Magnetic
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
+  character (len=labellen) :: ydep_profile='two-step'
   character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -254,8 +258,9 @@ module Magnetic
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
       reinitialize_aa, rescale_aa, initaa, amplaa, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
-      lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, eta_width, &
-      eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, borderaa, &
+      lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
+      eta_xwidth, eta_ywidth, eta_zwidth, & 
+      eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
@@ -995,9 +1000,16 @@ module Magnetic
           if (lroot) print*, 'resistivity: x-dependent'
           lresi_xdep=.true.
           call eta_xdep(eta_x,geta_x,xdep_profile)
+        case ('ydep','eta-ydep')
+          if (lroot) print*, 'resistivity: y-dependent'
+          lresi_ydep=.true.
+          call eta_ydep(ydep_profile, my, y, eta_y, geta_y)
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
+          ! Backward compatibility: originally, this routine used 
+          ! eta_zwidth as eta_width
+          if (eta_zwidth==0.and.eta_width/=0.0) eta_zwidth=eta_width
           call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
         case ('dust')
           if (lroot) print*, 'resistivity: depending on dust density'
@@ -1667,7 +1679,7 @@ module Magnetic
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or. &
-          lresi_xdep.or.lresi_xydep.or. &
+          lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_smagorinsky_cross.or.lresi_spitzer)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
@@ -1741,7 +1753,7 @@ module Magnetic
         lpenc_requested(i_aij)=.true.
         lpenc_requested(i_uij)=.true.
       endif
-      if (lresi_shell.or.lresi_xdep.or.lresi_xydep) &
+      if (lresi_shell.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep) &
            lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
@@ -2855,6 +2867,14 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
         etatotal=etatotal+eta_x(l1:l2)
+      endif
+!
+      if (lresi_ydep) then
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_y(m)*p%del2a(:,j)+geta_y(m,j)*p%diva
+        enddo
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_y(m)
+        etatotal=etatotal+eta_y(m)
       endif
 !
       if (lresi_hyper2) then
@@ -6419,17 +6439,17 @@ module Magnetic
 !
         case ('tanh')
 !  default to spread gradient over ~5 grid cells.
-          if (eta_width == 0.) eta_width = 5.*dz
-          eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) &
-                - tanh((z - eta_z0)/eta_width))
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
+          eta_z = eta*0.5*(tanh((z + eta_z0)/eta_zwidth) &
+                - tanh((z - eta_z0)/eta_zwidth))
 !
 ! its gradient:
           if (present(geta_z)) then
              geta_z(:,1) = 0.
              geta_z(:,2) = 0.
-             geta_z(:,3) = -eta/(2.*eta_width) * &
-               ((tanh((z + eta_z0)/eta_width))**2. &
-               -(tanh((z - eta_z0)/eta_width))**2.)
+             geta_z(:,3) = -eta/(2.*eta_zwidth) * &
+               ((tanh((z + eta_z0)/eta_zwidth))**2. &
+               -(tanh((z - eta_z0)/eta_zwidth))**2.)
           endif
 !
 !  Single tanh step function
@@ -6438,60 +6458,102 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
-          if (eta_width == 0.) eta_width = 5.*dz
-          eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_width)
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
+          eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_zwidth)
 !
 ! its gradient:
           if (present(geta_z)) then
             geta_z(:,1) = 0.
             geta_z(:,2) = 0.
-            geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+            geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_zwidth)
           endif
 !
         case ('cubic_step')
 !
 !  Cubic-step profile
 !
-          if (eta_width == 0.) eta_width = 5.*dz
-          eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_width)
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
+          eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_zwidth)
 !
 ! its gradient:
           if (present(geta_z)) then
             geta_z(:,1) = 0.
             geta_z(:,2) = 0.
-            geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_width)
+            geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth)
           endif
 !
 !  Two-step function
 !
-        case ('two_step')
+        case ('two-step','two_step')
 !
 !  Default to spread gradient over ~5 grid cells,
 !
-          if (eta_width == 0.) eta_width = 5.*dz
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
           eta_z = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-            (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
+            (step(z,eta_z0,eta_zwidth)-step(z,eta_z1,eta_zwidth))
 !
 !  ... and its gradient. Note that the sign of the second term enters
-!  with the opposite sign, because we have used negative eta_width.
+!  with the opposite sign, because we have used negative eta_zwidth.
 !
           if (present(geta_z)) then
             geta_z(:,1) = 0.
             geta_z(:,2) = 0.
             geta_z(:,3) = eta*(eta_jump-two_step_factor)*( &
-              der_step(z,eta_z0,-eta_width)+der_step(z,eta_z1,eta_width))
+              der_step(z,eta_z0,-eta_zwidth)+der_step(z,eta_z1,eta_zwidth))
           endif
 !
       endselect
 !
     endsubroutine eta_zdep
 !***********************************************************************
+    subroutine eta_ydep(ydep_profile, ny, y, eta_y, geta_y)
+!
+!  creates a z-dependent resistivity for protoplanetary disk studies
+!
+!  19-aug-2013/wlad: adapted from eta_zdep
+!
+      use General, only: erfcc
+      use Sub, only: step, der_step, cubic_step, cubic_der_step
+      use EquationOfState, only: cs0
+!
+      character(len=labellen), intent(in) :: ydep_profile
+      integer, intent(in) :: ny
+      real, dimension(ny), intent(in) :: y
+      real, dimension(ny), intent(out) :: eta_y
+      real, dimension(ny,3), intent(out), optional :: geta_y
+!
+      select case (ydep_profile)
+!
+!  Two-step function
+!
+        case ('two-step','two_step')
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+          if (eta_ywidth == 0.) eta_ywidth = 5.*dy
+          eta_y = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
+            (step(y,eta_y0,eta_ywidth)-step(y,eta_y1,eta_ywidth))
+!
+!  ... and its gradient. Note that the sign of the second term enters
+!  with the opposite sign, because we have used negative eta_ywidth.
+!
+          if (present(geta_y)) then
+            geta_y(:,1) = 0.
+            geta_y(:,2) = eta*(eta_jump-two_step_factor)*( &
+              der_step(y,eta_y0,-eta_ywidth)+der_step(y,eta_y1,eta_ywidth))
+            geta_y(:,3) = 0.
+          endif
+!
+      endselect
+!
+    endsubroutine eta_ydep
+!***********************************************************************
     subroutine eta_xdep(eta_x,geta_x,xdep_profile)
 !
 !  creates a x-dependent resistivity for protoplanetary disk studies
 !
 !  09-mar-2011/wlad: adapted from eta_zdep
-!  10-mar-2011/axel: corrected gradient term: should point in z
+!  10-mar-2011/axel: corrected gradient term: should point in x
 !
       use General, only: erfcc
       use Sub, only: step, der_step
@@ -6523,14 +6585,14 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
-           if (eta_width == 0.) eta_width = 5.*dx
-           eta_x = eta*0.5*(tanh((x + eta_x0)/eta_width) &
-             - tanh((x - eta_x0)/eta_width))
+           if (eta_xwidth == 0.) eta_xwidth = 5.*dx
+           eta_x = eta*0.5*(tanh((x + eta_x0)/eta_xwidth) &
+             - tanh((x - eta_x0)/eta_xwidth))
 !
 ! its gradient:
 !
-           geta_x(:,1) = -eta/(2.*eta_width) * ((tanh((x + eta_x0)/eta_width))**2. &
-             - (tanh((x - eta_x0)/eta_width))**2.)
+           geta_x(:,1) = -eta/(2.*eta_xwidth) * ((tanh((x + eta_x0)/eta_xwidth))**2. &
+             - (tanh((x - eta_x0)/eta_xwidth))**2.)
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
@@ -6540,28 +6602,28 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
-           eta_x = eta*(1.+(x-xyz1(1))/eta_width)
+           eta_x = eta*(1.+(x-xyz1(1))/eta_xwidth)
 !
 ! its gradient:
 !
-           geta_x(:,1) = eta/eta_width
+           geta_x(:,1) = eta/eta_xwidth
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
 !  Single step function
-!  Note that eta_x increases with increasing x when eta_width is negative (!)
+!  Note that eta_x increases with increasing x when eta_xwidth is negative (!)
 !
         case ('step')
 !
 !  default to spread gradient over ~5 grid cells.
 !
-           if (eta_width == 0.) eta_width = 5.*dx
-           eta_x = eta + eta*(eta_jump-1.)*step(x,eta_x0,-eta_width)
+           if (eta_xwidth == 0.) eta_xwidth = 5.*dx
+           eta_x = eta + eta*(eta_jump-1.)*step(x,eta_x0,-eta_xwidth)
 !
 !  its gradient:
 !  Note that geta_x points then only in the x direction.
 !
-           geta_x(:,1) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_width)
+           geta_x(:,1) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_xwidth)
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
@@ -6582,16 +6644,16 @@ module Magnetic
 !
 !  Default to spread gradient over ~5 grid cells,
 !
-           if (eta_width == 0.) eta_width = 5.*dx
+           if (eta_xwidth == 0.) eta_xwidth = 5.*dx
            eta_x = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-             (step(x,eta_x0,eta_width)-step(x,eta_x1,eta_width))
+             (step(x,eta_x0,eta_xwidth)-step(x,eta_x1,eta_xwidth))
 !
 !  ... and its gradient. Note that the sign of the second term enters
-!  with the opposite sign, because we have used negative eta_width.
+!  with the opposite sign, because we have used negative eta_xwidth.
 !  Note that geta_x points then only in the x direction.
 !
            geta_x(:,1) = eta*(eta_jump-two_step_factor)*( &
-             der_step(x,eta_x0,-eta_width)+der_step(x,eta_x1,eta_width))
+             der_step(x,eta_x0,-eta_xwidth)+der_step(x,eta_x1,eta_xwidth))
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
@@ -6675,7 +6737,6 @@ module Magnetic
           bb_hat(:,j) = bb(:,j)
         endwhere
       enddo
-!
 !
 !  Get unit vector.
 !
