@@ -4342,7 +4342,7 @@ module Special
       real, dimension (nx) :: quench
       real, dimension (nx) :: cosbgT,glnTT2
       real, dimension (nx) :: chi_spitzer,chi_grad,chi_grad_iso
-      real, dimension (nx,3) :: unit_glnTT
+      real, dimension (nx,3) :: unit_glnTT,bbb_tmp
       real, dimension (nx) :: diffus_hcond,dt1_hcond_max
       real :: B2_ext,cp1
       logical :: luse_Bext_in_b2=.true.
@@ -4377,7 +4377,7 @@ module Special
           p%aa=f(l1:l2,m,n,iax:iaz)
           call gij(f,iaa,p%aij,1)
           call curl_mn(p%aij,p%bb,p%aa)
-          p%bbb=p%bb
+          bbb_tmp=p%bb
           B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
           if (B2_ext/=0.0) then
@@ -4394,7 +4394,7 @@ module Special
           if (luse_Bext_in_b2) then
             if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
           else
-            if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+            if (lpencil(i_b2)) call dot2_mn(bbb_tmp,p%b2)
           endif
 ! bunit
           quench = 1.0/max(tini,sqrt(p%b2))
@@ -4403,9 +4403,9 @@ module Special
             p%bunit(:,2) = p%bb(:,2)*quench
             p%bunit(:,3) = p%bb(:,3)*quench
           else
-            p%bunit(:,1) = p%bbb(:,1)*quench
-            p%bunit(:,2) = p%bbb(:,2)*quench
-            p%bunit(:,3) = p%bbb(:,3)*quench
+            p%bunit(:,1) = bbb_tmp(:,1)*quench
+            p%bunit(:,2) = bbb_tmp(:,2)*quench
+            p%bunit(:,3) = bbb_tmp(:,3)*quench
           endif
 !
 ! 1.2) other assistant varible
