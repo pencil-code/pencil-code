@@ -8,6 +8,8 @@ function dot, f, g
   sf = size(f)
   sg = size(g)
   if (sf[0] ne sg[0]) then message, 'Incompatible shapes'
+  if ((sf[sf[0]] ne 3) and (sg[sg[0]] ne 3) and (sf[1] eq 3) and (sg[1] eq 3)) then $
+      return, dot (transpose(f), transpose(g))
   if ((sf[sf[0]] ne 3) or (sg[sg[0]] ne 3)) then message, 'Need two 3-vectors'
 
   case (sf[0]) of
