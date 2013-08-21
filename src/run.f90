@@ -553,7 +553,7 @@ program run
       endif
     endif
 !
-!  If we want to write out video data, wvid sets lvideo=.true.
+!  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
     if (lwrite_slices) call wvid_prepare()
