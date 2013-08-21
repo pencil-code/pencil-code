@@ -103,9 +103,10 @@ module ImplicitDiffusion
 ! diffusive operation.  Input procedure argument get_diffus_coeff is
 ! a subroutine returning the diffusion coefficient with the interface
 !
-!   subroutine get_diffus_coeff(diffus_coeff)
+!   subroutine get_diffus_coeff(ndc, diffus_coeff)
 !
-!     real, dimension(:), intent(out) :: diffus_coeff
+!     integer, intent(in) :: ndc
+!     real, dimension(ndc), intent(out) :: diffus_coeff
 !
 ! where diffus_coeff(i) is the diffusion coefficient at position i.
 !
@@ -122,19 +123,19 @@ module ImplicitDiffusion
       dir: select case (direction)
 !
       case (1) dir
-        call get_diffus_coeff(dc(1:nxgrid))
+        call get_diffus_coeff(nxgrid, dc(1:nxgrid))
         a(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid - 0.5 * dxtgrid)
         b(1:nxgrid) = -dc(1:nxgrid) * dx1grid**2
         c(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid + 0.5 * dxtgrid)
 !
       case (2) dir
-        call get_diffus_coeff(dc(1:nygrid))
+        call get_diffus_coeff(nygrid, dc(1:nygrid))
         a(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid - 0.5 * dytgrid)
         b(1:nygrid) = -dc(1:nygrid) * dy1grid**2
         c(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid + 0.5 * dytgrid)
 !
       case (3) dir
-        call get_diffus_coeff(dc(1:nzgrid))
+        call get_diffus_coeff(nzgrid, dc(1:nzgrid))
         a(1:nzgrid) = 0.5 * dc(1:nzgrid) * dz1grid * (dz1grid - 0.5 * dztgrid)
         b(1:nzgrid) = -dc(1:nzgrid) * dz1grid**2
         c(1:nzgrid) = 0.5 * dc(1:nzgrid) * dz1grid * (dz1grid + 0.5 * dztgrid)
@@ -159,7 +160,7 @@ module ImplicitDiffusion
 !   ivar2: ending f component
 !   dt: time step
 ! Input Procedure
-!   subroutine get_diffus_coeff(diffus_coeff): see set_diffusion_equations
+!   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       character(len=*), dimension(mcom), intent(in) :: bcx1, bcx2
@@ -198,7 +199,7 @@ module ImplicitDiffusion
 !   ivar2: ending f component
 !   dt: time step
 ! Input Procedure
-!   subroutine get_diffus_coeff(diffus_coeff): see set_diffusion_equations
+!   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
       use Mpicomm, only: transp_xy
 !
@@ -247,7 +248,7 @@ module ImplicitDiffusion
 !   ivar2: ending f component
 !   dt: time step
 ! Input Procedure
-!   subroutine get_diffus_coeff(diffus_coeff): see set_diffusion_equations
+!   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
       use Mpicomm, only: transp_xz, transp_zx
 !
