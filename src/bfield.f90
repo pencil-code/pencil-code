@@ -44,6 +44,7 @@ module Magnetic
 !  Runtime parameters
 !
   logical :: lbext = .false.
+  logical :: limplicit_resistivity = .false.
   logical :: lresis_const = .false.
   logical :: lresis_shock = .false.
   logical :: lresis_hyper3_mesh = .false.
@@ -51,7 +52,8 @@ module Magnetic
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
 !
-  namelist /magnetic_run_pars/ b_ext, lresis_const, eta, lresis_shock, eta_shock, lresis_hyper3_mesh, eta_hyper3_mesh
+  namelist /magnetic_run_pars/ &
+    b_ext, limplicit_resistivity, lresis_const, eta, lresis_shock, eta_shock, lresis_hyper3_mesh, eta_hyper3_mesh
 !
 !  Diagnostic variables
 !
@@ -380,6 +382,21 @@ module Magnetic
 !
     endsubroutine daa_dt
 !***********************************************************************
+    subroutine split_update_magnetic(f)
+!
+! Calls for ImplicitDiffusion to implicitly evolve the resistivity
+! term(s).
+!
+! 21-aug-13/ccyang: coded
+!
+      use ImplicitDiffusion, only: integrate_diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (limplicit_resistivity) call integrate_diffusion(get_resistivity_implicit, f, ibx, ibz)
+!
+    endsubroutine split_update_magnetic
+!***********************************************************************
     subroutine read_magnetic_init_pars(unit, iostat)
 !
 ! Reads the initialization parameters for Magnetic.
@@ -630,14 +647,14 @@ module Magnetic
 !
 !  Gets the total normal resistivity along one pencil.
 !
-!  02-jul-13/ccyang: coded.
+!  21-aug-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: eta_penc
 !
 !  Constant resistivity
 !
-      if (lresis_const) then
+      if (lresis_const .and. .not. limplicit_resistivity) then
         eta_penc = eta
       else
         eta_penc = 0.0
@@ -648,6 +665,23 @@ module Magnetic
       if (lresis_shock) eta_penc = eta_penc + eta_shock * f(l1:l2,m,n,ishock)
 !
     endsubroutine get_resistivity
+!***********************************************************************
+    subroutine get_resistivity_implicit(ndc, diffus_coeff)
+!
+!  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
+!
+!  21-aug-13/ccyang: coded.
+!
+      integer, intent(in) :: ndc
+      real, dimension(ndc), intent(out) :: diffus_coeff
+!
+      if (lresis_const) then
+        diffus_coeff = mu01 * eta
+      else
+        diffus_coeff = 0.0
+      endif
+!
+    endsubroutine get_resistivity_implicit
 !***********************************************************************
     subroutine add_resis_hyper3_mesh(f, df)
 !
@@ -772,16 +806,6 @@ module Magnetic
       output_persistent_magnetic = .false.
 !
     endfunction output_persistent_magnetic
-!***********************************************************************
-    subroutine split_update_magnetic(f)
-!
-!  dummy
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine split_update_magnetic
 !***********************************************************************
     subroutine expand_shands_magnetic()
 !
