@@ -133,6 +133,8 @@ module Equ
           dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
           dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
           dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+          dxmax_pencil(:) = dxmax
+          dxmin_pencil(:) = dxmin
         endif
       endif
 !
