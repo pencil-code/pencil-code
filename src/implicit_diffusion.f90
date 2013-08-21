@@ -9,7 +9,7 @@ module ImplicitDiffusion
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: fatal_error
+  use Messages, only: fatal_error, warning
 !
   implicit none
 !
