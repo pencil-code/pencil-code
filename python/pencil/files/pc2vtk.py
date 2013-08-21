@@ -284,6 +284,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     except:
         pass
 
+    del(var)
+    
     fd.close()
 
 
@@ -569,6 +571,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         except:
             pass
       
+        del(var)
+        
         fd.close()
 
 
