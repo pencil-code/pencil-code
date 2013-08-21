@@ -3295,7 +3295,7 @@ module Mpicomm
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !
-      sendc=nx*nz
+      sendc=nxt*nz
 !
 !  Send information to different processors (x-z transpose)
 !
