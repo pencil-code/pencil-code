@@ -28,6 +28,7 @@ module Special
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper2_spi=0.
   real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.
+  real :: R_hyperchi=0.,R_hypereta=0.,R_hypernu=0.,R_hyperdiffrho=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
@@ -42,12 +43,14 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.
-  logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
+  logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.
+  logical :: lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
-  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.,mach_chen=0.,maxvA=0.
+  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.
+  real ::mach_chen=0.,maxvA=0.
   logical :: sub_step_hcond=.false.
-  logical :: lrad_loss=.false.
+  logical :: lrad_loss=.false.,hyper_heating=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -75,7 +78,8 @@ module Special
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
-      sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp
+      sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
+      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho
 !
 ! variables for print.in
 !
@@ -488,11 +492,14 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
+      if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
+!
+      if (R_hypernu/=0. .or. R_hyperchi/=0. .or. &
+          R_hypereta/=0. .or. R_hyperdiffrho/=0.) lpenc_requested(i_u2)=.true.
+!
       if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
 !
       if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
-!
-      if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -1037,7 +1044,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc
+      real, dimension (nx) :: hc,tmp
       integer :: itemp
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
@@ -1058,15 +1065,33 @@ module Special
         elseif (ltemperature) then
           itemp = ilnTT
         else
-          call fatal_error('hyper3_chi special','only for ltemperature')
+          call fatal_error('hyper3_chi special','please check')
         endif
 !
         call del6(f,itemp,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,itemp) = df(l1:l2,m,n,itemp) + hyper3_chi*hc
 !
-!  due to ignoredx hyper3_chi has [1/s]
+!  due to ignoredx hyper3_chi has the unit [1/s]
 !
         if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+      endif
+!
+      if (R_hyperchi /= 0.) then
+        if (lentropy) then
+          itemp = iss
+        elseif (ltemperature) then
+          itemp = ilnTT
+        else
+          call fatal_error('hyper3_chi special','please check')
+        endif
+!
+        tmp = sqrt(p%u2)/dxmax_pencil/R_hyperchi
+        call del6(f,itemp,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,itemp) = df(l1:l2,m,n,itemp) + tmp*hc
+!
+!  due to ignoredx tmp has the unit [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
       endif
 !
     endsubroutine special_calc_energy
@@ -1081,7 +1106,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc, uu_tmp, uu_floor
+      real, dimension (nx) :: hc, uu_tmp, uu_floor, tmp
       integer :: i
       real :: damp_height, damp_width
 !
@@ -1093,9 +1118,21 @@ module Special
           df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
         enddo
 !
-!  due to ignoredx hyper3_nu has [1/s]
+!  due to ignoredx hyper3_nu has the unit [1/s]
 !
         if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+      endif
+!
+      if (R_hypernu /= 0.) then
+        tmp = sqrt(p%u2)/dxmax_pencil/R_hypernu
+        do i=0,2
+          call del6(f,iux+i,hc,IGNOREDX=.true.)
+          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
+        enddo
+!
+!  due to ignoredx tmp has the unit [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
       endif
 !
       if (lchen .and. mach_chen /= 0.) then
@@ -1131,19 +1168,20 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx) :: tmp
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc,lnrho_floor
 !
       if (ldensity_floor_c) then
-        lnrho_floor = alog(p%b2/mu0/cdt)-2.*alog(real(c_light)) 
+        lnrho_floor = alog(p%b2/mu0/cdt)-2.*alog(real(c_light))
         where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
           f(l1:l2,m,n,ilnrho) = lnrho_floor
         endwhere
       endif
 !
       if (maxvA/=0.) then
-        lnrho_floor = alog(p%b2/mu0)-2.*alog(maxvA) 
+        lnrho_floor = alog(p%b2/mu0)-2.*alog(maxvA)
         where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
           f(l1:l2,m,n,ilnrho) = lnrho_floor
         endwhere
@@ -1161,6 +1199,19 @@ module Special
         if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
       endif
 !
+      if (R_hyperdiffrho /= 0.) then
+        if (ldensity_nolog.and.(ilnrho /= irho)) &
+            call fatal_error('hyper3_diffrho special','please check')
+!
+        tmp = sqrt(p%u2)/dxmax_pencil/R_hyperdiffrho
+        call del6(f,ilnrho,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + tmp*hc
+!
+!  due to ignoredx tmp has the units [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+      endif
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -1176,7 +1227,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc,hyper3_heat
+      real, dimension (nx) :: hc,hyper3_heat,tmp
       integer :: i
 !
       if (aa_tau_inv /=0.) call update_aa(f,df)
@@ -1190,13 +1241,32 @@ module Special
           df(l1:l2,m,n,iax+i) = df(l1:l2,m,n,iax+i) + hyper3_eta*hc
         enddo
 ! add the energy difference to the internal energy
-        if (ltemperature .and. (.not.ltemperature_nolog)) then
+        if (ltemperature .and. (.not.ltemperature_nolog).and.hyper_heating) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - hyper3_heat*p%cVTrho1
         endif
 !
-!  due to ignoredx hyper3_eta has [1/s]
+!  due to ignoredx hyper3_heat has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_eta/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+      endif
+!
+      if (R_hypereta /= 0.) then
+        hyper3_heat = 0.
+! apply hyper resistivity to the magnetic field
+        tmp = sqrt(p%u2)/dxmax_pencil/R_hypereta
+        do i=0,2
+          call del6(f,iax+i,hc,IGNOREDX=.true.)
+          hyper3_heat = hyper3_heat + p%jj(:,i+1)*hc*tmp
+          df(l1:l2,m,n,iax+i) = df(l1:l2,m,n,iax+i) + tmp*hc
+        enddo
+! add the energy difference to the internal energy
+        if (ltemperature .and. (.not.ltemperature_nolog) .and. hyper_heating) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - hyper3_heat*p%cVTrho1
+        endif
+!
+!  due to ignoredx tmp has the unit [1/s]
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
       endif
 !
     endsubroutine special_calc_magnetic
@@ -4043,7 +4113,7 @@ module Special
 !
         if (ldensity) &
             f(:,:,n1-i,ilnrho)=lnrho_init(:,:,n1-i)*(1.-coeff)+coeff*(inte(:,:,n1-i,4)-log(unit_density))
-!                                                                                                                                  
+!
         if (ltemperature .and. (.not. ltemperature_nolog)) then
           f(:,:,n1-i,ilnTT)=lntt_init(:,:,n1-i)*(1.-coeff)+coeff*(inte(:,:,n1-i,5)-log(unit_temperature))
         endif
