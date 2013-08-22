@@ -3,8 +3,9 @@
 !
 &run_pars
   cvsid = '$Id$'
-  nt = 1000, it1 = 1
-  tmax = 1.0
+  nt = 1000, it1 = 10
+  tmax = 10.0
+  cdt = 0.4
   lpencil_check = .true.
 /
 &eos_run_pars
@@ -12,10 +13,11 @@
 &hydro_run_pars
 /
 &magnetic_run_pars
-  eta = 0.1
   B_ext = 1., 1., 0.5
+  limplicit_resistivity = .true.
+  eta = 0.1
 /
 &viscosity_run_pars
-  ivisc = 'simplified'
-  nu = 0.1
+  limplicit_viscosity = .true.
+  ivisc = 'simplified', nu = 0.1
 /

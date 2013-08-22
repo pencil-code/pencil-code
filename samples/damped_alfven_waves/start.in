@@ -3,7 +3,6 @@
 !
 &init_pars
   cvsid = '$Id$'
-  lwrite_ic = .true.
 /
 &eos_init_pars
 /
