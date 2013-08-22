@@ -175,7 +175,7 @@ module Diagnostics
           open(1,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
           if (outlog(iostat,'open',trim(datadir)//'/legend.dat')) goto 91
 !
-          write(1,'(" ",A)',IOSTAT=iostat)trim(legend)
+          write(1,'(" ",A)',IOSTAT=iostat) trim(legend)
           if (outlog(iostat,'write legend')) goto 91
 !
           close(1,IOSTAT=iostat)
@@ -251,8 +251,8 @@ module Diagnostics
 !  Produce the format.
 !  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = '('
-        if (present(legend)) legend=char(0)
+        fform = '(""'
+        if (present(legend)) legend=''
 
         do iname=1,nname
           if (itype_name(iname)==ilabel_complex) then
