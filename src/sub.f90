@@ -86,7 +86,9 @@ module Sub
   public :: xlocation, ylocation, zlocation, location_in_proc
   public :: register_report_aux
   public :: fourier_single_mode
-  public :: remove_mean
+  public :: remove_mean,global_mean
+  public :: insert
+  public :: operator(.INDAT.)
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -227,6 +229,17 @@ module Sub
      module procedure power_law_pt
      module procedure power_law_mn
   endinterface
+!
+  interface insert                 ! Overload the 'insert' function
+    module procedure insert_carray
+    module procedure insert_carray_mult
+    module procedure insert_rarray
+  endinterface
+!
+  interface operator (.INDAT.)
+    module procedure indat
+  endinterface
+!
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -473,24 +486,71 @@ module Sub
       real, dimension (nx) :: c
 !
       logical, optional :: ladd
-      logical :: ladd1
 !
       intent(in) :: a,b,ladd
       intent(inout) :: c
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
-!
-      if (ladd1) then
+      if (loptest(ladd)) then
         c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
       else
-        c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
+        c=  a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
       endif
 !
     endsubroutine dot_mn
+!***********************************************************************
+    logical function loptest(opt)
+!  
+!  returns value of optional logical parameter opt if present, .false. otherwise.
+!
+!  20-aug-13/MR: coded
+!
+      logical, optional, intent(IN) :: opt
+
+      if (present(opt)) then
+        loptest=opt
+      else
+        loptest=.false.
+      endif
+
+    endfunction loptest
+!***********************************************************************
+    integer function ioptest(iopt,idef)
+!  
+!  returns value of optional integer parameter iopt if present, otherwise the default value idef, if present, 
+!  zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      integer, optional, intent(IN) :: iopt, idef
+
+      if (present(iopt)) then
+        ioptest=iopt
+      elseif (present(idef)) then
+        ioptest=idef
+      else
+        ioptest=0
+      endif
+
+    endfunction ioptest
+!***********************************************************************
+    integer function roptest(ropt,rdef)
+!  
+!  returns value of optional real parameter ropt if present, otherwise the default value rdef, if present, 
+!  zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      real, optional, intent(IN) :: ropt, rdef
+
+      if (present(ropt)) then
+        roptest=ropt
+      elseif (present(idef)) then
+        roptest=rdef
+      else
+        roptest=0.
+      endif
+
+    endfunction roptest
 !***********************************************************************
     subroutine transpose_mn(a,b)
 !
@@ -897,16 +957,9 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
-      logical :: ladd1
 !
       intent(in) :: a,b,ladd
       intent(out) :: c
-!
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
 !
       do i=1,3
 !
@@ -916,7 +969,7 @@ module Sub
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
 !
-        if (ladd1) then
+        if (loptest(ladd)) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -941,16 +994,9 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
-      logical :: ladd1
 !
       intent(in) :: a,b,ladd
       intent(inout) :: c
-!
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
 !
       do i=1,3
         j=1
@@ -959,7 +1005,7 @@ module Sub
           tmp=tmp+a(:,j,i)*b(:,j)
         enddo
 !
-        if (ladd1) then
+        if (loptest(ladd)) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
@@ -2483,19 +2529,11 @@ module Sub
         return
       endif
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
+      ladd1=loptest(ladd)
 !
 !  Test for upwind.
 !
-      if (present(upwind)) then
-        upwind1=upwind
-      else
-        upwind1=.false.
-      endif
+      upwind1=loptest(upwind)
 !
       do j=1,3
 !
@@ -2552,11 +2590,7 @@ module Sub
         return
       endif
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
+      ladd1=loptest(ladd)
 !
       do j=1,3
         call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
@@ -2659,8 +2693,6 @@ module Sub
 !  28-Sep-2009/MR: ladd added for incremental work
 !  26-mar-12/MR: doupwind introduced
 !
-      logical :: ladd1
-!
       intent(in) :: f,k,gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
@@ -2675,13 +2707,7 @@ module Sub
         return
       endif
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
-!
-      call dot_mn(uu,gradf,ugradf,ladd1)
+      call dot_mn(uu,gradf,ugradf,loptest(ladd))
 !
 !  Upwind correction
 !
@@ -2704,25 +2730,21 @@ module Sub
 ! kurganov-tadmore scheme.
 !  26-mar-12/MR: doupwind introduced
 !
-      logical :: ladd1
-!
       intent(in) :: f,k,gradf,uu,iadvec,ladd
       intent(out) :: ugradf
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu,gradf
       real, dimension (nx) :: ugradf, udelf
+      logical, optional :: ladd
       integer :: k,iadvec
+      logical :: ladd1
+!
 ! iadvec=0 normal scheme
 ! iadvec=1 upwinding
 ! iadvec=2 Kurganov-Tadmor (KT)
-      logical, optional :: ladd
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
+      ladd1=loptest(ladd)
 !
       select case (iadvec)
       case (0)
@@ -2797,8 +2819,6 @@ module Sub
 !  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 !  28-Sep-2009/MR: ladd added for incremental work
 !
-      logical :: ladd1
-!
       intent(in) :: gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
@@ -2806,13 +2826,7 @@ module Sub
       real, dimension (nx) :: ugradf
       logical, optional :: upwind,ladd
 !
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
-!
-      call dot_mn(uu,gradf,ugradf,ladd1)
+      call dot_mn(uu,gradf,ugradf,loptest(ladd))
 !
 !  Upwind correction (currently just for z-direction).
 !
@@ -3300,18 +3314,21 @@ module Sub
 !
     endsubroutine identify_bcs
 !***********************************************************************
-    function noform(cname)
+    function noform(cname,lcomplex)
 !
 !  Given a string of the form `name(format)',
 !  returns the name without format, fills empty space
 !  of correct length (depending on format) with dashes.
+
 !  For output as legend.dat and first line of time_series.dat.
 !
 !  22-jun-02/axel: coded
+!  20-aug-13/MR: optional parameter lcomplex added
 !
       use Cparam, only: max_col_width
 !
       character (len=*) :: cname
+      logical, optional :: lcomplex
       character (len=max_col_width) :: noform,cform,cnumber,dashes
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
       integer :: iform0,iform1,iform2,length,number,number1,number2
@@ -3356,7 +3373,8 @@ module Sub
 !
       cnumber=cform(index1+1:index2-1)
       read(cnumber,'(i4)',err=99) number
-10    number1=max(0,(number-length)/2)
+10    if (loptest(lcomplex)) number = 2*number+3
+      number1=max(0,(number-length)/2)
       number2=max(1,number-length-number1) ! at least one separating dash
 !
 !  Sanity check.
@@ -4112,7 +4130,7 @@ module Sub
 !***********************************************************************
     subroutine parse_shell(strin,strout)
 !
-!  Parse strin replacing all $XXXX sequences with appropriate
+!  Parse string replacing all $XXXX sequences with appropriate
 !  values from the environment. Return the parsed result in strout.
 !
       use General, only: safe_character_assign
@@ -5789,6 +5807,51 @@ nameloop: do
 !
     endsubroutine doupwind
 !***********************************************************************
+    function global_mean(f,inda,indep,lexp)
+!
+!  Calculate global mean for a (several) field(s) selected by the index inda
+!  (the index range inda - indep) in f.
+!
+!  15-oct-12/MR: adapted from remove_mean
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(:), allocatable                    :: global_mean
+!
+      real, dimension (mx,my,mz,*), intent(in)           :: f
+      integer,                      intent(in)           :: inda
+      integer,                      intent(in), optional :: indep
+      logical,                      intent(in), optional :: lexp
+!
+      real, allocatable, dimension(:) :: mean_tmp
+      integer :: j, inde
+      logical :: lexpl
+!
+      inde = ioptest(indep,inda)
+      allocate(global_mean(inda:inde),mean_tmp(inda:inde))
+!
+!  initialize mean
+!
+      global_mean(inda:inde) = 0.0
+!
+!  Compute mean for each field.
+!
+      lexpl = loptest(lexp) 
+      do j=inda,inde
+        if (lexpl) then
+          global_mean(j) = global_mean(j) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
+        else
+          global_mean(j) = global_mean(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
+        endif
+      enddo
+!
+!  Compute total mean for all processors
+!
+      call mpiallreduce_sum(global_mean,mean_tmp,inde-inda+1)
+      global_mean = mean_tmp/nwgrid
+!
+    endfunction global_mean
+!***********************************************************************
     subroutine remove_mean(f,inda,indep)
 !
 !  Substract mean from a (several) field(s) selected by the index inda
@@ -5850,5 +5913,116 @@ nameloop: do
       deallocate( mean, mean_tmp )
 !
     endsubroutine remove_mean
+!***********************************************************************
+  integer function indat(cvec,str)
+!
+!  finds position of a string in a vector of strings,
+!  returns zero if not contained
+!
+!  20-aug-13/MR: coded
+!
+    character (LEN=*), dimension(:), intent(IN) :: cvec
+    character (LEN=*),               intent(IN) :: str
+
+    do indat=1,size(cvec)
+      if (cvec(indat)==str) return
+    enddo
+
+    indat = 0
+
+  endfunction indat
+!***********************************************************************
+    subroutine insert_carray( array, insert, index, leng )
+!
+! inserts string vector insert in string vector array at position index; array is assumed
+! to be settled until position leng; leng is updated.
+! Oobs: routine does not check whether there is enough free space in
+!       array for the insertion.
+!
+! 15-feb-2013/MR: parameter leng_insert removed (now derived from insert)
+! 21-aug-2013/MR: moved from Testflow
+!
+      character*(*), dimension(*) :: array
+      character*(*), dimension(:) :: insert
+      integer                     :: index, leng, leng_insert, i
+!
+      intent(in)    :: index, insert
+      intent(inout) :: leng, array
+!
+!  insert only if position index is meaningful
+!
+      if ( index>0.and.index<=leng+1 ) then
+!
+        leng_insert = size(insert)
+        do i=leng,index,-1
+          array(i+leng_insert) = array(i)
+        enddo
+!
+        array(index:index+leng_insert-1) = insert
+!
+        leng = leng+leng_insert
+
+      endif
+!
+    endsubroutine insert_carray
+!***********************************************************************
+    subroutine insert_rarray( array, insert, index, leng )
+!
+! 21-aug-2013/MR: derived from insert_carray for vectors of reals.
+!
+      integer            :: index, leng, leng_insert, i
+      real, dimension(*) :: array
+      real, dimension(:) :: insert
+!
+      intent(in)    :: index, insert
+      intent(inout) :: leng, array
+!
+!  insert only if position index is meaningful
+!
+      if ( index>0.and.index<=leng+1 ) then
+!
+        leng_insert = size(insert)
+        do i=leng,index,-1
+          array(i+leng_insert) = array(i)
+        enddo
+!
+        array(index:index+leng_insert-1) = insert
+!
+        leng = leng+leng_insert
+
+      endif
+!
+    endsubroutine insert_rarray
+!***********************************************************************
+    subroutine insert_carray_mult( array, insert, mult, index, leng )
+!
+! inserts string insert mult times in string vector array at position index; array is assumed
+! to be settled until position leng; leng is updated.
+! Oobs: routine does not check whether there is enough free space in
+!       array for the insertion.
+!
+! 15-feb-2013/MR: derived from insert_carray
+!
+      character*(*), dimension(*) :: array
+      character*(*)               :: insert
+      integer                     :: index, leng, mult, i
+!
+      intent(in)    :: index, insert, mult
+      intent(inout) :: leng, array
+!
+!  insert only if position index is meaningful
+!
+      if ( index>0.and.index<=leng+1 ) then
+!
+        do i=leng,index,-1
+          array(i+mult) = array(i)
+        enddo
+!
+        array(index:index+mult-1) = insert
+!
+        leng = leng+mult
+!
+      endif
+    endsubroutine insert_carray_mult
 !***********************************************************************
 endmodule Sub
