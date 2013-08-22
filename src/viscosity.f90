@@ -88,13 +88,14 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
+  logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
   logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
-      nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
+      limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
       nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
@@ -741,7 +742,7 @@ module Viscosity
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
           lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_therm.or. &
-          (lvisc_simplified.and.lboussinesq) ) then
+          (.not. limplicit_viscosity .and. lvisc_simplified.and.lboussinesq) ) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
@@ -771,7 +772,7 @@ module Viscosity
         lpenc_requested(i_uijk)=.true.
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
-      if (lvisc_simplified .or. lvisc_rho_nu_const .or. &
+      if (lvisc_rho_nu_const .or. &
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
@@ -779,6 +780,7 @@ module Viscosity
           lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic .or. lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_del2u)=.true.
+      if (.not. limplicit_viscosity .and. lvisc_simplified) lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
           lpenc_requested(i_del6u)=.true.
@@ -934,7 +936,7 @@ module Viscosity
 !  numerically easy and in most cases qualitatively OK,
 !  for boussinesq (divu=0) yet exact
 !
-      if (lvisc_simplified) then
+      if (.not. limplicit_viscosity .and. lvisc_simplified) then
         p%fvisc=p%fvisc+nu*p%del2u
         if (lpencil(i_visc_heat)) then
           if (lboussinesq) then
@@ -1958,6 +1960,37 @@ module Viscosity
       if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * umax / re_mesh
 !
     endsubroutine dynamical_viscosity
+!***********************************************************************
+    subroutine split_update_viscosity(f)
+!
+!  Update the velocity by integrating the operator split viscous terms.
+!
+!  22-aug-13/ccyang: coded.
+!
+      use ImplicitDiffusion, only: integrate_diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
+!
+    endsubroutine split_update_viscosity
+!***********************************************************************
+    subroutine get_viscosity_implicit(ndc, diffus_coeff)
+!
+!  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
+!
+!  22-aug-13/ccyang: coded.
+!
+      integer, intent(in) :: ndc
+      real, dimension(ndc), intent(out) :: diffus_coeff
+!
+      if (lvisc_simplified) then
+        diffus_coeff = nu
+      else
+        diffus_coeff = 0.0
+      endif
+!
+    endsubroutine get_viscosity_implicit
 !***********************************************************************
     subroutine calc_lambda(p,div_lambda)
 !

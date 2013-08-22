@@ -90,6 +90,7 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step
+  use Viscosity,       only: split_update_viscosity
 !
   implicit none
 !
@@ -589,6 +590,7 @@ program run
 !
     if (lenergy) call split_update_energy(f)
     if (lmagnetic) call split_update_magnetic(f)
+    if (lviscosity) call split_update_viscosity(f)
 !
 !  Print diagnostic averages to screen and file.
 !

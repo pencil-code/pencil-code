@@ -207,4 +207,14 @@ module Viscosity
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
+    subroutine split_update_viscosity(f)
+!
+!  Dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_viscosity
+!***********************************************************************
 endmodule Viscosity
