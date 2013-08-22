@@ -1104,13 +1104,11 @@ module Testscalar
 !
       use Cdata
       use Diagnostics
+      use Sub, only: loptest
 !
       integer :: iname,inamez,inamexz
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -1205,7 +1203,7 @@ module Testscalar
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) then
+      if (loptest(lwrite)) then
         write(3,*) 'idiag_F11z=',idiag_F11z
         write(3,*) 'idiag_F21z=',idiag_F21z
         write(3,*) 'idiag_F31z=',idiag_F31z
