@@ -64,6 +64,12 @@ module Diagnostics
     module procedure parse_name_v
   endinterface parse_name
 !
+  interface sum_mn_name
+    module procedure sum_mn_name_real
+    module procedure sum_mn_name_cmplx
+    module procedure sum_mn_name_std
+  endinterface sum_mn_name
+!
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
   character (len=intlen) :: ch2davg
@@ -122,11 +128,12 @@ module Diagnostics
 !
       use General, only: safe_character_append
       use Cparam, only: max_col_width
+      use Sub, only: insert
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
-      integer :: iname, iostat
-      real, dimension(nname) :: buffer
+      integer :: iname, iostat, nnamel
+      real, dimension(2*nname) :: buffer
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -180,10 +187,18 @@ module Diagnostics
 !  Put output line into a string.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
-        buffer = fname(1:nname)
-        where( fname_keep /= impossible ) buffer = buffer+fname_keep
-        write(line,trim(fform)) buffer
+        buffer(1:nname) = fname(1:nname)
 !
+!  add accumulated values to current ones if existent
+!
+        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+
+        nnamel=nname
+        do iname=nname,1,-1
+          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
+        enddo
+!
+        write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
 !
 !  Append to diagnostics file.
@@ -213,7 +228,9 @@ module Diagnostics
       if (ldebug) write(*,*) 'exit prints'
       first = .false.
 !
-      where( fname_keep==0. ) fname(1:nname)=0.0
+!  reset non-accumulating values (marked with zero in fname_keep)
+!
+      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
 !
     endsubroutine prints
 !***********************************************************************
@@ -227,17 +244,23 @@ module Diagnostics
       character (len=640)          ,intent(OUT) :: fform
       character (len=640), optional,intent(OUT) :: legend
 !
-      character (len=1), parameter :: comma=','
-      integer :: iname
+      character, parameter :: comma=','
+      character(len=40)    :: tform
+      integer              :: iname
 !
 !  Produce the format.
 !  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = '('//cform(1)
-        if (present(legend)) legend=noform(cname(1))
+        fform = '('
+        if (present(legend)) legend=char(0)
 
-        do iname=2,nname
-          call safe_character_append(fform, comma//cform(iname))
+        do iname=1,nname
+          if (itype_name(iname)==ilabel_complex) then
+            tform = comma//'"("'//comma//trim(cform(iname))//comma//'","'//comma//trim(cform(iname))//comma//'")"'
+          else
+            tform = comma//cform(iname)
+          endif
+          call safe_character_append(fform, trim(tform))
           if (present(legend)) call safe_character_append(legend, noform(cname(iname)))
         enddo
         call safe_character_append(fform, ')')
@@ -410,7 +433,7 @@ module Diagnostics
         close(1,IOSTAT=iostat)
         if (outlog(iostat,'close')) continue
 !
-99    if (ldebug) write(*,*) 'exit prints'
+99    if (ldebug) write(*,*) 'exit write_sound'
       lfirst = .false.
 !
       fname_sound(1:nname_sound,1:ncoords_sound)=0.0
@@ -1514,7 +1537,32 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_cmplx(a,iname,lsqrt,lint,ipart)
+
+      complex, dimension(nx), intent(IN) :: a
+      integer,           intent(IN)      :: iname
+      integer, optional, intent(IN)      :: ipart
+      logical, optional, intent(IN)      :: lsqrt, lint
+
+      itype_name(iname)=ilabel_complex
+
+      call sum_mn_name_real(real(a),iname,fname,lsqrt,lint,ipart)
+      call sum_mn_name_real(imag(a),iname,fname_keep)
+
+    endsubroutine sum_mn_name_cmplx
+!***********************************************************************
+    subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
+
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: iname
+      integer, optional,   intent(IN) :: ipart
+      logical, optional,   intent(IN) :: lsqrt, lint
+
+      call sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+
+    endsubroutine sum_mn_name_std
+!***********************************************************************
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
@@ -1541,7 +1589,9 @@ module Diagnostics
 !  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
-      real, dimension (nx) :: a,a_scaled
+      real, dimension(nx) :: a,a_scaled
+      real, dimension(nname) :: fname
+!
       real :: ppart,qpart
       integer :: iname
       integer, optional :: ipart
@@ -1618,7 +1668,7 @@ module Diagnostics
 !
       endif
 !
-    endsubroutine sum_mn_name
+    endsubroutine sum_mn_name_real
 !***********************************************************************
     subroutine sum_mn_name_halfy(a,iname)
 !
@@ -2492,6 +2542,7 @@ module Diagnostics
 !
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
+!   18-aug-13/MR: accumulation of diagnostics enabled
 !
       integer, intent(in) :: nnamel
 !
@@ -2846,6 +2897,7 @@ module Diagnostics
 !   20-apr-10/Bourdin.KIS: copied from xyaverages_clean_up
 !
       if (allocated(fname)) deallocate(fname)
+      if (allocated(fname_keep)) deallocate(fname_keep)
       if (allocated(cname)) deallocate(cname)
       if (allocated(cform)) deallocate(cform)
 !
