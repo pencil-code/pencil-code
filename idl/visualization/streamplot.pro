@@ -36,7 +36,7 @@
 
 function blank_pos, xi, yi
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
 
   ; --- takes grid space coords and 
   ;     returns nearest space in the blank array
@@ -48,7 +48,7 @@ end
 
 function value_at, a, xi, yi, oob=oob
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
 
   ; --- linear interpolation - nice and quick because we are
   ;     working in grid-index coordinates.
@@ -77,7 +77,7 @@ end
         
 function f, xi, yi, bw=bw, oob=oob
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
 
   dt_ds = 1./value_at(speed, xi, yi, oob=oob)
@@ -92,7 +92,7 @@ end
 
 function check_bounds, xi, yi
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
 
   return, (xi ge 0) and (xi lt ngx-1) $
       and (yi ge 0) and (yi lt ngy-1)
@@ -102,7 +102,7 @@ end
 
 function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
   common changes, bx_changes, by_changes
 
@@ -176,7 +176,7 @@ end
 function flow_integrate, x0, y0
 
   common fields, u,v,x,y, speed, blank
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common changes, bx_changes, by_changes
 
   ; --- this function does RK4 forward and back trajectories from
@@ -221,7 +221,7 @@ end
 
 pro traj, xb,yb, _extra=extr
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
 
   ; --- a quick function for integrating trajectories if blank==0.
@@ -259,7 +259,7 @@ end
 
 pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
 
-  common geom, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
 
   ;  - x and y are 1d arrays defining an *evenly spaced* grid.
