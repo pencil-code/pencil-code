@@ -544,7 +544,7 @@ module Sub
 
       if (present(ropt)) then
         roptest=ropt
-      elseif (present(idef)) then
+      elseif (present(rdef)) then
         roptest=rdef
       else
         roptest=0.
