@@ -1841,13 +1841,11 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use Sub, only: loptest
 !
       integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -2007,115 +2005,7 @@ module Testfield
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_alp31=',idiag_alp31
-        write(3,*) 'idiag_alp12=',idiag_alp12
-        write(3,*) 'idiag_alp22=',idiag_alp22
-        write(3,*) 'idiag_alp32=',idiag_alp32
-        write(3,*) 'idiag_eta11=',idiag_eta11
-        write(3,*) 'idiag_eta21=',idiag_eta21
-        write(3,*) 'idiag_eta12=',idiag_eta12
-        write(3,*) 'idiag_eta22=',idiag_eta22
-        write(3,*) 'idiag_alpK=',idiag_alpK
-        write(3,*) 'idiag_alpM=',idiag_alpM
-        write(3,*) 'idiag_alpMK=',idiag_alpMK
-        write(3,*) 'idiag_phi11=',idiag_phi11
-        write(3,*) 'idiag_phi21=',idiag_phi21
-        write(3,*) 'idiag_phi12=',idiag_phi12
-        write(3,*) 'idiag_phi22=',idiag_phi22
-        write(3,*) 'idiag_phi32=',idiag_phi32
-        write(3,*) 'idiag_psi11=',idiag_psi11
-        write(3,*) 'idiag_psi21=',idiag_psi21
-        write(3,*) 'idiag_psi12=',idiag_psi12
-        write(3,*) 'idiag_psi22=',idiag_psi22
-        write(3,*) 'idiag_phiK=',idiag_phiK
-        write(3,*) 'idiag_phiM=',idiag_phiM
-        write(3,*) 'idiag_phiMK=',idiag_phiMK
-        write(3,*) 'idiag_alp11cc=',idiag_alp11cc
-        write(3,*) 'idiag_alp21sc=',idiag_alp21sc
-        write(3,*) 'idiag_alp12cs=',idiag_alp12cs
-        write(3,*) 'idiag_alp22ss=',idiag_alp22ss
-        write(3,*) 'idiag_eta11cc=',idiag_eta11cc
-        write(3,*) 'idiag_eta21sc=',idiag_eta21sc
-        write(3,*) 'idiag_eta12cs=',idiag_eta12cs
-        write(3,*) 'idiag_eta22ss=',idiag_eta22ss
-        write(3,*) 'idiag_s2kzDFm=',idiag_s2kzDFm
-        write(3,*) 'idiag_M11=',idiag_M11
-        write(3,*) 'idiag_M22=',idiag_M22
-        write(3,*) 'idiag_M33=',idiag_M33
-        write(3,*) 'idiag_M11cc=',idiag_M11cc
-        write(3,*) 'idiag_M11ss=',idiag_M11ss
-        write(3,*) 'idiag_M22cc=',idiag_M22cc
-        write(3,*) 'idiag_M22ss=',idiag_M22ss
-        write(3,*) 'idiag_M12cs=',idiag_M12cs
-        write(3,*) 'idiag_bx11pt=',idiag_bx11pt
-        write(3,*) 'idiag_bx21pt=',idiag_bx21pt
-        write(3,*) 'idiag_bx12pt=',idiag_bx12pt
-        write(3,*) 'idiag_bx22pt=',idiag_bx22pt
-        write(3,*) 'idiag_bx0pt=',idiag_bx0pt
-        write(3,*) 'idiag_by11pt=',idiag_by11pt
-        write(3,*) 'idiag_by21pt=',idiag_by21pt
-        write(3,*) 'idiag_by12pt=',idiag_by12pt
-        write(3,*) 'idiag_by22pt=',idiag_by22pt
-        write(3,*) 'idiag_by0pt=',idiag_by0pt
-        write(3,*) 'idiag_Ex11pt=',idiag_Ex11pt
-        write(3,*) 'idiag_Ex21pt=',idiag_Ex21pt
-        write(3,*) 'idiag_Ex12pt=',idiag_Ex12pt
-        write(3,*) 'idiag_Ex22pt=',idiag_Ex22pt
-        write(3,*) 'idiag_Ex0pt=',idiag_Ex0pt
-        write(3,*) 'idiag_Ey11pt=',idiag_Ey11pt
-        write(3,*) 'idiag_Ey21pt=',idiag_Ey21pt
-        write(3,*) 'idiag_Ey12pt=',idiag_Ey12pt
-        write(3,*) 'idiag_Ey22pt=',idiag_Ey22pt
-        write(3,*) 'idiag_Ey0pt=',idiag_Ey0pt
-        write(3,*) 'idiag_u11rms=',idiag_u11rms
-        write(3,*) 'idiag_u21rms=',idiag_u21rms
-        write(3,*) 'idiag_u12rms=',idiag_u12rms
-        write(3,*) 'idiag_u22rms=',idiag_u22rms
-        write(3,*) 'idiag_j11rms=',idiag_j11rms
-        write(3,*) 'idiag_b11rms=',idiag_b11rms
-        write(3,*) 'idiag_b21rms=',idiag_b21rms
-        write(3,*) 'idiag_b12rms=',idiag_b12rms
-        write(3,*) 'idiag_b22rms=',idiag_b22rms
-        write(3,*) 'idiag_jb0m=',idiag_jb0m
-        write(3,*) 'idiag_ux0m=',idiag_ux0m
-        write(3,*) 'idiag_uy0m=',idiag_uy0m
-        write(3,*) 'idiag_ux11m=',idiag_ux11m
-        write(3,*) 'idiag_uy11m=',idiag_uy11m
-        write(3,*) 'idiag_u0rms=',idiag_u0rms
-        write(3,*) 'idiag_b0rms=',idiag_b0rms
-        write(3,*) 'idiag_E11rms=',idiag_E11rms
-        write(3,*) 'idiag_E21rms=',idiag_E21rms
-        write(3,*) 'idiag_E12rms=',idiag_E12rms
-        write(3,*) 'idiag_E22rms=',idiag_E22rms
-        write(3,*) 'idiag_E0rms=',idiag_E0rms
-        write(3,*) 'idiag_bx0mz=',idiag_bx0mz
-        write(3,*) 'idiag_by0mz=',idiag_by0mz
-        write(3,*) 'idiag_bz0mz=',idiag_bz0mz
-        write(3,*) 'idiag_bamp=',idiag_bamp
-        write(3,*) 'idiag_E111z=',idiag_E111z
-        write(3,*) 'idiag_E211z=',idiag_E211z
-        write(3,*) 'idiag_E311z=',idiag_E311z
-        write(3,*) 'idiag_E121z=',idiag_E121z
-        write(3,*) 'idiag_E221z=',idiag_E221z
-        write(3,*) 'idiag_E321z=',idiag_E321z
-        write(3,*) 'idiag_E112z=',idiag_E112z
-        write(3,*) 'idiag_E212z=',idiag_E212z
-        write(3,*) 'idiag_E312z=',idiag_E312z
-        write(3,*) 'idiag_E122z=',idiag_E122z
-        write(3,*) 'idiag_E222z=',idiag_E222z
-        write(3,*) 'idiag_E322z=',idiag_E322z
-        write(3,*) 'idiag_E10z=',idiag_E10z
-        write(3,*) 'idiag_E20z=',idiag_E20z
-        write(3,*) 'idiag_E30z=',idiag_E30z
-        write(3,*) 'idiag_M11z=',idiag_M11z
-        write(3,*) 'idiag_M22z=',idiag_M22z
-        write(3,*) 'idiag_M33z=',idiag_M33z
-        write(3,*) 'idiag_EBpq=',idiag_EBpq
-        write(3,*) 'idiag_E0Um=',idiag_E0Um
-        write(3,*) 'idiag_E0Wm=',idiag_E0Wm
+      if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iuutest=',iuutest
         write(3,*) 'ntestfield=',ntestfield
