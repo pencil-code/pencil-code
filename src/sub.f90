@@ -5826,16 +5826,17 @@ nameloop: do
 !
     endsubroutine doupwind
 !***********************************************************************
-    function global_mean(f,inda,indep,lexp)
+    subroutine global_mean(f,inda,mean,indep,lexp)
 !
 !  Calculate global mean for a (several) field(s) selected by the index inda
 !  (the index range inda - indep) in f.
 !
 !  15-oct-12/MR: adapted from remove_mean
+!  22-aug-13/MR: rewritten into subroutine because of internal compiler error of gfortran
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension(:), allocatable                    :: global_mean
+      real, dimension(:), allocatable                    :: mean
 !
       real, dimension (mx,my,mz,*), intent(in)           :: f
       integer,                      intent(in)           :: inda
@@ -5843,37 +5844,34 @@ nameloop: do
       logical,                      intent(in), optional :: lexp
 !
       real, allocatable, dimension(:) :: mean_tmp
-      integer :: j, inde, jj
+      integer :: j, inde
       logical :: lexpl
 !
       inde = ioptest(indep,inda) 
 !
-!!      allocate(global_mean(inda:inde),mean_tmp(inda:inde))
-      allocate(global_mean(inde-inda+1),mean_tmp(inde-inda+1))
+      allocate(mean(inda:inde),mean_tmp(inda:inde))
 !
 !  initialize mean
 !
-!      global_mean(inda:inde) = 0.0
-      global_mean = 0.0
+      mean = 0.0
 !
 !  Compute mean for each field.
 !
       lexpl = loptest(lexp) 
       do j=inda,inde
-        jj=j-inda+1
         if (lexpl) then
-          global_mean(jj) = global_mean(jj) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
+          mean(j) = mean(j) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
         else
-          global_mean(jj) = global_mean(jj) + sum(f(l1:l2,m1:m2,n1:n2,j))
+          mean(j) = mean(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
         endif
       enddo
 !
 !  Compute total mean for all processors
 !
-      call mpiallreduce_sum(global_mean,mean_tmp,inde-inda+1)
-      global_mean = mean_tmp/nwgrid
+      call mpiallreduce_sum(mean,mean_tmp,inde-inda+1)
+      mean = mean_tmp/nwgrid
 !
-    endfunction global_mean
+    endsubroutine global_mean
 !***********************************************************************
     subroutine remove_mean(f,inda,indep)
 !
@@ -5891,11 +5889,7 @@ nameloop: do
       real, allocatable, dimension(:) :: mean, mean_tmp
       integer :: m,n,j, inde
 !
-      if (.not.present(indep) ) then
-        inde = inda
-      else
-        inde = indep
-      endif
+      inde = ioptest(indep,inda)
       allocate( mean(inda:inde), mean_tmp(inda:inde) )
 !
 !  initialize mean
