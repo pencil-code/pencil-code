@@ -1209,11 +1209,11 @@ module Dustvelocity
           if (idiag_rdudx2m(k)/=0) &
               call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
           if (idiag_odrms(k)/=0) &
-              call sum_mn_name(p%od2,idiag_odrms(k),lsqrt=.true.)
+              call sum_mn_name(p%od2(:,1),idiag_odrms(k),lsqrt=.true.)
           if (idiag_odmax(k)/=0) &
               call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
-          if (idiag_od2m(k)/=0) call sum_mn_name(p%od2,idiag_od2m(k))
-          if (idiag_oudm(k)/=0) call sum_mn_name(p%oud,idiag_oudm(k))
+          if (idiag_od2m(k)/=0) call sum_mn_name(p%od2(:,1),idiag_od2m(k))
+          if (idiag_oudm(k)/=0) call sum_mn_name(p%oud(:,1),idiag_oudm(k))
         enddo
       endif
 !
