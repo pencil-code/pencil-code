@@ -25,7 +25,7 @@
 ;	DAMPED_ALFVEN_WAVES, /DOUBLE, VARFILE='VAR10'
 ;
 ; MODIFICATION HISTORY:
-; 	Written by:	Chao-Chin Yang, June 26, 2013.
+; 	Written by:	Chao-Chin Yang, August 22, 2013.
 ;-
 
 pro damped_alfven_waves, double=double, varfile=varfile
@@ -46,6 +46,8 @@ pro damped_alfven_waves, double=double, varfile=varfile
   decay = exp(-0.5 * total(ki^2, double=double) * (nu + eta) * f.t)
   du = [par1.amp0[0], par1.amp0[1], par1.amp0[2]] * decay
   db = du * sqrt(par1.mu0 * par1.rho0)
+  du2 = total(du^2, double=double)
+  db2 = total(db^2, double=double)
 
 ; Allocate memory.
   if keyword_set(double) then begin
@@ -77,7 +79,6 @@ pro damped_alfven_waves, double=double, varfile=varfile
       bez[*,j,k] = db[2] * a
     endfor
   endfor
-  help, phase
 
 ; Compare the solutions.
   ix = fix(dim.nxgrid * randomu(seed))
@@ -92,12 +93,12 @@ pro damped_alfven_waves, double=double, varfile=varfile
   oplot, f.x, f.bb[*,iy,iz,2], psym=1, color=200
 
 ; Evaluate the errors.
-  vol = f.dx * f.dy * f.dz
-  err2 = (f.uu[*,*,*,0] - uex)^2 + (f.uu[*,*,*,1] - uey)^2 + (f.uu[*,*,*,2] - uez)^2 + $
-         (f.bb[*,*,*,0] - bex)^2 + (f.bb[*,*,*,1] - bey)^2 + (f.bb[*,*,*,2] - bez)^2
+  vol = (f.dx / par1.lxyz[0]) * (f.dy / par1.lxyz[1]) * (f.dz / par1.lxyz[2])
+  err2 = ((f.uu[*,*,*,0] - uex)^2 + (f.uu[*,*,*,1] - uey)^2 + (f.uu[*,*,*,2] - uez)^2) / du2 + $
+         ((f.bb[*,*,*,0] - bex)^2 + (f.bb[*,*,*,1] - bey)^2 + (f.bb[*,*,*,2] - bez)^2) / db2
   two_norm = sqrt(vol * total(err2, double=double))
   max_norm = sqrt(max(err2))
-  print, 'dx = ', f.dx
+  print, 'dx = ', f.dx / par1.lxyz[0]
   print, 'Two-norm error = ', two_norm
   print, 'Max-norm error = ', max_norm
 
