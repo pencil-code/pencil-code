@@ -1787,7 +1787,8 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
-        if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)
+        !!!if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)   !What is intended here? p%fvisc is a vector!!
+        if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc(:,1),idiag_fviscm)
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
         if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
         if (idiag_fviscrmsx/=0) then
