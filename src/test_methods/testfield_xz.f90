@@ -718,15 +718,12 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use Sub, only: loptest
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamexz,i
-      logical :: lwr
-
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -765,7 +762,7 @@ module Testfield
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) then
+      if (loptest(lwr)) then
 !
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
