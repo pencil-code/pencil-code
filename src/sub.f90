@@ -5843,31 +5843,28 @@ nameloop: do
       logical,                      intent(in), optional :: lexp
 !
       real, allocatable, dimension(:) :: mean_tmp
-      integer :: j, inde
+      integer :: j, inde, jj
       logical :: lexpl
 !
-!      inde = ioptest(indep,inda)   !!! causes internal compiler error
+      inde = ioptest(indep,inda) 
 !
-      if (present(indep)) then
-        inde=indep
-      else
-        inde=inda
-      endif
-!
-      allocate(global_mean(inda:inde),mean_tmp(inda:inde))
+!!      allocate(global_mean(inda:inde),mean_tmp(inda:inde))
+      allocate(global_mean(inde-inda+1),mean_tmp(inde-inda+1))
 !
 !  initialize mean
 !
-      global_mean(inda:inde) = 0.0
+!      global_mean(inda:inde) = 0.0
+      global_mean = 0.0
 !
 !  Compute mean for each field.
 !
       lexpl = loptest(lexp) 
       do j=inda,inde
+        jj=j-inda+1
         if (lexpl) then
-          global_mean(j) = global_mean(j) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
+          global_mean(jj) = global_mean(jj) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
         else
-          global_mean(j) = global_mean(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
+          global_mean(jj) = global_mean(jj) + sum(f(l1:l2,m1:m2,n1:n2,j))
         endif
       enddo
 !
