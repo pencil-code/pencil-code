@@ -1116,13 +1116,11 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use Sub, only: loptest
 !
       integer :: iname,inamex,inamez,inamexz
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -1235,9 +1233,7 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E30z',idiag_E30z)
       enddo
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
+      if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
