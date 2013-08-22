@@ -79,7 +79,7 @@ module Special
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
-      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho
+      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating
 !
 ! variables for print.in
 !
