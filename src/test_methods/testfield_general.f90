@@ -1,8 +1,8 @@
 module Testfield_general
 !
-!  27-jun-13/MR:  created to centralize functionalities of testfield modules
-!                 eveything to be used in individual testfield modules needs
-!                 to be public (or protected)
+!  27-jun-13/MR:  Created to centralize functionalities of testfield modules.
+!                 Everything to be used in individual testfield modules needs
+!                 to be public (or protected).
   use Cparam
   use Messages
   use General, only: keep_compiler_quiet
@@ -19,12 +19,12 @@ module Testfield_general
   logical                                    :: luxb_as_aux=.false.,ljxb_as_aux=.false.
   namelist /testfield_init_pars/          &
            B_ext,                         &
-           luxb_as_aux,                   &     ! can be PROTECTED  
-           ljxb_as_aux,                   &     !        .
-           initaatest,                    &     !        .
-           amplaatest,                    &     !        .
-           kx_aatest,ky_aatest,kz_aatest, &
-           phasex_aatest,phasey_aatest,phasez_aatest
+           luxb_as_aux,                   &          ! can be PROTECTED  
+           ljxb_as_aux,                   &          !        .
+           initaatest,                    &          !        .
+           amplaatest,                    &          !        .
+           kx_aatest,ky_aatest,kz_aatest, &          !        .
+           phasex_aatest,phasey_aatest,phasez_aatest !        .
 !
 ! run parameters
 !
@@ -296,5 +296,26 @@ module Testfield_general
       write(unit,NML=testfield_init_pars)
 !
     endsubroutine write_testfield_init_pars
+!***********************************************************************
+    subroutine calc_uxb(f,p,iaxt,uxb,bbtest)
+!
+!   6-jun-13/MR: outsourced from daatest_dt of testfield_z
+!                along with uxb also bbtest is returned
+!
+      use Cdata
+      use Sub
+
+      real, dimension(mx,my,mz,mfarray),intent(IN) :: f      
+      type (pencil_case),               intent(IN) :: p
+      integer,                          intent(IN) :: iaxt
+      real, dimension(nx,3),            intent(OUT):: uxb, bbtest
+
+      real, dimension(nx,3,3):: aijtest
+
+      call gij(f,iaxt,aijtest,1)
+      call curl_mn(aijtest,bbtest,f(l1:l2,m,n,iaxt:iaxt+2))
+      call cross_mn(p%uu,bbtest,uxb)
+
+    endsubroutine calc_uxb
 !***********************************************************************
 endmodule Testfield_general
