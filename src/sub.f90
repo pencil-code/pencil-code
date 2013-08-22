@@ -5846,7 +5846,14 @@ nameloop: do
       integer :: j, inde
       logical :: lexpl
 !
-      inde = ioptest(indep,inda)
+!      inde = ioptest(indep,inda)   !!! causes internal compiler error
+!
+      if (present(indep)) then
+        inde=indep
+      else
+        inde=inda
+      endif
+!
       allocate(global_mean(inda:inde),mean_tmp(inda:inde))
 !
 !  initialize mean
