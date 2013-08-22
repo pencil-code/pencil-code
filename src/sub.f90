@@ -533,7 +533,7 @@ module Sub
 
     endfunction ioptest
 !***********************************************************************
-    integer function roptest(ropt,rdef)
+    real function roptest(ropt,rdef)
 !  
 !  returns value of optional real parameter ropt if present, otherwise the default value rdef, if present, 
 !  zero, if not.
@@ -551,6 +551,25 @@ module Sub
       endif
 
     endfunction roptest
+!***********************************************************************
+    real*8 function doptest(dopt,ddef)
+!  
+!  returns value of optional real*8 parameter dopt if present, otherwise the default value ddef, if present, 
+!  zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      real*8, optional, intent(IN) :: dopt, ddef
+
+      if (present(dopt)) then
+        doptest=dopt
+      elseif (present(ddef)) then
+        doptest=ddef
+      else
+        doptest=0.
+      endif
+
+    endfunction doptest
 !***********************************************************************
     subroutine transpose_mn(a,b)
 !
