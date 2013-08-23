@@ -133,8 +133,7 @@ module Diagnostics
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
       integer :: iname, iostat, nnamel
-!!      real, dimension(2*nname) :: buffer
-      real, dimension(nname) :: buffer
+      real, dimension(2*nname) :: buffer
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
