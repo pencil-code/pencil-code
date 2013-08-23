@@ -66,7 +66,7 @@ module Diagnostics
 !
   interface sum_mn_name
     module procedure sum_mn_name_real
-    module procedure sum_mn_name_cmplx
+    module procedure sum_mn_name_arr2
     module procedure sum_mn_name_std
   endinterface sum_mn_name
 !
@@ -125,6 +125,7 @@ module Diagnostics
 !  modules and marked in `print.in'.
 !
 !   3-may-02/axel: coded
+!  20-aug-13/MR: changes for accumulating and complex diagnostics
 !
       use General, only: safe_character_append
       use Cparam, only: max_col_width
@@ -191,12 +192,12 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+!!        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
         nnamel=nname
-        do iname=nname,1,-1
-          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
-        enddo
+!!        do iname=nname,1,-1
+!!          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
+!!        enddo
 !
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
@@ -204,7 +205,7 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(1,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
-! file not distributed, backskipping enabled
+!  file not distributed, backskipping enabled
         if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92
 !
         if (first) then
@@ -230,8 +231,9 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
-!!      fname(1:nname)=0.0
+!!      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.
+!!      where( itype_name==ilabel_complex ) fname_keep(1:nname)=0.
+      fname(1:nname)=0.0
 !
     endsubroutine prints
 !***********************************************************************
@@ -250,12 +252,12 @@ module Diagnostics
       integer              :: iname
 !
 !  Produce the format.
-!  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = "(' '"
+        fform = '(TL1'
         if (present(legend)) legend=''
 !
         do iname=1,nname
+          
           if (itype_name(iname)==ilabel_complex) then
             tform = comma//'"("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
@@ -264,6 +266,7 @@ module Diagnostics
           endif
           call safe_character_append(fform, trim(tform))
           if (present(legend)) call safe_character_append(legend, noform(cname(iname)))
+
         enddo
         call safe_character_append(fform, ')')
 !
@@ -478,8 +481,8 @@ module Diagnostics
 !
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname, imax_count, isum_count, nmax_count, nsum_count
-      logical :: lweight_comm
+      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
+      logical :: lweight_comm, lcomplex
       logical, save :: first=.true.
       real, save :: dVol_rel1
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
@@ -523,17 +526,23 @@ module Diagnostics
       imax_count=0
       isum_count=0
       lweight_comm=.false.
+
       do iname=1,nlname
-        if (itype_name(iname)<0) then
+
+        itype = itype_name(iname)
+
+        if (itype<0) then
           imax_count=imax_count+1
           fmax_tmp(imax_count)=vname(iname)
-        elseif (itype_name(iname)>0) then
+        elseif (itype>0) then
+          lcomplex = itype>=ilabel_complex
+          itype = mod(itype,10)
           isum_count=isum_count+1
           fsum_tmp(isum_count)=vname(iname)
-          if (itype_name(iname)==ilabel_sum_weighted .or. &
-              itype_name(iname)==ilabel_sum_weighted_sqrt .or. &
-              itype_name(iname)==ilabel_sum_par .or. &
-              itype_name(iname)==ilabel_sum_sqrt_par) then
+          if (itype==ilabel_sum_weighted .or. &
+              itype==ilabel_sum_weighted_sqrt .or. &
+              itype==ilabel_sum_par .or. &
+              itype==ilabel_sum_sqrt_par) then
             fweight_tmp(isum_count)=fweight(iname)
             lweight_comm=.true.
           endif
@@ -557,46 +566,51 @@ module Diagnostics
         imax_count=0
         isum_count=0
         do iname=1,nlname
-          if (itype_name(iname)<0) then ! max
+          itype = itype_name(iname)
+          if (itype<0) then ! max
             imax_count=imax_count+1
 !
-            if (itype_name(iname)==ilabel_max)            &
+            if (itype==ilabel_max)            &
                 vname(iname)=fmax(imax_count)
 !
-            if (itype_name(iname)==ilabel_max_sqrt)       &
+            if (itype==ilabel_max_sqrt)       &
                 vname(iname)=sqrt(fmax(imax_count))
 !
-            if (itype_name(iname)==ilabel_max_dt)         &
+            if (itype==ilabel_max_dt)         &
                 vname(iname)=fmax(imax_count)
 !
-            if (itype_name(iname)==ilabel_max_neg)        &
+            if (itype==ilabel_max_neg)        &
                 vname(iname)=-fmax(imax_count)
 !
-            if (itype_name(iname)==ilabel_max_reciprocal) &
+            if (itype==ilabel_max_reciprocal) &
                 vname(iname)=1./fmax(imax_count)
 !
-          elseif (itype_name(iname)>0) then
+          elseif (itype>0) then
+
+            lcomplex = itype>=ilabel_complex
+            itype = mod(itype,ilabel_complex)
+
             isum_count=isum_count+1
 !
-            if (itype_name(iname)==ilabel_sum)            &
+            if (itype==ilabel_sum)            &
                 vname(iname)=fsum(isum_count)*dVol_rel1
 !
-            if (itype_name(iname)==ilabel_sum_sqrt)       &
+            if (itype==ilabel_sum_sqrt)       &
                 vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
-            if (itype_name(iname)==ilabel_sum_par)        &
+            if (itype==ilabel_sum_par)        &
                 vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
-            if (itype_name(iname)==ilabel_sum_sqrt_par)        &
+            if (itype==ilabel_sum_sqrt_par)        &
                 vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
 !
-            if (itype_name(iname)==ilabel_integrate)      &
+            if (itype==ilabel_integrate)      &
                 vname(iname)=fsum(isum_count)
 !
-             if (itype_name(iname)==ilabel_surf)          &
+             if (itype==ilabel_surf)          &
                  vname(iname)=fsum(isum_count)
 !
-             if (itype_name(iname)==ilabel_sum_lim) then
+             if (itype==ilabel_sum_lim) then
                 vol=1.
                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
                 if (nzgrid/=1)           vol=vol*Lz
@@ -604,7 +618,7 @@ module Diagnostics
                 vname(iname)=fsum(isum_count)/vol
              endif
 !
-            if (itype_name(iname)==ilabel_sum_weighted) then
+            if (itype==ilabel_sum_weighted) then
               if (fweight(isum_count)/=0.0) then
                 vname(iname)=fsum(isum_count)/fweight(isum_count)
               else
@@ -612,7 +626,7 @@ module Diagnostics
               endif
             endif
 !
-            if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
+            if (itype==ilabel_sum_weighted_sqrt) then
               if (fweight(isum_count)/=0.0) then
                 vname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
               else
@@ -1539,19 +1553,24 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_cmplx(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
 
-      complex, dimension(nx), intent(IN) :: a
-      integer,           intent(IN)      :: iname
-      integer, optional, intent(IN)      :: ipart
-      logical, optional, intent(IN)      :: lsqrt, lint
+      real, dimension(:,:), intent(IN) :: a
+      integer,              intent(IN) :: iname
+      integer, optional,    intent(IN) :: ipart
+      logical, optional,    intent(IN) :: lsqrt, lint
 
-      itype_name(iname)=ilabel_complex
-
-      call sum_mn_name_real(real(a),iname,fname,lsqrt,lint,ipart)
-      call sum_mn_name_real(imag(a),iname,fname_keep)
-
-    endsubroutine sum_mn_name_cmplx
+      if (size(a,1)==1) then
+        call sum_mn_name_std(a(1,:),iname,lsqrt,lint,ipart)
+      else
+      
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,lint,ipart)
+        call sum_mn_name_real(a(2,:),iname,fname_keep)
+        itype_name(iname)=itype_name(iname)+ilabel_complex
+      
+      endif
+!
+    endsubroutine sum_mn_name_arr2
 !***********************************************************************
     subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
 
