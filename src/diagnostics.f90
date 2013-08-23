@@ -133,7 +133,8 @@ module Diagnostics
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
       integer :: iname, iostat, nnamel
-      real, dimension(2*nname) :: buffer
+!!      real, dimension(2*nname) :: buffer
+      real, dimension(nname) :: buffer
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -191,12 +192,12 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+!!        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 
-        nnamel=nname
-        do iname=nname,1,-1
-          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
-        enddo
+!!        nnamel=nname
+!!        do iname=nname,1,-1
+!!          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
+!!        enddo
 !
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
@@ -230,7 +231,8 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
+!!      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
+      fname(1:nname)=0.0
 !
     endsubroutine prints
 !***********************************************************************
