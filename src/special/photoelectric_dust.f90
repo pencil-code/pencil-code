@@ -349,7 +349,7 @@ endsubroutine read_special_run_pars
         if (idiag_photom/=0)   call sum_mn_name( q%fpres_photoelectric(:,1),idiag_photom)
         if (idiag_photomax/=0) call max_mn_name( q%fpres_photoelectric,idiag_photomax)
         if (idiag_photomin/=0) call max_mn_name(-q%fpres_photoelectric,idiag_photomin,lneg=.true.)
-        if (idiag_polym/=0)    call sum_mn_name( q%fpres_polytropici(:,1),idiag_polym)
+        if (idiag_polym/=0)    call sum_mn_name( q%fpres_polytropic(:,1),idiag_polym)
         if (idiag_polymax/=0)  call max_mn_name( q%fpres_polytropic,idiag_polymax)
         if (idiag_polymin/=0)  call max_mn_name(-q%fpres_polytropic,idiag_polymin,lneg=.true.)
         if (idiag_dtcp/=0)     call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtcp,l_dt=.true.)
