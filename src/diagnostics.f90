@@ -194,7 +194,7 @@ module Diagnostics
 !
 !!        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 
-!!        nnamel=nname
+        nnamel=nname
 !!        do iname=nname,1,-1
 !!          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
 !!        enddo
