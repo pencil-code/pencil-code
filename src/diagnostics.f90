@@ -191,12 +191,12 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-!!        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
-
+        where( fname_keep /= impossible .and. itype_name/=ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+!
         nnamel=nname
-!!        do iname=nname,1,-1
-!!          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
-!!        enddo
+        do iname=nname,1,-1
+          if (itype_name(iname)==ilabel_complex) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
+        enddo
 !
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
@@ -230,14 +230,14 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-!!      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
-      fname(1:nname)=0.0
+      where( fname_keep==0. .or. itype_name==ilabel_complex ) fname(1:nname)=0.0
+!!      fname(1:nname)=0.0
 !
     endsubroutine prints
 !***********************************************************************
     subroutine gen_form_legend(fform,legend)
 !
-!  19-08-13/MR: outsourced from prints
+!  19-aug-13/MR: outsourced from prints
 !
       use General, only: safe_character_append
       use Sub, only: noform
@@ -252,14 +252,15 @@ module Diagnostics
 !  Produce the format.
 !  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = '(""'
+        fform = "(' '"
         if (present(legend)) legend=''
-
+!
         do iname=1,nname
           if (itype_name(iname)==ilabel_complex) then
-            tform = comma//'"("'//comma//trim(cform(iname))//comma//'","'//comma//trim(cform(iname))//comma//'")"'
+            tform = comma//'"("'//comma//trim(cform(iname))//comma &
+              //'","'//comma//trim(cform(iname))//comma//'")"'
           else
-            tform = comma//cform(iname)
+            tform = comma//trim(cform(iname))
           endif
           call safe_character_append(fform, trim(tform))
           if (present(legend)) call safe_character_append(legend, noform(cname(iname)))
