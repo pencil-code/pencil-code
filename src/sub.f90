@@ -87,6 +87,7 @@ module Sub
   public :: register_report_aux
   public :: fourier_single_mode
   public :: remove_mean,global_mean
+  public :: loptest, ioptest, roptest, doptest
   public :: insert
   public :: operator(.INDAT.)
 !
