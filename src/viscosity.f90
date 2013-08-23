@@ -1972,7 +1972,10 @@ module Viscosity
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
+      if (limplicit_viscosity) then
+        if (lenergy) call fatal_error('split_update_viscosity', 'viscous heating with implicit update is not implemented. ')
+        call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
+      endif
 !
     endsubroutine split_update_viscosity
 !***********************************************************************
