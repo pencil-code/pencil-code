@@ -192,7 +192,8 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-!!        where( fname_keep /= impossible .and. itype_name<ilabel_complex ) buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+!!        where( fname_keep /= impossible .and. itype_name<ilabel_complex ) $
+!!           buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
         nnamel=nname
 !!        do iname=nname,1,-1
@@ -232,8 +233,9 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-      where( fname_keep==0. .or. itype_name>=ilabel_complex ) fname(1:nname)=0.
-      where( itype_name>=ilabel_complex ) fname_keep(1:nname)=0.
+!!      where( fname_keep==0. .or. itype_name>=ilabel_complex ) fname(1:nname)=0.
+!!      where( itype_name>=ilabel_complex ) fname_keep(1:nname)=0.
+      fname(1:nname)=0.
 !
     endsubroutine prints
 !***********************************************************************
@@ -259,7 +261,8 @@ module Diagnostics
 !
         do iname=1,nname
           
-          lcompl=itype_name(iname)/ilabel_complex==1
+!!          lcompl=itype_name(iname)/ilabel_complex==1
+          lcompl=.false.
           if (lcompl) then
             tform = comma//'" ("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
