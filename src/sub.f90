@@ -553,14 +553,14 @@ module Sub
 
     endfunction roptest
 !***********************************************************************
-    real*8 function doptest(dopt,ddef)
+    real(KIND=8) function doptest(dopt,ddef)
 !  
 !  returns value of optional real*8 parameter dopt if present, otherwise the default value ddef, if present, 
 !  zero, if not.
 !
 !  20-aug-13/MR: coded
 !
-      real*8, optional, intent(IN) :: dopt, ddef
+      real(KIND=8), optional, intent(IN) :: dopt, ddef
 
       if (present(dopt)) then
         doptest=dopt
@@ -3393,7 +3393,7 @@ module Sub
 !
       cnumber=cform(index1+1:index2-1)
       read(cnumber,'(i4)',err=99) number
-10    if (loptest(lcomplex)) number = 2*number+3
+10    if (loptest(lcomplex)) number = 2*number+4
       number1=max(0,(number-length)/2)
       number2=max(1,number-length-number1) ! at least one separating dash
 !
