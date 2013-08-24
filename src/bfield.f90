@@ -69,7 +69,7 @@ module Magnetic
 !
 !  Module variables
 !
-  logical :: lresistivity_normal = .false.
+  logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
 !
@@ -153,7 +153,12 @@ module Magnetic
       if (eta_shock /= 0.0) lresis_shock = .true.
       if (lresis_shock .and. .not. lshock) &
         call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
-      lresistivity_normal = lresis_const .or. lresis_shock
+      lexplicit_resistivity = (.not. limplicit_resistivity .and. lresis_const) .or. lresis_shock
+!
+!  Ohmic heating is not implemented yet.
+!
+      if (lenergy .and. (lresis_const .or. lresis_shock)) &
+        call fatal_error('initialize_magnetic', 'Ohmic heating is not implemented yet. ')
 !
       if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
 !
@@ -278,7 +283,7 @@ module Magnetic
 !
 !  Add normal resistivities.
 !
-        resis: if (lresistivity_normal) then
+        resis: if (lexplicit_resistivity) then
           call get_resistivity(f, eta_penc)
           call gij(f, ibb, bij, 1)
           call curl_mn(bij, jj, bb)
