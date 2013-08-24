@@ -727,13 +727,6 @@ module Magnetic
   integer :: idiag_StokesU1mxy=0! ZAVG_DOC: $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
   integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
 !
-! Module-specific variables
-!
-  real, dimension(nxgrid) :: ax_imp = 0., bx_imp = 0., cx_imp = 0.
-  real, dimension(nygrid) :: ay_imp = 0., by_imp = 0., cy_imp = 0.
-  real, dimension(nzgrid) :: az_imp = 0., bz_imp = 0., cz_imp = 0.
-  logical :: lsplit_update = .false.
-!
   contains
 !***********************************************************************
     subroutine register_magnetic()
@@ -1260,14 +1253,6 @@ module Magnetic
              'You may want to switch ladvective_gauge=T in magnetic_run_pars')
       endif
 !
-!  Check if operator splitting is requested.
-!
-      lsplit_update = limplicit_resistivity .and. (lresi_eta_const .or. lresi_zdep)
-      implicit: if (limplicit_resistivity) then
-        if (lroot) print *, 'Using implicit algorithm to integrate resistivity terms. '
-        call initialize_implicit_resistivity
-      endif implicit
-!
 !  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
@@ -1656,15 +1641,12 @@ module Magnetic
         lpenc_video(i_ab)=.true.
       endif
 !
-      explicit: if (.not. limplicit_resistivity) then
-        lorentz: if (.not. lweyl_gauge) then
-          if (lresi_eta_const) lpenc_requested(i_del2a) = .true.
-          if (lresi_zdep) then
-            lpenc_requested(i_del2a) = .true.
-            lpenc_requested(i_diva) = .true.
-          endif
-        endif lorentz
-      endif explicit
+      if (lresi_eta_const .and. .not. lweyl_gauge .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
+!
+      if (lresi_zdep) then
+        lpenc_requested(i_del2a) = .true.
+        lpenc_requested(i_diva) = .true.
+      endif
 !
 !  jj pencil always needed when in Weyl gauge
 !
@@ -2809,19 +2791,20 @@ module Magnetic
           etatotal=etatotal+eta
         endif eta_const
 !
-        eta_zdep: if (lresi_zdep) then
-          if (lweyl_gauge) then
-            fres=fres-eta_z(n)*mu0*p%jj
-          else
-            do j=1,3
-              fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-            enddo
-          endif
-          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
-          etatotal=etatotal+eta_z(n)
-        endif eta_zdep
-!
       endif explicit
+!
+      eta_zdep: if (lresi_zdep) then
+        if (lweyl_gauge) then
+          fres=fres-eta_z(n)*mu0*p%jj
+        else
+          do j=1,3
+            fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+          enddo
+        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
+        etatotal=etatotal+eta_z(n)
+      endif eta_zdep
+!
 !
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
@@ -7454,331 +7437,35 @@ module Magnetic
 !  Update the magnetic potential by integrating the operator split
 !  magnetic terms.
 !
-!  11-may-12/ccyang: coded
+!  23-aug-13/ccyang: coded
+!
+      use ImplicitDiffusion, only: integrate_diffusion
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      split: if (lsplit_update) then
-        if (limplicit_resistivity) call implicit_resistivity(f)
-      endif split
+      if (limplicit_resistivity) then
+        if (lenergy) call fatal_error('split_update_magnetic', 'ohmic heating with implicit update is not implemented. ')
+        call integrate_diffusion(get_resistivity_implicit, f, iax, iaz)
+      endif
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
-    subroutine initialize_implicit_resistivity()
+    subroutine get_resistivity_implicit(ndc, diffus_coeff)
 !
-! Initialize the variables required by subroutines implicit_resistivity_[xyz]sweep.
+!  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
 !
-! 22-may-12/ccyang: coded
+!  23-aug-13/ccyang: coded.
 !
-! Sanity check
+      integer, intent(in) :: ndc
+      real, dimension(ndc), intent(out) :: diffus_coeff
 !
-      if (.not. lcartesian_coords) &
-        call fatal_error('initialize_implicit_resistivity', 'currently only works in Cartesian coordinates.')
-      if (nprocx /= 1) call fatal_error('initialize_implicit_resistivity', 'nprocx /= 1')
-      if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('initialize_implicit_resistivity', 'nxgrid /= nygrid')
-      if (lresi_zdep) call fatal_error('initialize_implicit_resistivity', 'zdep under construction')
-!
-! Calculate one-time variables
-!
-      ax_imp = 0.5 * eta * dx1grid * (dx1grid - 0.5 * dxtgrid)
-      ay_imp = 0.5 * eta * dy1grid * (dy1grid - 0.5 * dytgrid)
-      az_imp = 0.5 * eta * dz1grid * (dz1grid - 0.5 * dztgrid)
-      bx_imp = -eta * dx1grid**2
-      by_imp = -eta * dy1grid**2
-      bz_imp = -eta * dz1grid**2
-      cx_imp = 0.5 * eta * dx1grid * (dx1grid + 0.5 * dxtgrid)
-      cy_imp = 0.5 * eta * dy1grid * (dy1grid + 0.5 * dytgrid)
-      cz_imp = 0.5 * eta * dz1grid * (dz1grid + 0.5 * dztgrid)
-!
-    endsubroutine initialize_implicit_resistivity
-!***********************************************************************
-    subroutine implicit_resistivity(f)
-!
-! Implicitly integrate the resistivity terms.
-!
-! 22-may-12/ccyang: coded
-! 05-jun-12/ccyang: included shear
-!
-      use Shear, only: sheared_advection_fft
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      real :: dth
-!
-      dth = 0.5 * dt
-!
-      shearing: if (lshear) then
-!       Shear is present: Work in unsheared frame.
-        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
-        call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
-!
-        call sheared_advection_fft(f, iax, iaz, real(-t))
-        call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
-        call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
-        call sheared_advection_fft(f, iax, iaz, real(t))
-!
-        call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
-        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
-      else shearing
-!       No shear is present.
-        call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
-        call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
-        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
-!
-        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
-        call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
-        call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
-      endif shearing
-!
-    endsubroutine implicit_resistivity
-!***********************************************************************
-    subroutine implicit_resistivity_xsweep(f, bcx1, bcx2, dt)
-!
-! Implicitly integrate the resistivity term in the x-direction.
-!
-! 22-may-12/ccyang: coded
-!
-! Input Arguments
-!   bcx1: array of the lower boundary conditions for each component
-!   bcx2: array of the upper boundary conditions for each component
-!   dt: time step
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(3), intent(in) :: bcx1, bcx2
-      real, intent(in) :: dt
-!
-      real, dimension(nxgrid) :: a, opb, omb, c
-      integer :: j, k, l
-!
-      int_x: if (nxgrid > 1) then
-        call get_tridiag(ax_imp, bx_imp, cx_imp, dt, a, opb, omb, c)
-        zscan: do k = n1, n2
-          yscan: do j = m1, m2
-            do l = 1, 3
-              call implicit_pencil(f(l1-1:l2+1,j,k,iaa+l-1), nxgrid, a, opb, omb, c, bcx1(l), bcx2(l))
-            enddo
-          enddo yscan
-        enddo zscan
-      endif int_x
-!
-    endsubroutine implicit_resistivity_xsweep
-!***********************************************************************
-    subroutine implicit_resistivity_ysweep(f, bcy1, bcy2, dt)
-!
-! Implicitly integrate the resistivity term in the y-direction.
-!
-! 22-may-12/ccyang: coded
-!
-! Input Arguments
-!   bcy1: array of the lower boundary conditions for each component
-!   bcy2: array of the upper boundary conditions for each component
-!   dt: time step
-!
-      use Mpicomm, only: transp_xy
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(3), intent(in) :: bcy1, bcy2
-      real, intent(in) :: dt
-!
-      real, dimension(nx,ny) :: axy      ! assuming nxgrid = nygrid and nprocx = 1
-      real, dimension(0:nx+1) :: penc    ! assuming nxgrid = nygrid and nprocx = 1
-      real, dimension(nygrid) :: a, opb, omb, c
-      integer :: j, k, l, la
-!
-      int_y: if (nygrid > 1) then
-        call get_tridiag(ay_imp, by_imp, cy_imp, dt, a, opb, omb, c)
-        comp: do l = 1, 3
-          la = iaa + l - 1
-          zscan: do k = n1, n2
-            axy = f(l1:l2,m1:m2,k,la)
-            call transp_xy(axy)  ! assuming nxgrid = nygrid
-            xscan: do j = 1, ny
-              penc(1:nx) = axy(:,j)
-              call implicit_pencil(penc, nygrid, a, opb, omb, c, bcy1(l), bcy2(l))
-              axy(:,j) = penc(1:nx)
-            enddo xscan
-            call transp_xy(axy)
-            f(l1:l2,m1:m2,k,la) = axy
-          enddo zscan
-        enddo comp
-      endif int_y
-!
-    endsubroutine implicit_resistivity_ysweep
-!***********************************************************************
-    subroutine implicit_resistivity_zsweep(f, bcz1, bcz2, dt)
-!
-! Implicitly integrate the resistivity term in the z-direction.
-!
-! 22-may-12/ccyang: coded
-!
-! Input Arguments
-!   bcz1: array of the lower boundary conditions for each component
-!   bcz2: array of the upper boundary conditions for each component
-!   dt: time step
-!
-      use Mpicomm, only: transp_xz, transp_zx
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(3), intent(in) :: bcz1, bcz2
-      real, intent(in) :: dt
-!
-      integer, parameter :: nxt = nx / nprocz
-      real, dimension(nx,nz) :: axz
-      real, dimension(nzgrid,nxt) :: azx
-      real, dimension(0:nzgrid+1) :: penc
-      real, dimension(nzgrid) :: a, opb, omb, c
-      integer :: j, k, l, la
-!
-      int_z: if (nzgrid > 1) then
-        call get_tridiag(az_imp, bz_imp, cz_imp, dt, a, opb, omb, c)
-        comp: do l = 1, 3
-          la = iaa + l - 1
-          yscan: do j = m1, m2
-            axz = f(l1:l2,j,n1:n2,la)
-            call transp_xz(axz, azx)
-            xscan: do k = 1, nxt
-              penc(1:nzgrid) = azx(:,k)
-              call implicit_pencil(penc, nzgrid, a, opb, omb, c, bcz1(l), bcz2(l))
-              azx(:,k) = penc(1:nzgrid)
-            enddo xscan
-            call transp_zx(azx, axz)
-            f(l1:l2,j,n1:n2,la) = axz
-          enddo yscan
-        enddo comp
-      endif int_z
-!
-    endsubroutine implicit_resistivity_zsweep
-!***********************************************************************
-    subroutine get_tridiag (a, b, c, dt, adt, opbdt, ombdt, cdt)
-!
-! Prepare the tridiagonal elements of the linear system for the Crank-
-! Nicolson algorithm.
-!
-! 22-may-12/ccyang: coded
-!
-! Input Arguments
-!   a, b, c: a_i, b_i, and c_i, respectively, defined in the
-!     subroutine implicit_pencil except a factor of time step dt
-!   dt: time step
-!
-! Output Arguments
-!   adt: array of dt * a_i
-!   opbdt: array of 1 + dt * b_i
-!   ombdt: array of 1 - dt * b_i
-!   cdt: array of dt * c_i
-!
-      real, dimension(:), intent(in) :: a, b, c
-      real, dimension(:), intent(out) :: adt, opbdt, ombdt, cdt
-      real, intent(in) :: dt
-!
-      adt = dt * a
-      cdt = dt * b
-      opbdt = 1. + cdt
-      ombdt = 1. - cdt
-      cdt = dt * c
-!
-    endsubroutine get_tridiag
-!***********************************************************************
-    subroutine implicit_pencil(q, n, a, opb, omb, c, bc1, bc2)
-!
-! Implicitly integrate a state variable along one pencil using the
-! Crank-Nicolson method.  The (linear) system of equations read
-!
-!   q_i^{n+1} - q_i^n = psi(q_{i-1}^n, q_i^n, q_{i+1}^n)
-!                     + psi(q_{i-1}^{n+1}, q_i^{n+1}, q_{i+1}^{n+1})
-!
-! where q_i^n is the value of q at x = x_i and t = t_n and
-!
-!   psi(q_{i-1},q_i,q_{i+1}) = a_i * q_{i-1} + b_i * q_i + c_i * q_{i+1}.
-!
-! 30-may-12/ccyang: coded
-!
-! Comments:
-!   Although this subroutine is currently only used by Magnetic module, it is
-! general enough such that it can be considered moving to Sub or General
-! module.
-!
-! Input/Output Arguments
-!   q - state variable along one pencil including one ghost cell on each side
-!
-! Input Arguments
-!   n - number of active cells
-!   a - array of a_i
-!   opb - array of 1 + b_i
-!   omb - array of 1 - b_i
-!   c - array of c_i
-!   bc1 - lower boundary conditions
-!   bc2 - upper boundary conditions
-!
-      use Boundcond, only: bc_pencil
-      use General, only: cyclic, tridag
-!
-      integer, intent(in) :: n
-      real, dimension(0:n+1), intent(inout) :: q
-      real, dimension(n), intent(in) :: a, opb, omb, c
-      character(len=*), intent(in) :: bc1, bc2
-!
-      real, dimension(n) :: r, omb1
-      character(len=255) :: msg
-      logical :: lcyclic, err
-      real :: alpha, beta
-!
-! Prepare the RHS of the linear system.
-!
-      call bc_pencil(q, n, 1, bc1, bc2)
-      r = a * q(0:n-1) + opb * q(1:n) + c * q(2:n+1)
-!
-! Assume non-periodic boundary conditions first.
-!
-      lcyclic = .false.
-      alpha = 0.0
-      beta = 0.0
-      omb1 = omb
-!
-! Check the lower boundary conditions.
-!
-      lower: select case (bc1)
-!     Periodic
-      case ('p') lower
-        beta = -a(1)
-        lcyclic = .true.
-!     Zero: do nothing
-      case ('0', '') lower
-!     Zeroth-order extrapolation
-      case ('cop') lower
-        omb1(1) = omb(1) - a(1)
-!     Unknown
-      case default lower
-        call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
-      endselect lower
-!
-! Check the upper boundary condition.
-!
-      upper: select case (bc2)
-!     Periodic
-      case ('p') upper
-        alpha = -c(n)
-        lcyclic = .true.
-!     Zero: do nothing
-      case ('0', '') upper
-!     Zeroth-order extrapolation
-      case ('cop') upper
-        omb1(n) = omb(n) - c(n)
-!     Unknown
-      case default upper
-        call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
-      endselect upper
-!
-! Solve the linear system.
-!
-      if (lcyclic) then
-        call cyclic(-a, omb1, -c, alpha, beta, r, q(1:n), n)
+      if (lresi_eta_const) then
+        diffus_coeff = mu01 * eta
       else
-        call tridag(-a, omb1, -c, r, q(1:n), err, msg)
-        if (err) call warning('implicit_pencil', trim(msg))
+        diffus_coeff = 0.0
       endif
 !
-    endsubroutine implicit_pencil
+    endsubroutine get_resistivity_implicit
 !***********************************************************************
     subroutine expand_shands_magnetic()
 !
