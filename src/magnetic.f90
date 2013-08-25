@@ -2700,6 +2700,7 @@ module Magnetic
 !  18-jun-04/axel: Hall term added
 !   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
 !  31-mar-13/axel: Stokes parameter integration from synchrotron emission
+!  25-aug-13/MR: simplified calls of save_name_sound
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -3903,30 +3904,18 @@ module Magnetic
           nspoint=sound_coords_list(isound,3)
 !
           if ((m==mspoint).and.(n==nspoint)) then
-            if (idiag_axpt/=0) &
-                call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound)
-            if (idiag_aypt/=0) &
-                call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
-            if (idiag_azpt/=0) &
-                call save_name_sound(f(lspoint,mspoint,nspoint,iaz),idiag_azpt,isound)
-            if (idiag_bxpt/=0) &
-                call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
-            if (idiag_bypt/=0) &
-                call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
-            if (idiag_bzpt/=0) &
-                call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
-            if (idiag_jxpt/=0) &
-                call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
-            if (idiag_jypt/=0) &
-                call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
-            if (idiag_jzpt/=0) &
-                call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
-            if (idiag_Expt/=0) &
-                call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
-            if (idiag_Eypt/=0) &
-                call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
-            if (idiag_Ezpt/=0) &
-                call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
+            call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound)
+            call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
+            call save_name_sound(f(lspoint,mspoint,nspoint,iaz),idiag_azpt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
+            call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
+            call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
+            call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
+            call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
+            call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
+            call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
+            call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
           endif
         enddo
       endif
