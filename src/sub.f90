@@ -5834,13 +5834,13 @@ nameloop: do
 !
 !  15-oct-12/MR: adapted from remove_mean
 !  22-aug-13/MR: rewritten into subroutine because of internal compiler error of gfortran
+!  25-aug-13/MR: removed allocatable attribute from mean to adhere to f95
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension(:), allocatable                    :: mean
-!
       real, dimension (mx,my,mz,*), intent(in)           :: f
       integer,                      intent(in)           :: inda
+      real, dimension(inda:),       intent(out)          :: mean
       integer,                      intent(in), optional :: indep
       logical,                      intent(in), optional :: lexp
 !
@@ -5850,7 +5850,7 @@ nameloop: do
 !
       inde = ioptest(indep,inda) 
 !
-      allocate(mean(inda:inde),mean_tmp(inda:inde))
+      allocate(mean_tmp(inda:inde))
 !
 !  initialize mean
 !
