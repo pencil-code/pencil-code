@@ -192,8 +192,8 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-!!        where( fname_keep /= impossible .and. itype_name<ilabel_complex ) $
-!!           buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+        where( fname_keep /= impossible .and. itype_name<ilabel_complex ) &
+           buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
         nnamel=nname
 !!        do iname=nname,1,-1
@@ -233,9 +233,8 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-!!      where( fname_keep==0. .or. itype_name>=ilabel_complex ) fname(1:nname)=0.
-!!      where( itype_name>=ilabel_complex ) fname_keep(1:nname)=0.
-      fname(1:nname)=0.
+      where( fname_keep==0. .or. itype_name>=ilabel_complex ) fname(1:nname)=0.
+      where( itype_name>=ilabel_complex ) fname_keep(1:nname)=0.
 !
     endsubroutine prints
 !***********************************************************************
@@ -1409,7 +1408,9 @@ module Diagnostics
 !
 !  Lists the value of a (must be treated as real) in fname array
 !
-!  3-Dec-10 dhruba+joern: adapted from max_mn_name
+!  3-Dec-10/dhruba+joern: adapted from max_mn_name
+! 25-aug-13/MR: removed unneeded setting of itype,
+!               added test of iname.
 !
       real :: a
       integer :: iname,iscoord
@@ -1417,8 +1418,7 @@ module Diagnostics
 !  Set corresponding entry in itype_name
 !  This routine is to be called only once per step
 !
-      fname_sound(iname,iscoord)=a
-      itype_name(iname)=ilabel_save
+      if (iname/=0) fname_sound(iname,iscoord)=a
 !
    endsubroutine save_name_sound
 !***********************************************************************
@@ -2569,6 +2569,7 @@ module Diagnostics
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
 !   18-aug-13/MR: accumulation of diagnostics enabled
+!   25-aug-13/MR: added allocation of itype_name
 !
       integer, intent(in) :: nnamel
 !
@@ -2605,6 +2606,15 @@ module Diagnostics
       endif
       cform=''
 !
+      if (.not.allocated(itype_name)) then
+        allocate(itype_name(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_fnames', &
+            'Could not allocate memory for itype_name')
+        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+            'itype_name with nname   =', nnamel
+      endif
+      itype_name=ilabel_save
+
     endsubroutine allocate_fnames
 !***********************************************************************
     subroutine allocate_vnames(nnamel)
@@ -2921,11 +2931,13 @@ module Diagnostics
 !  Deallocate space needed for reading the print.in file.
 !
 !   20-apr-10/Bourdin.KIS: copied from xyaverages_clean_up
+!   25-aug-13/MR: added deallocation of itype_name.
 !
       if (allocated(fname)) deallocate(fname)
       if (allocated(fname_keep)) deallocate(fname_keep)
       if (allocated(cname)) deallocate(cname)
       if (allocated(cform)) deallocate(cform)
+      if (allocated(itype_name)) deallocate(itype_name)
 !
     endsubroutine fnames_clean_up
 !***********************************************************************
