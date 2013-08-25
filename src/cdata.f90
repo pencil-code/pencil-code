@@ -337,8 +337,8 @@ module Cdata
   integer :: nr_directions=1
   real :: tdiagnos,t1ddiagnos,t2davgfirst
   integer, parameter :: mname=100
-  integer, dimension (mname) :: itype_name=0
   real, dimension (mname) :: fweight=0.0
+  integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable :: fname,fname_keep
   real, dimension(:,:)    , allocatable :: fnamer,fname_sound
   real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez,fnamexy, fnamexz
