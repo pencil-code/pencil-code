@@ -3362,7 +3362,7 @@ module Special
       inquire(IOLENGTH=lend) dummy
 !
       if (present(issnap)) then
-        write (filename,'("/points_",I1.1,"_",I3.3,".dat")') level,issnap
+        write (filename,'("/points_",I1.1,"_",I4.4,".dat")') level,issnap
       else
         write (filename,'("/points_",I1.1,".dat")') level
       endif
@@ -3384,7 +3384,7 @@ module Special
 ! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
       if (present(issnap)) then
-        write (filename,'("/seed_",I1.1,"_",I3.3,".dat")') level,issnap
+        write (filename,'("/seed_",I1.1,"_",I4.4,".dat")') level,issnap
       else
         write (filename,'("/seed_",I1.1,".dat")') level
       endif
