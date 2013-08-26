@@ -745,7 +745,7 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex*16, dimension(nbcast_array) :: bcast_array
+      complex(KIND=16), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
@@ -2330,7 +2330,7 @@ module Mpicomm
 !
     endsubroutine parallel_close
 !***********************************************************************
-    function parallel_count_lines(file)
+    function parallel_count_lines(file,comchars)
 !
 !  Determines the number of lines in a file.
 !
@@ -2339,13 +2339,16 @@ module Mpicomm
 !  * -1 on error
 !
 !  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter comchars added for use in count_lines
 !
       use Syscalls, only: count_lines
 !
-      character(len=*) :: file
+      character(len=*),                  intent(IN) :: file
+      character, dimension(:), optional, intent(IN) :: comchars
+!
       integer :: parallel_count_lines
 !
-      parallel_count_lines = count_lines(file)
+      parallel_count_lines = count_lines(file,comchars)
 !
     endfunction
 !***********************************************************************
