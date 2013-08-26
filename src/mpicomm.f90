@@ -6591,7 +6591,6 @@ module Mpicomm
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
-!
       integer :: unit
 !
       if (lfake_parallel_io) then
@@ -6626,7 +6625,7 @@ module Mpicomm
 !
     endsubroutine true_parallel_close
 !***********************************************************************
-    function parallel_count_lines(file)
+    function parallel_count_lines(file,comchars)
 !
 !  Determines in parallel the number of lines in a file.
 !
@@ -6635,13 +6634,16 @@ module Mpicomm
 !  * -1 on error
 !
 !  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter comchars added for use in count_lines
 !
       use Syscalls, only: count_lines
 !
-      character(len=*) :: file
+      character(len=*),                  intent(IN) :: file
+      character, dimension(:), optional, intent(IN) :: comchars
+!
       integer :: parallel_count_lines
 !
-      if (lroot) parallel_count_lines = count_lines(file)
+      if (lroot) parallel_count_lines = count_lines(file,comchars)
       call mpibcast_int(parallel_count_lines, 1)
 !
     endfunction
