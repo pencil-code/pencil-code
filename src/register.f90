@@ -700,25 +700,25 @@ module Register
 !   23-jan-11/MR: pointer based handling of cname-like arrays instead of allocatable
 !                 dummy parameter (the latter standardized only since FORTRAN 2000)
 !   24-jan-11/MR: removed allocation
+!   26-aug-13/MR: modification for uncounted comment lines in input file
 !
       use Mpicomm, only: parallel_open, parallel_close
       use Cdata  , only: comment_char
 !
-      character (len=*) ,               intent(in)    :: in_file
-      character (len=30), dimension(*), intent(out)   :: cnamel
-      integer,                          intent(inout) :: nnamel
+      character (len=*) ,               intent(in)  :: in_file
+      character (len=30), dimension(*), intent(out) :: cnamel
+      integer,                          intent(out) :: nnamel
 !
       character (len=30) :: cname_tmp
-      integer            :: iname, mname
+      integer            :: iname
       integer, parameter :: unit=1
 !
       call parallel_open(unit,FILE=trim(in_file))
 !
 !  Read names and formats.
 !
-      mname  = nnamel
       nnamel = 0
-      do iname=1,mname
+      do 
         read(unit,*,end=99) cname_tmp
         if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
           nnamel=nnamel+1
@@ -739,6 +739,8 @@ module Register
 !  3-may-01/axel: coded
 !  11-jan-11/MR: introduced read_name_format calls for each of the lists
 !                for homogeneity
+!  26-aug-13/MR: introduced use of parameter comchars when reading print.in
+!                to avoid counting comment lines
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -808,7 +810,7 @@ module Register
 !
       if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
 !
-      nname = max(0,parallel_count_lines(print_in_file))
+      nname = max(0,parallel_count_lines(print_in_file,comchars=(/'#','!'/)))
 !
       if (nname>0) then
         call allocate_fnames(nname)
@@ -816,7 +818,7 @@ module Register
       endif
       if ( nname==0 ) &
           call fatal_error('rprint_list','You must have a "'// &
-          trim(print_in_file)// &
+          trim(print_in_file)// &      ! Why is that required?
           '" file in the run directory with valid print requests!')
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
