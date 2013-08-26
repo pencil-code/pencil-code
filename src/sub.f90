@@ -89,7 +89,6 @@ module Sub
   public :: remove_mean,global_mean
   public :: loptest, ioptest, roptest, doptest
   public :: insert
-  public :: operator(.INDAT.)
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -236,11 +235,6 @@ module Sub
     module procedure insert_carray_mult
     module procedure insert_rarray
   endinterface
-!
-  interface operator (.INDAT.)
-    module procedure indat
-  endinterface
-!
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -3344,6 +3338,7 @@ module Sub
 !
 !  22-jun-02/axel: coded
 !  20-aug-13/MR: optional parameter lcomplex added
+!  26-aug-13/MR: unnecessary p descriptors removed from cform
 !
       use Cparam, only: max_col_width
 !
@@ -3372,7 +3367,7 @@ module Sub
         cform=cname(iform1:iform2)
         length=iform1-1
       else
-        cform='(1p,e10.2,0p)'
+        cform='(e10.2)'
         length=iform0-1
       endif
 !
@@ -5931,24 +5926,6 @@ nameloop: do
       deallocate( mean, mean_tmp )
 !
     endsubroutine remove_mean
-!***********************************************************************
-  integer function indat(cvec,str)
-!
-!  finds position of a string in a vector of strings,
-!  returns zero if not contained
-!
-!  20-aug-13/MR: coded
-!
-    character (LEN=*), dimension(:), intent(IN) :: cvec
-    character (LEN=*),               intent(IN) :: str
-
-    do indat=1,size(cvec)
-      if (cvec(indat)==str) return
-    enddo
-
-    indat = 0
-
-  endfunction indat
 !***********************************************************************
     subroutine insert_carray( array, insert, index, leng )
 !
