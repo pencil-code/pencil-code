@@ -32,6 +32,7 @@ module General
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
+  public :: operator(.INDAT.)
 !
   include 'record_types.h'
 !
@@ -93,6 +94,10 @@ module General
   interface polynomial_interpolation
     module procedure poly_interp_one
     module procedure poly_interp_fixorder
+  endinterface
+!
+  interface operator (.INDAT.)
+    module procedure indat
   endinterface
 !
 !  State and default generator of random numbers.
@@ -2773,5 +2778,23 @@ module General
       lextend_vector_char = newlen<=size(vector)
 !
     endfunction lextend_vector_char
+!***********************************************************************
+  integer function indat(str,cvec)
+!
+!  finds position of a string str in a vector of strings cvec,
+!  returns zero if not contained
+!
+!  20-aug-13/MR: coded
+!
+    character (LEN=*), dimension(:), intent(IN) :: cvec
+    character (LEN=*),               intent(IN) :: str
+
+    do indat=1,size(cvec)
+      if (cvec(indat)==str) return
+    enddo
+
+    indat = 0
+
+  endfunction indat
 !***********************************************************************
 endmodule General
