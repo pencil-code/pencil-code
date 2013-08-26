@@ -745,7 +745,8 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex(KIND=16), dimension(nbcast_array) :: bcast_array
+      complex*16, dimension(nbcast_array) :: bcast_array
+      !!complex(KIND=16), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
