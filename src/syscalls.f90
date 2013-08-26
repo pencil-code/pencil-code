@@ -88,7 +88,7 @@ module Syscalls
 !
     endfunction file_size
 !***********************************************************************
-    function count_lines(file)
+    function count_lines(file,comchars)
 !
 !  Determines the number of lines in a file.
 !
@@ -97,11 +97,18 @@ module Syscalls
 !  * -1 on error
 !
 !  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter comchars for characters marking not to be
+!                counted comment lines added
 !
-      character(len=*) :: file
+      use General, only: operator(.INDAT.)
+!
+      character(len=*),                  intent(IN) :: file
+      character, dimension(:), optional, intent(IN) :: comchars
       integer :: count_lines
 !
       integer :: unit=1, ierr
+      character :: ch
+      logical :: lcount 
 !
       count_lines=-1
       if (.not. file_exists(file)) return
@@ -110,8 +117,15 @@ module Syscalls
       if (ierr/=0) return
       count_lines=0
       do while (ierr==0)
-        read(unit,*,iostat=ierr)
-        if (ierr==0) count_lines=count_lines+1
+        read(unit,'(a)',iostat=ierr) ch
+        if (ierr==0) then
+          if (present(comchars)) then
+            lcount=(ch.INDAT.comchars)==0
+          else
+            lcount=.true.
+          endif
+          if (lcount) count_lines=count_lines+1
+        endif
       enddo
       close(unit)
 !
