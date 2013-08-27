@@ -762,7 +762,7 @@ module Testfield
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (loptest(lwr)) then
+      if (loptest(lwrite)) then
 !
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
