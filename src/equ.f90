@@ -24,6 +24,7 @@ module Equ
 !  10-sep-01/axel: coded
 !  12-may-12/MR: call of density_before_boundary added for boussinesq;
 !                moved call of timing after call of anelastic_after_mn
+!  26-aug-13/MR: added call of diagnostic for imaginary parts
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -102,7 +103,7 @@ module Equ
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
-      ldiagnos   =lfirst.and.lout
+      ladiagnos   =lfirst.and.lout
       l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
 !
