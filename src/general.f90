@@ -32,7 +32,7 @@ module General
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
-  public :: operator(.INDAT.)
+  public :: operator(.IN.)
 !
   include 'record_types.h'
 !
@@ -96,8 +96,8 @@ module General
     module procedure poly_interp_fixorder
   endinterface
 !
-  interface operator (.INDAT.)
-    module procedure indat
+  interface operator (.IN.)
+    module procedure in
   endinterface
 !
 !  State and default generator of random numbers.
@@ -2779,7 +2779,7 @@ module General
 !
     endfunction lextend_vector_char
 !***********************************************************************
-  integer function indat(str,cvec)
+  integer function in(str,cvec)
 !
 !  finds position of a string str in a vector of strings cvec,
 !  returns zero if not contained
@@ -2789,12 +2789,12 @@ module General
     character (LEN=*), dimension(:), intent(IN) :: cvec
     character (LEN=*),               intent(IN) :: str
 
-    do indat=1,size(cvec)
-      if (cvec(indat)==str) return
+    do in=1,size(cvec)
+      if (cvec(in)==str) return
     enddo
 
-    indat = 0
+    in = 0
 
-  endfunction indat
+  endfunction in
 !***********************************************************************
 endmodule General
