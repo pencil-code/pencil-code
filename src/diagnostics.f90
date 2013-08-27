@@ -1157,7 +1157,8 @@ module Diagnostics
 !  26-feb-13/MR  : prepared for ignoring multiple occurrences of 
 !                  diagnostics in print.in
 !  26-aug-13/MR  : removed unneeded 0p setting in format, added handling of D formats
-! 
+!  27-aug13/MR   : reinstated 0p
+!
       use General, only: safe_character_assign
 !
       character (len=*) :: cname,cform
@@ -1190,7 +1191,7 @@ module Diagnostics
       if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') .or. &
           (cform(1:1) == 'd') .or. (cform(1:1) == 'D') .or. &
           (cform(1:1) == 'g') .or. (cform(1:1) == 'G'))     &
-        call safe_character_assign(cform, '1p'//trim(cform))
+        call safe_character_assign(cform, '1p'//trim(cform)//',0p')
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
@@ -1422,8 +1423,7 @@ module Diagnostics
 !  Lists the value of a (must be treated as real) in fname array
 !
 !  3-Dec-10/dhruba+joern: adapted from max_mn_name
-! 25-aug-13/MR: removed unneeded setting of itype,
-!               added test of iname.
+! 25-aug-13/MR: removed unneeded setting of itype, added test of iname.
 !
       real :: a
       integer :: iname,iscoord
