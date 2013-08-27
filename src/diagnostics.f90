@@ -16,7 +16,7 @@ module Diagnostics
 !
   private
 !
-  public :: initialize_prints, prints
+  public :: initialize_diagnostics, prints
   public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
@@ -71,53 +71,87 @@ module Diagnostics
   endinterface sum_mn_name
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
+  real :: dVol_rel1
+
   integer :: mnamer
   character (len=intlen) :: ch2davg
 !
   contains
 !***********************************************************************
-    subroutine initialize_prints()
+    subroutine initialize_diagnostics()
 !
 !  Setup variables needed for output of diagnostic quantities and
 !  averages.
 !
 !  14-aug-03/axel: added dxy, dyz, and dxz
+!  26-aug-13/MR: removed switch first; moved calculation of dVol_rel1 from diagnostic
 !
       integer :: i
       real :: dxeff,dyeff,dzeff
-      logical, save :: first=.true.
-!
-      if (first) then
+      real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
 !
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
 !
-        if (nrcyl/=0) then
-          drcyl=xyz1(1)/nrcyl
-        else
-          drcyl=0.0
-        endif
-        rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
+      if (nrcyl/=0) then
+        drcyl=xyz1(1)/nrcyl
+      else
+        drcyl=0.0
+      endif
+      rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
 !
 !  Calculate the three surface elements. Take care of degenerate dimensions.
 !
-        if (nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
-        if (nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
-        if (nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
+      if (nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
+      if (nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
+      if (nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
 !
-        dsurfxy=dxeff*dyeff
-        dsurfyz=dyeff*dzeff
-        dsurfzx=dzeff*dxeff
+      dsurfxy=dxeff*dyeff
+      dsurfyz=dyeff*dzeff
+      dsurfzx=dzeff*dxeff
 !
 !  Calculate the volume element.
 !
-        dvol=dxeff*dyeff*dzeff
+      dvol=dxeff*dyeff*dzeff
+!
+!  Calculate relative volume integral.
+!
+      if (lspherical_coords) then
+!
+        intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
+        intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
+        intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!
+!  Prevent zeros from less than 3-dimensional runs
+!  (maybe this should be 2pi, but maybe not).
+!
+        if (nx==1) intdr_rel=1.0
+        if (ny==1) intdtheta_rel=1.0
+        if (nz==1) intdphi_rel=1.0
+!
+        dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
+!
+      elseif (lcylindrical_coords) then
+!
+        intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
+        intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
+        intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!
+!  Prevent zeros from less than 3-dimensional runs.
+!
+        if (nx==1) intdr_rel=1.0
+        if (ny==1) intdphi_rel=1.0
+        if (nz==1) intdz_rel=1.0
+!
+        dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
+!
+      else
+        dVol_rel1=1./nwgrid
       endif
-!
-      first=.false.
-!
-    endsubroutine initialize_prints
+      if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
+        
+    endsubroutine initialize_diagnostics
 !***********************************************************************
     subroutine prints
 !
@@ -126,6 +160,7 @@ module Diagnostics
 !
 !   3-may-02/axel: coded
 !  20-aug-13/MR: changes for accumulating and complex diagnostics
+!  26-aug-13/MR: corrected insertion of imaginary values
 !
       use General, only: safe_character_append
       use Cparam, only: max_col_width
@@ -133,7 +168,7 @@ module Diagnostics
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
-      integer :: iname, iostat, nnamel, icompl
+      integer :: iname, iostat, nnamel
       real, dimension(2*nname) :: buffer
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
@@ -192,14 +227,16 @@ module Diagnostics
 !
 !  add accumulated values to current ones if existent
 !
-        where( fname_keep /= impossible .and. itype_name<ilabel_complex ) &
+        where( fname_keep(1:nname) /= impossible .and. &
+               itype_name(1:nname)<ilabel_complex ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
         nnamel=nname
-!!        do iname=nname,1,-1
-!!          icompl=itype_name(iname)/ilabel_complex
-!!          if (icompl==1) call insert(buffer,(/fname_keep(iname)/),iname,nnamel)
-!!        enddo
+        do iname=nname,1,-1
+          if (itype_name(iname)>=ilabel_complex) then
+            call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)
+          endif
+        enddo
 !
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
@@ -233,8 +270,9 @@ module Diagnostics
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
-      where( fname_keep==0. .or. itype_name>=ilabel_complex ) fname(1:nname)=0.
-      where( itype_name>=ilabel_complex ) fname_keep(1:nname)=0.
+      where( fname_keep(1:nname)==0. .or. &
+             itype_name(1:nname)>=ilabel_complex ) fname(1:nname)=0.
+      where( itype_name(1:nname)>=ilabel_complex ) fname_keep(1:nname)=0.
 !
     endsubroutine prints
 !***********************************************************************
@@ -260,8 +298,8 @@ module Diagnostics
 !
         do iname=1,nname
           
-!!          lcompl=itype_name(iname)/ilabel_complex==1
-          lcompl=.false.
+          lcompl=itype_name(iname)>=ilabel_complex
+          
           if (lcompl) then
             tform = comma//'" ("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
@@ -473,56 +511,25 @@ module Diagnostics
 !
     endsubroutine get_average_density
 !**********************************************************************
-    subroutine diagnostic(vname,nlname)
+    subroutine diagnostic(vname,nlname,lcomplex)
 !
 !  Finalize calculation of diagnostic quantities (0-D).
 !
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
+!  26-aug-13/MR:   moved calculation of dVol_rel1 to initialize_diagnostics
+!                  added optional parameter lcomplex for use with imaginary part
 !
-      integer,                 intent(in)    :: nlname
-      real, dimension(nlname), intent(inout) :: vname
+      use Sub, only: loptest
+!
+      integer,                 intent(in)   :: nlname
+      real, dimension(nlname), intent(inout):: vname
+      logical,optional,        intent(in)   :: lcomplex
 !
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
       integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
-      logical :: lweight_comm, lcomplex
-      logical, save :: first=.true.
-      real, save :: dVol_rel1
-      real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
-!
-!  Calculate relative volume integral.
-!
-      if (first) then
-        if (lspherical_coords) then
-          intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
-          intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
-          intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
-!
-!  Prevent zeros from less than 3-dimensional runs
-!  (maybe this should be 2pi, but maybe not).
-!
-          if (nx==1) intdr_rel=1.0
-          if (ny==1) intdtheta_rel=1.0
-          if (nz==1) intdphi_rel=1.0
-          dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
-        elseif (lcylindrical_coords) then
-          intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
-          intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
-          intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
-!
-!  Prevent zeros from less than 3-dimensional runs.
-!
-          if (nx==1) intdr_rel=1.0
-          if (ny==1) intdphi_rel=1.0
-          if (nz==1) intdz_rel=1.0
-          dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
-        else
-          dVol_rel1=1./nwgrid
-        endif
-        first=.false.
-        if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
-      endif
+      logical :: lweight_comm, lalways
 !
 !  Go through all print names, and sort into communicators
 !  corresponding to their type.
@@ -531,29 +538,34 @@ module Diagnostics
       isum_count=0
       lweight_comm=.false.
 
+      lalways=.not.loptest(lcomplex)
+
       do iname=1,nlname
 
         itype = itype_name(iname)
 
-        if (itype<0) then
-          imax_count=imax_count+1
-          fmax_tmp(imax_count)=vname(iname)
-        elseif (itype>0) then
-          lcomplex = itype>=ilabel_complex
-          itype = mod(itype,10)
-          isum_count=isum_count+1
-          fsum_tmp(isum_count)=vname(iname)
-          if (itype==ilabel_sum_weighted .or. &
-              itype==ilabel_sum_weighted_sqrt .or. &
-              itype==ilabel_sum_par .or. &
-              itype==ilabel_sum_sqrt_par) then
-            fweight_tmp(isum_count)=fweight(iname)
-            lweight_comm=.true.
+        if (lalways.or.itype>=ilabel_complex) then
+          if (itype<0) then
+            imax_count=imax_count+1
+            fmax_tmp(imax_count)=vname(iname)
+          elseif (itype>0) then
+            itype = mod(itype,ilabel_complex)
+            isum_count=isum_count+1
+            fsum_tmp(isum_count)=vname(iname)
+            if (itype==ilabel_sum_weighted .or. &
+                itype==ilabel_sum_weighted_sqrt .or. &
+                itype==ilabel_sum_par .or. &
+                itype==ilabel_sum_sqrt_par) then
+              fweight_tmp(isum_count)=fweight(iname)
+              lweight_comm=.true.
+            endif
           endif
         endif
       enddo
       nmax_count=imax_count
       nsum_count=isum_count
+
+      if (nmax_count==0 .and. nsum_count==0) return
 !
 !  Communicate over all processors.
 !
@@ -570,76 +582,77 @@ module Diagnostics
         imax_count=0
         isum_count=0
         do iname=1,nlname
+!
           itype = itype_name(iname)
-          if (itype<0) then ! max
-            imax_count=imax_count+1
-!
-            if (itype==ilabel_max)            &
-                vname(iname)=fmax(imax_count)
-!
-            if (itype==ilabel_max_sqrt)       &
-                vname(iname)=sqrt(fmax(imax_count))
-!
-            if (itype==ilabel_max_dt)         &
-                vname(iname)=fmax(imax_count)
-!
-            if (itype==ilabel_max_neg)        &
-                vname(iname)=-fmax(imax_count)
-!
-            if (itype==ilabel_max_reciprocal) &
-                vname(iname)=1./fmax(imax_count)
-!
-          elseif (itype>0) then
+          if (lalways.or.itype>=ilabel_complex) then
 
-            lcomplex = itype>=ilabel_complex
-            itype = mod(itype,ilabel_complex)
-
-            isum_count=isum_count+1
+            if (itype<0) then ! max
+              imax_count=imax_count+1
 !
-            if (itype==ilabel_sum)            &
-                vname(iname)=fsum(isum_count)*dVol_rel1
+              if (itype==ilabel_max)            &
+                  vname(iname)=fmax(imax_count)
 !
-            if (itype==ilabel_sum_sqrt)       &
-                vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
+              if (itype==ilabel_max_sqrt)       &
+                  vname(iname)=sqrt(fmax(imax_count))
 !
-            if (itype==ilabel_sum_par)        &
-                vname(iname)=fsum(isum_count)/fweight(isum_count)
+              if (itype==ilabel_max_dt)         &
+                  vname(iname)=fmax(imax_count)
 !
-            if (itype==ilabel_sum_sqrt_par)        &
-                vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
+              if (itype==ilabel_max_neg)        &
+                  vname(iname)=-fmax(imax_count)
 !
-            if (itype==ilabel_integrate)      &
-                vname(iname)=fsum(isum_count)
+              if (itype==ilabel_max_reciprocal) &
+                  vname(iname)=1./fmax(imax_count)
 !
-             if (itype==ilabel_surf)          &
-                 vname(iname)=fsum(isum_count)
+            elseif (itype>0) then
 !
-             if (itype==ilabel_sum_lim) then
-                vol=1.
-                if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
-                if (nzgrid/=1)           vol=vol*Lz
-                if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
-                vname(iname)=fsum(isum_count)/vol
-             endif
+              itype = mod(itype,ilabel_complex)
+              isum_count=isum_count+1
 !
-            if (itype==ilabel_sum_weighted) then
-              if (fweight(isum_count)/=0.0) then
-                vname(iname)=fsum(isum_count)/fweight(isum_count)
-              else
-                vname(iname)=0.0
+              if (itype==ilabel_sum)            &
+                  vname(iname)=fsum(isum_count)*dVol_rel1
+!
+              if (itype==ilabel_sum_sqrt)       &
+                  vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
+!
+              if (itype==ilabel_sum_par)        &
+                  vname(iname)=fsum(isum_count)/fweight(isum_count)
+!
+              if (itype==ilabel_sum_sqrt_par)        &
+                  vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
+!
+              if (itype==ilabel_integrate)      &
+                  vname(iname)=fsum(isum_count)
+!
+               if (itype==ilabel_surf)          &
+                   vname(iname)=fsum(isum_count)
+!
+               if (itype==ilabel_sum_lim) then
+                  vol=1.
+                  if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
+                  if (nzgrid/=1)           vol=vol*Lz
+                  if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
+                  vname(iname)=fsum(isum_count)/vol
+               endif
+!
+              if (itype==ilabel_sum_weighted) then
+                if (fweight(isum_count)/=0.0) then
+                  vname(iname)=fsum(isum_count)/fweight(isum_count)
+                else
+                  vname(iname)=0.0
+                endif
               endif
-            endif
 !
-            if (itype==ilabel_sum_weighted_sqrt) then
-              if (fweight(isum_count)/=0.0) then
-                vname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
-              else
-                vname(iname)=0.0
+              if (itype==ilabel_sum_weighted_sqrt) then
+                if (fweight(isum_count)/=0.0) then
+                  vname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
+                else
+                  vname(iname)=0.0
+                endif
               endif
-            endif
 !
+            endif
           endif
-!
         enddo
 !
       endif
@@ -1143,6 +1156,7 @@ module Diagnostics
 !   6-apr-04/wolf: more liberate format reading
 !  26-feb-13/MR  : prepared for ignoring multiple occurrences of 
 !                  diagnostics in print.in
+!  26-aug-13/MR  : removed unneeded 0p setting in format, added handling of D formats
 ! 
       use General, only: safe_character_assign
 !
@@ -1171,15 +1185,12 @@ module Diagnostics
         length=iform0-1
       endif
 !
-!  Fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d).
+!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
 !
-      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') &
-          .or. (cform(1:1) == 'g') .or. (cform(1:1) == 'G')) then
+      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') .or. &
+          (cform(1:1) == 'd') .or. (cform(1:1) == 'D') .or. &
+          (cform(1:1) == 'g') .or. (cform(1:1) == 'G'))     &
         call safe_character_assign(cform, '1p'//trim(cform))
-      endif
-      if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
-        call safe_character_assign(cform, '0p'//trim(cform))
-      endif
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
@@ -1198,6 +1209,8 @@ module Diagnostics
 !  Integer formats are turned into floating point numbers.
 !
       index_i=index(cform,'i')
+      if (index_i==0) index_i=index(cform,'I')
+
       if (index_i/=0) then
         cform(index_i:index_i)='f'
         cform=trim(cform)//'.0'
@@ -1415,7 +1428,6 @@ module Diagnostics
       real :: a
       integer :: iname,iscoord
 !
-!  Set corresponding entry in itype_name
 !  This routine is to be called only once per step
 !
       if (iname/=0) fname_sound(iname,iscoord)=a

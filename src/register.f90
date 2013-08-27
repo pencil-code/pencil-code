@@ -184,6 +184,7 @@ module Register
 ! 23-feb-03/axel: added physical constants conversion
 !  7-oct-03/david: initialize_gravity before density, etc (its needed there)
 ! 11-sep-04/axel: began adding spherical coordinates
+! 26-aug-13/MR: changed initialize_prints into initialize_diagnostics
 !
       use Cdata
       use Param_IO
@@ -198,7 +199,7 @@ module Register
       use Cosmicray,        only: initialize_cosmicray
       use Density,          only: initialize_density
       use Deriv,            only: initialize_deriv
-      use Diagnostics,      only: initialize_prints
+      use Diagnostics,      only: initialize_diagnostics
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
       use Energy,           only: initialize_energy
@@ -361,7 +362,7 @@ module Register
 !  Run rest of initialization of individual modules.
 !
       call initialize_deriv()
-      call initialize_prints()
+      call initialize_diagnostics()
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
       call initialize_eos()
