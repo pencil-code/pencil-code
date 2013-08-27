@@ -1051,9 +1051,12 @@ module Equ
         call fatal_error_local('pde','')
       endif
 !
-!  Diagnostics.
+!  0-D Diagnostics.
 !
-      if (ldiagnos) call diagnostic(fname,nname)
+      if (ldiagnos) then 
+        call diagnostic(fname,nname)
+        call diagnostic(fname_keep,nname,lcomplex=.true.)
+      endif
 !
 !  1-D diagnostics.
 !
