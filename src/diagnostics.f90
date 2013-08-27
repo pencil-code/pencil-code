@@ -1571,7 +1571,12 @@ module Diagnostics
     endsubroutine max_mn_name
 !***********************************************************************
     subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
-
+!
+!  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
+!                first dimension of a is 1; if it is 2 considers a a complex
+!                pencil - stores real(imaginary) part in fname(fname_keep),
+!                sets type of diagnostic to complex
+! 
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
@@ -1590,7 +1595,9 @@ module Diagnostics
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
     subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
-
+!
+!  20-aug-13/MR: derived from sum_mn_name, behaves as before 
+!
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
@@ -1616,7 +1623,8 @@ module Diagnostics
 !  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !  30-aug-07/wlad: adapted for cylindrical coordinates
 !  22-mar-08/axel: added ladd option, to add to previous values
-!  29-aug-2011/Bourdin.KIS: added TODO and a comment about building the mean
+!  29-aug-11/Bourdin.KIS: added TODO and a comment about building the mean
+!  20-aug-13/MR: derived from sum_mn_name, made array of values fname a dummy argument 
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of

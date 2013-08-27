@@ -7386,8 +7386,6 @@ module Magnetic
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'Ezpt',idiag_Ezpt)
       enddo
 !
-!  Write column, idiag_XYZ, where our variable XYZ is stored.
-!
       if (lwr) then
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
