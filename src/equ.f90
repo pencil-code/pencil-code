@@ -103,7 +103,7 @@ module Equ
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
-      ladiagnos   =lfirst.and.lout
+      ldiagnos   =lfirst.and.lout
       l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
 !
