@@ -256,7 +256,7 @@ module Testfield
 !  subtract average emf
 !
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
-                                        +uxbtest-uxbtestm(:,n-n1+1,:,jtest)
+                                        +uxbtest-uxbtestm(:,m-m1+1,:,jtest)
         endif
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
@@ -295,7 +295,7 @@ module Testfield
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nxgrid*nygrid, nl
+      integer :: jtest,j,nxy=nxgrid*nygrid, ml
       logical :: headtt_save
       real :: fac
       real, dimension (nx,ny,3) :: uxbtestm1
@@ -326,13 +326,13 @@ module Testfield
           uxbtestm(:,:,:,jtest)=0.
         else
 !
-          do n=n1,n2
+          do m=m1,m2
 !
-            nl=n-n1+1
+            ml=m-m1+1
 !
-            uxbtestm(:,nl,:,jtest)=0.
+            uxbtestm(:,ml,:,jtest)=0.
 !
-            do m=m1,m2
+            do n=n1,n2
 !
               call curl(f,iaxtest,btest)
               call cross_mn(f(l1:l2,m,n,iux:iuz),btest,uxbtest)
@@ -344,11 +344,11 @@ module Testfield
 !
               do j=1,3
                 if (lflucts_with_xyaver) then
-                  uxbtestm(:,nl,j,jtest)=spread(sum( &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                  uxbtestm(:,ml,j,jtest)=spread(sum( &
+                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
-                  uxbtestm(:,nl,j,jtest)= &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,ml,j,jtest)= &
+                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j)
                 endif
               enddo
               headtt=.false.
@@ -385,7 +385,7 @@ module Testfield
     Use Diagnostics
     Use Sub, only: fourier_single_mode
 !
-    integer :: i, j, ij, count, nl, jtest
+    integer :: i, j, ij, count, ml, jtest
     real, dimension(2,nx) :: temp_fft_y
     real, dimension(2,2) :: temp_fft
     real, dimension (:,:,:), allocatable :: temp_array
@@ -394,15 +394,15 @@ module Testfield
 !
 ! Mean EMF
 !
-    do n=n1,n2 
+    do m=m1,m2 
 !
-      nl = n-n1+1
+      ml = m-m1+1
       jtest = 1
 !
       do i=idiag_Eij_start,idiag_Eij_stop,3                            ! over all testfields
         do j=1,3                                                       ! over vector components
 !          call ysum_mn_name_xz(uxbtestm(:,nl,j,jtest),idiags_xz(i+j-1))
-          call zsum_mn_name_xy(uxbtestm(:,nl,j,jtest),idiags_xy(i+j-1))
+          call zsum_mn_name_xy(uxbtestm(:,ml,j,jtest),idiags_xy(i+j-1))
         enddo
         jtest = jtest+1
       enddo
@@ -513,33 +513,33 @@ module Testfield
     temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
 !
     if (ldiagnos .and. needed2d_1d) then
-      do n=n1,n2
+      do m=m1,m2
         
-        nl = n-n1+1
+        ml = m-m1+1
         do i=1,size(twod_address)
-          call sum_mn_name(temp_array(:,nl,twod_address(i)), idiags(i))
+          call sum_mn_name(temp_array(:,ml,twod_address(i)), idiags(i))
         enddo
 
       enddo
     endif
 !
     if (l1davgfirst .and. needed2d_1d) then  !!!TBC
-      do n=n1,n2
+      do m=m1,m2
 !
-        nl = n-n1+1
+        ml = m-m1+1
         do i=1,size(twod_address)
-          call yzsum_mn_name_x(temp_array(:,nl,twod_address(i)), idiags_y(i))
+          call yzsum_mn_name_x(temp_array(:,ml,twod_address(i)), idiags_y(i))
         enddo
 !
       enddo
     endif
 !
     if (l2davgfirst .and. needed2d_2d) then
-      do n=n1,n2 
+      do m=m1,m2 
 !
-        nl = n-n1+1
+        ml = m-m1+1
         do i=1,size(twod_address)
-          call zsum_mn_name_xy(temp_array(:,nl,twod_address(i)),idiags_xy(i))
+          call zsum_mn_name_xy(temp_array(:,ml,twod_address(i)),idiags_xy(i))
         enddo
 !
       enddo
@@ -564,25 +564,25 @@ module Testfield
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-      integer :: nl
+      integer :: ml
 !
 !  set bbtest for each of the 9 cases
 !
-      nl = n-n1+1
+      ml = m-m1+1
 !
       select case (jtest)
 !
-      case (1); bbtest(:,1)=cx*cy(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=sx*cy(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=cx*sy(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (1); bbtest(:,1)=cx*cy(ml); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sx*cy(ml); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=cx*sy(ml); bbtest(:,2)=0.; bbtest(:,3)=0.
 !
-      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cy(nl); bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cy(nl); bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sy(nl); bbtest(:,3)=0.
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cy(ml); bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cy(ml); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sy(ml); bbtest(:,3)=0.
 !
-      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cy(nl)
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cy(nl)
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sy(nl)
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cy(ml)
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cy(ml)
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sy(ml)
 !
       case default; bbtest(:,:)=0.
 !
