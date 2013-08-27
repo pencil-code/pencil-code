@@ -100,7 +100,7 @@ module Syscalls
 !  26-aug-13/MR: optional parameter comchars for characters marking not to be
 !                counted comment lines added
 !
-      use General, only: operator(.INDAT.)
+      use General, only: operator(.IN.)
 !
       character(len=*),                  intent(IN) :: file
       character, dimension(:), optional, intent(IN) :: comchars
@@ -120,7 +120,7 @@ module Syscalls
         read(unit,'(a)',iostat=ierr) ch
         if (ierr==0) then
           if (present(comchars)) then
-            lcount=(ch.INDAT.comchars)==0
+            lcount=(ch.IN.comchars)==0
           else
             lcount=.true.
           endif
