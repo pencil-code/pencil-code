@@ -244,14 +244,13 @@ module Magnetic
 !  dummy routine
 !
 !   3-may-02/axel: coded
+!  26-aug-13/MR: uneeded output of idiag* removed
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
         write(3,*) 'nname=',nname
@@ -261,7 +260,6 @@ module Magnetic
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
-        write(3,*) 'idiag_bmxy_rms=',idiag_bmxy_rms
       endif
 !
       call keep_compiler_quiet(lreset)
