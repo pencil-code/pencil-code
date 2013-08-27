@@ -493,16 +493,19 @@ module Sub
 !
     endsubroutine dot_mn
 !***********************************************************************
-    logical function loptest(opt)
+    logical function loptest(lopt,ldef)
 !  
 !  returns value of optional logical parameter opt if present, .false. otherwise.
 !
 !  20-aug-13/MR: coded
+!  26-aug-13/MR: optional default value ldef added
 !
-      logical, optional, intent(IN) :: opt
+      logical, optional, intent(IN) :: lopt, ldef
 
-      if (present(opt)) then
-        loptest=opt
+      if (present(lopt)) then
+        loptest=lopt
+      else if (present(ldef)) then
+        loptest=ldef
       else
         loptest=.false.
       endif
