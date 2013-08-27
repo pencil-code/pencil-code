@@ -201,7 +201,8 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,uufluct
+      real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,uufluct,aatemp
+      real, dimension (nx,3,3) :: aijtemp, bijtemp
       real, dimension (nx,3) :: del2Atest
       integer :: jtest,j,i
 !
@@ -227,7 +228,14 @@ module Testfield
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
 !
-        call del2v(f,iaxtest,del2Atest)
+        if (lcartesian_coords) then
+           call del2v(f,iaxtest,del2Atest)
+        endif
+        if (lspherical_coords) then
+           aatemp=f(l1:l2,m,n,iaxtest:iaztest)
+           call gij(f,iaxtest,aijtemp,1)
+           call gij_etc(f,iaxtest,aatemp,AIJ=aijtemp,BIJ=bijtemp,DEL2=del2Atest)
+        endif
 !
         select case (itestfield)
           case ('1'); call set_bbtest (bbtest,jtest)
@@ -243,8 +251,8 @@ module Testfield
         if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
         if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
 !
-        uufluct = p%uu-uumxy(l1:l2,n,:)
-
+        uufluct = p%uu-uumxy(l1:l2,m,:)
+!
         call cross_mn(uufluct,bbtest,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest+uxB 
 !
