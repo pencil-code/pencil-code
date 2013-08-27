@@ -9,29 +9,58 @@ module Testfield_general
 
   implicit none
 !
-! input parameters
+! constants
 !
-  real, dimension(3)                         :: B_ext=(/0.,0.,0./)
-  character (len=labellen), dimension(ninit) :: initaatest='zero'
-  real,                     dimension(ninit) :: amplaatest=0.
-  real,                     dimension(ninit) :: kx_aatest,ky_aatest,kz_aatest, &
-                                                phasex_aatest,phasey_aatest,phasez_aatest
-  logical                                    :: luxb_as_aux=.false.,ljxb_as_aux=.false.
-  namelist /testfield_init_pars/          &
-           B_ext,                         &
-           luxb_as_aux,                   &          ! can be PROTECTED  
-           ljxb_as_aux,                   &          !        .
-           initaatest,                    &          !        .
-           amplaatest,                    &          !        .
-           kx_aatest,ky_aatest,kz_aatest, &          !        .
-           phasex_aatest,phasey_aatest,phasez_aatest !        .
+  integer, parameter :: nresitest_max=4
+!
+! initial parameters
+!
+  real, dimension(3)                        :: B_ext=(/0.,0.,0./)
+  character (len=labellen), dimension(ninit):: initaatest='zero'
+  real,                     dimension(ninit):: amplaatest=0.,                            &
+                                               kx_aatest,ky_aatest,kz_aatest,            &
+                                               phasex_aatest,phasey_aatest,phasez_aatest
+!
+  logical                                   :: luxb_as_aux=.false.,ljxb_as_aux=.false.
+
+  namelist /testfield_init_pars/                    &
+           B_ext,                                   &
+           luxb_as_aux,                             &          ! can be PROTECTED  
+           ljxb_as_aux,                             &          !        .
+           initaatest,                              &          !        .
+           amplaatest,                              &          !        .
+           kx_aatest,ky_aatest,kz_aatest,           &          !        .
+           phasex_aatest,phasey_aatest,phasez_aatest           !        .
 !
 ! run parameters
 !
-  logical                  :: reinitialize_aatest=.false.,lsoca=.false.,lsoca_jxb=.true., &
-                              lignore_uxbtestm=.false.,linit_aatest=.false.,ltestfield_taver=.false.
-  real                     :: etatest=0.,etatest1=0.,daainit=0.,bamp=1.
+  logical:: reinitialize_aatest=.false.,      &
+            lsoca=.false.,                    &
+            lsoca_jxb=.true.,                 &
+            lignore_uxbtestm=.false.,         &
+            linit_aatest=.false.,             &
+            ltestfield_taver=.false.,         &
+            ltestfield_artifric=.false.,      &
+            ltestfield_profile_eta_z=.false., &
+            lresitest_eta_const=.false.,      &
+            lresitest_hyper3=.false.,         &
+            leta_rank2=.true.,                &   
+            lforcing_cont_aatest=.false.
+!
+  real   :: etatest=0.,etatest1=0.,       &
+            etatest_hyper3=0.,            &
+            daainit=0.,bamp=1.,           &
+            tau_aatest=0.,tau1_aatest=0., &
+            ampl_fcont_aatest=1.,         &
+            lin_testfield=0.,             &
+            lam_testfield=0.,             &
+            om_testfield=0.,              &
+            delta_testfield=0.,           &
+            delta_testfield_next=0.,      &
+            delta_testfield_time=0.
+!
   character (len=labellen) :: itestfield='linear'
+  character (len=labellen), dimension(nresitest_max) :: iresistivity_test=''
   real, dimension(njtest)  :: rescale_aatest=0.
 
 !  namelist /testfield_run_pars_gen/ &
@@ -50,6 +79,9 @@ module Testfield_general
 !           rescale_aatest
 !
 ! work variables
+!
+  real, dimension(:,:), pointer :: geta_z
+  real, dimension(:),   pointer :: eta_z
 !
   integer, dimension (njtest) :: nuxb=0
 
@@ -317,5 +349,41 @@ module Testfield_general
       call cross_mn(p%uu,bbtest,uxb)
 
     endsubroutine calc_uxb
+!***********************************************************************
+    subroutine calc_diffusive_part(f,iaxt,daatest)
+!
+!   6-jun-13/MR:  outsourced from daatest_dt
+!
+      use Cdata
+      use Sub
+
+      real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
+      real, dimension(nx,3),            intent(INOUT):: daatest
+      integer,                          intent(IN)   :: iaxt
+
+      real, dimension(nx)    :: divatest
+      real, dimension(nx,3)  :: del2Atest
+      real, dimension(nx,3,3):: aijtest
+      integer :: j
+
+      call del2v(f,iaxt,del2Atest)
+
+      if (ltestfield_profile_eta_z) then
+        call gij(f,iaxt,aijtest,1)
+        call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
+        do j=1,3
+          daatest(:,j)=eta_z(n)*etatest*del2Atest(:,j)+geta_z(n,j)*divatest
+        enddo
+      else
+        if (lresitest_eta_const) daatest=etatest*del2Atest
+        
+        if (lresitest_hyper3) then
+          call del6v(f,iaxt,del2Atest)
+          daatest=daatest+etatest_hyper3*del2Atest
+          if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
+        endif
+      endif
+
+    endsubroutine calc_diffusive_part
 !***********************************************************************
 endmodule Testfield_general
