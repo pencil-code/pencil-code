@@ -6,10 +6,10 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 3
+! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED qq(3); q2; divq; cVTrho1
+! PENCILS PROVIDED cVTrho1
 !
 !***************************************************************
 !
@@ -166,11 +166,6 @@ module Special
 !
 !  10-sep-10/bing: coded
 !
-      use FArrayManager, only: farray_register_pde
-!
-      call farray_register_pde('spitzer',iqq,vector=3)
-      iqx=iqq; iqy=iqq+1; iqz=iqq+2
-!
       if (lroot) call svn_id( &
           "$Id$")
 !
@@ -307,8 +302,6 @@ module Special
         endif
       endif
 !
-      if (lreset_heatflux) f(:,:,:,iqx:iqz)=0.
-!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f)
@@ -319,23 +312,13 @@ module Special
 !
       intent(inout) :: f
 !
+      call keep_compiler_quiet(f)
+!
 !  Initialization for the non-fourier heat transprot
 !
       if (ltemperature.and. (.not. ltemperature_nolog)) then
         Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
             unit_length*unit_temperature**(3.5)
-!
-        f(:,:,:,iqx:iqz)=0.
-!         do i=1,my
-!           do j=n1,n2
-! !
-!             glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
-!  !
-!             f(:,i,j,iqz) = - Kspitzer_para * &
-!                 exp(3.5*f(:,i,j,ilnTT))*glnT
-!           enddo
-!         enddo
-!
       endif
 !
     endsubroutine init_special
@@ -374,34 +357,6 @@ module Special
 !  04-sep-10/bing: coded
 !
       lpenc_requested(i_cVTrho1)=.true.
-!
-      if (eighth_moment /= 0.) then
-        lpenc_requested(i_qq)=.true.
-        lpenc_requested(i_divq)=.true.
-        lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_uij)=.true.
-      endif
-!
-      if (tau_inv_spitzer /= 0.) then
-        lpenc_requested(i_qq)=.true.
-        lpenc_requested(i_divq)=.true.
-        lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_bunit)=.true.
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_uglnrho)=.true.
-        lpenc_requested(i_divu)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_glnrho)=.true.
-      endif
 !
       if (Kc /= 0.) then
         lpenc_requested(i_cp1)=.true.
@@ -499,15 +454,12 @@ module Special
 !
       if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
 !
-      if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
-!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (lpencil_in(i_q2)) lpencil_in(i_qq)=.true.
       if (lpencil_in(i_cVTrho1)) then
         lpencil_in(i_lnrho)=.true.
         lpencil_in(i_lnTT)=.true.
@@ -524,9 +476,8 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case), intent(inout) :: p
 !
-      if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
-      if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
-      if (lpencil(i_divq)) call div(f,iqq,p%divq)
+      call keep_compiler_quiet(f)
+!
       if (lpencil(i_cVTrho1)) p%cVTrho1=gamma*p%cp1*exp(-p%lnrho-p%lnTT)
 !
     endsubroutine calc_pencils_special
@@ -606,16 +557,6 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: b2_1,qsat,qabs
-      real, dimension(nx) :: rhs,cosgT_b
-      real, dimension(nx,3) :: K1,unit_glnTT
-      real, dimension(nx,3) :: spitzer_vec
-      real, dimension(nx) :: tmp,dt_1_8th,nu_coll
-      real :: coeff
-!
-      real, dimension(nx,3,3) ::  qij
-      real, dimension(nx,3) :: qgradu,ugradq,qmu,qdivu,tmp_vec
-      integer :: i
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -623,137 +564,10 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-      if (headtt) then
-        call identify_bcs('spitzerx',iqx)
-        call identify_bcs('spitzery',iqy)
-        call identify_bcs('spitzerz',iqz)
-      endif
 !
       if (lfilter_farray) call filter_farray(f,df)
 !
-      if (tau_inv_spitzer /= 0.) then
-!
-        b2_1=1./(p%b2+tini)
-!
-        call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
-!
-        call dot(K1,p%bb,tmp)
-        call multsv(-b2_1*tmp,p%bb,spitzer_vec)
-!
-! Reduce the heat conduction at places of low density or very
-! high temperatures
-!
-        if (Ksat/=0.) then
-          call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
-          qsat = Ksat*Ksaturation*exp(1.5*p%lnTT)
-!
-          qsat = 1./(1./qsat +1./qabs)
-          where (qabs > sqrt(tini))
-            spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
-            spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
-            spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
-          endwhere
-        endif
-!
-        do i=1,3
-          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) + &
-              tau_inv_spitzer*(-p%qq(:,i)+spitzer_vec(:,i))  +  &
-              p%qq(:,i)*(p%uglnrho + p%divu)
-        enddo
- !
-        call dot(p%qq,p%glnrho,tmp)
-!
-        rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
-!
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-!
-        if (lvideo) then
-!
-! slices
-          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
-          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
-          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
-          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
-          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
-          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
-        endif
-!
-        if (lfirst.and.ldt) then
-          call unit_vector(p%glnTT,unit_glnTT)
-          call dot(unit_glnTT,p%bunit,cosgT_b)
-          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-              gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
-          advec_uu = max(advec_uu,rhs/dxmax_pencil)
-!
-          if (idiag_dtspitzer/=0) &
-              call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
-          !
-          dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
-        endif
-      endif
-!
-! #########################################################
-! Eighth moment approximation
-! #########################################################
-!
-      if (eighth_moment /= 0.) then
-!
-        b2_1=1./(p%b2+tini)
-!
-        call gij(f,iqx,qij,1)
-        call u_dot_grad(f,iqx,qij,p%uu,ugradq)
-!
-        call u_dot_grad(f,iux,p%uij,p%qq,qgradu)
-        call multsv(p%divu,p%qq,qdivu)
-!
-        call multmv(p%uij,p%qq,qmu)
-!
-        spitzer_vec=-(ugradq +7./5.*qgradu+7./5.*qdivu+2./5.*qmu)
-!
-        coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)*eighth_moment
-        call multsv(coeff*exp(2.0*p%lnTT+p%lnrho),p%glnTT,K1)
-!
-        call dot(K1,p%bb,tmp)
-        call multsv(b2_1*tmp,p%bb,tmp_vec)
-!
-        spitzer_vec=spitzer_vec-tmp_vec
-!
-        nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
-!
-        do i=1,3
-          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) &
-              -nu_coll*p%qq(:,i)+spitzer_vec(:,i)
-        enddo
-!
-!  Limit by saturation heat flux
-!
-        rhs = exp(-p%lnrho-p%lnTT)*p%divq
-!
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
-!
-        if (lvideo) then
-!
-! slices
-          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
-          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
-          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
-          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
-          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
-          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
-        endif
-!
-        if (lfirst.and.ldt) then
-          dt_1_8th = nu_coll
-          dt1_max=max(dt1_max,dt_1_8th/cdts)
-          advec_uu = max(advec_uu,sqrt(coeff*exp(p%lnTT)*gamma*p%cp1)/dxmax_pencil)
-          if (idiag_dtspitzer/=0) &
-              call max_mn_name(dt_1_8th/cdts,idiag_dtspitzer,l_dt=.true.)
-          !
-        endif
-      endif
-!
-      if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
-      if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -766,25 +580,11 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data), intent(inout) :: slices
 !
+      call keep_compiler_quiet(f)
+!
 !  Loop over slices
 !
       select case (trim(slices%name))
-!
-      case ('sflux')
-        if (slices%index>=3) then
-          slices%ready=.false.
-        else
-          slices%index=slices%index+1
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index)
-          if (lwrite_slice_xy3) &
-              slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index)
-          if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index)
-          if (slices%index<=3) slices%ready=.true.
-        endif
 !
       case ('newton')
         slices%yz => newton_yz
@@ -2893,7 +2693,6 @@ module Special
         do level=1,n_gran_level
           call write_points(level)
         enddo
-        close (77+iproc)
       endif
 !
     endsubroutine granulation_driver
@@ -3060,7 +2859,7 @@ module Special
               tmppoint(2) = current%data(2) + ipy*ny
               tmppoint(3:6) = current%data(3:6)
               if (lwrite_granules.and.level==1) &
-                  write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') 1,current%data,level,current%number
+                  write (77+iproc,'(I4.2,E13.5,E13.5,E10.2,E10.2,E10.2,E10.2,I4.2,I7.5)') 1,current%data,level,current%number
             else
 ! Create dummy result
               tmppoint(:)=0.
@@ -3084,7 +2883,7 @@ module Special
               current%data(3:6)=tmppoint_recv(3:6)
               call draw_update(level)
               if (lwrite_granules.and.level==1) &
-                write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') 1,current%data,level,current%number
+                write (77+iproc,'(I4.2,E13.5,E13.5,E10.2,E10.2,E10.2,E10.2,I4.2,I7.5)') 1,current%data,level,current%number
             endif
           endif
 !
@@ -3505,7 +3304,7 @@ module Special
       integer, intent(in) :: level
 !
       if (lwrite_granules) &
-          write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') -1,current%data,level,current%number
+          write (77+iproc,'(I4.2,E13.5,E13.5,E10.2,E10.2,E10.2,E10.2,I4.2,I7.5)') -1,current%data,level,current%number
 !
       if (associated(current%next)) then
 ! current is NOT the last one
@@ -4577,6 +4376,23 @@ module Special
      endif
 !
    endsubroutine update_aa
+!***********************************************************************
+    subroutine finalize_special(f,lstarting)
+!
+!  Called by start.f90 together with lstarting=.true.   and then
+!  called by run.f90   together with lstarting=.false.  before exiting.
+!
+!  14-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      logical, intent(in) :: lstarting
+!
+      close (77+iproc)
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
+    endsubroutine finalize_special
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
