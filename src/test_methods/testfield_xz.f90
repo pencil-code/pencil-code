@@ -607,37 +607,37 @@ module Testfield
 !  set alternative testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
+!  27-aug-13/MR: removed unneeded calculations
 !
       use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,sx,cz,sz,xz
-      integer :: jtest
+      real, dimension (nx) :: xz
+      real :: szl
+      integer :: jtest, nl
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
 !  xx and zz for calculating diffusive part of emf
 !
-      cx=cos(x(l1:l2))
-      sx=sin(x(l1:l2))
-      cz=cos(z(n))
-      sz=sin(z(n))
-      xz=cx*cz
+      nl = n-n1+1
+      szl=sz(nl)
+      xz=cx*cz(nl)
 !
 !  set bbtest for each of the 9 cases
 !
       select case (jtest)
-      case (1); bbtest(:,1)=xz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=xz; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xz
-      case (4); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
-      case (7); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
+      case (1); bbtest(:,1)=xz ; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=0. ; bbtest(:,2)=xz ; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=xz
+      case (4); bbtest(:,1)=szl; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0. ; bbtest(:,2)=szl; bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=szl
+      case (7); bbtest(:,1)=sx ; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0. ; bbtest(:,2)=sx ; bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=sx
       case default; bbtest(:,:)=0.
       endselect
 !
@@ -648,12 +648,14 @@ module Testfield
 !  set testfield using constant and linear functions
 !
 !  15-jun-05/axel: adapted from set_bbtest3
+!  27-aug-13/MR: made zz scalar
 !
       use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: xx,zz
+      real, dimension (nx) :: xx
+      real :: zz
       integer :: jtest
 !
       intent(in)  :: jtest
@@ -686,36 +688,31 @@ module Testfield
 !  set alternative testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
+!  27-aug-13/MR: removed unneeded calculations
 !
       use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,sx,cz,sz
-      integer :: jtest
+      integer :: jtest, nl
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  xx and zz for calculating diffusive part of emf
-!
-      cx=cos(x(l1:l2))
-      sx=sin(x(l1:l2))
-      cz=cos(z(n))
-      sz=sin(z(n))
-!
 !  set bbtest for each of the 9 cases
 !
+      nl=n-n1+1
+
       select case (jtest)
-      case (1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case (4); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
-      case (7); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
+      case (1); bbtest(:,1)=1.    ; bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=0.    ; bbtest(:,2)=1.    ; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=1.
+      case (4); bbtest(:,1)=sz(nl); bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.    ; bbtest(:,2)=sz(nl); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=cz(nl)
+      case (7); bbtest(:,1)=cx    ; bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0.    ; bbtest(:,2)=sx    ; bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=sx
       case default; bbtest(:,:)=0.
       endselect
 !
