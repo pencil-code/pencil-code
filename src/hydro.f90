@@ -515,6 +515,8 @@ module Hydro
   integer :: idiag_ruyuzmxy=0   ! ZAVG_DOC: $\left< \rho u_y u_z \right>_{z}$
   integer :: idiag_fkinxmxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_x\right>_{z}$
+  integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
+                                ! ZAVG_DOC: u_y\right>_{z}$
 !
   contains
 !***********************************************************************
@@ -1584,7 +1586,7 @@ module Hydro
           idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
-      if (idiag_fkinxmxy/=0) then
+      if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0) then
         lpenc_diagnos2d(i_ekin)=.true.
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
@@ -2728,6 +2730,8 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
         if (idiag_fkinxmxy/=0) &
             call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
+        if (idiag_fkinymxy/=0) &
+            call zsum_mn_name_xy(p%ekin*p%uu(:,2),idiag_fkinymxy)
         if (idiag_uguxmxy/=0) &
             call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
         if (idiag_uguymxy/=0) &
@@ -3964,6 +3968,7 @@ module Hydro
         idiag_fkinzmz=0
         idiag_fkinxmx=0
         idiag_fkinxmxy=0
+        idiag_fkinymxy=0
         idiag_uguxmxy=0
         idiag_uguymxy=0
         idiag_uguzmxy=0
@@ -4326,6 +4331,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxmxy',idiag_fkinxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinymxy',idiag_fkinymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguxmxy',idiag_uguxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguymxy',idiag_uguymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguzmxy',idiag_uguzmxy)
