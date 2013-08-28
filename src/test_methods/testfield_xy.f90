@@ -13,6 +13,8 @@
 !  present module from inactive/testfield.f90 rather than the
 !  inactive/testfield_xz.f90 that also exists.
 !
+!   27-aug-13/pete: adapted from testfield_xz.f90
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -63,7 +65,7 @@ module Testfield
   character(LEN=len_cdiags), dimension(n_cdiags) :: cdiags = &
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   ! DIAG_DOC: $\alpha_{ij}$       
      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  ',&   ! DIAG_DOC: $\eta_{ijk}$
-     'eta113  ','eta213  ','eta313  ','eta123  ','eta223  ','eta323  ','eta133  ','eta233  ','eta333  ',&
+     'eta112  ','eta212  ','eta312  ','eta122  ','eta222  ','eta322  ','eta132  ','eta232  ','eta332  ',&
      'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta123cc','eta123cs','eta123sc','eta123ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
                                                                                                             ! Diag_DOC: $\eta_{11,\rm hh}, {\rm h}={\rm c,s}$
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     '  /) ! DIAG_DOC: ${\cal E}^i_j$
@@ -114,33 +116,18 @@ module Testfield
 !
 !  xx and yy for calculating diffusive part of emf
 !
-      cx=cos(ktestfield_x*(x(l1:l2)+xx0))
-      sx=sin(ktestfield_x*(x(l1:l2)+xx0))
+!      cx=cos(ktestfield_x*(x(l1:l2)+xx0))
+!      sx=sin(ktestfield_x*(x(l1:l2)+xx0))
 !
-      cy=cos(ktestfield_y*(y(m1:m2)+yy0))
-      sy=sin(ktestfield_y*(y(m1:m2)+yy0))
+!      cy=cos(ktestfield_y*(y(m1:m2)+yy0))
+!      sy=sin(ktestfield_y*(y(m1:m2)+yy0))
 !
-      !c2x=cos(2*ktestfield_x*(x(l1:l2)+xx0))
-      !c2z=cos(2*ktestfield_z*(z(n1:n2)+zz0))
+!      cx1=1./cx
+!      cy1=1./cy
 !
-      cx1=1./cx
-      cy1=1./cy
+! calculate inverse matrix for determination of the turbulent coefficients
 !
-      do i=1,nx
-      do j=1,ny
-!
-!        Minv(i,j,1,:) = (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
-        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sy(j)**2)*cx1(i)*cy1(j),              sx(i)*cy1(j),              sy(j)*cx1(i) /)
-        Minv(i,j,2,:) = (/              -sx(i)*cy1(j)/ktestfield_x, cx(i)*cy1(j)/ktestfield_x,                        0. /)
-        Minv(i,j,3,:) = (/              -sy(j)*cx1(i)/ktestfield_y,                        0., cy(j)*cx1(i)/ktestfield_y /)
-!
-!        Minv(i,j,:,:) = RESHAPE((/  &
-!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
-!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
-!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
-!                                /), (/3,3/), ORDER=(/ 2, 1 /))
-      enddo
-      enddo
+      call calc_inverse_matrix(x(l1:l2),y(m1:m2),ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
 !
       lcalc_uumeanxy = .true.
 !
@@ -157,6 +144,49 @@ module Testfield
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
+!***********************************************************************
+    subroutine calc_inverse_matrix(x,y,ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
+!
+!  27-aug-13/MR: outsourced from initialize_testfield for broader use
+!
+      real, dimension(:),       intent(in) :: x, y
+      real,                     intent(in) :: ktestfield_x,ktestfield_y,xx0,yy0
+      real, dimension(:,:,:,:), intent(out):: Minv
+      real, dimension(:),       intent(out):: cx,sx,cy,sy
+
+      integer :: i, j
+
+      real, dimension(size(x)):: cx1
+      real, dimension(size(y)):: cy1
+
+!
+! calculate inverse matrix for determination of the turbulent coefficients
+!
+      cx=cos(ktestfield_x*(x+xx0))
+      sx=sin(ktestfield_x*(x+xx0))
+!
+      cy=cos(ktestfield_y*(y+yy0))
+      sy=sin(ktestfield_y*(y+yy0))
+!
+      cx1=1./cx
+      cy1=1./cy
+!
+      do i=1,size(x)
+      do j=1,size(y)
+!
+        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sy(j)**2)*cx1(i)*cy1(j),              sx(i)*cy1(j),              sy(j)*cx1(i) /)
+        Minv(i,j,2,:) = (/              -sx(i)*cy1(j)/ktestfield_x, cx(i)*cy1(j)/ktestfield_x,                        0. /)
+        Minv(i,j,3,:) = (/              -sy(j)*cx1(i)/ktestfield_y,                        0., cy(j)*cx1(i)/ktestfield_y /)
+!
+!        Minv(i,j,:,:) = RESHAPE((/  &
+!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
+!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
+!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                /), (/3,3/), ORDER=(/ 2, 1 /))
+      enddo
+      enddo
+   
+      endsubroutine calc_inverse_matrix
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
 !
@@ -518,7 +548,7 @@ module Testfield
 !
     endif
 !
-    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
+    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an m loop
 !
     if (ldiagnos .and. needed2d_1d) then
       do m=m1,m2
@@ -753,7 +783,7 @@ module Testfield
         enddo
       enddo
 !
-!  xy-averages
+!  xz-averages
 !
       do inamey=1,nnamey
         do i=1,size(idiags_y)
@@ -761,7 +791,7 @@ module Testfield
         enddo
       enddo
 !
-!  y-averages
+!  z-averages
 !
       do inamexy=1,nnamexy
         do i=1,size(idiags_xy)
