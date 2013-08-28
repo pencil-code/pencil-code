@@ -65,7 +65,7 @@ module Testfield
      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  ',&   ! DIAG_DOC: $\eta_{ijk}$
      'eta113  ','eta213  ','eta313  ','eta123  ','eta223  ','eta323  ','eta133  ','eta233  ','eta333  ',&
      'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta123cc','eta123cs','eta123sc','eta123ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
-                                                                                                            ! Diag_DOC: $\eta_{11,\rm hh}, {\rm h}={\rm c,s}$
+                                                                                                            ! Diag_DOC: $\eta_{123,\rm hh}, {\rm h}={\rm c,s}$
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     '  /) ! DIAG_DOC: ${\cal E}^i_j$
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_z=0, idiags_xz=0
@@ -76,10 +76,10 @@ module Testfield
 !
 !  work variables
 !
-  real, dimension (nx)              :: cx,sx
-  real, dimension (nz)              :: cz,sz
-  real, dimension (nx,nz,3,3)       :: Minv
-  real, dimension (nx,nz,3,njtest)  :: uxbtestm
+  real, dimension(nx)              :: cx,sx
+  real, dimension(nz)              :: cz,sz
+  real, dimension(nx,nz,3,3)       :: Minv
+  real, dimension(nx,nz,3,njtest)  :: uxbtestm
   logical, dimension(idiag_base_end):: twod_need_1d, twod_need_2d
   logical                           :: needed2d_1d, needed2d_2d
 !
@@ -99,10 +99,6 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
-       real, dimension (nx)        :: c2x, cx1
-       real, dimension (nz)        :: c2z, cz1
-       integer :: i,j
-!
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
@@ -112,35 +108,9 @@ module Testfield
 !
       itestfield='1'
 !
-!  xx and zz for calculating diffusive part of emf
+! calculate inverse matrix for determination of the turbulent coefficients
 !
-      cx=cos(ktestfield_x*(x(l1:l2)+xx0))
-      sx=sin(ktestfield_x*(x(l1:l2)+xx0))
-!
-      cz=cos(ktestfield_z*(z(n1:n2)+zz0))
-      sz=sin(ktestfield_z*(z(n1:n2)+zz0))
-!
-      !c2x=cos(2*ktestfield_x*(x(l1:l2)+xx0))
-      !c2z=cos(2*ktestfield_z*(z(n1:n2)+zz0))
-!
-      cx1=1./cx
-      cz1=1./cz
-!
-      do i=1,nx
-      do j=1,nz
-!
-!        Minv(i,j,1,:) = (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
-        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
-        Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
-        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
-!
-!        Minv(i,j,:,:) = RESHAPE((/  &
-!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
-!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
-!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
-!                                /), (/3,3/), ORDER=(/ 2, 1 /))
-      enddo
-      enddo
+      call calc_inverse_matrix(x(l1:l2),z(n1:n2),ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
 !
       lcalc_uumeanxz = .true.
 !
@@ -157,6 +127,49 @@ module Testfield
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
+!***********************************************************************
+    subroutine calc_inverse_matrix(x,z,ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
+!
+!  27-aug-13/MR: outsourced from initialize_testfield for broader use
+!
+      real, dimension(:),       intent(in) :: x, z
+      real,                     intent(in) :: ktestfield_x,ktestfield_z,xx0,zz0
+      real, dimension(:,:,:,:), intent(out):: Minv
+      real, dimension(:),       intent(out):: cx,sx,cz,sz
+
+      integer :: i, j
+
+      real, dimension(size(x)):: cx1
+      real, dimension(size(z)):: cz1
+
+!
+! calculate inverse matrix for determination of the turbulent coefficients
+!
+      cx=cos(ktestfield_x*(x+xx0))
+      sx=sin(ktestfield_x*(x+xx0))
+!
+      cz=cos(ktestfield_z*(z+zz0))
+      sz=sin(ktestfield_z*(z+zz0))
+!
+      cx1=1./cx
+      cz1=1./cz
+!
+      do i=1,size(x)
+      do j=1,size(z)
+!
+        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
+        Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
+        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
+!
+!        Minv(i,j,:,:) = RESHAPE((/  &
+!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
+!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
+!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                /), (/3,3/), ORDER=(/ 2, 1 /))
+      enddo
+      enddo
+   
+      endsubroutine calc_inverse_matrix
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
 !
