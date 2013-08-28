@@ -711,7 +711,6 @@ module Register
       integer,                          intent(out) :: nnamel
 !
       character (len=30) :: cname_tmp
-      integer            :: iname
       integer, parameter :: unit=1
 !
       call parallel_open(unit,FILE=trim(in_file))
@@ -719,7 +718,7 @@ module Register
 !  Read names and formats.
 !
       nnamel = 0
-      do 
+      do
         read(unit,*,end=99) cname_tmp
         if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
           nnamel=nnamel+1
@@ -836,7 +835,7 @@ module Register
           if ( .not.lwrite_slices ) dvid=0.0
         endif
       endif
-     
+
       if (lroot .and. (ip<14)) &
           print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
@@ -858,9 +857,9 @@ module Register
 !  nsound_location and lwrite_sound are set there, too.
 !
       if ( dimensionality>0 .and. dsound/=0.0 ) then
-        
+
         nname_sound = max(0,parallel_count_lines(sound_in_file))
-!       
+!
         if (nname_sound>0) then
           call allocate_sound(nname_sound)
 
@@ -945,8 +944,8 @@ module Register
 !  Read in the list of variables for z-averages.
 !
       nnamexy = parallel_count_lines(zaver_in_file)
-!     
-      if (nnamexy>0) then                  
+!
+      if (nnamexy>0) then
         call allocate_zaverages(nnamexy)
         lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
       endif
@@ -973,7 +972,7 @@ module Register
         enddo
         call parallel_close(unit)
 !
-        if (nnamerz>0) then                  
+        if (nnamerz>0) then
           call allocate_phiaverages(nnamerz+iadd)
           lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz)
         endif
@@ -1034,7 +1033,7 @@ module Register
 !   8-jun-02/axel: adapted from hydro
 !  16-may-12/MR  : standardized expansion of names in print.in and similar
 !                  files by introducing calls to corresp. module routines
-! 
+!
       use Cdata
       use Diagnostics
       use Energy,  only: expand_shands_energy
