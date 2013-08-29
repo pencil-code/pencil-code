@@ -64,6 +64,7 @@ module Energy
   real :: chit_aniso=0.0, chit_aniso_prof1=1.0, chit_aniso_prof2=1.0
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
+  real :: heat_gaussianz=0.0, heat_gaussianz_sigma=0.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
@@ -156,6 +157,7 @@ module Energy
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
+      heat_gaussianz, heat_gaussianz_sigma, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
@@ -2785,8 +2787,8 @@ module Energy
 !
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
-          heat_uniform/=0.0 .or. tau_cool/=0.0 .or. tau_cool_ss/=0.0 .or. &
-          cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
+          heat_uniform/=0.0 .or. heat_gaussianz/=0.0 .or. tau_cool/=0.0 .or. &
+          tau_cool_ss/=0.0 .or. cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
           (tau_cool2 /=0)) &
           call calc_heat_cool(df,p,Hmax)
@@ -4365,6 +4367,13 @@ module Energy
 !  x-direction the same module may be used.
 !
       if (lconvection_gravx) call get_heat_cool_gravx_cartesian(heat,p)
+!
+!  Add heating with Gaussian profile.
+!
+      if (heat_gaussianz/=0.0) then
+        heat=heat+heat_gaussianz*exp(-.5*z(n)**2/heat_gaussianz_sigma**2)/ &
+          (sqrt(2*pi)*heat_gaussianz_sigma)
+      endif
 !
 !  Add spatially uniform heating.
 !
