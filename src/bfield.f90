@@ -128,10 +128,14 @@ module Magnetic
 !
 !  Conducts post-parameter-read initialization for Magnetic.
 !
-!  09-jul-13/ccyang: coded.
+!  29-aug-13/ccyang: coded.
+!
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
+!
+      integer :: ierr
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -139,6 +143,11 @@ module Magnetic
 !  Check the existence of external field.
 !
       lbext = any(b_ext /= 0.0)
+!
+!  Share it.
+!
+      call put_shared_variable('B_ext', B_ext, ierr)
+      if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
 !
 !  Calculates variables required by Magnetic and possibly other module(s).
 !
