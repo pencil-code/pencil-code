@@ -5,6 +5,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lmagnetic = .false.
+! CPARAM logical, parameter :: lbfield = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
