@@ -877,7 +877,6 @@ module Radiation
 !
         if (ipz==ipzstart) then
           call radboundary_xy_set(Qrecv_xy)
-!print*,'AXEL Qrecv_xy=',Qrecv_xy
         else
           call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         endif
@@ -1260,7 +1259,6 @@ module Radiation
       if (bc_ray_z=='blo') then
         fact=.5/radius_Isurf**2
         Qrad0_xy=ampl_Isurf*exp(-fact*(spread(x**2,2,my)+spread(y**2,1,mx)))
-!print*,'AXEL: idir=',idir,ampl_Isurf
       endif
 !
 !  Incoming intensity from a layer of constant temperature TT_top.

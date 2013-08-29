@@ -32,7 +32,7 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
-  real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
+  real :: radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
@@ -113,7 +113,7 @@ module Forcing
        iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
-       dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
+       radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
@@ -200,6 +200,10 @@ module Forcing
           if (lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
         endif
       endif
+!
+!  initialize location to location_fixed
+!
+      location=location_fixed
 !
 !  vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.
@@ -3701,7 +3705,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_blobs(f)
 !
-!  add blobs in entropy every dforce time units
+!  add blobs in entropy every dtforce time units
 !
 !  28-jul-02/axel: coded
 !
@@ -3723,15 +3727,15 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       file=trim(datadir)//'/tforce.dat'
       if (lfirst_call) then
-        call read_snaptime(trim(file),tforce,nforce,dforce,t)
+        call read_snaptime(trim(file),tforce,nforce,dtforce,t)
         lfirst_call=.false.
       endif
 !
 !  Check whether we want to do forcing at this time.
 !
-      call update_snaptime(file,tforce,nforce,dforce,t,lforce,ch)
+      call update_snaptime(file,tforce,nforce,dtforce,t,lforce,ch)
       if (lforce) then
-        call blob(force,f,iss,radius_ff,0.,0.,.5)
+        call blob(force,f,iss,radius_ff,location(1),location(2),location(3))
       endif
 !
     endsubroutine forcing_blobs
