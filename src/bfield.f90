@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED bij(3,3); jj(3); divb
 ! PENCILS PROVIDED curle(3); jxbr(3)
 !
-! PENCILS PROVIDED ss12
+! PENCILS PROVIDED aa(3); ss12
 !
 !***************************************************************
 module Magnetic
@@ -351,6 +351,8 @@ module Magnetic
       endif curle
 !
 !  Dummy pencils
+!
+      if (lpencil(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
 !
       if (lpencil(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
 !
