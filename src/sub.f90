@@ -2203,15 +2203,16 @@ module Sub
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
 !  23-feb-07/axel: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
+!  29-aug-13/MR: made bij optional; added error messages for misssing optional parameters
 !
       use Deriv, only: der2,derij
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
-      real, dimension (nx,3,3), intent (out) :: bij
-      real, dimension (nx,3,3), intent (in), optional :: aij
-      real, dimension (nx,3), intent (out), optional :: del2,graddiv
       real, dimension (nx,3), intent (in), optional :: aa
+      real, dimension (nx,3,3), intent (in), optional :: aij
+      real, dimension (nx,3,3), intent (out), optional :: bij
+      real, dimension (nx,3), intent (out), optional :: del2,graddiv
 !
 !  Locally used variables.
 !
@@ -2246,6 +2247,8 @@ module Sub
 !  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
 !
       if (lspherical_coords) then
+        if (.not.present(aij)) &
+          call fatal_error('gij_etc', 'aij needed for spherical coordinates')
         do i=1,3
           d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
           d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
@@ -2257,34 +2260,43 @@ module Sub
 !  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
 !
       if (lcylindrical_coords) then
+        if (.not.present(aij)) &
+          call fatal_error('gij_etc', 'aij needed for cylindrical coordinates')
         do i=1,3
           d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
         enddo
       endif
 !
-!  Calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
+!  Calculate optionally b_i,j = eps_ikl A_l,kj,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji .
 !
-      bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
-      bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
-      bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
+      if (present(bij)) then 
+!
+        bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
+        bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
+        bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
 !
 !  Corrections for spherical coordinates.
 !
-      if (lspherical_coords) then
-        bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
-        bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
-        bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
-        bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         -aa(:,2)*r2_mn
-        bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
-        bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
-      endif
+        if (lspherical_coords) then
+          if (.not.present(aa)) &
+            call fatal_error('gij_etc', 'aa needed for spherical coordinates')
+          bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
+          bij(:,2,3)=bij(:,2,3)-aij(:,3,3)*r1_mn
+          bij(:,1,3)=bij(:,1,3)+aij(:,3,3)*r1_mn*cotth(m)
+          bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         -aa(:,2)*r2_mn
+          bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
+          bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
+        endif
 !
 !  Corrections for cylindrical coordinates.
 !
-      if (lcylindrical_coords) then
-        bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
-        bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+        if (lcylindrical_coords) then
+          if (.not.present(aa)) &
+            call fatal_error('gij_etc', 'aa needed for cylindrical coordinates')
+          bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
+          bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+        endif
       endif
 !
 !  Calculate del2 and graddiv, if requested.
@@ -2292,6 +2304,8 @@ module Sub
       if (present(graddiv)) then
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
+          if (.not.present(aa)) &
+            call fatal_error('gij_etc', 'aa needed for spherical coordinates')
           graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ &
              aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
           graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ &
@@ -2303,7 +2317,9 @@ module Sub
 !
       if (present(del2)) then
         del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
-        if (lspherical_coords.and.present(aij).and.present(aa)) then
+        if (lspherical_coords) then
+          if (.not.present(aa)) &
+            call fatal_error('gij_etc', 'aa needed for spherical coordinates')
           del2(:,1)= del2(:,1)+&
             r1_mn*(2.*(aij(:,1,1)-aij(:,2,2)-aij(:,3,3)&
             -r1_mn*aa(:,1)-cotth(m)*r1_mn*aa(:,2) ) &
@@ -2316,7 +2332,6 @@ module Sub
             r1_mn*(2.*(aij(:,3,1)+aij(:,1,3)&
             +cotth(m)*aij(:,2,3) ) &
             +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
-        else
         endif
         if (lcylindrical_coords) call fatal_error('gij_etc', &
             'use del2=graddiv-curlcurl for cylindrical coords')
