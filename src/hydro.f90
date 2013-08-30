@@ -148,6 +148,7 @@ module Hydro
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
+  logical :: lremove_mean_angmom=.false.
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lreinitialize_uu=.false.
@@ -187,7 +188,7 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range, Ra, Pr, llinearized_hydro
+      hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2020,6 +2021,7 @@ module Hydro
         call remove_mean_momenta(f,iux)
       else
         if (lremove_mean_flow) call remove_mean_flow(f,iux)
+        if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
 !
     endsubroutine hydro_before_boundary
@@ -4889,6 +4891,65 @@ module Hydro
         if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
 !
     endsubroutine remove_mean_flow
+!***********************************************************************
+    subroutine remove_mean_angmom(f,induz)
+!
+!  Substract <L_z>/<rho*sin(theta)> from z-flow. Useful to avoid
+!  unphysical accumulation of angular momentum in spherical
+!  coordinates.
+!
+!  29-aug-13/pete: adapted from remove_mean_flow
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: induz
+!
+      real, dimension (nx) :: uu, rho, rsint
+      real :: um, angmom, angmom_tmp, rhosint, rhosint_tmp
+      integer :: m,n
+      real    :: fac
+!
+!  initialize um and compute normalization factor fac
+!
+        um = 0.0
+        angmom = 0.0
+        rhosint = 0.0
+        fac = 1.0/nwgrid
+!
+!  Go through all pencils.
+!
+        do n = n1,n2
+        do m = m1,m2
+!
+!  Compute mean angular momentum and rho*sin(theta) including geometric
+!  corrections for spherical coordinates.
+!
+           uu = f(l1:l2,m,n,induz)
+           rho = exp(f(l1:l2,m,n,ilnrho))
+           rsint = x(l1:l2)*sinth(m)
+           angmom = angmom + fac*sum(rho*x(l1:l2)*rsint**2*uu)
+           rhosint = rhosint + fac*sum(rho*x(l1:l2)*rsint**2)
+        enddo
+        enddo
+!
+!  Compute total sum for all processors
+!
+        call mpiallreduce_sum(angmom,angmom_tmp)
+        call mpiallreduce_sum(rhosint,rhosint_tmp)
+        um=angmom_tmp/rhosint_tmp
+!
+!  Go through all pencils and subtract out the excess u_phi
+!
+        do n = n1,n2
+        do m = m1,m2
+            f(l1:l2,m,n,induz) = f(l1:l2,m,n,induz) - um
+        enddo
+        enddo
+!
+        if (lroot.and.ip<6) print*,'remove_mean_angmom: um=',um
+!
+    endsubroutine remove_mean_angmom
 !***********************************************************************
     subroutine interior_bc_hydro(f)
 !
