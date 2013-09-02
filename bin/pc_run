@@ -34,7 +34,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
-#                   config file base on a host ID.
+#                   config file based on a host ID.
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
