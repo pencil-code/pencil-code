@@ -2,7 +2,7 @@
 	# $Id$
 
         # Echoes "$pre$str$post$always" or just "$always$default" if $str is empty.
-        function ifecho ($pre, $str, $post, $always, $default) {
+        function ifecho ($pre, $str, $post, $always = "", $default = "") {
                 $str = ifstr ($pre, $str, $post, $always, $default);
                 if (!empty ($str)) { echo $str; }
         }
