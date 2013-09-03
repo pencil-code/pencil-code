@@ -75,8 +75,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (mx) :: TT, dTdr, rho_prof, ss_prof, cs2_prof 
-      real, dimension (mx) :: npoly2, gnpoly2, kappa
-      real, dimension (mx,3) :: gkappa
+      real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma
       real, pointer :: gravx, cp, cv
 !
@@ -125,34 +124,41 @@ module InitialCondition
       enddo
       enddo
 !
-!  Compute hcond and glhcond
+!  Compute hcond and glhcond using global x-array
 !
       coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
-      npoly2(l1:l2)=npoly_jump*(x(l1:l2)/x0)**(-15.)+nad-npoly_jump
-      gnpoly2(l1:l2)=15./x(l1:l2)*(nad-npoly_jump-npoly2(l1:l2))
+!
+      do n=1,nxgrid
+         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+      enddo
 !
       kappa=coef1*(npoly2+1.)
-      gkappa(l1:l2,1)=coef1*(gnpoly2(l1:l2)+1)
-      gkappa(l1:l2,2)=0.
-      gkappa(l1:l2,3)=0.
+      gkappa=coef1*gnpoly2
 !
-!     Write kappa and gkappa to file to be read by run.in
+!  Write kappa and gkappa to file to be read by run.in
 !
       if (iproc .eq. root) then 
          call safe_character_assign(wfile,'hcond_glhc.dat')
          open(unit,file=wfile,status='unknown')
-         do ix=nghost+1,mx-nghost
-            write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix,1)
+         do ix=1,nxgrid
+            write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
          enddo
          close(unit)
       endif
+!
+!  Compute flux at the bottom and a modified Stefan-Boltzmann constant
+!  assuming the the total flux at the outer boundary radiates through
+!  the surface for the Fgs boundary condition.
 !
       L00=star_luminosity*rho0*gravx**1.5*sqrt(Rstar)
       Fbottom=L00/(4.*pi*x0**2)
       sigma=(L00/(4.*pi*Rsurf**2))/Tsurf**4
 !
-      print*,'initial_condition: Fbottom =',Fbottom
-      print*,'initial_condition: SigmaSBt =',sigma
+      if (iproc .eq. root) then 
+         print*,'initial_condition: Fbottom =',Fbottom
+         print*,'initial_condition: SigmaSBt =',sigma
+      endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************
