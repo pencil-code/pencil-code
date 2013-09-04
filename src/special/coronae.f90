@@ -2858,7 +2858,7 @@ module Special
               tmppoint(1) = current%data(1) + ipx*nx
               tmppoint(2) = current%data(2) + ipy*ny
               tmppoint(3:6) = current%data(3:6)
-              if (lwrite_granules.and.level==1) &
+              if (lwrite_granules) &
                   write (77+iproc,'(I4.2,E13.5,E13.5,E10.2,E10.2,E10.2,E10.2,I4.2,I7.5)') 1,current%data,level,current%number
             else
 ! Create dummy result
@@ -2882,7 +2882,7 @@ module Special
               current%data(2)=tmppoint_recv(2)-ipy*ny
               current%data(3:6)=tmppoint_recv(3:6)
               call draw_update(level)
-              if (lwrite_granules.and.level==1) &
+              if (lwrite_granules) &
                 write (77+iproc,'(I4.2,E13.5,E13.5,E10.2,E10.2,E10.2,E10.2,I4.2,I7.5)') 1,current%data,level,current%number
             endif
           endif
