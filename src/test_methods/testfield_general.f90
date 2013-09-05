@@ -4,6 +4,7 @@ module Testfield_general
 !                 Everything to be used in individual testfield modules needs
 !                 to be public (or protected).
   use Cparam
+  use Cdata, only: ninit, labellen
   use Messages
   use General, only: keep_compiler_quiet
 
@@ -88,7 +89,6 @@ module Testfield_general
   real    :: taainit=0.,bamp1=1.,bamp12=1.
   integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
-  integer :: ntestfield            ! can be PROTECTED
   integer, private :: naainit
 !
   contains
@@ -100,9 +100,8 @@ module Testfield_general
 !   2-jun-05/axel: adapted from magnetic
 !
       use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use Initcond
-      !!use Sub
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -225,7 +224,7 @@ module Testfield_general
 !  27-jun-13/MR  : moved from testfield_xz
 !
       use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use Sub
 !
 !  Set first and last index of test field
@@ -335,7 +334,7 @@ module Testfield_general
 !                along with uxb also bbtest is returned
 !
       use Cdata
-      use Sub
+      use Sub, only: gij, curl_mn, cross_mn
 
       real, dimension(mx,my,mz,mfarray),intent(IN) :: f      
       type (pencil_case),               intent(IN) :: p
@@ -355,7 +354,7 @@ module Testfield_general
 !   6-jun-13/MR:  outsourced from daatest_dt
 !
       use Cdata
-      use Sub
+      use Sub, only: del2v, gij, div_mn, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
       real, dimension(nx,3),            intent(INOUT):: daatest
@@ -385,5 +384,355 @@ module Testfield_general
       endif
 
     endsubroutine calc_diffusive_part
+!***********************************************************************
+    subroutine calc_inverse_matrix(x,z,ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
+!
+!  27-aug-13/MR: outsourced from testfield_xz:initialize_testfield for broader use
+!
+      real, dimension(:),       intent(in) :: x, z
+      real,                     intent(in) :: ktestfield_x,ktestfield_z,xx0,zz0
+      real, dimension(:,:,:,:), intent(out):: Minv
+      real, dimension(:),       intent(out):: cx,sx,cz,sz
+
+      integer :: i, j
+
+      real, dimension(size(x)):: cx1
+      real, dimension(size(z)):: cz1
+
+!
+! calculate inverse matrix for determination of the turbulent coefficients
+!
+      cx=cos(ktestfield_x*(x+xx0))
+      sx=sin(ktestfield_x*(x+xx0))
+!
+      cz=cos(ktestfield_z*(z+zz0))
+      sz=sin(ktestfield_z*(z+zz0))
+!
+      cx1=1./cx
+      cz1=1./cz
+!
+      do i=1,size(x)
+      do j=1,size(z)
+!
+        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
+        Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
+        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
+!
+!        Minv(i,j,:,:) = RESHAPE((/  &
+!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
+!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
+!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                /), (/3,3/), ORDER=(/ 2, 1 /))
+      enddo
+      enddo
+
+      endsubroutine calc_inverse_matrix
+!***********************************************************************
+    subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiag_Eij,idiag_alp11h,idiag_eta123h, &
+                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d)
+!  
+!  calculation of the turbulent coefficients for an average over one coordinate,
+!  takes subroutine ysum_xz for 1D and xysum_z for 2D averages as parameters;
+!  symbols chosen as the 2D average were over all y and the 1D average over all x and y
+!
+!  26-feb-13/MR: determination of y-averaged components of alpha completed
+!   6-mar-13/MR: internal order of etas changed; calls to save_name, *sum_mn_name 
+!                simplified
+!   7-mar-13/MR: further shortened by introduction of do-loops in calculating
+!                temp_array
+!  27-jun-13/MR: avoided calculation of pencil-case, introduced calculation of mean EMF
+!  28-aug-13/MR: parametrized such that it is usable for all cases with average over one direction
+!   3-sep-13/MR: outsourced from testfield_xz
+!   
+    Use Diagnostics, only: sum_mn_name, save_name
+    Use Cdata, only: n, nghost, l1davgfirst, l2davgfirst, ldiagnos, lroot
+    Use Sub, only: fourier_single_mode
+!
+    integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiag_Eij, &
+                                             idiag_alp11h, idiag_eta123h
+    logical, dimension(2),      intent(in):: needed2d
+    logical, dimension(:),      intent(in):: twod_need_1d, twod_need_2d
+    real,    dimension(:,:,:,:),intent(in):: uxbtestm, Minv
+    external                              :: ysum_xz,xysum_z
+!
+    integer :: i, j, ij, count, nl, jtest, nx, nz, n1, n2
+    real, dimension(2,size(uxbtestm,1)) :: temp_fft_z
+    real, dimension(2,2) :: temp_fft
+    real, dimension (:,:,:), allocatable :: temp_array
+    logical, dimension(size(idiags)) :: need_temp
+    integer, dimension (size(idiags)) :: twod_address
+!
+! Mean EMF
+!
+    nx = size(uxbtestm,1)
+    nz = size(uxbtestm,2)
+    n1 = nghost+1
+    n2 = nghost+nz
+
+    do n=n1,n2 
+!
+      nl = n-n1+1
+      jtest = 1
+!
+      do i=1,size(idiag_Eij),3                                         ! over all testfields
+        do j=1,3                                                       ! over vector components
+          call ysum_xz(uxbtestm(:,nl,j,jtest),n,idiags_xz(i+j-1))
+        enddo
+        jtest = jtest+1
+      enddo
+!
+    enddo
+
+    if (l2davgfirst .and. needed2d(2)) then 
+      need_temp=twod_need_2d
+    else
+      need_temp=.false.
+    endif
+    if (ldiagnos .and. needed2d(1)) need_temp=need_temp .or. twod_need_1d
+!
+    count=0
+    twod_address=1     !to ensure valid indices even when a slot is unused (flagged by need_temp)
+
+    do j=1,size(idiags)
+      if (need_temp(j)) then
+        count=count+1
+        twod_address(j)=count
+      endif
+    enddo
+!
+    if (count==0) return
+
+    allocate(temp_array(nx,nz,count))
+!
+    select case (itestfield)
+    case ('1')
+!
+      do n=1,nz
+        do i=1,3 
+!
+          if (need_temp(i))   & !(idiag_alpi1*/=0) &
+            temp_array(:,n,twod_address(i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,1)+Minv(:,n,1,2)*uxbtestm(:,n,i,2)+Minv(:,n,1,3)*uxbtestm(:,n,i,3)
+!
+          if (need_temp(3+i)) & !(idiag_alpi2*/=0) &
+            temp_array(:,n,twod_address(3+i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,4)+Minv(:,n,1,2)*uxbtestm(:,n,i,5)+Minv(:,n,1,3)*uxbtestm(:,n,i,6)
+!
+          if (need_temp(6+i)) & !(idiag_alpi3*/=0) &
+            temp_array(:,n,twod_address(6+i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,7)+Minv(:,n,1,2)*uxbtestm(:,n,i,8)+Minv(:,n,1,3)*uxbtestm(:,n,i,9)
+!
+          if (need_temp(9+i)) & !(idiag_etai11*/=0) &
+            temp_array(:,n,twod_address(9+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,1)+Minv(:,n,2,2)*uxbtestm(:,n,i,2)+Minv(:,n,2,3)*uxbtestm(:,n,i,3)
+!
+          if (need_temp(12+i)) & !(idiag_etai21*/=0) &
+            temp_array(:,n,twod_address(12+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,4)+Minv(:,n,2,2)*uxbtestm(:,n,i,5)+Minv(:,n,2,3)*uxbtestm(:,n,i,6)
+!
+          if (need_temp(15+i)) & !(idiag_etai31*/=0) &
+            temp_array(:,n,twod_address(15+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,7)+Minv(:,n,2,2)*uxbtestm(:,n,i,8)+Minv(:,n,2,3)*uxbtestm(:,n,i,9)
+!
+          if (need_temp(18+i)) & !(idiag_etai13*/=0) &
+            temp_array(:,n,twod_address(18+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,1)+Minv(:,n,3,2)*uxbtestm(:,n,i,2)+Minv(:,n,3,3)*uxbtestm(:,n,i,3)
+!
+          if (need_temp(21+i)) & !(idiag_etai23*/=0) &
+            temp_array(:,n,twod_address(21+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,4)+Minv(:,n,3,2)*uxbtestm(:,n,i,5)+Minv(:,n,3,3)*uxbtestm(:,n,i,6)
+!
+          if (need_temp(24+i)) & !(idiag_etai33*/=0) &
+            temp_array(:,n,twod_address(24+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,7)+Minv(:,n,3,2)*uxbtestm(:,n,i,8)+Minv(:,n,3,3)*uxbtestm(:,n,i,9)
+        enddo
+      enddo
+!
+    case default
+      call fatal_error('calc_coefficients','Calculation of coefficients not implemented for itestfield /= 1')
+      temp_array=0.
+!
+    end select
+!
+    if (ldiagnos .and. needed2d(1)) then
+!
+      if (any(idiag_alp11h/=0)) then
+        call fourier_single_mode(temp_array(:,:,twod_address(1)), &
+            (/nx,nz/), 1., 3, temp_fft_z, l2nd=.true.)
+        if (lroot) then
+          call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
+          ij=1
+          do i=1,2
+            do j=1,2
+              call save_name(temp_fft(i,j), idiag_alp11h(ij))
+              ij=ij+1
+            enddo
+          enddo 
+        endif
+      endif
+!
+      if (any(idiag_eta123h/=0)) then
+        call fourier_single_mode(temp_array(:,:,twod_address(22)), &
+            (/nx,nz/), 1., 3, temp_fft_z, l2nd=.true.)
+        if (lroot) then
+          call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
+          ij=1
+          do i=1,2
+            do j=1,2
+              call save_name(temp_fft(i,j), idiag_eta123h(ij))
+              ij=ij+1
+            enddo
+          enddo 
+        endif
+      endif
+!
+    endif
+!
+    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
+!
+    if (ldiagnos .and. needed2d(1)) then
+      do n=n1,n2
+        
+        nl = n-n1+1
+        do i=1,size(twod_address)
+          call sum_mn_name(temp_array(:,nl,twod_address(i)), idiags(i))
+        enddo
+
+      enddo
+    endif
+!
+    if (l1davgfirst .and. needed2d(1)) then  !!!TBC
+      do n=n1,n2
+!
+        nl = n-n1+1
+        do i=1,size(twod_address)
+          call xysum_z(temp_array(:,nl,twod_address(i)),n,idiags_z(i))
+        enddo
+!
+      enddo
+    endif
+!
+    if (l2davgfirst .and. needed2d(2)) then
+      do n=n1,n2 
+!
+        nl = n-n1+1
+        do i=1,size(twod_address)
+          call ysum_xz(temp_array(:,nl,twod_address(i)),n,idiags_xz(i))
+        enddo
+!
+      enddo
+    endif
+!
+    deallocate(temp_array)
+!
+    endsubroutine calc_coefficients
+!***********************************************************************
+    function diagnos_interdep(idiags,idiags_z,idiags_xz,twod_need_1d,twod_need_2d)
+!
+!  detects which of the 2D and 1D averages are needed
+!
+!  3-sep-13/MR: outsourced from testfield_xz
+!
+      logical, dimension(2)            :: diagnos_interdep
+      integer, dimension(:),intent(IN) :: idiags,idiags_z,idiags_xz
+      logical, dimension(:),intent(OUT):: twod_need_2d, twod_need_1d
+!
+!  2d-dependences
+!
+      twod_need_2d = idiags_xz/=0
+      diagnos_interdep(2) = any(twod_need_2d)
+!
+!  2d dependencies of 0 or 1-d averages
+!
+      twod_need_1d = idiags/=0 .or. idiags_z/=0
+      diagnos_interdep(1) = any(twod_need_1d)
+!
+    endfunction diagnos_interdep
+!***********************************************************************
+    subroutine rhs_daatest(f,df,p,uumxz,uxbtestm,set_bbtest)
+!
+!  calculates rhs of all testproblems; to be used within nm-loop,
+!  takes specific routine for calculation of testfield as parameter
+!  symbols chosen as the average were over all y
+!
+!  3-sep-13/MR: outsourced from testfield_xz
+!
+      use Cdata
+      use Sub, only: curl, cross_mn, del2v, gij, gij_etc, identify_bcs
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      real, dimension (mx,my,mz,mvar),   intent(INOUT):: df
+      type (pencil_case),                intent(IN)   :: p
+      real, dimension(nx,3),             intent(IN)   :: uumxz
+      real, dimension(nx,3,njtest),      intent(IN)   :: uxbtestm
+      external                                        :: set_bbtest
+!
+      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,uufluct,del2Atest
+      real, dimension (nx,3,3):: aijtemp
+!
+      integer :: jtest,j,i
+!
+!  identify module and boundary conditions
+!
+      if (headtt.or.ldebug) print*,'daatest_dt: SOLVE'
+!
+      if (headtt) then
+        if (iaxtest /= 0) call identify_bcs('Axtest',iaxtest)
+        if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
+        if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
+      endif
+!
+!  do each of the 9 test fields at a time
+!  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!  Note: the same block of lines occurs again further down in the file.
+!
+      do jtest=1,njtest
+!
+        iaxtest=iaatest+3*(jtest-1)
+        iaztest=iaxtest+2
+!
+!  calculate diffusive part
+!
+        if (lcartesian_coords) then
+          call del2v(f,iaxtest,del2Atest)
+        elseif (lspherical_coords) then
+          call gij(f,iaxtest,aijtemp,1)
+          call gij_etc(f,iaxtest,f(l1:l2,m,n,iaxtest:iaztest),AIJ=aijtemp,DEL2=del2Atest)
+        endif
+!
+        call set_bbtest(bbtest,jtest)
+!
+!  add an external field, if present
+!
+        if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
+        if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
+        if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+!
+!  calculate fluctuating velocity  in the main run
+!
+        uufluct = p%uu-uumxz
+
+        call cross_mn(uufluct,bbtest,uxB)
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest+uxB 
+!
+        if (.not.lsoca) then
+
+          call curl(f,iaxtest,btest)
+          call cross_mn(uufluct,btest,uxbtest)
+!
+!  subtract average emf
+!
+          df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
+                                        +uxbtest-uxbtestm(:,:,jtest)
+        endif
+!
+!  diffusive time step, just take the max of diffus_eta (if existent)
+!  and whatever is calculated here
+!
+        if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
+      
+      enddo
+!
+    endsubroutine rhs_daatest
 !***********************************************************************
 endmodule Testfield_general
