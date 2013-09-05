@@ -808,7 +808,7 @@ module Register
             print_in_file = trim(print_in_file)//'.double'
       endif
 !
-      if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
+      if (ldebug) print*, 'Reading print formats from '//trim(print_in_file)
 !
       nname = max(0,parallel_count_lines(print_in_file,comchars=(/'#','!'/)))
 !
