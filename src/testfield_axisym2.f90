@@ -502,7 +502,7 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
-      real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
+      real, dimension (nx,3,3) :: aijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
       integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
