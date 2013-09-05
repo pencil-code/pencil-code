@@ -47,6 +47,7 @@ module Diagnostics
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
+  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
 !
   interface max_name
     module procedure max_name_int
@@ -2033,14 +2034,28 @@ module Diagnostics
 !***********************************************************************
     subroutine xysum_mn_name_z(a,iname)
 !
+!   3-sep-13/MR: derived from xysum_mn_name_z
+!
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: iname
+
+      call xysum_mn_name_z_npar(a,n,iname)
+
+    endsubroutine xysum_mn_name_z
+!***********************************************************************
+    subroutine xysum_mn_name_z_npar(a,n,iname)
+!
 !  Successively calculate sum over x,y of a, which is supplied at each call.
 !  The result fnamez is z-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
 !   5-jun-02/axel: adapted from sum_mn_name
+!   3-sep-13/MR: derived from xysum_mn_name_z, index n now parameter
 !
-      real, dimension (nx) :: a
-      integer :: iname,n_nghost,isum,lmax
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: n,iname
+!
+      integer :: isum,lmax,nl
 !
 !  Only do something if iname is not zero.
 !
@@ -2053,36 +2068,49 @@ module Diagnostics
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
-        lmax=l2
-        n_nghost=n-nghost
+        lmax=l2; nl=n-nghost
         if (lav_smallx)  lmax=ixav_max
         if (.not.loutside_avg) then
           if (lspherical_coords.or.lcylindrical_coords)then
             do isum=l1,lmax
-              fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
-                  x(isum)*a(isum-nghost)
+              fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
+                                     x(isum)*a(isum-nghost)
             enddo
           else
             do isum=l1,lmax
-              fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
-                  a(isum-nghost)
+              fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
+                                     a(isum-nghost)
             enddo
           endif
         endif
       endif
 !
-    endsubroutine xysum_mn_name_z
+    endsubroutine xysum_mn_name_z_npar
 !***********************************************************************
     subroutine xzsum_mn_name_y(a,iname)
+!
+!   3-sep-13/MR: derived from xzsum_mn_name_y
+!
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: iname
+
+      call xzsum_mn_name_y_mpar(a,m,iname)
+
+    endsubroutine xzsum_mn_name_y
+!***********************************************************************
+    subroutine xzsum_mn_name_y_mpar(a,m,iname)
 !
 !  Successively calculate sum over x,z of a, which is supplied at each call.
 !  The result fnamey is y-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
 !  12-oct-05/anders: adapted from xysum_mn_name_z
+!   3-sep-13/MR: derived from xzsum_mn_name_y, index m now parameter
 !
-      real, dimension (nx) :: a
-      integer :: iname,m_nghost,isum,lmax
+      real, dimension (nx), intent(IN) :: a
+      integer,              intent(IN) :: iname,m
+!
+      integer :: isum,lmax,ml
 !
 !  Only do something if iname is not zero.
 !
@@ -2095,36 +2123,47 @@ module Diagnostics
 !
 !  m starts with mghost+1=4, so the correct index is m-nghost.
 !
-        m_nghost=m-nghost
-        lmax=l2
+        lmax=l2; ml=m-nghost
         if (lav_smallx) lmax=ixav_max
         if (.not.loutside_avg) then
           if (lspherical_coords.and.nxgrid>1)then
             do isum=l1,lmax
-              fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                  x(isum)*sinth(m)*a(isum-nghost)
+              fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+ &
+                                     x(isum)*sinth(m)*a(isum-nghost)
             enddo
           else ! also correct for cylindrical
             do isum=l1,lmax
-              fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                  a(isum-nghost)
+              fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+ &
+                                     a(isum-nghost)
             enddo
           endif
         endif
       endif
 !
-    endsubroutine xzsum_mn_name_y
+    endsubroutine xzsum_mn_name_y_mpar
 !***********************************************************************
     subroutine yzsum_mn_name_x(a,iname)
+!
+!   3-sep-13/MR: derived from yzsum_mn_name_x
+!
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: iname
+
+      call yzsum_mn_name_x_mpar(a,m,iname)
+
+    endsubroutine yzsum_mn_name_x
+!***********************************************************************
+    subroutine yzsum_mn_name_x_mpar(a,m,iname)
 !
 !  Successively calculate sum over y,z of a, which is supplied at each call.
 !  The result fnamex is x-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
 !   2-oct-05/anders: adapted from xysum_mn_name_z
+!   3-sep-13/MR: derived from yzsum_mn_name_x, m now parameter
 !
-      real, dimension (nx) :: a
-      integer :: iname
+      real, dimension (nx), intent(IN) :: a
+      integer,              intent(IN) :: iname,m
 !
 !  Only do something if iname is not zero.
 !
@@ -2145,7 +2184,7 @@ module Diagnostics
         endif
       endif
 !
-    endsubroutine yzsum_mn_name_x
+    endsubroutine yzsum_mn_name_x_mpar
 !***********************************************************************
     subroutine xyintegrate_mn_name_z(a,iname)
 !
@@ -2290,14 +2329,28 @@ module Diagnostics
 !***********************************************************************
     subroutine ysum_mn_name_xz(a,iname)
 !
+!   3-sep-13/MR: derived from ysum_mn_name_xz
+!
+      real, dimension(nx), intent(IN) :: a
+      integer,             intent(IN) :: iname
+
+      call ysum_mn_name_xz_npar(a,n,iname)
+
+    endsubroutine ysum_mn_name_xz
+!***********************************************************************
+    subroutine ysum_mn_name_xz_npar(a,n,iname)
+!
 !  Successively calculate sum over y of a, which is supplied at each call.
 !  The result fnamexz is xz-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
 !   7-jun-05/axel: adapted from zsum_mn_name_xy
+!   3-sep-13/MR: derived from ysum_mn_name_xz, n now parameter
 !
-      real, dimension (nx) :: a
-      integer :: iname,n_nghost
+      real, dimension (nx), intent(IN) :: a
+      integer,              intent(IN) :: iname,n
+!
+      integer :: nl
 !
       if (iname==0) return
 !
@@ -2308,14 +2361,15 @@ module Diagnostics
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost.
 !
-      n_nghost=n-nghost
+      nl=n-nghost
+!
       if (lspherical_coords.or.lcylindrical_coords)then
-        fnamexz(:,n_nghost,iname) = fnamexz(:,n_nghost,iname)+a*x(l1:l2)
+        fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a*x(l1:l2)
       else
-        fnamexz(:,n_nghost,iname)=fnamexz(:,n_nghost,iname)+a
+        fnamexz(:,nl,iname)=fnamexz(:,nl,iname)+a
       endif
 !
-    endsubroutine ysum_mn_name_xz
+    endsubroutine ysum_mn_name_xz_npar
 !***********************************************************************
     subroutine zsum_mn_name_xy(a,iname,lint)
 !
@@ -2325,39 +2379,50 @@ module Diagnostics
 !
 !  19-jun-02/axel: adapted from xysum_mn_name
 !  08-feb-12/ccyang: add option for integration
+!   3-sep-13/MR: derived from zsum_mn_name_xy
+!
+      use Sub, only: loptest
 !
       real, dimension(nx), intent(in) :: a
-      integer, intent(in) :: iname
-      logical, intent(in), optional :: lint
-!
-      integer :: m_nghost
-      real :: factor
+      integer,             intent(in) :: iname
+      logical,   optional, intent(in) :: lint
 !
       if (iname==0) return
 !
 !  Scale factor for integration
 !
-      if (present(lint)) then
-        if (lint) then
-          factor = real(nzgrid) * zprim(n)
-        else
-          factor = 1.
-        endif
+      if (loptest(lint)) then
+        call zsum_mn_name_xy_mpar((real(nzgrid)*zprim(n))*a,m,iname)
       else
-        factor = 1.
+        call zsum_mn_name_xy_mpar(a,m,iname)
       endif
+!
+    endsubroutine zsum_mn_name_xy
+!***********************************************************************
+    subroutine zsum_mn_name_xy_mpar(a,m,iname)
 !
 !  Initialize to zero, including other parts of the xy-array
 !  which are later merged with an mpi reduce command.
+!
+!   3-sep-13/MR: derived from zsum_mn_name_xy, m now parameter
+!                no optional lint because of compiler error in g95 and gfortran
+!                when using the subroutine as an actual parameter
+!
+      real, dimension(nx), intent(in) :: a
+      integer,             intent(in) :: iname, m
+!
+      integer :: ml
+!
+      if (iname==0) return
 !
       if (lfirstpoint) fnamexy(:,:,iname)=0.
 !
 !  m starts with nghost+1=4, so the correct index is m-nghost.
 !
-      m_nghost=m-nghost
-      fnamexy(:,m_nghost,iname)=fnamexy(:,m_nghost,iname)+factor*a
+      ml=m-nghost
+      fnamexy(:,ml,iname)=fnamexy(:,ml,iname)+a
 !
-    endsubroutine zsum_mn_name_xy
+    endsubroutine zsum_mn_name_xy_mpar
 !***********************************************************************
     subroutine calc_phiavg_profile(p)
 !
@@ -2548,7 +2613,7 @@ module Diagnostics
           allocate(fname_sound(nnamel,ncoords_sound),stat=stat)
           if (stat>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for fname_sound')
-          if (lroot) print*, 'allocate_sound: allocated memory for '// &
+          if (ldebug) print*, 'allocate_sound: allocated memory for '// &
             'fname_sound  with nname_sound  =', nnamel
 !
         endif
@@ -2599,7 +2664,7 @@ module Diagnostics
         allocate(cname(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_fnames', &
             'Could not allocate memory for cname')
-        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
             'cname   with nname   =', nnamel
       endif
       cname=''
@@ -2608,7 +2673,7 @@ module Diagnostics
         allocate(fname(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_fnames', &
             'Could not allocate memory for fname')
-        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
             'fname   with nname   =', nnamel
         allocate(fname_keep(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_fnames', &
@@ -2621,7 +2686,7 @@ module Diagnostics
         allocate(cform(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_fnames', &
             'Could not allocate memory for cform')
-        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
             'cform   with nname   =', nnamel
       endif
       cform=''
@@ -2630,7 +2695,7 @@ module Diagnostics
         allocate(itype_name(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_fnames', &
             'Could not allocate memory for itype_name')
-        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
             'itype_name with nname   =', nnamel
       endif
       itype_name=ilabel_save
@@ -2652,7 +2717,7 @@ module Diagnostics
         allocate(cnamev(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_vnames', &
             'Could not allocate memory for cnamev')
-        if (lroot) print*, 'allocate_vnames    : allocated memory for '// &
+        if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
             'cnamev  with nnamev  =', nnamel
       endif
       cnamev=''
@@ -2679,7 +2744,7 @@ module Diagnostics
         allocate(cnamez(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xyaverages', &
             'Could not allocate memory for cnamez')
-        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
             'cnamez  with nnamez  =', nnamel
       endif
       cnamez=''
@@ -2688,7 +2753,7 @@ module Diagnostics
         allocate(fnamez(nz,nprocz,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xyaverages', &
             'Could not allocate memory for fnamez')
-        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
             'fnamez  with nnamez  =', nnamel
       endif
       fnamez=0.0
@@ -2697,7 +2762,7 @@ module Diagnostics
         allocate(cformz(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xyaverages', &
             'Could not allocate memory for cformz')
-        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
             'cformz  with nnamez  =', nnamel
       endif
       cformz=''
@@ -2719,7 +2784,7 @@ module Diagnostics
         allocate(cnamey(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xzaverages', &
             'Could not allocate memory for cnamey')
-        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
             'cnamey  with nnamey  =', nnamel
       endif
       cnamey=''
@@ -2728,7 +2793,7 @@ module Diagnostics
         allocate(fnamey(ny,nprocy,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xzaverages', &
             'Could not allocate memory for fnamey', .true.)
-        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
             'fnamey  with nnamey  =', nnamel
       endif
       fnamey=0.0
@@ -2737,7 +2802,7 @@ module Diagnostics
         allocate(cformy(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_xzaverages', &
             'Could not allocate memory for cformy', .true.)
-        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
             'cformy  with nnamey  =', nnamel
       endif
       cformy=''
@@ -2759,7 +2824,7 @@ module Diagnostics
         allocate(cnamex(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yzaverages', &
             'Could not allocate memory for cnamex')
-        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
             'cnamex  with nnamex  =', nnamel
       endif
       cnamex=''
@@ -2768,7 +2833,7 @@ module Diagnostics
         allocate(fnamex(nx,nprocx,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yzaverages', &
             'Could not allocate memory for fnamex')
-        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
             'fnamex  with nnamex  =', nnamel
       endif
       fnamex=0.0
@@ -2777,7 +2842,7 @@ module Diagnostics
         allocate(cformx(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yzaverages', &
             'Could not allocate memory for cformx')
-        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
             'cformx  with nnamex  =', nnamel
       endif
       cformx=''
@@ -2799,7 +2864,7 @@ module Diagnostics
         allocate(cnamer(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_phizaverages', &
             'Could not allocate memory for cnamer')
-        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
             'cnamer  with nnamel =', nnamel
       endif
       cnamer=''
@@ -2809,7 +2874,7 @@ module Diagnostics
         allocate(fnamer(nrcyl,mnamer),stat=stat)
         if (stat>0) call fatal_error('allocate_phizaverages', &
             'Could not allocate memory for fnamer')
-        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
             'fnamer  with nnamer+1 =', mnamer
       endif
       fnamer=0.0
@@ -2818,7 +2883,7 @@ module Diagnostics
         allocate(cformr(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_phizaverages', &
             'Could not allocate memory for cformr')
-        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
             'cformr  with nnamel =', nnamel
       endif
       cformr=''
@@ -2840,7 +2905,7 @@ module Diagnostics
         allocate(cnamexz(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yaverages', &
             'Could not allocate memory for cnamexz')
-        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
             'cnamexz with nnamexz =', nnamel
       endif
       cnamexz=''
@@ -2849,7 +2914,7 @@ module Diagnostics
         allocate(fnamexz(nx,nz,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yaverages', &
             'Could not allocate memory for fnamexz')
-        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
             'fnamexz with nnamexz =', nnamel
       endif
       fnamexz=0.0
@@ -2858,7 +2923,7 @@ module Diagnostics
         allocate(cformxz(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_yaverages', &
             'Could not allocate memory for cformxz')
-        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
             'cformxz with nnamexz =', nnamel
       endif
       cformxz=''
@@ -2880,7 +2945,7 @@ module Diagnostics
         allocate(cnamexy(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages', &
             'Could not allocate memory for cnamexy')
-        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
             'cnamexy with nnamexy =', nnamel
       endif
       cnamexy=''
@@ -2889,7 +2954,7 @@ module Diagnostics
         allocate(fnamexy(nx,ny,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages', &
             'Could not allocate memory for fnamexy')
-        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
             'fnamexy with nnamexy =', nnamel
       endif
       fnamexy=0.0
@@ -2899,7 +2964,7 @@ module Diagnostics
         if (stat>0) &
           call fatal_error('allocate_zaverages', &
             'Could not allocate memory for cformxy')
-        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
             'fnamexy with cformxy =', nnamel
       endif
       cformxy=''
@@ -2921,7 +2986,7 @@ module Diagnostics
         allocate(cnamerz(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_phiaverages', &
             'Could not allocate memory for cnamerz')
-        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
             'cnamerz with nnamerz =', nnamel
       endif
       cnamerz=''
@@ -2930,7 +2995,7 @@ module Diagnostics
         allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_phiaverages', &
             'Could not allocate memory for fnamerz')
-        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
             'fnamerz with nnamerz =', nnamel
       endif
       fnamerz=0.0
@@ -2939,7 +3004,7 @@ module Diagnostics
         allocate(cformrz(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_phiaverages', &
             'Could not allocate memory for cformrz')
-        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
             'cformrz with nnamerz =', nnamel
       endif
       cformrz=''
