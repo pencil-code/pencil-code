@@ -5,14 +5,8 @@
 !  routine is used instead which absorbs all the calls to the
 !  testfield relevant subroutines listed in here.
 !
-!  NOTE: since the fall of 2007 we have been using the routine
-!  testfield_z.f90, not this one! For more information, please
-!  contact Axel Brandenburg <brandenb@nordita.org>
-!
-!  Alex Hubbard and Matthias Rheinhardt have then developed the
-!  present module from inactive/testfield.f90 rather than the
-!  inactive/testfield_xz.f90 that also exists.
-!
+!  Derived from testfield_xz by P. Käpylä, A. Brandenburg and 
+!  M. Rheinhardt
 !   27-aug-13/pete: adapted from testfield_xz.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -66,15 +60,15 @@ module Testfield
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   ! DIAG_DOC: $\alpha_{ij}$       
      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  ',&   ! DIAG_DOC: $\eta_{ijk}$
      'eta112  ','eta212  ','eta312  ','eta122  ','eta222  ','eta322  ','eta132  ','eta232  ','eta332  ',&
-     'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta123cc','eta123cs','eta123sc','eta123ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
-                                                                                                            ! Diag_DOC: $\eta_{11,\rm hh}, {\rm h}={\rm c,s}$
+     'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta122cc','eta122cs','eta122sc','eta122ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
+                                                                                                            ! Diag_DOC: $\eta_{122,\rm hh}, {\rm h}={\rm c,s}$
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     '  /) ! DIAG_DOC: ${\cal E}^i_j$
 !
-  integer, dimension(n_cdiags):: idiags=0, idiags_y=0, idiags_xy=0
-  integer, parameter :: idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+9-1,idiag_base_end=27
+  integer, dimension(n_cdiags):: idiags=0, idiags_x=0, idiags_xy=0
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+9-1
 !
-  integer, dimension(4) :: idiag_alp11f, idiag_eta123f            
-  equivalence(idiags(idiag_base_end+1),idiag_alp11f), (idiags(idiag_base_end+5),idiag_eta123f)      ! alias names for selected diagnostics
+  integer, dimension(4) :: idiag_alp11h, idiag_eta122h            
+  equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta122h)      ! alias names for selected diagnostics
 !
 !  work variables
 !
@@ -83,7 +77,7 @@ module Testfield
   real, dimension (nx,ny,3,3)       :: Minv
   real, dimension (nx,ny,3,njtest)  :: uxbtestm
   logical, dimension(idiag_base_end):: twod_need_1d, twod_need_2d
-  logical                           :: needed2d_1d, needed2d_2d
+  logical, dimension(2)             :: needed2d
 !
   contains
 !
@@ -95,15 +89,11 @@ module Testfield
 !   2-jun-05/axel: adapted from magnetic
 !  27-jun-13/MR  : set itestfield='1' as it is only implemented case
 !                  set lcalc_uumeanxy=.true., itestfield now string     
-      use Cdata
+!
       use Hydro, only: lcalc_uumeanxy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
-!
-       real, dimension (nx)        :: c2x, cx1
-       real, dimension (ny)        :: c2y, cy1
-       integer :: i,j
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -113,17 +103,6 @@ module Testfield
       if (linit_aatest) lrescaling_testfield=.true.
 !
       itestfield='1'
-!
-!  xx and yy for calculating diffusive part of emf
-!
-!      cx=cos(ktestfield_x*(x(l1:l2)+xx0))
-!      sx=sin(ktestfield_x*(x(l1:l2)+xx0))
-!
-!      cy=cos(ktestfield_y*(y(m1:m2)+yy0))
-!      sy=sin(ktestfield_y*(y(m1:m2)+yy0))
-!
-!      cx1=1./cx
-!      cy1=1./cy
 !
 ! calculate inverse matrix for determination of the turbulent coefficients
 !
@@ -144,49 +123,6 @@ module Testfield
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
-!***********************************************************************
-    subroutine calc_inverse_matrix(x,y,ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
-!
-!  27-aug-13/MR: outsourced from initialize_testfield for broader use
-!
-      real, dimension(:),       intent(in) :: x, y
-      real,                     intent(in) :: ktestfield_x,ktestfield_y,xx0,yy0
-      real, dimension(:,:,:,:), intent(out):: Minv
-      real, dimension(:),       intent(out):: cx,sx,cy,sy
-
-      integer :: i, j
-
-      real, dimension(size(x)):: cx1
-      real, dimension(size(y)):: cy1
-
-!
-! calculate inverse matrix for determination of the turbulent coefficients
-!
-      cx=cos(ktestfield_x*(x+xx0))
-      sx=sin(ktestfield_x*(x+xx0))
-!
-      cy=cos(ktestfield_y*(y+yy0))
-      sy=sin(ktestfield_y*(y+yy0))
-!
-      cx1=1./cx
-      cy1=1./cy
-!
-      do i=1,size(x)
-      do j=1,size(y)
-!
-        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sy(j)**2)*cx1(i)*cy1(j),              sx(i)*cy1(j),              sy(j)*cx1(i) /)
-        Minv(i,j,2,:) = (/              -sx(i)*cy1(j)/ktestfield_x, cx(i)*cy1(j)/ktestfield_x,                        0. /)
-        Minv(i,j,3,:) = (/              -sy(j)*cx1(i)/ktestfield_y,                        0., cy(j)*cx1(i)/ktestfield_y /)
-!
-!        Minv(i,j,:,:) = RESHAPE((/  &
-!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
-!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
-!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
-!                                /), (/3,3/), ORDER=(/ 2, 1 /))
-      enddo
-      enddo
-   
-      endsubroutine calc_inverse_matrix
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
 !
@@ -221,88 +157,22 @@ module Testfield
 !                  moved calculation of xy-averaged quantities to 
 !                  calc_coefficients, completed
 !
-      use Cdata
-      use Diagnostics
-      use Mpicomm, only: stop_it
-      use Sub
-      use Hydro, only: lcalc_uumeanxy, uumxy
+      use Hydro, only: uumxy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,uufluct,aatemp
-      real, dimension (nx,3,3) :: aijtemp, bijtemp
-      real, dimension (nx,3) :: del2Atest
-      integer :: jtest,j,i
-!
-      intent(in)     :: f,p
-      intent(inout)  :: df
-!
-!  identify module and boundary conditions
-!
-      if (headtt.or.ldebug) print*,'daatest_dt: SOLVE'
-!
-      if (headtt) then
-        if (iaxtest /= 0) call identify_bcs('Axtest',iaxtest)
-        if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
-        if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
-      endif
-!
-!  do each of the 9 test fields at a time
-!  but exclude redundancies, e.g. if the averaged field lacks x extent.
-!  Note: the same block of lines occurs again further down in the file.
-!
-      do jtest=1,njtest
-!
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
-!
-        if (lcartesian_coords) then
-           call del2v(f,iaxtest,del2Atest)
-        endif
-        if (lspherical_coords) then
-           aatemp=f(l1:l2,m,n,iaxtest:iaztest)
-           call gij(f,iaxtest,aijtemp,1)
-           call gij_etc(f,iaxtest,aatemp,AIJ=aijtemp,BIJ=bijtemp,DEL2=del2Atest)
-        endif
+      intent(in)    :: f,p
+      intent(inout) :: df
 !
         select case (itestfield)
-          case ('1'); call set_bbtest (bbtest,jtest)
-          case ('2'); call set_bbtest2(bbtest,jtest)
-          case ('3'); call set_bbtest3(bbtest,jtest)
-          case ('4'); call set_bbtest4(bbtest,jtest)
+          case ('1')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest)
+          case ('2')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest2)
+          case ('3')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest3)
+          case ('4')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest4)
           case default; call fatal_error('daatest_dt','undefined itestfield')
         endselect
-!
-!  add an external field, if present
-!
-        if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
-        if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
-        if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
-!
-        uufluct = p%uu-uumxy(l1:l2,m,:)
-!
-        call cross_mn(uufluct,bbtest,uxB)
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest+uxB 
-!
-        if (.not.lsoca) then
-
-          call curl(f,iaxtest,btest)
-          call cross_mn(uufluct,btest,uxbtest)
-!
-!  subtract average emf
-!
-          df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
-                                        +uxbtest-uxbtestm(:,m-m1+1,:,jtest)
-        endif
-!
-!  diffusive time step, just take the max of diffus_eta (if existent)
-!  and whatever is calculated here
-!
-        if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
-      
-      enddo
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -324,16 +194,14 @@ module Testfield
 !
 !  21-jan-06/axel: coded
 !
-      use Cdata
-      use Sub
-      use Hydro, only: calc_pencils_hydro
-      use Mpicomm, only: stop_it,mpiallreduce_sum     !,mpiallreduce_sum_arr
+      use Sub, only: curl, cross_mn
+      use Mpicomm, only: mpiallreduce_sum     !,mpiallreduce_sum_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nxgrid*nygrid, ml
+      integer :: jtest,j,ml
       logical :: headtt_save
       real :: fac
       real, dimension (nx,ny,3) :: uxbtestm1
@@ -346,10 +214,9 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./ny
-      if ((ldiagnos .and. needed2d_1d) .or. &
-          (l2davgfirst .and. needed2d_2d)) then
-        need_output=.true. ; else ; need_output=.false. ; endif
+      fac=1./nz
+      need_output = (ldiagnos .and. needed2d(1)) .or. &
+                    (l2davgfirst .and. needed2d(2))
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -381,7 +248,7 @@ module Testfield
 !  It is off by default.
 !
               do j=1,3
-                if (lflucts_with_xyaver) then
+                if (lflucts_with_xyaver) then    !!! TBC
                   uxbtestm(:,ml,j,jtest)=spread(sum( &
                     uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
@@ -397,7 +264,7 @@ module Testfield
 !
           call mpiallreduce_sum(uxbtestm(:,:,:,jtest),uxbtestm1,(/nx,ny,3/),idir=3)
 !         or
-!         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*nz*3,idir=2)       !avoids copy
+!         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*ny*3,idir=3)       !avoids copy
           uxbtestm(:,:,:,jtest)=uxbtestm1/nprocz
 !
         endif
@@ -407,194 +274,83 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if (need_output) call calc_coefficients
+      if (need_output) call calc_coeffs
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************
-    subroutine calc_coefficients
+    subroutine calc_coeffs
 !
-!  26-feb-13/MR: determination of y-averaged components of alpha completed
-!   6-mar-13/MR: internal order of etas changed; calls to save_name, *sum_mn_name 
-!                simplified
-!   7-mar-13/MR: further shortened by introduction of do-loops in calculating
-!                temp_array
-!  27-jun-13/MR: avoided calculation of pencil-case, introduced calculation of mean EMF
-!   
-    Use Diagnostics
-    Use Sub, only: fourier_single_mode
+!  interface to enable use of of calc_coefficients originally developed for testfield_xz
 !
-    integer :: i, j, ij, count, ml, jtest
-    real, dimension(2,nx) :: temp_fft_y
-    real, dimension(2,2) :: temp_fft
-    real, dimension (:,:,:), allocatable :: temp_array
-    logical, dimension(idiag_base_end) :: need_temp
-    integer, dimension (idiag_base_end) :: twod_address
+!  28-aug-13/MR: coded
 !
-! Mean EMF
+      use Diagnostics, only: zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar
 !
-    do m=m1,m2 
-!
-      ml = m-m1+1
-      jtest = 1
-!
-      do i=idiag_Eij_start,idiag_Eij_stop,3                            ! over all testfields
-        do j=1,3                                                       ! over vector components
-!          call ysum_mn_name_xz(uxbtestm(:,nl,j,jtest),idiags_xz(i+j-1))
-          call zsum_mn_name_xy(uxbtestm(:,ml,j,jtest),idiags_xy(i+j-1))
-        enddo
-        jtest = jtest+1
-      enddo
-!
-    enddo
+      integer, dimension(idiag_base_end) :: idiags_map
+      integer :: i,j
 
-    if (l2davgfirst .and. needed2d_2d) need_temp=twod_need_2d
-    if (ldiagnos .and. needed2d_1d) need_temp=need_temp .or. twod_need_1d
+!  consider rotation of coordinate system about x axis by pi/2, that is: x --> x, y --> z, z --> -y;
 !
-    count=0
-    twod_address=1     !to ensure valid indices even when a slot is unused (flagged by need_temp)
+!      turbulent coefficients calculated here:
+!
+!       1            2          3          4          5          6          7          8          9
+!     'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ' 
+!       10           11         12         13         14         15         16         17         18     
+!     'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  '
+!       19           20         21         22         23         24         25         26         27
+!     'eta112  ','eta212  ','eta312  ','eta122  ','eta222  ','eta322  ','eta132  ','eta232  ','eta332 
 
-    do j=1,idiag_base_end
-      if (need_temp(j)) then
-        count=count+1
-        twod_address(j)=count
-      endif
-    enddo
+!      correspondingly in testfield_xz:
 !
-    if (count==0) return
+!      'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   '
+!      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  '
+!      'eta113  ','eta213  ','eta313  ','eta123  ','eta223  ','eta323  ','eta133  ','eta233  ','eta333  '
 
-    allocate(temp_array(nx,ny,count))
+!     hence the following mapping by idiags_map, where a negative sign indicates that the sign of the coefficient must
+!     be inverted:
 !
-    select case (itestfield)
-    case ('1')
+!     running index   1   2    3   4   5   6   7   8   9  10  11   12  13  14   15   16   17  18
 !
-      do n=1,ny
-        do i=1,3 
+      idiags_map = (/ 1,  3,  -2,  7,  9, -8, -4, -6,  5, 10, 12, -11, 16, 18, -17, -13, -15, 14, &
 !
-          if (need_temp(i))   & !(idiag_alpi1*/=0) &
-            temp_array(:,n,twod_address(i))= &
-                Minv(:,n,1,1)*uxbtestm(:,n,i,1)+Minv(:,n,1,2)*uxbtestm(:,n,i,2)+Minv(:,n,1,3)*uxbtestm(:,n,i,3)
+!                    19  20   21  22  23  24  25  26  27
 !
-          if (need_temp(3+i)) & !(idiag_alpi2*/=0) &
-            temp_array(:,n,twod_address(3+i))= &
-                Minv(:,n,1,1)*uxbtestm(:,n,i,4)+Minv(:,n,1,2)*uxbtestm(:,n,i,5)+Minv(:,n,1,3)*uxbtestm(:,n,i,6)
+                     19, 21, -20, 25, 27,-26,-22,-24, 23 /)
 !
-          if (need_temp(6+i)) & !(idiag_alpi3*/=0) &
-            temp_array(:,n,twod_address(6+i))= &
-                Minv(:,n,1,1)*uxbtestm(:,n,i,7)+Minv(:,n,1,2)*uxbtestm(:,n,i,8)+Minv(:,n,1,3)*uxbtestm(:,n,i,9)
+      call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
+                              idiags(idiag_Eij_start:idiag_Eij_stop),    &
+                              idiag_alp11h, idiag_eta122h, &
+                              uxbtestm,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
+                              twod_need_1d,twod_need_2d,needed2d )
 !
-          if (need_temp(9+i)) & !(idiag_etai11*/=0) &
-            temp_array(:,n,twod_address(9+i))= &
-                Minv(:,n,2,1)*uxbtestm(:,n,i,1)+Minv(:,n,2,2)*uxbtestm(:,n,i,2)+Minv(:,n,2,3)*uxbtestm(:,n,i,3)
+!  mapping back and sign inversion if necessary
 !
-          if (need_temp(12+i)) & !(idiag_etai21*/=0) &
-            temp_array(:,n,twod_address(12+i))= &
-                Minv(:,n,2,1)*uxbtestm(:,n,i,4)+Minv(:,n,2,2)*uxbtestm(:,n,i,5)+Minv(:,n,2,3)*uxbtestm(:,n,i,6)
-!
-          if (need_temp(15+i)) & !(idiag_etai31*/=0) &
-            temp_array(:,n,twod_address(15+i))= &
-                Minv(:,n,2,1)*uxbtestm(:,n,i,7)+Minv(:,n,2,2)*uxbtestm(:,n,i,8)+Minv(:,n,2,3)*uxbtestm(:,n,i,9)
-!
-          if (need_temp(18+i)) & !(idiag_etai13*/=0) &
-            temp_array(:,n,twod_address(18+i))= &
-                Minv(:,n,3,1)*uxbtestm(:,n,i,1)+Minv(:,n,3,2)*uxbtestm(:,n,i,2)+Minv(:,n,3,3)*uxbtestm(:,n,i,3)
-!
-          if (need_temp(21+i)) & !(idiag_etai23*/=0) &
-            temp_array(:,n,twod_address(21+i))= &
-                Minv(:,n,3,1)*uxbtestm(:,n,i,4)+Minv(:,n,3,2)*uxbtestm(:,n,i,5)+Minv(:,n,3,3)*uxbtestm(:,n,i,6)
-!
-          if (need_temp(24+i)) & !(idiag_etai33*/=0) &
-            temp_array(:,n,twod_address(24+i))= &
-                Minv(:,n,3,1)*uxbtestm(:,n,i,7)+Minv(:,n,3,2)*uxbtestm(:,n,i,8)+Minv(:,n,3,3)*uxbtestm(:,n,i,9)
-        enddo
-      enddo
-!
-    case default
-      call fatal_error('calc_coefficients','Calculation of coefficients not implemented for itestfield /= 1')
-      temp_array=0.
-!
-    end select
-!
-    if (ldiagnos .and. needed2d_1d) then
-!
-      if (any(idiag_alp11f/=0)) then
-        call fourier_single_mode(temp_array(:,:,twod_address(1)), &
-            (/nx,ny/), 1., 3, temp_fft_y, l2nd=.true.)
+      if (ldiagnos .and. needed2d(1)) then
+!        print*, 'fname(idiags(1:idiag_base_end))=', fname(idiags(1:idiag_base_end))
+        where(idiags(1:idiag_base_end)/=0) fname(idiags(1:idiag_base_end)) =  sign(1.,float(idiags_map)) &
+                                                                             *fname(idiags(abs(idiags_map)))
         if (lroot) then
-          call fourier_single_mode(temp_fft_y, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
-          ij=1
-          do i=1,2
-            do j=1,2
-              call save_name(temp_fft(i,j), idiag_alp11f(ij))
-              ij=ij+1
-            enddo
-          enddo 
+          do i=1,nprocz; do j=1,nz
+            where(idiags_x(1:idiag_base_end)/=0) &
+              fnamex(j,i,idiags_x(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamex(j,i,idiags_x(abs(idiags_map)))
+          enddo; enddo
         endif
       endif
-!
-      if (any(idiag_eta123f/=0)) then
-        call fourier_single_mode(temp_array(:,:,twod_address(22)), &
-            (/nx,ny/), 1., 3, temp_fft_y, l2nd=.true.)
-        if (lroot) then
-          call fourier_single_mode(temp_fft_y, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
-          ij=1
-          do i=1,2
-            do j=1,2
-              call save_name(temp_fft(i,j), idiag_eta123f(ij))
-              ij=ij+1
-            enddo
-          enddo 
-        endif
-      endif
-!
-    endif
-!
-    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an m loop
-!
-    if (ldiagnos .and. needed2d_1d) then
-      do m=m1,m2
-        
-        ml = m-m1+1
-        do i=1,size(twod_address)
-          call sum_mn_name(temp_array(:,ml,twod_address(i)), idiags(i))
-        enddo
 
-      enddo
-    endif
-!
-    if (l1davgfirst .and. needed2d_1d) then  !!!TBC
-      do m=m1,m2
-!
-        ml = m-m1+1
-        do i=1,size(twod_address)
-          call yzsum_mn_name_x(temp_array(:,ml,twod_address(i)), idiags_y(i))
-        enddo
-!
-      enddo
-    endif
-!
-    if (l2davgfirst .and. needed2d_2d) then
-      do m=m1,m2 
-!
-        ml = m-m1+1
-        do i=1,size(twod_address)
-          call zsum_mn_name_xy(temp_array(:,ml,twod_address(i)),idiags_xy(i))
-        enddo
-!
-      enddo
-    endif
-!
-    deallocate(temp_array)
-!
-    endsubroutine calc_coefficients
+!      if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
+         do i=1,ny; do j=1,nx
+           where(idiags_xy(1:idiag_base_end)/=0) &
+             fnamexy(j,i,idiags_xy(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamexy(j,i,idiags_xy(abs(idiags_map)))
+         enddo; enddo
+!      endif
+
+    endsubroutine calc_coeffs
 !***********************************************************************
     subroutine set_bbtest(bbtest,jtest)
 !
 !  set testfield
 !
 !   3-jun-05/axel: coded
-!
-      use Cdata
-      use Sub
 !
       real, dimension (nx,3) :: bbtest
       integer :: jtest
@@ -622,7 +378,7 @@ module Testfield
       case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cy(ml)
       case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sy(ml)
 !
-      case default; bbtest(:,:)=0.
+      case default; bbtest=0.
 !
       endselect
 !
@@ -634,37 +390,34 @@ module Testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
 !
-      use Cdata
-      use Sub
-!
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,sx,cy,sy,xy
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  xx and yy for calculating diffusive part of emf
+      real, dimension (nx) :: xy
+      real :: syl
+
+      integer :: ml
 !
-      cx=cos(x(l1:l2))
-      sx=sin(x(l1:l2))
-      cy=cos(y(m))
-      sy=sin(y(m))
-      xy=cx*cy
+      ml = m-m1+1
+      syl=sy(ml)
+      xy=cx*cy(ml)
 !
 !  set bbtest for each of the 9 cases
 !
       select case (jtest)
-      case (1); bbtest(:,1)=xy; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=xy; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xy
-      case (4); bbtest(:,1)=sy; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sy; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sy
-      case (7); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
-      case default; bbtest(:,:)=0.
+      case (1); bbtest(:,1)=xy ; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=0. ; bbtest(:,2)=xy ; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=xy
+      case (4); bbtest(:,1)=syl; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0. ; bbtest(:,2)=syl; bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=syl
+      case (7); bbtest(:,1)=sx ; bbtest(:,2)=0. ; bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0. ; bbtest(:,2)=sx ; bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0. ; bbtest(:,2)=0. ; bbtest(:,3)=sx
+      case default; bbtest=0.
       endselect
 !
     endsubroutine set_bbtest2
@@ -675,18 +428,15 @@ module Testfield
 !
 !  15-jun-05/axel: adapted from set_bbtest3
 !
-      use Cdata
-      use Sub
-!
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: xx,yy
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  xx and yy for calculating diffusive part of emf
-!
+      real, dimension (nx) :: xx
+      real :: yy
+
       xx=x(l1:l2)
       yy=y(m)
 !
@@ -702,7 +452,7 @@ module Testfield
       case (7); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
       case (8); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
       case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
-      case default; bbtest(:,:)=0.
+      case default; bbtest=0.
       endselect
 !
     endsubroutine set_bbtest4
@@ -713,36 +463,29 @@ module Testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
 !
-      use Cdata
-      use Sub
-!
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,sx,cy,sy
       integer :: jtest
 !
       intent(in)  :: jtest
       intent(out) :: bbtest
 !
-!  xx and yy for calculating diffusive part of emf
+      integer :: ml
 !
-      cx=cos(x(l1:l2))
-      sx=sin(x(l1:l2))
-      cy=cos(y(m))
-      sy=sin(y(m))
+      ml=m-m1+1
 !
 !  set bbtest for each of the 9 cases
 !
       select case (jtest)
-      case (1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case (4); bbtest(:,1)=sy; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sy; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cy
-      case (7); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
-      case default; bbtest(:,:)=0.
+      case (1); bbtest(:,1)=1.    ; bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=0.    ; bbtest(:,2)=1.    ; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=1.
+      case (4); bbtest(:,1)=sy(ml); bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.    ; bbtest(:,2)=sy(ml); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=cy(ml)
+      case (7); bbtest(:,1)=cx    ; bbtest(:,2)=0.    ; bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0.    ; bbtest(:,2)=sx    ; bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0.    ; bbtest(:,2)=0.    ; bbtest(:,3)=sx
+      case default; bbtest=0.
       endselect
 !
     endsubroutine set_bbtest3
@@ -755,21 +498,20 @@ module Testfield
 !  26-feb-13/MR  : output of ntestfield in index.pro added
 !   6-mar-13/MR  : alternative parse_name used
 !
-      use Cdata
-      use Diagnostics
+      use Diagnostics, only: parse_name
       use Sub, only: loptest
 !
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamey,inamexy,i
+      integer :: iname,inamex,inamexy,i
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
 !
-        idiags=0; idiags_y=0; idiags_xy=0
+        idiags=0; idiags_x=0; idiags_xy=0
 !
       endif
 !
@@ -783,11 +525,11 @@ module Testfield
         enddo
       enddo
 !
-!  xz-averages
+!  yz-averages
 !
-      do inamey=1,nnamey
-        do i=1,size(idiags_y)
-          call parse_name(inamey,cnamey,cformy,trim(cdiags(i))//'y',idiags_y(i))
+      do inamex=1,nnamex
+        do i=1,size(idiags_x)
+          call parse_name(inamex,cnamex,cformx,trim(cdiags(i))//'x',idiags_x(i))
         enddo
       enddo
 !
@@ -799,36 +541,18 @@ module Testfield
         enddo
       enddo
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
       if (loptest(lwrite)) then
 !
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamey=',nnamey
-        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamex=',nnamex
         write(3,*) 'nnamexy=',nnamexy
 !
       endif
 !
-      call diagnos_interdep
+      needed2d = diagnos_interdep(idiags(1:idiag_base_end),idiags_x(1:idiag_base_end), &
+                                  idiags_xy(1:idiag_base_end),twod_need_1d,twod_need_2d)
 !
     endsubroutine rprint_testfield
-!***********************************************************************
-    subroutine diagnos_interdep
-!
-! 2d-dependences
-!
-    twod_need_2d = idiags_xy(1:idiag_base_end)/=0
-!
-    needed2d_2d = any(twod_need_2d)
-!
-!  2d dependencies of 0 or 1-d averages
-!
-    twod_need_1d = idiags(1:idiag_base_end)/=0 .or. idiags_y(1:idiag_base_end)/=0
-!
-    needed2d_1d=any(twod_need_1d)
-!
-  endsubroutine diagnos_interdep
 !***********************************************************************
 endmodule Testfield
