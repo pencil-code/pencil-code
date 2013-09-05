@@ -53,8 +53,7 @@ module Magnetic
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
 !
-  namelist /magnetic_run_pars/ &
-    b_ext, limplicit_resistivity, lresis_const, eta, lresis_shock, eta_shock, lresis_hyper3_mesh, eta_hyper3_mesh
+  namelist /magnetic_run_pars/ b_ext, eta, eta_shock, eta_hyper3_mesh, limplicit_resistivity
 !
 !  Diagnostic variables
 !
@@ -70,6 +69,7 @@ module Magnetic
 !
 !  Module variables
 !
+  real, dimension(nx) :: maxdiffus_eta = 0.0
   logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
@@ -161,16 +161,21 @@ module Magnetic
 !
       if (eta /= 0.0) lresis_const = .true.
       if (eta_shock /= 0.0) lresis_shock = .true.
+      if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
+!
+!  Sanity check
+!
       if (lresis_shock .and. .not. lshock) &
         call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
-      lexplicit_resistivity = (.not. limplicit_resistivity .and. lresis_const) .or. lresis_shock
-!
-!  Ohmic heating is not implemented yet.
-!
+!     Ohmic heating is not implemented yet.
       if (lenergy .and. (lresis_const .or. lresis_shock)) &
         call fatal_error('initialize_magnetic', 'Ohmic heating is not implemented yet. ')
 !
-      if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
+!  Determine if any resistivity by explicit solver is present.
+!
+      lexplicit_resistivity = (.not. limplicit_resistivity .and. lresis_const) .or. lresis_shock
+!
+!  Information output
 !
       resis: if (lroot) then
         if (lresis_const) print *, 'initialize_magnetic: constant resistivity, eta = ', eta
@@ -267,6 +272,10 @@ module Magnetic
       if (iuu /= 0) call update_ghosts(f, iux, iuz)
       call update_ghosts(f, ibx, ibz)
 !
+!  Reset maxdiffus_eta for time step constraint.
+!
+      if (lfirst .and. ldt) maxdiffus_eta = 0.0
+!
 !  Calculate the effective electric field along each pencil.
 !
       mn_loop: do imn = 1, ny * nz
@@ -301,7 +310,7 @@ module Magnetic
 !         Time-step constraint
           timestep: if (lfirst .and. ldt) then
             if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
-            diffus_eta = eta_penc * dxyz_2
+            maxdiffus_eta = max(maxdiffus_eta, eta_penc * dxyz_2)
           endif timestep
         endif resis
 !
@@ -391,7 +400,10 @@ module Magnetic
 !
 !  Constrain the time step.
 !
-      if (lfirst .and. ldt) call set_advec_va2(p)
+      timestep: if (lfirst .and. ldt) then
+        call set_advec_va2(p)
+        diffus_eta = maxdiffus_eta
+      endif timestep
 !
 !  Evaluate Magnetic diagnostics.
 !
