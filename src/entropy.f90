@@ -74,6 +74,7 @@ module Energy
   real :: ss_volaverage=0., ss_volaverage_tmp
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
+  real, dimension(nx), target :: chit_prof
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
@@ -831,6 +832,12 @@ module Energy
 !
       if (borderss/='nothing') call request_border_driving(borderss)
 !
+!  Compute and share chit_prof (needed e.g. for 'Fgs'-boundary condition)
+!
+      if (chi_t/=0. .and. (chit_prof1/=1. .or. chit_prof2/= 1.)) then
+         call chit_profile(chit_prof)
+      endif
+!
 !  Shared variables.
 !
       call put_shared_variable('hcond0',hcond0,ierr)
@@ -872,6 +879,9 @@ module Energy
       call put_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting chi_t')
+      call put_shared_variable('chit_prof',chit_prof,ierr)
+      if (ierr/=0) call fatal_error('initialize_energy', &
+          'there was a problem when putting chit_prof')
 !      call put_shared_variable('chi_th',chi_th,ierr)
 !      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting chi_th')
