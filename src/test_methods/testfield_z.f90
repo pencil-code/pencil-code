@@ -1,5 +1,4 @@
 ! $Id$
-
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -507,7 +506,8 @@ module Testfield
 !   5-jun-13/axel+MR: correction of the former; df(l1:l2,m,n,iaxtest:iaztest) --> daatest
 !   6-jun-13/MR: further corrected, alternative formulation added
 !  16-aug-13/MR: iterative procedure and complex treatment for harmonic testfields added
-!  
+!  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
+!
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumean

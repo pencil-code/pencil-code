@@ -2003,8 +2003,6 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'M33z',idiag_M33z)
       enddo
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
       if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iuutest=',iuutest
