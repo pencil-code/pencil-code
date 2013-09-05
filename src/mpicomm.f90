@@ -388,6 +388,10 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
+!  Announce myself for pc_run to detect.
+!
+      if (lroot) print *, 'initialize_mpicomm: enabled MPI'
+!
 !  Check consistency in processor layout.
 !
       if (ncpus/=nprocx*nprocy*nprocz) then

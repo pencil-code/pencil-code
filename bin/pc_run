@@ -655,7 +655,7 @@ sub local_settings {
             . `ls src/start*`;
     }
     $settings{'mpi'}
-      = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x` + 0;
+      = `fgrep -c 'initialize_mpicomm: enabled MPI' src/start.x` + 0;
     unless ($quiet) {
         if ($settings{'mpi'} + 0) {
             print "MPI run\n"
