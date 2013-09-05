@@ -76,7 +76,7 @@ module InitialCondition
 !
       real, dimension (mx) :: TT, dTdr, rho_prof, ss_prof, cs2_prof 
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
-      real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma
+      real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf
       real, pointer :: gravx, cp, cv
 !
       integer :: i, n, m, q, ix, ierr, unit=1
@@ -154,10 +154,12 @@ module InitialCondition
       L00=star_luminosity*rho0*gravx**1.5*sqrt(Rstar)
       Fbottom=L00/(4.*pi*x0**2)
       sigma=(L00/(4.*pi*Rsurf**2))/Tsurf**4
+      cs2_surf=Tsurf*cv*gamma*(gamma-1.)
 !
       if (iproc .eq. root) then 
          print*,'initial_condition: Fbottom =',Fbottom
          print*,'initial_condition: SigmaSBt =',sigma
+         print*,'initial_condition: cs2top =',cs2_surf
       endif
 !
     endsubroutine initial_condition_all
