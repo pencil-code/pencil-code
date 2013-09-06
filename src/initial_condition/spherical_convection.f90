@@ -1,4 +1,4 @@
-! $Id: $
+! $Id$
 !
 !  Isentropic initial condition (density, entropy) for convection in
 !  spherical coordinates. Produces an isentropic stratification with
@@ -44,7 +44,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-           "$Id: baroclinic_init.f90 19193 2012-06-30 12:55:46Z wdobler $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
