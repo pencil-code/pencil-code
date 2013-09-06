@@ -77,6 +77,8 @@ module InitialCondition
       real, dimension (mx) :: TT, dTdr, rho_prof, ss_prof, cs2_prof 
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf
+      real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.6e-6, Msun=2e30
+      real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real, pointer :: gravx, cp, cv
 !
       integer :: i, n, m, q, ix, ierr, unit=1
@@ -156,10 +158,21 @@ module InitialCondition
       sigma=(L00/(4.*pi*Rsurf**2))/Tsurf**4
       cs2_surf=Tsurf*cv*gamma*(gamma-1.)
 !
+!  Compute the ratio of the dimensionless luminosity in the simulation
+!  versus the Sun in order to determine a rotation rate for the
+!  simulation which reproduces the rotational effect in the Sun.
+!
+      fluxratio=star_luminosity*rhosun*(GG*Msun)**1.5*sqrt(Rsun)/Lsun
+      gratio=gravx/(GG*Msun)
+      rratio=Rsun/Rstar
+      Omsim=fluxratio**(1./3.)*sqrt(gratio)*rratio**(1.5)*Omsun
+!
       if (iproc .eq. root) then 
-         print*,'initial_condition: Fbottom =',Fbottom
-         print*,'initial_condition: SigmaSBt =',sigma
-         print*,'initial_condition: cs2top =',cs2_surf
+         print*,'initial_condition: Fbottom   =',Fbottom
+         print*,'initial_condition: SigmaSBt  =',sigma
+         print*,'initial_condition: cs2top    =',cs2_surf
+         print*,'initial_condition: fluxratio =',fluxratio
+         print*,'initial_condition: Omsim     =',Omsim
       endif
 !
     endsubroutine initial_condition_all
