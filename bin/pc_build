@@ -20,7 +20,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Date:   23-Jun-2009
 # SVN: $Id$
 # Description:
-#   Compile the Pencil Code, using settings from the `Makefile' section in
+#   Compile the Pencil Code, using settings from the 'Makefile' section in
 #   the appropriate configuration files.
 # Usage:
 #   pc_build [-v|-h]
@@ -28,8 +28,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build [<options>] [<MAKE_VAR1=val1> [<MAKE_VAR2>=val2 ...]]
 # Options:
 #   -h, --help      This help.
-#       --clean     Run `make clean'
-#       --cleanall  Run `pc_setupsrc; make cleanall'
+#       --debug     Show debug output.
+#       --clean     Run 'make clean'.
+#       --cleanall  Run 'pc_setupsrc; make cleanall'.
 #   -f <files>,
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as
@@ -51,7 +52,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build
 #       use host ID mechanism to identify the appropriate config file.
 #   pc_build REAL_PRECISION=double
-#       run `make REAL_PRECISION=double', i.e. compile for double precision
+#       run 'make REAL_PRECISION=double', i.e. compile for double precision
 #   pc_build -f os/GNU_Linux,mpi/open-mpi
 #       will use the configuration files
 #       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
@@ -63,7 +64,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       exists.
 #   pc_build -H workhorse
 #       will look for, and use the configuration file for host ID
-#       `workhorse'. If no config file is found, pc_build exits with an
+#       'workhorse'. If no config file is found, pc_build exits with an
 #       error message.
 #   pc_build --debug-config
 #       will not build, but instead helps to choose an appropriate
@@ -72,7 +73,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # To do / ideas:
 #   - Allow make-style assignement arguments:
 #       pc_build FC=myf90 FFLAGS+='-O0 -g'
-#   - Allow handing down flags to `make' with
+#   - Allow handing down flags to 'make' with
 #       -Wm,<flag1>,<flag2>,...
 #       --make-flags=<flag1>,<flag2>,...
 #   - Allow setting the search path
@@ -99,7 +100,7 @@ Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
 
 use POSIX qw(strftime tmpnam);
 use Getopt::Long;
-# Allow for `-Plp' as equivalent to `-P lp' etc:
+# Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
 
 my $cmd_name = $0;
@@ -123,10 +124,10 @@ GetOptions(\%opts,
                -v   --version )
           ) or die "Aborting.\n";
 
-my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+my $debug = ($opts{'debug'} ? 1 : 0 );
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print "\@ARGV = '@ARGV'\n";
 }
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
@@ -217,7 +218,7 @@ system('make', @make_args) == 0
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
-# Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
+# Use this to suppress ''Name "Pencil::ConfigFinder::debug" used only
 # once'' warning
     my @args = @_;
 }
@@ -315,7 +316,7 @@ sub printopts {
     my ($optsref) = @_;
     my %opts = %$optsref;
     foreach my $opt (keys(%opts)) {
-        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+        print STDERR "\$opts{$opt} = '$opts{$opt}'\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -325,9 +326,9 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "< $thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-        # Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain 'Description:' or 'Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
-        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        # Drop 'Author:', etc. (anything before 'Description:' or 'Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
         # Don't print comment sign:
         s/^\s*# ?//mg;
