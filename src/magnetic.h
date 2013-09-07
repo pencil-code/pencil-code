@@ -27,3 +27,5 @@
   public :: dynamical_resistivity
   public :: split_update_magnetic
   public :: expand_shands_magnetic
+
+  public :: lresi_dep
