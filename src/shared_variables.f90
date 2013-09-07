@@ -42,11 +42,14 @@ module SharedVariables
   public :: get_shared_variable
   public :: sharedvars_error_string
   public :: sharedvars_clean_up
+  public :: fetch_profile
 !
   interface get_shared_variable
     module procedure get_variable_real0d
     module procedure get_variable_real1d
     module procedure get_variable_real2d
+    module procedure get_variable_real3d
+    module procedure get_variable_real4d
     module procedure get_variable_int0d
     module procedure get_variable_int1d
     module procedure get_variable_logical0d
@@ -58,11 +61,19 @@ module SharedVariables
     module procedure put_variable_real0d
     module procedure put_variable_real1d
     module procedure put_variable_real2d
+    module procedure put_variable_real3d
+    module procedure put_variable_real4d
     module procedure put_variable_int0d
     module procedure put_variable_int1d
     module procedure put_variable_logical0d
     module procedure put_variable_logical1d
     module procedure put_variable_char0d
+  endinterface
+
+  interface fetch_profile
+    module procedure fetch_profile_1d
+    module procedure fetch_profile_2d
+    module procedure fetch_profile_3d
   endinterface
 !
 ! Used internally to keep track ot the type of data
@@ -71,6 +82,8 @@ module SharedVariables
   integer, parameter :: iSHVAR_TYPE_REAL0D=1
   integer, parameter :: iSHVAR_TYPE_REAL1D=2
   integer, parameter :: iSHVAR_TYPE_REAL2D=3
+  integer, parameter :: iSHVAR_TYPE_REAL3D=4
+  integer, parameter :: iSHVAR_TYPE_REAL4D=5
   integer, parameter :: iSHVAR_TYPE_INT0D=10
   integer, parameter :: iSHVAR_TYPE_INT1D=11
   integer, parameter :: iSHVAR_TYPE_INT2D=12
@@ -100,14 +113,16 @@ module SharedVariables
 !
 ! Possible data types
 !
-    real,                  pointer :: real0d
-    real, dimension(:),    pointer :: real1d
-    real, dimension(:,:),  pointer :: real2d
-    integer,               pointer :: int0d
-    integer, dimension(:), pointer :: int1d
-    logical,               pointer :: log0d
-    logical, dimension(:), pointer :: log1d
-    character(len=linelen),pointer :: char0D
+    real,                    pointer :: real0d
+    real, dimension(:),      pointer :: real1d
+    real, dimension(:,:),    pointer :: real2d
+    real, dimension(:,:,:),  pointer :: real3d
+    real, dimension(:,:,:,:),pointer :: real4d
+    integer,                 pointer :: int0d
+    integer, dimension(:),   pointer :: int1d
+    logical,                 pointer :: log0d
+    logical, dimension(:),   pointer :: log1d
+    character(len=linelen),  pointer :: char0D
 !
 ! Linked list link to next list element
 !
@@ -293,6 +308,116 @@ module SharedVariables
       call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real2d
+!***********************************************************************
+    subroutine get_variable_real3d(varname,variable,ierr)
+!
+!  get 3-D array
+!
+!   6-sep-13/MR: derived from get_variable_real2d
+!
+      character (len=*) :: varname
+      real, dimension(:,:,:), pointer :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          if (item%vartype==iSHVAR_TYPE_REAL3D) then
+            variable=>item%real3D
+            if (.not.associated(item%real3D)) then
+              if (present(ierr)) then
+                ierr=iSHVAR_ERR_NOTASSOCIATED
+                return
+              endif
+              print*, 'Getting shared variable: ',varname
+              call fatal_error('get_variable', 'Data pointer is not associated.')
+            endif
+            return
+          else
+            nullify(variable)
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*, 'Getting shared variable: ',varname
+            call fatal_error('get_variable', 'Shared variable has the wrong type!')
+          endif
+        endif
+        item=>item%next
+      enddo
+!
+      nullify(variable)
+!
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+!
+      print*, 'Getting shared variable: ',varname
+      call fatal_error('get_variable', 'Shared variable does not exist!')
+!
+    endsubroutine get_variable_real3d
+!***********************************************************************
+    subroutine get_variable_real4d(varname,variable,ierr)
+!
+!  get 4-D array
+!
+!   6-sep-13/MR: derived from get_variable_real2d
+!
+      character (len=*) :: varname
+      real, dimension(:,:,:,:), pointer :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          if (item%vartype==iSHVAR_TYPE_REAL4D) then
+            variable=>item%real4D
+            if (.not.associated(item%real4D)) then
+              if (present(ierr)) then
+                ierr=iSHVAR_ERR_NOTASSOCIATED
+                return
+              endif
+              print*, 'Getting shared variable: ',varname
+              call fatal_error('get_variable', 'Data pointer is not associated.')
+            endif
+            return
+          else
+            nullify(variable)
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*, 'Getting shared variable: ',varname
+            call fatal_error('get_variable', 'Shared variable has the wrong type!')
+          endif
+        endif
+        item=>item%next
+      enddo
+!
+      nullify(variable)
+!
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+!
+      print*, 'Getting shared variable: ',varname
+      call fatal_error('get_variable', 'Shared variable does not exist!')
+!
+    endsubroutine get_variable_real4d
 !***********************************************************************
     subroutine get_variable_int0d(varname,variable,ierr)
 !
@@ -719,6 +844,74 @@ module SharedVariables
 !
     endsubroutine put_variable_real2d
 !***********************************************************************
+    subroutine put_variable_real3d(varname,variable,ierr)
+!
+!  put 3-D array into shared variable
+!
+!   6-sep-13/MR: derived from put_variable_real2d
+!
+      character (len=*) :: varname
+      real, dimension(:,:,:), target :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%real3D,target=variable)) return
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*, 'Setting shared variable: ',varname
+        call fatal_error('get_variable', 'Shared variable name already exists!')
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_REAL3D
+      new%real3D=>variable
+!
+    endsubroutine put_variable_real3d
+!***********************************************************************
+    subroutine put_variable_real4d(varname,variable,ierr)
+!
+!  put 4-D array into shared variable
+!
+!   6-sep-13/MR: derived from put_variable_real2d
+!
+      character (len=*) :: varname
+      real, dimension(:,:,:,:), target :: variable
+      integer, optional :: ierr
+      type (shared_variable_list), pointer :: new
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%real4D,target=variable)) return
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*, 'Setting shared variable: ',varname
+        call fatal_error('get_variable', 'Shared variable name already exists!')
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_REAL4D
+      new%real4D=>variable
+!
+    endsubroutine put_variable_real4d
+!***********************************************************************
     subroutine put_variable_logical0d(varname,variable,ierr)
 !
 !  Comment me.
@@ -903,5 +1096,70 @@ module SharedVariables
       call free_list(thelist)
 !
     endsubroutine sharedvars_clean_up
+!***********************************************************************
+    subroutine fetch_profile_1d(name,prof,gprof)
+!
+!  fetches a function of a single variable together with its gradient.
+!
+!   6-sep-2013/MR: coded
+!
+      use Cdata, only: labellen
+!
+      character(LEN=labellen),     intent(IN) :: name
+      real, dimension(:), pointer, intent(OUT):: prof, gprof
+      
+      integer :: ierr
+
+      call get_shared_variable(trim(name),prof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      call get_shared_variable('g'//trim(name),gprof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+      !!do n=n1,n2
+      !!  print*,ipz,z(n),prof(n),gprof(n)
+      !!enddo
+
+    endsubroutine fetch_profile_1d
+!***********************************************************************
+    subroutine fetch_profile_2d(name,prof,gprof)
+!
+!  fetches a function of two variables together with its gradient.
+!
+!   6-sep-2013/MR: coded
+!
+      use Cdata, only: labellen
+!
+      character(LEN=labellen),         intent(IN) :: name
+      real, dimension(:,:),   pointer, intent(OUT):: prof
+      real, dimension(:,:,:), pointer, intent(OUT):: gprof
+      
+      integer :: ierr
+
+      call get_shared_variable(trim(name),prof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      call get_shared_variable('g'//trim(name),gprof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+
+    endsubroutine fetch_profile_2d
+!***********************************************************************
+    subroutine fetch_profile_3d(name,prof,gprof)
+!
+!  fetches a function of three variables together with its gradient.
+!
+!   6-sep-2013/MR: coded
+!
+      use Cdata, only: labellen
+!
+      character(LEN=labellen),           intent(IN) :: name
+      real, dimension(:,:,:),   pointer, intent(OUT):: prof
+      real, dimension(:,:,:,:), pointer, intent(OUT):: gprof
+      
+      integer :: ierr
+
+      call get_shared_variable(trim(name),prof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      call get_shared_variable('g'//trim(name),gprof,ierr)
+      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+
+    endsubroutine fetch_profile_3d
 !***********************************************************************
 endmodule SharedVariables
