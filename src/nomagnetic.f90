@@ -33,6 +33,7 @@ module Magnetic
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aamean=.false.
+  logical, dimension(7) :: lresi_dep=.false.
 !
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
   integer :: idiag_jbm=0,idiag_epsM=0,idiag_vArms=0,idiag_vAmax=0
