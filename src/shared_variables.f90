@@ -1105,8 +1105,8 @@ module SharedVariables
 !
       use Cdata, only: labellen
 !
-      character(LEN=labellen),     intent(IN) :: name
-      real, dimension(:), pointer, intent(OUT):: prof, gprof
+      character(LEN=labellen), intent(IN) :: name
+      real, dimension(:),      pointer    :: prof, gprof    !intent(OUT)
       
       integer :: ierr
 
@@ -1128,9 +1128,9 @@ module SharedVariables
 !
       use Cdata, only: labellen
 !
-      character(LEN=labellen),         intent(IN) :: name
-      real, dimension(:,:),   pointer, intent(OUT):: prof
-      real, dimension(:,:,:), pointer, intent(OUT):: gprof
+      character(LEN=labellen), intent(IN) :: name
+      real, dimension(:,:),    pointer    :: prof    !intent(OUT)
+      real, dimension(:,:,:),  pointer    :: gprof   !intent(OUT)
       
       integer :: ierr
 
@@ -1149,9 +1149,9 @@ module SharedVariables
 !
       use Cdata, only: labellen
 !
-      character(LEN=labellen),           intent(IN) :: name
-      real, dimension(:,:,:),   pointer, intent(OUT):: prof
-      real, dimension(:,:,:,:), pointer, intent(OUT):: gprof
+      character(LEN=labellen),  intent(IN) :: name
+      real, dimension(:,:,:),   pointer    :: prof    !intent(OUT)
+      real, dimension(:,:,:,:), pointer    :: gprof   !intent(OUT)
       
       integer :: ierr
 
