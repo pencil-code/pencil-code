@@ -49,6 +49,7 @@ module Magnetic
   logical :: lresis_const = .false.
   logical :: lresis_shock = .false.
   logical :: lresis_hyper3_mesh = .false.
+  logical, dimension(7) :: lresi_dep=.false.
   real :: eta = 0.0
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
