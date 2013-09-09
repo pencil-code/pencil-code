@@ -354,7 +354,7 @@ module Energy
 !
 !  Call for the InitialCondition facility.
 !
-      call initial_condition_ss(f)
+      if (linitial_condition) call initial_condition_ss(f)
 !
     endsubroutine init_energy
 !***********************************************************************
