@@ -95,12 +95,9 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
-!  set to zero and then rescale the testfield
-!  (in future, could call something like init_aa_simple)
-!
-      if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-!
-      if (linit_aatest) lrescaling_testfield=.true.
+      call initialize_testfield_general(f)
+           
+      !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!! TBC
 !
       itestfield='1'
 !
