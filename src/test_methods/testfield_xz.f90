@@ -93,18 +93,16 @@ module Testfield
 !   2-jun-05/axel: adapted from magnetic
 !  27-jun-13/MR  : set itestfield='1' as it is only implemented case
 !                  set lcalc_uumeanxz=.true., itestfield now string     
+!   9-sep-13/MR  : intro'd use of initialize_testfield_general
 !
       use Hydro, only: lcalc_uumeanxz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
-!  set to zero and then rescale the testfield
-!  (in future, could call something like init_aa_simple)
+      call initialize_testfield_general
 !
-      if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-!
-      if (linit_aatest) lrescaling_testfield=.true.
+      !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!!TBC
 !
       itestfield='1'
 !
