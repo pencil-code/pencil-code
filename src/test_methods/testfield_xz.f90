@@ -100,7 +100,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
-      call initialize_testfield_general
+      call initialize_testfield_general(f)
 !
       !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!!TBC
 !
