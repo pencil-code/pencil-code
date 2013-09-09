@@ -44,6 +44,12 @@ module ImplicitDiffusion
       integer :: iv1, iv2
       real :: dth
 !
+!  Sanity check
+!
+      if (nprocx /= 1) call fatal_error('integrate_diffusion', 'nprocx /= 1')
+      if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('integrate_diffusion', 'nxgrid /= nygrid')
+      if (nzgrid > 1 .and. mod(nxgrid, nprocz) /= 0) call fatal_error('integrate_diffusion', 'mod(nxgrid,nprocz) /= 0')
+!
 !  Check the indices.
 !
       iv1 = ivar1
