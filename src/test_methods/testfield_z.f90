@@ -201,10 +201,8 @@ module Testfield
 !  Perform any post-parameter-read initialization
 !
 !   2-jun-05/axel: adapted from magnetic
+!   6-sep-3/MR: outsourced unspecific stuff to testfield_general
 !
-      use Cdata
-      use FArrayManager
-      use SharedVariables, only: get_shared_variable
       use Diagnostics, only: gen_form_legend
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -214,36 +212,8 @@ module Testfield
       integer :: i, jtest, ierr, iaatest2, iostat
       character(LEN=640) :: fform
       real, dimension(nname) :: buffer
-!
-!  Precalculate etatest if 1/etatest (==etatest1) is given instead
-!
-      if (etatest1/=0.) then
-        etatest=1./etatest1
-      endif
-      if (lroot) print*,'initialize_testfield: etatest=',etatest
-!
-      if (iresistivity_test(1)=='') iresistivity_test(1)='etatest-const'
-      lresitest_eta_const=.false.
-      lresitest_hyper3=.false.
-!
-      do i=1,nresitest_max
-        select case (iresistivity_test(i))
-        case ('etatest-const')
-          if (lroot) print*, 'resistivity: constant eta'
-          lresitest_eta_const=.true.
-        case ('hyper3')
-          if (lroot) print*, 'resistivity: hyper3'
-          lresitest_hyper3=.true.
-        case ('none')
-          ! do nothing
-        case ('')
-          ! do nothing
-        case default
-          if (lroot) print*, 'No such value for iresistivity_test(',i,'): ', &
-              trim(iresistivity_test(i))
-          call fatal_error('initialize_testfield','')
-        endselect
-      enddo
+
+      call initialize_testfield_general(f)
 !
 !  set cosine and sine function for setting test fields and analysis
 !  Choice of using rescaled z-array or original z-array
@@ -316,43 +286,6 @@ module Testfield
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
         endselect
-      endif
-!
-!  set to zero and then rescale the testfield
-!  (in future, could call something like init_aa_simple)
-!
-      if (reinitialize_aatest) then
-        do jtest=1,njtest
-          iaxtest=iaatest+3*(jtest-1)
-          iaztest=iaxtest+2
-          f(:,:,:,iaxtest:iaztest)=rescale_aatest(jtest)*f(:,:,:,iaxtest:iaztest)
-        enddo
-      endif
-!
-!  set lrescaling_testfield=T if linit_aatest=T
-!
-      if (linit_aatest) then
-        lrescaling_testfield=.true.
-      endif
-!
-!  check for possibility of artificial friction force
-!
-      if (tau_aatest/=0.) then
-        ltestfield_artifric=.true.
-        tau1_aatest=1./tau_aatest
-        if (lroot) print*,'initialize_testfield: tau1_aatest=',tau1_aatest
-      endif
-!
-!  if magnetic, get a possible eta_z profile from there
-!
-      if (lmagnetic) then
-        call get_shared_variable('eta_z',eta_z,ierr)
-        if (ierr/=0) call fatal_error("initialize_testfield","shared eta_z")
-        call get_shared_variable('geta_z',geta_z,ierr)
-        if (ierr/=0) call fatal_error("initialize_testfield","shared geta_z")
-        do n=n1,n2
-          print*,ipz,z(n),eta_z(n),geta_z(n,3)
-        enddo
       endif
 !
       liter = dt_iter/=0.                       ! iterative procedure enabled
@@ -508,7 +441,6 @@ module Testfield
 !  16-aug-13/MR: iterative procedure and complex treatment for harmonic testfields added
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !
-      use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumean
       use Mpicomm, only: stop_it
@@ -1320,7 +1252,6 @@ module Testfield
 !  16-aug-13/MR: MPI communication simplified; changes for iterative procedure
 !  20-aug-13/MR: changes for complex calculation: testfield loop then over njtest instead of njtestl
 !
-      use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
       use Magnetic, only: idiag_bcosphz, idiag_bsinphz
@@ -1512,8 +1443,6 @@ module Testfield
 !
 !  29-mar-08/axel: coded
 !
-      use Cdata
-!
       real, dimension (nx,3) :: B0test
       integer :: jtest
 !
@@ -1524,7 +1453,7 @@ module Testfield
 !
       select case (jtest)
       case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_Beltrami
@@ -1534,8 +1463,6 @@ module Testfield
 !  set testfield
 !
 !   3-jun-05/axel: coded
-!
-      use Cdata
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1548,7 +1475,7 @@ module Testfield
       select case (jtest)
       case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B21
@@ -1558,8 +1485,6 @@ module Testfield
 !  set testfield
 !
 !   3-jun-05/axel: coded
-!
-      use Cdata
 !
       real, dimension (nx,3) :: J0test
       integer :: jtest
@@ -1572,18 +1497,16 @@ module Testfield
       select case (jtest)
       case (1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
       case (2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
-      case default; J0test(:,:)=0.
+      case default; J0test=0.
       endselect
 !
     endsubroutine set_J0test_B11_B21
 !***********************************************************************
-    subroutine set_bbtest_B11_B22 (B0test,jtest)
+    subroutine set_bbtest_B11_B22(B0test,jtest)
 !
 !  set testfield
 !
 !   3-jun-05/axel: coded
-!
-      use Cdata
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1598,7 +1521,7 @@ module Testfield
       case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp*cz(n); B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B22
@@ -1610,8 +1533,6 @@ module Testfield
 !  25-Mar-09/axel: adapted from set_bbtest_B11_B22
 !  22-Juil-10/emeric: added the fifth testfield to measure alpi3
 !                     done only for linear testfields, should also be done for the other cases
-!
-      use Cdata
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1627,7 +1548,7 @@ module Testfield
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
       case (5); B0test(:,1)=0. ; B0test(:,2)=0 ; B0test(:,3)=bamp
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B22_lin
@@ -1639,7 +1560,6 @@ module Testfield
 !   3-jun-05/axel: adapted from rprint_magnetic
 !  14-aug-13/MR  : removed unnecessary output of idiags into index.pro
 !
-      use Cdata
       use Diagnostics
       use Sub, only: loptest
 !
