@@ -204,6 +204,8 @@ module Testfield
 !   6-sep-3/MR: outsourced unspecific stuff to testfield_general
 !
       use Diagnostics, only: gen_form_legend
+      use Cdata
+      use FarrayManager, only: farray_register_auxiliary
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
@@ -442,6 +444,7 @@ module Testfield
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !
       use Diagnostics
+      use Cdata
       use Hydro, only: uumz,lcalc_uumean
       use Mpicomm, only: stop_it
       use Sub
@@ -449,7 +452,10 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
+      intent(in)     :: p
+      intent(inout)  :: f,df
+!
       real, dimension (nx,3) :: uxb,B0test,bbtest,duxbbtest
       real, dimension (nx,3) :: jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
@@ -471,9 +477,6 @@ module Testfield
 
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       integer      :: iswitch_iter=0
-!
-      intent(in)     :: p
-      intent(inout)  :: f,df
 !
 !  identify module and boundary conditions
 !
@@ -1253,6 +1256,7 @@ module Testfield
 !  20-aug-13/MR: changes for complex calculation: testfield loop then over njtest instead of njtestl
 !
       use Sub
+      use Cdata
       use Hydro, only: calc_pencils_hydro
       use Magnetic, only: idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpiallreduce_sum, mpibcast_real
@@ -1443,6 +1447,8 @@ module Testfield
 !
 !  29-mar-08/axel: coded
 !
+      use Cdata, only: nx,n
+!
       real, dimension (nx,3) :: B0test
       integer :: jtest
 !
@@ -1463,6 +1469,8 @@ module Testfield
 !  set testfield
 !
 !   3-jun-05/axel: coded
+!
+      use Cdata, only: nx,n
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1486,6 +1494,8 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !
+      use Cdata, only: nx,n
+!
       real, dimension (nx,3) :: J0test
       integer :: jtest
 !
@@ -1507,6 +1517,8 @@ module Testfield
 !  set testfield
 !
 !   3-jun-05/axel: coded
+!
+      use Cdata, only: nx,n
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1534,6 +1546,8 @@ module Testfield
 !  22-Juil-10/emeric: added the fifth testfield to measure alpi3
 !                     done only for linear testfields, should also be done for the other cases
 !
+      use Cdata, only: nx,n,z
+!
       real, dimension (nx,3) :: B0test
       integer :: jtest
 !
@@ -1560,6 +1574,7 @@ module Testfield
 !   3-jun-05/axel: adapted from rprint_magnetic
 !  14-aug-13/MR  : removed unnecessary output of idiags into index.pro
 !
+      use Cdata
       use Diagnostics
       use Sub, only: loptest
 !
