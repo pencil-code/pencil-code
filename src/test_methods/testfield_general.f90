@@ -12,7 +12,8 @@ module Testfield_general
 !
 ! constants
 !
-  integer, parameter :: nresitest_max=4
+  integer, parameter :: nresitest_max=4, inx=1, iny=2, inz=3, inxy=4, inxz=5, inyz=6, inxyz=7
+  character*2, dimension(7) :: coor_label=(/'x  ','y  ','z  ','xy ','xz ','yz ','xyz'/)
 !
 ! initial parameters
 !
@@ -42,11 +43,14 @@ module Testfield_general
             linit_aatest=.false.,             &
             ltestfield_taver=.false.,         &
             ltestfield_artifric=.false.,      &
-            ltestfield_profile_eta_z=.false., &
             lresitest_eta_const=.false.,      &
             lresitest_hyper3=.false.,         &
             leta_rank2=.true.,                &   
             lforcing_cont_aatest=.false.
+!
+  logical, dimension(7):: lresitest_prof=.false.
+  logical              :: ltestfield_profile_eta_z
+  equivalence (lresitest_prof(inz),ltestfield_profile_eta_z)   ! for compatibility
 !
   real   :: etatest=0.,etatest1=0.,       &
             etatest_hyper3=0.,            &
@@ -81,8 +85,11 @@ module Testfield_general
 !
 ! work variables
 !
-  real, dimension(:,:), pointer :: geta_z
-  real, dimension(:),   pointer :: eta_z
+  real, dimension(:),      pointer:: eta1d, geta1d
+  real, dimension(:,:),    pointer:: eta2d
+  real, dimension(:,:,:),  pointer:: eta3d,geta2d
+  real, dimension(:,:,:,:),pointer:: geta3d
+  integer                         :: mnprof=0,jgprof=0
 !
   integer, dimension (njtest) :: nuxb=0
 
@@ -92,6 +99,114 @@ module Testfield_general
   integer, private :: naainit
 !
   contains
+!***********************************************************************
+    subroutine initialize_testfield_general(f)
+!
+!  Perform any post-parameter-read initialization
+!
+!   2-jun-05/axel: adapted from magnetic
+!   6-sep-13/MR: insourced from testfield_z;
+!                generalized handling of eta profiles to all possible cases
+!
+      use Cdata
+      use Magnetic, only: lresi_dep
+      use SharedVariables, only: fetch_profile
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      integer :: i, jtest
+!
+!  Precalculate etatest if 1/etatest (==etatest1) is given instead
+!
+      if (etatest1/=0.) then
+        etatest=1./etatest1
+      endif
+      if (lroot) print*,'initialize_testfield: etatest=',etatest
+!
+      do i=1,nresitest_max
+        select case (iresistivity_test(i))
+        case ('etatest-const','')
+          if (lroot) print*, 'resistivity: constant eta'
+          lresitest_eta_const=.true.
+        case ('hyper3')
+          if (lroot) print*, 'resistivity: hyper3'
+          lresitest_hyper3=.true.
+        case ('none')
+          ! do nothing
+        case default
+          if (lroot) print*, 'No such value for iresistivity_test(',i,'): ', &
+              trim(iresistivity_test(i))
+          call fatal_error('initialize_testfield_general','')
+        endselect
+      enddo
+!
+!  rescale the testfield
+!  (in future, could call something like init_aa_simple)
+!
+      if (reinitialize_aatest) then
+        do jtest=1,njtest
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+          f(:,:,:,iaxtest:iaztest)=rescale_aatest(jtest)*f(:,:,:,iaxtest:iaztest)
+        enddo
+      endif
+!
+!  set lrescaling_testfield
+!
+      if (linit_aatest) lrescaling_testfield=.true.
+!
+!  check for possibility of artificial friction force
+!
+      if (tau_aatest/=0.) then
+        ltestfield_artifric=.true.
+        tau1_aatest=1./tau_aatest
+        if (lroot) print*,'initialize_testfield: tau1_aatest=',tau1_aatest
+      endif
+!      
+      if (lmagnetic) then
+!
+!  if magnetic, get a possible eta profile from there
+!
+        lresitest_prof = lresi_dep
+!
+!  profiles depending on only one coordinate
+!
+        do i=1,3
+          if (lresitest_prof(i)) call fetch_profile('eta_'//trim(coor_label(i)),eta1d,geta1d)
+        enddo
+!
+!  profiles depending on two coordinates (only x and y dependent case implemented in magnetic)
+!
+        do i=4,6
+          if (lresitest_prof(i)) call fetch_profile('eta_'//trim(coor_label(i)),eta2d,geta2d)
+        enddo
+!
+!  profile depending on three coordinates (not yet implemented in magnetic)
+!
+        if (lresitest_prof(7)) call fetch_profile('eta_'//trim(coor_label(7)),eta3d,geta3d)
+!
+!  for y or z dependent profiles: first (for x independent)/second (for x dependent profiles) index
+!  for access is m or n, respectively.
+!
+        if (lresitest_prof(iny).or.lresitest_prof(inxy)) then
+          mnprof=m
+        elseif (lresitest_prof(inz).or.lresitest_prof(inxz)) then
+          mnprof=n
+        endif
+!  
+!  for x and y or x and z dependent profiles: index for second component of geta is 2 or 3, respectively.
+!
+        if (lresitest_prof(inxy)) then
+          jgprof=2
+        elseif (lresitest_prof(inxz)) then
+          jgprof=3
+        endif
+!
+      else
+        ltestfield_profile_eta_z = .false.
+      endif
+!
+    endsubroutine initialize_testfield_general
 !***********************************************************************
     subroutine init_aatest(f)
 !
@@ -351,29 +466,51 @@ module Testfield_general
 !***********************************************************************
     subroutine calc_diffusive_part(f,iaxt,daatest)
 !
-!   6-jun-13/MR:  outsourced from daatest_dt
+!   6-jun-13/MR: outsourced from daatest_dt
+!   6-sep-13/MR: extended to spherical coordinates,
+!                generalized handling of eta profiles to all possible cases.
 !
       use Cdata
-      use Sub, only: del2v, gij, div_mn, del6v
+      use Sub, only: del2v, gij, gij_etc, div_mn, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
-      real, dimension(nx,3),            intent(INOUT):: daatest
       integer,                          intent(IN)   :: iaxt
+      real, dimension(nx,3),            intent(INOUT):: daatest
 
       real, dimension(nx)    :: divatest
       real, dimension(nx,3)  :: del2Atest
       real, dimension(nx,3,3):: aijtest
-      integer :: j
 
-      call del2v(f,iaxt,del2Atest)
-
-      if (ltestfield_profile_eta_z) then
+      if (lcartesian_coords) then
+        call del2v(f,iaxt,del2Atest)
+      elseif (lcylindrical_coords) then
+        !TBDone ?
+      elseif (lspherical_coords) then
         call gij(f,iaxt,aijtest,1)
+        call gij_etc(f,iaxt,f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
+      endif
+
+      if (any(lresitest_prof)) then
+!
+        if (.not.lspherical_coords) call gij(f,iaxt,aijtest,1)
         call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
-        do j=1,3
-          daatest(:,j)=eta_z(n)*etatest*del2Atest(:,j)+geta_z(n,j)*divatest
-        enddo
+
+        if (lresitest_prof(iny).or.lresitest_prof(inz)) then
+          call calc_diffusive_part_prof_0d(del2Atest,divatest,eta1d(mnprof),(/geta1d(mnprof)/),(/jgprof/),daatest)
+        elseif (lresitest_prof(inx)) then
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta1d,geta1d,(/1/),daatest)
+        elseif (lresitest_prof(inxy).or.lresitest_prof(inxz)) then
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta2d(:,mnprof),geta2d(:,mnprof,:),(/1,jgprof/),daatest)
+        elseif (lresitest_prof(inyz)) then 
+          call calc_diffusive_part_prof_0d(del2Atest,divatest,eta2d(m,n),geta2d(m,n,:),(/2,3/),daatest)
+        elseif (lresitest_prof(inxyz)) then 
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta3d(:,m,n),geta3d(:,m,n,:),(/1,2,3/),daatest)
+        endif
+!
       else
+!
+!  better cumulative with profiles?
+!
         if (lresitest_eta_const) daatest=etatest*del2Atest
         
         if (lresitest_hyper3) then
@@ -381,9 +518,61 @@ module Testfield_general
           daatest=daatest+etatest_hyper3*del2Atest
           if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
         endif
+!
       endif
 
     endsubroutine calc_diffusive_part
+!***********************************************************************
+    subroutine calc_diffusive_part_prof_0d(del2Atest,divatest,eta,geta,jg,daatest)
+!
+!  calculates full diffusive part daatest from del2Atest, divatest
+!  with x independent eta (m,n fixed) and grad(eta) with variable number of components
+!  jg contains indices (out of {1,2,3}) for which geta has nonvanishing components
+!
+!   6-sep-13/MR: coded
+!
+      real, dimension(nx,3),intent(IN) :: del2Atest
+      real, dimension(nx),  intent(IN) :: divatest
+      real,                 intent(IN) :: eta
+      real, dimension(*),   intent(IN) :: geta
+      integer, dimension(:),intent(IN) :: jg                        
+      real, dimension(nx,3),intent(OUT):: daatest
+!
+      integer :: j
+
+      daatest=(eta*etatest)*del2Atest
+
+      do j=1,size(jg)
+        daatest(:,jg(j))=daatest(:,jg(j))+geta(jg(j))*divatest
+      enddo
+
+    endsubroutine calc_diffusive_part_prof_0d
+!***********************************************************************
+    subroutine calc_diffusive_part_prof_1d(del2Atest,divatest,eta,geta,jg,daatest)
+!
+!  calculates full diffusive part daatest from del2Atest, divatest 
+!  with x dependent eta (m,n fixed) and grad(eta) with variable number of components
+!  jg contains indices (out of {1,2,3}) for which geta has nonvanishing components
+!
+!   6-sep-13/MR: coded
+!
+      real, dimension(nx,3),intent(IN) :: del2Atest
+      real, dimension(nx),  intent(IN) :: divatest,eta
+      real, dimension(nx,*),intent(IN) :: geta
+      integer, dimension(:),intent(IN) :: jg
+      real, dimension(nx,3),intent(OUT):: daatest
+
+      integer :: j
+
+      do j=1,3
+        daatest(:,j)=etatest*eta*del2Atest(:,j)
+      enddo
+
+      do j=1,size(jg)
+        daatest(:,jg(j))=daatest(:,jg(j))+geta(:,jg(j))*divatest
+      enddo
+
+    endsubroutine calc_diffusive_part_prof_1d
 !***********************************************************************
     subroutine calc_inverse_matrix(x,z,ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
 !
@@ -656,6 +845,7 @@ module Testfield_general
 !  symbols chosen as the average were over all y
 !
 !  3-sep-13/MR: outsourced from testfield_xz
+!  6-sep-13/MR: introduced use of calc_diffusive_part
 !
       use Cdata
       use Sub, only: curl, cross_mn, del2v, gij, gij_etc, identify_bcs
@@ -667,8 +857,7 @@ module Testfield_general
       real, dimension(nx,3,njtest),      intent(IN)   :: uxbtestm
       external                                        :: set_bbtest
 !
-      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,uufluct,del2Atest
-      real, dimension (nx,3,3):: aijtemp
+      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,uufluct,daatest
 !
       integer :: jtest,j,i
 !
@@ -693,12 +882,9 @@ module Testfield_general
 !
 !  calculate diffusive part
 !
-        if (lcartesian_coords) then
-          call del2v(f,iaxtest,del2Atest)
-        elseif (lspherical_coords) then
-          call gij(f,iaxtest,aijtemp,1)
-          call gij_etc(f,iaxtest,f(l1:l2,m,n,iaxtest:iaztest),AIJ=aijtemp,DEL2=del2Atest)
-        endif
+        call calc_diffusive_part(f,iaxtest,daatest)      
+!
+!  calculate testfield
 !
         call set_bbtest(bbtest,jtest)
 !
@@ -713,7 +899,7 @@ module Testfield_general
         uufluct = p%uu-uumxz
 
         call cross_mn(uufluct,bbtest,uxB)
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest+uxB 
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest+uxB 
 !
         if (.not.lsoca) then
 
