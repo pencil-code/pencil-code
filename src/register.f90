@@ -155,7 +155,7 @@ module Register
 !
       if (lroot) then
         do aux_count=1,maux
-          write(4,'(a10)') aux_var(aux_count)
+          write(4,'(A)') aux_var(aux_count)
         enddo
         close(4)
         close(15)

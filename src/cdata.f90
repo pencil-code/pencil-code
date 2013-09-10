@@ -537,7 +537,7 @@ module Cdata
 !
 !  Auxiliary variables.
 !
-  character (len=10), dimension(maux) :: aux_var
+  character (len=labellen), dimension(maux) :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0
   integer :: ireac=0

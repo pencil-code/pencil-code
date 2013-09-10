@@ -416,7 +416,7 @@ module Interstellar
 !  Writing files for use with IDL
 !
       if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling2 $'
-      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',cooling2'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',cooling2'
       aux_count=aux_count+1
       if (lroot) write(15,*) 'cooling2 = fltarr(mx,my,mz)*one'
 !
