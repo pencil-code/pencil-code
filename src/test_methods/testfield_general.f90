@@ -13,7 +13,7 @@ module Testfield_general
 ! constants
 !
   integer, parameter :: nresitest_max=4, inx=1, iny=2, inz=3, inxy=4, inxz=5, inyz=6, inxyz=7
-  character*2, dimension(7) :: coor_label=(/'x  ','y  ','z  ','xy ','xz ','yz ','xyz'/)
+  character (len=labellen), dimension(7) :: coor_label=(/'x  ','y  ','z  ','xy ','xz ','yz ','xyz'/)
 !
 ! initial parameters
 !
@@ -859,7 +859,7 @@ module Testfield_general
 !
       real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,uufluct,daatest
 !
-      integer :: jtest,j,i
+      integer :: jtest
 !
 !  identify module and boundary conditions
 !
