@@ -9,4 +9,4 @@
   public :: init_aatest, daatest_dt
   public :: pencil_criteria_testfield, pencil_interdep_testfield
   public :: testfield_after_boundary
-  public :: rescaling_testfield               
+  public :: rescaling_testfield
