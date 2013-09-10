@@ -422,7 +422,7 @@ module Particles_main
 !
 !  Insert particles.
 !
-      call particles_insert_continuously(f)
+      if (lfirst) call particles_insert_continuously(f)
       call insert_particles_now(f)
 !
     endsubroutine particles_timestep_second
