@@ -146,7 +146,7 @@ module Magnetic
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep, lresi_ydep, lresi_xdep, lresi_xydep
   logical, dimension(7) :: lresi_dep=.false.
-  equivalence (lresi_dep(1),lresi_xdep), (lresi_dep(2),lresi_ydep), (lresi_dep(3),lresi_zdep), (lresi_dep(4),lresi_xydep)  ! for compatibility
+  !!equivalence (lresi_dep(1),lresi_xdep), (lresi_dep(2),lresi_ydep), (lresi_dep(3),lresi_zdep), (lresi_dep(4),lresi_xydep)  ! for compatibility
   logical :: lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
