@@ -15,11 +15,10 @@
   public :: traceless_strain, coriolis_cartesian
   public :: kinematic_random_phase
   public :: hydro_before_boundary
-  public :: find_umax
   public :: expand_shands_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
-  public :: uumz, guumz, lcalc_uumean, lupw_uu
+  public :: uumz, guumz, lcalc_uumeanz, lupw_uu
   public :: uumxy, uumxz, lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
