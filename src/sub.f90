@@ -4325,6 +4325,7 @@ nameloop: do
 !
 !  04-oct-02/wolf: coded
 !  08-oct-02/tony: use safe_character_assign() to detect string overflows
+!  12-sep-13/mcnallcp: make the endianness detection reflect the platform
 !
       use General, only: safe_character_append, date_time_string
 !
@@ -4332,6 +4333,9 @@ nameloop: do
       character (len=*) :: file
       character (len=datelen) :: date
       character (len=linelen) :: field='',struct='',type='',dep=''
+!
+!  This is True for big endian, False of little endian
+      logical, parameter :: bigendian = ichar(transfer(1,'a')) == 0
 !
       call date_time_string(date)
 !
@@ -4389,8 +4393,12 @@ nameloop: do
       write(1,'(A,A)') '# Date: ', trim(date)
       write(1,'(A,A)') 'file = ', trim(datadir)//'/proc0/var.dat'
       write(1,'(A,I4," x ",I4," x ",I4)') 'grid = ', mx, my, mz
-      write(1,'(A)'  ) '# NB: setting lsb (little endian); may need to change this to msb'
-      write(1,'(A,A," ",A)') 'format = ', 'lsb', 'ieee'
+      write(1,'(A,A)') '# NB: hardcoded assumption of ieee'
+      if (bigendian) then
+        write(1,'(A,A," ",A)') 'format = ', 'msb', 'ieee'
+      else
+        write(1,'(A,A," ",A)') 'format = ', 'lsb', 'ieee'
+      endif
       write(1,'(A,A)') 'header = ', 'bytes 4'
       write(1,'(A,A)') 'interleaving = ', 'record'
       write(1,'(A,A)') 'majority = ', 'column'
