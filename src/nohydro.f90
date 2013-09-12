@@ -36,7 +36,7 @@ module Hydro
 !
   real :: u_out_kep=0.0
   logical, target :: lpressuregradient_gas=.false.
-  logical :: lcalc_uumean=.false.,lupw_uu=.false.
+  logical :: lcalc_uumean=.false.,lupw_uu=.false.,lcalc_uumeanz=.false.
   logical :: lcalc_uumeanxy=.false.,lcalc_uumeanxz=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
