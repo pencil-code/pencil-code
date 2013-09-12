@@ -89,6 +89,8 @@ module Sub
   public :: remove_mean,global_mean
   public :: loptest, ioptest, roptest, doptest
   public :: insert
+  public :: find_max_fvec
+  public :: finalize_aver
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -235,6 +237,11 @@ module Sub
     module procedure insert_carray_mult
     module procedure insert_rarray
   endinterface
+!
+  interface finalize_aver
+    module procedure finalize_1D_aver
+    module procedure finalize_2D_aver
+  endinterface finalize_aver
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -6037,5 +6044,84 @@ nameloop: do
 !
       endif
     endsubroutine insert_carray_mult
+!***********************************************************************
+    real function find_max_fvec(f,iv)
+!
+!  Find the maximum of the modulus of a vector field.
+!
+!  19-aug-2011/ccyang: coded
+!  12-sep-2013/MR: outsourced from hydro
+!
+      use Mpicomm, only: mpiallreduce_max
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: iv
+!
+      real :: umax1
+!
+!  Find the maximum.
+!
+      umax1 = sqrt(maxval(  f(l1:l2,m1:m2,n1:n2,iv  )**2 &
+                          + f(l1:l2,m1:m2,n1:n2,iv+1)**2 &
+                          + f(l1:l2,m1:m2,n1:n2,iv+2)**2  ))
+      call mpiallreduce_max(umax1, find_max_fvec)
+!
+    endfunction find_max_fvec
+!***********************************************************************
+    subroutine finalize_1D_aver(nproc,idir,arrm)
+!
+!  Finalize calculation of a 1D average of a vector field arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction.
+!
+!  12-sep-2013/MR: coded 
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      integer,              intent(IN)   :: nproc,idir
+      real, dimension(:,:), intent(INOUT):: arrm
+
+      real, dimension(:,:), allocatable :: temp
+      integer :: sz
+!
+!  communicate over 2 directions
+!
+        if (nproc>1) then
+!
+          sz = size(arrm)
+          allocate(temp(sz,3))
+          call mpiallreduce_sum(arrm,temp,(/sz,3/),idir=idir)
+          arrm=temp
+!
+        endif
+!
+    endsubroutine finalize_1D_aver
+!***********************************************************************
+    subroutine finalize_2D_aver(nproc,idir,arrm)
+!
+!  Finalize calculation of a 2D average of a vector field arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction.
+!
+!  12-sep-2013/MR: coded 
+!     
+      use Mpicomm, only: mpiallreduce_sum
+!
+      integer,                intent(IN)   :: nproc,idir
+      real, dimension(:,:,:), intent(INOUT):: arrm
+
+      real, dimension(:,:,:), allocatable :: temp
+      integer, dimension(2) :: sz
+!
+!  communicate over 1 direction
+!
+        if (nproc>1) then
+!
+          sz=(/size(arrm,1),size(arrm,2)/)
+          allocate(temp(sz(1),sz(2),3))
+          call mpiallreduce_sum(arrm,temp,(/sz,3/),idir=idir)
+          arrm=temp
+!
+        endif
+!
+    endsubroutine finalize_2D_aver
 !***********************************************************************
 endmodule Sub
