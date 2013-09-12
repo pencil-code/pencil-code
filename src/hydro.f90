@@ -153,8 +153,9 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
-  logical :: lcalc_uumean=.false.,lcalc_uumeanxy=.false.
+  logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
+  equivalence (lcalc_uumean,lcalc_uumeanz)                ! for compatibility
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
@@ -2854,9 +2855,11 @@ module Hydro
 !
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
-!
+!  12-sep-13/MR  : use finalize_aver
+! 
       use Deriv, only: der_z
       use Mpicomm, only: mpiallreduce_sum, fill_zghostzones_3vec
+      use Sub, only: finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy,ruz
@@ -2870,10 +2873,6 @@ module Hydro
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: l,m,i,j, nnz
       real :: fact
-      real, dimension (mz,3) :: temp
-      real, dimension (mx,3) :: tempx
-      real, dimension (mx,my,3) :: tempxy
-      real, dimension (mx,mz,3) :: tempxz
 !
       intent(inout) :: f
 !
@@ -2921,21 +2920,14 @@ module Hydro
 !
 !  do xy-averaged mean field for each component
 !
-      if (lcalc_uumean) then
+      if (lcalc_uumeanz) then
         fact=1./nxy
-        uumz = 0.
         do nnz=1,mz
           do j=1,3
             uumz(nnz,j)=fact*sum(f(l1:l2,m1:m2,nnz,iux+j-1))
           enddo
         enddo
-!
-!  communicate over x and y directions
-!
-        if (nprocx>1.or.nprocy>1) then
-          call mpiallreduce_sum(uumz,temp,(/mz,3/),idir=12)
-          uumz=temp
-        endif
+        call finalize_aver(nprocx*nprocy,12,uumz)
 !
         do j=1,3
           call der_z(uumz(:,j),guumz(:,j)) 
@@ -2952,13 +2944,7 @@ module Hydro
             uumx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iux+j-1))
           enddo
         enddo
-!
-!  communicate over y and z directions
-!
-        if (nprocy>1.or.nprocz>1) then
-          call mpiallreduce_sum(uumx,tempx,(/mx,3/),idir=23)
-          uumx=tempx
-        endif
+        call finalize_aver(nprocy*nprocz,23,uumx)
 !
       endif
 !
@@ -2966,23 +2952,8 @@ module Hydro
 !
       if (lcalc_uumeanxy) then
 !
-        fact=1./nzgrid
-        uumxy = 0.
-!
-        do l=1,mx
-          do m=1,my
-            do j=1,3
-              uumxy(l,m,j)=fact*sum(f(l,m,n1:n2,iux+j-1))
-            enddo
-          enddo
-        enddo
-!
-        if (nprocz>1) then
-!
-          call mpiallreduce_sum(uumxy,tempxy,(/mx,my,3/),idir=3)
-          uumxy = tempxy
-!
-        endif
+        uumxy = sum(f(:,:,n1:n2,iux:iuz),3)/nzgrid
+        call finalize_aver(nprocz,3,uumxy)
 !
       endif
 !
@@ -2990,23 +2961,8 @@ module Hydro
 !
       if (lcalc_uumeanxz) then
 !
-        fact=1./nygrid
-        uumxz = 0.
-!
-        do n=1,mx
-          do m=1,mz
-            do j=1,3
-              uumxz(n,m,j)=fact*sum(f(n,m1:m2,m,iux+j-1))
-            enddo
-          enddo
-        enddo
-!
-        if (nprocy>1) then
-!
-          call mpiallreduce_sum(uumxz,tempxz,(/mx,mz,3/),idir=2)
-          uumxz = tempxz
-!
-        endif
+        uumxz = sum(f(:,m1:m2,:,iux:iuz),2)/nygrid
+        call finalize_aver(nprocy,2,uumxz)
 !
       endif
 !
@@ -4863,7 +4819,7 @@ module Hydro
         do n = n1,n2
         do m = m1,m2
 !
-!  Compute mean momentum in each of the 3 directions.
+!  Compute mean flow in each of the 3 directions.
 !
           do j=indux,indux+2
             uu = f(l1:l2,m,n,j)
@@ -5342,7 +5298,7 @@ module Hydro
 !
 !  8-sep-2009/dhruba: coded
 !
-      call warning('hydro_clean_up','Nothing to do for hydro.f90')
+      if (ldebug) call warning('hydro_clean_up','Nothing to do for hydro.f90')
 !
     endsubroutine hydro_clean_up
 !***********************************************************************
@@ -5356,28 +5312,6 @@ module Hydro
           'Use HYDRO=hydro_kinematic in Makefile.local instead')
 !
     endsubroutine kinematic_random_phase
-!***********************************************************************
-    subroutine find_umax(f,umax)
-!
-!  Find the absolute maximum of the velocity.
-!
-!  19-aug-2011/ccyang: coded
-!
-      use Mpicomm, only: mpiallreduce_max
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, intent(out) :: umax
-!
-      real :: umax1
-!
-!  Find the maximum.
-!
-      umax1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
-                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
-                        + f(l1:l2,m1:m2,n1:n2,iuz)**2))
-      call mpiallreduce_max(umax1, umax)
-!
-    endsubroutine find_umax
 !***********************************************************************
     subroutine expand_shands_hydro()
 !
