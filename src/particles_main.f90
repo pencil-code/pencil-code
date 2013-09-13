@@ -395,6 +395,10 @@ module Particles_main
         dfp(1:npar_loc,:)=alpha_ts(itsub)*dfp(1:npar_loc,:)
       endif
 !
+!  Insert new particles continuously during the run
+!
+      if (lfirst) call particles_insert_continuously(f)
+!
     endsubroutine particles_timestep_first
 !***********************************************************************
     subroutine particles_timestep_second(f)
@@ -420,9 +424,8 @@ module Particles_main
         call particles_adaptation_pencils(f,fp,dfp,ipar,ineargrid)
       endif
 !
-!  Insert particles.
+!  Insert "old" (removed) particles.
 !
-      if (lfirst) call particles_insert_continuously(f)
       call insert_particles_now(f)
 !
     endsubroutine particles_timestep_second
