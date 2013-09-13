@@ -2927,7 +2927,7 @@ module Hydro
             uumz(nnz,j)=fact*sum(f(l1:l2,m1:m2,nnz,iux+j-1))
           enddo
         enddo
-        call finalize_aver(nprocx*nprocy,12,uumz)
+        call finalize_aver(nprocxy,12,uumz)
 !
         do j=1,3
           call der_z(uumz(:,j),guumz(:,j)) 
@@ -2944,7 +2944,7 @@ module Hydro
             uumx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iux+j-1))
           enddo
         enddo
-        call finalize_aver(nprocy*nprocz,23,uumx)
+        call finalize_aver(nprocyz,23,uumx)
 !
       endif
 !
@@ -3307,9 +3307,9 @@ module Hydro
 !
 !  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
 !
-!                    ( costh)   (u1)      (+sinth*u3)
+!                    ( costh)   (u1)     (+sinth*u3)
 !  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
-!                    (   0  )   (u3)      (-costh*u2-sinth*u1)
+!                    (   0  )   (u3)     (-costh*u2-sinth*u1)
 !
 !  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
 !
