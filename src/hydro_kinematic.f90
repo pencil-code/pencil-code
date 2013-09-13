@@ -147,8 +147,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      type(pencil_case),     allocatable :: p
-      logical, dimension(:), allocatable :: lpenc
+      type(pencil_case),dimension(:), allocatable :: p
+      logical,          dimension(:), allocatable :: lpenc
       real :: facxy, facyz, facy, facz
 !
 !  Compute preparatory functions needed to assemble
@@ -216,7 +216,7 @@ module Hydro
 !
       if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeanxy.or.lcalc_uumeanxz) then
 
-        allocate(p,lpenc(npencils))
+        allocate(p(1),lpenc(npencils))
         lpenc=.false.; lpenc(i_uu)=.true.
 
         facz  = 1./nzgrid
@@ -227,16 +227,16 @@ module Hydro
       
         do n=1,mz; do m=1,my
 !
-          call calc_pencils_hydro(f,p,lpenc)
+          call calc_pencils_hydro(f,p(1),lpenc)
 !
           if (lcalc_uumeanz .and. m>=m1 .and. m<=m2) &
-            uumz(n,:) = uumz(n,:) + facxy*sum(p%uu,1)
+            uumz(n,:) = uumz(n,:) + facxy*sum(p(1)%uu,1)
           if (lcalc_uumeanx .and. m>=m1 .and. m<=m2 .and. n>=n1 .and. n<=n2) &
-            uumx(l1:l2,:) = uumx(l1:l2,:) + facyz*p%uu
+            uumx(l1:l2,:) = uumx(l1:l2,:) + facyz*p(1)%uu
           if (lcalc_uumeanxy .and. n>=n1 .and. n<=n2) &
-            uumxy(l1:l2,m,:) = uumxy(l1:l2,m,:) + facz*p%uu
+            uumxy(l1:l2,m,:) = uumxy(l1:l2,m,:) + facz*p(1)%uu
           if (lcalc_uumeanxz .and. m>=m1 .and. m<=m2) &
-            uumxz(l1:l2,n,:) = uumxz(l1:l2,n,:) + facy*p%uu
+            uumxz(l1:l2,n,:) = uumxz(l1:l2,n,:) + facy*p(1)%uu
 !
         enddo; enddo
 !
