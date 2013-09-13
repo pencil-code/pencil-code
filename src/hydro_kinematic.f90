@@ -362,9 +362,6 @@ module Hydro
       integer :: modeN, ell
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f,lpenc
-      intent(inout) :: p
-!
       if (present(lpenc)) then
         lpenc_loc=lpenc
       else
