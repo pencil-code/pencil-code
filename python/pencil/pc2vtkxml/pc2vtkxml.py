@@ -192,7 +192,7 @@ def pc2vtkxml(varfile = 'var.dat', datadir = 'data/', proc = -1,
     w.closePiece()
     w.closeGrid()
 
-    w.appendData( time )
+    #w.appendData( time )
     w.appendData( (X,Y,Z) )
     for key in scalardata:
       w.appendData(data = scalardata[key])
