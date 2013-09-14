@@ -239,8 +239,10 @@ module Sub
   endinterface
 !
   interface finalize_aver
-    module procedure finalize_1D_aver
-    module procedure finalize_2D_aver
+    module procedure finalize_aver_1D
+    module procedure finalize_aver_2D
+    module procedure finalize_aver_3D
+    module procedure finalize_aver_4D
   endinterface finalize_aver
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
@@ -5970,9 +5972,9 @@ nameloop: do
 ! 15-feb-2013/MR: parameter leng_insert removed (now derived from insert)
 ! 21-aug-2013/MR: moved from Testflow
 !
-      character*(*), dimension(*) :: array
-      character*(*), dimension(:) :: insert
-      integer                     :: index, leng, leng_insert, i
+      character(LEN=*), dimension(*) :: array
+      character(LEN=*), dimension(:) :: insert
+      integer                        :: index, leng, leng_insert, i
 !
       intent(in)    :: index, insert
       intent(inout) :: leng, array
@@ -6031,9 +6033,9 @@ nameloop: do
 !
 ! 15-feb-2013/MR: derived from insert_carray
 !
-      character*(*), dimension(*) :: array
-      character*(*)               :: insert
-      integer                     :: index, leng, mult, i
+      character(LEN=*), dimension(*) :: array
+      character(LEN=*)               :: insert
+      integer                        :: index, leng, mult, i
 !
       intent(in)    :: index, insert, mult
       intent(inout) :: leng, array
@@ -6076,38 +6078,11 @@ nameloop: do
 !
     endfunction find_max_fvec
 !***********************************************************************
-    subroutine finalize_1D_aver(nproc,idir,arrm)
+    subroutine finalize_aver_3D(nproc,idir,arrm)
 !
-!  Finalize calculation of a 1D average of a vector field arrm, by MPI communication
-!  in direction idir, nproc - number of processors in this direction.
-!
-!  12-sep-2013/MR: coded 
-!
-      use Mpicomm, only: mpiallreduce_sum
-!
-      integer,              intent(IN)   :: nproc,idir
-      real, dimension(:,:), intent(INOUT):: arrm
-
-      real, dimension(:,:), allocatable :: temp
-      integer :: sz
-!
-!  communicate over 2 directions
-!
-        if (nproc>1) then
-!
-          sz = size(arrm)
-          allocate(temp(sz,3))
-          call mpiallreduce_sum(arrm,temp,(/sz,3/),idir=idir)
-          arrm=temp
-!
-        endif
-!
-    endsubroutine finalize_1D_aver
-!***********************************************************************
-    subroutine finalize_2D_aver(nproc,idir,arrm)
-!
-!  Finalize calculation of a 2D average of a vector field arrm, by MPI communication
-!  in direction idir, nproc - number of processors in this direction.
+!  Finalize calculation of an average of a 3D array arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction,
+!  direction can be a beam or a layer
 !
 !  12-sep-2013/MR: coded 
 !     
@@ -6117,19 +6092,106 @@ nameloop: do
       real, dimension(:,:,:), intent(INOUT):: arrm
 
       real, dimension(:,:,:), allocatable :: temp
-      integer, dimension(2) :: sz
+      integer, dimension(3) :: sz
 !
-!  communicate over 1 direction
+!  communicate direction idir
 !
         if (nproc>1) then
 !
-          sz=(/size(arrm,1),size(arrm,2)/)
-          allocate(temp(sz(1),sz(2),3))
-          call mpiallreduce_sum(arrm,temp,(/sz,3/),idir=idir)
+          sz=(/size(arrm,1),size(arrm,2),size(arrm,3)/)
+          allocate(temp(sz(1),sz(2),sz(3)))
+          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
           arrm=temp
 !
         endif
 !
-    endsubroutine finalize_2D_aver
+    endsubroutine finalize_aver_3D
+!***********************************************************************
+    subroutine finalize_aver_1D(nproc,idir,arrm)
+!
+!  Finalize calculation of an average of a 1D array arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction,
+!  direction can be a beam or a layer
+!
+!  12-sep-2013/MR: coded 
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      integer,            intent(IN)   :: nproc,idir
+      real, dimension(:), intent(INOUT):: arrm
+
+      real, dimension(:), allocatable :: temp
+      integer :: sz
+!
+!  communicate over direction idir
+!
+        if (nproc>1) then
+!
+          sz = size(arrm)
+          allocate(temp(sz))
+          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+          arrm=temp
+!
+        endif
+!
+    endsubroutine finalize_aver_1D
+!***********************************************************************
+    subroutine finalize_aver_2D(nproc,idir,arrm)
+!
+!  Finalize calculation of an average of a 2D array arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction,
+!  direction can be a beam or a layer
+!
+!  12-sep-2013/MR: coded 
+!     
+      use Mpicomm, only: mpiallreduce_sum
+!
+      integer,              intent(IN)   :: nproc,idir
+      real, dimension(:,:), intent(INOUT):: arrm
+
+      real, dimension(:,:), allocatable :: temp
+      integer, dimension(2) :: sz
+!
+!  communicate over direction idir
+!
+        if (nproc>1) then
+!
+          sz=(/size(arrm,1),size(arrm,2)/)
+          allocate(temp(sz(1),sz(2)))
+          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+          arrm=temp
+!
+        endif
+!
+    endsubroutine finalize_aver_2D
+!***********************************************************************
+    subroutine finalize_aver_4D(nproc,idir,arrm)
+!
+!  Finalize calculation of an average of a 4D array arrm, by MPI communication
+!  in direction idir, nproc - number of processors in this direction,
+!  direction can be a beam or a layer
+!
+!  12-sep-2013/MR: coded 
+!     
+      use Mpicomm, only: mpiallreduce_sum
+!
+      integer,                  intent(IN)   :: nproc,idir
+      real, dimension(:,:,:,:), intent(INOUT):: arrm
+
+      real, dimension(:,:,:,:), allocatable :: temp
+      integer, dimension(4) :: sz
+!
+!  communicate over direction idir
+!
+        if (nproc>1) then
+!
+          sz=(/size(arrm,1),size(arrm,2),size(arrm,3),size(arrm,4)/)
+          allocate(temp(sz(1),sz(2),sz(3),sz(4)))
+          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+          arrm=temp
+!
+        endif
+!
+    endsubroutine finalize_aver_4D
 !***********************************************************************
 endmodule Sub
