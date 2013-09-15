@@ -538,7 +538,7 @@ module Testscalar
       use Cdata
       use Diagnostics
       use Sub
-      use Hydro, only: uumz,lcalc_uumean
+      use Hydro, only: uumz,lcalc_uumeanz
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -566,7 +566,7 @@ module Testscalar
 !
 !  calculate uufluct=U-Umean
 !
-      if (lcalc_uumean) then
+      if (lcalc_uumeanz) then
         do j=1,3
           uufluct(:,j)=p%uu(:,j)-uumz(n,j)
         enddo
