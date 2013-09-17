@@ -4306,14 +4306,13 @@ module Magnetic
 !
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: finalize_aver
       use Deriv, only: der_z,der2_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: nxy=nxgrid*nygrid
       integer :: n,j
       real :: fact
-      real, dimension (mz,3) :: aamz1_tmp
       real, dimension (nz,3) :: gaamz,d2aamz
 !
       intent(inout) :: f
@@ -4328,13 +4327,7 @@ module Magnetic
             aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
           enddo
         enddo
-!
-!  communication over all processors in the xy plane
-!
-        if (nprocx>1.or.nprocy>1) then
-          call mpiallreduce_sum(aamz,aamz1_tmp,(/mz,3/),idir=12)
-          aamz=aamz1_tmp
-        endif
+        call finalize_aver(nprocxy,12,aamz)
 !
 !  Compute first and second derivatives.
 !
