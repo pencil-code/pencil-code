@@ -52,7 +52,7 @@ module Magnetic_meanfield
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0., uturb=.1
-  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0.
+  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
@@ -65,7 +65,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
   logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.false.
-  logical :: lturb_temp_diff=.false.
+  logical :: lturb_temp_diff=.false., lqp_profile=.false.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -83,7 +83,7 @@ module Magnetic_meanfield
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
-  real, dimension(mz) :: etat_z, detat_z
+  real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
@@ -95,7 +95,7 @@ module Magnetic_meanfield
       alpha_effect, alpha_quenching, alpha_rmax, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
-      chit_quenching, chi_t0, &
+      chit_quenching, chi_t0, lqp_profile, qp_width, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
       qp_model,&
@@ -384,6 +384,13 @@ module Magnetic_meanfield
         meanfield_qa1=1./meanfield_qa
       endif
 !
+!  define meanfield_qp_profile
+!
+      if (lqp_profile) then
+        qp_profile=0.5*(1.-erfunc((z-z_surface)/qp_width))
+        qp_profder=-exp(-((z-z_surface)/qp_width)**2)/(qp_width*sqrtpi)
+      endif
+!
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
@@ -655,6 +662,11 @@ module Magnetic_meanfield
           case ('uturbconst');
 !           allows to take into account a shifted equilibrium solution caused by the additional pressure contribution
             Beq21=mu01*p%rho1/(uturb**2)
+!         case ('uturbconst_surface');
+!  Beq21 becomes large in the corona
+!X
+!           Beq21=mu01*p%rho1/(uturb**2)
+!       0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
@@ -688,6 +700,7 @@ module Magnetic_meanfield
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !  Note: p%jij is not J_i,j; omit extra term for the time being.
+!  Also: "p%b2*meanfield_qp_der" is the same as dqp/dlnbeta^2.
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
           if (lqpcurrent) then
@@ -697,6 +710,13 @@ module Magnetic_meanfield
             if (lNEMPI_correction) then
               call multsv_mn_add(-.5*p%rho1*p%b2**2*meanfield_qp_der,p%grho,p%jxb_mf)
             endif
+          endif
+!
+!  Allow for qp profile
+!
+          if (lqp_profile) then
+            call multsv_mn(qp_profile(n),p%jxb_mf,p%jxb_mf)
+            p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*qp_profder(n)*meanfield_qp_func*p%b2
           endif
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
