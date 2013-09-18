@@ -603,7 +603,7 @@ module Testfield
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumeanz
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean,B_ext_inv
+      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -768,7 +768,7 @@ module Testfield
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
 !-  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
-          if (lcalc_aamean) then
+          if (lcalc_aameanz) then
             do j=1,3
               bbfluct(:,j)=p%bbb(:,j)-bbmz(n-n1+1,j)
               jjfluct(:,j)=p%jj(:,j)-jjmz(n-n1+1,j)
@@ -1202,7 +1202,7 @@ module Testfield
       use Sub
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-        aamz,bbmz,jjmz,lcalc_aamean
+        aamz,bbmz,jjmz,lcalc_aameanz
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1266,7 +1266,7 @@ module Testfield
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
 !-  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
-        if (lcalc_aamean) then
+        if (lcalc_aameanz) then
           do j=1,3
             bbfluct(:,j)=p%bbb(:,j)-bbmz(n-n1+1,j)
             jjfluct(:,j)=p%jj(:,j)-jjmz(n-n1+1,j)
@@ -1428,7 +1428,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: uumz,lcalc_uumeanz
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean
+      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
@@ -1471,7 +1471,7 @@ module Testfield
 !  Reinitialize reference fields with fluctuations of main run.
 !
           if (reinitialize_from_mainrun) then
-            if (lcalc_aamean.and.lcalc_uumeanz) then
+            if (lcalc_aameanz.and.lcalc_uumeanz) then
               jtest=iE0
               iaxtest=iaatest+3*(jtest-1)
               iuxtest=iuutest+3*(jtest-1)
@@ -1485,7 +1485,7 @@ module Testfield
               enddo
             else
               call fatal_error('rescaling_testfield', &
-                  'need lcalc_aamean.and.lcalc_uumeanz')
+                  'need lcalc_aameanz.and.lcalc_uumeanz')
             endif
           endif
 !
