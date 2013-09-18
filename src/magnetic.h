@@ -17,7 +17,7 @@
   public :: calc_pencils_magnetic
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
-  public :: lcalc_aamean, aamz, bbmz, jjmz
+  public :: lcalc_aameanz, aamz, bbmz, jjmz
   public :: rescaling_magnetic
   public :: B_ext_inv
   public :: bb_unitvec_shock

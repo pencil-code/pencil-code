@@ -78,7 +78,7 @@ module Magnetic
   real, dimension(mz,3), parameter :: aamz = 0.0
   real, dimension(nz,3), parameter :: bbmz = 0.0, jjmz = 0.0
   real, dimension(3) :: b_ext_inv = 0.0
-  logical, parameter :: lcalc_aamean = .false.
+  logical, parameter :: lcalc_aameanz = .false.
   logical, parameter :: lelectron_inertia = .false.
   integer, parameter :: idiag_bcosphz = 0, idiag_bsinphz = 0
   integer, parameter :: idiag_axmz = 0, idiag_aymz = 0

@@ -226,7 +226,8 @@ module Magnetic
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
-  logical :: lcalc_aamean=.false.
+  logical :: lcalc_aameanz=.false., lcalc_aamean
+  equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
   logical :: lforcing_cont_aa=.false.
   logical :: lelectron_inertia=.false.
   logical :: lkinematic=.false.
@@ -4320,7 +4321,7 @@ module Magnetic
 !  Compute mean field for each component. Include the ghost zones,
 !  because they have just been set.
 !
-      if (lcalc_aamean) then
+      if (lcalc_aameanz) then
         fact=1./nxy
         do j=1,3
           do n=1,mz
