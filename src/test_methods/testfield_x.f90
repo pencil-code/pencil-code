@@ -474,10 +474,11 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !  16-mar-08/axel: Lorentz force added for testfield method
+!  19-sep-13/MR  : corrected uumz -> uumx
 !
       use Cdata
       use Diagnostics
-      use Hydro, only: uumz,lcalc_uumean
+      use Hydro, only: uumx,lcalc_uumeanx
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -511,12 +512,9 @@ module Testfield
 !
 !  calculate uufluct=U-Umean
 !
-! NOTE THAT UUMZ IS THE WRONG MEAN UU TO USE HERE
-! To fix
-!
-      if (lcalc_uumean) then
+      if (lcalc_uumeanx) then
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
+          uufluct(:,j)=p%uu(:,j)-uumx(:,j)
         enddo
       else
         uufluct=p%uu
