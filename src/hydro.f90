@@ -155,7 +155,6 @@ module Hydro
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
-  equivalence (lcalc_uumean,lcalc_uumeanz)                ! for compatibility
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
@@ -837,6 +836,8 @@ module Hydro
              'failed to get profz_ffree from density')
         endif
       endif
+!
+      lcalc_uumeanz=lcalc_uumean                 ! for compatibility
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
