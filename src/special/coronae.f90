@@ -91,8 +91,6 @@ module Special
   integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
-  integer :: idiag_qmax=0     ! DIAG_DOC: max of heat flux vector
-  integer :: idiag_qrms=0     ! DIAG_DOC: rms of heat flux vector
 !
 !  variables for video slices:
 !
@@ -507,8 +505,6 @@ module Special
         idiag_dtchi2=0
         idiag_dtrad=0
         idiag_dtnewt=0
-        idiag_qmax=0
-        idiag_qrms=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -518,8 +514,6 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
-        call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
-        call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       enddo
 !
 !  write column where which variable is stored
@@ -529,8 +523,6 @@ module Special
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
-        write(3,*) 'i_qmax=',idiag_qmax
-        write(3,*) 'i_qrms=',idiag_qrms
       endif
 !
     endsubroutine rprint_special
