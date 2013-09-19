@@ -13,7 +13,7 @@ module Testfield_general
 ! constants
 !
   integer, parameter :: nresitest_max=4, inx=1, iny=2, inz=3, inxy=4, inxz=5, inyz=6, inxyz=7
-  character (len=labellen), dimension(7) :: coor_label=(/'x  ','y  ','z  ','xy ','xz ','yz ','xyz'/)
+  character(LEN=3), dimension(7) :: coor_label=(/'x  ','y  ','z  ','xy ','xz ','yz ','xyz'/)
 !
 ! initial parameters
 !
@@ -65,7 +65,7 @@ module Testfield_general
             delta_testfield_time=0.
 !
   character (len=labellen) :: itestfield='linear'
-  character (len=labellen), dimension(nresitest_max) :: iresistivity_test=''
+  character (len=labellen), dimension(nresitest_max) :: iresistivity_test=(/'const','none ','none ','none '/)
   real, dimension(njtest)  :: rescale_aatest=0.
 
 !  namelist /testfield_run_pars_gen/ &
@@ -125,7 +125,7 @@ module Testfield_general
 !
       do i=1,nresitest_max
         select case (iresistivity_test(i))
-        case ('etatest-const','')
+        case ('const')
           if (lroot) print*, 'resistivity: constant eta'
           lresitest_eta_const=.true.
         case ('hyper3')
@@ -461,6 +461,7 @@ module Testfield_general
       call gij(f,iaxt,aijtest,1)
       call curl_mn(aijtest,bbtest,f(l1:l2,m,n,iaxt:iaxt+2))
       call cross_mn(p%uu,bbtest,uxb)
+      !!!call cross_mn(f(l1:l2,m,n,iux:iuz),bbtest,uxb)
 
     endsubroutine calc_uxb
 !***********************************************************************
@@ -838,7 +839,7 @@ module Testfield_general
 !
     endfunction diagnos_interdep
 !***********************************************************************
-    subroutine rhs_daatest(f,df,p,uumxz,uxbtestm,set_bbtest)
+    subroutine rhs_daatest(f,df,p,uum,uxbtestm,set_bbtest)
 !
 !  calculates rhs of all testproblems; to be used within nm-loop,
 !  takes specific routine for calculation of testfield as parameter
@@ -853,7 +854,7 @@ module Testfield_general
       real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
       real, dimension (mx,my,mz,mvar),   intent(INOUT):: df
       type (pencil_case),                intent(IN)   :: p
-      real, dimension(nx,3),             intent(IN)   :: uumxz
+      real, dimension(nx,3),             intent(IN)   :: uum
       real, dimension(nx,3,njtest),      intent(IN)   :: uxbtestm
       external                                        :: set_bbtest
 !
@@ -896,7 +897,8 @@ module Testfield_general
 !
 !  calculate fluctuating velocity  in the main run
 !
-        uufluct = p%uu-uumxz
+        uufluct = p%uu-uum
+        !!!uufluct = f(l1:l2,m,n,iux:iuz)-uum
 
         call cross_mn(uufluct,bbtest,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest+uxB 
