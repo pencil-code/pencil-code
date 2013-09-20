@@ -1485,7 +1485,7 @@ module Sub
 !
     endsubroutine curl_horizontal
 !***********************************************************************
-    subroutine curl(f,k,g)
+    subroutine curl(f, k, g, ignoredx)
 !
 !  Calculate curl of a vector, get vector.
 !
@@ -1494,40 +1494,48 @@ module Sub
 !  11-sep-04/axel: began adding spherical coordinates
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates
+!  20-sep-13/ccyang: added optional argument ignoredx
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp1,tmp2
-      integer :: k,k1
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx,3), intent(out) :: g
+      integer, intent(in) :: k
+      logical, intent(in), optional :: ignoredx
 !
-      intent(in) :: f,k
-      intent(out) :: g
+      real, dimension(nx) :: tmp1, tmp2
+      logical :: igdx
+      integer :: k1
+!
+      if (present(ignoredx)) then
+        igdx = ignoredx
+      else
+        igdx = .false.
+      endif
 !
       k1=k-1
 !
-      call der(f,k1+3,tmp1,2)
-      call der(f,k1+2,tmp2,3)
+      call der(f, k1+3, tmp1, 2, ignoredx=igdx)
+      call der(f, k1+2, tmp2, 3, ignoredx=igdx)
       g(:,1)=tmp1-tmp2
 !
-      call der(f,k1+1,tmp1,3)
-      call der(f,k1+3,tmp2,1)
+      call der(f, k1+1, tmp1, 3, ignoredx=igdx)
+      call der(f, k1+3, tmp2, 1, ignoredx=igdx)
       g(:,2)=tmp1-tmp2
 !
-      call der(f,k1+2,tmp1,1)
-      call der(f,k1+1,tmp2,2)
+      call der(f, k1+2, tmp1, 1, ignoredx=igdx)
+      call der(f, k1+1, tmp2, 2, ignoredx=igdx)
       g(:,3)=tmp1-tmp2
 !
 !  Adjustments for spherical corrdinate system.
 !
-      if (lspherical_coords) then
+      if (.not. igdx .and. lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
         g(:,2)=g(:,2)-f(l1:l2,m,n,k1+3)*r1_mn
         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*r1_mn
       endif
 !
-      if (lcylindrical_coords) then
+      if (.not. igdx .and. lcylindrical_coords) then
         g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
       endif
 !
