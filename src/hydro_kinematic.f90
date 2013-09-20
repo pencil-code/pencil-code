@@ -147,8 +147,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      type(pencil_case),dimension(:), allocatable :: p
-      logical,          dimension(:), allocatable :: lpenc
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
       real :: facxy, facyz, facy, facz
 !
 !  Compute preparatory functions needed to assemble
@@ -216,8 +215,7 @@ module Hydro
 !
       if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeanxy.or.lcalc_uumeanxz) then
 
-        allocate(p(1),lpenc(npencils))
-        lpenc=.false.; lpenc(i_uu)=.true.
+        allocate(p(1))
 
         facz  = 1./nzgrid
         facy  = 1./nygrid
@@ -227,7 +225,7 @@ module Hydro
       
         do n=1,mz; do m=1,my
 !
-          call calc_pencils_hydro(f,p(1),lpenc)
+          call calc_pencils_hydro(f,p(1),(/i_uu/))
 !
           if (lcalc_uumeanz .and. m>=m1 .and. m<=m2) &
             uumz(n,:) = uumz(n,:) + facxy*sum(p(1)%uu,1)
@@ -328,7 +326,7 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p,lpenc)
+    subroutine calc_pencils_hydro(f,p,penc_inds)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -336,14 +334,16 @@ module Hydro
 !   08-nov-04/tony: coded
 !   12-sep-13/MR  : optional parameter lpenc added for possibility
 !                   to calculate less pencils than in the global setting
+!   20-sep-13/MR  : lpenc changed into list of indices in lpencil, penc_inds,
+!                   for which pencils are calculated, default: all
 !
       use Diagnostics
       use General
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray),     intent(IN)   :: f
-      type (pencil_case),                     intent(INOUT):: p
-      logical, dimension(npencils), optional, intent(IN)   :: lpenc
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+      integer, dimension(:), optional,   intent(IN) :: penc_inds
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
       real, dimension(nx) :: local_Omega
@@ -362,8 +362,9 @@ module Hydro
       integer :: modeN, ell
       logical, dimension(npencils) :: lpenc_loc
 !
-      if (present(lpenc)) then
-        lpenc_loc=lpenc
+      if (present(penc_inds)) then
+        lpenc_loc=.false.
+        lpenc_loc(penc_inds)=.true.
       else
         lpenc_loc=lpencil
       endif
