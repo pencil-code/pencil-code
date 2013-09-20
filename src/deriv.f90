@@ -86,7 +86,7 @@ module Deriv
 !
     endsubroutine initialize_deriv
 !***********************************************************************
-    subroutine der_main(f,k,df,j)
+    subroutine der_main(f, k, df, j, ignoredx)
 !
 !  calculate derivative df_k/dx_j
 !  accurate to 6th order, explicit, periodic
@@ -97,20 +97,30 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  20-sep-13/ccyang: added optional argument ignoredx
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
-      integer :: j,k
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+      logical, intent(in), optional :: ignoredx
 !
-      intent(in)  :: f,k,j
-      intent(out) :: df
+      real, parameter :: a = 1.0 / 60.0
+      real, dimension(nx) :: fac
+      logical :: withdx
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
 !debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
 !
+      if (present(ignoredx)) then
+        withdx = .not. ignoredx
+        if (ignoredx) fac = a
+      else
+        withdx = .true.
+      endif
+!
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
+          if (withdx) fac = a * dx_1(l1:l2)
           df=fac*(+ 45.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
                   -  9.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
                   +      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
@@ -120,23 +130,23 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
+          if (withdx) fac = a * dy_1(m)
           df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lspherical_coords  ) df=df*r1_mn
-          if (lcylindrical_coords) df=df*rcyl_mn1
+          if (withdx .and. lspherical_coords  ) df = df * r1_mn
+          if (withdx .and. lcylindrical_coords) df = df * rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
+          if (withdx) fac = a * dz_1(n)
           df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-          if (lspherical_coords) df=df*r1_mn*sin1th(m)
+          if (withdx .and. lspherical_coords) df = df * r1_mn * sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
