@@ -1674,25 +1674,28 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p)
+    subroutine calc_pencils_hydro(f,p,penc_inds)
 !
 ! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is 
 ! selected or not. 
 ! 
 ! 24-jun-13/dhruba: coded
+! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+!                   for which pencils are calculated, default: all
 !
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+      integer, dimension(:), optional,   intent(IN) :: penc_inds
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      if(llinearized_hydro) then
-        call calc_pencils_hydro_linearized(f,p)
+      if (llinearized_hydro) then
+        call calc_pencils_hydro_linearized(f,p,penc_inds)
       else
-        call calc_pencils_hydro_nonlinear(f,p)
+        call calc_pencils_hydro_nonlinear(f,p,penc_inds)
       endif
+!
       endsubroutine calc_pencils_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro_nonlinear(f,p)
+    subroutine calc_pencils_hydro_nonlinear(f,p,penc_inds)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1700,6 +1703,8 @@ module Hydro
 !  08-nov-04/tony: coded
 !  26-mar-07/axel: started using the gij_etc routine
 !  24-jun-13/dhruba: the earlier calc_pencils_hydro routine is copied here.
+!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+!                    for which pencils are calculated, default: all
 !
       use Deriv
       use Sub
@@ -1707,56 +1712,67 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer, dimension(:), optional :: penc_inds
 !
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
-      intent(in) :: f
-      intent(inout) :: p
+      intent(in) :: f, penc_inds
+      intent(out):: p
+!
+      logical, dimension(npencils) :: lpenc_loc
+!
+      if (present(penc_inds)) then
+        lpenc_loc=.false.
+        lpenc_loc(penc_inds)=.true.
+      else
+        lpenc_loc=lpencil
+      endif
+!
 ! uu
-      if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
-      if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
+      if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
-      if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
-!      if (.not.lpencil_check_at_work) then
+      if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
+!      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
 ! divu
-      if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij
-      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+      if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2
-      if (lpencil(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
+      if (lpenc_loc(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
 ! uij5
-      if (lpencil(i_uij5)) call gij(f,iuu,p%uij5,5)
+      if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
-      if (lpencil(i_oo)) then
+      if (lpenc_loc(i_oo)) then
         call curl_mn(p%uij,p%oo,p%uu)
       endif
 ! o2
-      if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
+      if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
-      if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+      if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
 ! Useful to debug forcing - Dhruba
-      if (loutest.and.lpencil(i_ou))then
-!      write(*,*) lpencil(i_ou)
+      if (loutest.and.lpenc_loc(i_ou))then
+!      write(*,*) lpenc_loc(i_ou)
         outest = minval(p%ou)
         if (outest<(-1.0d-8))then
-          write(*,*) m,n,outest,maxval(p%ou),lpencil(i_ou)
+          write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
         else
         endif
       else
       endif
 ! ugu
-      if (lpencil(i_ugu)) then
+      if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
-!      if (.not.lpencil_check_at_work) then
+!      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'ugu',p%ugu(1:6,1)
 !      endif
-!        if (.not.lpencil_check_at_work) then
+!        if (.not.lpenc_loc_check_at_work) then
 !          write(*,*) 'DM',x(l1:l2)
 !          write(*,*) 'DM',p%uu(:,1)
 !          write(*,*) 'DM',p%uij(:,1,1)
@@ -1774,19 +1790,19 @@ module Hydro
         endif
       endif
 ! ugu2
-      if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
+      if (lpenc_loc(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
-      if (lpencil(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
-      if (lpencil(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
-      if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
-      if (lpencil(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
-      if (lpencil(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
-      if (lpencil(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
+      if (lpenc_loc(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
+      if (lpenc_loc(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
+      if (lpenc_loc(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
+      if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
+      if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
+      if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
 ! del4u and del6u
-      if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
-      if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
+      if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
 ! del6u_bulk
-      if (lpencil(i_del6u_bulk)) then
+      if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
         p%del6u_bulk(:,1)=tmp
         call der6(f,iuy,tmp,2)
@@ -1798,11 +1814,11 @@ module Hydro
 ! del2u, graddivu
 !
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
-        if (lpencil(i_graddivu)) then
+        if (lpenc_loc(i_graddivu)) then
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
           call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         endif
-        if (lpencil(i_del2u)) then
+        if (lpenc_loc(i_del2u)) then
           call curl_mn(p%oij,p%curlo,p%oo)
           p%del2u=p%graddivu-p%curlo
         endif
@@ -1810,43 +1826,43 @@ module Hydro
 !
 !  all 3 together
 !
-        if (lpencil(i_del2u).and.lpencil(i_graddivu).and.lpencil(i_curlo)) then
+        if (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
 !
 !  all 3 possible pairs
 !
-        elseif (lpencil(i_del2u).and.lpencil(i_graddivu)) then
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-        elseif (lpencil(i_del2u).and.lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
-        elseif (lpencil(i_graddivu).and.lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
 !
 !  all 3 individually
 !
-        elseif (lpencil(i_del2u)) then
+        elseif (lpenc_loc(i_del2u)) then
           call del2v_etc(f,iuu,DEL2=p%del2u)
-        elseif (lpencil(i_graddivu)) then
+        elseif (lpenc_loc(i_graddivu)) then
           call del2v_etc(f,iuu,GRADDIV=p%graddivu)
-        elseif (lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,CURLCURL=p%curlo)
         endif
       endif
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpencil(i_d2uidxj)) &
+      if (lpenc_loc(i_d2uidxj)) &
         call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if(lpencil(i_uijk)) then
+      if(lpenc_loc(i_uijk)) then
         call del2fi_dxjk(f,iuu,p%uijk)
       endif
 !
 ! grad5divu
 !
-      if (lpencil(i_grad5divu)) then
+      if (lpenc_loc(i_grad5divu)) then
         do i=1,3
           tmp=0.0
           do j=1,3
@@ -1858,7 +1874,7 @@ module Hydro
         enddo
       endif
 ! transpurho
-      if (lpencil(i_transpurho)) then
+      if (lpenc_loc(i_transpurho)) then
         call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
         call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
         call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
@@ -1866,12 +1882,14 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
-    subroutine calc_pencils_hydro_linearized(f,p)
+    subroutine calc_pencils_hydro_linearized(f,p,penc_inds)
 !
 !  Calculate linearized hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-jun-13/dhruba: aped from calc_pencils_hydro from previous version
+!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+!                    for which pencils are calculated, default: all
 !
       use Deriv
       use Sub
@@ -1879,40 +1897,51 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer, dimension(:), optional :: penc_inds
 !
       real, dimension (nx) :: tmp, tmp2
       real, dimension (nx,3) :: ugu0,u0gu
       integer :: i, j, ju
 !
-      intent(in) :: f
-      intent(inout) :: p
+      intent(in) :: f, penc_inds
+      intent(out) :: p
+
+      logical, dimension(npencils) :: lpenc_loc
+
+      if (present(penc_inds)) then
+        lpenc_loc=.false.
+        lpenc_loc(penc_inds)=.true.
+      else
+        lpenc_loc=lpencil
+      endif
+!
 ! uu
-      if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
-      if (lpencil(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
+      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      if (lpenc_loc(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
 ! u2, should not be calculated
-      if (lpencil(i_u2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate u2 pencil')
+      if (lpenc_loc(i_u2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate u2 pencil')
 ! uij
-      if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
-      if (lpencil(i_u0ij)) call gij(f,iuu0,p%u0ij,1)
+      if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
+      if (lpenc_loc(i_u0ij)) call gij(f,iuu0,p%u0ij,1)
 ! divu
-      if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
-      if (lpencil(i_divu0)) call div_mn(p%u0ij,p%divu0,p%uu0)
+      if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      if (lpenc_loc(i_divu0)) call div_mn(p%u0ij,p%divu0,p%uu0)
 ! sij
-      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+      if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2
-      if (lpencil(i_sij2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate sij2 pencil')
+      if (lpenc_loc(i_sij2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate sij2 pencil')
 ! uij5
-      if (lpencil(i_uij5)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate uij5 pencil')
+      if (lpenc_loc(i_uij5)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate uij5 pencil')
 ! oo (=curlu)
-      if (lpencil(i_oo)) then
+      if (lpenc_loc(i_oo)) then
         call curl_mn(p%uij,p%oo,p%uu)
       endif
 ! o2
-      if (lpencil(i_o2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 pencil')
+      if (lpenc_loc(i_o2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 pencil')
 ! ou
-      if (lpencil(i_ou)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou pencil')
+      if (lpenc_loc(i_ou)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou pencil')
 ! ugu
-      if (lpencil(i_ugu)) then
+      if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
 !        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
         call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
@@ -1920,17 +1949,17 @@ module Hydro
         p%ugu = ugu0+u0gu
       endif
 ! ugu2
-      if (lpencil(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu2 pencil')
+      if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu2 pencil')
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
-      if (lpencil(i_u3u21).or.lpencil(i_u1u32).or.lpencil(i_u2u13)  & 
-        .or.lpencil(i_u2u31).or.lpencil(i_u3u12).or.lpencil(i_u1u23) ) then 
+      if (lpenc_loc(i_u3u21).or.lpenc_loc(i_u1u32).or.lpenc_loc(i_u2u13)  & 
+        .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then 
         call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
       endif
 ! del4u and del6u
-      if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
-      if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
+      if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
 ! del6u_bulk
-      if (lpencil(i_del6u_bulk)) then
+      if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
         p%del6u_bulk(:,1)=tmp
         call der6(f,iuy,tmp,2)
@@ -1942,11 +1971,11 @@ module Hydro
 ! del2u, graddivu
 !
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
-        if (lpencil(i_graddivu)) then
+        if (lpenc_loc(i_graddivu)) then
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
           call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         endif
-        if (lpencil(i_del2u)) then
+        if (lpenc_loc(i_del2u)) then
           call curl_mn(p%oij,p%curlo,p%oo)
           p%del2u=p%graddivu-p%curlo
         endif
@@ -1954,43 +1983,43 @@ module Hydro
 !
 !  all 3 together
 !
-        if (lpencil(i_del2u).and.lpencil(i_graddivu).and.lpencil(i_curlo)) then
+        if (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
 !
 !  all 3 possible pairs
 !
-        elseif (lpencil(i_del2u).and.lpencil(i_graddivu)) then
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-        elseif (lpencil(i_del2u).and.lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
-        elseif (lpencil(i_graddivu).and.lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
 !
 !  all 3 individually
 !
-        elseif (lpencil(i_del2u)) then
+        elseif (lpenc_loc(i_del2u)) then
           call del2v_etc(f,iuu,DEL2=p%del2u)
-        elseif (lpencil(i_graddivu)) then
+        elseif (lpenc_loc(i_graddivu)) then
           call del2v_etc(f,iuu,GRADDIV=p%graddivu)
-        elseif (lpencil(i_curlo)) then
+        elseif (lpenc_loc(i_curlo)) then
           call del2v_etc(f,iuu,CURLCURL=p%curlo)
         endif
       endif
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpencil(i_d2uidxj)) &
+      if (lpenc_loc(i_d2uidxj)) &
         call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if(lpencil(i_uijk)) then
+      if(lpenc_loc(i_uijk)) then
         call del2fi_dxjk(f,iuu,p%uijk)
       endif
 !
 ! grad5divu
 !
-      if (lpencil(i_grad5divu)) then
+      if (lpenc_loc(i_grad5divu)) then
         do i=1,3
           tmp=0.0
           do j=1,3
@@ -2001,8 +2030,10 @@ module Hydro
           p%grad5divu(:,i)=tmp
         enddo
       endif
+!
 ! transpurho
-      if (lpencil(i_transpurho)) then
+!
+      if (lpenc_loc(i_transpurho)) then
         call fatal_error('calc_pencils_hydro_linearized:','no linearized weno transport ')
       endif
 !
