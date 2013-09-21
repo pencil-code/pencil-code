@@ -107,6 +107,11 @@ module Hydro
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
 !
+  interface calc_pencils_hydro
+    module procedure calc_pencils_hydro_pencpar
+    module procedure calc_pencils_hydro_std
+  endinterface calc_pencils_hydro
+!
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -140,6 +145,7 @@ module Hydro
 !
 !  24-nov-02/tony: coded
 !  12-sep-13/MR  : calculation of means added
+!  21-sep-13/MR  : adjusted use of calc_pencils_hydro
 !
       use FArrayManager
       use Sub, only: erfunc, finalize_aver
@@ -148,6 +154,8 @@ module Hydro
       logical :: lstarting
 !
       type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+      logical, dimension(:), allocatable :: lpenc_loc
+!
       real :: facxy, facyz, facy, facz
 !
 !  Compute preparatory functions needed to assemble
@@ -215,17 +223,19 @@ module Hydro
 !
       if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeanxy.or.lcalc_uumeanxz) then
 
-        allocate(p(1))
+        allocate(p(1),lpenc_loc(npencils))
 
         facz  = 1./nzgrid
         facy  = 1./nygrid
 
         facxy = 1./(nxgrid*nygrid)
         facyz = 1./(nygrid*nzgrid)
-      
+     
+        lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+! 
         do n=1,mz; do m=1,my
 !
-          call calc_pencils_hydro(f,p(1),(/i_uu/))
+          call calc_pencils_hydro(f,p(1),lpenc_loc)
 !
           if (lcalc_uumeanz .and. m>=m1 .and. m<=m2) &
             uumz(n,:) = uumz(n,:) + facxy*sum(p(1)%uu,1)
@@ -326,7 +336,21 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p,penc_inds)
+    subroutine calc_pencils_hydro_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_hydro_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_hydro_std
+!***********************************************************************
+    subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -336,6 +360,7 @@ module Hydro
 !                   to calculate less pencils than in the global setting
 !   20-sep-13/MR  : lpenc changed into list of indices in lpencil, penc_inds,
 !                   for which pencils are calculated, default: all
+!   21-sep-13/MR  : returned to pencil mask as parameter lpenc_loc
 !
       use Diagnostics
       use General
@@ -343,7 +368,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
-      integer, dimension(:), optional,   intent(IN) :: penc_inds
+      logical, dimension(npencils),      intent(IN) :: lpenc_loc
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
       real, dimension(nx) :: local_Omega
@@ -360,14 +385,6 @@ module Hydro
       real :: ro
       real :: theta,theta1
       integer :: modeN, ell
-      logical, dimension(npencils) :: lpenc_loc
-!
-      if (present(penc_inds)) then
-        lpenc_loc=.false.
-        lpenc_loc(penc_inds)=.true.
-      else
-        lpenc_loc=lpencil
-      endif
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a 
@@ -1440,7 +1457,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_hydro
+    endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !
