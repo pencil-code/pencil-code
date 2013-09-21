@@ -519,6 +519,11 @@ module Hydro
   integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_y\right>_{z}$
 !
+  interface calc_pencils_hydro
+    module procedure calc_pencils_hydro_pencpar
+    module procedure calc_pencils_hydro_std
+  endinterface calc_pencils_hydro
+!    
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -1674,7 +1679,7 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p,penc_inds)
+    subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 ! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is 
 ! selected or not. 
@@ -1682,20 +1687,35 @@ module Hydro
 ! 24-jun-13/dhruba: coded
 ! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
 !                   for which pencils are calculated, default: all
+! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
-      integer, dimension(:), optional,   intent(IN) :: penc_inds
+      logical, dimension(:),             intent(IN) :: lpenc_loc
 !
       if (llinearized_hydro) then
-        call calc_pencils_hydro_linearized(f,p,penc_inds)
+        call calc_pencils_hydro_linearized(f,p,lpenc_loc)
       else
-        call calc_pencils_hydro_nonlinear(f,p,penc_inds)
+        call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
       endif
 !
-      endsubroutine calc_pencils_hydro
+      endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
-    subroutine calc_pencils_hydro_nonlinear(f,p,penc_inds)
+    subroutine calc_pencils_hydro_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with 
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_hydro_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_hydro_std
+!***********************************************************************
+    subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1705,6 +1725,7 @@ module Hydro
 !  24-jun-13/dhruba: the earlier calc_pencils_hydro routine is copied here.
 !  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
 !                    for which pencils are calculated, default: all
+!  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc 
 !
       use Deriv
       use Sub
@@ -1712,23 +1733,13 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer, dimension(:), optional :: penc_inds
+      logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
-      intent(in) :: f, penc_inds
+      intent(in) :: f, lpenc_loc
       intent(out):: p
-!
-      logical, dimension(npencils) :: lpenc_loc
-!
-      if (present(penc_inds)) then
-        lpenc_loc=.false.
-        lpenc_loc(penc_inds)=.true.
-      else
-        lpenc_loc=lpencil
-      endif
-!
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
@@ -1882,7 +1893,7 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
-    subroutine calc_pencils_hydro_linearized(f,p,penc_inds)
+    subroutine calc_pencils_hydro_linearized(f,p,lpenc_loc)
 !
 !  Calculate linearized hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1890,6 +1901,7 @@ module Hydro
 !  24-jun-13/dhruba: aped from calc_pencils_hydro from previous version
 !  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
 !                    for which pencils are calculated, default: all
+!  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc
 !
       use Deriv
       use Sub
@@ -1897,24 +1909,14 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer, dimension(:), optional :: penc_inds
+      logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
       real, dimension (nx,3) :: ugu0,u0gu
       integer :: i, j, ju
 !
-      intent(in) :: f, penc_inds
+      intent(in) :: f, lpenc_loc
       intent(out) :: p
-
-      logical, dimension(npencils) :: lpenc_loc
-
-      if (present(penc_inds)) then
-        lpenc_loc=.false.
-        lpenc_loc(penc_inds)=.true.
-      else
-        lpenc_loc=lpencil
-      endif
-!
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
       if (lpenc_loc(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
