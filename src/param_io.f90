@@ -142,7 +142,9 @@ module Param_IO
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, re_mesh, lreset_seed, &
-      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress
+      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, & 
+      theta_lower_border, wborder_theta_lower, theta_upper_border, &
+      wborder_theta_upper, fraction_tborder, lmeridional_border_drive
 !
   contains
 !***********************************************************************

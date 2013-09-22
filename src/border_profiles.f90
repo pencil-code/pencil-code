@@ -27,6 +27,7 @@ module BorderProfiles
   real, dimension(mz) :: border_prof_z=1.0
   real, dimension(nx) :: rborder_mn
   real                :: tborder1=impossible
+  real                :: fraction_tborder1=impossible
 !
 ! WL: Ideally,this 4D array f_init should be allocatable, since it
 !     is only used in specific conditions in the code (only when the
@@ -150,7 +151,18 @@ module BorderProfiles
           any(border_frac_z/=0)) &
         lborder_quenching=.true.
 !
-      if (tborder/=0.) tborder1=1./tborder
+!  Use a fixed timescale to drive the boundary, independently of radius. 
+!  Else use some fraction of the local orbital time. 
+!
+      if (tborder/=0.) then 
+        tborder1=1./tborder
+      else
+        fraction_tborder1=1./fraction_tborder
+      endif
+!
+      if (lmeridional_border_drive.and..not.lspherical_coords) &
+           call fatal_error("initialize_border_profiles",&
+           "drive meridional borders for spherical coords only.")
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
@@ -321,6 +333,7 @@ module BorderProfiles
       type (pencil_case) :: p
       real :: pborder,inverse_drive_time
       integer :: i,j
+      logical :: lradial, lmeridional
       logical :: lfirstcall=.true.
 !
 !  if r_int_border and/or r_ext_border are still set to impossible,
@@ -338,12 +351,19 @@ module BorderProfiles
 !  put it to a negative value instead, to avoid surprises at r=0.
 !
       do i=1,nx
-        if ( &
-            !inner stripe
-             (rborder_mn(i)<=r_int_border+2*wborder_int).or.&
-            !outer stripe
-             (rborder_mn(i)>=r_ext_border-2*wborder_ext)) then
 !
+! conditions for driving of the radial border
+!
+        lradial=(rborder_mn(i)<=r_int_border+2*wborder_int).or.&  ! inner stripe
+                (rborder_mn(i)>=r_ext_border-2*wborder_ext)       ! outer stripe
+!
+! conditions for driving of the meridional border
+!
+        lmeridional=lmeridional_border_drive.and.&
+               ((y(m)<=theta_lower_border+2*wborder_theta_lower).or.& ! lower stripe  
+                (y(m)>=theta_upper_border-2*wborder_theta_upper))     ! upper stripe
+!
+        if (lradial.or.lmeridional) then
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
@@ -383,8 +403,12 @@ module BorderProfiles
 ! cint = 1-step_int , cext = step_ext
 ! pborder = cint+cext
 !
-     pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT=1.) + &
-          cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
+      pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT= 1.) + &
+                  cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
+!
+      if (lmeridional_border_drive) pborder = pborder + & 
+           1-cubic_step(y(m),theta_lower_border,wborder_theta_lower,SHIFT= 1.) + &
+             cubic_step(y(m),theta_upper_border,wborder_theta_upper,SHIFT=-1.)
 !
     endsubroutine get_border
 !***********************************************************************
@@ -414,7 +438,7 @@ module BorderProfiles
           'not implemented for cartesian grid')
           uphi=0.
         endif
-        inverse_drive_time = .5*pi_1*uphi/rborder_mn(i)
+        inverse_drive_time = fraction_tborder1*.5*pi_1*uphi/rborder_mn(i)
 !
 !  specify tborder as input
 !
