@@ -77,7 +77,7 @@ module Hydro
   real :: omega_precession=0., alpha_precession=0.
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
-  character (len=labellen) :: borderuu='nothing'
+  character (len=labellen), dimension(3) :: borderuu='nothing'
   real, dimension (3) :: uu_const=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real, dimension(nx) :: xmask_hyd
@@ -159,6 +159,7 @@ module Hydro
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
   logical :: lrotation_xaxis=.false.
+  logical :: lpropagate_borderuu=.true.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -188,7 +189,8 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom
+      hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, & 
+      lpropagate_borderuu
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -715,10 +717,23 @@ module Hydro
              'initialize_hydro: fargo used. turned off advection of velocity'
       endif
 !
+!  Border profile backward compatibility. For a vector, if only the first 
+!  borderuu is set, then the other components get the same value.
+!
+      if (lpropagate_borderuu     .and. &
+           borderuu(1)/='nothing' .and. &
+           borderuu(2)=='nothing' .and. &
+           borderuu(3)=='nothing') then 
+        borderuu(2)=borderuu(1)
+        borderuu(3)=borderuu(1)
+      endif
+!
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderuu/='nothing') call request_border_driving(borderuu)
+      do j=1,3
+        if (borderuu(j)/='nothing') call request_border_driving(borderuu(j))
+      enddo
 !
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module
 !  knows whether to apply them or not.
@@ -3114,39 +3129,38 @@ module Hydro
       real, dimension (nx,3) :: f_target
       integer :: j,ju
 !
-      select case (borderuu)
+      do j=1,3
+
+        select case (borderuu(j))
 !
-      case ('zero','0')
-        f_target=0.
+        case ('zero','0')
+          f_target(:,j)=0.
 !
-      case ('constant')
-        do j=1,3
+        case ('constant')
           f_target(:,j) = uu_const(j)
-        enddo
 !
-      case ('initial-condition')
-        do j=1,3
+        case ('initial-condition')
           ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
-        enddo
 !
-      case ('nothing')
-        if (lroot.and.ip<=5) &
-             print*,"set_border_hydro: borderuu='nothing'"
+        case ('nothing')
+          if (lroot.and.ip<=5) &
+               print*,"set_border_hydro: borderuu='nothing'"
 !
-      case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_hydro: No such value for borderuu: ', &
-              trim(borderuu)
-         call fatal_error('set_border_hydro',errormsg)
-      endselect
+        case default
+          write(unit=errormsg,fmt=*) &
+               'set_border_hydro: No such value for borderuu: ', &
+               trim(borderuu(j))
+          call fatal_error('set_border_hydro',errormsg)
 !
-      if (borderuu/='nothing') then
-        do j=1,3
+        endselect
+
+        if (borderuu(j)/='nothing') then
           ju=j+iuu-1
           call border_driving(f,df,p,f_target(:,j),ju)
-        enddo
-      endif
+        endif
+!
+      enddo
 !
     endsubroutine set_border_hydro
 !***********************************************************************
