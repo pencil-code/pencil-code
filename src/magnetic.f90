@@ -85,7 +85,7 @@ module Magnetic
 !
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
   character (len=labellen), dimension(ninit) :: initaa='nothing'
-  character (len=labellen) :: borderaa='nothing'
+  character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
 !
 ! Input parameters
@@ -237,6 +237,7 @@ module Magnetic
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
+  logical :: lpropagate_borderaa=.true.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -274,7 +275,8 @@ module Magnetic
       k_relprof,lmagneto_friction,numag, &
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
-      limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb
+      limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
+      lpropagate_borderaa
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1188,10 +1190,23 @@ module Magnetic
         call put_shared_variable('geta_z',geta_z,ierr)
       endif
 !
+!  Border profile backward compatibility. For a vector, if only the first
+!  borderaa is set, then the other components get the same value.
+!                                                                                                                                     
+      if (lpropagate_borderaa     .and. &
+           borderaa(1)/='nothing' .and. &
+           borderaa(2)=='nothing' .and. &
+           borderaa(3)=='nothing') then
+        borderaa(2)=borderaa(1)
+        borderaa(3)=borderaa(1)
+      endif
+!
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderaa/='nothing') call request_border_driving(borderaa)
+      do j=1,3
+        if (borderaa(j)/='nothing') call request_border_driving(borderaa(j))
+      enddo
 !
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -2653,7 +2668,7 @@ module Magnetic
       case default
          write(unit=errormsg,fmt=*) &
               'set_ambipolar_diffusion: No such value for ambipolar_diffusion: ', &
-              trim(borderaa)
+              trim(ambipolar_diffusion)
          call fatal_error('set_ambipolar_diffusion',errormsg)
 !
       endselect
@@ -4384,36 +4399,37 @@ module Magnetic
 !
 !  select for different target profiles
 !
-      select case (borderaa)
+      do j=1,3
+
+        select case (borderaa(j))
 !
-      case ('zero','0')
-        f_target=0.
+        case ('zero','0')
+          f_target(:,j)=0.
 !
-      case ('initial-condition')
-        do j=1,3
+        case ('initial-condition')
           ju=j+iaa-1
           call set_border_initcond(f,ju,f_target(:,j))
-        enddo
 !
-      case ('nothing')
-        if (lroot.and.ip<=5) &
-             print*,"set_border_magnetic: borderaa='nothing'"
+        case ('nothing')
+          if (lroot.and.ip<=5) &
+               print*,"set_border_magnetic: borderaa='nothing'"
 !
-      case default
-        write(unit=errormsg,fmt=*) &
-             'set_border_magnetic: No such value for borderaa: ', &
-             trim(borderaa)
-        call fatal_error('set_border_magnetic',errormsg)
-      endselect
+        case default
+          write(unit=errormsg,fmt=*) &
+               'set_border_magnetic: No such value for borderaa: ', &
+               trim(borderaa(j))
+          call fatal_error('set_border_magnetic',errormsg)
+!
+        endselect
 !
 !  apply border profile
 !
-      if (borderaa /= 'nothing') then
-        do j=1,3
+        if (borderaa(j) /= 'nothing') then
           ju=j+iaa-1
           call border_driving(f,df,p,f_target(:,j),ju)
-        enddo
-      endif
+        endif
+!
+      enddo
 !
     endsubroutine set_border_magnetic
 !***********************************************************************
