@@ -71,6 +71,7 @@ module Magnetic
 !  Module variables
 !
   real, dimension(nx) :: maxdiffus_eta = 0.0
+  real, dimension(nx) :: maxdiffus_eta3 = 0.0
   logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
@@ -277,6 +278,14 @@ module Magnetic
 !
       if (lfirst .and. ldt) maxdiffus_eta = 0.0
 !
+!  Zero E field or initialize it with mesh hyper-resistivity.
+!
+      if (lresis_hyper3_mesh) then
+        call mesh_hyper_resistivity(f)
+      else
+        f(:,:,:,ieex:ieez) = 0.0
+      endif
+!
 !  Calculate the effective electric field along each pencil.
 !
       mn_loop: do imn = 1, ny * nz
@@ -315,7 +324,7 @@ module Magnetic
           endif timestep
         endif resis
 !
-        f(l1:l2,m,n,ieex:ieez) = ee
+        f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) + ee
       enddo mn_loop
 !
 !  Communicate the E field.
@@ -395,15 +404,12 @@ module Magnetic
 !
       if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%jxbr
 !
-!  Mesh hyper-resistivity
-!
-      if (lresis_hyper3_mesh) call add_resis_hyper3_mesh(f, df)
-!
 !  Constrain the time step.
 !
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
         diffus_eta = maxdiffus_eta
+        diffus_eta3 = maxdiffus_eta3
       endif timestep
 !
 !  Evaluate Magnetic diagnostics.
@@ -713,46 +719,63 @@ module Magnetic
 !
     endsubroutine get_resistivity_implicit
 !***********************************************************************
-    subroutine add_resis_hyper3_mesh(f, df)
+    subroutine mesh_hyper_resistivity(f)
 !
-!  Adds the mesh hyper-resistivity.
+!  Adds the mesh hyper-resistivity in divergence conserving form.
 !
-!  09-jul-13/ccyang: coded
+!  20-sep-13/ccyang: coded
 !
-      use Deriv, only: der6
+      use Boundcond, only: update_ghosts
+      use Deriv, only: der4
+      use Grid, only: get_grid_mn
+      use Sub, only: curl
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx) :: penc
-      integer :: i, j, jvar
+      real, dimension(nx,ny,nz,3) :: d4jj
+      real, dimension(nx,3) :: pv
+      integer :: j, k, mc, nc
 !
-!  Add the mesh hyper-resistivity to the derivatives.
+!  Reset maxdiffus_eta3 for time-step constraint.
 !
-      comp: do j = 1, 3
-        jvar = ibb + j - 1
-        dir: do i = 1, 3
-          call der6(f, jvar, penc, i, ignoredx=.true.)
-          if (ldynamical_diffusion) then
-            df(l1:l2,m,n,jvar) = df(l1:l2,m,n,jvar) + eta_hyper3_mesh * penc * dline_1(:,i)
-          else
-            df(l1:l2,m,n,jvar) = df(l1:l2,m,n,jvar) + eta_hyper3_mesh * pi5_1 / 60.0 * penc * dline_1(:,i)
-          endif
+      if (lfirst .and. ldt) maxdiffus_eta3 = 0.0
+!
+!  Calculate the mesh curl of B (assuming the boundary conditions have been applied).
+!
+      curlbb: do imn = 1, ny * nz
+        m = mm(imn)
+        n = nn(imn)
+        call curl(f, ibb, pv, ignoredx=.true.)
+        f(l1:l2,m,n,ieex:ieez) = pv
+      enddo curlbb
+      call update_ghosts(f, ieex, ieez)
+!
+!  Calculate its fourth-order mesh derivative.
+!
+      d4jj = 0.0
+      d4jjp: do imn = 1, ny * nz
+        m = mm(imn)
+        n = nn(imn)
+        mc = m - nghost
+        nc = n - nghost
+        dir: do k = 1, 3
+          comp: do j = 1, 3
+            call der4(f, iee+j-1, pv(:,j), k, ignoredx=.true.)
+          enddo comp
+          d4jj(:,mc,nc,:) = d4jj(:,mc,nc,:) + pv
         enddo dir
-      enddo comp
+!       Time-step constraint
+        timestep: if (lfirst .and. ldt) then
+          if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
+          maxdiffus_eta3 = max(maxdiffus_eta3, eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
+        endif timestep
+      enddo d4jjp
 !
-!  Time-step constraint
+!  Assign it to the E field.
 !
-      timestep: if (lfirst .and. ldt) then
-        dynamic: if (ldynamical_diffusion) then
-          diffus_eta3 = diffus_eta3 + eta_hyper3_mesh
-          advec_hypermesh_aa = 0.0
-        else dynamic
-          advec_hypermesh_aa = eta_hyper3_mesh * pi5_1 * sqrt(dxyz_2)
-        endif dynamic
-      endif timestep
+      f(l1:l2,m1:m2,n1:n2,ieex:ieez) = eta_hyper3_mesh * d4jj
 !
-    endsubroutine add_resis_hyper3_mesh
+    endsubroutine mesh_hyper_resistivity
 !***********************************************************************
 !***********************************************************************
 !
