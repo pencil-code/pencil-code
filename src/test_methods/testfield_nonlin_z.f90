@@ -1191,12 +1191,13 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  Calculate <uxb^T> + <u^Txb>, which is needed when lsoca=.false.
 !  Also calculate <jxb^T> + <j^Txb>, which is needed when lsoca_jxb=.false.
 !
 !  30-nov-09/axel: adapted from testfield_z.f90
+!  24-sep-13/MR  : parameter p removed, calculation of pencil restricted
 !
       use Cdata
       use Sub
@@ -1206,7 +1207,6 @@ module Testfield
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
@@ -1222,6 +1222,8 @@ module Testfield
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
       intent(inout) :: f
 !
@@ -1242,6 +1244,8 @@ module Testfield
       uxbtestmz=0.
       jxbtestmz=0.
 !
+      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+!
 !  Start mn loop
 !
       do n=n1,n2
@@ -1249,8 +1253,8 @@ module Testfield
 !
 !  Begin by getting/computing fields from main run.
 !
-        call calc_pencils_hydro(f,p)
-        call calc_pencils_magnetic(f,p)
+        call calc_pencils_hydro(f,p,lpenc_loc)
+        call calc_pencils_magnetic(f,p,lpenc_loc)
 !
 !  Calculate uufluct=U-Umean.
 !-  Note that uumz has dimensions mz*3, not nz*3.
