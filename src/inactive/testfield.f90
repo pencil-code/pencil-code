@@ -475,7 +475,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -486,15 +486,13 @@ module Testfield
       use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,nxy=nxgrid*nygrid
       logical :: headtt_save
       real :: fac
-!
-      intent(in) :: f
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
