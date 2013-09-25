@@ -732,6 +732,11 @@ module Magnetic
   integer :: idiag_StokesU1mxy=0! ZAVG_DOC: $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
   integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
 !
+  interface calc_pencils_magnetic
+     module procedure calc_pencils_magnetic_pencpar
+     module procedure calc_pencils_magnetic_std
+  endinterface calc_pencils_magnetic
+!
   contains
 !***********************************************************************
     subroutine register_magnetic()
@@ -2214,7 +2219,16 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_pencils_magnetic(f,p)
+    subroutine calc_pencils_magnetic_std(f,p)
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+!
+      call calc_pencils_magnetic_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_magnetic_std
+!***********************************************************************
+    subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2227,25 +2241,24 @@ module Magnetic
       use SharedVariables, only: put_shared_variable
       use EquationOfState, only: rho0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+      logical, dimension(:),              intent(in)   :: lpenc_loc       
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
       real :: B2_ext,c,s
       integer :: i,j,ix
-!
-      intent(inout) :: f,p
 ! aa
-      if (lpencil(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
+      if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! a2
-      if (lpencil(i_a2)) call dot2_mn(p%aa,p%a2)
+      if (lpenc_loc(i_a2)) call dot2_mn(p%aa,p%a2)
 ! aij
-      if (lpencil(i_aij)) call gij(f,iaa,p%aij,1)
+      if (lpenc_loc(i_aij)) call gij(f,iaa,p%aij,1)
 ! diva
-      if (lpencil(i_diva)) call div_mn(p%aij,p%diva,p%aa)
+      if (lpenc_loc(i_diva)) call div_mn(p%aij,p%diva,p%aa)
 ! bb
-      if (lpencil(i_bb)) then
+      if (lpenc_loc(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
 !
 !  Save field before adding imposed field (for diagnostics).
@@ -2320,20 +2333,20 @@ module Magnetic
 !  This can be changed by setting lignore_Bext_in_b2=T
 !
       if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
-        if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+        if (lpenc_loc(i_b2)) call dot2_mn(p%bbb,p%b2)
       else
-        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+        if (lpenc_loc(i_b2)) call dot2_mn(p%bb,p%b2)
       endif
-      if (lpencil(i_bf2)) call dot2_mn(p%bbb,p%bf2)
+      if (lpenc_loc(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
 ! rho=(rho0/10+B^2)
 !
-      if (lmagneto_friction.and.lpencil(i_rho1)) then
+      if (lmagneto_friction.and.lpenc_loc(i_rho1)) then
         p%rho=(rho0*1.0e-2+p%b2)
         p%rho1=1./(rho0*1.0e-2+p%b2)
       endif
 ! bunit
-      if (lpencil(i_bunit)) then
+      if (lpenc_loc(i_bunit)) then
         quench = 1.0/max(tini,sqrt(p%b2))
         if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
           p%bunit(:,1) = p%bbb(:,1)*quench
@@ -2346,10 +2359,10 @@ module Magnetic
         endif
       endif
 ! ab
-      if (lpencil(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
-      if (lpencil(i_ua)) call dot_mn(p%uu,p%aa,p%ua)
+      if (lpenc_loc(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
+      if (lpenc_loc(i_ua)) call dot_mn(p%uu,p%aa,p%ua)
 ! uxb
-      if (lpencil(i_uxb)) then
+      if (lpenc_loc(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
         call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
@@ -2358,7 +2371,7 @@ module Magnetic
         if (iglobal_ez_ext/=0) p%uxb(:,3)=p%uxb(:,3)+f(l1:l2,m,n,iglobal_ez_ext)
       endif
 ! uga
-      if (lpencil(i_uga)) then
+      if (lpenc_loc(i_uga)) then
         if (.not.lfargo_advection) then
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         else
@@ -2371,23 +2384,23 @@ module Magnetic
 !  bij, del2a, graddiva
 !  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
 !
-      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva) .or. &
-          lpencil(i_jj) ) then
+      if (lpenc_loc(i_bij) .or. lpenc_loc(i_del2a) .or. lpenc_loc(i_graddiva) .or. &
+          lpenc_loc(i_jj) ) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
-          if (.not. lpencil(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-          if (.not. lpencil(i_del2A)) p%del2A=0.0  ! consistency check...
-          if (.not. lpencil(i_graddiva)) p%graddiva=0.0
-!          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
+          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+          if (.not. lpenc_loc(i_del2A)) p%del2A=0.0  ! consistency check...
+          if (.not. lpenc_loc(i_graddiva)) p%graddiva=0.0
+!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
 !DM curl in cartesian does not need p%bb, then it is better not
 ! to give it.
-          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj)
+          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
-          if (.not. lpencil(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
           call curl_mn(p%bij,p%jj,p%bb)            ! consistency check...
-          if (lpencil(i_del2a)) p%del2a=p%graddiva-p%jj
-!           if (lpencil(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
+          if (lpenc_loc(i_del2a)) p%del2a=p%graddiva-p%jj
+!           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
         endif
       endif
 !
@@ -2396,7 +2409,7 @@ module Magnetic
       if (ldiamagnetism) call diamagnetism(p)
 !
 ! jj
-      if (lpencil(i_jj)) then
+      if (lpenc_loc(i_jj)) then
         p%jj=mu01*p%jj
 !
 !  Add external j-field.
@@ -2421,16 +2434,16 @@ module Magnetic
         endif
       endif
 ! exa
-      if (lpencil(i_exa)) then
+      if (lpenc_loc(i_exa)) then
         call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
       endif
 ! j2
-      if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
+      if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
 ! jb
-      if (lpencil(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
+      if (lpenc_loc(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
 !
 ! va2
-      if (lpencil(i_va2)) then
+      if (lpenc_loc(i_va2)) then
         p%va2=p%b2*mu01*p%rho1
         if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then
           print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
@@ -2440,30 +2453,30 @@ module Magnetic
         endif
       endif
 ! eta_va
-      if (lpencil(i_etava)) then
+      if (lpenc_loc(i_etava)) then
         p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
         if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
       endif
 ! eta_j
-      if (lpencil(i_etaj)) then
+      if (lpenc_loc(i_etaj)) then
         p%etaj = mu0 * eta_j * dxmax**2 * sqrt(mu0 * p%j2 * p%rho1)
         if (eta_min > 0.) where (p%etaj < eta_min) p%etaj = 0.
       endif
 ! eta_j2
-      if (lpencil(i_etaj2)) then
+      if (lpenc_loc(i_etaj2)) then
         p%etaj2 = etaj20 * p%j2 * p%rho1
         if (eta_min > 0.) where (p%etaj2 < eta_min) p%etaj2 = 0.
       endif
 ! eta_jrho
-      if (lpencil(i_etajrho)) then
+      if (lpenc_loc(i_etajrho)) then
         p%etajrho = mu0 * eta_jrho * dxmax * sqrt(p%j2) * p%rho1
         if (eta_min > 0.) where (p%etajrho < eta_min) p%etajrho = 0.
       endif
 ! jxb
-      if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
+      if (lpenc_loc(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
 !
 ! cosjb
-      if (lpencil(i_cosjb)) then
+      if (lpenc_loc(i_cosjb)) then
         do ix=1,nx
           if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%cosjb(ix)=0.
@@ -2477,12 +2490,12 @@ module Magnetic
         endif
       endif
 ! jparallel and jperp
-      if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
+      if (lpenc_loc(i_jparallel).or.lpenc_loc(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
         p%jperp=sqrt(p%j2)*sqrt(abs(1-p%cosjb**2))
       endif
 ! jxbr
-      if (lpencil(i_jxbr)) then
+      if (lpenc_loc(i_jxbr)) then
         rho1_jxb=p%rho1
 !
 !  Set rhomin_jxb>0 in order to limit the jxb term at very low densities.
@@ -2504,11 +2517,11 @@ module Magnetic
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
 ! jxbr2
-      if (lpencil(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
+      if (lpenc_loc(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
 ! ub
-      if (lpencil(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
+      if (lpenc_loc(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
 ! cosub
-      if (lpencil(i_cosub)) then
+      if (lpenc_loc(i_cosub)) then
         do ix=1,nx
           if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
             p%cosub(ix)=0.
@@ -2522,63 +2535,63 @@ module Magnetic
         endif
       endif
 ! uxb2
-      if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
+      if (lpenc_loc(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
-      if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
+      if (lpenc_loc(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! chibp
-      if (lpencil(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
+      if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
 ! StokesI
-      if (lpencil(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
+      if (lpenc_loc(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
 !
 ! StokesQ, StokesU, StokesQ1, and StokesU1
 !
       if (lncr_correlated) then
         StokesI_ncr=p%StokesI*p%b2
-        if (lpencil(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
-        if (lpencil(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
-        if (lpencil(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
-        if (lpencil(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
+        if (lpenc_loc(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
+        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
       elseif (lncr_anticorrelated) then
         StokesI_ncr=p%StokesI/(1.+ncr_quench*p%b2)
-        if (lpencil(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
-        if (lpencil(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
-        if (lpencil(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
-        if (lpencil(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
+        if (lpenc_loc(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
+        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
       else
-        if (lpencil(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
-        if (lpencil(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
-        if (lpencil(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
-        if (lpencil(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
+        if (lpenc_loc(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
+        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
       endif
 !
 ! beta1
-      if (lpencil(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
+      if (lpenc_loc(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! djuidjbi
-      if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
+      if (lpenc_loc(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
-      if (lpencil(i_jo)) call dot(p%jj,p%oo,p%jo)
+      if (lpenc_loc(i_jo)) call dot(p%jj,p%oo,p%jo)
 ! ujxb
-      if (lpencil(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
+      if (lpenc_loc(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
 ! oxu
-      if (lpencil(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
+      if (lpenc_loc(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
 ! oxuxb
-      if (lpencil(i_oxuxb)) call cross_mn(p%oxu,p%bb,p%oxuxb)
+      if (lpenc_loc(i_oxuxb)) call cross_mn(p%oxu,p%bb,p%oxuxb)
 ! jxbxb
-      if (lpencil(i_jxbxb)) call cross_mn(p%jxb,p%bb,p%jxbxb)
+      if (lpenc_loc(i_jxbxb)) call cross_mn(p%jxb,p%bb,p%jxbxb)
 ! jxbrxb
-      if (lpencil(i_jxbrxb)) call cross_mn(p%jxbr,p%bb,p%jxbrxb)
+      if (lpenc_loc(i_jxbrxb)) call cross_mn(p%jxbr,p%bb,p%jxbrxb)
 ! glnrhoxb
-      if (lpencil(i_glnrhoxb)) call cross_mn(p%glnrho,p%bb,p%glnrhoxb)
+      if (lpenc_loc(i_glnrhoxb)) call cross_mn(p%glnrho,p%bb,p%glnrhoxb)
 ! del4a
-      if (lpencil(i_del4a)) call del4v(f,iaa,p%del4a)
+      if (lpenc_loc(i_del4a)) call del4v(f,iaa,p%del4a)
 ! hjj
-      if (lpencil(i_hjj)) p%hjj = p%del4a
+      if (lpenc_loc(i_hjj)) p%hjj = p%del4a
 ! hj2
-      if (lpencil(i_hj2)) call dot2_mn(p%hjj,p%hj2)
+      if (lpenc_loc(i_hj2)) call dot2_mn(p%hjj,p%hj2)
 ! hjb
-      if (lpencil(i_hjb)) call dot_mn(p%hjj,p%bb,p%hjb)
+      if (lpenc_loc(i_hjb)) call dot_mn(p%hjj,p%bb,p%hjb)
 ! coshjb
-      if (lpencil(i_coshjb)) then
+      if (lpenc_loc(i_coshjb)) then
         do ix=1,nx
           if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%coshjb(ix)=0.
@@ -2592,20 +2605,20 @@ module Magnetic
         endif
       endif
 ! hjparallel and hjperp
-      if (lpencil(i_hjparallel).or.lpencil(i_hjperp)) then
+      if (lpenc_loc(i_hjparallel).or.lpenc_loc(i_hjperp)) then
         p%hjparallel=sqrt(p%hj2)*p%coshjb
         p%hjperp=sqrt(p%hj2)*sqrt(abs(1-p%coshjb**2))
       endif
 ! del6a
-      if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
+      if (lpenc_loc(i_del6a)) call del6v(f,iaa,p%del6a)
 ! e3xa
-      if (lpencil(i_e3xa)) then
+      if (lpenc_loc(i_e3xa)) then
         call cross_mn(-p%uxb+eta_hyper3*p%del6a,p%aa,p%e3xa)
       endif
 ! oxj
-      if (lpencil(i_oxj)) call cross_mn(p%oo,p%jj,p%oxJ)
+      if (lpenc_loc(i_oxj)) call cross_mn(p%oo,p%jj,p%oxJ)
 ! jij
-      if (lpencil(i_jij)) then
+      if (lpenc_loc(i_jij)) then
         do j=1,3
           do i=1,3
             p%jij(:,i,j)=.5*(p%bij(:,i,j)+p%bij(:,j,i))
@@ -2613,11 +2626,11 @@ module Magnetic
         enddo
       endif
 ! d6ab
-      if (lpencil(i_d6ab)) call dot_mn(p%del6a,p%bb,p%d6ab)
+      if (lpenc_loc(i_d6ab)) call dot_mn(p%del6a,p%bb,p%d6ab)
 ! sj
-      if (lpencil(i_sj)) call multmm_sc(p%sij,p%jij,p%sj)
+      if (lpenc_loc(i_sj)) call multmm_sc(p%sij,p%jij,p%sj)
 ! ss12
-      if (lpencil(i_ss12)) p%ss12=sqrt(abs(p%sj))
+      if (lpenc_loc(i_ss12)) p%ss12=sqrt(abs(p%sj))
 !
 !  Store bb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
@@ -2634,9 +2647,9 @@ module Magnetic
 !
 !  Ambipolar diffusion pencil
 !
-      if (lpencil(i_nu_ni1)) call set_ambipolar_diffusion(p)
+      if (lpenc_loc(i_nu_ni1)) call set_ambipolar_diffusion(p)
 !
-    endsubroutine calc_pencils_magnetic
+    endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine set_ambipolar_diffusion(p)
 !
