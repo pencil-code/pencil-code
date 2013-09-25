@@ -894,11 +894,12 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
 !  21-jan-06/axel: coded
+!  25-sep-13/MR: removed parameter p, changed call of calc_pencils_hydro
 !
       use Cdata
       use Sub
@@ -906,8 +907,8 @@ module Testfield
       use Magnetic, only: idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
       real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
@@ -919,8 +920,8 @@ module Testfield
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
-!
-      intent(inout) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -932,6 +933,8 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
+      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+
       do jtest=1,njtest
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
@@ -957,7 +960,7 @@ module Testfield
             uxbtestm(n,:,jtest)=0.
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
-              call calc_pencils_hydro(f,p)
+              call calc_pencils_hydro(f,p,lpenc_loc)
               call gij(f,iaxtest,aijtest,1)
               call curl_mn(aijtest,bbtest,aatest)
               call cross_mn(p%uu,bbtest,uxbtest)
