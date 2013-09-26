@@ -154,6 +154,9 @@ module Viscosity
   integer :: idiag_fviscmxy=0   ! ZAVG_DOC: $\left<2\nu\varrho u_i
                                 ! ZAVG_DOC: \mathcal{S}_{ix} \right>_{z}$
                                 ! ZAVG_DOC: ($x$-xomponent of viscous flux)
+  integer :: idiag_fviscymxy=0  ! ZAVG_DOC: $\left<2\nu\varrho u_i
+                                ! ZAVG_DOC: \mathcal{S}_{iy} \right>_{z}$
+                                ! ZAVG_DOC: ($y$-xomponent of viscous flux)
 !
   contains
 !***********************************************************************
@@ -230,14 +233,14 @@ module Viscosity
           if (lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
         case ('rho-nu-const-bulk')
-          if (lroot) print*,'viscous force: zeta/rho*graddivu)'
+          if (lroot) print*,'viscous force: (zeta/rho)*graddivu'
           lvisc_rho_nu_const_bulk=.true.
         case ('sqrtrho-nu-const')
-          if (lroot) print*,'viscous force: mu/sqrt(rho)*(del2u+graddivu/3)'
+          if (lroot) print*,'viscous force: mu/sqrt(rho)*(del2u+graddivu/3+S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_sqrtrho_nu_const=.true.
         case ('nu-therm')
-          if (lroot) print*,'viscous force: mu*sqrt(TT)*(del2u+graddivu/3)'
+          if (lroot) print*,'viscous force: mu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_therm=.true.
         case ('mu-therm')
@@ -660,7 +663,7 @@ module Viscosity
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
-        idiag_epsKmz=0; idiag_numx=0
+        idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -706,6 +709,7 @@ module Viscosity
 !
       do ixy=1,nnamexy
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscmxy',idiag_fviscmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscymxy',idiag_fviscymxy)
       enddo
 !
 !  write column where which viscosity variable is stored
@@ -808,7 +812,7 @@ module Viscosity
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
-          lvisc_nu_profr_twosteps .or. &
+          lvisc_nu_profr_twosteps .or. lvisc_sqrtrho_nu_const .or. &
           lvisc_nut_from_magnetic.or.lvisc_nu_therm .or.  &
           lvisc_mu_therm .or. lvisc_spitzer) &
           lpenc_requested(i_sglnrho)=.true.
@@ -876,7 +880,7 @@ module Viscosity
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
-      if (idiag_fviscmxy/=0) then
+      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0) then
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
       endif
@@ -1014,12 +1018,15 @@ module Viscosity
 !  viscous force: mu/sqrt(rho)*(del2u+graddivu/3)
 !  [Implemented by Fred Gent in r13626 of 13 April 2010]
 !  [AB: this may not correspond to a symmetric stress tensor]
+!  PJK: 21-09-13 modified to include the missing term
+!  viscous force: mu/sqrt(rho)*(del2u+graddivu/3+S.glnrho)
 !
       if (lvisc_sqrtrho_nu_const) then
         murho1=nu*sqrt(p%rho1)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
-              murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
+              murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i) &
+              + p%sglnrho(:,i))
         enddo
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
@@ -1868,6 +1875,9 @@ module Viscosity
         if (idiag_fviscmxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+        if (idiag_fviscymxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
+            p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+ &
+            p%uu(:,3)*p%sij(:,3,2)),idiag_fviscymxy)
       endif
 !
     endsubroutine calc_viscous_force
