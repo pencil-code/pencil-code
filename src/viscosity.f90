@@ -1875,6 +1875,14 @@ module Viscosity
         if (idiag_fviscmxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+        if (idiag_fviscmxy/=0.and.lvisc_sqrtrho_nu_const) &
+            call zsum_mn_name_xy(-2.*sqrt(p%rho)*nu*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+        if (idiag_fviscmxy/=0.and.lvisc_rho_nu_const) &
+            call zsum_mn_name_xy(-2.*nu*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
         if (idiag_fviscymxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+ &
             p%uu(:,3)*p%sij(:,3,2)),idiag_fviscymxy)
