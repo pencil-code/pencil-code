@@ -1246,7 +1246,7 @@ module Testfield
       uxbtestmz=0.
       jxbtestmz=0.
 !
-      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+      lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_jj/))=.true.
 !
 !  Start mn loop
 !
