@@ -19,7 +19,7 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MVAR CONTRIBUTION 0
+! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 0
 !***************************************************************
 
@@ -191,7 +191,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension(mz,3,njtest) :: uxbtestm,jxbtestm    ! TB improved: declare smaller (njtestl) if possible, requires tb allocatable
+  real, dimension(nz,3,njtest) :: uxbtestm,jxbtestm    ! TB improved: declare smaller (njtestl) if possible, requires tb allocatable
 
   contains
 
@@ -442,6 +442,7 @@ module Testfield
 !   6-jun-13/MR: further corrected, alternative formulation added
 !  16-aug-13/MR: iterative procedure and complex treatment for harmonic testfields added
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
+!  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !
       use Diagnostics
       use Cdata
@@ -476,7 +477,7 @@ module Testfield
                  iaxtest2, iaztest2
 
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
-      integer      :: iswitch_iter=0
+      integer      :: iswitch_iter=0, nl
 !
 !  identify module and boundary conditions
 !
@@ -549,6 +550,8 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
+      nl=n-n1+1
+!
       do jtest=1,njtestl
 !
         iaxtest=iaatest+3*(jtest-1)
@@ -611,7 +614,7 @@ module Testfield
             duxbbtest=uxb
           else
             do j=1,3
-              duxbbtest(:,j)=uxb(:,j)-uxbtestm(n,j,jtest)
+              duxbbtest(:,j)=uxb(:,j)-uxbtestm(nl,j,jtest)
             enddo
           endif
 !
@@ -633,7 +636,7 @@ module Testfield
               duxbbtest2=uxb2
             else
               do j=1,3
-                duxbbtest2(:,j)=uxb2(:,j)-uxbtestm(n,j,jtest+njtestl)
+                duxbbtest2(:,j)=uxb2(:,j)-uxbtestm(nl,j,jtest+njtestl)
               enddo
             endif
 !
@@ -707,7 +710,7 @@ module Testfield
                 duxbbtest=uxb
               else
                 do j=1,3
-                  duxbbtest(:,j)=uxb(:,j)-uxbtestm(n,j,jtest)
+                  duxbbtest(:,j)=uxb(:,j)-uxbtestm(nl,j,jtest)
                 enddo
               endif
 !
@@ -802,7 +805,7 @@ module Testfield
 !  subtract average jxb
 !
             do j=1,3
-              djxbrtest(:,j)=jxbtest(:,j)-jxbtestm(n,j,jtest)
+              djxbrtest(:,j)=jxbtest(:,j)-jxbtestm(nl,j,jtest)
             enddo
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
               +jxB0rtest+J0xbrtest+djxbrtest
@@ -1098,12 +1101,12 @@ module Testfield
 !  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
 !
         if (iE0/=0) then
-          if (idiag_E0Um/=0) call sum_mn_name(uxbtestm(n,1,iE0)*p%uu(:,1) &
-                                             +uxbtestm(n,2,iE0)*p%uu(:,2) &
-                                             +uxbtestm(n,3,iE0)*p%uu(:,3),idiag_E0Um)
-          if (idiag_E0Wm/=0) call sum_mn_name(uxbtestm(n,1,iE0)*p%oo(:,1) &
-                                             +uxbtestm(n,2,iE0)*p%oo(:,2) &
-                                             +uxbtestm(n,3,iE0)*p%oo(:,3),idiag_E0Wm)
+          if (idiag_E0Um/=0) call sum_mn_name(uxbtestm(nl,1,iE0)*p%uu(:,1) &
+                                             +uxbtestm(nl,2,iE0)*p%uu(:,2) &
+                                             +uxbtestm(nl,3,iE0)*p%uu(:,3),idiag_E0Um)
+          if (idiag_E0Wm/=0) call sum_mn_name(uxbtestm(nl,1,iE0)*p%oo(:,1) &
+                                             +uxbtestm(nl,2,iE0)*p%oo(:,2) &
+                                             +uxbtestm(nl,3,iE0)*p%oo(:,3),idiag_E0Wm)
         endif
 !
 !  diagnostics for delta function driving, but doesn't seem to work
@@ -1247,34 +1250,33 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
 !  21-jan-06/axel: coded
 !  16-aug-13/MR: MPI communication simplified; changes for iterative procedure
 !  20-aug-13/MR: changes for complex calculation: testfield loop then over njtest instead of njtestl
+!  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...; removed p from parameter list
+!		 restricted pencil calculation; simplified communication
 !
       use Sub
       use Cdata
       use Hydro, only: calc_pencils_hydro
       use Magnetic, only: idiag_bcosphz, idiag_bsinphz
-      use Mpicomm, only: mpiallreduce_sum, mpibcast_real
+      use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
       real, dimension (mz) :: c,s
-!
-      real, dimension(:,:,:), allocatable :: buffer
-!
       real, dimension(nx,3,3) :: aijtest,bijtest
       real, dimension(nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
       real, dimension(nx,3) :: del2Atest2,graddivatest
-      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb, njtest_loc
+      integer :: jtest,j,juxb,jjxb, njtest_loc,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
-!
-      intent(inout) :: f
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+      logical, dimension(:), allocatable :: lpenc_loc
 !
       uxbtestm=0.; jxbtestm=0.
 !
@@ -1282,28 +1284,27 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./nxy
+      fac=1./nxygrid
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
       if ( .not.lsoca .or. .not.lsoca_jxb .or. liter.and.(t-t_iter_last >= dt_iter) ) then
-! 
         if (lcomplex) then
           njtest_loc = njtest
         else
           njtest_loc = njtestl
         endif
-
-        allocate(buffer(nz,3,njtest_loc))
-
       endif
 !
 !  calculate uxb for nonSOCA or if in iterative procedure integration time for present iteration level 
 !  is reached: then uxb needed for rhs of next level
 !
       if ( .not.lsoca .or. liter.and.(t-t_iter_last >= dt_iter) ) then
+
+        allocate(p(1),lpenc_loc(npencils))
+        lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
         do jtest=1,njtest_loc
 !
@@ -1325,10 +1326,11 @@ module Testfield
 !  so that does not currently work. It was introduced in revision 10236.
 !
           do n=n1,n2
+            nl=n-n1+1
             do m=m1,m2
 !
-              call calc_pencils_hydro(f,p)
-              call calc_uxb(f,p,iaxtest,uxbtest,bbtest)
+              call calc_pencils_hydro(f,p(1),lpenc_loc)
+              call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
 !
               juxb=iuxb+3*(jtest-1)
               if (ltestfield_taver) then
@@ -1339,9 +1341,7 @@ module Testfield
               else
                 if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
-              do j=1,3
-                uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
-              enddo
+              uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
               headtt=.false.
             enddo
           enddo
@@ -1355,15 +1355,8 @@ module Testfield
           endif
 !
         enddo
+        call finalize_aver(nprocxy,12,uxbtestm)
 !
-!  do communication for array of size nz*3*njtestl
-!
-        if (nprocx>1 .or. nprocy>1) then
-
-          call mpiallreduce_sum(uxbtestm(n1:n2,:,:),buffer,(/nz,3,njtestl/),idir=12)
-          uxbtestm(n1:n2,:,:) = buffer
-        
-        endif
       endif
 !
 !  Do the same for jxb; do each of the 9 test fields at a time
@@ -1380,6 +1373,7 @@ module Testfield
           iaztest=iaxtest+2
 !
           do n=n1,n2
+            nl=n-n1+1
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
               call gij(f,iaxtest,aijtest,1)
@@ -1389,22 +1383,12 @@ module Testfield
               call cross_mn(jjtest,bbtest,jxbtest)
               jjxb=ijxb+3*(jtest-1)
               if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-              do j=1,3
-                jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
-              enddo
+              jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)
               headtt=.false.
             enddo
           enddo
         enddo
-!
-!  do communication for array of size nz*3*njtestl 
-!
-        if (nprocx>1 .or. nprocy>1) then
-
-          call mpiallreduce_sum(jxbtestm(n1:n2,:,:),buffer,(/nz,3,njtestl/),idir=12)
-          jxbtestm(n1:n2,:,:) = buffer
-
-        endif
+        call finalize_aver(nprocxy,12,jxbtestm)
       endif
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
