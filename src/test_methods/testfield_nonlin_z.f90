@@ -207,7 +207,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (mz,3,mtestfield/6) :: uxbtestmz,jxbtestmz
+  real, dimension (nz,3,njtest) :: uxbtestmz,jxbtestmz
 
   contains
 
@@ -599,6 +599,7 @@ module Testfield
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  27-nov-09/axel: adapted from testfield_z, and added velocity equation
 !  25-jan-09/axel: added Maxwell stress tensor calculation
+!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(mz,...
 !
       use Cdata
       use Diagnostics
@@ -628,11 +629,12 @@ module Testfield
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,upq2,jpq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4
+      integer :: jtest,j,nl
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
-      intent(in)     :: f,p
-      intent(inout)  :: df
+      intent(in)    :: f,p
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -646,6 +648,7 @@ module Testfield
 !  loop over all fields, but do it backwards,
 !  so we compute the zero field first
 !
+      nl=n-n1+1
       do jtest=njtest,1,-1
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
         iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
@@ -711,10 +714,10 @@ module Testfield
           if (iuxb/=0.and..not.ltest_uxb) then
             uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
             if (lignore_uxbtestm) then
-              duxbtest(:,:)=uxbtest(:,:)
+              duxbtest=uxbtest
             else
               do j=1,3
-                duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(n,j,jtest)
+                duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(nl,j,jtest)
               enddo
             endif
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -726,10 +729,10 @@ module Testfield
           if (ijxb/=0.and..not.ltest_jxb) then
             jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
             if (lignore_jxbtestm) then
-              djxbtest(:,:)=jxbtest(:,:)
+              djxbtest=jxbtest
             else
               do j=1,3
-                djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(n,j,jtest)
+                djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(nl,j,jtest)
               enddo
             endif
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
@@ -1008,12 +1011,12 @@ module Testfield
 !  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
 !
         if (iE0/=0) then
-          if (idiag_E0Um/=0) call sum_mn_name(uxbtestmz(n,1,iE0)*p%uu(:,1) &
-                                             +uxbtestmz(n,2,iE0)*p%uu(:,2) &
-                                             +uxbtestmz(n,3,iE0)*p%uu(:,3),idiag_E0Um)
-          if (idiag_E0Wm/=0) call sum_mn_name(uxbtestmz(n,1,iE0)*p%oo(:,1) &
-                                             +uxbtestmz(n,2,iE0)*p%oo(:,2) &
-                                             +uxbtestmz(n,3,iE0)*p%oo(:,3),idiag_E0Wm)
+          if (idiag_E0Um/=0) call sum_mn_name(uxbtestmz(nl,1,iE0)*p%uu(:,1) &
+                                             +uxbtestmz(nl,2,iE0)*p%uu(:,2) &
+                                             +uxbtestmz(nl,3,iE0)*p%uu(:,3),idiag_E0Um)
+          if (idiag_E0Wm/=0) call sum_mn_name(uxbtestmz(nl,1,iE0)*p%oo(:,1) &
+                                             +uxbtestmz(nl,2,iE0)*p%oo(:,2) &
+                                             +uxbtestmz(nl,3,iE0)*p%oo(:,3),idiag_E0Wm)
         endif
 !
 !  diagnostics for delta function driving, but doesn't seem to work
@@ -1198,19 +1201,18 @@ module Testfield
 !
 !  30-nov-09/axel: adapted from testfield_z.f90
 !  24-sep-13/MR  : parameter p removed, calculation of pencil restricted
+!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(mz,...;
+!                  communication simplified
 !
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
         aamz,bbmz,jjmz,lcalc_aameanz
-      use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c,s
-!
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
-      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uutest,uxbtest,jxbtest
@@ -1219,7 +1221,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3) :: uufluct,bbfluct,jjfluct
-      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
+      integer :: jtest,j,juxb,jjxb,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
       type (pencil_case) :: p
@@ -1231,7 +1233,7 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./nxy
+      fac=1./nxygrid
 !
 !  Stop if iE0 is too small.
 !
@@ -1249,7 +1251,8 @@ module Testfield
 !  Start mn loop
 !
       do n=n1,n2
-      do m=m1,m2
+        nl=n-n1+1
+        do m=m1,m2
 !
 !  Begin by getting/computing fields from main run.
 !
@@ -1348,45 +1351,20 @@ module Testfield
 !
 !  Add corresponding contribution into averaged arrays, uxbtestmz, jxbtestmz
 !
-          do j=1,3
-            uxbtestmz(n,j,jtest)=uxbtestmz(n,j,jtest)+fac*sum(uxbtest(:,j))
-            jxbtestmz(n,j,jtest)=jxbtestmz(n,j,jtest)+fac*sum(jxbtest(:,j))
-          enddo
+          uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+fac*sum(uxbtest,1)
+          jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
           headtt=.false.
 !
 !  finish jtest and mn loops
 !
         enddo
-      enddo
-      enddo
-!
-!  Set uxbtestm1 and jxbtestm1 for communication.
-!
-      do jtest=njtest,1,-1
-        do j=1,3
-          do n=n1,n2
-            uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestmz(n,j,jtest)
-            jxbtestm1(n-n1+1,ipz+1,j,jtest)=jxbtestmz(n,j,jtest)
-          enddo
         enddo
       enddo
 !
-!  do communication for array of size nz*nprocz*3*njtest
+!  do communication
 !
-      if (nprocy>1) then
-        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
-        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
-        do jtest=1,njtest
-          do n=n1,n2
-            do j=1,3
-              uxbtestmz(n,j,jtest)=uxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
-              jxbtestmz(n,j,jtest)=jxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
-            enddo
-          enddo
-        enddo
-      endif
+      call finalize_aver(nprocxy,12,uxbtestmz)
+      call finalize_aver(nprocxy,12,jxbtestmz)
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
