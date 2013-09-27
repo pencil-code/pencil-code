@@ -57,10 +57,10 @@ module Energy
   real, target :: hcondzbot=impossible, hcondztop=impossible
   real, target :: Fbot=impossible, FbotKbot=impossible
   real, target :: Ftop=impossible, FtopKtop=impossible
+  real, target :: chit_prof1=1.0, chit_prof2=1.0
   real, pointer :: reduce_cs2
   real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
-  real :: chit_prof1=1.0, chit_prof2=1.0
   real :: chit_aniso=0.0, chit_aniso_prof1=1.0, chit_aniso_prof2=1.0
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
@@ -74,7 +74,6 @@ module Energy
   real :: ss_volaverage=0., ss_volaverage_tmp
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
-  real, dimension(nx), target :: chit_prof
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
@@ -287,10 +286,13 @@ module Energy
   integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<\varrho u_x T \right>_{z}$
   integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<\varrho u_y T \right>_{z}$
   integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<\varrho u_z T \right>_{z}$
-  integer :: idiag_fradxy_Kprof=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged, from Kprof)
+  integer :: idiag_fradxy_Kprof=0 ! ZAVG_DOC: $F^{\rm rad}_x$ ($x$-component of radiative flux, $z$-averaged, from Kprof)
+  integer :: idiag_fradymxy_Kprof=0 ! ZAVG_DOC: $F^{\rm rad}_y$ ($y$-component of radiative flux, $z$-averaged, from Kprof)
   integer :: idiag_fradxy_kramers=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged,
                                     ! ZAVG_DOC: from Kramers' opacity)
   integer :: idiag_fturbxy=0   ! ZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
+                               ! ZAVG_DOC: s\right>_{z}$
+  integer :: idiag_fturbymxy=0 ! ZAVG_DOC: $\left<\varrho T \chi_t \nabla_y
                                ! ZAVG_DOC: s\right>_{z}$
   integer :: idiag_fturbrxy=0  ! ZAVG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
                                ! ZAVG_DOC: s\right>_{z}$ \quad(radial part
@@ -832,12 +834,6 @@ module Energy
 !
       if (borderss/='nothing') call request_border_driving(borderss)
 !
-!  Compute and share chit_prof (needed e.g. for 'Fgs'-boundary condition)
-!
-      if (chi_t/=0. .and. (chit_prof1/=1. .or. chit_prof2/= 1.)) then
-         call chit_profile(chit_prof)
-      endif
-!
 !  Shared variables.
 !
       call put_shared_variable('hcond0',hcond0,ierr)
@@ -879,9 +875,12 @@ module Energy
       call put_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting chi_t')
-      call put_shared_variable('chit_prof',chit_prof,ierr)
+      call put_shared_variable('chit_prof1',chit_prof1,ierr)
       if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting chit_prof')
+          'there was a problem when putting chit_prof1')
+      call put_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call fatal_error('initialize_energy', &
+          'there was a problem when putting chit_prof2')
 !      call put_shared_variable('chi_th',chi_th,ierr)
 !      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting chi_th')
@@ -2510,9 +2509,13 @@ module Energy
           lpenc_diagnos2d(i_TT)=.true.
       endif
       if (idiag_fturbxy/=0 .or. idiag_fturbrxy/=0 .or. &
-          idiag_fturbthxy/=0) then
+          idiag_fturbthxy/=0 .or. idiag_fturbymxy/=0) then
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
+      endif
+      if (idiag_fradxy_Kprof/=0 .or. idiag_fradymxy_Kprof/=0) then
+          lpenc_diagnos2d(i_TT)=.true.
+          lpenc_diagnos2d(i_glnTT)=.true.
       endif
       if (idiag_fradxy_kramers/=0) then
           lpenc_diagnos2d(i_rho)=.true.
@@ -4172,7 +4175,9 @@ module Energy
 !
       if (l2davgfirst) then
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
+        if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,2),idiag_fradymxy_Kprof)
         if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
+        if (idiag_fturbymxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,2),idiag_fturbymxy)
         if (idiag_fturbrxy/=0) &
             call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
             (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
@@ -4641,6 +4646,8 @@ module Energy
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
       case ('step')
         prof = step(spread(z(n),1,nx),z2,wcool)
+      case ('step2')
+        prof = step(spread(z(n),1,nx),zcool,wcool)
       case ('cubic_step')
         prof = cubic_step(spread(z(n),1,nx),z2,wcool)
 !
@@ -5145,12 +5152,13 @@ module Energy
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
-        idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
+        idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
         idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
+        idiag_fradymxy_Kprof=0; idiag_fturbymxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5241,9 +5249,11 @@ module Energy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uyTTmxy',idiag_uyTTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uzTTmxy',idiag_uzTTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbxy',idiag_fturbxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbymxy',idiag_fturbymxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbrxy',idiag_fturbrxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradymxy_Kprof',idiag_fradymxy_Kprof)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_kramers',idiag_fradxy_kramers)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvxy',idiag_fconvxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvyxy',idiag_fconvyxy)

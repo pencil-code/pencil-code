@@ -2323,8 +2323,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: chi_t,hcondxbot,hcondxtop
-      real, pointer :: chit_prof(:)
+      real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2342,9 +2341,12 @@ module EquationOfState
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
            "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof',chit_prof,ierr)
+      call get_shared_variable('chit_prof1',chit_prof1,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chit_prof")
+           "there was a problem when getting chit_prof1")
+      call get_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting chit_prof2")
       call get_shared_variable('hcondxbot',hcondxbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
            "there was a problem when getting hcondxbot")
@@ -2377,7 +2379,7 @@ module EquationOfState
                            -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
                            +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
            dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
-              (chit_prof(1)*chi_t*rho_yz+hcondxbot/cv)
+              (chit_prof1*chi_t*rho_yz+hcondxbot/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2409,7 +2411,7 @@ module EquationOfState
                            -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
                            +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
-              (chit_prof(nx)*chi_t*rho_yz+hcondxtop/cv)
+              (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
