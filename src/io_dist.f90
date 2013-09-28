@@ -500,13 +500,16 @@ module Io
           lerror = outlog (io_err, "Can't read additional data", file)
         endif
 !
-!  Verify consistency of the snapshots regarding their timestamp.
+!  Verify consistency of the snapshots regarding their timestamp,
+!  unless lreset_tstart=T, in which case we reset all times to tstart.
 !
-        t_test = t_sp
-        call mpibcast_real(t_test)
-        if (t_test /= t_sp) &
-            write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
-        call stop_it_if_any((t_test /= t_sp), '')
+        if (.not.lreset_tstart) then
+          t_test = t_sp
+          call mpibcast_real(t_test)
+          if (t_test /= t_sp) &
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+          call stop_it_if_any((t_test /= t_sp), '')
+        endif
 !
 !  Set time or overwrite it by a given value.
 !
