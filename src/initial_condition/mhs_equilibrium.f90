@@ -25,15 +25,20 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: density_power_law,temperature_power_law,plasma_beta
+  real :: g0=1,qgshear=1.5,density_power_law,temperature_power_law,plasma_beta
   logical :: lnumerical_mhsequilibrium=.true.
-  logical :: lintegrate_potential=.true.,lcap_field=.false.
+  logical :: lintegrate_potential=.true.
+  logical :: lcap_field=.false.,lcap_field_radius=.false.,lcap_field_theta=.false.
   real :: rm_int=0.0,rm_ext=impossible
+  real :: tm_bot=0.0,tm_top=impossible
+  logical :: ladd_noise_propto_cs=.false. 
+  real :: ampluu_cs_factor=0.01
 !
   namelist /initial_condition_pars/ &
-      density_power_law,temperature_power_law,plasma_beta,&
+      g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
-      rm_int,rm_ext,lcap_field
+      rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
+      ladd_noise_propto_cs, ampluu_cs_factor
 !
   real :: ksi=1.
 !
@@ -69,6 +74,8 @@ module InitialCondition
           ksi=1.
         endif
 !
+        lcap_field=lcap_field_radius.or.lcap_field_theta
+!
     endsubroutine initialize_initial_condition
 !***********************************************************************
     subroutine initial_condition_uu(f)
@@ -77,9 +84,10 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Gravity,       only: acceleration
-      use Sub,           only: get_radial_distance
-      use FArrayManager, only: farray_use_global
+      use Gravity,        only: acceleration
+      use Sub,            only: get_radial_distance, power_law
+      use FArrayManager,  only: farray_use_global
+      use EquationofState,only: gamma
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
@@ -94,9 +102,13 @@ module InitialCondition
 !
 !  Get the sound speed
 !
-      nullify(iglobal_cs2)
-      call farray_use_global('cs2',iglobal_cs2)
-      ics2=iglobal_cs2 
+      if (llocal_iso) then 
+        nullify(iglobal_cs2)
+        call farray_use_global('cs2',iglobal_cs2)
+        ics2=iglobal_cs2 
+      else
+        ics2=iss
+      endif
 !
 !  Analytical expression that leads to an equilibrium configuration. 
 !  Commented out because the numerical equilibrium enforced below 
@@ -109,13 +121,17 @@ module InitialCondition
         q=-temperature_power_law
 !
         do m=1,my;do n=1,mz
-          call acceleration(g_r)
           call get_radial_distance(rr_sph,rr_cyl)
+          if (lgrav) then 
+            call acceleration(g_r)
           ! Cylindrical Keplerian velocity: GM/rr_cyl**3
-          OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
-!
+            OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
+          elseif (lparticles_nbody) then 
+            call power_law(g0,rr_cyl,2*qgshear,OOK2)
+          endif
+
           !H2 defined as in Fromang et al. 2011
-          H2=f(:,m,n,ics2)/OOK2
+          H2=f(:,m,n,ics2)/(gamma*OOK2)
 !
           tmp=1 + q*(1-sinth(m)) + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
           OO2=OOK2*tmp
@@ -135,7 +151,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: rho0
+      use EquationOfState, only: rho0,gamma
       use FArrayManager,   only: farray_use_global
       use Gravity,         only: potential
       use Sub,             only: get_radial_distance
@@ -158,9 +174,13 @@ module InitialCondition
 !
 !  Get the sound speed globals
 !
-      nullify(iglobal_cs2)
-      call farray_use_global('cs2',iglobal_cs2)
-      ics2=iglobal_cs2 
+      if (llocal_iso) then 
+        nullify(iglobal_cs2)
+        call farray_use_global('cs2',iglobal_cs2)
+        ics2=iglobal_cs2 
+      else
+        ics2=iss
+      endif
 !
 !  Pencilize the density allocation.
 !
@@ -176,9 +196,15 @@ module InitialCondition
 !  Vertical stratification
 !
           cs2=f(:,m,n,ics2)
-          call potential(POT=tmp1,RMN=rr_sph)
-          call potential(POT=tmp2,RMN=rr_cyl)
-          strat=-(tmp1-tmp2)/(cs2*ksi)
+!
+          if (lgrav) then
+            call potential(POT=tmp1,RMN=rr_sph)
+            call potential(POT=tmp2,RMN=rr_cyl)
+          elseif (lparticles_nbody) then
+            tmp1=-g0/rr_sph 
+            tmp2=-g0/rr_cyl
+          endif
+          strat=-gamma*(tmp1-tmp2)/(cs2*ksi)
           f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
 !
         enddo
@@ -324,21 +350,34 @@ module InitialCondition
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine cap_field(Bin,Bout)
-!                                                                                    
+!
       use Sub, only: step_scalar
-!                                                                                    
-      real, dimension(nx) :: Bin,Bout
+!
+      real, dimension(nx) :: Bin,Brad,Bout
       real :: width
       integer :: i
-!                                                                                    
-      do i=1,nx
-         width=5./dx_1(i-1+l1)
-         Bout(i) = Bin(i) * &
-             (step_scalar(x(i),rm_int,width)-&
-              step_scalar(x(i),rm_ext,width))
-      enddo
-!                                                                                    
-    endsubroutine cap_field
+!
+      if (lcap_field_radius) then
+        do i=1,nx
+          width=5./dx_1(i-1+l1)
+          Brad(i) = Bin(i) * &
+               (step_scalar(x(i),rm_int,width)-&
+               step_scalar(x(i),rm_ext,width))
+        enddo
+      else
+        Brad=Bin
+      endif
+!
+      if (lcap_field_theta) then
+        width=1./dy_1(m-1+m1)
+        Bout = Brad * &
+             (step_scalar(y(m),tm_bot,width)-&
+              step_scalar(y(m),tm_top,width))
+      else
+        Bout=Brad
+      endif
+!
+      endsubroutine cap_field
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !
@@ -346,11 +385,28 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use EquationOfState, only: gamma,gamma_m1,get_cp1,cs20,lnrho0
+      use Sub, only: notanumber
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: cs2,lnrho
+      real :: cp1
 !
 !  SAMPLE IMPLEMENTATION
 !
-      call keep_compiler_quiet(f)
+      !set_sound_speed set cs2 in the slot of iss, rewrite
+!
+      call get_cp1(cp1)
+!
+      do m=m1,m2; do n=n1,n2
+        cs2=f(l1:l2,m,n,iss)
+        if (ldensity_nolog) then 
+          lnrho=log(f(l1:l2,m,n,irho))
+        else
+          lnrho=f(l1:l2,m,n,ilnrho)
+        endif     
+        f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+      enddo;enddo
 !
     endsubroutine initial_condition_ss
 !***********************************************************************     
@@ -375,10 +431,14 @@ module InitialCondition
 !
 !  Get the globals needed to store sound speed and temperature gradient
 !
-      nullify(iglobal_cs2)
-      call farray_use_global('cs2',iglobal_cs2);ics2=iglobal_cs2
-      nullify(iglobal_glnTT)
-      call farray_use_global('glnTT',iglobal_glnTT);iglnTT=iglobal_glnTT
+      if (llocal_iso) then 
+        nullify(iglobal_cs2)
+        call farray_use_global('cs2',iglobal_cs2);ics2=iglobal_cs2
+        nullify(iglobal_glnTT)
+        call farray_use_global('glnTT',iglobal_glnTT);iglnTT=iglobal_glnTT
+      else
+        ics2=iss
+      endif
 !
 !  Set the sound speed - a power law in cylindrical radius.
 !
@@ -391,16 +451,58 @@ module InitialCondition
 !
           f(:,m,n,ics2)=cs2
 !
-!  Same for the temperature gradient
+!  Set the velocity noise if a fraction of sound speed
 !          
-          f(:,m,n,iglnTT  )=q/rr_sph
-          f(:,m,n,iglnTT+1)=q/rr_sph*cotth(m)
-          f(:,m,n,iglnTT+2)=0.
+          if (ladd_noise_propto_cs) then 
+            call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
+          endif
+!
+!  Same for the temperature gradient
+!
+          if (llocal_iso) then             
+            f(:,m,n,iglnTT  )=q/rr_sph
+            f(:,m,n,iglnTT+1)=q/rr_sph*cotth(m)
+            f(:,m,n,iglnTT+2)=0.
+          endif
 !
         enddo
       enddo
 !
     endsubroutine set_sound_speed
+!***********************************************************************
+    subroutine gaunoise_vect(ampl,f,i1,i2)
+!
+!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
+!
+!  23-may-02/axel: coded
+!  10-sep-03/axel: result only *added* to whatever f array had before
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+!
+      real, dimension (mx) :: r,p,tmp,ampl
+      integer :: i
+!
+      intent(in)    :: ampl,i1,i2
+      intent(inout) :: f
+!
+!  set gaussian random noise vector
+!
+      do i=i1,i2
+        if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+        if (modulo(i-i1,2)==0) then
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+        else
+          tmp=sqrt(-2*log(r))*cos(2*pi*p)
+        endif
+        f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
+      enddo
+!
+    endsubroutine gaunoise_vect
 !***********************************************************************
     subroutine enforce_numerical_equilibrium(f,lhd)
 !
