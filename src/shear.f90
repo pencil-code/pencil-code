@@ -52,6 +52,10 @@ module Shear
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
 !
+!  Module variables
+!
+  real, dimension(nx) :: uy0 = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_shear()
@@ -88,12 +92,16 @@ module Shear
 !
       integer :: ierr
 !
+!  Calculate the shear velocity.
+!
       if (qshear/=0.0) then
         Sshear=-(qshear-qshear0)*Omega
         Sshear1=-qshear*Omega
       else if (Sshear/=0.0.and.Sshear1==0.0) then
         Sshear1=Sshear
       endif
+!
+      uy0 = Sshear * (x(l1:l2) - x0_shear)
 !
       if (lroot .and. ip<=12) then
         print*, 'initialize_shear: Sshear,Sshear1=', Sshear, Sshear1
@@ -260,7 +268,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: uy0,dfdy
+      real, dimension (nx) :: dfdy
       integer :: j,k,jseg,nseg,na,ne
 !
       intent(in)  :: f
@@ -271,10 +279,6 @@ module Shear
         print*, 'shearing: Sshear,Sshear1=', Sshear, Sshear1
         print*, 'shearing: qshear,qshear0=', qshear, qshear0
       endif
-!
-!  Add shear (advection) term, -uy0*df/dy, for all variables.
-!
-      uy0=Sshear*(x(l1:l2)-x0_shear)
 !
 !  Advection of all variables by shear flow.
 !
@@ -397,7 +401,7 @@ module Shear
       logical, intent(in), optional :: shear1
 !
       integer :: j,jend,js
-      real, dimension (nx) :: uy0,dfdy
+      real, dimension (nx) :: dfdy
       real :: sh
 !
       if ( .not.present(jstep) ) then
@@ -413,10 +417,6 @@ module Shear
       else
         sh = Sshear
       endif
-!
-!  Add shear (advection) term, -uy0*df/dy, for all variables.
-!
-      uy0=Sshear*(x(l1:l2)-x0_shear)
 !
 !  Advection of all variables by shear flow.
 !
