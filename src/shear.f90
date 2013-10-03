@@ -864,4 +864,16 @@ module Shear
 !
     endsubroutine rprint_shear
 !***********************************************************************
+    subroutine get_uy0_shear(uy0_shear)
+!
+!  Gets the shear velocity.
+!
+!  03-oct-13/ccyang: coded
+!
+      real, dimension(nx), intent(out) :: uy0_shear
+!
+      uy0_shear = uy0
+!
+    endsubroutine
+!***********************************************************************
 endmodule Shear
