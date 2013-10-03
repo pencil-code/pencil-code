@@ -43,7 +43,7 @@ index=strsplit(res,'&',/extract)
 nindex=n_elements(index)
 for i=0,nindex-1 do begin
   if (execute(index[i]) ne 1) then $
-  message, 'pc_varcontent: there was a problem with index.pro', /info
+  message, 'pc_varcontent: there was a problem with index.pro at line '+string(i+1)+'.', /info
 endfor
 ;
 ;  The number of variables in the snapshot file depends on whether we
