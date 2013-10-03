@@ -203,6 +203,7 @@ module Shear
             x0_shear=x0_shear*Lxyz(1)+xyz0(1)
           endif
           call mpibcast_real(x0_shear,1,0)
+          uy0 = Sshear * (x(l1:l2) - x0_shear)
         endif
       endif
 !
@@ -532,7 +533,7 @@ module Shear
 !
 !  Find the sheared length as a function of x.
 !
-      shift = Sshear * (x(l1:l2) - x0_shear) * dt_shear
+      shift = uy0 * dt_shear
       shift = shift - int(shift / Ly) * Ly
 !
 !  Conduct the Fourier interpolation.
