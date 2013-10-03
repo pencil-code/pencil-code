@@ -10,6 +10,9 @@
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
 ;;;   'RELOAD' cases where print.in changes in the Pencil-Code
+;;; 03/10/2013 - MR:
+;;;   Added detection of complex quantities in output, new output parameter
+;;;   for their positions in line
 ;;;
 ;;; Usage:
 ;;;   IDL> data = input_table(FILE)
@@ -44,6 +47,8 @@
 ;;;                   contains the position where reading was
 ;;;                   terminated due to STOP_AT, or -1 if the end of
 ;;;                   the file was reached.
+;;;  INDS_COMPL    -- returns list of positions of complex quantities in line 
+;;;                   (detected by opening bracket); = [-1] if none are present
 ;;;
 ;;; Note:
 ;;;   INPUT_TABLE relies on a quadrangular layout of the data, i.e.
@@ -55,7 +60,7 @@ function input_table, filename, $
                       STOP_AT=stop_AT, FILEPOSITION=fileposition, $
                       COMMENT_CHAR=cchar, DOUBLE=double, $
                       NOFILE_OK=nofile_ok, VERBOSE=verb, $
-                      HELP=help
+                      HELP=help, INDS_COMPL=inds_compl
   ;on_error,2
 
   if (keyword_set(help)) then extract_help, 'input_table'
@@ -146,7 +151,22 @@ function input_table, filename, $
     if (not is_comm) then begin
       ;; If this is first data line, determine number of columns
       if (N_cols eq 0) then begin
-        N_cols = n_elements(strsplit(line,'[\ ]',/REGEX,/EXTRACT))
+
+        ;; split the line, accept whitespace and (|,|) as separators (for complex output)
+        inds_fields = strsplit(line,'[(,)]| ',/REGEX,count=N_cols)      
+ 
+        ;; obtain number of complex quantities
+        inds_bracks = strsplit(line,'[(] *',/REGEX,count=N_compl)
+        N_compl=N_compl-1
+        ;; reduce by one as strsplit returns at least one substring
+        ;; yet untreated case: already first quantity is complex
+        inds_compl = [-1]
+        if N_compl gt 0 then begin
+          ;; determine positions of complex quantities
+          for i=1,N_compl do $
+            inds_compl = [inds_compl,where( inds_fields eq inds_bracks(i) )]
+          inds_compl = inds_compl[1:*]
+        endif 
 
         if (double) then begin
           row  = dblarr(N_cols)
@@ -175,6 +195,8 @@ function input_table, filename, $
       if (not found_stop) then begin
         is_empty = (strlen(line) eq 0)
         if (not (is_empty)) then begin ; a data line
+          if N_compl gt 0 then $
+            line = strjoin(strsplit(line,' |[(,)]',/REGEX,/EXTRACT),' ')
           reads, line, row
           data[*,idat] = row
           idat = idat + 1
