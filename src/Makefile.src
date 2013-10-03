@@ -1732,6 +1732,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O3 #(Chandrasekhar)
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
 ##
+## Petri's job laptop (MacBook Pro)
+##
+#FC=mpif90 #(lm3-huckleberry)
+#FFLAGS= -O3 #(lm3-huckleberry)
+#CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry)
+##
 ## Gustavo's laptop
 #FC=mpif90 #(Plato)
 #FFLAGS= -O0 #(Plato)
