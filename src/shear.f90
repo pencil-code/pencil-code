@@ -110,7 +110,7 @@ module Shear
 !
 !  Get the external magnetic field if exists.
 !
-      if (lmagnetic) then
+      if (lmagnetic .and. .not. lbfield) then
         call get_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_shear', 'unable to get shared variable B_ext')
       endif
@@ -218,7 +218,7 @@ module Shear
 !  01-may-09/wlad: coded
 !
       if (lhydro)    lpenc_requested(i_uu)=.true.
-      if (lmagnetic) lpenc_requested(i_aa)=.true.
+      if (lmagnetic .and. .not. lbfield) lpenc_requested(i_aa)=.true.
 !
     endsubroutine pencil_criteria_shear
 !***********************************************************************
@@ -300,10 +300,12 @@ module Shear
         na=1
         do jseg=1,nseg
 !
-          do j=na,ne
+          comp: do j=na,ne
+!           bfield module handles its own shearing.
+            if (lbfield .and. ibx <= j .and. j <= ibz) cycle comp
             call der(f,j,dfdy,2)
             df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
-          enddo
+          enddo comp
 !
           na=iuutest+ntestflow
           ne=nvar
@@ -328,7 +330,7 @@ module Shear
 !
 !  Magnetic stretching and tilt terms (can be turned off for debugging purposes).
 !
-      if (lmagnetic .and. lmagnetic_stretching) then
+      if (lmagnetic .and. .not. lbfield .and. lmagnetic_stretching) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*p%aa(:,2)
         if (lmagnetic_tilt) then
           df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear_sini*p%aa(:,1)
@@ -338,7 +340,7 @@ module Shear
 !
 !  Consider the external magnetic field.
 !
-      if (lmagnetic .and. lexternal_magnetic_field) then
+      if (lmagnetic .and. .not. lbfield .and. lexternal_magnetic_field) then
         df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + B_ext(3) * uy0
         df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) - B_ext(1) * uy0
       endif
@@ -479,19 +481,21 @@ module Shear
 !  from shear motion.
 !
       shear: if (lshearadvection_as_shift) then
-        method: select case (shear_method)
-        case ('fft') method
-          call sheared_advection_fft(f, 1, mvar, dt_shear)
-          if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
-        case ('spline', 'poly') method
-          comp: do ivar = 1, mvar
+        comp: do ivar = 1, mvar
+!         bfield module handles its own shearing.
+          if (lbfield .and. ibx <= ivar .and. ivar <= ibz) cycle comp
+          method: select case (shear_method)
+          case ('fft') method
+            call sheared_advection_fft(f, ivar, ivar, dt_shear)
+            if (.not. llast) call sheared_advection_fft(df, ivar, ivar, dt_shear)
+          case ('spline', 'poly') method
             posdef = lposdef_advection .and. (ivar == irho .or. ivar == ieth)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
-          enddo comp
-          if (.not. llast) call sheared_advection_nonfft(df, 1, mvar, dt_shear, shear_method, ltvd_advection, .false.)
-        case default method
-          call fatal_error('advance_shear', 'unknown method')
-        end select method
+            if (.not. llast) call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
+          case default method
+            call fatal_error('advance_shear', 'unknown method')
+          end select method
+        enddo comp
       endif shear
 !
 !  Print identifier.
