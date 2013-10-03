@@ -460,7 +460,7 @@ An up to date list of Pencil Code contributers can be found at
 Code}{https://code.google.com/p/pencil-code/people/list}.
 
 \begin{tabular}{lll}
-  wladimir.lyra & \htmladdnormallink{Wladimir Lyra}{http://www.astro.uu.se/~wlyra/} & JPL/Caltech\\
+  wladimir.lyra & \htmladdnormallink{Wladimir Lyra}{http://www.wladimirlyra.com} & Caltech-JPL\\
   weezy & \htmladdnormallink{S. Louise Wilkin}{http://www.mas.ncl.ac.uk/~n9405169/} & University of Newcastle\\
   wdobler & \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/} & Potsdam\\
   vpariev & \htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/} & University of Rochester\\
@@ -743,6 +743,10 @@ Babkovskaia, N., Haugen, N. E. L., Brandenburg, A.\yjour{2011}{J.\ Comp.\ Phys.}
 % -- superparticles --
 Johansen, A., Youdin, A. N., \& Lithwick, Y.\yanaN{2012}{537}{A125}
 {Adding particle collisions to the formation of asteroids and Kuiper belt objects via streaming instabilities}
+
+% -- photoelectric effect in debris disks -- 
+Lyra, W. \& Kuchner, W. \ynat{2013}{499}{184}{187}
+{Formation of sharp eccentric rings in debris disks with gas but without planets}
 
 \end{list}
 This list is not always up-to-date.
@@ -7545,6 +7549,7 @@ where \code{nw=nx*ny*nz}.
   32 & Sanss & 0.273& $128\times256^2$ &nomag& 4x8 &  3-jul-07 & AB \\
   32 &Neolith& 0.275& $128^3$ &testfield4& 24-oct-08 & AB \\
   32 &Ferlin & 0.556& $128^3$ &testscalar&  7-jan-09 & AB \\
+  36 &Kraken&0.177&$192 \times 384 \times 64$&magn/noentro&64$^2$x32&12-jan-12&WL\\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -7559,6 +7564,7 @@ where \code{nw=nx*ny*nz}.
   64 &Ferlin & 8.51&$150\times128^2$&Li mechanism& 8x8& 21-jun-09 & AB \\
   64 &Ferlin & 0.156& $256^3$ & magn/noentro &  8x8   & 14-jun-09 & AB \\
   64 & Akka  & 0.038&$256^2\times512$& magn/noentro & 8x8 & 27-dec-12 & AB \\
+  72 &Kraken&0.093&$192 \times 384 \times 64$&magn/noentro&64x32$^2$&12-jan-12&WL\\
  128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -7568,17 +7574,22 @@ where \code{nw=nx*ny*nz}.
  128l& giga2 & 0.0605&$512^3$ & magn/noentro &4x32/ifc6&21-aug-04 & AB \\
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
+ 144 &Kraken&0.059&$192 \times 384 \times 64$&magn/noentro&32$^3$                &12-jan-12&WL\\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
+ 288 &Kraken&0.0432&$192 \times 384 \times 64$&magn/noentro&32$^2$x16&12-jan-12&WL\\
  512 & Akka  &0.0081& $512^3$ & magn/noentro & 16x32  & 10-sep-11 & AB \\
  512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
  512 &Gardar &0.0035& $512^3$ & magn/noentro &        & 14-jan-13 & AB \\
  512 &Lindgren&0.0040&$512^2\times1024$&magn/noentro&16x32& 8-jul-12 & AB \\
+ 576 &Kraken&0.02575&$192 \times 384 \times 64$&magn/noentro&32x16$^2$&12-jan-12&WL\\
+1152&Kraken&0.02120&$192 \times 384 \times 64$&magn/noentro&16$^3$               &13-jan-12&WL\\
 1536 &Lindgren&0.00171&$512^2\times384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048 &Lindgren&0.00129&$512^2\times1024$&magn/noentro&32x64&20-apr-13& AB \\
 2048 &Lindgren&0.00129&$1024^2\times2048$&magn/noentro&32x64&31-jul-12& AB \\
-4096 &Lindgren&$4.6\times10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13& AB \\
-    \bottomrule
+2304&Kraken&0.02267&$192 \times 384 \times 64$&magn/noentro&16$^2$x8&13-jan-12&WL\\
+4096&Lindgren&$4.6\times10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
+\bottomrule
   \end{longtable}
   %\end{tabular}
     \end{small}
