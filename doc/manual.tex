@@ -7410,7 +7410,7 @@ where \code{nw=nx*ny*nz}.
 
 
 % ---------------------------------------------------------------------- %
-\small %AB: Wolfgang, this \small doesn't seem to have an effect!?
+%\scriptsize %AB: Wolfgang, this \small doesn't seem to have an effect!?
 %\begin{table}[htb]
 \begin{center}
 %    \caption{
@@ -7418,7 +7418,7 @@ where \code{nw=nx*ny*nz}.
 %      and per full 3-stage time step.
 %    }
 %    \label{Ttimescale}
-    \begin{small}
+    \begin{footnotesize}
 %    \begin{tabular}{rllrlrll}
     \begin{longtable}{rllrlrrr}
     \toprule
@@ -7547,8 +7547,8 @@ where \code{nw=nx*ny*nz}.
   32 & Steno & 0.085& $256^3$ &nomag/entro/cool/sh& 4x8 & 20-jun-06 & AB \\
   32 & Steno & 0.235& $512^2{\!\times\!}256$ &mag/entro& 4x8 &  9-jul-06 & AB \\
   32 & Sanss & 0.273& $128{\!\times\!}256^2$ &nomag& 4x8 &  3-jul-07 & AB \\
-  32 &Neolith& 0.275& $128^3$ &testfield4& 24-oct-08 & AB \\
-  32 &Ferlin & 0.556& $128^3$ &testscalar&  7-jan-09 & AB \\
+  32 &Neolith& 0.275& $128^3$ &testfield4& &24-oct-08 & AB \\
+  32 &Ferlin & 0.556& $128^3$ &testscalar&  &7-jan-09 & AB \\
   36 &Kraken&0.177&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&64$^2$x32&12-jan-12&WL\\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
@@ -7565,6 +7565,9 @@ where \code{nw=nx*ny*nz}.
   64 &Ferlin & 0.156& $256^3$ & magn/noentro &  8x8   & 14-jun-09 & AB \\
   64 & Akka  & 0.038&$256^2{\!\times\!}512$& magn/noentro & 8x8 & 27-dec-12 & AB \\
   72 &Kraken&0.093&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&64x32$^2$&12-jan-12&WL\\
+  72 & Kraken& 0.151  &$96 {\!\times\!} 192 {\!\times\!} 16$ &magn/noentro & 6x12 &17-jan-12 & WL\\
+  72 & Kraken& 0.091  &$192 {\!\times\!} 384 {\!\times\!} 32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
+  72 & Kraken& 0.071  &$384 {\!\times\!} 768 {\!\times\!} 64$ & magn/noentro & 6x12 &17-jan-12 & WL\\
  128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -7575,56 +7578,50 @@ where \code{nw=nx*ny*nz}.
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
  144 &Kraken&0.059&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&32$^3$                &12-jan-12&WL\\
+ 144 & Kraken& 0.080  &$96 {\!\times\!} 192 {\!\times\!} 32$ & magn/noentro & 6x12x2 &13-jan-12 & WL\\
+ 144 & Kraken& 0.058  &$192 {\!\times\!} 384 {\!\times\!} 64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
+ 144 & Kraken& 0.044  &$384 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
  288 &Kraken&0.0432&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&32$^2$x16&12-jan-12&WL\\
+ 288 & Kraken& 0.0447  &$96 {\!\times\!} 192 {\!\times\!} 64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
+ 288 & Kraken& 0.0201  &$384 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
  512 & Akka  &0.0081& $512^3$ & magn/noentro & 16x32  & 10-sep-11 & AB \\
  512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
  512 &Gardar &0.0035& $512^3$ & magn/noentro &        & 14-jan-13 & AB \\
  512 &Lindgren&0.0040&$512^2{\!\times\!}1024$&magn/noentro&16x32& 8-jul-12 & AB \\
- 576 &Kraken&0.02575&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&32x16$^2$&12-jan-12&WL\\
-1152&Kraken&0.02120&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&16$^3$               &13-jan-12&WL\\
-1536 &Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
-2048 &Lindgren&0.00129&$512^2{\!\times\!}1024$&magn/noentro&32x64&20-apr-13& AB \\
-2048 &Lindgren&0.00129&$1024^2{\!\times\!}2048$&magn/noentro&32x64&31-jul-12& AB \\
+ 576 &Kraken&0.0257&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&32x16$^2$&12-jan-12&WL\\
+ 576 &Kraken& 0.0317  &$192^2 {\!\times\!} 64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
+ 576 &Kraken& 0.0116  &$768^2 {\!\times\!} 256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+1152&Kraken&0.0212&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&16$^3$               &13-jan-12&WL\\
+1152&Kraken& 0.0217  &$192 {\!\times\!} 384 {\!\times\!} 64$ & magn/noentro & 12x24x4 &13-jan-12 & WL\\
+1152&Kraken& 0.00856  &$384 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
+1152&Kraken& 0.00549  &$768 {\!\times\!} 1536 {\!\times\!} 256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
+1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
+2048&Lindgren&0.00129&$512^2{\!\times\!}1024$&magn/noentro&32x64&20-apr-13& AB \\
+2048&Lindgren&0.00129&$1024^2{\!\times\!}2048$&magn/noentro&32x64&31-jul-12& AB \\
 2304&Kraken&0.02267&$192 {\!\times\!} 384 {\!\times\!} 64$&magn/noentro&16$^2$x8&13-jan-12&WL\\
+2304&Kraken&  0.01233 &$192 {\!\times\!} 768 {\!\times\!} 64$ & magn/noentro & 12x48x4 &13-jan-12 & WL\\
+2304&Kraken& 0.00300  &$768 {\!\times\!} 3072 {\!\times\!} 256$ & magn/noentro & 12x48x4 &18-jan-12 & WL\\
 4096&Lindgren&$4.6{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
-% 16^3 batch
-72    & Kraken& 0.151  &$96 {\!\times\!} 192 {\!\times\!} 16$ & magn/noentro & 6x12 &17-jan-12 & WL\\
-144   & Kraken& 0.08013  &$96 {\!\times\!} 192 {\!\times\!} 32$ & magn/noentro & 6x12x2 &13-jan-12 & WL\\
-288   & Kraken& 0.04467  &$96 {\!\times\!} 192 {\!\times\!} 64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
-576   & Kraken& 0.03169  &$192^2 {\!\times\!} 64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
-1152  & Kraken& 0.02175  &$192 {\!\times\!} 384 {\!\times\!} 64$ & magn/noentro & 12x24x4 &13-jan-12 & WL\\
-2304  & Kraken&  0.01233 &$192 {\!\times\!} 768 {\!\times\!} 64$ & magn/noentro & 12x48x4 &13-jan-12 & WL\\
-4608  & Kraken&  0.00764 &$192 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 12x48x8 &13-jan-12 & WL\\
-9216  & Kraken&  0.004847 &$192 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 24x48x8 &13-jan-12 & WL\\
-18432 & Kraken& 0.003162  &$384 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
-36864 & Kraken& 0.002006  &$384 {\!\times\!} 768 {\!\times\!} 512$ & magn/noentro & 48x48x16 &14-jan-12 & WL\\
+4608& Kraken&  0.00764 &$192 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 12x48x8 &13-jan-12 & WL\\
+4608& Kraken& 0.00144  &$768 {\!\times\!} 3072 {\!\times\!} 512$ & magn/noentro & 12x48x8 &18-jan-12 & WL\\
+9216& Kraken&  0.00485 &$192 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 24x48x8 &13-jan-12 & WL\\
+9216& Kraken& 0.00158   &$768 {\!\times\!} 1536 {\!\times\!} 256$ & magn/noentro & 24x48x8 &17-jan-12 & WL\\
+9216& Kraken& $8.0{\!\times\!}10^{-4}$  &$1536{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 24x48x8 &18-jan-12 & WL\\
+18432 & Kraken& 0.00316  &$384 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
+18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768 {\!\times\!} 1536 {\!\times\!} 512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
+18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
+36864 & Kraken& 0.0020  &$384 {\!\times\!} 768 {\!\times\!} 512$ & magn/noentro & 48$^2$x16 &14-jan-12 & WL\\
+36864 & Kraken& $4.9{\!\times\!}10^{-4}$  &$1536^2 {\!\times\!} 512$ & magn/noentro & 48$^2$x16 &17-jan-12 & WL\\
+36864 & Kraken& $2.2{\!\times\!}10^{-4}$  &$1536{\!\times\!}3072{\!\times\!}2048$ & magn/noentro & 24x48x32 &18-jan-12 & WL\\
 73728 & Kraken& 0.00121  &$768^2 {\!\times\!} 512$ & magn/noentro & 48$^2$x32 &19-jan-12 & WL\\
-% 32^3 batch
-72    & Kraken& 0.09123  &$192 {\!\times\!} 384 {\!\times\!} 32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
-144   & Kraken& 0.05764  &$192 {\!\times\!} 384 {\!\times\!} 64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
-1152  & Kraken& 0.008565  &$384 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
-9216  & Kraken& 0.001582   &$768 {\!\times\!} 1536 {\!\times\!} 256$ & magn/noentro & 24x48x8 &17-jan-12 & WL\\
-18432 & Kraken& 0.0008763  &$768 {\!\times\!} 1536 {\!\times\!} 512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
-36864 & Kraken& 0.0004907  &$1536^2 {\!\times\!} 512$ & magn/noentro & 48x48x16 &17-jan-12 & WL\\
-73728 & Kraken& 0.0002877 &$1536^2 {\!\times\!} 1024$ & magn/noentro & 48$^2$x32 &26-jan-12 & WL\\
-% 64^3 batch
-72    & Kraken& 0.07083  &$384 {\!\times\!} 768 {\!\times\!} 64$ & magn/noentro & 6x12 &17-jan-12 & WL\\
-144   & Kraken& 0.04405  &$384 {\!\times\!} 768 {\!\times\!} 128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
-288   & Kraken& 0.02012  &$384 {\!\times\!} 768 {\!\times\!} 256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
-576   & Kraken& 0.0116  &$768^2 {\!\times\!} 256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
-1152  & Kraken& 0.005492  &$768 {\!\times\!} 1536 {\!\times\!} 256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
-2304  & Kraken& 0.002995  &$768 {\!\times\!} 3072 {\!\times\!} 256$ & magn/noentro & 12x48x4 &18-jan-12 & WL\\
-4608  & Kraken& 0.001445  &$768 {\!\times\!} 3072 {\!\times\!} 512$ & magn/noentro & 12x48x8 &18-jan-12 & WL\\
-9216  & Kraken& 0.0007949  &$1536{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 24x48x8 &18-jan-12 & WL\\
-18432 & Kraken& 0.0003993  &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
-36864 & Kraken& 0.0002155  &$1536{\!\times\!}3072{\!\times\!}2048$ & magn/noentro & 24x48x32 &18-jan-12 & WL\\
-73728 & Kraken& 0.0001227  &$3072^2{\!\times\!}2048$ & magn/noentro & 48$^2$x32 &26-jan-12 & WL\\
+73728 & Kraken& $2.9{\!\times\!}10^{-4}$ &$1536^2 {\!\times\!} 1024$ & magn/noentro & 48$^2$x32 &26-jan-12 & WL\\
+73728 & Kraken& $1.2{\!\times\!}10^{-4}$  &$3072^2{\!\times\!}2048$ & magn/noentro & 48$^2$x32 &26-jan-12 & WL\\
 \bottomrule
   \end{longtable}
   %\end{tabular}
-    \end{small}
+    \end{footnotesize}
   \end{center}
 %\end{table}
 \normalsize
