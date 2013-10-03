@@ -9,6 +9,7 @@
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
+;  03-oct-13/MR  : handling of complex data in timeseries added
 ;
 ;  Requires: input_table.pro
 ;
@@ -187,7 +188,30 @@ COMPILE_OPT IDL2,HIDDEN
     newheader='^#--'
  
     data = input_table(fullfilename,double=double,  $
-           stop_at=newheader,fileposition=fileposition,verbose=verbose)
+           stop_at=newheader,fileposition=fileposition,verbose=verbose,inds_compl=inds_compl)
+
+    if inds_compl[0] ne -1 then begin
+;
+;  If there are complex quantities in output
+;
+      ninds=n_elements(inds_compl)
+      nlabs=n_elements(labels)
+;
+;  Replace the corresponding labels: <label> --> <label>_r <label>_i
+;
+      for i=0,ninds-1 do begin
+
+        ind = inds_compl[i]
+        if ind eq n_elements(labels)-1 then $
+          labels = [labels[0:ind-1],labels[ind]+'_r',labels[ind]+'_i'] $
+        else $
+          labels = [labels[0:ind-1],labels[ind]+'_r',labels[ind]+'_i',labels[ind+1:*]]
+
+      endfor
+      ncols += ninds
+      
+    endif
+ 
     if ((size(data))[1] ne ncols) then begin
       message, /INFO, 'Inconsistency: label number different from column number'
     endif
