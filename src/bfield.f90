@@ -72,6 +72,7 @@ module Magnetic
 !
   real, dimension(nx) :: maxdiffus_eta = 0.0
   real, dimension(nx) :: maxdiffus_eta3 = 0.0
+  real, dimension(nx) :: uy0 = 0.0
   logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
@@ -261,18 +262,23 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts
       use Grid, only: get_grid_mn
+      use Shear, only: get_uy0_shear
       use Sub, only: cross, gij, curl_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3,3) :: bij
-      real, dimension(nx,3) :: bb, jj, ee
+      real, dimension(nx,3) :: bb, jj, ee, uu
       real, dimension(nx) :: eta_penc
 !
 !  Update ghost cells of the velocity and the magnetic fields.
 !
       if (iuu /= 0) call update_ghosts(f, iux, iuz)
       call update_ghosts(f, ibx, ibz)
+!
+!  Get the shear velocity if existed.
+!
+      if (lshear) call get_uy0_shear(uy0)
 !
 !  Reset maxdiffus_eta for time step constraint.
 !
@@ -305,7 +311,9 @@ module Magnetic
 !  Add uu cross bb.
 !
         uxb: if (iuu /= 0) then
-          call cross(f(l1:l2,m,n,iux:iuz), bb, ee)
+          uu = f(l1:l2,m,n,iux:iuz)
+          if (lshear) uu(:,2) = uu(:,2) + uy0
+          call cross(uu, bb, ee)
         else uxb
           ee = 0.0
         endif uxb
@@ -408,6 +416,7 @@ module Magnetic
 !
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
+        if (lshear) advec_shear = abs(uy0 * dy_1(m))
         diffus_eta = maxdiffus_eta
         diffus_eta3 = maxdiffus_eta3
       endif timestep
