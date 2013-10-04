@@ -378,6 +378,18 @@ module Forcing
         profz_hel=1.
 !
 !  turn off forcing intensity above z=z0, and
+!  stepx profile of helicity
+!
+      elseif (iforce_profile=='surface_z_stepx') then
+        profx_ampl=1.
+        profy_ampl=1.; profy_hel=1.
+        do l=l1,l2
+          profx_hel(l-nghost)= -1.+2.*step_scalar(x(l),0.,width_ff)
+        enddo
+        profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
+        profz_hel=1.
+!
+!  turn off forcing intensity above z=z0, and
 !  stepy profile of helicity
 !
       elseif (iforce_profile=='surface_z_stepy') then
