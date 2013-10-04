@@ -193,6 +193,7 @@ module Testfield
 !                  hydro pencils (restricted); simplified communication
 !
       use Sub, only: curl, cross_mn, finalize_aver
+      use Hydro, only:  calc_pencils_hydro
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
