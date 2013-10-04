@@ -18,10 +18,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
-! CPARAM integer, parameter :: njtest=9
-!
-! MVAR CONTRIBUTION 27
-! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 !
