@@ -14,10 +14,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
-! CPARAM integer, parameter :: njtest=9
-!
-! MVAR CONTRIBUTION 27
-! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 !
@@ -163,11 +159,14 @@ module Testfield
       intent(in)    :: f,p
       intent(inout) :: df
 !
+      integer :: ml
+!
+        ml=m-m1+1
         select case (itestfield)
-          case ('1')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest)
-          case ('2')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest2)
-          case ('3')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest3)
-          case ('4')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,m-m1+1,:,:),set_bbtest4)
+          case ('1')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest)
+          case ('2')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest2)
+          case ('3')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest3)
+          case ('4')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest4)
           case default; call fatal_error('daatest_dt','undefined itestfield')
         endselect
 !
@@ -185,25 +184,24 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
 !  21-jan-06/axel: coded
+!  04-oct-13/MR  : removed p from parameter list, introd calculation of
+!                  hydro pencils (restricted); simplified communication
 !
-      use Sub, only: curl, cross_mn
-      use Mpicomm, only: mpiallreduce_sum     !,mpiallreduce_sum_arr
+      use Sub, only: curl, cross_mn, finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,ml
       logical :: headtt_save
       real :: fac
-      real, dimension (nx,ny,3) :: uxbtestm1
-!
-      intent(in) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
       logical :: need_output
 !
@@ -211,7 +209,7 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./nz
+      fac=1./nzgrid
       need_output = (ldiagnos .and. needed2d(1)) .or. &
                     (l2davgfirst .and. needed2d(2))
 !
@@ -219,6 +217,7 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
+      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
       do jtest=1,njtest
 !
         iaxtest=iaatest+3*(jtest-1)
@@ -237,7 +236,8 @@ module Testfield
             do n=n1,n2
 !
               call curl(f,iaxtest,btest)
-              call cross_mn(f(l1:l2,m,n,iux:iuz),btest,uxbtest)
+              call calc_pencils_hydro(f,p,lpenc_loc)
+              call cross_mn(p%uu,btest,uxbtest)
 !
 !  without SOCA, the alpha tensor is anisotropic even for the standard
 !  Roberts flow. To check that this is because of the averaging that
@@ -256,13 +256,7 @@ module Testfield
               headtt=.false.
             enddo
           enddo
-!
-!  do communication along z
-!
-          call mpiallreduce_sum(uxbtestm(:,:,:,jtest),uxbtestm1,(/nx,ny,3/),idir=3)
-!         or
-!         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*ny*3,idir=3)       !avoids copy
-          uxbtestm(:,:,:,jtest)=uxbtestm1/nprocz
+          call finalize_aver(nprocz,3,uxbtestm)
 !
         endif
       enddo
