@@ -2183,7 +2183,7 @@ module EquationOfState
       use SharedVariables, only: get_shared_variable
 !
       logical, pointer :: lmeanfield_chitB
-      real, pointer :: chi, chi_t, chi_t0, hcondzbot, hcondztop
+      real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2205,6 +2205,12 @@ module EquationOfState
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting chi_t")
+      call get_shared_variable('chit_prof1',chit_prof1,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting chit_prof1")
+      call get_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting chit_prof2")
       call get_shared_variable('chi',chi,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting chi")
@@ -2248,7 +2254,7 @@ module EquationOfState
                          -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
                          +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
         dsdz_xy=-(sigmaSBt*TT_xy**3+hcondzbot*(gamma_m1)*dlnrhodz_xy)/ &
-            (chi_t*rho_xy+hcondzbot/cv)
+            (chit_prof1*chi_t*rho_xy+hcondzbot/cv)
 !
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2292,10 +2298,10 @@ module EquationOfState
 !
         if (hcondztop==impossible) then
           dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*(gamma_m1)*dlnrhodz_xy)/ &
-              (chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
+              (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
         else
           dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
-              (chi_t*rho_xy+hcondztop/cv)
+              (chit_prof2*chi_t*rho_xy+hcondztop/cv)
         endif
 !
 !  Apply condition;
