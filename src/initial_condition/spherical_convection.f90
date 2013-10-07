@@ -116,7 +116,9 @@ logical :: lcorona=.false.
          wtran=wtran*Rstar
          Rmin=Rsurf+(Rtran-Rsurf)/8
          wmin=wtran/1.5
-         print*,'initial_condition: you are using a coronal envelope'
+         if (iproc .eq. root) then
+           print*,'initial_condition: you are using a coronal envelope'
+         endif
          do i=l1,l2 
            if (xglobal(i)>=Rsurf) then
              nsurf=i
