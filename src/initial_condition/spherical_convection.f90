@@ -155,11 +155,11 @@ logical :: lcorona=.false.
 !
 !  Density stratification assuming an isentropic atmosphere with ss=0. 
 !
-      rho_prof(l1:nsurf)=(TT(l1:nsurf)/T00)**(1./(gamma-1.))
-      rho00=(T00/T00)**(1./(gamma-1.))
-      rho_surf=(Tsurf/T00)**(1./(gamma-1.))
+      rho_prof(l1:nsurf)=rho0*(TT(l1:nsurf)/T00)**(1./(gamma-1.))
+      rho00=rho0*(T00/T00)**(1./(gamma-1.))
+      rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
 !
-      lnrho(l1:nsurf)=log(rho_prof(l1:nsurf))
+      lnrho(l1:nsurf)=log(rho_prof(l1:nsurf)/rho0)
       if (lcorona) then
          dlnrhodr=-dlnTdr-gravx/x**2/(cv*(gamma-1)*TT)
          do i=nsurf, l2
@@ -169,8 +169,8 @@ logical :: lcorona=.false.
 !
 !  Renormalize entropy with rho0 and cs20
 !
-      cs2_prof=TT*cv*gamma*(gamma-1.)
-      ss_prof=log(cs2_prof/cs20/gamma)/gamma - & 
+      cs2_prof=cs20*TT*cv*gamma*(gamma-1.)
+      ss_prof=log(cs2_prof/cs20)/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
 
 !
