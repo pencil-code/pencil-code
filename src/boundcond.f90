@@ -6438,7 +6438,7 @@ module Boundcond
     subroutine bcz_hydrostatic_temp(f,topbot)
 !
 !  The logarithmic density in the ghost cells is used to calculate the
-!  logarithmic tempterature under the asumption of a hydrostatic equilibrium.
+!  logarithmic temperature under the assumption of a hydrostatic equilibrium.
 !
 !  19-nov-2010/Bourdin.KIS: coded
 !
