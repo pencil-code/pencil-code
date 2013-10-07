@@ -170,7 +170,8 @@ logical :: lcorona=.false.
 !  Renormalize entropy with rho0 and cs20
 !
       cs2_prof=TT*cv*gamma*(gamma-1.)
-      ss_prof=log(cs2_prof/cs20)/gamma - (gamma-1.)/(gamma)*(lnrho-log(rho0))
+      ss_prof=log(cs2_prof/cs20/gamma)/gamma - & 
+              (gamma-1.)/(gamma)*(lnrho-log(rho0))
 
 !
 !  Put lnrho and ss into the f-array
