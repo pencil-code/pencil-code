@@ -172,7 +172,6 @@ logical :: lcorona=.false.
       cs2_prof=cs20*TT*cv*gamma*(gamma-1.)
       ss_prof=log(cs2_prof/cs20)/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
-
 !
 !  Put lnrho and ss into the f-array
 !
@@ -190,9 +189,11 @@ logical :: lcorona=.false.
       do n=1,nxgrid
          npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
          gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-         if (xglobal(nghost+n)>=Rtran) then
-           npoly2(n)=npoly_jump*(Rtran/x0)**(-15.)+nad-npoly_jump
+         if (xglobal(nghost+n)>=Rstar) then
+           npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)+nad-npoly_jump
+!           npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)*exp(1./xglobal(nghost+n)-1./Rstar)+nad-npoly_jump
            gnpoly2(n)=0
+!           gnpoly2(n)=(-1./xglobal(nghost+n))**2.*(nad-npoly_jump-npoly2(n))
          endif
 
       enddo
