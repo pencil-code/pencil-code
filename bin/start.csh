@@ -120,6 +120,7 @@ rm -f ERROR COMPLETED
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
+#gdb $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
 set start_status=$status        # save for exit
 echo ""
 date

@@ -150,6 +150,7 @@ date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
+#gdb $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status          # save for exit
 date
 
