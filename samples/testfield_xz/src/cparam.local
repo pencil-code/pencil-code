@@ -6,3 +6,8 @@
 !
 integer, parameter :: ncpus=8,nprocx=1,nprocy=2,nprocz=ncpus/(nprocx*nprocy)
 integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
+!
+integer, parameter :: njtest=9
+!
+! MVAR CONTRIBUTION 27
+! MAUX CONTRIBUTION 0
