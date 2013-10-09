@@ -159,7 +159,7 @@ module Equ
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_prepencil_calc.or.lsolid_cells.or. &
-                     lchemistry.or.lweno_transport
+                     lchemistry.or.lweno_transport .or. lbfield
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
