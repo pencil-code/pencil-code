@@ -257,8 +257,10 @@ module Testfield
               headtt=.false.
             enddo
           enddo
-          !!!call finalize_aver(nprocz,3,uxbtestm)
-          !!! if (notanumber(uxbtestm)) print*, 'jtest=', jtest
+          call finalize_aver(nprocz,3,uxbtestm)
+          do j=1,3
+            if (notanumber(uxbtestm(:,:,j,jtest))) print*, 'j,jtest=', j,jtest
+          enddo
 !
         endif
       enddo
