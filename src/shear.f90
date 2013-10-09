@@ -19,7 +19,7 @@ module Shear
   use Cparam, only: ltestflow
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Messages, only: svn_id, fatal_error
 !
   implicit none
 !
@@ -869,15 +869,21 @@ module Shear
 !
     endsubroutine rprint_shear
 !***********************************************************************
-    subroutine get_uy0_shear(uy0_shear)
+    subroutine get_uy0_shear(uy0_shear, x)
 !
 !  Gets the shear velocity.
 !
-!  03-oct-13/ccyang: coded
+!  08-oct-13/ccyang: coded
 !
-      real, dimension(nx), intent(out) :: uy0_shear
+      real, dimension(:), intent(out) :: uy0_shear
+      real, dimension(:), intent(in), optional :: x
 !
-      uy0_shear = uy0
+      if (present(x)) then
+        uy0_shear = Sshear * (x - x0_shear)
+      else
+        if (size(uy0_shear) /= nx) call fatal_error('get_uy0_shear', 'unconformable output array uy0_shear')
+        uy0_shear(1:nx) = uy0
+      endif
 !
     endsubroutine
 !***********************************************************************

@@ -230,15 +230,17 @@ module Shear
 !
     endsubroutine rprint_shear
 !***********************************************************************
-    subroutine get_uy0_shear(uy0_shear)
+    subroutine get_uy0_shear(uy0_shear, x)
 !
 !  Gets the shear velocity.
 !
-!  03-oct-13/ccyang: coded
+!  08-oct-13/ccyang: coded
 !
-      real, dimension(nx), intent(out) :: uy0_shear
+      real, dimension(:), intent(out) :: uy0_shear
+      real, dimension(:), intent(in), optional :: x
 !
       uy0_shear = 0.0
+      if (present(x)) call keep_compiler_quiet(x)
 !
     endsubroutine
 !***********************************************************************
