@@ -72,7 +72,7 @@ module Magnetic
 !
   real, dimension(nx) :: maxdiffus_eta = 0.0
   real, dimension(nx) :: maxdiffus_eta3 = 0.0
-  real, dimension(nx) :: uy0 = 0.0
+  real, dimension(mx) :: uy0 = 0.0
   logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
@@ -258,27 +258,20 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  04-jul-13/ccyang: coded.
+!  08-oct-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts
       use Grid, only: get_grid_mn
       use Shear, only: get_uy0_shear
-      use Sub, only: cross, gij, curl_mn
+      use Sub, only: gij, curl_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3,3) :: bij
-      real, dimension(nx,3) :: bb, jj, ee, uu
+      real, dimension(mx,3) :: uum, bbm
+      real, dimension(nx,3) :: jjn, bbn
       real, dimension(nx) :: eta_penc
-!
-!  Update ghost cells of the velocity and the magnetic fields.
-!
-      if (iuu /= 0) call update_ghosts(f, iux, iuz)
-      call update_ghosts(f, ibx, ibz)
-!
-!  Get the shear velocity if existed.
-!
-      if (lshear) call get_uy0_shear(uy0)
+      integer :: j, k
 !
 !  Reset maxdiffus_eta for time step constraint.
 !
@@ -292,52 +285,55 @@ module Magnetic
         f(:,:,:,ieex:ieez) = 0.0
       endif
 !
-!  Calculate the effective electric field along each pencil.
-!
-      mn_loop: do imn = 1, ny * nz
-        n = nn(imn)
-        m = mm(imn)
-!
-!  Get the magnetic field.
-!
-        get_bb: if (iuu /= 0 .or. lresis_const) then
-          if (lbext) then
-            bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
-          else
-            bb = f(l1:l2,m,n,ibx:ibz)
-          endif
-        endif get_bb
-!
-!  Add uu cross bb.
-!
-        uxb: if (iuu /= 0) then
-          uu = f(l1:l2,m,n,iux:iuz)
-          if (lshear) uu(:,2) = uu(:,2) + uy0
-          call cross(uu, bb, ee)
-        else uxb
-          ee = 0.0
-        endif uxb
-!
 !  Add normal resistivities.
 !
-        resis: if (lexplicit_resistivity) then
+      resis: if (lexplicit_resistivity) then
+        mn_loop: do imn = 1, ny * nz
+          n = nn(imn)
+          m = mm(imn)
+          if (lbext) then
+            bbn = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
+          else
+            bbn = f(l1:l2,m,n,ibx:ibz)
+          endif
           call get_resistivity(f, eta_penc)
           call gij(f, ibb, bij, 1)
-          call curl_mn(bij, jj, bb)
-          ee = ee - spread(mu01 * eta_penc, 2, 3) * jj
+          call curl_mn(bij, jjn, bbn)
+          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(mu01 * eta_penc, 2, 3) * jjn
 !         Time-step constraint
           timestep: if (lfirst .and. ldt) then
             if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
             maxdiffus_eta = max(maxdiffus_eta, eta_penc * dxyz_2)
           endif timestep
-        endif resis
-!
-        f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) + ee
-      enddo mn_loop
+        enddo mn_loop
+      endif resis
 !
 !  Communicate the E field.
 !
-      call update_ghosts(f, ieex, ieez)
+      if (lresis_hyper3_mesh .or. lexplicit_resistivity) call update_ghosts(f, ieex, ieez)
+!
+!  Get the shear velocity if existed.
+!
+      if (lshear) call get_uy0_shear(uy0, x=x)
+!
+!  Add uu cross bb, including ghost cells.
+!
+      uxb: if (iuu /= 0) then
+        zscan: do j = 1, mz
+          yscan: do k = 1, my
+            if (lbext) then
+              bbm = f(:,j,k,ibx:ibz) + spread(b_ext,1,mx)
+            else
+              bbm = f(:,j,k,ibx:ibz)
+            endif
+            uum = f(:,j,k,iux:iuz)
+            if (lshear) uum(:,2) = uum(:,2) + uy0
+            f(:,j,k,ieex) = f(:,j,k,ieex) + (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
+            f(:,j,k,ieey) = f(:,j,k,ieey) + (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
+            f(:,j,k,ieez) = f(:,j,k,ieez) + (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
+          enddo yscan
+        enddo zscan
+      endif uxb
 !
     endsubroutine calc_lmagnetic_pars
 !***********************************************************************
@@ -416,7 +412,7 @@ module Magnetic
 !
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
-        if (lshear) advec_shear = abs(uy0 * dy_1(m))
+        if (lshear) advec_shear = abs(uy0(l1:l2) * dy_1(m))
         diffus_eta = maxdiffus_eta
         diffus_eta3 = maxdiffus_eta3
       endif timestep
