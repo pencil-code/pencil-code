@@ -192,7 +192,7 @@ module Testfield
 !  04-oct-13/MR  : removed p from parameter list, introd calculation of
 !                  hydro pencils (restricted); simplified communication
 !
-      use Sub, only: curl, cross_mn, finalize_aver
+      use Sub, only: curl, cross_mn, finalize_aver, notanumber
       use Hydro, only:  calc_pencils_hydro
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
