@@ -6186,7 +6186,9 @@ nameloop: do
       integer,                  intent(IN)   :: nproc,idir
       real, dimension(:,:,:,:), intent(INOUT):: arrm
 
-      real, dimension(:,:,:,:), allocatable :: temp
+!!      real, dimension(:,:,:,:), allocatable :: temp
+      real, dimension(size(arrm,1),size(arrm,2),size(arrm,3),size(arrm,4)) :: temp
+
       integer, dimension(4) :: sz
 !
 !  communicate over direction idir
@@ -6194,7 +6196,7 @@ nameloop: do
         if (nproc>1) then
 !
           sz=(/size(arrm,1),size(arrm,2),size(arrm,3),size(arrm,4)/)
-          allocate(temp(sz(1),sz(2),sz(3),sz(4)))
+          !!allocate(temp(sz(1),sz(2),sz(3),sz(4)))
           call mpiallreduce_sum(arrm,temp,sz,idir=idir)
           arrm=temp
 !
