@@ -49,12 +49,13 @@ module Magnetic
   logical :: lresis_const = .false.
   logical :: lresis_shock = .false.
   logical :: lresis_hyper3_mesh = .false.
+  logical :: lohmic_heat = .true.
   logical, dimension(7) :: lresi_dep=.false.
   real :: eta = 0.0
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
 !
-  namelist /magnetic_run_pars/ b_ext, eta, eta_shock, eta_hyper3_mesh, limplicit_resistivity
+  namelist /magnetic_run_pars/ b_ext, eta, eta_shock, eta_hyper3_mesh, limplicit_resistivity, lohmic_heat
 !
 !  Diagnostic variables
 !
@@ -73,6 +74,7 @@ module Magnetic
   real, dimension(nx) :: maxdiffus_eta = 0.0
   real, dimension(nx) :: maxdiffus_eta3 = 0.0
   real, dimension(mx) :: uy0 = 0.0
+  logical :: lresistivity = .false.
   logical :: lexplicit_resistivity = .false.
 !
 !  Dummy but public variables (unfortunately)
@@ -165,14 +167,12 @@ module Magnetic
       if (eta /= 0.0) lresis_const = .true.
       if (eta_shock /= 0.0) lresis_shock = .true.
       if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
+      lresistivity = lresis_const .and. lresis_shock
 !
 !  Sanity check
 !
       if (lresis_shock .and. .not. lshock) &
         call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
-!     Ohmic heating is not implemented yet.
-      if (lenergy .and. (lresis_const .or. lresis_shock)) &
-        call fatal_error('initialize_magnetic', 'Ohmic heating is not implemented yet. ')
 !
 !  Determine if any resistivity by explicit solver is present.
 !
@@ -214,6 +214,29 @@ module Magnetic
 !  PDE related
 !
       lpenc_requested(i_curle) = .true.
+!
+      ohmic: if (lenergy .and. lresistivity .and. lohmic_heat) then
+        lpenc_requested(i_j2) = .true.
+        entropy: if (lentropy) then
+          lnTT: if (pretend_lnTT) then
+            lpenc_requested(i_cv1) = .true.
+            lpenc_requested(i_rho1) = .true.
+            lpenc_requested(i_TT1) = .true.
+          else lnTT
+            lpenc_requested(i_rho1) = .true.
+            lpenc_requested(i_TT1) = .true.
+          endif lnTT
+        else if (ltemperature) then entropy
+          nolog: if (ltemperature_nolog) then
+            lpenc_requested(i_cv1) = .true.
+            lpenc_requested(i_rho1) = .true.
+          else nolog
+            lpenc_requested(i_cv1) = .true.
+            lpenc_requested(i_rho1) = .true.
+            lpenc_requested(i_TT1) = .true.
+          endif nolog
+        endif entropy
+      endif ohmic
 !
       if (lhydro) lpenc_requested(i_jxbr) = .true.
 !
@@ -402,6 +425,8 @@ module Magnetic
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
+      real, dimension(nx) :: eta_penc
+!
 !  dB/dt = curl(E).
 !
       df(l1:l2,m,n,ibx:ibz) =  df(l1:l2,m,n,ibx:ibz) + p%curle
@@ -409,6 +434,27 @@ module Magnetic
 !  Lorentz force
 !
       if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%jxbr
+!
+!  Ohmic heating
+!
+      ohmic: if (lresistivity .and. lenergy .and. lohmic_heat) then
+        call get_resistivity(f, eta_penc)
+        eth: if (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + mu0 * eta_penc * p%j2
+        else if (lentropy) then eth
+          if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + mu0 * eta_penc * p%cv1 * p%j2 *p%rho1 * p%TT1
+          else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + mu0 * eta_penc * p%j2 * p%rho1 *p%TT1
+          endif
+        else if (ltemperature) then eth
+          if (ltemperature_nolog) then
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + mu0 * eta_penc * p%cv1 * p%j2 * p%rho1
+          else
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + mu0 * eta_penc * p%cv1 * p%j2 * p%rho1 * p%TT1
+          endif
+        endif eth
+      endif ohmic
 !
 !  Constrain the time step.
 !
