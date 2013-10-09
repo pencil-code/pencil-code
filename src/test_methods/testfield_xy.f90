@@ -257,7 +257,8 @@ module Testfield
               headtt=.false.
             enddo
           enddo
-          call finalize_aver(nprocz,3,uxbtestm)
+          !!!call finalize_aver(nprocz,3,uxbtestm)
+          !!! if (notanumber(uxbtestm)) print*, 'jtest=', jtest
 !
         endif
       enddo
