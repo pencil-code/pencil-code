@@ -19,7 +19,7 @@
 ! COMMUNICATED AUXILIARIES 3
 !
 ! PENCILS PROVIDED bb(3); bbb(3); b2
-! PENCILS PROVIDED bij(3,3); jj(3); divb
+! PENCILS PROVIDED bij(3,3); jj(3); j2; divb
 ! PENCILS PROVIDED curle(3); jxbr(3)
 !
 ! PENCILS PROVIDED aa(3); ss12
@@ -344,7 +344,7 @@ module Magnetic
 !
 !  25-jun-13/ccyang: coded.
 !
-      use Sub, only: gij, div_mn, curl_mn, cross
+      use Sub, only: gij, div_mn, curl_mn, cross, dot2_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(pencil_case), intent(inout) :: p
@@ -369,6 +369,8 @@ module Magnetic
         call curl_mn(p%bij, p%jj, p%bb)
         p%jj = mu01 * p%jj
       endif jj
+!
+      if (lpencil(i_j2)) call dot2_mn(p%jj, p%j2)
 !
       if (lpencil(i_divb)) call div_mn(p%bij, p%divb, p%bb)
 !
