@@ -218,21 +218,19 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
-      do jtest=1,njtest
+      uxbtestm=0.
 !
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
+      if (.not.lsoca .or. need_output) then
 
-        if (lsoca .and.(.not. need_output)) then
-          uxbtestm(:,:,:,jtest)=0.
-        else
+        lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+        do jtest=1,njtest
 !
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+
           do m=m1,m2
 !
             ml=m-m1+1
-!
-            uxbtestm(:,ml,:,jtest)=0.
 !
             do n=n1,n2
 !
@@ -257,13 +255,11 @@ module Testfield
               headtt=.false.
             enddo
           enddo
-          call finalize_aver(nprocz,3,uxbtestm)
-          do j=1,3
-            if (notanumber(uxbtestm(:,:,j,jtest))) print*, 'j,jtest=', j,jtest
-          enddo
+        enddo
+!      
+        call finalize_aver(nprocz,3,uxbtestm)
 !
-        endif
-      enddo
+      endif
 !
 !  reset headtt
 !
