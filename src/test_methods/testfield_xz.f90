@@ -225,22 +225,19 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+      uxbtestm=0.
+      if (.not.lsoca .or. need_output) then
 !
-      do jtest=1,njtest
+        lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 !
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
+        do jtest=1,njtest
+!
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
 
-        if (lsoca .and.(.not. need_output)) then
-          uxbtestm(:,:,:,jtest)=0.
-        else
-!
           do n=n1,n2
 !
             nl=n-n1+1
-!
-            uxbtestm(:,nl,:,jtest)=0.
 !
             do m=m1,m2
 !
@@ -265,10 +262,9 @@ module Testfield
               headtt=.false.
             enddo
           enddo
-!
-        endif
-      enddo
-      call finalize_aver(nprocy,2,uxbtestm)
+        enddo
+        call finalize_aver(nprocy,2,uxbtestm)
+      endif
 !
 !  reset headtt
 !
