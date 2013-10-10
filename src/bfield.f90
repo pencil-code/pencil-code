@@ -59,21 +59,21 @@ module Magnetic
 !
 !  Diagnostic variables
 !
-  integer :: idiag_bmax = 0     ! DIAG_DOC: $\max|\mathbf(B)|$
-  integer :: idiag_brms = 0     ! DIAG_DOC: $\left<B^2\right>^{1/2}$
+  integer :: idiag_bmax = 0     ! DIAG_DOC: $\max B$
+  integer :: idiag_brms = 0     ! DIAG_DOC: $\langle B^2\rangle^{1/2}$
   integer :: idiag_bxmax = 0    ! DIAG_DOC: $\max|B_x|$
   integer :: idiag_bymax = 0    ! DIAG_DOC: $\max|B_y|$
   integer :: idiag_bzmax = 0    ! DIAG_DOC: $\max|B_z|$
-  integer :: idiag_bxm = 0      ! DIAG_DOC: $\left<B_x\right>$
-  integer :: idiag_bym = 0      ! DIAG_DOC: $\left<B_y\right>$
-  integer :: idiag_bzm = 0      ! DIAG_DOC: $\left<B_z\right>$
-  integer :: idiag_dbxmax = 0   ! DIAG_DOC: $\max|\Delta B_x|$
-  integer :: idiag_dbymax = 0   ! DIAG_DOC: $\max|\Delta B_y|$
-  integer :: idiag_dbzmax = 0   ! DIAG_DOC: $\max|\Delta B_z|$
-  integer :: idiag_dbxm = 0     ! DIAG_DOC: $\left<\Delta B_x\right>$
-  integer :: idiag_dbym = 0     ! DIAG_DOC: $\left<\Delta B_y\right>$
-  integer :: idiag_dbzm = 0     ! DIAG_DOC: $\left<\Delta B_z\right>$
-  integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\mathbf{B}|$
+  integer :: idiag_bxm = 0      ! DIAG_DOC: $\langle B_x\rangle$
+  integer :: idiag_bym = 0      ! DIAG_DOC: $\langle B_y\rangle$
+  integer :: idiag_bzm = 0      ! DIAG_DOC: $\langle B_z\rangle$
+  integer :: idiag_dbxmax = 0   ! DIAG_DOC: $\max|B_x - B_{\mathrm{ext,}x}|$
+  integer :: idiag_dbymax = 0   ! DIAG_DOC: $\max|B_y - B_{\mathrm{ext,}y}|$
+  integer :: idiag_dbzmax = 0   ! DIAG_DOC: $\max|B_z - B_{\mathrm{ext,}z}|$
+  integer :: idiag_dbxm = 0     ! DIAG_DOC: $\langle B_x - B_{\mathrm{ext,}x}\rangle$
+  integer :: idiag_dbym = 0     ! DIAG_DOC: $\langle B_y - B_{\mathrm{ext,}y}\rangle$
+  integer :: idiag_dbzm = 0     ! DIAG_DOC: $\langle B_z - B_{\mathrm{ext,}z}\rangle$
+  integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\vec{B}|$
 !
 !  Module variables
 !
