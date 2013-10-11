@@ -84,6 +84,9 @@ module Magnetic
   integer :: idiag_dbz2m = 0    ! DIAG_DOC: $\langle\left(B_z - B_{\mathrm{ext,}z}\right)^2\rangle$
   integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\vec{B}|$
   integer :: idiag_divbrms = 0  ! DIAG_DOC: $\langle\left(\nabla\cdot\vec{B}\right)^2\rangle^{1/2}$
+  integer :: idiag_betamax = 0  ! DIAG_DOC: $\max\beta$
+  integer :: idiag_betamin = 0  ! DIAG_DOC: $\min\beta$
+  integer :: idiag_betam = 0    ! DIAG_DOC: $\langle\beta\rangle$
 !
 !  Module variables
 !
@@ -271,6 +274,7 @@ module Magnetic
           idiag_dbxm /= 0 .or. idiag_dbym /= 0 .or. idiag_dbzm /= 0 .or. &
           idiag_dbx2m /= 0 .or. idiag_dby2m /= 0 .or. idiag_dbz2m /= 0) lpenc_diagnos(i_bbb) = .true.
       if (idiag_divbmax /= 0 .or. idiag_divbrms /= 0) lpenc_diagnos(i_divb) = .true.
+      if (idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. idiag_betam /= 0) lpenc_diagnos(i_beta) = .true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -629,6 +633,9 @@ module Magnetic
         idiag_dbz2m = 0
         idiag_divbmax = 0
         idiag_divbrms = 0
+        idiag_betamax = 0
+        idiag_betamin = 0
+        idiag_betam = 0
       endif reset
 !
 !  Parse the names from print.in.
@@ -658,6 +665,9 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'dbz2m', idiag_dbz2m)
         call parse_name(iname, cname(iname), cform(iname), 'divbmax', idiag_divbmax)
         call parse_name(iname, cname(iname), cform(iname), 'divbrms', idiag_divbrms)
+        call parse_name(iname, cname(iname), cform(iname), 'betamax', idiag_betamax)
+        call parse_name(iname, cname(iname), cform(iname), 'betamin', idiag_betamin)
+        call parse_name(iname, cname(iname), cform(iname), 'betam', idiag_betam)
       enddo diag
 !
 !  Write variable indices for IDL.
@@ -783,6 +793,9 @@ module Magnetic
       if (idiag_dbz2m /= 0) call sum_mn_name(p%bbb(:,3)**2, idiag_dbz2m)
       if (idiag_divbmax /= 0) call max_mn_name(abs(p%divb), idiag_divbmax)
       if (idiag_divbrms /= 0) call sum_mn_name(p%divb**2, idiag_divbrms, lsqrt=.true.)
+      if (idiag_betamax /= 0) call max_mn_name(p%beta, idiag_betamax)
+      if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
+      if (idiag_betam /= 0) call sum_mn_name(p%beta, idiag_betam)
 !
     endsubroutine diagnostic_magnetic
 !***********************************************************************
