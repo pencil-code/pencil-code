@@ -21,6 +21,7 @@
 ! PENCILS PROVIDED bb(3); bbb(3); b2
 ! PENCILS PROVIDED bij(3,3); jj(3); j2; divb
 ! PENCILS PROVIDED curle(3); jxbr(3)
+! PENCILS PROVIDED beta
 !
 ! PENCILS PROVIDED aa(3); ss12
 !
@@ -294,6 +295,11 @@ module Magnetic
         lpencil_in(i_rho1) = .true.
       endif jxbr
 !
+      beta1: if (lpencil_in(i_beta)) then
+        lpencil_in(i_b2) = .true.
+        lpencil_in(i_pp) = .true.
+      endif beta1
+!
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
     subroutine calc_lmagnetic_pars(f)
@@ -425,6 +431,14 @@ module Magnetic
         call gij(f, iee, eij, 1)
         call curl_mn(eij, p%curle, f(l1:l2,m,n,ieex:ieez))
       endif curle
+!
+      beta: if (lpencil(i_beta)) then
+        where (p%b2 > 0.0)
+          p%beta = 2.0 * mu0 * p%pp / p%b2
+        elsewhere
+          p%beta = huge(1.0)
+        endwhere
+      endif beta
 !
 !  Dummy pencils
 !
