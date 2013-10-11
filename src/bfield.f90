@@ -60,6 +60,7 @@ module Magnetic
 !  Diagnostic variables
 !
   integer :: idiag_bmax = 0     ! DIAG_DOC: $\max B$
+  integer :: idiag_bmin = 0     ! DIAG_DOC: $\min B$
   integer :: idiag_brms = 0     ! DIAG_DOC: $\langle B^2\rangle^{1/2}$
   integer :: idiag_bxmax = 0    ! DIAG_DOC: $\max|B_x|$
   integer :: idiag_bymax = 0    ! DIAG_DOC: $\max|B_y|$
@@ -74,6 +75,7 @@ module Magnetic
   integer :: idiag_dbym = 0     ! DIAG_DOC: $\langle B_y - B_{\mathrm{ext,}y}\rangle$
   integer :: idiag_dbzm = 0     ! DIAG_DOC: $\langle B_z - B_{\mathrm{ext,}z}\rangle$
   integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\vec{B}|$
+  integer :: idiag_divbrms = 0  ! DIAG_DOC: $\langle\left(\nabla\cdot\vec{B}\right)^2\rangle^{1/2}$
 !
 !  Module variables
 !
@@ -253,12 +255,12 @@ module Magnetic
 !
 !  Diagnostic related
 !
-      if (idiag_bmax /= 0 .or. idiag_brms /= 0) lpenc_diagnos(i_b2) = .true.
+      if (idiag_bmax /= 0 .or. idiag_bmin /= 0 .or. idiag_brms /= 0) lpenc_diagnos(i_b2) = .true.
       if (idiag_bxmax /= 0 .or. idiag_bymax /= 0 .or. idiag_bzmax /= 0 .or. &
           idiag_bxm /= 0 .or. idiag_bym /= 0 .or. idiag_bzm /= 0) lpenc_diagnos(i_bb) = .true.
       if (idiag_dbxmax /= 0 .or. idiag_dbymax /= 0 .or. idiag_dbzmax /= 0 .or. &
           idiag_dbxm /= 0 .or. idiag_dbym /= 0 .or. idiag_dbzm /= 0) lpenc_diagnos(i_bbb) = .true.
-      if (idiag_divbmax /= 0) lpenc_diagnos(i_divb) = .true.
+      if (idiag_divbmax /= 0 .or. idiag_divbrms /= 0) lpenc_diagnos(i_divb) = .true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -581,6 +583,7 @@ module Magnetic
 !
       reset: if (lreset) then
         idiag_bmax = 0
+        idiag_bmin = 0
         idiag_brms = 0
         idiag_bxmax = 0
         idiag_bymax = 0
@@ -595,12 +598,14 @@ module Magnetic
         idiag_dbym = 0
         idiag_dbzm = 0
         idiag_divbmax = 0
+        idiag_divbrms = 0
       endif reset
 !
 !  Parse the names from print.in.
 !
       diag: do iname = 1, nname
         call parse_name(iname, cname(iname), cform(iname), 'bmax', idiag_bmax)
+        call parse_name(iname, cname(iname), cform(iname), 'bmin', idiag_bmin)
         call parse_name(iname, cname(iname), cform(iname), 'brms', idiag_brms)
         call parse_name(iname, cname(iname), cform(iname), 'bxmax', idiag_bxmax)
         call parse_name(iname, cname(iname), cform(iname), 'bymax', idiag_bymax)
@@ -615,6 +620,7 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'dbym', idiag_dbym)
         call parse_name(iname, cname(iname), cform(iname), 'dbzm', idiag_dbzm)
         call parse_name(iname, cname(iname), cform(iname), 'divbmax', idiag_divbmax)
+        call parse_name(iname, cname(iname), cform(iname), 'divbrms', idiag_divbrms)
       enddo diag
 !
 !  Write variable indices for IDL.
@@ -717,6 +723,7 @@ module Magnetic
       type(pencil_case), intent(in) :: p
 !
       if (idiag_bmax /= 0) call max_mn_name(p%b2, idiag_bmax, lsqrt=.true.)
+      if (idiag_bmin /= 0) call max_mn_name(-sqrt(p%b2), idiag_bmin, lneg=.true.)
       if (idiag_brms /= 0) call sum_mn_name(p%b2, idiag_brms, lsqrt=.true.)
       if (idiag_bxmax /= 0) call max_mn_name(abs(p%bb(:,1)), idiag_bxmax)
       if (idiag_bymax /= 0) call max_mn_name(abs(p%bb(:,2)), idiag_bymax)
@@ -731,6 +738,7 @@ module Magnetic
       if (idiag_dbym /= 0) call sum_mn_name(p%bbb(:,2), idiag_dbym)
       if (idiag_dbzm /= 0) call sum_mn_name(p%bbb(:,3), idiag_dbzm)
       if (idiag_divbmax /= 0) call max_mn_name(abs(p%divb), idiag_divbmax)
+      if (idiag_divbrms /= 0) call sum_mn_name(p%divb**2, idiag_divbrms, lsqrt=.true.)
 !
     endsubroutine diagnostic_magnetic
 !***********************************************************************
