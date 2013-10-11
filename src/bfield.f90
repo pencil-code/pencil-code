@@ -63,6 +63,7 @@ module Magnetic
   integer :: idiag_bmax = 0     ! DIAG_DOC: $\max B$
   integer :: idiag_bmin = 0     ! DIAG_DOC: $\min B$
   integer :: idiag_brms = 0     ! DIAG_DOC: $\langle B^2\rangle^{1/2}$
+  integer :: idiag_bm = 0       ! DIAG_DOC: $\langle B\rangle$
   integer :: idiag_b2m = 0      ! DIAG_DOC: $\langle B^2\rangle$
   integer :: idiag_bxmax = 0    ! DIAG_DOC: $\max|B_x|$
   integer :: idiag_bymax = 0    ! DIAG_DOC: $\max|B_y|$
@@ -266,7 +267,8 @@ module Magnetic
 !
 !  Diagnostic related
 !
-      if (idiag_bmax /= 0 .or. idiag_bmin /= 0 .or. idiag_brms /= 0 .or. idiag_b2m /= 0) lpenc_diagnos(i_b2) = .true.
+      if (idiag_bmax /= 0 .or. idiag_bmin /= 0 .or. idiag_brms /= 0 .or. &
+          idiag_bm /= 0 .or. idiag_b2m /= 0) lpenc_diagnos(i_b2) = .true.
       if (idiag_bxmax /= 0 .or. idiag_bymax /= 0 .or. idiag_bzmax /= 0 .or. &
           idiag_bxm /= 0 .or. idiag_bym /= 0 .or. idiag_bzm /= 0 .or. &
           idiag_bx2m /= 0 .or. idiag_by2m /= 0 .or. idiag_bz2m /= 0) lpenc_diagnos(i_bb) = .true.
@@ -606,6 +608,7 @@ module Magnetic
         idiag_bmax = 0
         idiag_bmin = 0
         idiag_brms = 0
+        idiag_bm = 0
         idiag_b2m = 0
         idiag_bxmax = 0
         idiag_bymax = 0
@@ -638,6 +641,7 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'bmax', idiag_bmax)
         call parse_name(iname, cname(iname), cform(iname), 'bmin', idiag_bmin)
         call parse_name(iname, cname(iname), cform(iname), 'brms', idiag_brms)
+        call parse_name(iname, cname(iname), cform(iname), 'bm', idiag_bm)
         call parse_name(iname, cname(iname), cform(iname), 'b2m', idiag_b2m)
         call parse_name(iname, cname(iname), cform(iname), 'bxmax', idiag_bxmax)
         call parse_name(iname, cname(iname), cform(iname), 'bymax', idiag_bymax)
@@ -766,6 +770,7 @@ module Magnetic
       if (idiag_bmax /= 0) call max_mn_name(p%b2, idiag_bmax, lsqrt=.true.)
       if (idiag_bmin /= 0) call max_mn_name(-sqrt(p%b2), idiag_bmin, lneg=.true.)
       if (idiag_brms /= 0) call sum_mn_name(p%b2, idiag_brms, lsqrt=.true.)
+      if (idiag_bm /= 0) call sum_mn_name(sqrt(p%b2), idiag_bm)
       if (idiag_b2m /= 0) call sum_mn_name(p%b2, idiag_b2m)
       if (idiag_bxmax /= 0) call max_mn_name(abs(p%bb(:,1)), idiag_bxmax)
       if (idiag_bymax /= 0) call max_mn_name(abs(p%bb(:,2)), idiag_bymax)
