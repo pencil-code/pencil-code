@@ -145,7 +145,7 @@ logical :: lcorona=.false.
         TTc(nsurf:l2)=Tsurf+(Tcor-Tsurf)*step(x(nsurf:l2),Rtran,wtran)
         TT(nsurf:l2)=TT(nsurf:l2)+(TTc(nsurf:l2)-TT(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin)
 ! derivative
-        dTdr(l1:l2)=gravx/x(l1:l2)**2./(cv*(gamma-1)*(npoly1+1))
+        dTdr(l1:l2)=-gravx/x(l1:l2)**2./(cv*(gamma-1)*(npoly1+1))
         dTdr_cor(nsurf:l2)=(Tcor-Tsurf)*der_step(x(nsurf:l2),Rtran,wtran)
         dTdr(nsurf:l2)=dTdr(nsurf:l2)+(dTdr_cor(nsurf:l2) - & 
                        dTdr(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin) + &
@@ -162,7 +162,7 @@ logical :: lcorona=.false.
       lnrho(l1:nsurf)=log(rho_prof(l1:nsurf)/rho0)
       if (lcorona) then
          dlnrhodr=-dlnTdr-gravx/x**2/(cv*(gamma-1)*TT)
-         do i=nsurf, l2
+         do i=nsurf-10, l2
            lnrho(i)=lnrho(i-1)+dlnrhodr(i-1)/dx_1(i-1)
          enddo
       endif
