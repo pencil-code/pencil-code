@@ -86,6 +86,11 @@ module Magnetic
   integer :: idiag_dbx2m = 0    ! DIAG_DOC: $\langle\left(B_x - B_{\mathrm{ext,}x}\right)^2\rangle$
   integer :: idiag_dby2m = 0    ! DIAG_DOC: $\langle\left(B_y - B_{\mathrm{ext,}y}\right)^2\rangle$
   integer :: idiag_dbz2m = 0    ! DIAG_DOC: $\langle\left(B_z - B_{\mathrm{ext,}z}\right)^2\rangle$
+  integer :: idiag_jmax = 0     ! DIAG_DOC: $\max J$
+  integer :: idiag_jmin = 0     ! DIAG_DOC: $\min J$
+  integer :: idiag_jrms = 0     ! DIAG_DOC: $\langle J^2\rangle^{1/2}$
+  integer :: idiag_jm = 0       ! DIAG_DOC: $\langle J\rangle$
+  integer :: idiag_j2m = 0      ! DIAG_DOC: $\langle J^2\rangle$
   integer :: idiag_divbmax = 0  ! DIAG_DOC: $\max|\nabla\cdot\vec{B}|$
   integer :: idiag_divbrms = 0  ! DIAG_DOC: $\langle\left(\nabla\cdot\vec{B}\right)^2\rangle^{1/2}$
   integer :: idiag_betamax = 0  ! DIAG_DOC: $\max\beta$
@@ -279,6 +284,8 @@ module Magnetic
       if (idiag_dbxmax /= 0 .or. idiag_dbymax /= 0 .or. idiag_dbzmax /= 0 .or. &
           idiag_dbxm /= 0 .or. idiag_dbym /= 0 .or. idiag_dbzm /= 0 .or. &
           idiag_dbx2m /= 0 .or. idiag_dby2m /= 0 .or. idiag_dbz2m /= 0) lpenc_diagnos(i_bbb) = .true.
+      if (idiag_jmax /= 0 .or. idiag_jmin /= 0 .or. idiag_jrms /= 0 .or. &
+          idiag_jm /= 0 .or. idiag_j2m /= 0) lpenc_diagnos(i_j2) = .true.
       if (idiag_divbmax /= 0 .or. idiag_divbrms /= 0) lpenc_diagnos(i_divb) = .true.
       if (idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. idiag_betam /= 0) lpenc_diagnos(i_beta) = .true.
 !
@@ -635,6 +642,11 @@ module Magnetic
         idiag_dbx2m = 0
         idiag_dby2m = 0
         idiag_dbz2m = 0
+        idiag_jmax = 0
+        idiag_jmin = 0
+        idiag_jrms = 0
+        idiag_jm = 0
+        idiag_j2m = 0
         idiag_divbmax = 0
         idiag_divbrms = 0
         idiag_betamax = 0
@@ -671,6 +683,11 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'dbx2m', idiag_dbx2m)
         call parse_name(iname, cname(iname), cform(iname), 'dby2m', idiag_dby2m)
         call parse_name(iname, cname(iname), cform(iname), 'dbz2m', idiag_dbz2m)
+        call parse_name(iname, cname(iname), cform(iname), 'jmax', idiag_jmax)
+        call parse_name(iname, cname(iname), cform(iname), 'jmin', idiag_jmin)
+        call parse_name(iname, cname(iname), cform(iname), 'jrms', idiag_jrms)
+        call parse_name(iname, cname(iname), cform(iname), 'jm', idiag_jm)
+        call parse_name(iname, cname(iname), cform(iname), 'j2m', idiag_j2m)
         call parse_name(iname, cname(iname), cform(iname), 'divbmax', idiag_divbmax)
         call parse_name(iname, cname(iname), cform(iname), 'divbrms', idiag_divbrms)
         call parse_name(iname, cname(iname), cform(iname), 'betamax', idiag_betamax)
@@ -803,6 +820,11 @@ module Magnetic
       if (idiag_dbx2m /= 0) call sum_mn_name(p%bbb(:,1)**2, idiag_dbx2m)
       if (idiag_dby2m /= 0) call sum_mn_name(p%bbb(:,2)**2, idiag_dby2m)
       if (idiag_dbz2m /= 0) call sum_mn_name(p%bbb(:,3)**2, idiag_dbz2m)
+      if (idiag_jmax /= 0) call max_mn_name(p%j2, idiag_jmax, lsqrt=.true.)
+      if (idiag_jmin /= 0) call max_mn_name(-sqrt(p%j2), idiag_jmin, lneg=.true.)
+      if (idiag_jrms /= 0) call sum_mn_name(p%j2, idiag_jrms, lsqrt=.true.)
+      if (idiag_jm /= 0) call sum_mn_name(sqrt(p%j2), idiag_jm)
+      if (idiag_j2m /= 0) call sum_mn_name(p%j2, idiag_j2m)
       if (idiag_divbmax /= 0) call max_mn_name(abs(p%divb), idiag_divbmax)
       if (idiag_divbrms /= 0) call sum_mn_name(p%divb**2, idiag_divbrms, lsqrt=.true.)
       if (idiag_betamax /= 0) call max_mn_name(p%beta, idiag_betamax)
