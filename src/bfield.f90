@@ -436,13 +436,7 @@ module Magnetic
         call curl_mn(eij, p%curle, f(l1:l2,m,n,ieex:ieez))
       endif curle
 !
-      beta: if (lpencil(i_beta)) then
-        where (p%b2 > 0.0)
-          p%beta = 2.0 * mu0 * p%pp / p%b2
-        elsewhere
-          p%beta = huge(1.0)
-        endwhere
-      endif beta
+      if (lpencil(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
 !
 !  Dummy pencils
 !
