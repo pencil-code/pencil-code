@@ -963,15 +963,14 @@ module Magnetic
 !  20-sep-13/ccyang: coded
 !
       use Boundcond, only: update_ghosts
-      use Deriv, only: der4
       use Grid, only: get_grid_mn
-      use Sub, only: curl
+      use Sub, only: curl, del4
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,ny,nz,3) :: d4jj
       real, dimension(nx,3) :: pv
-      integer :: j, k, mc, nc
+      integer :: j, mc, nc
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
 !
@@ -989,18 +988,15 @@ module Magnetic
 !
 !  Calculate its fourth-order mesh derivative.
 !
-      d4jj = 0.0
       d4jjp: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
         mc = m - nghost
         nc = n - nghost
-        dir: do k = 1, 3
-          comp: do j = 1, 3
-            call der4(f, iee+j-1, pv(:,j), k, ignoredx=.true.)
-          enddo comp
-          d4jj(:,mc,nc,:) = d4jj(:,mc,nc,:) + pv
-        enddo dir
+        comp: do j = 1, 3
+          call del4(f, iee+j-1, pv(:,j), ignoredx=.true.)
+        enddo comp
+        d4jj(:,mc,nc,:) = pv
 !       Time-step constraint
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
