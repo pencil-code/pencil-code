@@ -968,9 +968,8 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx,ny,nz,3) :: d4jj
       real, dimension(nx,3) :: pv
-      integer :: j, mc, nc
+      integer :: j
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
 !
@@ -988,25 +987,19 @@ module Magnetic
 !
 !  Calculate its fourth-order mesh derivative.
 !
-      d4jjp: do imn = 1, ny * nz
+      d4jj: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
-        mc = m - nghost
-        nc = n - nghost
         comp: do j = 1, 3
           call del4(f, iee+j-1, pv(:,j), ignoredx=.true.)
         enddo comp
-        d4jj(:,mc,nc,:) = pv
+        f(l1:l2,m,n,ieex:ieez) = -eta_hyper3_mesh * pv
 !       Time-step constraint
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
           maxdiffus_eta3 = max(maxdiffus_eta3, eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
         endif timestep
-      enddo d4jjp
-!
-!  Assign it to the E field.
-!
-      f(l1:l2,m1:m2,n1:n2,ieex:ieez) = -eta_hyper3_mesh * d4jj
+      enddo d4jj
 !
     endsubroutine mesh_hyper_resistivity
 !***********************************************************************
