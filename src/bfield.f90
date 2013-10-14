@@ -1006,7 +1006,7 @@ module Magnetic
 !
 !  Assign it to the E field.
 !
-      f(l1:l2,m1:m2,n1:n2,ieex:ieez) = eta_hyper3_mesh * d4jj
+      f(l1:l2,m1:m2,n1:n2,ieex:ieez) = -eta_hyper3_mesh * d4jj
 !
     endsubroutine mesh_hyper_resistivity
 !***********************************************************************
