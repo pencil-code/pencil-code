@@ -148,15 +148,10 @@ module Hydro
 !  21-sep-13/MR  : adjusted use of calc_pencils_hydro
 !
       use FArrayManager
-      use Sub, only: erfunc, finalize_aver
+      use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-!
-      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
-      logical, dimension(:), allocatable :: lpenc_loc
-!
-      real :: facxy, facyz, facy, facz
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -221,18 +216,40 @@ module Hydro
         endif
       endif
 !
+      call calc_means_hydro(f)
+!
+      call keep_compiler_quiet(lstarting)
+!
+    endsubroutine initialize_hydro
+!***********************************************************************
+    subroutine calc_means_hydro(f)
+!
+! calculates various means
+!
+! 14-oct-13/MR: outsourced from initialize_hydro
+!
+      use Sub, only: finalize_aver
+
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+!
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+      logical, dimension(:), allocatable :: lpenc_loc
+!
+      real :: facxy, facyz, facy, facz
+      logical :: headtt_save
+!
       if (lcalc_uumeanz.or.lcalc_uumeanx.or.lcalc_uumeanxy.or.lcalc_uumeanxz) then
 
         allocate(p(1),lpenc_loc(npencils))
 
         facz  = 1./nzgrid
         facy  = 1./nygrid
-
-        facxy = 1./(nxgrid*nygrid)
-        facyz = 1./(nygrid*nzgrid)
-     
+        facxy = 1./nxygrid
+        facyz = 1./nyzgrid
+        
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 ! 
+        headtt=headtt_save
         do n=1,mz; do m=1,my
 !
           call calc_pencils_hydro(f,p(1),lpenc_loc)
@@ -246,8 +263,12 @@ module Hydro
           if (lcalc_uumeanxz .and. m>=m1 .and. m<=m2) &
             uumxz(l1:l2,n,:) = uumxz(l1:l2,n,:) + facy*p(1)%uu
 !
+          headtt=.false.
+
         enddo; enddo
 !
+        headtt=headtt_save
+
         if (lcalc_uumeanz ) &
           call finalize_aver(nprocxy,12,uumz)
         if (lcalc_uumeanx ) &
@@ -259,9 +280,7 @@ module Hydro
 !
       endif
 !
-      call keep_compiler_quiet(lstarting)
-!
-    endsubroutine initialize_hydro
+    endsubroutine calc_means_hydro
 !***********************************************************************
     subroutine init_uu(f)
 !
