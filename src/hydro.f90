@@ -864,6 +864,126 @@ module Hydro
 !
       endsubroutine initialize_hydro
 !***********************************************************************
+      subroutine calc_means_hydro(f)
+!
+! calculates various means 
+!
+!  14-oct-13/MR: outsourced from calc_lhydro_pars
+!
+      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: finalize_aver
+      use Deriv, only: der_z
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+!
+      real, dimension (nx) :: rho,rux,ruy,ruz
+      integer, parameter :: nreduce=3
+      real, dimension (nreduce) :: fsum_tmp,fsum
+      real :: fact
+      integer :: j,nnz,l,m,n
+!
+!  calculate averages of rho*ux and rho*uy
+!
+!AB: ldensity is now sufficient
+      !if (ldensity.or.lanelastic) then
+      if (ldensity) then
+        if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
+          ruxm=0.
+          ruym=0.
+          ruzm=0.
+          fact=1./nwgrid
+          do n=n1,n2
+          do m=m1,m2
+            if (ldensity_nolog) then
+              rho=f(l1:l2,m,n,irho)
+            else
+              rho=exp(f(l1:l2,m,n,ilnrho))
+            endif
+            rux=rho*f(l1:l2,m,n,iux)
+            ruy=rho*f(l1:l2,m,n,iuy)
+            ruz=rho*f(l1:l2,m,n,iuz)
+            ruxm=ruxm+fact*sum(rux)
+            ruym=ruym+fact*sum(ruy)
+            ruzm=ruzm+fact*sum(ruz)
+          enddo
+          enddo
+!
+!  communicate to the other processors
+!
+          fsum_tmp(1)=ruxm
+          fsum_tmp(2)=ruym
+          fsum_tmp(3)=ruzm
+          call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
+          ruxm=fsum(1)
+          ruym=fsum(2)
+          ruzm=fsum(3)
+        endif
+      endif
+!
+!  do xy-averaged mean field for each component
+!
+      if (lcalc_uumeanz) then
+        fact=1./nxygrid
+        do nnz=1,mz
+          do j=1,3
+            uumz(nnz,j)=fact*sum(f(l1:l2,m1:m2,nnz,iux+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocxy,12,uumz)
+!
+        do j=1,3
+          call der_z(uumz(:,j),guumz(:,j)) 
+        enddo
+!
+      endif
+!
+!  do yz-averaged mean field for each component
+!
+      if (lcalc_uumeanx) then
+        fact=1./nyzgrid
+        do l=1,mx
+          do j=1,3
+            uumx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iux+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocyz,23,uumx)
+!
+      endif
+!
+!  Do mean 2D field in (x,y)-plane for each component
+!
+      if (lcalc_uumeanxy) then
+!
+        uumxy = sum(f(:,:,n1:n2,iux:iuz),3)/nzgrid
+        call finalize_aver(nprocz,3,uumxy)
+!
+      endif
+!
+!  Do mean 2D field in (x,z)-plane for each component
+!
+      if (lcalc_uumeanxz) then
+!
+        uumxz = sum(f(:,m1:m2,:,iux:iuz),2)/nygrid
+        call finalize_aver(nprocy,2,uumxz)
+!
+      endif
+!
+!  do communication for array of size nz*nprocz*3*njtest
+!
+!     if (nprocy>1) then
+!       uum2=reshape(uumz1,shape=(/nz*nprocz*3/))
+!       call mpireduce_sum(uumz2,uum3,(/nz,nprocz,3/))
+!       call mpibcast_real(uumz3,nz*nprocz*3)
+!       uum1=reshape(uum3,shape=(/nz,nprocz,3/))
+!       do n=n1,n2
+!         do j=1,3
+!           uumz(n,j)=uumz1(n-n1+1,ipz+1,j)
+!         enddo
+!       enddo
+!     endif
+!
+      endsubroutine calc_means_hydro
+!***********************************************************************
     subroutine init_uu(f)
 !
 !  initialise velocity field ; called from start.f90
@@ -2906,22 +3026,11 @@ module Hydro
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !  12-sep-13/MR  : use finalize_aver
 ! 
-      use Deriv, only: der_z
-      use Mpicomm, only: mpiallreduce_sum, fill_zghostzones_3vec
-      use Sub, only: finalize_aver
-!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rho,rux,ruy,ruz
-      integer, parameter :: nreduce=3
-      real, dimension (nreduce) :: fsum_tmp,fsum
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
-      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid
-!     real, dimension (nz,nprocz,3) :: uumz1
-!     real, dimension (nz*nprocz*3) :: uumz2,uumz3
       real, dimension (3) :: OO, dOO
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      integer :: l,m,i,j, nnz
-      real :: fact
+      integer :: i,j
 !
       intent(inout) :: f
 !
@@ -2929,105 +3038,7 @@ module Hydro
 !
       if (lhydro_bc_interior) call interior_bc_hydro(f)
 !
-!  calculate averages of rho*ux and rho*uy
-!
-!AB: ldensity is now sufficient
-      !if (ldensity.or.lanelastic) then
-      if (ldensity) then
-        if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
-          ruxm=0.
-          ruym=0.
-          ruzm=0.
-          fact=1./nwgrid
-          do n=n1,n2
-          do m=m1,m2
-            if (ldensity_nolog) then
-              rho=f(l1:l2,m,n,irho)
-            else
-              rho=exp(f(l1:l2,m,n,ilnrho))
-            endif
-            rux=rho*f(l1:l2,m,n,iux)
-            ruy=rho*f(l1:l2,m,n,iuy)
-            ruz=rho*f(l1:l2,m,n,iuz)
-            ruxm=ruxm+fact*sum(rux)
-            ruym=ruym+fact*sum(ruy)
-            ruzm=ruzm+fact*sum(ruz)
-          enddo
-          enddo
-!
-!  communicate to the other processors
-!
-          fsum_tmp(1)=ruxm
-          fsum_tmp(2)=ruym
-          fsum_tmp(3)=ruzm
-          call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
-          ruxm=fsum(1)
-          ruym=fsum(2)
-          ruzm=fsum(3)
-        endif
-      endif
-!
-!  do xy-averaged mean field for each component
-!
-      if (lcalc_uumeanz) then
-        fact=1./nxy
-        do nnz=1,mz
-          do j=1,3
-            uumz(nnz,j)=fact*sum(f(l1:l2,m1:m2,nnz,iux+j-1))
-          enddo
-        enddo
-        call finalize_aver(nprocxy,12,uumz)
-!
-        do j=1,3
-          call der_z(uumz(:,j),guumz(:,j)) 
-        enddo
-!
-      endif
-!
-!  do yz-averaged mean field for each component
-!
-      if (lcalc_uumeanx) then
-        fact=1./nyz
-        do l=1,mx
-          do j=1,3
-            uumx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iux+j-1))
-          enddo
-        enddo
-        call finalize_aver(nprocyz,23,uumx)
-!
-      endif
-!
-!  Do mean 2D field in (x,y)-plane for each component
-!
-      if (lcalc_uumeanxy) then
-!
-        uumxy = sum(f(:,:,n1:n2,iux:iuz),3)/nzgrid
-        call finalize_aver(nprocz,3,uumxy)
-!
-      endif
-!
-!  Do mean 2D field in (x,z)-plane for each component
-!
-      if (lcalc_uumeanxz) then
-!
-        uumxz = sum(f(:,m1:m2,:,iux:iuz),2)/nygrid
-        call finalize_aver(nprocy,2,uumxz)
-!
-      endif
-!
-!  do communication for array of size nz*nprocz*3*njtest
-!
-!     if (nprocy>1) then
-!       uum2=reshape(uumz1,shape=(/nz*nprocz*3/))
-!       call mpireduce_sum(uumz2,uum3,(/nz,nprocz,3/))
-!       call mpibcast_real(uumz3,nz*nprocz*3)
-!       uum1=reshape(uum3,shape=(/nz,nprocz,3/))
-!       do n=n1,n2
-!         do j=1,3
-!           uumz(n,j)=uumz1(n-n1+1,ipz+1,j)
-!         enddo
-!       enddo
-!     endif
+      call calc_means_hydro(f)
 !
 !  calculate precession matrices, assume that alpha_precession is given
 !  in degrees.

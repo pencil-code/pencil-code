@@ -140,6 +140,17 @@ module Hydro
 !
     endsubroutine initialize_hydro
 !***********************************************************************
+      subroutine calc_means_hydro(f)
+!
+!  dummy routine
+!
+!  14-oct-13/MR: coded
+!
+        real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+        call keep_compiler_quiet(f)
+!
+      endsubroutine calc_means_hydro
+!***********************************************************************
     subroutine init_uu(f)
 !
 !  initialise uu and lnrho; called from start.f90

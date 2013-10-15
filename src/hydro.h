@@ -16,6 +16,7 @@
   public :: kinematic_random_phase
   public :: hydro_before_boundary
   public :: expand_shands_hydro
+  public :: calc_means_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
