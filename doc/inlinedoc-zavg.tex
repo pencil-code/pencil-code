@@ -46,6 +46,8 @@
   \var{ruyuzmxy}  & $\left< \rho u_y u_z \right>_{z}$ \\
   \var{fkinxmxy}  & $\left<{1\over2}\varrho\uv^2
                     u_x\right>_{z}$ \\
+  \var{fkinymxy}  & $\left<{1\over2}\varrho\uv^2
+                    u_y\right>_{z}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -70,10 +72,13 @@
   \var{fconvxy}   & $\left<\varrho u_x T \right>_{z}$ \\
   \var{fconvyxy}  & $\left<\varrho u_y T \right>_{z}$ \\
   \var{fconvzxy}  & $\left<\varrho u_z T \right>_{z}$ \\
-  \var{fradxy_Kprof} & $F_{\rm rad}$ ($z$-averaged, from Kprof) \\
+  \var{fradxy_Kprof} & $F^{\rm rad}_x$ ($x$-component of radiative flux, $z$-averaged, from Kprof) \\
+  \var{fradymxy_Kprof} & $F^{\rm rad}_y$ ($y$-component of radiative flux, $z$-averaged, from Kprof) \\
   \var{fradxy_kramers} & $F_{\rm rad}$ ($z$-averaged,
                     from Kramers' opacity) \\
   \var{fturbxy}   & $\left<\varrho T \chi_t \nabla_x
+                    s\right>_{z}$ \\
+  \var{fturbymxy} & $\left<\varrho T \chi_t \nabla_y
                     s\right>_{z}$ \\
   \var{fturbrxy}  & $\left<\varrho T \chi_{ri} \nabla_i
                     s\right>_{z}$ \quad(radial part
@@ -129,6 +134,9 @@
   \var{fviscmxy}  & $\left<2\nu\varrho u_i
                     \mathcal{S}_{ix} \right>_{z}$
                     ($x$-xomponent of viscous flux) \\
+  \var{fviscymxy} & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{iy} \right>_{z}$
+                    ($y$-xomponent of viscous flux) \\
 %
 \bottomrule
 \end{longtable}

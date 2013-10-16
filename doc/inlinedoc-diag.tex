@@ -551,15 +551,54 @@
 \midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
-  \var{bmax}      & $\max|\mathbf(B)|$ \\
-  \var{brms}      & $\left<B^2\right>^{1/2}$ \\
+  \var{bmax}      & $\max B$ \\
+  \var{bmin}      & $\min B$ \\
+  \var{brms}      & $\langle B^2\rangle^{1/2}$ \\
+  \var{bm}        & $\langle B\rangle$ \\
+  \var{b2m}       & $\langle B^2\rangle$ \\
   \var{bxmax}     & $\max|B_x|$ \\
   \var{bymax}     & $\max|B_y|$ \\
   \var{bzmax}     & $\max|B_z|$ \\
-  \var{dbxmax}    & $\max|\Delta B_x|$ \\
-  \var{dbymax}    & $\max|\Delta B_y|$ \\
-  \var{dbzmax}    & $\max|\Delta B_z|$ \\
-  \var{divbmax}   & $\max|\nabla\cdot\mathbf{B}|$ \\
+  \var{bxm}       & $\langle B_x\rangle$ \\
+  \var{bym}       & $\langle B_y\rangle$ \\
+  \var{bzm}       & $\langle B_z\rangle$ \\
+  \var{bx2m}      & $\langle B_x^2\rangle$ \\
+  \var{by2m}      & $\langle B_y^2\rangle$ \\
+  \var{bz2m}      & $\langle B_z^2\rangle$ \\
+  \var{bxbym}     & $\langle B_x B_y\rangle$ \\
+  \var{bxbzm}     & $\langle B_x B_z\rangle$ \\
+  \var{bybzm}     & $\langle B_y B_z\rangle$ \\
+  \var{dbxmax}    & $\max|B_x - B_{\mathrm{ext,}x}|$ \\
+  \var{dbymax}    & $\max|B_y - B_{\mathrm{ext,}y}|$ \\
+  \var{dbzmax}    & $\max|B_z - B_{\mathrm{ext,}z}|$ \\
+  \var{dbxm}      & $\langle B_x - B_{\mathrm{ext,}x}\rangle$ \\
+  \var{dbym}      & $\langle B_y - B_{\mathrm{ext,}y}\rangle$ \\
+  \var{dbzm}      & $\langle B_z - B_{\mathrm{ext,}z}\rangle$ \\
+  \var{dbx2m}     & $\langle\left(B_x - B_{\mathrm{ext,}x}\right)^2\rangle$ \\
+  \var{dby2m}     & $\langle\left(B_y - B_{\mathrm{ext,}y}\right)^2\rangle$ \\
+  \var{dbz2m}     & $\langle\left(B_z - B_{\mathrm{ext,}z}\right)^2\rangle$ \\
+  \var{jmax}      & $\max J$ \\
+  \var{jmin}      & $\min J$ \\
+  \var{jrms}      & $\langle J^2\rangle^{1/2}$ \\
+  \var{jm}        & $\langle J\rangle$ \\
+  \var{j2m}       & $\langle J^2\rangle$ \\
+  \var{jxmax}     & $\max|J_x|$ \\
+  \var{jymax}     & $\max|J_y|$ \\
+  \var{jzmax}     & $\max|J_z|$ \\
+  \var{jxm}       & $\langle J_x\rangle$ \\
+  \var{jym}       & $\langle J_y\rangle$ \\
+  \var{jzm}       & $\langle J_z\rangle$ \\
+  \var{jx2m}      & $\langle J_x^2\rangle$ \\
+  \var{jy2m}      & $\langle J_y^2\rangle$ \\
+  \var{jz2m}      & $\langle J_z^2\rangle$ \\
+  \var{divbmax}   & $\max|\nabla\cdot\vec{B}|$ \\
+  \var{divbrms}   & $\langle\left(\nabla\cdot\vec{B}\right)^2\rangle^{1/2}$ \\
+  \var{betamax}   & $\max\beta$ \\
+  \var{betamin}   & $\min\beta$ \\
+  \var{betam}     & $\langle\beta\rangle$ \\
+  \var{vAmax}     & $\max v_A$ \\
+  \var{vAmin}     & $\min v_A$ \\
+  \var{vAm}       & $\langle v_A\rangle$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
@@ -668,8 +707,6 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
-  \var{qmax}      & max of heat flux vector \\
-  \var{qrms}      & rms of heat flux vector \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule

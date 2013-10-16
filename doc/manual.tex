@@ -8935,7 +8935,11 @@ Viscosity has some caveats where subtleties apply. The difference is that the mo
   S_{ij} = \frac{1}{2}
            \left(
              \pderiv{u_i}{x_j} + \pderiv{u_j}{x_i}
-             - \frac{1}{3}\delta_{ij} \Div{\uv}
+%            - \frac{1}{3}\delta_{ij} \Div{\uv}
+%AB: I see that the above line was previously edited by Wolfgang in r11314.
+%AB: A factor 2 is missing here, but I see that a similarly wrong line existed
+%AB: also previously.
+             - \frac{2}{3}\delta_{ij} \Div{\uv}
            \right) \; ,
 \end{equation}
 which only allows the viscous acceleration to be reduced to the simple
@@ -9479,7 +9483,7 @@ which is delta-correlated in time, is properly normalized such
 that the correlator of the forcing function is independent of the
 length of the time step, $\delta t$.
 We focus on the case where $|\kv|$ is around 5, and
-select at each timestep randomly one of the 228 possible vectors in
+select at each timestep randomly one of the 350 possible vectors in
 $4.5<|\kv|<5.5$. We force the system with eigenfunctions of the curl
 operator,
 \begin{equation}
