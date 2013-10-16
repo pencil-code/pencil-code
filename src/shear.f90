@@ -33,7 +33,7 @@ module Shear
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
-  logical :: lexternal_magnetic_field = .false.
+  logical :: lexternal_magnetic_field = .true.
 !
   include 'shear.h'
 !
@@ -55,6 +55,7 @@ module Shear
 !  Module variables
 !
   real, dimension(nx) :: uy0 = 0.0
+  logical :: lbext = .false.
 !
   contains
 !***********************************************************************
@@ -113,6 +114,7 @@ module Shear
       if (lmagnetic .and. .not. lbfield) then
         call get_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_shear', 'unable to get shared variable B_ext')
+        lbext = any(B_ext /= 0.0)
       endif
 !
 !  Turn on tilt of magnetic stretching if requested.
@@ -340,7 +342,7 @@ module Shear
 !
 !  Consider the external magnetic field.
 !
-      if (lmagnetic .and. .not. lbfield .and. lexternal_magnetic_field) then
+      if (lmagnetic .and. .not. lbfield .and. lexternal_magnetic_field .and. lbext) then
         df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + B_ext(3) * uy0
         df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) - B_ext(1) * uy0
       endif
