@@ -1,6 +1,9 @@
 #
 # __init__.py
-# $LastChangedDate$
-# $LastChangedBy$
+#
+# Initializes package PencilCode.
+#
+# Chao-Chin Yang, 2013-10-17
+# Last Modification: $Id$
 #
 from . import read
