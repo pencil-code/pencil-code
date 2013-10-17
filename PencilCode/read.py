@@ -1,11 +1,10 @@
 #
 # read.py
-# $LastChangedDate$
-# $LastChangedBy$
 #
 # Facilities for reading the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-05-06
+# Last Modification: $Id$
 #
 class Dim:
     """object holding the dimensions of the data.
