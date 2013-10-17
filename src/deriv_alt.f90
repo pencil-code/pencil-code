@@ -194,17 +194,20 @@ module Deriv
 
     endsubroutine finalize_deriv
 !***********************************************************************
-    subroutine der_main(f,k,df,j)
+    subroutine der_main(f,k,df,j,ignoredx)
 !
 !  calculates derivative df_k/dx_j
 !  accurate to 6th order, explicit, periodic (??)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
+      logical, intent(in), optional :: ignoredx
       integer :: j,k
 !
       intent(in)  :: f,k,j
       intent(out) :: df
+!
+      if (present(ignoredx)) call fatal_error('der_main', 'optional argument ignoredx is not implemented. ')
 !
       call deri_3d( f(1,1,1,k), df, 1, j )
 !

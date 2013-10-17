@@ -84,7 +84,7 @@ module Deriv
 !
     endsubroutine initialize_deriv
 !***********************************************************************
-    subroutine der_main(f,k,df,j)
+    subroutine der_main(f,k,df,j,ignoredx)
 !
 !  calculate derivative df_k/dx_j
 !  accurate to 8th order, explicit, periodic
@@ -100,6 +100,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
+      logical, intent(in), optional :: ignoredx
       integer :: j,k
 !
       intent(in)  :: f,k,j
@@ -107,6 +108,8 @@ module Deriv
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
 !debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
+!
+      if (present(ignoredx)) call fatal_error('der_main', 'optional argument ignoredx is not implemented. ')
 !
       if (j==1) then
         if (nxgrid/=1) then
