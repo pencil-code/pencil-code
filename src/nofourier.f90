@@ -638,7 +638,7 @@ module Fourier
       real, dimension (nx,ny,nz) :: a_re
       real, dimension (nx) :: shift_y
 !
-      call fatal_error('fourier_transform_y', &
+      call fatal_error('fourier_shift_y', &
           'this sub is not available in nofourier.f90!')
 !
       call keep_compiler_quiet(a_re)
