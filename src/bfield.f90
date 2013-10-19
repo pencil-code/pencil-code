@@ -385,7 +385,7 @@ module Magnetic
           call get_resistivity(f, eta_penc)
           call gij(f, ibb, bij, 1)
           call curl_mn(bij, jjn, bbn)
-          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(mu01 * eta_penc, 2, 3) * jjn
+          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(mu0 * eta_penc, 2, 3) * jjn
 !         Time-step constraint
           timestep: if (lfirst .and. ldt) then
             if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
@@ -506,19 +506,20 @@ module Magnetic
 !
       ohmic: if (lresistivity .and. lenergy .and. lohmic_heat) then
         call get_resistivity(f, eta_penc)
+        eta_penc = mu0 * eta_penc
         eth: if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + mu0 * eta_penc * p%j2
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_penc * p%j2
         else if (lentropy) then eth
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + mu0 * eta_penc * p%cv1 * p%j2 *p%rho1 * p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc * p%cv1 * p%j2 *p%rho1 * p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + mu0 * eta_penc * p%j2 * p%rho1 *p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc * p%j2 * p%rho1 *p%TT1
           endif
         else if (ltemperature) then eth
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + mu0 * eta_penc * p%cv1 * p%j2 * p%rho1
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + eta_penc * p%cv1 * p%j2 * p%rho1
           else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + mu0 * eta_penc * p%cv1 * p%j2 * p%rho1 * p%TT1
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + eta_penc * p%cv1 * p%j2 * p%rho1 * p%TT1
           endif
         endif eth
       endif ohmic
@@ -919,6 +920,7 @@ module Magnetic
     subroutine get_resistivity(f, eta_penc)
 !
 !  Gets the total normal resistivity along one pencil.
+!  The unit of eta_penc is unit_length^2 / unit_time.
 !
 !  21-aug-13/ccyang: coded.
 !
@@ -949,7 +951,7 @@ module Magnetic
       real, dimension(ndc), intent(out) :: diffus_coeff
 !
       if (lresis_const) then
-        diffus_coeff = mu01 * eta
+        diffus_coeff = eta
       else
         diffus_coeff = 0.0
       endif
