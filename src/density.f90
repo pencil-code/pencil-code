@@ -702,16 +702,22 @@ module Density
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampllnrho(j),f,ilnrho,rnoise_int,rnoise_ext)
-        case ('gaussian-noise-x')
+!
+!  use code to plot EoS
+!
+        case ('lnrho_vs_lnT')
+          f(:,:,:,ilnrho)=spread(spread(y,1,mx),3,mz)
+          f(:,:,:,ilnTT)=spread(spread(x,2,my),3,mz)
 !
 !  Noise, but just x-dependent.
 !
+        case ('gaussian-noise-x')
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
           f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
-        case ('rho-jump-z', '2')
 !
 !  Density jump (for shocks).
 !
+        case ('rho-jump-z', '2')
           if (lroot) print*, 'init_lnrho: density jump; rho_left,right=', &
               rho_left(j), rho_right(j)
           if (lroot) print*, 'init_lnrho: density jump; widthlnrho=', &
@@ -731,10 +737,10 @@ module Density
               f(l1:l2,m,n,ilnrho)=prof
             enddo
           enddo
-        case ('hydrostatic-z-2', '3')
 !
 !  Hydrostatic density stratification for isentropic atmosphere.
 !
+        case ('hydrostatic-z-2', '3')
           if (lgravz) then
             if (lroot) print*,'init_lnrho: vertical density stratification'
             do n=n1,n2; do m=m1,m2
@@ -2215,17 +2221,18 @@ module Density
             tmp=lnrho0+alog(1.+(gamma-1.)*(-pot/cs20))/(gamma-1.)
           endif
           f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+tmp
+!
+!  Add corresponding profile to the other thermodynamic variable.
+!
           if (lentropy.and..not.pretend_lnTT) then
-!
-!  Note: the initial condition is always produced for lnrho.
-!  This part has not yet been used or checked!
-!
-            f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
-                (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+            f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) + &
+                (1/cp1)*(f(l1:l2,m,n,ilnrho)-lnrho0)*(ggamma/gamma-1.)
           elseif (lentropy.and.pretend_lnTT) then
-            f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
+            call fatal_error("stratification_tsallis", &
+                "not implemented for pretend_lnTT")
           elseif (ltemperature.and..not.ltemperature_nolog) then
-            f(l1:l2,m,n,iTT)=log(cs20*cp1/gamma_m1)
+            call fatal_error("stratification_tsallis", &
+                "not implemented for ltemperature")
           elseif (ltemperature.and.ltemperature_nolog) then
             call fatal_error("stratification_tsallis", &
                 "not implemented for ltemperature_nolog")
