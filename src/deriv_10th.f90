@@ -87,7 +87,7 @@ module Deriv
     subroutine der_main(f,k,df,j,ignoredx)
 !
 !  calculate derivative df_k/dx_j
-!  accurate to 8th order, explicit, periodic
+!  accurate to 10th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !  18-jul-98/axel: corrected mx -> my and mx -> mz in all y and z ders
@@ -158,7 +158,7 @@ module Deriv
 !
 !  Along one pencil in NON f variable
 !  calculate derivative of a scalar, get scalar
-!  accurate to 8th order, explicit, periodic
+!  accurate to 10th order, explicit, periodic
 !
 !  26-nov-02/tony: coded, duplicate der_main but without k subscript, overload
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
@@ -280,7 +280,7 @@ module Deriv
     subroutine der2_main(f,k,df2,j)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
-!  accurate to 8th order, explicit, periodic
+!  accurate to 10th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
@@ -357,7 +357,7 @@ module Deriv
     subroutine der2_other(f,df2,j)
 !
 !  calculate 2nd derivative d^2f/dx_j^2 (of scalar f)
-!  accurate to 8th order, explicit, periodic
+!  accurate to 10th order, explicit, periodic
 !
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
@@ -1120,7 +1120,7 @@ module Deriv
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
-!  accurate to 8th order, explicit, periodic
+!  accurate to 10th order, explicit, periodic
 !
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
