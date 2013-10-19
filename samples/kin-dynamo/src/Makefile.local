@@ -9,4 +9,6 @@ DENSITY   = nodensity
 MAGNETIC  =   magnetic
 VISCOSITY = noviscosity
 EOS       = noeos
-#DERIV     =   deriv_10th
+#DERIV     =   deriv_2nd
+#DERIV     =   deriv_8th
+DERIV     =   deriv_10th
