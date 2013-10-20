@@ -7476,7 +7476,7 @@ module Magnetic
       real, dimension(ndc), intent(out) :: diffus_coeff
 !
       if (lresi_eta_const) then
-        diffus_coeff = mu01 * eta
+        diffus_coeff = eta
       else
         diffus_coeff = 0.0
       endif
