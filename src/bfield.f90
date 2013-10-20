@@ -385,7 +385,7 @@ module Magnetic
           call get_resistivity(f, eta_penc)
           call gij(f, ibb, bij, 1)
           call curl_mn(bij, jjn, bbn)
-          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(mu0 * eta_penc, 2, 3) * jjn
+          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(eta_penc, 2, 3) * jjn
 !         Time-step constraint
           timestep: if (lfirst .and. ldt) then
             if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
