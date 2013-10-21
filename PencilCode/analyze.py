@@ -1,7 +1,7 @@
 #
-# __init__.py
+# analyze.py
 #
-# Initializes submodule PencilCode.Analyze
+# Facilities for analyzing the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-10-21
 # Last Modification: $Id$
