@@ -17,7 +17,7 @@ def time_series(datadir='./data', diagnostics='dt'):
     # Chao-Chin Yang, 2013-10-22
     #
     from . import read
-    from pylab import plot, show
+    import matplotlib.pyplot as plt
 
     # Read the time series.
     ts = read.time_series(datadir=datadir)
@@ -25,8 +25,8 @@ def time_series(datadir='./data', diagnostics='dt'):
     # Plot the diagnostics.
     if type(diagnostics) is list:
         for diag in diagnostics:
-            plot(ts.t, ts[diag])
+            plt.plot(ts.t, ts[diag])
     else:
-        plot(ts.t, ts[diagnostics])
+        plt.plot(ts.t, ts[diagnostics])
     show()
 
