@@ -7,7 +7,15 @@
 # Last Modification: $Id$
 #
 def time_average(datadir='./data', diagnostics=['urms'], tmin=0):
-    """Find the time average of each given diagnostic variable.
+    """Finds the time average of each given diagnostic variable.
+
+    Keyword Arguments:
+        datadir:  Name of the data directory.
+        diagnostics:  A list of the diagnostic variables.
+        tmin:  Starting time of the time average.
+
+    A dictionary is returned with the mean and standard deviation of
+    each diagnostics.
     """
     #
     # Chao-Chin Yang, 2013-10-21
@@ -36,4 +44,5 @@ def time_average(datadir='./data', diagnostics=['urms'], tmin=0):
         print("<", diag, "> = ", mean, "+/-", stddev)
         return mean, stddev
 
+    # Find and return the time average and its standard deviation of each diagnostics.
     return dict((diag, stats(diag)) for diag in diagnostics)
