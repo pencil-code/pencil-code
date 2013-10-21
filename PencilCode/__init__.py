@@ -8,3 +8,4 @@
 #
 from . import read
 from . import find
+from . import plot
