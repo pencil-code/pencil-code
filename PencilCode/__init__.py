@@ -7,4 +7,4 @@
 # Last Modification: $Id$
 #
 from . import read
-from . import Analyze as analyze
+from . import analyze
