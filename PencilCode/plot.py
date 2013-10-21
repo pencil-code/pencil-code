@@ -28,5 +28,5 @@ def time_series(datadir='./data', diagnostics='dt'):
             plt.plot(ts.t, ts[diag])
     else:
         plt.plot(ts.t, ts[diagnostics])
-    show()
+    plt.show()
 
