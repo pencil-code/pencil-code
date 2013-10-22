@@ -52,17 +52,17 @@ module Testfield_general
   logical              :: ltestfield_profile_eta_z
   equivalence (lresitest_prof(inz),ltestfield_profile_eta_z)   ! for compatibility
 !
-  real   :: etatest=0.,etatest1=0.,       &
-            etatest_hyper3=0.,            &
-            daainit=0.,bamp=1.,           &
-            tau_aatest=0.,tau1_aatest=0., &
-            ampl_fcont_aatest=1.,         &
-            lin_testfield=0.,             &
-            lam_testfield=0.,             &
-            om_testfield=0.,              &
-            delta_testfield=0.,           &
-            delta_testfield_next=0.,      &
-            delta_testfield_time=0.
+  real :: etatest=0.,etatest1=0.,       &
+          etatest_hyper3=0.,            &
+          daainit=0.,bamp=1.,           &
+          tau_aatest=0.,tau1_aatest=0., &
+          ampl_fcont_aatest=1.,         &
+          lin_testfield=0.,             &
+          lam_testfield=0.,             &
+          om_testfield=0.,              &
+          delta_testfield=0.,           &
+          delta_testfield_next=0.,      &
+          delta_testfield_time=0.
 !
   character (len=labellen) :: itestfield='linear'
   character (len=labellen), dimension(nresitest_max) :: iresistivity_test=(/'const','none ','none ','none '/)
@@ -89,7 +89,8 @@ module Testfield_general
   real, dimension(:,:),    pointer:: eta2d
   real, dimension(:,:,:),  pointer:: eta3d,geta2d
   real, dimension(:,:,:,:),pointer:: geta3d
-  integer                         :: mnprof=0,jgprof=0
+  integer,                 pointer:: mnprof
+  integer                         :: jgprof=0
 !
   integer, dimension (njtest) :: nuxb=0
 
@@ -107,8 +108,10 @@ module Testfield_general
 !   2-jun-05/axel: adapted from magnetic
 !   6-sep-13/MR: insourced from testfield_z;
 !                generalized handling of eta profiles to all possible cases
+!  20-oct-13/MR: corrected: connection between mnprof and m or n needs to be permanent
+!                -> pointer introduced 
 !
-      use Cdata
+      use Cdata, only: lroot, iaxtest, iaatest, iaztest, lrescaling_testfield, m, n
       use Magnetic, only: lresi_dep
       use SharedVariables, only: fetch_profile
 !
@@ -189,9 +192,9 @@ module Testfield_general
 !  for access is m or n, respectively.
 !
         if (lresitest_prof(iny).or.lresitest_prof(inxy)) then
-          mnprof=m
+          mnprof => m
         elseif (lresitest_prof(inz).or.lresitest_prof(inxz)) then
-          mnprof=n
+          mnprof => n
         endif
 !  
 !  for x and y or x and z dependent profiles: index for second component of geta is 2 or 3, respectively.
@@ -396,7 +399,7 @@ module Testfield_general
 !  26-jun-05/anders: adapted from magnetic
 !  27-jun-13/MR  : moved from testfield_xz
 !
-      use Cdata
+      use Cdata, only: lpenc_requested, i_uu
 !
       lpenc_requested(i_uu)=.true.
 !
@@ -409,7 +412,7 @@ module Testfield_general
 !  26-jun-05/anders: adapted from magnetic
 !  27-jun-13/MR  : moved from testfield_xz
 !
-      use Cdata
+      use Cdata, only: npencils
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -461,7 +464,6 @@ module Testfield_general
       call gij(f,iaxt,aijtest,1)
       call curl_mn(aijtest,bbtest,f(l1:l2,m,n,iaxt:iaxt+2))
       call cross_mn(p%uu,bbtest,uxb)
-      !!!call cross_mn(f(l1:l2,m,n,iux:iuz),bbtest,uxb)
 
     endsubroutine calc_uxb
 !***********************************************************************
@@ -556,6 +558,7 @@ module Testfield_general
 !  jg contains indices (out of {1,2,3}) for which geta has nonvanishing components
 !
 !   6-sep-13/MR: coded
+!  20-oct-13/MR: Minv for itestfield='1-alt' and 'linear' added
 !
       real, dimension(nx,3),intent(IN) :: del2Atest
       real, dimension(nx),  intent(IN) :: divatest,eta
@@ -604,15 +607,33 @@ module Testfield_general
       do i=1,size(x)
       do j=1,size(z)
 !
-        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
-        Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
-        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
+        select case (itestfield)
+          case ('1')    
+            Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
+            Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /) 
+            Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
 !
-!        Minv(i,j,:,:) = RESHAPE((/  &
-!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
-!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
-!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
-!                                /), (/3,3/), ORDER=(/ 2, 1 /))
+!            Minv(i,j,:,:) = RESHAPE((/  &
+!                                      (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
+!                                      (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
+!                                      (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                    /), (/3,3/), ORDER=(/ 2, 1 /))
+
+          case ('1-alt')
+            Minv(i,j,1,:) = (/ cx(i)*cz(j)+sx(i)*sz(j), sx(i)*cz(j)-cx(i)*sz(j), -sx(i)*cz(j)+cx(i)*sz(j) /)  
+            Minv(i,j,2,:) = (/-cx(i)*sx(i), cx(i)*cx(i), sx(i)*sx(i) /)/(cx(i)*cz(j)-sx(i)*sz(j)) 
+            Minv(i,j,3,:) = (/-cz(j)*sz(j), sz(j)*sz(j), cz(j)*cz(j) /)/(cx(i)*cz(j)-sx(i)*sz(j))
+!
+          case ('2')    
+          case ('3')    
+          case ('4','linear')
+            Minv(i,j,1,:) = (/     1., 0., 0. /)
+            Minv(i,j,2,:) = (/  -x(i), 1., 0. /)
+            Minv(i,j,3,:) = (/  -z(j), 0., 1. /)
+    
+          case default  
+        endselect
+
       enddo
       enddo
 
@@ -633,9 +654,11 @@ module Testfield_general
 !  27-jun-13/MR: avoided calculation of pencil-case, introduced calculation of mean EMF
 !  28-aug-13/MR: parametrized such that it is usable for all cases with average over one direction
 !   3-sep-13/MR: outsourced from testfield_xz
-!   
+!  20-oct-13/MR: setting of lfirstpoint corrected; ny*temp_array --> nygrid*temp_array
+!                allowed for other cases of itestfield; calculation of Eij for diagnostic output corrected
+! 
     Use Diagnostics, only: sum_mn_name, save_name
-    Use Cdata, only: n, nghost, l1davgfirst, l2davgfirst, ldiagnos, lroot
+    Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x, fnamexz
     Use Sub, only: fourier_single_mode
 !
     integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiag_Eij, &
@@ -645,34 +668,39 @@ module Testfield_general
     real,    dimension(:,:,:,:),intent(in):: uxbtestm, Minv
     external                              :: ysum_xz,xysum_z
 !
-    integer :: i, j, ij, count, nl, jtest, nx, nz, n1, n2
+    integer :: i, j, ij, count, nl, jtest, nx, nz, n, n1, n2
     real, dimension(2,size(uxbtestm,1)) :: temp_fft_z
     real, dimension(2,2) :: temp_fft
     real, dimension (:,:,:), allocatable :: temp_array
     logical, dimension(size(idiags)) :: need_temp
     integer, dimension (size(idiags)) :: twod_address
 !
-! Mean EMF
-!
     nx = size(uxbtestm,1)
     nz = size(uxbtestm,2)
     n1 = nghost+1
     n2 = nghost+nz
-
-    do n=n1,n2 
 !
-      nl = n-n1+1
-      jtest = 1
+! Mean EMF
 !
-      do i=1,size(idiag_Eij),3                                         ! over all testfields
-        do j=1,3                                                       ! over vector components
-          call ysum_xz(uxbtestm(:,nl,j,jtest),n,idiags_xz(i+j-1))
+    if (l2davgfirst) then
+!
+      lfirstpoint=.true.
+      do n=n1,n2 
+!
+        nl = n-n1+1
+        jtest = 1
+!
+        do i=1,size(idiag_Eij),3                                            ! over all testfields
+          do j=1,3                                                          ! over vector components
+            call ysum_xz(uxbtestm(:,nl,j,jtest)*nygrid,n,idiag_Eij(i+j-1))  ! but not over y, hence multiplied by nyrgid
+          enddo
+          jtest = jtest+1
         enddo
-        jtest = jtest+1
-      enddo
-!
-    enddo
 
+        lfirstpoint=.false.
+      enddo
+    endif
+  
     if (l2davgfirst .and. needed2d(2)) then 
       need_temp=twod_need_2d
     else
@@ -695,7 +723,7 @@ module Testfield_general
     allocate(temp_array(nx,nz,count))
 !
     select case (itestfield)
-    case ('1')
+    case ('1','1-alt','4','linear')
 !
       do n=1,nz
         do i=1,3 
@@ -739,7 +767,7 @@ module Testfield_general
       enddo
 !
     case default
-      call fatal_error('calc_coefficients','Calculation of coefficients not implemented for itestfield /= 1')
+      call fatal_error('calc_coefficients',"Calculation of coefficients not implemented for itestfield /= '1'")
       temp_array=0.
 !
     end select
@@ -775,41 +803,43 @@ module Testfield_general
           enddo 
         endif
       endif
-!
     endif
 !
-    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
+    temp_array = nygrid*temp_array    ! nygrid multiplied because we are in the following only in an n loop
 !
     if (ldiagnos .and. needed2d(1)) then
-      do n=n1,n2
-        
+!
+      lfirstpoint=.true.
+      do n=n1,n2        
         nl = n-n1+1
         do i=1,size(twod_address)
           call sum_mn_name(temp_array(:,nl,twod_address(i)), idiags(i))
         enddo
-
+        lfirstpoint=.false.
       enddo
     endif
 !
     if (l1davgfirst .and. needed2d(1)) then  !!!TBC
-      do n=n1,n2
 !
+      lfirstpoint=.true.
+      do n=n1,n2
         nl = n-n1+1
         do i=1,size(twod_address)
           call xysum_z(temp_array(:,nl,twod_address(i)),n,idiags_z(i))
         enddo
-!
+        lfirstpoint=.false.
       enddo
     endif
 !
     if (l2davgfirst .and. needed2d(2)) then
-      do n=n1,n2 
 !
+      lfirstpoint=.true.
+      do n=n1,n2 
         nl = n-n1+1
         do i=1,size(twod_address)
           call ysum_xz(temp_array(:,nl,twod_address(i)),n,idiags_xz(i))
         enddo
-!
+        lfirstpoint=.false.
       enddo
     endif
 !
@@ -847,6 +877,7 @@ module Testfield_general
 !
 !  3-sep-13/MR: outsourced from testfield_xz
 !  6-sep-13/MR: introduced use of calc_diffusive_part
+! 20-oct-13/MR: corrected: use full velocity in Uxbtest
 !
       use Cdata
       use Sub, only: curl, cross_mn, del2v, gij, gij_etc, identify_bcs
@@ -858,7 +889,7 @@ module Testfield_general
       real, dimension(nx,3,njtest),      intent(IN)   :: uxbtestm
       external                                        :: set_bbtest
 !
-      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,uufluct,daatest
+      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,daatest
 !
       integer :: jtest
 !
@@ -897,18 +928,15 @@ module Testfield_general
 !
 !  calculate fluctuating velocity  in the main run
 !
-        uufluct = p%uu-uum
-        !!!uufluct = f(l1:l2,m,n,iux:iuz)-uum
-
-        call cross_mn(uufluct,bbtest,uxB)
+        call cross_mn(p%uu-uum,bbtest,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest+uxB 
 !
         if (.not.lsoca) then
 
           call curl(f,iaxtest,btest)
-          call cross_mn(uufluct,btest,uxbtest)
+          call cross_mn(p%uu,btest,uxbtest)
 !
-!  subtract average emf
+!  subtract average emf, that is, add finally (U x btest)' = \mean{U} x btest + (u x btest)'
 !
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                         +uxbtest-uxbtestm(:,:,jtest)
