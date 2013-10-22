@@ -309,7 +309,8 @@ module Cdata
 !
 !  Pencil-related stuff.
 !
-  integer :: imn,m,n
+  integer :: imn
+  integer, target :: m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer, dimension (my,mz) :: imn_array
@@ -474,7 +475,8 @@ module Cdata
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   character (LEN=40) :: xy_spec=''
-  character (LEN=10), dimension(10) :: xy_specs=''
+  integer, parameter :: n_xy_specs_max=10
+  character (LEN=10), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
