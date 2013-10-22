@@ -85,8 +85,9 @@ module Testfield
 !   2-jun-05/axel: adapted from magnetic
 !  27-jun-13/MR  : set itestfield='1' as it is only implemented case
 !                  set lcalc_uumeanxy=.true., itestfield now string     
-!
-      use Hydro, only: lcalc_uumeanxy
+!  20-oct-13/MR  : calculation of means in hydro triggered
+! 
+      use Hydro, only: lcalc_uumeanxy, calc_means_hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
@@ -95,13 +96,14 @@ module Testfield
            
       !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!! TBC
 !
-      itestfield='1'
+!!!      itestfield='1'
 !
 ! calculate inverse matrix for determination of the turbulent coefficients
 !
       call calc_inverse_matrix(x(l1:l2),y(m1:m2),ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
 !
       lcalc_uumeanxy = .true.
+      call calc_means_hydro(f)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -163,11 +165,11 @@ module Testfield
 !
         ml=m-m1+1
         select case (itestfield)
-          case ('1')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest)
-          case ('2')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest2)
-          case ('3')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest3)
-          case ('4')  ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest4)
-          case default; call fatal_error('daatest_dt','undefined itestfield')
+          case ('1')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest)
+          case ('2')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest2)
+          case ('3')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest3)
+          case ('4','linear'); call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest4)
+          case default       ; call fatal_error('daatest_dt','undefined itestfield')
         endselect
 !
     endsubroutine daatest_dt
@@ -236,6 +238,9 @@ module Testfield
 !
               call curl(f,iaxtest,btest)
               call calc_pencils_hydro(f,p,lpenc_loc)
+!
+! U x btest = (\mean{U} + u') x btest
+!
               call cross_mn(p%uu,btest,uxbtest)
 !
 !  without SOCA, the alpha tensor is anisotropic even for the standard
@@ -418,12 +423,13 @@ module Testfield
 !  set testfield using constant and linear functions
 !
 !  15-jun-05/axel: adapted from set_bbtest3
+!  20-oct-13/MR  : changed order of testfields
 !
       real, dimension (nx,3) :: bbtest
       integer :: jtest
 !
-      intent(in)  :: jtest
-      intent(out) :: bbtest
+      intent(in) :: jtest
+      intent(out):: bbtest
 !
       real, dimension (nx) :: xx
       real :: yy
@@ -435,14 +441,17 @@ module Testfield
 !
       select case (jtest)
       case (1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case (4); bbtest(:,1)=yy; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=yy; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=yy
-      case (7); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
+      case (2); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=yy; bbtest(:,2)=0.; bbtest(:,3)=0.
+!
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=yy; bbtest(:,3)=0.
+!
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=yy
+!
       case default; bbtest=0.
       endselect
 !
