@@ -189,6 +189,8 @@ else if ( ($hn =~ stokes*) && ($USER =~ pr1s0037) ) then # Stokes machine
   set str='s/\/ichec\/home\/users\/pr1s0037/\/ichec\/work\/PLANETESIM/g'
 else if ( ($hn =~ gardar*) ) then
   set str='s/home/scratch/g'
+else if ($hn =~ darwin*) then
+  set str='s/Users/var\/tmp/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
@@ -204,7 +206,7 @@ if ("$str" == '') then
   mkdir data
 else
 #
-#  Make and link to scatch disk.
+#  Make and link to scratch disk.
 #
   sed -e "$str" .tmp >! .scr
   if ( -d data ) then
