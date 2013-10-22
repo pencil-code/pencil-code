@@ -73,6 +73,7 @@ module Testfield
   real :: ampl_fcont_aatest=1.
   real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
+  logical :: ltestfield_newx=.true.,ltestfield_newy=.true.
   logical :: ltestfield_taver=.false.
   logical :: llorentzforce_testfield=.false.
   logical :: lforcing_cont_aatest=.false.
@@ -84,7 +85,8 @@ module Testfield
        ktestfield,kxtestfield,kytestfield, &
        ztestfield_offset, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
-       ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
+       ltestfield_newx,ltestfield_newy,ltestfield_newz, &
+       leta_rank2,lphase_adjust,phase_testfield, &
        ltestfield_taver,llorentzforce_testfield, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
@@ -228,13 +230,23 @@ module Testfield
 !
 !  define sinkx and coskx, called sx and cx
 !
-      sx=sin(kxtestfield*x(l1:l2))
-      cx=cos(kxtestfield*x(l1:l2))
+      if (ltestfield_newx) then
+        sx=sin(2.*pi*kxtestfield*(x(l1:l2)-x0)/Lx)
+        cx=cos(2.*pi*kxtestfield*(x(l1:l2)-x0)/Lx)
+      else
+        sx=sin(kxtestfield*x(l1:l2))
+        cx=cos(kxtestfield*x(l1:l2))
+      endif
 !
 !  define sinky and cosky, called sy and cy
 !
-      sy=sin(kytestfield*y)
-      cy=cos(kytestfield*y)
+      if (ltestfield_newy) then
+        sy=sin(2.*pi*kytestfield*(y-y0)/Ly)
+        cy=cos(2.*pi*kytestfield*(y-y0)/Ly)
+      else
+        sy=sin(kytestfield*y)
+        cy=cos(kytestfield*y)
+      endif
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
