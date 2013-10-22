@@ -380,6 +380,7 @@ module Hydro
 !   20-sep-13/MR  : lpenc changed into list of indices in lpencil, penc_inds,
 !                   for which pencils are calculated, default: all
 !   21-sep-13/MR  : returned to pencil mask as parameter lpenc_loc
+!   20-oct-13/MR  : Glen Roberts flow w.r.t. x and z added
 !
       use Diagnostics
       use General
@@ -486,6 +487,18 @@ module Hydro
           p%uij(:,3,2)=sqrt2*ky_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uij(:,3,3)=+0.
         endif
+     case ('roberts_xz')
+        if (headtt) print*,'Glen Roberts flow w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin
+! uu
+        sqrt2=sqrt(2.)
+        if (lpenc_loc(i_uu)) then
+          eps1=1.-eps_kinflow
+          p%uu(:,1)= +eps1*sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-sqrt2*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uu(:,3)= -eps1*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu) .or. lpenc_loc(i_uij)) &
+           call fatal_error('hydro_kinematic: roberts_xz -- div u and uij not yet implemented')
 !
 ! Chandrasekhar-Kendall Flow
 !
