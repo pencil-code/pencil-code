@@ -39,10 +39,11 @@ def time_average(datadir='./data', diagnostics=['urms'], tmin=0):
     def stats(diag):
         from scipy import integrate
         from numpy import sqrt
-        mean = dtinv * integrate.simps(ts[diag], ts.t)
-        stddev = sqrt(dtinv * integrate.simps((ts[diag] - mean)**2, ts.t))
+        mean = dtinv * integrate.simps(ts[diag][indices], ts.t[indices])
+        stddev = sqrt(dtinv * integrate.simps((ts[diag][indices] - mean)**2, ts.t[indices]))
         print("<", diag, "> = ", mean, "+/-", stddev)
         return mean, stddev
 
     # Find and return the time average and its standard deviation of each diagnostics.
     return dict((diag, stats(diag)) for diag in diagnostics)
+
