@@ -1599,6 +1599,8 @@ module Diagnostics
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before 
 !
+      use Cdata, only: fname
+!
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
@@ -2036,6 +2038,8 @@ module Diagnostics
 !
 !   3-sep-13/MR: derived from xysum_mn_name_z
 !
+      use Cdata, only: n
+!
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
@@ -2091,6 +2095,8 @@ module Diagnostics
 !
 !   3-sep-13/MR: derived from xzsum_mn_name_y
 !
+      use Cdata, only: m
+!
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
@@ -2124,6 +2130,7 @@ module Diagnostics
 !  m starts with mghost+1=4, so the correct index is m-nghost.
 !
         lmax=l2; ml=m-nghost
+!        
         if (lav_smallx) lmax=ixav_max
         if (.not.loutside_avg) then
           if (lspherical_coords.and.nxgrid>1)then
@@ -2145,6 +2152,8 @@ module Diagnostics
     subroutine yzsum_mn_name_x(a,iname)
 !
 !   3-sep-13/MR: derived from yzsum_mn_name_x
+!
+      use Cdata, only: m
 !
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
@@ -2196,6 +2205,7 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname
       real :: fac,suma
+      integer :: nl
 !
       if (iname==0) return
 !
@@ -2218,7 +2228,8 @@ module Diagnostics
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost.
 !
-      fnamez(n-nghost,ipz+1,iname) = fnamez(n-nghost,ipz+1,iname) + suma
+      nl=n-nghost
+      fnamez(nl,ipz+1,iname) = fnamez(nl,ipz+1,iname) + suma
 !
     endsubroutine xyintegrate_mn_name_z
 !***********************************************************************
@@ -2331,6 +2342,8 @@ module Diagnostics
 !
 !   3-sep-13/MR: derived from ysum_mn_name_xz
 !
+      use Cdata, only: n
+!
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
@@ -2366,7 +2379,7 @@ module Diagnostics
       if (lspherical_coords.or.lcylindrical_coords)then
         fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a*x(l1:l2)
       else
-        fnamexz(:,nl,iname)=fnamexz(:,nl,iname)+a
+        fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
       endif
 !
     endsubroutine ysum_mn_name_xz_npar
@@ -2381,7 +2394,8 @@ module Diagnostics
 !  08-feb-12/ccyang: add option for integration
 !   3-sep-13/MR: derived from zsum_mn_name_xy
 !
-      use Sub, only: loptest
+      use Sub  , only: loptest
+      use Cdata, only: n,m
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
@@ -2420,6 +2434,7 @@ module Diagnostics
 !  m starts with nghost+1=4, so the correct index is m-nghost.
 !
       ml=m-nghost
+!
       fnamexy(:,ml,iname)=fnamexy(:,ml,iname)+a
 !
     endsubroutine zsum_mn_name_xy_mpar
