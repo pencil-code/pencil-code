@@ -498,7 +498,7 @@ module Hydro
           p%uu(:,3)= -eps1*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
         endif
         if (lpenc_loc(i_divu) .or. lpenc_loc(i_uij)) &
-           call fatal_error('hydro_kinematic: roberts_xz -- div u and uij not yet implemented')
+           call fatal_error('hydro_kinematic: kinflow=roberts_xz','div u and uij not yet implemented')
 !
 ! Chandrasekhar-Kendall Flow
 !
