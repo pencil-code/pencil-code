@@ -1821,6 +1821,7 @@ module Magnetic
       if (idiag_jxmax/=0 .or. idiag_jymax/=0 .or. idiag_jzmax/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
+      if (idiag_jxbrmax/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_poynzmz/=0) lpenc_diagnos(i_jxb)=.true.
       if (idiag_jxbr2m/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jxbrxmx/=0 .or. idiag_jxbrymx/=0 .or. idiag_jxbrzmx/=0 .or. &
@@ -2088,6 +2089,8 @@ module Magnetic
         lpencil_in(i_bb)=.true.
         lpencil_in(i_hjj)=.true.
       endif
+!
+      if (lpencil_in(i_jxbr2)) lpencil_in(i_jxbr)=.true.
 !
       if (lpencil_in(i_jxbr)) then
         lpencil_in(i_jxb)=.true.
