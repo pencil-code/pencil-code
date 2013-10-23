@@ -6,6 +6,19 @@
 # Chao-Chin Yang, 2013-05-06
 # Last Modification: $Id$
 #
+    #object holding the dimensions of the data held by one processor.
+
+    #   Data attributes:
+
+    #     double:     True if the data is in double precision.
+    #     maux:       number of auxiliary variables.
+    #     mglobal:    number of global variables.
+    #     mvar:       number of state variables.
+    #     mx, my, mz: number of cells including ghost cells in each direction.
+    #     nghost:     number of ghost cells from boundary.
+    #     iprocx, iprocy, iprocz:
+    #                 processor ID in each direction.
+
 def dimensions(datadir='./data'):
     """Returns the dimensions of the Pencil Code data from datadir. """
     #
@@ -41,37 +54,41 @@ def dimensions(datadir='./data'):
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
 
-class DimProc:
-    """object holding the dimensions of the data held by one processor.
+def proc_dim(datadir='./data', proc=0):
+    """Returns the dimensions of the data from one process.
 
-       Data attributes:
-
-         double:     True if the data is in double precision.
-         maux:       number of auxiliary variables.
-         mglobal:    number of global variables.
-         mvar:       number of state variables.
-         mx, my, mz: number of cells including ghost cells in each direction.
-         nghost:     number of ghost cells from boundary.
-         iprocx, iprocy, iprocz:
-                     processor ID in each direction.
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+        proc
+            Process ID
     """
+    # Chao-Chin Yang, 2013-10-23
 
-    def __init__(self, proc=0, datadir='./data'):
-        """reads the dimensions of the data from processor of ID proc under datadir. """
-        #
-        # Chao-Chin Yang, 2013-05-06
-        #
-        f = open(path_proc(proc, datadir.strip()) + '/dim.dat')
-        a = f.read().rsplit()
-        self.mx, self.my, self.mz, self.mvar, self.maux, self.mglobal = (int(b) for b in a[0:6])
-        self.double = a[6] == 'D'
-        if a[6] == '?':
-            print('Warning: unknown data precision. ')
-        if not a[7] == a[8] == a[9]:
-            raise Exception('unequal number of ghost zones in every direction. ')
-        self.nghost = int(a[7])
-        self.iprocx, self.iprocy, self.iprocz = (int(b) for b in a[10:13])
-        f.close()
+    # Read dim.dat.
+    f = open(datadir.strip() + '/proc' + str(proc) + '/dim.dat')
+    a = f.read().rsplit()
+    f.close()
+
+    # Sanity Check
+    if a[6] == '?':
+        print('Warning: unknown data precision. ')
+    if not a[7] == a[8] == a[9]:
+        raise Exception('unequal number of ghost zones in every direction. ')
+
+    # Extract the dimensions.
+    mx, my, mz, mvar, maux, mglobal = (int(b) for b in a[0:6])
+    double_precision = a[6] == 'D'
+    nghost = int(a[7])
+    nx, ny, nz = (int(b) - 2 * nghost for b in a[0:3])
+    iprocx, iprocy, iprocz = (int(b) for b in a[10:13])
+
+    # Define and return a named tuple.
+    from collections import namedtuple
+    Dimensions = namedtuple('Dimensions', ['nx', 'ny', 'nz', 'nghost', 'mx', 'my', 'mz', 'mvar', 'maux', 'mglobal',
+                                           'double_precision', 'iprocx', 'iprocy', 'iprocz'])
+    return Dimensions(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz, mvar=mvar, maux=maux, mglobal=mglobal,
+                      double_precision=double_precision, iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
 
 
 def time_series(datadir='./data'):
@@ -93,14 +110,6 @@ def time_series(datadir='./data'):
     f.close()
 
     return ts
-
-
-def path_proc(proc=0, datadir='./data'):
-    """returns the path to the data held by the processor of ID proc. """
-    #
-    # Chao-Chin Yang, 2013-05-13
-    #
-    return datadir.strip() + '/proc' + str(proc)
 
 
 def varname(datadir='./data'):
