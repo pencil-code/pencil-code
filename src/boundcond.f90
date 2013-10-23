@@ -15,7 +15,7 @@ module Boundcond
 !
   private
 !
-  public :: update_ghosts, finalize_boundcond
+  public :: update_ghosts, zero_ghosts, finalize_boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
@@ -26,6 +26,11 @@ module Boundcond
   interface update_ghosts
      module procedure update_ghosts_all
      module procedure update_ghosts_range
+  endinterface
+!
+  interface zero_ghosts
+     module procedure zero_ghosts_all
+     module procedure zero_ghosts_range
   endinterface
 !
   interface bc_pencil
@@ -71,6 +76,36 @@ module Boundcond
       call boundconds_z(a,ivar1,ivar2)
 !
     endsubroutine update_ghosts_range
+!***********************************************************************
+    subroutine zero_ghosts_all(f)
+!
+!  Zeros the ghost cells for all variables.
+!
+!  23-oct-13/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call zero_ghosts_range(f, 1, mfarray)
+!
+    endsubroutine zero_ghosts_all
+!***********************************************************************
+    subroutine zero_ghosts_range(f, ivar1, ivar2)
+!
+!  Zeros the ghost cells for variables ivar1:ivar2.
+!
+!  23-oct-13/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
+!
+      f(1:nghost,:,:,ivar1:ivar2) = 0.0
+      f(mx-nghost+1:mx,:,:,ivar1:ivar2) = 0.0
+      f(:,1:nghost,:,ivar1:ivar2) = 0.0
+      f(:,my-nghost+1:my,:,ivar1:ivar2) = 0.0
+      f(:,:,1:nghost,ivar1:ivar2) = 0.0
+      f(:,:,mz-nghost+1:mz,ivar1:ivar2) = 0.0
+!
+    endsubroutine zero_ghosts_range
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !

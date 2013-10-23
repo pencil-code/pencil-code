@@ -346,7 +346,7 @@ module Magnetic
 !
 !  08-oct-13/ccyang: coded.
 !
-      use Boundcond, only: update_ghosts
+      use Boundcond, only: update_ghosts, zero_ghosts
       use Grid, only: get_grid_mn
       use Shear, only: get_uy0_shear
       use Sub, only: gij, curl_mn
@@ -967,7 +967,7 @@ module Magnetic
 !
 !  20-sep-13/ccyang: coded
 !
-      use Boundcond, only: update_ghosts
+      use Boundcond, only: update_ghosts, zero_ghosts
       use Grid, only: get_grid_mn
       use Sub, only: curl, del4
 !
@@ -1012,27 +1012,6 @@ module Magnetic
       f(l1:l2,m1:m2,n1:n2,ieex:ieez) = -eta_hyper3_mesh * d4jj
 !
     endsubroutine mesh_hyper_resistivity
-!***********************************************************************
-    subroutine zero_ghosts(f, ivar1, ivar2)
-!
-!  Zeros the ghost cells for variables ivar1:ivar2.
-!
-!  23-oct-13/ccyang: coded.
-!
-!  This is a temporary solution to a known bug in shearing boundary
-!  conditions.
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: ivar1, ivar2
-!
-      f(1:nghost,:,:,ivar1:ivar2) = 0.0
-      f(mx-nghost+1:mx,:,:,ivar1:ivar2) = 0.0
-      f(:,1:nghost,:,ivar1:ivar2) = 0.0
-      f(:,my-nghost+1:my,:,ivar1:ivar2) = 0.0
-      f(:,:,1:nghost,ivar1:ivar2) = 0.0
-      f(:,:,mz-nghost+1:mz,ivar1:ivar2) = 0.0
-!
-    endsubroutine zero_ghosts
 !***********************************************************************
 !***********************************************************************
 !
