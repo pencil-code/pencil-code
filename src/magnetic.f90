@@ -263,7 +263,7 @@ module Magnetic
       reinitialize_aa, rescale_aa, initaa, amplaa, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
-      eta_xwidth, eta_ywidth, eta_zwidth, & 
+      eta_xwidth, eta_ywidth, eta_zwidth, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
@@ -768,7 +768,7 @@ module Magnetic
         write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
       endif
 !
-! register EE as auxilliary array if asked for. 
+! register EE as auxilliary array if asked for.
 !
       if (lEE_as_aux) then
         call farray_register_auxiliary('EE',iEE,vector=3)
@@ -1010,7 +1010,7 @@ module Magnetic
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
-          ! Backward compatibility: originally, this routine used 
+          ! Backward compatibility: originally, this routine used
           ! eta_zwidth as eta_width
           if (eta_zwidth==0.and.eta_width/=0.0) eta_zwidth=eta_width
           call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
@@ -1197,7 +1197,7 @@ module Magnetic
 !
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderaa is set, then the other components get the same value.
-!                                                                                                                                     
+!
       if (lpropagate_borderaa     .and. &
            borderaa(1)/='nothing' .and. &
            borderaa(2)=='nothing' .and. &
@@ -2246,7 +2246,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
-      logical, dimension(:),              intent(in)   :: lpenc_loc       
+      logical, dimension(:),              intent(in)   :: lpenc_loc
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
@@ -3212,7 +3212,7 @@ module Magnetic
             enddo
             dAdt = dAdt-p%uga-ujiaj+fres
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
-            
+!
 !
 !  ladvective_gauge2
 !
@@ -3427,13 +3427,13 @@ module Magnetic
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
-! Electric field E = -dA/dt, store the Electric field in an array if asked for. 
+! Electric field E = -dA/dt, store the Electric field in an array if asked for.
 !
       if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
 !
-! Now add all the contribution to dAdt so far into df. 
+! Now add all the contribution to dAdt so far into df.
 ! This is done here, such that contribution from mean-field models are not added to
-! the electric field. This may need review later. 
+! the electric field. This may need review later.
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
 !
@@ -4416,7 +4416,7 @@ module Magnetic
 !  select for different target profiles
 !
       do j=1,3
-
+!
         select case (borderaa(j))
 !
         case ('zero','0')
