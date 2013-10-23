@@ -1,29 +1,19 @@
-#
+#=======================================================================
 # read.py
 #
 # Facilities for reading the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-05-06
 # Last Modification: $Id$
-#
-    #object holding the dimensions of the data held by one processor.
-
-    #   Data attributes:
-
-    #     double:     True if the data is in double precision.
-    #     maux:       number of auxiliary variables.
-    #     mglobal:    number of global variables.
-    #     mvar:       number of state variables.
-    #     mx, my, mz: number of cells including ghost cells in each direction.
-    #     nghost:     number of ghost cells from boundary.
-    #     iprocx, iprocy, iprocz:
-    #                 processor ID in each direction.
-
+#=======================================================================
 def dimensions(datadir='./data'):
-    """Returns the dimensions of the Pencil Code data from datadir. """
-    #
+    """Returns the dimensions of the Pencil Code data from datadir.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
     # Chao-Chin Yang, 2013-10-23
-    #
 
     # Read dim.dat.
     f = open(datadir.strip() + '/dim.dat')
@@ -53,7 +43,7 @@ def dimensions(datadir='./data'):
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
-
+#=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
 
@@ -90,37 +80,51 @@ def proc_dim(datadir='./data', proc=0):
     return Dimensions(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz, mvar=mvar, maux=maux, mglobal=mglobal,
                       double_precision=double_precision, iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
 
-
+#=======================================================================
 def time_series(datadir='./data'):
-    """returns a NumPy recarray from the time series data under datadir. """
-    #
+    """Returns a NumPy recarray from the time series.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
     # Chao-Chin Yang, 2013-05-13
-    #
+
+    # Import necessary modules.
     from numpy import recfromtxt
     from io import BytesIO
 
+    # Save the data path.
     path = datadir.strip()
 
+    # Read legend.dat.
     f = open(path + '/legend.dat')
     names = f.read().replace('-', ' ').split()
     f.close()
 
+    # Read time_series.dat.
     f = open(path + '/time_series.dat')
     ts = recfromtxt(BytesIO(f.read().encode()), names=names)
     f.close()
 
     return ts
 
-
+#=======================================================================
 def varname(datadir='./data'):
-    """returns the names of the farray variables. """
-    #
+    """Returns the names of the farray variables.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
     # Chao-Chin Yang, 2013-05-13
-    #
+
+    # Read varname.dat.
     f = open(datadir.strip() + '/varname.dat')
     var = []
     for line in f:
         var.append(line.split()[1])
     f.close()
+
     return var
 
