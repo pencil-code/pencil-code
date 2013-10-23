@@ -11,79 +11,34 @@ def dimensions(datadir='./data'):
     #
     # Chao-Chin Yang, 2013-10-23
     #
+
     # Read dim.dat.
     f = open(datadir.strip() + '/dim.dat')
     a = f.read().rsplit()
     f.close()
+
     # Sanity check
     if a[6] == '?':
         print('Warning: unknown data precision. ')
     if not a[7] == a[8] == a[9]:
         raise Exception('unequal number of ghost zones in different directions. ')
-    # Define and return a dimension object.
-    class Dimension:
-        """Contains the dimensions of the Pencil Code data."""
-        @property
-        def nghost(self):
-            """number of ghost cells"""
-            return int(a[7])
-        @property
-        def mxgrid(self):
-            """number of cells in x direction, including ghost cells"""
-            return int(a[0])
-        @property
-        def mygrid(self):
-            """number of cells in y direction, including ghost cells"""
-            return int(a[1])
-        @property
-        def mzgrid(self):
-            """number of cells in z direction, including ghost cells"""
-            return int(a[2])
-        @property
-        def nxgrid(self):
-            """number of cells in x direction, excluding ghost cells"""
-            return int(a[0]) - 2 * int(a[7])
-        @property
-        def nygrid(self):
-            """number of cells in y direction, excluding ghost cells"""
-            return int(a[1]) - 2 * int(a[7])
-        @property
-        def nzgrid(self):
-            """number of cells in z direction, excluding ghost cells"""
-            return int(a[2]) - 2 * int(a[7])
-        @property
-        def mvar(self):
-            """number of state variables"""
-            return int(a[3])
-        @property
-        def maux(self):
-            """number of auxiliary variables"""
-            return int(a[4])
-        @property
-        def mglobal(self):
-            """number of global variables"""
-            return int(a[5])
-        @property
-        def double_precision(self):
-            """True if the data is in double precision; False otherwise"""
-            return a[6] == 'D'
-        @property
-        def nprocx(self):
-            """number of processors in x direction"""
-            return int(a[10])
-        @property
-        def nprocy(self):
-            """number of processors in x direction"""
-            return int(a[11])
-        @property
-        def nprocz(self):
-            """number of processors in x direction"""
-            return int(a[12])
-        @property
-        def procz_last(self):
-            """True if the z direction is the last; False otherwise"""
-            return int(a[13]) == 1
-    return Dimension()
+
+    # Extract the dimensions.
+    mxgrid, mygrid, mzgrid, mvar, maux, mglobal = (int(b) for b in a[0:6])
+    double_precision = a[6] == 'D'
+    nghost = int(a[7])
+    nxgrid, nygrid, nzgrid = (int(b) - 2 * nghost for b in a[0:3])
+    nprocx, nprocy, nprocz = (int(b) for b in a[10:13])
+    procz_last = int(a[13]) == 1
+
+    # Define and return a named tuple.
+    from collections import namedtuple
+    Dimensions = namedtuple('Dimensions', ['nxgrid', 'nygrid', 'nzgrid', 'nghost', 'mxgrid', 'mygrid', 'mzgrid',
+                                           'mvar', 'maux', 'mglobal', 'double_precision',
+                                           'nprocx', 'nprocy', 'nprocz', 'procz_last'])
+    return Dimensions(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost, mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,
+                      mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
+                      nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
 
 class DimProc:
