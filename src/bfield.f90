@@ -396,7 +396,10 @@ module Magnetic
 !
 !  Communicate the E field.
 !
-      if (lresis_hyper3_mesh .or. lexplicit_resistivity) call update_ghosts(f, ieex, ieez)
+      bc: if (lresis_hyper3_mesh .or. lexplicit_resistivity) then
+        call zero_ghosts(f, ieex, ieez)
+        call update_ghosts(f, ieex, ieez)
+      endif bc
 !
 !  Get the shear velocity if existed.
 !
@@ -986,6 +989,7 @@ module Magnetic
         call curl(f, ibb, pv, ignoredx=.true.)
         f(l1:l2,m,n,ieex:ieez) = pv
       enddo curlbb
+      call zero_ghosts(f, ieex, ieez)
       call update_ghosts(f, ieex, ieez)
 !
 !  Calculate its fourth-order mesh derivative.
@@ -1008,6 +1012,27 @@ module Magnetic
       f(l1:l2,m1:m2,n1:n2,ieex:ieez) = -eta_hyper3_mesh * d4jj
 !
     endsubroutine mesh_hyper_resistivity
+!***********************************************************************
+    subroutine zero_ghosts(f, ivar1, ivar2)
+!
+!  Zeros the ghost cells for variables ivar1:ivar2.
+!
+!  23-oct-13/ccyang: coded.
+!
+!  This is a temporary solution to a known bug in shearing boundary
+!  conditions.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
+!
+      f(1:nghost,:,:,ivar1:ivar2) = 0.0
+      f(mx-nghost+1:mx,:,:,ivar1:ivar2) = 0.0
+      f(:,1:nghost,:,ivar1:ivar2) = 0.0
+      f(:,my-nghost+1:my,:,ivar1:ivar2) = 0.0
+      f(:,:,1:nghost,ivar1:ivar2) = 0.0
+      f(:,:,mz-nghost+1:mz,ivar1:ivar2) = 0.0
+!
+    endsubroutine zero_ghosts
 !***********************************************************************
 !***********************************************************************
 !
