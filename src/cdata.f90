@@ -165,6 +165,7 @@ module Cdata
   logical :: lformat=.false.
   logical :: lread_less=.false.
   logical :: loutput_varn_at_exact_tsnap=.false.
+  logical :: lread_from_other_prec=.false.
 !
 !  Units (need to be in double precision).
 !
