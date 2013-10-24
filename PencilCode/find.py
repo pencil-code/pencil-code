@@ -9,15 +9,16 @@
 def time_average(datadir='./data', diagnostics=None, tmin=0):
     """Finds the time average of each given diagnostic variable.
 
-    Returned Value:
-        A dictionary with the mean and standard deviation of each
-    diagnostics for t >= tmin.
+    Returned Values:
+        The mean and standard deviation of each diagnostics for
+      t >= tmin.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
         diagnostics
-            (A list of) diagnostic variable(s).
+            (A list of) diagnostic variable(s).  If None, all
+          diagnostics but it and t are processed.
         tmin
             Starting time of the time average.
     """
