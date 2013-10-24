@@ -6,7 +6,7 @@
 # Chao-Chin Yang, 2013-10-21
 # Last Modification: $Id$
 #=======================================================================
-def time_average(datadir='./data', diagnostics='dt', tmin=0):
+def time_average(datadir='./data', diagnostics=None, tmin=0):
     """Finds the time average of each given diagnostic variable.
 
     Returned Value:
@@ -21,7 +21,7 @@ def time_average(datadir='./data', diagnostics='dt', tmin=0):
         tmin
             Starting time of the time average.
     """
-    # Chao-Chin Yang, 2013-10-21
+    # Chao-Chin Yang, 2013-10-24
 
     # Read the time series.
     from . import read
@@ -45,6 +45,15 @@ def time_average(datadir='./data', diagnostics='dt', tmin=0):
         stddev = sqrt(dtinv * integrate.simps((ts[diag][indices] - mean)**2, ts.t[indices]))
         print("<", diag, "> = ", mean, "+/-", stddev)
         return mean, stddev
+
+    # Default diagnostics is all except it and t.
+    if diagnostics is None:
+        diagnostics = list(ts.dtype.names)
+        for name in ['it', 't']:
+            try:
+                diagnostics.remove(name)
+            except ValueError:
+                pass
 
     # Find and return the time average and its standard deviation of each diagnostics.
     if type(diagnostics) is str:
