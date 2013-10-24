@@ -133,7 +133,7 @@ module Io
 !
       if (lserial_io) call start_serialize()
       open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
-      lerror = outlog (io_err, 'open', file, dist=lun_output)
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_snap')
 !
       if (lwrite_2d) then
         if (nx == 1) then
@@ -150,7 +150,7 @@ module Io
         write (lun_output, IOSTAT=io_err) a
       endif
 !
-      lerror = outlog (io_err, 'write main data', file)
+      lerror = outlog (io_err, 'write main data')
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -158,10 +158,10 @@ module Io
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        lerror = outlog (io_err, 'write additional data plus deltay', file)
+        lerror = outlog (io_err, 'write additional data plus deltay')
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        lerror = outlog (io_err, 'write additional data', file)
+        lerror = outlog (io_err, 'write additional data')
       endif
 !
       if (lserial_io) call end_serialize()
@@ -214,9 +214,9 @@ module Io
       else
         open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', IOSTAT=io_err, status='replace')
       endif
-      lerror = outlog(io_err, 'open formatted', file)
+      lerror = outlog(io_err, 'openw formatted', file, location='output_form_int_0D')
       write (lun_output,*,IOSTAT=io_err) data
-      lerror = outlog(io_err, 'write formatted data', file)
+      lerror = outlog(io_err, 'write formatted data')
       close (lun_output)
 !
     endsubroutine output_form_int_0D
@@ -261,8 +261,10 @@ module Io
 !
       if (filename /= "") then
         close (lun_output)
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
-        init_write_persist = outlog (io_err, 'open persistent file for writing')
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', &
+              IOSTAT=io_err, status='replace')
+        init_write_persist = outlog (io_err, 'openw persistent file', &
+                             trim (directory_snap)//'/'//file, location='init_write_persist' )
         filename = ""
       endif
 !
@@ -421,11 +423,47 @@ module Io
 !***********************************************************************
     subroutine input_snap(file,a,nv,mode)
 !
+!  manages reading of snapshot from different precision
+!
+!  24-oct-13/MR: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real, dimension (mx,my,mz,nv), intent(out) :: a
+
+      real(KIND=8), dimension(:,:,:,:), allocatable :: adb
+      real(KIND=4), dimension(:,:,:,:), allocatable :: asg
+
+      real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb
+      real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg
+
+      real(KIND=8) :: dxdb,dydb,dzdb,deltaydb      
+      real(KIND=4) :: dxsg,dysg,dzsg,deltaysg
+ 
+      if (lread_from_other_prec) then
+        if (kind(a)==4) then
+          allocate(adb(mx,my,mz,nv),xdb(mx),ydb(my),zdb(mz))
+          call input_snap_double(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
+          a=adb; x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb; deltay=deltaydb
+        elseif (kind(a)==8) then
+          allocate(asg(mx,my,mz,nv),xsg(mx),ysg(my),zsg(mz))
+          call input_snap_single(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltaysg,nv,mode)
+          a=asg; x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg; deltay=deltaysg
+        endif
+      else
+        call input_snap_std(file,a,nv,mode)
+      endif
+
+    endsubroutine input_snap
+!***********************************************************************
+    subroutine input_snap_std(file,a,nv,mode)
+!
 !  Read snapshot file, possibly with mesh and time (if mode=1).
 !
 !  11-apr-97/axel: coded
 !  13-dec-11/Bourdin.KIS: reworked
 !   5-jan-13/axel: allow nghost_read_fewer > 0 to read fewer ghost zones
+!  24-oct-13/MR  : renamed from input_snap
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
 !
@@ -438,8 +476,10 @@ module Io
       logical :: lerror
 !
       if (lserial_io) call start_serialize()
-      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
-      lerror = outlog (io_err, "Can't open for reading", trim(directory_snap)//'/'//file)
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
+            IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "openr snapshot", trim(directory_snap)//'/'//file, &
+                       location='input_snap_std' )
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -481,7 +521,7 @@ module Io
           call fatal_error('input_snap','nghost_read_fewer must be >=0')
         endif
       endif
-      lerror = outlog (io_err, "Can't read main data", file)
+      lerror = outlog (io_err, "read main data")
 
       if (ip <= 8) print *, 'input_snap: read ', file
       if (mode == 1) then
@@ -490,14 +530,14 @@ module Io
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          lerror = outlog (io_err, "Can't read additional data plus deltay", file)
+          lerror = outlog (io_err, "read additional data plus deltay",lcont=.true.)
         else
           if (nghost_read_fewer==0) then
             read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
           elseif (nghost_read_fewer>0) then
             read (lun_input, IOSTAT=io_err) t_sp
           endif
-          lerror = outlog (io_err, "Can't read additional data", file)
+          lerror = outlog (io_err, "read additional data",lcont=.true.)
         endif
 !
 !  Verify consistency of the snapshots regarding their timestamp,
@@ -525,7 +565,238 @@ module Io
 !
       endif
 !
-    endsubroutine input_snap
+    endsubroutine input_snap_std
+!***********************************************************************
+    subroutine input_snap_single(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+!
+!  Read snapshot file in single precision, possibly with mesh and time (if mode=1).
+!
+!  24-oct-13/MR: derived from input_snap_std
+!
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real(KIND=4), dimension (mx,my,mz,nv), intent(out) :: a
+!
+      real(KIND=4) :: t_sp
+
+      real(KIND=4),                 intent(out) :: dx, dy, dz, deltay
+      real(KIND=4), dimension (mx), intent(out) :: x
+      real(KIND=4), dimension (my), intent(out) :: y
+      real(KIND=4), dimension (mz), intent(out) :: z
+
+      real :: t_test   ! t in single precision for backwards compatibility
+
+      integer :: io_err
+      logical :: lerror
+!
+      if (lserial_io) call start_serialize()
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
+            IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, &
+                       location='input_snap_single')
+!      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
+      if (lwrite_2d) then
+        if (nx == 1) then
+          read (lun_input, IOSTAT=io_err) a(4,:,:,:)
+        elseif (ny == 1) then
+          read (lun_input, IOSTAT=io_err) a(:,4,:,:)
+        elseif (nz == 1) then
+          read (lun_input, IOSTAT=io_err) a(:,:,4,:)
+        else
+          io_err = 0
+          call fatal_error ('input_snap', 'lwrite_2d used for 3-D simulation!')
+        endif
+      else
+!
+!  Possibility of reading data with different numbers of ghost zones.
+!  In that case, one must regenerate the mesh with luse_oldgrid=T.
+!
+        if (nghost_read_fewer==0) then
+          read (lun_input, IOSTAT=io_err) a
+        elseif (nghost_read_fewer>0) then
+          read (lun_input, IOSTAT=io_err) &
+              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                1+nghost_read_fewer:my-nghost_read_fewer, &
+                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+!
+!  The following 3 possibilities allow us to replicate 1-D data input
+!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
+!
+        elseif (nghost_read_fewer==-1) then
+          read (lun_input, IOSTAT=io_err) a(:,1:1+nghost*2,1:1+nghost*2,:)
+          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+        elseif (nghost_read_fewer==-2) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,:,1:1+nghost*2,:)
+          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+        elseif (nghost_read_fewer==-3) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,1:1+nghost*2,:,:)
+          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+        else
+          call fatal_error('input_snap','nghost_read_fewer must be >=0')
+        endif
+      endif
+      lerror = outlog (io_err, 'read main data')
+
+      if (ip <= 8) print *, 'input_snap: read ', file
+      if (mode == 1) then
+!
+!  Check whether we want to read deltay from snapshot.
+!
+        if (lshear) then
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
+          lerror = outlog (io_err, 'read additional data plus deltay')
+        else
+          if (nghost_read_fewer==0) then
+            read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+          elseif (nghost_read_fewer>0) then
+            read (lun_input, IOSTAT=io_err) t_sp
+          endif
+          lerror = outlog (io_err, 'read additional data')
+        endif
+!
+!  Verify consistency of the snapshots regarding their timestamp,
+!  unless lreset_tstart=T, in which case we reset all times to tstart.
+!
+        if (.not.lreset_tstart) then
+          t_test = t_sp
+          call mpibcast_real(t_test)
+          if (t_test /= t_sp) &
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+          call stop_it_if_any((t_test /= t_sp), '')
+        endif
+!
+!  Set time or overwrite it by a given value.
+!
+        t = t_sp
+        if (lreset_tstart) t = tstart
+!
+!  Verify the read values for x, y, z, and t.
+!
+        if (ip <= 3) print *, 'input_snap: x=', x
+        if (ip <= 3) print *, 'input_snap: y=', y
+        if (ip <= 3) print *, 'input_snap: z=', z
+        if (ip <= 3) print *, 'input_snap: t=', t
+!
+      endif
+!
+    endsubroutine input_snap_single
+!***********************************************************************
+    subroutine input_snap_double(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+!
+!  Read snapshot file in double precision, possibly with mesh and time (if mode=1).
+!
+!  24-oct-13/MR: derived from input_snap_std
+!
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real(KIND=8), dimension (mx,my,mz,nv), intent(out) :: a
+!
+      real(KIND=8) :: t_sp
+
+      real(KIND=8), intent(out) :: dx, dy, dz, deltay
+      real(KIND=8), dimension (mx), intent(out) :: x
+      real(KIND=8), dimension (my), intent(out) :: y
+      real(KIND=8), dimension (mz), intent(out) :: z
+
+      real :: t_test   ! t in single precision for backwards compatibility
+      integer :: io_err
+      logical :: lerror
+!
+      if (lserial_io) call start_serialize()
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
+            IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, &
+                       location='input_snap_double')
+!      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
+      if (lwrite_2d) then
+        if (nx == 1) then
+          read (lun_input, IOSTAT=io_err) a(4,:,:,:)
+        elseif (ny == 1) then
+          read (lun_input, IOSTAT=io_err) a(:,4,:,:)
+        elseif (nz == 1) then
+          read (lun_input, IOSTAT=io_err) a(:,:,4,:)
+        else
+          io_err = 0
+          call fatal_error ('input_snap', 'lwrite_2d used for 3-D simulation!')
+        endif
+      else
+!
+!  Possibility of reading data with different numbers of ghost zones.
+!  In that case, one must regenerate the mesh with luse_oldgrid=T.
+!
+        if (nghost_read_fewer==0) then
+          read (lun_input, IOSTAT=io_err) a
+        elseif (nghost_read_fewer>0) then
+          read (lun_input, IOSTAT=io_err) &
+              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                1+nghost_read_fewer:my-nghost_read_fewer, &
+                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+!
+!  The following 3 possibilities allow us to replicate 1-D data input
+!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
+!
+        elseif (nghost_read_fewer==-1) then
+          read (lun_input, IOSTAT=io_err) a(:,1:1+nghost*2,1:1+nghost*2,:)
+          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+        elseif (nghost_read_fewer==-2) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,:,1:1+nghost*2,:)
+          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+        elseif (nghost_read_fewer==-3) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,1:1+nghost*2,:,:)
+          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+        else
+          call fatal_error('input_snap','nghost_read_fewer must be >=0')
+        endif
+      endif
+      lerror = outlog (io_err, 'read main data')
+
+      if (ip <= 8) print *, 'input_snap: read ', file
+      if (mode == 1) then
+!
+!  Check whether we want to read deltay from snapshot.
+!
+        if (lshear) then
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
+          lerror = outlog (io_err, 'read additional data plus deltay')
+        else
+          if (nghost_read_fewer==0) then
+            read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+          elseif (nghost_read_fewer>0) then
+            read (lun_input, IOSTAT=io_err) t_sp
+          endif
+          lerror = outlog (io_err, 'read additional data')
+        endif
+!
+!  Verify consistency of the snapshots regarding their timestamp,
+!  unless lreset_tstart=T, in which case we reset all times to tstart.
+!
+        if (.not.lreset_tstart) then
+          t_test = t_sp
+          call mpibcast_real(t_test)
+          if (t_test /= t_sp) &
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+          call stop_it_if_any((t_test /= t_sp), '')
+        endif
+!
+!  Set time or overwrite it by a given value.
+!
+        t = t_sp
+        if (lreset_tstart) t = tstart
+!
+!  Verify the read values for x, y, z, and t.
+!
+        if (ip <= 3) print *, 'input_snap: x=', x
+        if (ip <= 3) print *, 'input_snap: y=', y
+        if (ip <= 3) print *, 'input_snap: z=', z
+        if (ip <= 3) print *, 'input_snap: t=', t
+!
+      endif
+!
+    endsubroutine input_snap_double
 !***********************************************************************
     subroutine input_snap_finalize()
 !
@@ -565,7 +836,7 @@ module Io
       if (present (file)) then
         close (lun_input)
         open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
-        init_read_persist = outlog (io_err, 'open persistent file for reading')
+        init_read_persist = outlog (io_err, 'openr persistent data',file,location='init_read_persist')
       endif
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
@@ -599,7 +870,7 @@ module Io
           read_persist_id = .false.
         endif
       else
-        read_persist_id = outlog (io_err, 'read persistent ID '//label)
+        read_persist_id = outlog (io_err, 'read persistent ID '//label,lcont=.true.)
       endif
 !
     endfunction read_persist_id
@@ -616,7 +887,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_logical_0D = outlog (io_err, 'read persistent '//label)
+      read_persist_logical_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -632,7 +903,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_logical_1D = outlog (io_err, 'read persistent '//label)
+      read_persist_logical_1D = outlog(io_err, 'read persistent '//label,lcont=.true.)
 !
     endfunction read_persist_logical_1D
 !***********************************************************************
@@ -648,7 +919,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_int_0D = outlog (io_err, 'read persistent '//label)
+      read_persist_int_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -664,7 +935,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_int_1D = outlog (io_err, 'read persistent '//label)
+      read_persist_int_1D = outlog(io_err, 'read persistent '//label,lcont=.true.)
 !
     endfunction read_persist_int_1D
 !***********************************************************************
@@ -673,14 +944,28 @@ module Io
 !  Read persistent data from snapshot file.
 !
 !  13-Dec-2011/Bourdin.KIS: coded
+!  23-oct-2013/MR: modified for reading of different precision
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
       integer :: io_err
+      real(KIND=8) :: vdb
+      real(KIND=4) :: vsg
 !
-      read (lun_input, iostat=io_err) value
-      read_persist_real_0D = outlog (io_err, 'read persistent '//label)
+      if (lread_from_other_prec) then
+        if (kind(value)==4) then
+          read (lun_input, iostat=io_err) vdb
+          value=vdb
+        elseif (kind(value)==8) then
+          read (lun_input, iostat=io_err) vsg
+          value=vsg
+        endif
+      else
+        read (lun_input, iostat=io_err) value
+      endif
+
+      read_persist_real_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -689,14 +974,30 @@ module Io
 !  Read persistent data from snapshot file.
 !
 !  13-Dec-2011/Bourdin.KIS: coded
+!  23-oct-2013/MR: modified for reading of different precision
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
       integer :: io_err
+      real(KIND=8), dimension(:), allocatable :: vdb
+      real(KIND=4), dimension(:), allocatable :: vsg
 !
-      read (lun_input, iostat=io_err) value
-      read_persist_real_1D = outlog (io_err, 'read persistent '//label)
+      if (lread_from_other_prec) then
+        if (kind(value)==4) then
+          allocate(vdb(size(value)))
+          read (lun_input, iostat=io_err) vdb
+          value=vdb
+        elseif (kind(value)==8) then
+          allocate(vsg(size(value)))
+          read (lun_input, iostat=io_err) vsg
+          value=vsg
+        endif
+      else
+        read (lun_input, iostat=io_err) value
+      endif
+!
+      read_persist_real_1D = outlog(io_err, 'read persistent '//label, lcont=.true.)
 !
     endfunction read_persist_real_1D
 !***********************************************************************
@@ -717,7 +1018,7 @@ module Io
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
-      lerror = outlog(io_err,"output_globals: Can't open",file)
+      lerror = outlog(io_err,"openw globals",file,location='output_globals')
 !
       if (lwrite_2d) then
         if (nx==1) then
@@ -733,7 +1034,7 @@ module Io
       else
         write(lun_output,IOSTAT=io_err) a
       endif
-      lerror = outlog(io_err,"Can't write data block",file)
+      lerror = outlog(io_err,"write data block")
       close(lun_output)
 !
       if (lserial_io) call end_serialize()
@@ -746,7 +1047,7 @@ module Io
 !
 !  10-nov-06/tony: coded
 !
-      use Mpicomm, only: start_serialize,end_serialize,stop_it
+      use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: file
       integer :: nv
@@ -754,13 +1055,47 @@ module Io
 !
       integer :: io_err
       logical :: lerror
+      real(KIND=8), dimension(:,:,:,:), allocatable :: adb
+      real(KIND=4), dimension(:,:,:,:), allocatable :: asg
+
 !
       if (lserial_io) call start_serialize()
 !
       open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
-      lerror = outlog(io_err,"input_globals: Can't open",file)
+      lerror = outlog(io_err,"openr globals",file,location='input_globals')
 
-      if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
+      if (lread_from_other_prec) then
+        if (kind(a)==4) then
+          allocate(adb(mx,my,mz,nv))
+          call read_globals_double(adb)
+          a=adb
+        elseif (kind(a)==8) then
+          allocate(asg(mx,my,mz,nv))
+          call read_globals_single(asg)
+          a=asg
+        endif
+      else
+        call read_globals(a)
+      endif
+
+      close(lun_input)
+!
+      if (lserial_io) call end_serialize()
+!
+    endsubroutine input_globals
+!***********************************************************************
+    subroutine read_globals(a)
+!
+!  Read globals snapshot file, ignoring mesh.
+!
+!  10-nov-06/tony: coded
+!  23-oct-13/MR  : derived from input_globals
+!
+      real, dimension (:,:,:,:) :: a
+!
+      integer :: io_err
+      logical :: lerror
+
       if (lwrite_2d) then
         if (nx==1) then
           read(lun_input,IOSTAT=io_err) a(4,:,:,:)
@@ -775,12 +1110,67 @@ module Io
       else
         read(lun_input,IOSTAT=io_err) a
       endif
-      lerror = outlog(io_err,"Can't read data block",file)
-      close(lun_input)
+      lerror = outlog(io_err,"read data block",location='read_globals')
 !
-      if (lserial_io) call end_serialize()
+    endsubroutine read_globals
+!***********************************************************************
+    subroutine read_globals_double(a)
 !
-    endsubroutine input_globals
+!  Read globals snapshot file in double precision
+!
+!  23-oct-13/MR  : derived from input_globals
+!
+      real(KIND=8), dimension (:,:,:,:) :: a
+!
+      integer :: io_err
+      logical :: lerror
+
+      if (lwrite_2d) then
+        if (nx==1) then
+          read(lun_input,IOSTAT=io_err) a(4,:,:,:)
+        elseif (ny==1) then
+          read(lun_input,IOSTAT=io_err) a(:,4,:,:)
+        elseif (nz==1) then
+          read(lun_input,IOSTAT=io_err) a(:,:,4,:)
+        else
+          io_err=0
+          call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
+        endif
+      else
+        read(lun_input,IOSTAT=io_err) a
+      endif
+      lerror = outlog(io_err,"read data block",location='read_globals_double')
+!
+    endsubroutine read_globals_double
+!***********************************************************************
+    subroutine read_globals_single(a)
+!
+!  Read globals snapshot file in single precision
+!
+!  23-oct-13/MR  : derived from input_globals
+!
+      real(KIND=4), dimension (:,:,:,:) :: a
+!
+      integer :: io_err
+      logical :: lerror
+
+      if (lwrite_2d) then
+        if (nx==1) then
+          read(lun_input,IOSTAT=io_err) a(4,:,:,:)
+        elseif (ny==1) then
+          read(lun_input,IOSTAT=io_err) a(:,4,:,:)
+        elseif (nz==1) then
+          read(lun_input,IOSTAT=io_err) a(:,:,4,:)
+        else
+          io_err=0
+          call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
+        endif
+      else
+        read(lun_input,IOSTAT=io_err) a
+      endif
+      lerror = outlog(io_err,"read data block",location='read_globals_single')
+!
+    endsubroutine read_globals_single
 !***********************************************************************
     subroutine log_filename_to_file(file,flist)
 !
@@ -800,18 +1190,20 @@ module Io
 !
       open(lun_output,FILE=trim(dir)//'/'//flist,POSITION='append',IOSTAT=io_err)
       ! file not distributed?, backskipping enabled
-      lerror = outlog(io_err,"open",trim(dir)//'/'//flist,dist=-lun_output)
+      lerror = outlog(io_err,"openw",trim(dir)//'/'//flist,dist=-lun_output, &
+                      location='log_filename_to_file')
       write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-      lerror = outlog(io_err,"write fpart", flist)
+      lerror = outlog(io_err,"write fpart", trim(dir)//'/'//flist)
       close(lun_output)
 !
       if (lcopysnapshots_exp) then
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
           ! file not distributed?, backskipping enabled
-          lerror = outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)
+          lerror = outlog(io_err,"openw",trim(datadir)//'/move-me.list',dist=-lun_output, &
+                          location='log_filename_to_file')
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-          lerror = outlog(io_err,"write fpart", "move-me.list")
+          lerror = outlog(io_err,"write fpart")
           close(lun_output)
         endif
       endif
@@ -837,19 +1229,121 @@ module Io
       if (io_err /= 0) call fatal_error('wgrid', &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?", .true.)
+      lerror = outlog(io_err,"openw",trim(directory)//'/'//file,location='wgrid')
       write(lun_output,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      lerror = outlog(io_err,"wgrid: write main data block", file)
+      lerror = outlog(io_err,"write main data block")
       write(lun_output,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"wgrid: write dx,dy,dz", file)
+      lerror = outlog(io_err,"write dx,dy,dz")
       write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
-      lerror = outlog(io_err,"wgrid: write Lx,Ly,Lz", file)
+      lerror = outlog(io_err,"write Lx,Ly,Lz")
       write(lun_output,IOSTAT=io_err) dx_1,dy_1,dz_1
-      lerror = outlog(io_err,"wgrid: write dx_1,dy_1,dz_1", file)
+      lerror = outlog(io_err,"write dx_1,dy_1,dz_1")
       write(lun_output,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      lerror = outlog(io_err,"wgrid: write dx_tilde,dy_tilde,dz_tilde", file)
-      close(lun_output)
+      lerror = outlog(io_err,"write dx_tilde,dy_tilde,dz_tilde")
+      close(lun_output,IOSTAT=io_err)
+      lerror = outlog(io_err,'close')
 !
     endsubroutine wgrid
+!***********************************************************************
+    subroutine input_grid
+!
+!  Read grid
+!
+!  23-oct-13/MR: outsourced from rgrid
+!
+      real    :: t_sp   ! t in single precision for backwards compatibility
+      integer :: io_err
+      logical :: lerror
+!
+      read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      lerror = outlog(io_err,"read main data block", location='input_grid')
+      read(lun_input,IOSTAT=io_err) dx,dy,dz
+      lerror = outlog(io_err,"read dx,dy,dz")
+      read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
+      if (io_err < 0) then
+        ! End-Of-File: give notification that box dimensions are not read.
+        ! This should only happen when reading old files.
+        ! We should allow this for the time being.
+        call warning ('input_grid', "Lx,Ly,Lz are not yet in grid.dat")
+      else
+        lerror = outlog(io_err,"read Lx,Ly,Lz")
+        read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
+        lerror = outlog(io_err,"read dx_1,dy_1,dz_1")
+        read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+        lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")
+      endif
+
+    endsubroutine input_grid
+!***********************************************************************
+    subroutine input_grid_single(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
+!
+!  Read grid in single precision
+!
+!  23-oct-13/MR: derived from input_grid
+!
+      real(KIND=4),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
+      real(KIND=4), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
+      real(KIND=4), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
+      real(KIND=4), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
+
+      integer :: io_err
+      logical :: lerror
+      real(KIND=4) :: t_sp   ! t in single precision for backwards compatibility
+!
+      read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      lerror = outlog(io_err,"read main data block")
+      read(lun_input,IOSTAT=io_err) dx,dy,dz
+      lerror = outlog(io_err,"read dx,dy,dz")
+      read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
+      if (io_err < 0) then
+        ! End-Of-File: give notification that box dimensions are not read.
+        ! This should only happen when reading old files.
+        ! We should allow this for the time being.
+        call warning ('input_grid', "Lx,Ly,Lz are not yet in grid.dat")
+      else
+        lerror = outlog(io_err,"read Lx,Ly,Lz")
+        read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
+        lerror = outlog(io_err,"read dx_1,dy_1,dz_1")
+        read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+        lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")
+      endif
+
+    endsubroutine input_grid_single
+!***********************************************************************
+    subroutine input_grid_double(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
+!
+!  Read grid in double precision
+!
+!  23-oct-13/MR: derived from input_grid
+!
+      real(KIND=8),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
+      real(KIND=8), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
+      real(KIND=8), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
+      real(KIND=8), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
+
+      integer :: io_err
+      logical :: lerror
+      real(KIND=8) :: t_sp   ! t in single precision for backwards compatibility
+!
+      read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      lerror = outlog(io_err,"read main data block")
+      read(lun_input,IOSTAT=io_err) dx,dy,dz
+      lerror = outlog(io_err,"read dx,dy,dz")
+      read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
+      if (io_err < 0) then
+        ! End-Of-File: give notification that box dimensions are not read.
+        ! This should only happen when reading old files.
+        ! We should allow this for the time being.
+        call warning ('input_grid', "Lx,Ly,Lz are not yet in grid.dat")
+      else
+        lerror = outlog(io_err,"read Lx,Ly,Lz")
+        read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
+        lerror = outlog(io_err,"read dx_1,dy_1,dz_1")
+        read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+        lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")
+      endif
+
+    endsubroutine input_grid_double
 !***********************************************************************
     subroutine rgrid (file)
 !
@@ -857,35 +1351,46 @@ module Io
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
+!  24-oct-13/MR  : handling of reading from different precision introduced
 !
       character (len=*) :: file
 !
       integer :: io_err
       logical :: lerror
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb
+      real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg
+
+      real(KIND=8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb      
+      real(KIND=4) :: dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg
+
       open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
       if (io_err /= 0) call fatal_error('rgrid', &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?",.true.)
-      read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      lerror = outlog(io_err,"rgrid: read main data block", file)
-      read(lun_input,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"rgrid: read dx,dy,dz", file)
-      read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
-      if (io_err < 0) then
-        ! End-Of-File: give notification that box dimensions are not read.
-        ! This should only happen when reading old files.
-        ! We should allow this for the time being.
-        call warning ('rgrid', "Lx,Ly,Lz are not yet in grid.dat")
+      lerror = outlog(io_err,'openr',file,location='rgrid')
+
+      if (lread_from_other_prec) then
+        if (kind(x)==4) then
+          allocate(xdb(mx),ydb(my),zdb(mz),dx_1db(mx),dy_1db(my),dz_1db(mz),dx_tildedb(mx),dy_tildedb(my),dz_tildedb(mz))
+          call input_grid_double(xdb,ydb,zdb,dxdb,dydb,dzdb, &
+               Lxdb,Lydb,Lzdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb)
+          x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb
+          Lx=Lxdb; Ly=Lydb; Lz=Lzdb; dx_1=dx_1db; dy_1=dy_1db; dz_1=dz_1db;
+          dx_tilde=dx_tildedb; dy_tilde=dy_tildedb; dz_tilde=dz_tildedb
+        elseif (kind(x)==8) then
+          allocate(xsg(mx),ysg(my),zsg(mz),dx_1sg(mx),dy_1sg(my),dz_1sg(mz),dx_tildesg(mx),dy_tildesg(my),dz_tildesg(mz))
+          call input_grid_single(xsg,ysg,zsg,dxsg,dysg,dzsg, &
+               Lxsg,Lysg,Lzsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg)
+          x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg
+          Lx=Lxsg; Ly=Lysg; Lz=Lzsg; dx_1=dx_1sg; dy_1=dy_1sg; dz_1=dz_1sg;
+          dx_tilde=dx_tildesg; dy_tilde=dy_tildesg; dz_tilde=dz_tildesg
+        endif
       else
-        lerror = outlog(io_err,"rgrid: read Lx,Ly,Lz", file)
-        read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
-        lerror = outlog(io_err,"rgrid: read dx_1,dy_1,dz_1", file)
-        read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-        lerror = outlog(io_err,"rgrid: read dx_tilde,dy_tilde,dz_tilde", file)
+        call input_grid
       endif
-      close(lun_input)
+      close(lun_input,IOSTAT=io_err)
+      lerror = outlog(io_err,'close')
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
@@ -898,7 +1403,7 @@ module Io
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 !
 !  Fill pencil with maximum gridspacing. Will be overwritten
-!  during the mn loop in the non equiditant case
+!  during the mn loop in the non equidistant case
 !
       dxmax_pencil(:) = dxmax
       dxmin_pencil(:) = dxmin
@@ -930,14 +1435,15 @@ module Io
       logical :: lerror
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
-      lerror = outlog(io_err,"Can't open",file)
+      lerror = outlog(io_err,"openw",file,location='wproc_bounds')
       write(lun_output,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'write procx_bounds',file)
+      lerror = outlog(io_err,'write procx_bounds')
       write(lun_output,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'write procy_bounds',file)
+      lerror = outlog(io_err,'write procy_bounds')
       write(lun_output,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'write procz_bounds',file)
-      close(lun_output)
+      lerror = outlog(io_err,'write procz_bounds')
+      close(lun_output,IOSTAT=io_err)
+      lerror = outlog(io_err,'close')
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -952,17 +1458,93 @@ module Io
 !
       integer :: io_err
       logical :: lerror
+      real(KIND=4), dimension(0:nprocx):: procx_boundssg
+      real(KIND=4), dimension(0:nprocy):: procy_boundssg
+      real(KIND=4), dimension(0:nprocz):: procz_boundssg
+!
+      real(KIND=8), dimension(0:nprocx):: procx_boundsdb
+      real(KIND=8), dimension(0:nprocy):: procy_boundsdb
+      real(KIND=8), dimension(0:nprocz):: procz_boundsdb
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err,status='old')
-      lerror = outlog(io_err,"Can't open",file)
-      read(lun_input,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'read procx_bounds',file)
-      read(lun_input,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'read procy_bounds',file)
-      read(lun_input,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'read procz_bounds',file)
-      close(lun_output)
+
+      if (lread_from_other_prec) then
+        if (kind(x)==4) then
+          call input_proc_bounds_double(procx_boundsdb,procy_boundsdb,procz_boundsdb)
+          procx_bounds=procx_boundsdb; procy_bounds=procy_boundsdb; procz_bounds=procz_boundsdb
+        elseif (kind(x)==8) then
+          call input_proc_bounds_single(procx_boundssg,procy_boundssg,procz_boundssg)
+          procx_bounds=procx_boundssg; procy_bounds=procy_boundssg; procz_bounds=procz_boundssg
+        endif
+      else
+        call input_proc_bounds
+      endif
+
+      close(lun_output,IOSTAT=io_err)
+      lerror = outlog(io_err,'close')
 !
     endsubroutine rproc_bounds
+!***********************************************************************
+    subroutine input_proc_bounds
+
+!   Import processor boundaries from file.
+!
+!   23-oct-13/MR: outsourced from rproc_bounds
+!
+      integer :: io_err
+      logical :: lerror
+!
+      read(lun_input,IOSTAT=io_err) procx_bounds
+      lerror = outlog(io_err,'read procx_bounds')
+      read(lun_input,IOSTAT=io_err) procy_bounds
+      lerror = outlog(io_err,'read procy_bounds')
+      read(lun_input,IOSTAT=io_err) procz_bounds
+      lerror = outlog(io_err,'read procz_bounds')
+!
+    endsubroutine input_proc_bounds
+!***********************************************************************
+    subroutine input_proc_bounds_double(procx_bounds,procy_bounds,procz_bounds)
+!
+!   Import processor boundaries from file.in double precision
+!
+!   23-oct-13/MR: derivced from input_proc_bounds
+!
+      real(KIND=8), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=8), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=8), dimension(0:nprocz), intent(OUT):: procz_bounds
+
+      integer :: io_err
+      logical :: lerror
+!
+      read(lun_input,IOSTAT=io_err) procx_bounds
+      lerror = outlog(io_err,'read procx_bounds')
+      read(lun_input,IOSTAT=io_err) procy_bounds
+      lerror = outlog(io_err,'read procy_bounds')
+      read(lun_input,IOSTAT=io_err) procz_bounds
+      lerror = outlog(io_err,'read procz_bounds')
+!
+    endsubroutine input_proc_bounds_double
+!***********************************************************************
+    subroutine input_proc_bounds_single(procx_bounds,procy_bounds,procz_bounds)
+!
+!   Import processor boundaries from file.in single precision
+!
+!   23-oct-13/MR: derivced from input_proc_bounds
+!
+      real(KIND=4), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=4), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=4), dimension(0:nprocz), intent(OUT):: procz_bounds
+
+      integer :: io_err
+      logical :: lerror
+!
+      read(lun_input,IOSTAT=io_err) procx_bounds
+      lerror = outlog(io_err,'read procx_bounds')
+      read(lun_input,IOSTAT=io_err) procy_bounds
+      lerror = outlog(io_err,'read procy_bounds')
+      read(lun_input,IOSTAT=io_err) procz_bounds
+      lerror = outlog(io_err,'read procz_bounds')
+!
+    endsubroutine input_proc_bounds_single
 !***********************************************************************
 endmodule Io
