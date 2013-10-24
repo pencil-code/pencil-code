@@ -55,17 +55,19 @@ module Testfield
 !
 ! diagnostic variables
 !
-  integer, parameter :: n_cdiags = 44, len_cdiags = 8
+  integer, parameter :: n_cdiags = 62, len_cdiags = 8
   character(LEN=len_cdiags), dimension(n_cdiags) :: cdiags = &
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   ! DIAG_DOC: $\alpha_{ij}$       
      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  ',&   ! DIAG_DOC: $\eta_{ijk}$
      'eta113  ','eta213  ','eta313  ','eta123  ','eta223  ','eta323  ','eta133  ','eta233  ','eta333  ',&
      'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta123cc','eta123cs','eta123sc','eta123ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
                                                                                                             ! Diag_DOC: $\eta_{123,\rm hh}, {\rm h}={\rm c,s}$
-     'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     '  /) ! DIAG_DOC: ${\cal E}^i_j$
+     'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',&   ! DIAG_DOC: ${\cal E}^j_i$
+     'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     '  /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_z=0, idiags_xz=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+9-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta123h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta123h)      ! alias names for selected diagnostics
@@ -90,8 +92,9 @@ module Testfield
 !  27-jun-13/MR  : set itestfield='1' as it is only implemented case
 !                  set lcalc_uumeanxz=.true., itestfield now string     
 !   9-sep-13/MR  : intro'd use of initialize_testfield_general
+!  20-oct-13/MR  : call to calc_means_hydro intro'd (needed when used with hydro_kinematic)
 !
-      use Hydro, only: lcalc_uumeanxz
+      use Hydro, only: lcalc_uumeanxz, calc_means_hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
@@ -100,13 +103,12 @@ module Testfield
 !
       !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!!TBC
 !
-      itestfield='1'
-!
 ! calculate inverse matrix for determination of the turbulent coefficients
 !
       call calc_inverse_matrix(x(l1:l2),z(n1:n2),ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
 !
       lcalc_uumeanxz = .true.
+      call calc_means_hydro(f)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -154,6 +156,7 @@ module Testfield
 !  27-jun-13/MR  : correct calculation of uufluct intro'd
 !                  moved calculation of xy-averaged quantities to 
 !                  calc_coefficients, completed
+!  20-oct-13/MR  : cases for itestfield='linear','1-alt' added
 !
       use Hydro, only: uumxz
 !
@@ -168,11 +171,12 @@ module Testfield
 
       nl=n-n1+1
       select case (itestfield)
-        case ('1')  ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest)
-        case ('2')  ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest2)
-        case ('3')  ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest3)
-        case ('4')  ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest4)
-        case default; call fatal_error('daatest_dt','undefined itestfield')
+        case ('1')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest)
+        case ('1-alt')     ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest_alt)
+        case ('2')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest2)
+        case ('3')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest3)
+        case ('4','linear'); call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest4)
+        case default       ; call fatal_error('daatest_dt','undefined itestfield')
       endselect
 !
     endsubroutine daatest_dt
@@ -197,6 +201,7 @@ module Testfield
 !  27-sep-13/MR  : corrected fac, simplified communication,
 !                  added call to calc_pencils_hydro to enable work
 !                  with hydro_kinematic (restricted to p%uu)
+!  20-oct-13/MR  : call of calc_coefficients corrected
 !
       use Sub, only: curl, cross_mn, finalize_aver
       use Diagnostics, only: ysum_mn_name_xz_npar,xysum_mn_name_z_npar
@@ -271,7 +276,7 @@ module Testfield
       headtt=headtt_save
 !
       if (need_output) call calc_coefficients(idiags(1:idiag_base_end),idiags_z(1:idiag_base_end),idiags_xz(1:idiag_base_end), &
-                                              idiags(idiag_Eij_start:idiag_Eij_stop),    &
+                                              idiags_xz(idiag_Eij_start:idiag_Eij_stop),    &
                                               idiags(idiag_base_end+1:idiag_base_end+4), &
                                               idiags(idiag_base_end+5:idiag_base_end+8), &
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
@@ -317,6 +322,47 @@ module Testfield
 !
     endsubroutine set_bbtest
 !***********************************************************************
+    subroutine set_bbtest_alt(bbtest,jtest)
+!
+!  tries of alternative testfields
+!
+!  23-oct-13/MR: coded
+!
+      real, dimension (nx,3) :: bbtest
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: bbtest
+!
+      integer :: nl
+!
+!  set bbtest for each of the 9 cases
+!
+      nl = n-n1+1
+!
+      select case (jtest)
+!
+      case (1); bbtest(:,1)=cx*cz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sx*cz(nl)+cx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=cx*sz(nl); bbtest(:,2)=0.;           bbtest(:,3)=0.
+!      case (3); bbtest(:,1)=cx*sz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+!
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cz(nl)+sx*sz(nl); bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(nl)+cx*sz(nl); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(nl);           bbtest(:,3)=0.
+!      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(nl)+sx*sz(nl); bbtest(:,3)=0.
+!
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cz(nl)+sx*sz(nl)
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(nl)+cx*sz(nl)
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(nl)
+!      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(nl)+sx*sz(nl)
+!
+      case default; bbtest=0.
+!
+      endselect
+!
+    endsubroutine set_bbtest_alt
+!***********************************************************************
     subroutine set_bbtest2(bbtest,jtest)
 !
 !  set alternative testfield
@@ -361,6 +407,7 @@ module Testfield
 !
 !  15-jun-05/axel: adapted from set_bbtest3
 !  27-aug-13/MR: made zz scalar
+!  20-oct-13/MR: changed order of testfields
 !
       real, dimension (nx,3) :: bbtest
       integer :: jtest
@@ -378,14 +425,17 @@ module Testfield
 !
       select case (jtest)
       case (1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case (4); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
-      case (7); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
+      case (2); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
+!
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
+!
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
+!
       case default; bbtest=0.
       endselect
 !
