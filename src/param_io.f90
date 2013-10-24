@@ -91,7 +91,7 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lforce_shear_bc
+      lforce_shear_bc,lread_from_other_prec
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -144,7 +144,8 @@ module Param_IO
       ldynamical_diffusion, re_mesh, lreset_seed, &
       loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, & 
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
-      wborder_theta_upper, fraction_tborder, lmeridional_border_drive
+      wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
+      lread_from_other_prec
 !
   contains
 !***********************************************************************
