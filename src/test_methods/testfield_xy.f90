@@ -51,17 +51,19 @@ module Testfield
 !
 ! diagnostic variables
 !
-  integer, parameter :: n_cdiags = 44, len_cdiags = 8
+  integer, parameter :: n_cdiags = 62, len_cdiags = 8
   character(LEN=len_cdiags), dimension(n_cdiags) :: cdiags = &
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   ! DIAG_DOC: $\alpha_{ij}$       
      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  ',&   ! DIAG_DOC: $\eta_{ijk}$
      'eta112  ','eta212  ','eta312  ','eta122  ','eta222  ','eta322  ','eta132  ','eta232  ','eta332  ',&
-     'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta122cc','eta122cs','eta122sc','eta122ss',           &   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
+     'alp11cc ','alp11cs ','alp11sc ','alp11ss ','eta122cc','eta122cs','eta122sc','eta122ss'           ,&   ! DIAG_DOC: $\alpha_{11,\rm hh},$ 
                                                                                                             ! Diag_DOC: $\eta_{122,\rm hh}, {\rm h}={\rm c,s}$
-     'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     '  /) ! DIAG_DOC: ${\cal E}^i_j$
+     'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',& ! DIAG_DOC: ${\cal E}^i_j$
+     'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ' /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_x=0, idiags_xy=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+9-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta122h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta122h)      ! alias names for selected diagnostics
