@@ -638,7 +638,7 @@ module Cdata
 !
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !
-  real :: re_mesh=1.
+  real :: re_mesh=0.5
   logical :: ldynamical_diffusion=.false.
 !
 !***********************************************************************

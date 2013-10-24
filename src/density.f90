@@ -2860,7 +2860,7 @@ module Density
 !  Hyper-diffusion coefficient
 !
       if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * umax / re_mesh
+      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(3.0)
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

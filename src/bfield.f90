@@ -825,7 +825,7 @@ module Magnetic
 !
 !  Mesh hyper-resistivity coefficient
 !
-      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh / 3.0
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
