@@ -23,9 +23,8 @@ def time_average(datadir='./data', diagnostics='dt', tmin=0):
     """
     # Chao-Chin Yang, 2013-10-21
 
-    from . import read
-
     # Read the time series.
+    from . import read
     ts = read.time_series(datadir=datadir)
 
     # Check the time span.
@@ -48,8 +47,12 @@ def time_average(datadir='./data', diagnostics='dt', tmin=0):
         return mean, stddev
 
     # Find and return the time average and its standard deviation of each diagnostics.
-    if type(diagnostics) is list:
-        return dict((diag, stats(diag)) for diag in diagnostics)
-    else:
-        return {diagnostics: stats(diagnostics)}
+    if type(diagnostics) is str:
+        return stats(diagnostics)
+    else:  # assuming diagnostics is iterable.
+        from collections import namedtuple
+        Mean = namedtuple('Mean', diagnostics)
+        StdDev = namedtuple('StandardDeviation', diagnostics)
+        mean, stddev = zip(*(stats(diag) for diag in diagnostics))
+        return Mean(*mean), StdDev(*stddev)
 
