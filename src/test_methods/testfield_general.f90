@@ -601,8 +601,12 @@ module Testfield_general
       cz=cos(ktestfield_z*(z+zz0))
       sz=sin(ktestfield_z*(z+zz0))
 !
-      cx1=1./cx
-      cz1=1./cz
+      select case (itestfield)
+        case ('1''1-alt')    
+          cx1=1./cx
+          cz1=1./cz
+        case default
+      endselect
 !
       do i=1,size(x)
       do j=1,size(z)
@@ -620,9 +624,26 @@ module Testfield_general
 !                                    /), (/3,3/), ORDER=(/ 2, 1 /))
 
           case ('1-alt')
-            Minv(i,j,1,:) = (/ cx(i)*cz(j)+sx(i)*sz(j), sx(i)*cz(j)-cx(i)*sz(j), -sx(i)*cz(j)+cx(i)*sz(j) /)  
-            Minv(i,j,2,:) = (/-cx(i)*sx(i), cx(i)*cx(i), sx(i)*sx(i) /)/(cx(i)*cz(j)-sx(i)*sz(j)) 
-            Minv(i,j,3,:) = (/-cz(j)*sz(j), sz(j)*sz(j), cz(j)*cz(j) /)/(cx(i)*cz(j)-sx(i)*sz(j))
+            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) - ktestfield_z*z(j)), sin(ktestfield_x*x(i) - ktestfield_z*z(j)), &
+                              -2*sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
+            Minv(i,j,2,:) = (/ -0.5*sin(2*ktestfield_x*x(i)), cx(i)**2  , -cos(2*ktestfield_x*x(i))/) &
+                             /cos(ktestfield_x*x(i) + ktestfield_z*z(j))
+            Minv(i,j,3,:) = (/ -0.5*sin(2*ktestfield_z*z(j)), sz(j)**2  ,  cos(2*ktestfield_z*z(j))/) &
+                             /cos(ktestfield_x*x(i) + ktestfield_z*z(j))
+            exit
+!           Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) + ktestfield_z*z(j))*(cos(ktestfield_x*x(i) - ktestfield_z*z(j)) &
+!                            + sin(ktestfield_x*x(i) - ktestfield_z*z(j))), &
+!                              sin(ktestfield_x*x(i) - ktestfield_z*z(j))*(cos(ktestfield_x*x(i) + ktestfield_z*z(j)) &
+!                            + sin(ktestfield_x*x(i) + ktestfield_z*z(j))), &
+!                            - sin(2*ktestfield_x*x(i)) + sin(2*ktestfield_z*z(j))  /)&           
+!                           /(cos(ktestfield_x*x(i)) + sin(ktestfield_x*x(i)))/(cos(ktestfield_z*z(j)) - sin(ktestfield_z*z(j)))
+       
+!           Minv(i,j,2,:) = (/  -sx(i),  cx(i), -cx(i)) + sx(i) /) &
+!                           /ktestfield_x/(cz(j) - sz(j)) 
+                       
+!           Minv(i,j,3,:) = (/  -sz(j), -sz(j),  cz(j) + sz(j) /) &
+!                           /ktestfield_z/(cx(i) + sx(i)) 
+
 !
           case ('2')    
           case ('3')    
@@ -926,7 +947,7 @@ module Testfield_general
         if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
         if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
 !
-!  calculate fluctuating velocity  in the main run
+!  take fluctuating velocity from the main run, plug into u' x B^T
 !
         call cross_mn(p%uu-uum,bbtest,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest+uxB 
