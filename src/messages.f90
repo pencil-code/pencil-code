@@ -573,7 +573,7 @@ module Messages
 !
     endsubroutine terminal_highlight_fatal_error
 !***********************************************************************
-  logical function outlog(code,mode,file,dist,msg)
+  logical function outlog(code,mode,file,dist,msg,lcont,location)
 !
 !  Creates log entries for I/O errors in ioerrors.log.
 !  Notifies user via e-mail if address mailaddress is given.
@@ -582,7 +582,7 @@ module Messages
 !  distributed files in data/procN/ -> all sub-files in a coherent state
 !
 !  code(IN): errorcode from IOSTAT
-!  mode(IN): describes failed action, starts with 'open', 'read', 'write' or 'close'
+!  mode(IN): describes failed action, starts with 'open', 'openr', 'openw', 'read', 'write' or 'close'
 !            for 'read' and 'write': should contain the name of the relevant variable(s) 
 !  file(IN): file at which operation failed, 
 !            if omitted assumed to be the one saved in curfile
@@ -591,6 +591,10 @@ module Messages
 !            or simple backskipping (<0);|dist| = logical unit number
 !            only considered in calls with mode='open'
 !  msg(IN) : additional message text
+!  lcont(IN): flag for continue despite of READ error 
+!  location(IN): name of program unit, in which error occurred
+!                if omitted assumed to be the one saved in curloc
+!                usually set by the call with mode='open'
 !
 !  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
 !                statement ending the present group of I/O operations as outlog closes (tries to close) the file.
@@ -599,50 +603,70 @@ module Messages
 !  3-nov-11/MR: coded;
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 ! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
-!
+! 20-oct-13/MR: new options lcont,location introduced
+
     use Syscalls, only: system_cmd
     use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
     use Mpicomm, only: report_clean_output
 !
     integer,                     intent(IN) :: code
     character (LEN=*),           intent(IN) :: mode
-    character (LEN=*), optional, intent(IN) :: file,msg
+    character (LEN=*), optional, intent(IN) :: file,msg,location
     integer,           optional, intent(IN) :: dist
+    logical,           optional, intent(IN) :: lcont
 !
-    character (LEN=fnlen), save :: curfile=''
+    character (LEN=fnlen), save :: curfile='', curloc=''
     ! default: file not distributed, no backskipping
     integer, save :: curdist=0, curback=0
 !
     integer :: unit=90, iostat, ind
     character (LEN=intlen) :: date, codestr
     character (LEN=fnlen), dimension(2) :: strarr
-    character (LEN=fnlen) :: filename, submsg
-    logical :: lopen, lclose, lread, lwrite, lsync
+    character (LEN=fnlen) :: filename, submsg, message
+    logical :: lopen, lclose, lread, lwrite, lsync, lexists, lcontl
 !
     outlog = .false.
 !
-    filename = ""
-    if (present (file)) filename = ' in "'//trim (file)//'"'
+    lopen  = mode(1:4)=='open'
+    lread  = mode(1:5)=='read ' .or. mode(1:5)=='openr'
+    lwrite = mode(1:6)=='write '.or. mode(1:5)=='openw'
+    lclose = mode(1:5)=='close'
 !
-    ! Set the following expression to .false. to activate the experimental code
+    if (present(file)) curfile = file
+
+    filename = ''
+    if (curfile /= '' ) filename = ' "'//trim(curfile)//'"'
+    if (lclose) curfile = ''
+
+    if (present(location)) curloc = location
+
+    message = ""
+    if (present (msg)) message = ': '//trim (msg)
+    if (present(lcont)) then
+      lcontl = lcont
+    else
+      lcontl=.false.
+    endif
+!
+! Set the following expression to .false. to activate the experimental code
+!
     if (.true.) then
-      if (code < 0) then
-        outlog = .true.
-        call warning(mode, 'End-Of-File'//trim (filename))
+      if (code < 0 .and. .not.(lread.and.lcontl)) then
+        if (.not.lstop_on_ioerror) then
+          call warning(curloc, 'End-Of-File'//trim (filename)//trim (message))          !add mode?
+        else
+          outlog = .true.
+          call fatal_error(curloc, 'End-Of-File'//trim (filename)//trim (message))      !add mode?
+        endif 
       else if (code > 0) then
         outlog = .true.
-        call fatal_error(mode, 'I/O error (code '//trim (itoa (code))//')'//trim (filename), .true.)
+        call fatal_error(curloc, 'I/O error (code '//trim (itoa (code))//')'// &
+                         trim (filename)//trim (message), .true.)  !add mode?
       endif
       return
     endif
 !
     ! EXPERIMENTAL CODE:
-    lopen  = mode(1:4)=='open'
-    lread  = mode(1:5)=='read '
-    lwrite = mode(1:6)=='write '
-    lclose = mode(1:5)=='close'
-!
-    if (present(file)) curfile = file
 !
     if (lopen) then
 !
@@ -664,14 +688,14 @@ module Messages
 !
     lsync = .false.
 !
-    if (curdist/=0) then                                       ! backskipping enabled 
+    if (curdist/=0) then                               ! backskipping enabled 
 !
       if ( ncpus==1 .and. curdist>0 ) curdist = -curdist
 !
-      if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose) ) then      
-                                                               ! write/close on distributed file failed (somewhere)
+      if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose.or.lread) ) then      
+                                                               ! read/write/close on distributed file failed (somewhere)
         lsync = report_clean_output(code/=0, errormsg) 
-        if (lsync) then                                        ! synchronization necessary as at least 
+        if (lsync.and..not.lread) then                         ! synchronization necessary as at least 
                                                                ! one processor failed in writing
           if (lserial_io) then                                 ! no backskipping, needs to be checked
             submsg = ' not synchronized (lserial_io=T)!'
@@ -718,8 +742,16 @@ module Messages
       if ( lopen.or.lread.or.lwrite.or.lclose ) then
 !
         call safe_character_append(errormsg,' when '//mode(1:4)//'ing ')
+        
+        if (mode(1:5)=='openr') then
+          call safe_character_append(errormsg,' for reading ') 
+        elseif (mode(1:5)=='openw') then
+          call safe_character_append(errormsg,' for writing ')
+        endif
+
         if ( lread .or. lwrite ) then
-          call safe_character_append(errormsg,trim(mode(6:)))
+          if (mode(1:5)/='openr'.and.mode(1:5)/='openw') &
+            call safe_character_append(errormsg,' '//trim(mode(6:)))
           if (lread) then
             call safe_character_append(errormsg,' from')
           else
@@ -740,16 +772,23 @@ module Messages
 !
       codestr = itoa(code)
       call safe_character_append(errormsg,trim(filename)//'". Code: '//trim(codestr))
+      if (code<0) call safe_character_append(errormsg,' (EOF)')
+
       if ( submsg/='File' ) call safe_character_append(errormsg,'. '//trim(submsg))
       if ( present(msg) ) call safe_character_append(errormsg,'. '//trim(msg))
 !    
 ! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
 ! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerrors.log.
 !
-      strarr(1) = filename
-      strarr(2) = codestr
+      if (lread) then
+        lexists = .false.
+      else
+        strarr(1) = filename
+        strarr(2) = codestr
+        lexists = scanfile('ioerrors.log',2,strarr,'all')
+      endif
 !
-      if ( .not.scanfile('ioerrors.log',2,strarr,'all') ) then
+      if ( .not.lexists ) then
 !
         open(unit,file='ioerrors.log',position='append',iostat=IOSTAT)
 !
@@ -761,7 +800,7 @@ module Messages
 !
         if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
-        if ( index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
+        if ( .not.lread .and. index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
           call system_cmd( &
                'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
       endif
@@ -769,7 +808,8 @@ module Messages
 !
     if (code/=0.or.lsync) then
       outlog = .true.
-      if (lstop_on_ioerror) call stop_it('due to '//trim(errormsg))     ! stop on error if requested by user
+      if (lstop_on_ioerror.or.(lread.and..not.lcontl)) &      ! stop on error if requested by user or read operation
+        call fatal_error(curloc, 'I/O error'//' due to '//trim(errormsg)//' with '//trim(filename), .true.)  !add mode?
     endif
 !
   end function outlog
@@ -804,7 +844,11 @@ module Messages
 !
     do
       read(lun,'(a)',IOSTAT=io_err) line
-      if (io_err /= 0) exit
+      if (io_err < 0) then
+        exit
+      else if (io_err > 0) then 
+        cycle
+      endif
 !
       count=0
       do i=1,nstr
@@ -812,13 +856,16 @@ module Messages
           if (mode=='any') then
             scanfile = .true.
             exit
+          else
+            count = count+1
           endif
-          count = count+1
         endif
       enddo
 !
-      if (count == nstr) scanfile = .true.
-      if (scanfile) exit 
+      if (count == nstr) then 
+        scanfile = .true.
+        exit
+      endif 
 !
     enddo
 !
