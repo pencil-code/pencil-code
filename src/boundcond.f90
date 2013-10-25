@@ -613,6 +613,8 @@ module Boundcond
                 ! BCY_DOC: along $\theta$ boundary
 !joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
                 call bc_set_pfc_y(f,topbot,j)
+              case ('str')
+                call bc_stratified_y(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
               case default
@@ -1947,6 +1949,56 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_y
+!***********************************************************************
+    subroutine bc_stratified_y(f,topbot,j)
+!
+!  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction. 
+!  This boundary is coded only for linear density in spherical coordinates
+!
+!  06-oct-13/wlad: coded
+!
+      use EquationOfState, only: cs0
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx) :: rad,za,zg,H,lnrho
+      integer :: i,in,j
+!
+      if (j/=irho) call fatal_error("bc_stratified_y","This boundary condition is specific for density")
+      if (.not.ldensity_nolog) call fatal_error("bc_stratified_y","This boudary condition has not been coded for log density yet")
+      if (.not.lspherical_coords) call fatal_error("bc_stratified_y","This boudary condition is for spherical coordinates only")
+!
+      rad=x
+!
+      select case (topbot)
+      case ('bot')
+        za=rad*costh(m1)
+        H=cs0*rad
+        do i=1,nghost
+          zg=rad*costh(m1-i)
+          do in=1,mz
+            lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
+            f(:,m1-i,in,j) = exp(lnrho)
+          enddo
+        enddo
+!
+      case ('top')
+        za=rad*costh(m2)
+        H=cs0*rad
+        do i=1,nghost
+          zg=rad*costh(m2+i)
+          do in=1,mz
+            lnrho = alog(f(:,m2,in,j)) - (zg**2-za**2)/(2*H**2)
+            f(:,m2+i,in,j) = exp(lnrho)
+          enddo
+        enddo
+!
+      case default
+        print*, "bc_sym_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_stratified_y
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
 !
