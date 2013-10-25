@@ -373,8 +373,7 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
 else if ($hn =~ t*.hpc2n.umu.se ) then
   echo "HPC2N cluster (abisko) - Umea"
   echo "******************************"
-  echo "Always use  multiple of 48 no. of processors .."
-  echo "..for multiprecossor jobs. "
+  echo "Always use multiple of 48 processors!"
   echo " ******************************"
   set mpirunops = ''
   set mpirun = 'srun'
@@ -382,18 +381,14 @@ else if ($hn =~ t*.hpc2n.umu.se ) then
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
 #------------------------------------------
-else if ($hn =~ gardar ) then
+else if ($hn =~ gardar* ) then
   echo "******************************"
   echo "GARDAR in Iceland "
+  echo "Always use multiple of 12 processors!"
   echo " ******************************"
-  setenv LD_LIBRARY_PATH "/global/apps/openmpi/1.4.4-gnu/lib"
-  setenv LD_LIBRARY_PATH "/usr/lib/gcc/x86_64-redhat-linux/4.1.1/:${LD_LIBRARY_PATH}"
-  setenv LD_LIBRARY_PATH "/global/apps/gcc/4.6.2/lib64:${LD_LIBRARY_PATH}"
-#  set mpirun =  '/global/apps/openmpi/1.4.4/bin/mpirun'
-  set mpirun = '/global/apps/openmpi/1.4.4-gnu/bin/mpirun'
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
-  echo "Warp cluster (warp) - Pittsburg"
+  echo "Warp cluster (warp) - Pittsburgh"
   echo "******************************"
   echo "Always use  multiple of 8 no. of processors .."
   echo "..for multiprecossor jobs. "
