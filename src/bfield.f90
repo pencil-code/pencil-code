@@ -15,8 +15,8 @@
 ! CPARAM logical, parameter :: lbfield = .true.
 !
 ! MVAR CONTRIBUTION 3
-! MAUX CONTRIBUTION 3
-! COMMUNICATED AUXILIARIES 3
+! MAUX CONTRIBUTION 6
+! COMMUNICATED AUXILIARIES 6
 !
 ! PENCILS PROVIDED bb(3); bbb(3); b2
 ! PENCILS PROVIDED bij(3,3); jj(3); j2; divb
@@ -141,7 +141,7 @@ module Magnetic
 !
 !  Register the variables evolved by this magnetic module.
 !
-!  24-jun-13/ccyang: coded.
+!  25-oct-13/ccyang: coded.
 !
       use FArrayManager, only: farray_register_pde, farray_register_auxiliary
 !
@@ -166,6 +166,14 @@ module Magnetic
       ieex = iee
       ieey = ieex + 1
       ieez = ieey + 1
+!
+!  Request auxiliary variable for the current density.
+!
+      call farray_register_auxiliary('jj', ijj, vector=3, communicated=.true., ierr=istat)
+      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable jj. ')
+      ijx = ijj
+      ijy = ijx + 1
+      ijz = ijy + 1
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -311,16 +319,18 @@ module Magnetic
 !
 !  Speicifies the dependency of the pencils provided by Magnetic.
 !
-!  24-jun-13/ccyang: coded.
+!  25-oct-13/ccyang: coded.
 !
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
       if (lpencil_in(i_b2)) lpencil_in(i_bb) = .true.
 !
-      bder: if (lpencil_in(i_divb) .or. lpencil_in(i_jj)) then
+      divb: if (lpencil_in(i_divb)) then
         lpencil_in(i_bij) = .true.
         if (.not. lcartesian_coords) lpencil_in(i_bb) = .true.
-      endif bder
+      endif divb
+!
+      if (lpencil_in(i_j2)) lpencil_in(i_jj) = .true.
 !
       jxbr: if (lpencil_in(i_jxbr)) then
         lpencil_in(i_jj) = .true.
@@ -344,7 +354,7 @@ module Magnetic
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
-!  08-oct-13/ccyang: coded.
+!  25-oct-13/ccyang: coded.
 !
       use Boundcond, only: update_ghosts, zero_ghosts
       use Grid, only: get_grid_mn
@@ -355,9 +365,8 @@ module Magnetic
 !
       real, dimension(nx,3,3) :: bij
       real, dimension(mx,3) :: uum, bbm
-      real, dimension(nx,3) :: jjn, bbn
-      real, dimension(nx) :: eta_penc
-      integer :: j, k
+      real, dimension(nx,3) :: jj, bb
+      real, dimension(mx) :: eta_penc
 !
 !  Reset maxdiffus_eta for time step constraint.
 !
@@ -367,62 +376,80 @@ module Magnetic
 !
       if (lresis_hyper3_mesh) then
         call mesh_hyper_resistivity(f)
+!       Note: The jj field contains some garbage after this call.
       else
         f(:,:,:,ieex:ieez) = 0.0
       endif
 !
-!  Add normal resistivities.
+!  Find the current density J.
+!
+      mn_loop: do imn = 1, ny * nz
+        n = nn(imn)
+        m = mm(imn)
+        call gij(f, ibb, bij, 1)
+        cartesian: if (lcartesian_coords) then
+          call curl_mn(bij, jj)
+        else cartesian
+          if (lbext) then
+            bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
+          else
+            bb = f(l1:l2,m,n,ibx:ibz)
+          endif
+          call curl_mn(bij, jj, bb)
+        endif cartesian
+        f(l1:l2,m,n,ijx:ijz) = jj
+      enddo mn_loop
+!
+!  Communicate the J field.
+!
+      call zero_ghosts(f, ijx, ijz)
+      call update_ghosts(f, ijx, ijz)
 !
       resis: if (lexplicit_resistivity) then
-        mn_loop: do imn = 1, ny * nz
-          n = nn(imn)
-          m = mm(imn)
-          if (lbext) then
-            bbn = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
-          else
-            bbn = f(l1:l2,m,n,ibx:ibz)
-          endif
-          call get_resistivity(f, eta_penc)
-          call gij(f, ibb, bij, 1)
-          call curl_mn(bij, jjn, bbn)
-          f(l1:l2,m,n,ieex:ieez) = f(l1:l2,m,n,ieex:ieez) - spread(eta_penc, 2, 3) * jjn
-!         Time-step constraint
-          timestep: if (lfirst .and. ldt) then
-            if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
-            maxdiffus_eta = max(maxdiffus_eta, eta_penc * dxyz_2)
-          endif timestep
-        enddo mn_loop
+!
+!  Add normal resistivity.
+!
+        zscan1: do n = 1, mz
+          yscan1: do m = 1, my
+            call get_resistivity(f, eta_penc)
+            f(:,m,n,ieex:ieez) = f(:,m,n,ieex:ieez) - spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
+!           Time-step constraint
+            timestep: if (lfirst .and. ldt) then
+              if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
+              maxdiffus_eta = max(maxdiffus_eta, eta_penc(l1:l2) * dxyz_2)
+            endif timestep
+          enddo yscan1
+        enddo zscan1
       endif resis
 !
-!  Communicate the E field.
+!  Give the J field correct units.
 !
-      bc: if (lresis_hyper3_mesh .or. lexplicit_resistivity) then
-        call zero_ghosts(f, ieex, ieez)
-        call update_ghosts(f, ieex, ieez)
-      endif bc
+      f(:,:,:,ijx:ijz) = mu01 * f(:,:,:,ijx:ijz)
 !
-!  Get the shear velocity if existed.
+!  Get the shear velocity if it exists.
 !
       if (lshear) call get_uy0_shear(uy0, x=x)
 !
 !  Add uu cross bb, including ghost cells.
 !
-      uxb: if (iuu /= 0) then
-        zscan: do j = 1, mz
-          yscan: do k = 1, my
-            if (lbext) then
-              bbm = f(:,j,k,ibx:ibz) + spread(b_ext,1,mx)
-            else
-              bbm = f(:,j,k,ibx:ibz)
-            endif
-            uum = f(:,j,k,iux:iuz)
-            if (lshear) uum(:,2) = uum(:,2) + uy0
-            f(:,j,k,ieex) = f(:,j,k,ieex) + (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
-            f(:,j,k,ieey) = f(:,j,k,ieey) + (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
-            f(:,j,k,ieez) = f(:,j,k,ieez) + (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
-          enddo yscan
-        enddo zscan
-      endif uxb
+      zscan2: do n = 1, mz
+        yscan2: do m = 1, my
+          if (lbext) then
+            bbm = f(:,m,n,ibx:ibz) + spread(b_ext,1,mx)
+          else
+            bbm = f(:,m,n,ibx:ibz)
+          endif
+          if (iuu /= 0) then
+            uum = f(:,m,n,iux:iuz)
+          else
+            uum = 0.0
+          endif
+          if (lshear) uum(:,2) = uum(:,2) + uy0
+          f(:,m,n,ieex) = f(:,m,n,ieex) + (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
+          f(:,m,n,ieey) = f(:,m,n,ieey) + (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
+          f(:,m,n,ieez) = f(:,m,n,ieez) + (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
+        enddo yscan2
+      enddo zscan2
 !
     endsubroutine calc_lmagnetic_pars
 !***********************************************************************
@@ -454,10 +481,7 @@ module Magnetic
 !
       if (lpencil(i_bij)) call gij(f, ibb, p%bij, 1)
 !
-      jj: if (lpencil(i_jj)) then
-        call curl_mn(p%bij, p%jj, p%bb)
-        p%jj = mu01 * p%jj
-      endif jj
+      if (lpencil(i_jj)) p%jj = f(l1:l2,m,n,ijx:ijz)
 !
       if (lpencil(i_j2)) call dot2_mn(p%jj, p%j2)
 !
@@ -489,13 +513,13 @@ module Magnetic
 !
 !  Evaluates the time derivative of the magnetic field.
 !
-!  09-jul-13/ccyang: coded.
+!  25-oct-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: eta_penc
+      real, dimension(mx) :: eta_penc
 !
 !  dB/dt = curl(E).
 !
@@ -511,18 +535,18 @@ module Magnetic
         call get_resistivity(f, eta_penc)
         eta_penc = mu0 * eta_penc
         eth: if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_penc * p%j2
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_penc(l1:l2) * p%j2
         else if (lentropy) then eth
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc * p%cv1 * p%j2 *p%rho1 * p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc(l1:l2) * p%cv1 * p%j2 *p%rho1 * p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc * p%j2 * p%rho1 *p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_penc(l1:l2) * p%j2 * p%rho1 *p%TT1
           endif
         else if (ltemperature) then eth
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + eta_penc * p%cv1 * p%j2 * p%rho1
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + eta_penc(l1:l2) * p%cv1 * p%j2 * p%rho1
           else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + eta_penc * p%cv1 * p%j2 * p%rho1 * p%TT1
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + eta_penc(l1:l2) * p%cv1 * p%j2 * p%rho1 * p%TT1
           endif
         endif eth
       endif ohmic
@@ -925,10 +949,10 @@ module Magnetic
 !  Gets the total normal resistivity along one pencil.
 !  The unit of eta_penc is unit_length^2 / unit_time.
 !
-!  21-aug-13/ccyang: coded.
+!  25-oct-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: eta_penc
+      real, dimension(mx), intent(out) :: eta_penc
 !
 !  Constant resistivity
 !
@@ -940,7 +964,7 @@ module Magnetic
 !
 !  Shock resistivity
 !
-      if (lresis_shock) eta_penc = eta_penc + eta_shock * f(l1:l2,m,n,ishock)
+      if (lresis_shock) eta_penc = eta_penc + eta_shock * f(:,m,n,ishock)
 !
     endsubroutine get_resistivity
 !***********************************************************************
@@ -965,7 +989,7 @@ module Magnetic
 !
 !  Adds the mesh hyper-resistivity in divergence conserving form.
 !
-!  20-sep-13/ccyang: coded
+!  25-oct-13/ccyang: coded
 !
       use Boundcond, only: update_ghosts, zero_ghosts
       use Grid, only: get_grid_mn
@@ -973,43 +997,45 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx,ny,nz,3) :: d4jj
       real, dimension(nx,3) :: pv
-      integer :: j, mc, nc
+      integer :: j
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
 !
       if (lfirst .and. ldt) maxdiffus_eta3 = 0.0
 !
 !  Calculate the mesh curl of B (assuming the boundary conditions have been applied).
+!  Note: The auxiliary J field is temporarily used as working array here.
 !
       curlbb: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
         call curl(f, ibb, pv, ignoredx=.true.)
-        f(l1:l2,m,n,ieex:ieez) = pv
+        f(l1:l2,m,n,ijx:ijz) = pv
       enddo curlbb
-      call zero_ghosts(f, ieex, ieez)
-      call update_ghosts(f, ieex, ieez)
+      call zero_ghosts(f, ijx, ijz)
+      call update_ghosts(f, ijx, ijz)
 !
 !  Calculate its fourth-order mesh derivative.
 !
       getd4jj: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
-        mc = m - nghost
-        nc = n - nghost
         comp: do j = 1, 3
-          call del4(f, iee+j-1, pv(:,j), ignoredx=.true.)
+          call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
         enddo comp
-        d4jj(:,mc,nc,:) = pv
+        f(l1:l2,m,n,ieex:ieez) = -eta_hyper3_mesh * pv
 !       Time-step constraint
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
           maxdiffus_eta3 = max(maxdiffus_eta3, eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
         endif timestep
       enddo getd4jj
-      f(l1:l2,m1:m2,n1:n2,ieex:ieez) = -eta_hyper3_mesh * d4jj
+!
+!  Communicate the E field.
+!
+      call zero_ghosts(f, ieex, ieez)
+      call update_ghosts(f, ieex, ieez)
 !
     endsubroutine mesh_hyper_resistivity
 !***********************************************************************
