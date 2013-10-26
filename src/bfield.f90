@@ -215,7 +215,7 @@ module Magnetic
       if (eta /= 0.0) lresis_const = .true.
       if (eta_shock /= 0.0) lresis_shock = .true.
       if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
-      lresistivity = lresis_const .and. lresis_shock
+      lresistivity = lresis_const .or. lresis_shock
 !
 !  Sanity check
 !
