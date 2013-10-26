@@ -628,9 +628,12 @@ module Messages
     outlog = .false.
 !
     lopen  = mode(1:4)=='open'
-    lread  = mode(1:5)=='read ' .or. mode(1:5)=='openr'
-    lwrite = mode(1:6)=='write '.or. mode(1:5)=='openw'
-    lclose = mode(1:5)=='close'
+    lread  = mode(1:4)=='read' 
+    if (len_trim(mode)>4) then
+      lopen = lopen.or. mode(1:5)=='openr'
+      lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
+      lclose = mode(1:5)=='close'
+    endif
 !
     if (present(file)) curfile = file
 
