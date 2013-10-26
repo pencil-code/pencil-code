@@ -217,11 +217,6 @@ module Sub
     module procedure quintic_der_step_mn
   endinterface
 !
-  interface erfunc
-    module procedure erfunc_pt
-    module procedure erfunc_mn
-  endinterface
-!
   interface sine_step
     module procedure sine_step_pt
     module procedure sine_step_mn
@@ -4990,17 +4985,15 @@ nameloop: do
 !
     endfunction pencil_subtract2
 !***********************************************************************
-    function erfunc_pt(x)
+    elemental real function erfunc(x)
 !
 !  Error function from Numerical Recipes.
 !
-!  erfunc(x) = 1 - erfc(x)
-!
-!  This version is for scalar args.
-!
 !  15-Jan-2007/dintrans: coded
 !
-      real :: erfunc_pt,dumerfc,x,t,z
+      real, intent(in) :: x
+!
+      real :: dumerfc, t, z
 !
       z = abs(x)
       t = 1.0 / ( 1.0 + 0.5 * z )
@@ -5012,37 +5005,9 @@ nameloop: do
           ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
 !
       if (x<0.0) dumerfc = 2.0 - dumerfc
-      erfunc_pt = 1.0 - dumerfc
+      erfunc = 1.0 - dumerfc
 !
-    endfunction erfunc_pt
-!***********************************************************************
-    function erfunc_mn(x)
-!
-!  Error function from Numerical Recipes.
-!
-!  erfunc_mn(x) = 1 - erfc(x)
-!
-!  Version for 1d arg (in particular pencils).
-!
-!  15-Jan-2007/dintrans: coded
-!
-      real, dimension(:) :: x
-      real, dimension(size(x,1)) :: erfunc_mn,dumerfc,t,z
-!
-      z = abs(x)
-      t = 1.0 / ( 1.0 + 0.5 * z )
-!
-      dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
-          ( 1.00002368 + t * ( 0.37409196 + t *           &
-          ( 0.09678418 + t * (-0.18628806 + t *           &
-          ( 0.27886807 + t * (-1.13520398 + t *           &
-          ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
-!
-      where (x<0.) dumerfc = 2.0 - dumerfc
-!
-      erfunc_mn = 1.0 - dumerfc
-!
-    endfunction erfunc_mn
+    endfunction erfunc
 !***********************************************************************
     subroutine power_law_mn(const,dist,power_law_index,output,xref)
 !
