@@ -349,7 +349,12 @@ module Slices
         lwrite_slice_xy=lfirst_proc_z
         lwrite_slice_xz=.true.
 !
-! Another slice position for spherical coordinates. 
+! Another slice position for spherical coordinates, for global disks with 
+! buffer zones. It will read the midplane (xz2), and three other surfaces:
+! the theta-phi wall at constant radius (yz); the meridional plane at constant 
+! azimuth (xy); and the upper "lid", a radius-azimuth surface at constant 
+! theta, in the upper disk (xz). Both xy and yz are taken 10 grid cells away from
+! the beginning of the grid. This is to avoid the boundary.  
 !
       elseif (slice_position=='d') then
         ix_loc=l1+10; iy_loc=m1+10; iz_loc=n1
