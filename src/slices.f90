@@ -17,7 +17,7 @@ module Slices
   public :: wvid, wvid_prepare, setup_slices, wslice
 !
   real, target, dimension (nx,ny) :: slice_xy=0.0, slice_xy2=0.0
-  real, target, dimension (nx,nz) :: slice_xz=0.0
+  real, target, dimension (nx,nz) :: slice_xz=0.0, slice_xz2=0.0
   real, target, dimension (ny,nz) :: slice_yz=0.0
   real, target, dimension (nx,ny) :: slice_xy3=0.0, slice_xy4=0.0
 !
@@ -112,6 +112,7 @@ module Slices
         slices%ready=.false.
         slices%xy=>slice_xy
         slices%xz=>slice_xz
+        slices%xz2=>slice_xz2
         slices%yz=>slice_yz
         slices%xy2=>slice_xy2
         slices%xy3=>slice_xy3
@@ -163,6 +164,9 @@ module Slices
             if (associated(slices%xz)) &
               call wslice(path//trim(slices%name)//'.xz',slices%xz, &
                                                      y(iy_loc),nx,nz)
+            if (associated(slices%xz2)) &
+              call wslice(path//trim(slices%name)//'.xz2',slices%xz2, &
+                                                     y(iy2_loc),nx,nz)
             if (associated(slices%xy)) &
               call wslice(path//trim(slices%name)//'.xy',slices%xy, &
                                                      z(iz_loc),nx,ny)
@@ -184,6 +188,9 @@ module Slices
             if (associated(slices%xz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xz', &
                                        slices%xz, y(iy_loc),nx,nz)
+            if (associated(slices%xz2)) &
+              call wslice(path//trim(slices%name)//'.xz2',slices%xz2, &
+                                                     y(iy2_loc),nx,nz)
             if (associated(slices%xy)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy', &
                                        slices%xy, z(iz_loc),nx,ny)
@@ -251,6 +258,7 @@ module Slices
           (lwrite_slice_xy3.and.index(filename,'xy3')>0) .or. &
           (lwrite_slice_xy4.and.index(filename,'xy4')>0) .or. &
           (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
+          (lwrite_slice_xz2.and.index(filename,'xz2')>0) .or. &
           (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
 !
         open(1,file=filename,form='unformatted',position='append',IOSTAT=iostat)
@@ -341,6 +349,17 @@ module Slices
         lwrite_slice_xy=lfirst_proc_z
         lwrite_slice_xz=.true.
 !
+! Another slice position for spherical coordinates. 
+!
+      elseif (slice_position=='d') then
+        ix_loc=l1+10; iy_loc=m1+10; iz_loc=n1
+        if (mod(nprocy,2)==0) then; iy2_loc=m1; else; iy2_loc=(m1+m2)/2; endif
+        lwrite_slice_xy2=.false.
+        lwrite_slice_xy=lfirst_proc_z
+        lwrite_slice_xz=lfirst_proc_y
+        lwrite_slice_yz=lfirst_proc_x
+        lwrite_slice_xz2=(ipy==nprocy/2)
+!
 !  later we may also want to write other slices
 !
         !call xlocation(xtop_slice,ix2_loc,lwrite_slice_yz2)
@@ -389,18 +408,16 @@ module Slices
         endif
       endif
 !
-!  Spherical admits only position 'w'. Break if this is not met.
+!  Spherical admits only position 'w', 's', or 'd'. Break if this is not met.
 !  Also, turn extra r-theta slices to false in case of
 !  non-spherical coordinates
 !
-      if (coord_system=='spherical') then
-        if (slice_position/='w'.and.slice_position/='s') &
-            call warning("setup_slices",&
-            "You are using spherical coordinates. "//&
-            "To get slices use slice_position='w' or 's' in run_pars")
-      else
+      if (slice_position/='w'.and.slice_position/='s') then
         lwrite_slice_xy3=.false.
         lwrite_slice_xy4=.false.
+      endif
+      if (slice_position/='d') then
+        lwrite_slice_xz2=.false.
       endif
 !
 !  Overwrite slice postions if any ix,iy,iz,iz2,iz3,iz4 is greater then Zero
@@ -420,6 +437,15 @@ module Slices
           lwrite_slice_xz=.true.
         else
           lwrite_slice_xz=.false.
+        endif
+      endif
+!
+      if (iy2>0) then
+        iy2_loc=iy2-ipy*ny
+        if (iy2_loc>=m1.and.iy2_loc<=m2) then
+          lwrite_slice_xz2=.true.
+        else
+          lwrite_slice_xz2=.false.
         endif
       endif
 !
@@ -497,17 +523,22 @@ module Slices
      write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz,iy_loc
      if (outlog(iostat,'write lwrite_slice_xz,iy_loc')) goto 99
 !
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz2,iy2_loc
+     if (outlog(iostat,'write lwrite_slice_xz2,iy2_loc')) goto 99
+!
      write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_yz,ix_loc
      if (outlog(iostat,'write lwrite_slice_yz,ix_loc')) goto 99
 !
      close(1,IOSTAT=iostat)
      if (outlog(iostat,'close')) continue
 !
-!  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
+!  make sure ix_loc,iy_loc,iy2_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries
 !
-99     ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
-       ix_loc=max( ix_loc,l1) ;  iy_loc=max( iy_loc,m1)
+99     ix_loc=min( ix_loc,l2) 
+       ix_loc=max( ix_loc,l1) 
+       iy_loc=min( iy_loc,m2) ; iy2_loc=min( iy2_loc,m2)
+       iy_loc=max( iy_loc,m1) ; iy2_loc=max( iy2_loc,m1)
        iz_loc=min( iz_loc,n2) ; iz2_loc=min(iz2_loc,n2)
        iz_loc=max( iz_loc,n1) ; iz2_loc=max(iz2_loc,n1)
       iz3_loc=min(iz3_loc,n2) ; iz4_loc=min(iz4_loc,n2)
@@ -518,8 +549,10 @@ module Slices
         write (*,'(1x,a,4i4)') &
           'read_runpars: ix,iy,iz,iz2 (video files) =',&
           ix,iy,iz,iz2
-        if (coord_system=='spherical') write (*,'(1x,a,2i4)') &
+        if (slice_position=='s'.or.slice_position=='w') write (*,'(1x,a,2i4)') &
           'read_runpars: iz3, iz4 (video files) =',iz3,iz4
+        if (slice_position=='d') write (*,'(1x,a,1i4)') &
+          'read_runpars: iy2 (video files) =',iy2
       endif
 !
     endsubroutine setup_slices

@@ -157,6 +157,7 @@ module Cparam
     logical :: ready
     real, pointer, dimension (:,:) :: xy
     real, pointer, dimension (:,:) :: xz
+    real, pointer, dimension (:,:) :: xz2
     real, pointer, dimension (:,:) :: yz
     real, pointer, dimension (:,:) :: xy2
     real, pointer, dimension (:,:) :: xy3

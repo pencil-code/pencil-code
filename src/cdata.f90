@@ -205,7 +205,7 @@ module Cdata
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
-  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.
+  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -291,8 +291,8 @@ module Cdata
 !
 !  Parameters related to message passing.
 !
-  integer :: ix=-1,iy=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
-  integer :: ix_loc=-1,iy_loc=-1
+  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
+  integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
   integer :: iproc,ipx,ipy,ipz,root=0
   logical :: lprocz_slowest=.true.
