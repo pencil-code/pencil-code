@@ -45,18 +45,21 @@ module Magnetic
 !
 !  Runtime parameters
 !
+  real, dimension(2) :: eta_zdep_coeff = 0.0
+  character(len=8) :: eta_zdep_prof = ''
   logical :: lbext = .false.
   logical :: limplicit_resistivity = .false.
   logical :: lresis_const = .false.
+  logical :: lresis_zdep = .false.
   logical :: lresis_shock = .false.
   logical :: lresis_hyper3_mesh = .false.
   logical :: lohmic_heat = .true.
-  logical, dimension(7) :: lresi_dep=.false.
   real :: eta = 0.0
   real :: eta_shock = 0.0
   real :: eta_hyper3_mesh = 0.0
 !
-  namelist /magnetic_run_pars/ b_ext, eta, eta_shock, eta_hyper3_mesh, limplicit_resistivity, lohmic_heat
+  namelist /magnetic_run_pars/ &
+    b_ext, eta, eta_zdep_prof, eta_zdep_coeff, eta_shock, eta_hyper3_mesh, limplicit_resistivity, lohmic_heat
 !
 !  Diagnostic variables
 !
@@ -114,6 +117,7 @@ module Magnetic
   real, dimension(nx) :: maxdiffus_eta = 0.0
   real, dimension(nx) :: maxdiffus_eta3 = 0.0
   real, dimension(mx) :: uy0 = 0.0
+  real, dimension(mx) :: eta_zdep, detadz
   logical :: lresistivity = .false.
   logical :: lexplicit_resistivity = .false.
 !
@@ -121,6 +125,7 @@ module Magnetic
 !
   real, dimension(mz,3), parameter :: aamz = 0.0
   real, dimension(nz,3), parameter :: bbmz = 0.0, jjmz = 0.0
+  logical, dimension(7) :: lresi_dep = .false.
   real, dimension(3) :: b_ext_inv = 0.0
   logical, parameter :: lcalc_aameanz = .false.
   logical, parameter :: lelectron_inertia = .false.
@@ -213,9 +218,14 @@ module Magnetic
 !  Check the switches for resistivities.
 !
       if (eta /= 0.0) lresis_const = .true.
+      zdep: if (eta_zdep_prof /= '') then
+        call get_eta_zdep(z, eta_zdep, detadz)
+        if (all(eta_zdep == 0.0)) call fatal_error('initialize_magnetic', 'unknown eta_zdep_prof ' // eta_zdep_prof)
+        lresis_zdep = .true.
+      endif zdep
       if (eta_shock /= 0.0) lresis_shock = .true.
       if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
-      lresistivity = lresis_const .or. lresis_shock
+      lresistivity = lresis_const .or. lresis_zdep .or. lresis_shock
 !
 !  Sanity check
 !
@@ -224,12 +234,13 @@ module Magnetic
 !
 !  Determine if any resistivity by explicit solver is present.
 !
-      lexplicit_resistivity = (.not. limplicit_resistivity .and. lresis_const) .or. lresis_shock
+      lexplicit_resistivity = lresis_shock .or. (.not. limplicit_resistivity .and. (lresis_const .or. lresis_zdep))
 !
 !  Information output
 !
       resis: if (lroot) then
         if (lresis_const) print *, 'initialize_magnetic: constant resistivity, eta = ', eta
+        if (lresis_zdep) print *, 'initialize_magnetic: z-dependent resistivity profile ', eta_zdep_prof
         if (lresis_shock) print *, 'initialize_magnetic: shock resistivity, eta_shock = ', eta_shock
         if (lresis_hyper3_mesh) print *, 'initialize_magnetic: mesh hyper-resistivity, eta_hyper3_mesh = ', eta_hyper3_mesh
       endif resis
@@ -954,17 +965,25 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx), intent(out) :: eta_penc
 !
-!  Constant resistivity
+!  Shock resistivity
 !
-      if (lresis_const .and. .not. limplicit_resistivity) then
-        eta_penc = eta
+      if (lresis_shock) then
+        eta_penc = eta_shock * f(:,m,n,ishock)
       else
         eta_penc = 0.0
       endif
 !
-!  Shock resistivity
+      explicit: if (.not. limplicit_resistivity) then
 !
-      if (lresis_shock) eta_penc = eta_penc + eta_shock * f(:,m,n,ishock)
+!  Constant resistivity
+!
+        if (lresis_const) eta_penc = eta_penc + eta
+!
+!  z-dependent resistivity
+!
+        if (lresis_zdep) eta_penc = eta_penc + eta_zdep(n)
+!
+      endif explicit
 !
     endsubroutine get_resistivity
 !***********************************************************************
@@ -977,11 +996,18 @@ module Magnetic
       integer, intent(in) :: ndc
       real, dimension(ndc), intent(out) :: diffus_coeff
 !
+!  Constant resistivity
+!
       if (lresis_const) then
         diffus_coeff = eta
       else
         diffus_coeff = 0.0
       endif
+!
+!  z-dependent resistivity
+!
+      if (lresis_zdep) call fatal_error('get_resistivity_implicit', &
+                                        'z-dependent resistivity with implicit solver is under construction.')
 !
     endsubroutine get_resistivity_implicit
 !***********************************************************************
@@ -1038,6 +1064,44 @@ module Magnetic
       call update_ghosts(f, ieex, ieez)
 !
     endsubroutine mesh_hyper_resistivity
+!***********************************************************************
+    elemental subroutine get_eta_zdep(z, eta, detadz)
+!
+! Finds the resistivity at given height z and specified profile
+! zdep_prof.  If an unknown profile is given, zero resistivity is
+! returned.
+!
+! 26-oct-13/ccyang: coded.
+!
+      use Sub, only: erfunc
+      use EquationOfState, only: cs0
+!
+      real, intent(in) :: z
+      real, intent(out), optional :: eta
+      real, intent(out), optional :: detadz
+!
+      real :: h, zoh, a
+!
+      profile: select case (eta_zdep_prof)
+!
+      case ('FS03', 'FS2003') profile
+!       Fleming, T., & Stone, J. M. 2003, ApJ, 585, 908
+!         eta_zdep_coeff(1): eta at z = 0
+!         eta_zdep_coeff(2): surface density ratio Sigma_0 / Sigma_CR, where CR stands for cosmic rays
+        h = max(sqrt(2.0) * abs(cs0) / max(abs(Omega), tiny(1.0)), tiny(1.0))
+        zoh = abs(z) / h
+        a = eta_zdep_coeff(1) * exp(-0.5 * zoh**2 - 0.25 * eta_zdep_coeff(2) * erfunc(zoh))
+        if (present(eta)) eta = a
+        if (present(detadz)) detadz = -a * (zoh + 0.5 * exp(-zoh**2) / sqrtpi) / h
+!
+      case default profile
+!       Unknown profile
+        if (present(eta)) eta = 0.0
+        if (present(detadz)) detadz = 0.0
+!
+      endselect profile
+!
+    endsubroutine get_eta_zdep
 !***********************************************************************
 !***********************************************************************
 !
