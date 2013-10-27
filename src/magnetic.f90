@@ -58,6 +58,7 @@ module Magnetic
   real, target, dimension (nx,ny) :: b2_xy4,jb_xy4,j2_xy4, ab_xy4
   real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz,  ab_yz
   real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz,  ab_xz
+  real, target, dimension (nx,nz) :: b2_xz2
 !
   real, target, dimension (nx,ny) :: beta1_xy
   real, target, dimension (nx,ny) :: beta1_xy2
@@ -65,6 +66,7 @@ module Magnetic
   real, target, dimension (nx,ny) :: beta1_xy4
   real, target, dimension (ny,nz) :: beta1_yz
   real, target, dimension (nx,nz) :: beta1_xz
+  real, target, dimension (nx,nz) :: beta1_xz2
 !
 !  xy-averaged field
 !
@@ -4219,6 +4221,7 @@ module Magnetic
         enddo
         b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
         if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
+        if (m==iy2_loc) b2_xz2(:,n-n1+1)=p%b2
         if (n==iz_loc)  b2_xy(:,m-m1+1)=p%b2
         if (n==iz2_loc) b2_xy2(:,m-m1+1)=p%b2
         if (n==iz3_loc) b2_xy3(:,m-m1+1)=p%b2
@@ -4237,6 +4240,7 @@ module Magnetic
         if (n==iz4_loc) jb_xy4(:,m-m1+1)=p%jb
         beta1_yz(m-m1+1,n-n1+1)=p%beta1(ix_loc-l1+1)
         if (m==iy_loc)  beta1_xz(:,n-n1+1)=p%beta1
+        if (m==iy2_loc) beta1_xz2(:,n-n1+1)=p%beta1
         if (n==iz_loc)  beta1_xy(:,m-m1+1)=p%beta1
         if (n==iz2_loc) beta1_xy2(:,m-m1+1)=p%beta1
         if (n==iz3_loc) beta1_xy3(:,m-m1+1)=p%beta1
@@ -4944,6 +4948,7 @@ module Magnetic
           slices%xy2=>b2_xy2
           if (lwrite_slice_xy3) slices%xy3=>b2_xy3
           if (lwrite_slice_xy4) slices%xy4=>b2_xy4
+          if (lwrite_slice_xz2) slices%xz2=>b2_xz2
           slices%ready=.true.
 !
 !  Current squared (derived variable)
@@ -4977,6 +4982,7 @@ module Magnetic
           slices%xy2=>beta1_xy2
           if (lwrite_slice_xy3) slices%xy3=>beta1_xy3
           if (lwrite_slice_xy4) slices%xy4=>beta1_xy4
+          if (lwrite_slice_xz2) slices%xz2=>beta1_xz2
           slices%ready=.true.
 !
        case ('beta')
