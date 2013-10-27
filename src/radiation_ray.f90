@@ -106,7 +106,7 @@ module Radiation
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
   character (len=bclen) :: bc_ray_x, bc_ray_y, bc_ray_z
   character (len=labellen) :: source_function_type='LTE', opacity_type='Hminus'
-  character (len=labellen) :: angle_weight='constant'
+  character (len=labellen) :: angle_weight='corrected'
   character :: lrad_str, mrad_str, nrad_str
   character (len=3) :: raydir_str
 !
