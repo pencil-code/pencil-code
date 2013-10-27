@@ -24,13 +24,14 @@ program rvid_box
       real, dimension (ny,nz) :: yz_loc
 !
       integer :: ipx,ipy,ipz,iproc,it
-      integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
+      integer :: ipy1,ipy2,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun_pos=33, lun_video=34, i
       integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
       integer :: isep1=0,idummy,sindex
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
       logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
+      logical :: lread_slice_xz2
       real :: t
       real :: slice_pos=0.
       integer :: stride=1
@@ -97,6 +98,7 @@ program rvid_box
             read(lun_pos,'(l5,i5)') lread_slice_xy3,idummy
             read(lun_pos,'(l5,i5)') lread_slice_xy4,idummy
             read(lun_pos,'(l5,i5)') lread_slice_xz,idummy
+            read(lun_pos,'(l5,i5)') lread_slice_xz2,idummy
             read(lun_pos,'(l5,i5)') lread_slice_yz,idummy
             close(lun_pos)
             if (lread_slice_xy) ipz1=ipz
@@ -104,6 +106,7 @@ program rvid_box
             if (lread_slice_xy3) ipz3=ipz
             if (lread_slice_xy4) ipz4=ipz
             if (lread_slice_xz) ipy1=ipy
+            if (lread_slice_xz2) ipy2=ipy
             if (lread_slice_yz) ipx1=ipx
           enddo
         enddo
@@ -116,6 +119,7 @@ program rvid_box
       if (ipz3/=-1) lread_slice_xy3=.true.
       if (ipz4/=-1) lread_slice_xy4=.true.
       if (ipy1/=-1) lread_slice_xz=.true.
+      if (ipy2/=-1) lread_slice_xz2=.true.
       if (ipx1/=-1) lread_slice_yz=.true.
 !
 !  Loop over each field.
@@ -370,6 +374,46 @@ program rvid_box
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
               call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
+              call safe_character_assign(fullname,trim(path)//trim(file))
+              inquire(FILE=trim(fullname),EXIST=exists)
+              if (.not.exists) then
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
+              else
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xz_loc,t,slice_pos
+                  xz_t(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz,i)=xz_loc
+                  t_array(i) = t
+                enddo
+                close(lun_read)
+              endif
+            enddo
+          enddo
+          call safe_character_assign(wfile,trim(datadir)//trim(file))
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xz_t(:,:,i),t_array(i),slice_pos
+          enddo
+          close(lun_write)
+        else
+          write(*,*) 'Could not allocate memory to read slices'
+          STOP 1
+        endif
+        if (allocated(xz_t)) deallocate(xz_t)
+      endif
+!
+! Second xz plane
+!
+      if (lread_slice_xz2) then
+        allocate(xz_t(nxgrid,nzgrid,it),stat=stat)
+        if (stat==0) then
+          ipy=ipy2
+          do ipz=0,nprocz-1
+            do ipx=0,nprocx-1
+              iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
+              call safe_character_assign(file,'/slice_'//trim(field)//'.xz2')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then

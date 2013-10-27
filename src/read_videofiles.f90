@@ -16,7 +16,7 @@ program read_videofiles
   implicit none
 !
   integer :: ipx,ipy,ipz,iproc,it,num_slices,num_frames
-  integer :: ipy1=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1
+  integer :: ipy1=-1,ipy2=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1
   integer, parameter :: lun=10
   integer :: itdebug=1,n_every=1
   integer :: isep1=0,isep2=0
@@ -28,8 +28,8 @@ program read_videofiles
 !
   logical :: exists, lread_slice, lwritten_something=.false.
 !
-  real :: min_xy,min_xy2,min_xy3,min_xy4,min_xz,min_yz
-  real :: max_xy,max_xy2,max_xy3,max_xy4,max_xz,max_yz
+  real :: min_xy,min_xy2,min_xy3,min_xy4,min_xz,min_yz,min_xz2
+  real :: max_xy,max_xy2,max_xy3,max_xy4,max_xz,max_yz,max_xz2
 !
 !  read name of the field (must coincide with file extension)
 !
@@ -87,6 +87,8 @@ program read_videofiles
         read(lun,*) lread_slice
         if (lread_slice) ipy1=ipy
         read(lun,*) lread_slice
+        if (lread_slice) ipy2=ipy
+        read(lun,*) lread_slice
         if (lread_slice) ipx1=ipx
         close(lun)
       enddo
@@ -100,9 +102,10 @@ program read_videofiles
   call read_slice(ipz3,'xy3',min_xy3,max_xy3)
   call read_slice(ipz4,'xy4',min_xy4,max_xy4)
 !
-!  XZ-plane:
+!  XZ-planes:
 !
   call read_slice(ipy1,'xz',min_xz,max_xz)
+  call read_slice(ipy2,'xz2',min_xz2,max_xz2)
 !
 !  YZ-plane:
 !
@@ -119,6 +122,7 @@ program read_videofiles
     if (ipz3/=-1) print *,'xy3-plane:',min_xy3,max_xy3
     if (ipz4/=-1) print *,'xy4-plane:',min_xy4,max_xy4
     if (ipy1/=-1) print *,' xz-plane:',min_xz,max_xz
+    if (ipy2/=-1) print *,'xz2-plane:',min_xz2,max_xz2
     if (ipx1/=-1) print *,' yz-plane:',min_yz,max_yz
     print *,'-------------------------------------------------'
     print *,'finished OK'
