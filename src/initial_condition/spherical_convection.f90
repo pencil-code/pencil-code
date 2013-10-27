@@ -85,6 +85,7 @@ logical :: lcorona=.false.
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.6e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
+      real :: T00sun=2.23e6
       real, pointer :: gravx, cp, cv
       integer :: i, n, m, q, ix, ierr, unit=1, nsurf
 !
@@ -254,14 +255,18 @@ logical :: lcorona=.false.
            print*,'initial_condition: cs2cool2  =',cs2_cor
          endif
          print*,''
-         print*,'initial_condition: Temperature at the surface  =',Tsurf*cv/cvsun, 'K'
-         print*,'initial_condition: Temperature at the bottom   =',T00*cv/cvsun, 'K'
+!
+!  Compute temperatures at the surface and in the corona assuming solar
+!  temperature at the base of the convection zone.
+!
+         print*,'initial_condition: Temperature at the surface                =',Tsurf*T00sun/T00, 'K'
+         print*,'initial_condition: Temperature at the bottom                 =',T00sun, 'K'
          if (lcorona) then
-           print*,'initial_condition: Temperature in the corona   =',Tcor*cv/cvsun, 'K'
+           print*,'initial_condition: Temperature in the corona               =',Tcor*T00sun/T00, 'K'
          endif
-         print*,'initial_condition: Density strat in cov        =',rho00/rho_surf
+         print*,'initial_condition: Density stratification in convection zone =',rho00/rho_surf
          if (lcorona) then
-           print*,'initial_condition: Density strat with corona   =',exp(log(rho00)-lnrho(l2))
+           print*,'initial_condition: Density stratification with corona      =',exp(log(rho00)-lnrho(l2))
          endif
          print*,''
       endif
