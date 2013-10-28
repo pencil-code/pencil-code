@@ -30,7 +30,7 @@ module Particles_nbody
   real, dimension(nspar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: delta_vsp0=1.0, totmass, totmass1
   real :: create_jeans_constant=0.25, GNewton1
-  real :: GNewton=impossible, prhs_cte
+  real :: GNewton=impossible, density_scale=0.001
   real :: cdtpnbody=0.1
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
@@ -55,7 +55,7 @@ module Particles_nbody
   namelist /particles_nbody_init_pars/ &
       initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
       pmass, r_smooth, lcylindrical_gravity_nbody, lexclude_frozen, GNewton, &
-      bcspx, bcspy, bcspz, ramp_orbits, lramp, final_ramped_mass, prhs_cte, &
+      bcspx, bcspy, bcspz, ramp_orbits, lramp, final_ramped_mass, density_scale, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, maxsink, lcreate_sinks, icreate, lcreate_gas, &
       lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody
@@ -63,7 +63,7 @@ module Particles_nbody
   namelist /particles_nbody_run_pars/ &
       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
       lnogravz_star, lfollow_particle, lbackreaction, lexclude_frozen, &
-      GNewton, bcspx, bcspy, bcspz,prhs_cte, lnoselfgrav_star, &
+      GNewton, bcspx, bcspy, bcspz, density_scale, lnoselfgrav_star, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
       laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction, &
@@ -754,7 +754,10 @@ module Particles_nbody
 !
 !  Get the acceleration particle ks suffers due to self-gravity.
 !
+            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
             xxpar = fsp(ks,ixp:izp)
+!
             if (lcylindrical_gravity_nbody(ks)) then
               call integrate_selfgravity(p,rpcyl_mn(:,ks),&
                   xxpar,accg,r_smooth(ks))
@@ -1193,7 +1196,8 @@ module Particles_nbody
       else
         density=density+p%rho
       endif
-      selfgrav = prhs_cte*density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
+      selfgrav = GNewton*density_scale*&
+           density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Everything inside the accretion radius of the particle should
 !  not exert gravity (numerical problems otherwise)
