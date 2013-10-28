@@ -117,7 +117,7 @@ module Magnetic
   real, dimension(nx) :: maxdiffus_eta = 0.0
   real, dimension(nx) :: maxdiffus_eta3 = 0.0
   real, dimension(mx) :: uy0 = 0.0
-  real, dimension(mx) :: eta_zdep, detadz
+  real, dimension(mz) :: eta_zdep, detadz
   logical :: lresistivity = .false.
   logical :: lexplicit_resistivity = .false.
 !
