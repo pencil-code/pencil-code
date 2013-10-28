@@ -112,6 +112,11 @@ module Magnetic
   integer :: idiag_vAmin = 0    ! DIAG_DOC: $\min v_A$
   integer :: idiag_vAm = 0      ! DIAG_DOC: $\langle v_A\rangle$
 !
+!  yz averages
+!
+  integer :: idiag_bmx = 0      ! YZAVG_DOC: $\langle B\rangle_{yz}$
+  integer :: idiag_b2mx = 0     ! YZAVG_DOC: $\langle B^2\rangle_{yz}$
+!
 !  Module variables
 !
   real, dimension(nx) :: maxdiffus_eta = 0.0
@@ -323,6 +328,10 @@ module Magnetic
       if (idiag_divbmax /= 0 .or. idiag_divbrms /= 0) lpenc_diagnos(i_divb) = .true.
       if (idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. idiag_betam /= 0) lpenc_diagnos(i_beta) = .true.
       if (idiag_vAmax /= 0 .or. idiag_vAmin /= 0 .or. idiag_vAm /= 0) lpenc_diagnos(i_va2) = .true.
+!
+!  yz-averages related
+!
+      if (idiag_bmx /= 0 .or. idiag_b2mx /= 0) lpenc_diagnos(i_b2) = .true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -684,6 +693,9 @@ module Magnetic
 !  Reset everything in case of RELOAD.
 !
       reset: if (lreset) then
+!
+!       Diagnostics
+!
         idiag_bmax = 0
         idiag_bmin = 0
         idiag_brms = 0
@@ -732,6 +744,12 @@ module Magnetic
         idiag_vAmax = 0
         idiag_vAmin = 0
         idiag_vAm = 0
+!
+!       yz averages
+!
+        idiag_bmx = 0
+        idiag_b2mx = 0
+!
       endif reset
 !
 !  Parse the names from print.in.
@@ -786,6 +804,13 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'vAmin', idiag_vAmin)
         call parse_name(iname, cname(iname), cform(iname), 'vAm', idiag_vAm)
       enddo diag
+!
+!  Parse the names from yz-averages.
+!
+      yzavg: do iname = 1, nnamex
+        call parse_name(iname, cnamex(iname), cformx(iname), 'bmx', idiag_bmx)
+        call parse_name(iname, cnamex(iname), cformx(iname), 'b2mx', idiag_b2mx)
+      enddo yzavg
 !
 !  Write variable indices for IDL.
 !
@@ -967,9 +992,12 @@ module Magnetic
 !
 !  28-oct-13/ccyang: coded.
 !
+      use Diagnostics, only: yzsum_mn_name_x
+!
       type(pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(p)
+      if (idiag_bmx /= 0) call yzsum_mn_name_x(sqrt(p%b2), idiag_bmx)
+      if (idiag_b2mx /= 0) call yzsum_mn_name_x(p%b2, idiag_b2mx)
 !
     endsubroutine yzaverages_magnetic
 !***********************************************************************
