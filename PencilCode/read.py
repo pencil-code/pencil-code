@@ -110,20 +110,25 @@ def time_series(datadir='./data'):
     return ts
 
 #=======================================================================
-def varname(datadir='./data'):
-    """Returns the names of the farray variables.
+def varname(datadir='./data', filename='varname.dat'):
+    """Returns the names of variables.
 
     Keyword Arguments:
         datadir
             Name of the data directory
+        filename
+            Name of the file containing variable names
     """
     # Chao-Chin Yang, 2013-05-13
 
     # Read varname.dat.
-    f = open(datadir.strip() + '/varname.dat')
+    f = open(datadir.strip() + '/' + filename.strip())
     var = []
     for line in f:
-        var.append(line.split()[1])
+        try:
+            var.append(line.split()[1])
+        except:
+            var.append(line.split()[0])
     f.close()
 
     return var
