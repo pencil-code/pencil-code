@@ -6,6 +6,70 @@
 # Chao-Chin Yang, 2013-05-06
 # Last Modification: $Id$
 #=======================================================================
+def avg1d(datadir='./data', plane='xy'):
+    """Returns the time series of 1D averages.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+        plane
+            plane of average: 'xy', 'xz', or 'yz'
+    """
+    # Chao-Chin Yang, 2013-10-28
+
+    # Read the dimensions and check the plane of average.
+    dim = dimensions(datadir=datadir)
+    if plane == 'xy':
+        nc = dim.nzgrid
+    elif plane == 'xz':
+        nc = dim.nygrid
+    elif plane == 'yz':
+        nc = dim.nxgrid
+    else:
+        raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
+
+    # Read the names of the variables.
+    var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
+    print("Reading 1D averages", var, "...")
+
+    # Open file and define data stream.
+    f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
+    from collections import deque
+    queue = deque([float(a) for a in f.readline().split()])
+    eof = False
+    def pop(newline=False):
+        nonlocal eof
+        x = float(queue.popleft())
+        if newline:
+            queue.clear()
+        if len(queue) == 0:
+            for a in f.readline().split():
+                queue.append(float(a))
+            if len(queue) == 0:
+                eof = True
+        return x
+    def stream(n):
+        return [pop() for i in range(n)]
+
+    # Read the data.
+    import numpy as np
+    a = np.core.records.array(len(var) * [np.zeros(nc)], names=var)
+    t = [pop(newline=True)]
+    for v in var:
+        a[v] = np.array(stream(nc))
+    avg = a
+    while not eof:
+        t.append(pop(newline=True))
+        for v in var:
+            a[v] = np.array(stream(nc))
+        avg = np.vstack([avg, a])
+
+    # Close file.
+    f.close()
+
+    return t, avg.view(np.recarray)
+
+#=======================================================================
 def dimensions(datadir='./data'):
     """Returns the dimensions of the Pencil Code data from datadir.
 
