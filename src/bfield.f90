@@ -575,6 +575,12 @@ module Magnetic
 !
       if (ldiagnos) call diagnostic_magnetic(p)
 !
+      avg1d: if (l1davgfirst) then
+        call xyaverages_magnetic(p)
+        call xzaverages_magnetic(p)
+        call yzaverages_magnetic(p)
+      endif avg1d
+!
     endsubroutine daa_dt
 !***********************************************************************
     subroutine split_update_magnetic(f)
@@ -930,6 +936,42 @@ module Magnetic
       if (idiag_vAm /= 0) call sum_mn_name(sqrt(p%va2), idiag_vAm)
 !
     endsubroutine diagnostic_magnetic
+!***********************************************************************
+    subroutine xyaverages_magnetic(p)
+!
+!  Accumulates the xy-averaged diagnostics.
+!
+!  28-oct-13/ccyang: coded.
+!
+      type(pencil_case), intent(in) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine xyaverages_magnetic
+!***********************************************************************
+    subroutine xzaverages_magnetic(p)
+!
+!  Accumulates the xz-averaged diagnostics.
+!
+!  28-oct-13/ccyang: coded.
+!
+      type(pencil_case), intent(in) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine xzaverages_magnetic
+!***********************************************************************
+    subroutine yzaverages_magnetic(p)
+!
+!  Accumulates the yz-averaged diagnostics.
+!
+!  28-oct-13/ccyang: coded.
+!
+      type(pencil_case), intent(in) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine yzaverages_magnetic
 !***********************************************************************
     subroutine set_advec_va2(p)
 !
