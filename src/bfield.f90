@@ -125,6 +125,8 @@ module Magnetic
   integer :: idiag_bxbymx = 0   ! YZAVG_DOC: $\langle B_x B_y\rangle_{yz}$
   integer :: idiag_bxbzmx = 0   ! YZAVG_DOC: $\langle B_x B_z\rangle_{yz}$
   integer :: idiag_bybzmx = 0   ! YZAVG_DOC: $\langle B_y B_z\rangle_{yz}$
+  integer :: idiag_betamx = 0   ! YZAVG_DOC: $\langle\beta\rangle_{yz}$
+  integer :: idiag_beta2mx = 0  ! YZAVG_DOC: $\langle\beta^2\rangle_{yz}$
 !
 !  Module variables
 !
@@ -344,6 +346,7 @@ module Magnetic
       if (idiag_bxmx /= 0 .or. idiag_bymx /= 0 .or. idiag_bzmx /= 0 .or. &
           idiag_bx2mx /= 0 .or. idiag_by2mx /= 0 .or. idiag_bz2mx /= 0 .or. &
           idiag_bxbymx /= 0 .or. idiag_bxbzmx /= 0 .or. idiag_bybzmx /= 0) lpenc_diagnos(i_bb) = .true.
+      if (idiag_betamx /= 0 .or. idiag_beta2mx /= 0) lpenc_diagnos(i_beta) = .true.
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -770,6 +773,8 @@ module Magnetic
         idiag_bxbymx = 0
         idiag_bxbzmx = 0
         idiag_bybzmx = 0
+        idiag_betamx = 0
+        idiag_beta2mx = 0
 !
       endif reset
 !
@@ -840,6 +845,8 @@ module Magnetic
         call parse_name(iname, cnamex(iname), cformx(iname), 'bxbymx', idiag_bxbymx)
         call parse_name(iname, cnamex(iname), cformx(iname), 'bxbzmx', idiag_bxbzmx)
         call parse_name(iname, cnamex(iname), cformx(iname), 'bybzmx', idiag_bybzmx)
+        call parse_name(iname, cnamex(iname), cformx(iname), 'betamx', idiag_betamx)
+        call parse_name(iname, cnamex(iname), cformx(iname), 'beta2mx', idiag_beta2mx)
       enddo yzavg
 !
 !  Write variable indices for IDL.
@@ -1037,6 +1044,8 @@ module Magnetic
       if (idiag_bxbymx /= 0) call yzsum_mn_name_x(p%bb(:,1) * p%bb(:,2), idiag_bxbymx)
       if (idiag_bxbzmx /= 0) call yzsum_mn_name_x(p%bb(:,1) * p%bb(:,3), idiag_bxbzmx)
       if (idiag_bybzmx /= 0) call yzsum_mn_name_x(p%bb(:,2) * p%bb(:,3), idiag_bybzmx)
+      if (idiag_betamx /= 0) call yzsum_mn_name_x(p%beta, idiag_betamx)
+      if (idiag_beta2mx /= 0) call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
 !
     endsubroutine yzaverages_magnetic
 !***********************************************************************
