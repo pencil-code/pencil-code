@@ -604,6 +604,7 @@ module Messages
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 ! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
 ! 20-oct-13/MR: new options lcont,location introduced
+! 28-oct-13/MR: handling of lcont modified: now only in effect when reading
 
     use Syscalls, only: system_cmd
     use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
@@ -627,16 +628,15 @@ module Messages
 !
     outlog = .false.
 !
-    lopen  = mode(1:4)=='open'
-    lread  = mode(1:4)=='read' 
-    if (len_trim(mode)>4) then
-      lopen = lopen.or. mode(1:5)=='openr'
+    lopen = mode(1:4)=='open'
+    lread = mode(1:4)=='read' 
+    if (.not.lread .and. len_trim(mode)>4) then
+      lread = lread .or. mode(1:5)=='openr'
       lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
       lclose = mode(1:5)=='close'
     endif
 !
     if (present(file)) curfile = file
-
     filename = ''
     if (curfile /= '' ) filename = ' "'//trim(curfile)//'"'
     if (lclose) curfile = ''
@@ -661,7 +661,7 @@ module Messages
           outlog = .true.
           call fatal_error(curloc, 'End-Of-File'//trim (filename)//trim (message))      !add mode?
         endif 
-      else if (code > 0) then
+      elseif (code > 0 .and. .not.(lread.and.lcontl)) then
         outlog = .true.
         call fatal_error(curloc, 'I/O error (code '//trim (itoa (code))//')'// &
                          trim (filename)//trim (message), .true.)  !add mode?
