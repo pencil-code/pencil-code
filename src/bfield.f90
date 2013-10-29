@@ -116,6 +116,15 @@ module Magnetic
 !
   integer :: idiag_bmz = 0      ! XYAVG_DOC: $\langle B\rangle_{xy}$
   integer :: idiag_b2mz = 0     ! XYAVG_DOC: $\langle B^2\rangle_{xy}$
+  integer :: idiag_bxmz = 0     ! XYAVG_DOC: $\langle B_x\rangle_{xy}$
+  integer :: idiag_bymz = 0     ! XYAVG_DOC: $\langle B_y\rangle_{xy}$
+  integer :: idiag_bzmz = 0     ! XYAVG_DOC: $\langle B_z\rangle_{xy}$
+  integer :: idiag_bx2mz = 0    ! XYAVG_DOC: $\langle B_x^2\rangle_{xy}$
+  integer :: idiag_by2mz = 0    ! XYAVG_DOC: $\langle B_y^2\rangle_{xy}$
+  integer :: idiag_bz2mz = 0    ! XYAVG_DOC: $\langle B_z^2\rangle_{xy}$
+  integer :: idiag_bxbymz = 0   ! XYAVG_DOC: $\langle B_x B_y\rangle_{xy}$
+  integer :: idiag_bxbzmz = 0   ! XYAVG_DOC: $\langle B_x B_z\rangle_{xy}$
+  integer :: idiag_bybzmz = 0   ! XYAVG_DOC: $\langle B_y B_z\rangle_{xy}$
 !
 !  yz averages
 !
@@ -152,7 +161,6 @@ module Magnetic
   logical, parameter :: lelectron_inertia = .false.
   integer, parameter :: idiag_bcosphz = 0, idiag_bsinphz = 0
   integer, parameter :: idiag_axmz = 0, idiag_aymz = 0
-  integer, parameter :: idiag_bxmz = 0, idiag_bymz = 0
   real, parameter :: inertial_length = 0.0, linertial_2 = 0.0
 !
   contains
@@ -348,6 +356,9 @@ module Magnetic
 !  xy-averages related
 !
       if (idiag_bmz /= 0 .or. idiag_b2mz /= 0) lpenc_diagnos(i_b2) = .true.
+      if (idiag_bxmz /= 0 .or. idiag_bymz /= 0 .or. idiag_bzmz /= 0 .or. &
+          idiag_bx2mz /= 0 .or. idiag_by2mz /= 0 .or. idiag_bz2mz /= 0 .or. &
+          idiag_bxbymz /= 0 .or. idiag_bxbzmz /= 0 .or. idiag_bybzmz /= 0) lpenc_diagnos(i_bb) = .true.
 !
 !  yz-averages related
 !
@@ -773,6 +784,15 @@ module Magnetic
 !
         idiag_bmz = 0
         idiag_b2mz = 0
+        idiag_bxmz = 0
+        idiag_bymz = 0
+        idiag_bzmz = 0
+        idiag_bx2mz = 0
+        idiag_by2mz = 0
+        idiag_bz2mz = 0
+        idiag_bxbymz = 0
+        idiag_bxbzmz = 0
+        idiag_bybzmz = 0
 !
 !       yz averages
 !
@@ -850,6 +870,15 @@ module Magnetic
       xyavg: do iname = 1, nnamez
         call parse_name(iname, cnamez(iname), cformz(iname), 'bmz', idiag_bmz)
         call parse_name(iname, cnamez(iname), cformz(iname), 'b2mz', idiag_b2mz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bxmz', idiag_bxmz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bymz', idiag_bymz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bzmz', idiag_bzmz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bx2mz', idiag_bx2mz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'by2mz', idiag_by2mz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bz2mz', idiag_bz2mz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bxbymz', idiag_bxbymz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bxbzmz', idiag_bxbzmz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bybzmz', idiag_bybzmz)
       enddo xyavg
 !
 !  Parse the names from yz-averages.
@@ -1032,6 +1061,15 @@ module Magnetic
 !
       if (idiag_bmz /= 0) call xysum_mn_name_z(sqrt(p%b2), idiag_bmz)
       if (idiag_b2mz /= 0) call xysum_mn_name_z(p%b2, idiag_b2mz)
+      if (idiag_bxmz /= 0) call xysum_mn_name_z(p%bb(:,1), idiag_bxmz)
+      if (idiag_bymz /= 0) call xysum_mn_name_z(p%bb(:,2), idiag_bymz)
+      if (idiag_bzmz /= 0) call xysum_mn_name_z(p%bb(:,3), idiag_bzmz)
+      if (idiag_bx2mz /= 0) call xysum_mn_name_z(p%bb(:,1)**2, idiag_bx2mz)
+      if (idiag_by2mz /= 0) call xysum_mn_name_z(p%bb(:,2)**2, idiag_by2mz)
+      if (idiag_bz2mz /= 0) call xysum_mn_name_z(p%bb(:,3)**2, idiag_bz2mz)
+      if (idiag_bxbymz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,2), idiag_bxbymz)
+      if (idiag_bxbzmz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,3), idiag_bxbzmz)
+      if (idiag_bybzmz /= 0) call xysum_mn_name_z(p%bb(:,2) * p%bb(:,3), idiag_bybzmz)
 !
     endsubroutine xyaverages_magnetic
 !***********************************************************************
