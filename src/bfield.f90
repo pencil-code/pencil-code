@@ -125,6 +125,8 @@ module Magnetic
   integer :: idiag_bxbymz = 0   ! XYAVG_DOC: $\langle B_x B_y\rangle_{xy}$
   integer :: idiag_bxbzmz = 0   ! XYAVG_DOC: $\langle B_x B_z\rangle_{xy}$
   integer :: idiag_bybzmz = 0   ! XYAVG_DOC: $\langle B_y B_z\rangle_{xy}$
+  integer :: idiag_betamz = 0   ! XYAVG_DOC: $\langle\beta\rangle_{xy}$
+  integer :: idiag_beta2mz = 0  ! XYAVG_DOC: $\langle\beta^2\rangle_{xy}$
 !
 !  yz averages
 !
@@ -359,6 +361,7 @@ module Magnetic
       if (idiag_bxmz /= 0 .or. idiag_bymz /= 0 .or. idiag_bzmz /= 0 .or. &
           idiag_bx2mz /= 0 .or. idiag_by2mz /= 0 .or. idiag_bz2mz /= 0 .or. &
           idiag_bxbymz /= 0 .or. idiag_bxbzmz /= 0 .or. idiag_bybzmz /= 0) lpenc_diagnos(i_bb) = .true.
+      if (idiag_betamz /= 0 .or. idiag_beta2mz /= 0) lpenc_diagnos(i_beta) = .true.
 !
 !  yz-averages related
 !
@@ -793,6 +796,8 @@ module Magnetic
         idiag_bxbymz = 0
         idiag_bxbzmz = 0
         idiag_bybzmz = 0
+        idiag_betamz = 0
+        idiag_beta2mz = 0
 !
 !       yz averages
 !
@@ -879,6 +884,8 @@ module Magnetic
         call parse_name(iname, cnamez(iname), cformz(iname), 'bxbymz', idiag_bxbymz)
         call parse_name(iname, cnamez(iname), cformz(iname), 'bxbzmz', idiag_bxbzmz)
         call parse_name(iname, cnamez(iname), cformz(iname), 'bybzmz', idiag_bybzmz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'betamz', idiag_betamz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'beta2mz', idiag_beta2mz)
       enddo xyavg
 !
 !  Parse the names from yz-averages.
@@ -1070,6 +1077,8 @@ module Magnetic
       if (idiag_bxbymz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,2), idiag_bxbymz)
       if (idiag_bxbzmz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,3), idiag_bxbzmz)
       if (idiag_bybzmz /= 0) call xysum_mn_name_z(p%bb(:,2) * p%bb(:,3), idiag_bybzmz)
+      if (idiag_betamz /= 0) call xysum_mn_name_z(p%beta, idiag_betamz)
+      if (idiag_beta2mz /= 0) call xysum_mn_name_z(p%beta**2, idiag_beta2mz)
 !
     endsubroutine xyaverages_magnetic
 !***********************************************************************
