@@ -6,7 +6,7 @@
 # Chao-Chin Yang, 2013-10-22
 # Last Modification: $Id$
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', var=None):
+def avg1d(datadir='./data', plane='xy', var=None, **kwargs):
     """Plots the space-time diagram of a 1D average.
 
     Keyword Arguments:
@@ -16,6 +16,8 @@ def avg1d(datadir='./data', plane='xy', var=None):
             Plane of the average.
         var
             Name of the variable; if None, first variable is used.
+        **kwargs
+            Sent to matplotlib.pyplot.imshow.
     """
     # Chao-Chin Yang, 2013-10-29
 
@@ -37,7 +39,7 @@ def avg1d(datadir='./data', plane='xy', var=None):
     import matplotlib.pyplot as plt
     if var is None:
         var = avg.dtype.names[0]
-    img = plt.imshow(avg[var], origin='bottom')
+    img = plt.imshow(avg[var], origin='bottom', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
