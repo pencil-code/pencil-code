@@ -112,6 +112,11 @@ module Magnetic
   integer :: idiag_vAmin = 0    ! DIAG_DOC: $\min v_A$
   integer :: idiag_vAm = 0      ! DIAG_DOC: $\langle v_A\rangle$
 !
+!  xy averages
+!
+  integer :: idiag_bmz = 0      ! XYAVG_DOC: $\langle B\rangle_{xy}$
+  integer :: idiag_b2mz = 0     ! XYAVG_DOC: $\langle B^2\rangle_{xy}$
+!
 !  yz averages
 !
   integer :: idiag_bmx = 0      ! YZAVG_DOC: $\langle B\rangle_{yz}$
@@ -339,6 +344,10 @@ module Magnetic
       if (idiag_divbmax /= 0 .or. idiag_divbrms /= 0) lpenc_diagnos(i_divb) = .true.
       if (idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. idiag_betam /= 0) lpenc_diagnos(i_beta) = .true.
       if (idiag_vAmax /= 0 .or. idiag_vAmin /= 0 .or. idiag_vAm /= 0) lpenc_diagnos(i_va2) = .true.
+!
+!  xy-averages related
+!
+      if (idiag_bmz /= 0 .or. idiag_b2mz /= 0) lpenc_diagnos(i_b2) = .true.
 !
 !  yz-averages related
 !
@@ -760,6 +769,11 @@ module Magnetic
         idiag_vAmin = 0
         idiag_vAm = 0
 !
+!       xy averages
+!
+        idiag_bmz = 0
+        idiag_b2mz = 0
+!
 !       yz averages
 !
         idiag_bmx = 0
@@ -830,6 +844,13 @@ module Magnetic
         call parse_name(iname, cname(iname), cform(iname), 'vAmin', idiag_vAmin)
         call parse_name(iname, cname(iname), cform(iname), 'vAm', idiag_vAm)
       enddo diag
+!
+!  Parse the names from xy-averages.
+!
+      xyavg: do iname = 1, nnamez
+        call parse_name(iname, cnamez(iname), cformz(iname), 'bmz', idiag_bmz)
+        call parse_name(iname, cnamez(iname), cformz(iname), 'b2mz', idiag_b2mz)
+      enddo xyavg
 !
 !  Parse the names from yz-averages.
 !
@@ -1005,9 +1026,12 @@ module Magnetic
 !
 !  28-oct-13/ccyang: coded.
 !
+      use Diagnostics, only: xysum_mn_name_z
+!
       type(pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(p)
+      if (idiag_bmz /= 0) call xysum_mn_name_z(sqrt(p%b2), idiag_bmz)
+      if (idiag_b2mz /= 0) call xysum_mn_name_z(p%b2, idiag_b2mz)
 !
     endsubroutine xyaverages_magnetic
 !***********************************************************************
