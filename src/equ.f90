@@ -46,6 +46,7 @@ module Equ
       use GhostFold, only: fold_df
       use Gravity
       use Grid, only: calc_pencils_grid, get_grid_mn
+      use Heatflux
       use Hydro
       use Interstellar, only: interstellar_before_boundary
       use Lorenz_gauge
@@ -490,6 +491,7 @@ module Equ
         if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
         if (lspecial)         call calc_pencils_special(f,p)
+        if (lheatflux)        call calc_pencils_heatflux(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -571,6 +573,10 @@ module Equ
 !  Evolution of chemical species
 !
         if (lchemistry) call dchemistry_dt(f,df,p)
+!
+!  Evolution of heatflux vector
+!
+        if (lheatflux) call dheatflux_dt(f,df,p)
 !
 !  Continuous forcing function (currently only for extra diagonstics)
 !

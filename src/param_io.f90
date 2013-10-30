@@ -22,6 +22,7 @@ module Param_IO
   use Forcing
   use General
   use Gravity
+  use Heatflux
   use Hydro
   use InitialCondition
   use Interstellar
@@ -349,6 +350,10 @@ module Param_IO
 !
       call read_cosmicrayflux_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('cosmicrayflux_init_pars',ierr)
+      rewind(unit)
+!
+      call read_heatflux_init_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('heatflux_init_pars',ierr)
       rewind(unit)
 !
       call read_interstellar_init_pars(unit,IOSTAT=ierr)
@@ -690,6 +695,10 @@ module Param_IO
 !
       call read_cosmicrayflux_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('cosmicrayflux_run_pars',ierr)
+      rewind(unit)
+!
+      call read_heatflux_run_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('heatflux_run_pars',ierr)
       rewind(unit)
 !
       call read_interstellar_run_pars(unit,IOSTAT=ierr)

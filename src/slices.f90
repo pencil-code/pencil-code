@@ -80,6 +80,7 @@ module Slices
       use Dustvelocity,    only: get_slices_dustvelocity
       use EquationOfState, only: get_slices_eos
       use Energy,          only: get_slices_energy
+      use Heatflux,        only: get_slices_heatflux
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic
@@ -137,6 +138,7 @@ module Slices
         if (ldustvelocity) call get_slices_dustvelocity(f,slices)
         if (lenergy)       call get_slices_energy      (f,slices)
         if (leos)          call get_slices_eos         (f,slices)
+        if (lheatflux)     call get_slices_heatflux    (f,slices)
         if (lhydro)        call get_slices_hydro       (f,slices)
         if (linterstellar) call get_slices_interstellar(f,slices)
         if (lmagnetic)     call get_slices_magnetic    (f,slices)
