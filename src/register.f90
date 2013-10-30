@@ -43,6 +43,7 @@ module Register
       use EquationOfState,  only: register_eos
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
+      use Heatflux,         only: register_heatflux
       use Hydro,            only: register_hydro
       use Hyperresi_strict, only: register_hyperresi_strict
       use Hypervisc_strict, only: register_hypervisc_strict
@@ -150,6 +151,7 @@ module Register
       call register_hyperresi_strict
       call register_implicit_physics
       call register_special
+      call register_heatflux
 !
 !  Writing files for use with IDL.
 !
@@ -206,6 +208,7 @@ module Register
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
       use Gravity,          only: initialize_gravity
+      use Heatflux,         only: initialize_heatflux      
       use Hydro,            only: initialize_hydro
       use InitialCondition, only: initialize_initial_condition
       use Interstellar,     only: initialize_interstellar
@@ -399,6 +402,7 @@ module Register
       call initialize_border_profiles()
       call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
+      call initialize_heatflux(f,lstarting)
 !
     endsubroutine initialize_modules
 !***********************************************************************
@@ -539,6 +543,7 @@ module Register
       use Grid,            only: pencil_criteria_grid
       use BorderProfiles,  only: pencil_criteria_borderprofiles
       use EquationOfState, only: pencil_criteria_eos
+      use Heatflux,        only: pencil_criteria_heatflux
       use Hydro,           only: pencil_criteria_hydro
       use Density,         only: pencil_criteria_density
       use Forcing,         only: pencil_criteria_forcing
@@ -576,6 +581,7 @@ module Register
       call pencil_criteria_forcing()
       call pencil_criteria_eos()
       call pencil_criteria_hydro()
+      call pencil_criteria_heatflux()
       call pencil_criteria_shock()
       call pencil_criteria_viscosity()
       call pencil_criteria_energy()
@@ -621,6 +627,7 @@ module Register
       use Cdata
       use EquationOfState, only: pencil_interdep_eos
       use Hydro, only: pencil_interdep_hydro
+      use Heatflux, only: pencil_interdep_heatflux
       use Density, only: pencil_interdep_density
       use Forcing, only: pencil_interdep_forcing
       use Shock, only: pencil_interdep_shock
@@ -656,6 +663,7 @@ module Register
       call pencil_interdep_density(lpencil_in)
       call pencil_interdep_forcing(lpencil_in)
       call pencil_interdep_eos(lpencil_in)
+      call pencil_interdep_heatflux(lpencil_in)
       call pencil_interdep_hydro(lpencil_in)
       call pencil_interdep_shock(lpencil_in)
       call pencil_interdep_viscosity(lpencil_in)
@@ -747,6 +755,7 @@ module Register
       use Cdata
       use Sub,             only: numeric_precision
       use Diagnostics
+      use Heatflux,        only: rprint_heatflux
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
@@ -991,6 +1000,7 @@ module Register
       if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
 !
       call rprint_general         (lreset,LWRITE=lroot)
+      call rprint_heatflux        (lreset,LWRITE=lroot)
       call rprint_hydro           (lreset,LWRITE=lroot)
       call rprint_density         (lreset,LWRITE=lroot)
       call rprint_forcing         (lreset,LWRITE=lroot)
