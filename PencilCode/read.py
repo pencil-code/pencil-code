@@ -6,14 +6,16 @@
 # Chao-Chin Yang, 2013-05-06
 # Last Modification: $Id$
 #=======================================================================
-def avg1d(datadir='./data', plane='xy'):
+def avg1d(datadir='./data', plane='xy', verbose=True):
     """Returns the time series of 1D averages.
 
     Keyword Arguments:
         datadir
-            Name of the data directory
+            Name of the data directory.
         plane
-            plane of average: 'xy', 'xz', or 'yz'
+            Plane of average: 'xy', 'xz', or 'yz'.
+        verbose
+            Whether or not to print information.
     """
     # Chao-Chin Yang, 2013-10-28
 
@@ -30,9 +32,10 @@ def avg1d(datadir='./data', plane='xy'):
 
     # Read the names of the variables.
     var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
-    print("Reading 1D averages", var, "...")
 
     # Open file and define data stream.
+    if verbose:
+        print("Reading 1D averages", var, "...")
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
     from collections import deque
     queue = deque([float(a) for a in f.readline().split()])
