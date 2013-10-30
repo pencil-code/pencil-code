@@ -1,10 +1,11 @@
+#! /usr/bin/env python3
+# Last Modification: $Id$
 #=======================================================================
 # find.py
 #
 # Facilities for analyzing the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-10-21
-# Last Modification: $Id$
 #=======================================================================
 def time_average(datadir='./data', diagnostics=None, tmin=0):
     """Finds the time average of each given diagnostic variable.

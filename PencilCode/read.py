@@ -1,10 +1,11 @@
+#! /usr/bin/env python3
+# Last Modification: $Id$
 #=======================================================================
 # read.py
 #
 # Facilities for reading the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-05-06
-# Last Modification: $Id$
 #=======================================================================
 def avg1d(datadir='./data', plane='xy', verbose=True):
     """Returns the time series of 1D averages.
