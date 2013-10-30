@@ -46,8 +46,7 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
         if newline:
             queue.clear()
         if len(queue) == 0:
-            for a in f.readline().split():
-                queue.append(float(a))
+            queue.extend([float(a) for a in f.readline().split()])
             if len(queue) == 0:
                 eof = True
         return x
