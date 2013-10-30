@@ -48,7 +48,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     from scipy.interpolate import interp1d
     tmin, tmax = np.min(time), np.max(time)
     ns = avg.shape[1]
-    t = tmin + (np.arange(tsize) + 0.5) * (tmax - tmin) / tsize
+    t = np.linspace(tmin, tmax, tsize)
     a = np.empty((tsize, ns))
     for j in range(ns):
         a[:,j] = interp1d(time, avg[var][:,j])(t)
@@ -56,7 +56,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     # Plot the space-time diagram.
     print("Plotting...")
     import matplotlib.pyplot as plt
-    img = plt.imshow(a, origin='bottom', **kwargs)
+    img = plt.imshow(a, origin='bottom', extent=[-0.5,0.5,tmin,tmax], aspect='auto', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
