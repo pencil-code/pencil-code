@@ -38,38 +38,32 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
     if verbose:
         print("Reading 1D averages", var, "...")
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
-    queue = [float(a) for a in f.readline().split()]
-    eof = False
-    def pop(newline=False):
-        nonlocal eof
-        x = float(queue.pop(0))
-        if newline:
-            queue.clear()
-        if len(queue) == 0:
-            queue.extend([float(a) for a in f.readline().split()])
-            if len(queue) == 0:
-                eof = True
-        return x
-    def stream(n):
-        return [pop() for i in range(n)]
+    import numpy as np
+    def fetch(nval):
+        return np.fromfile(f, count=nval, sep=' ')
 
     # Read the data.
-    import numpy as np
     a = np.core.records.array(len(var) * [np.zeros(nc)], names=var)
-    t = [pop(newline=True)]
+    t = fetch(1)
     for v in var:
-        a[v] = np.array(stream(nc))
+        a[v] = fetch(nc)
     avg = a
-    while not eof:
-        t.append(pop(newline=True))
-        for v in var:
-            a[v] = np.array(stream(nc))
-        avg = np.vstack([avg, a])
+    while True:
+        tnew = fetch(1)
+        if tnew.size == 0:
+            break
+        t = np.concatenate((t, tnew))
+        try:
+            for v in var:
+                a[v] = fetch(nc)
+        except ValueError:
+            raise EOFError("incompatible data file")
+        avg = np.vstack((avg, a))
 
     # Close file.
     f.close()
 
-    return np.array(t), avg.view(np.recarray)
+    return t, avg.view(np.recarray)
 
 #=======================================================================
 def dimensions(datadir='./data'):
