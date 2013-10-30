@@ -34,14 +34,16 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
 
     # Read the data.
+    print("Reading 1D averages...")
     from . import read
-    time, avg = read.avg1d(datadir=datadir, plane=plane)
+    time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
 
     # Default variable name.
     if var is None:
         var = avg.dtype.names[0]
 
     # Interpolate the time series.
+    print("Interpolating", var, "...")
     import numpy as np
     from scipy.interpolate import interp1d
     tmin, tmax = np.min(time), np.max(time)
@@ -52,6 +54,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
         a[:,j] = interp1d(time, avg[var][:,j])(t)
 
     # Plot the space-time diagram.
+    print("Plotting...")
     import matplotlib.pyplot as plt
     img = plt.imshow(a, origin='bottom', **kwargs)
     ax = plt.gca()
