@@ -45,7 +45,7 @@ module Special
   real, dimension(mvar) :: filter_strength=0.
   logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.
   logical :: lwrite_granules=.false.
-  real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
+  real :: hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.
   real ::mach_chen=0.,maxvA=0.
@@ -62,6 +62,7 @@ module Special
   real, dimension(1) :: heat_par_rappazzo=0.
   real, dimension(1) :: heat_par_schrijver04=0.
   real, dimension(1) :: heat_par_balleg=0.
+  real :: R_hyper3
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
@@ -75,7 +76,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,irefz,tau_inv_spitzer,maxvA, &
-      eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
+      mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
@@ -98,10 +99,6 @@ module Special
   real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
   real, target, dimension (nx,nz) :: spitzer_xz
   real, target, dimension (ny,nz) :: spitzer_yz
-  real, target, dimension (nx,ny) :: sflux_xy,sflux_xy2
-  real, target, dimension (nx,ny) :: sflux_xy3,sflux_xy4
-  real, target, dimension (nx,nz) :: sflux_xz
-  real, target, dimension (ny,nz) :: sflux_yz
   real, target, dimension (nx,ny) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
   real, target, dimension (nx,nz) :: newton_xz
   real, target, dimension (ny,nz) :: newton_yz
@@ -159,8 +156,6 @@ module Special
 !
 !***********************************************************************
     subroutine register_special()
-!
-!  Set up indices for variables in special modules and write svn id.
 !
 !  10-sep-10/bing: coded
 !
@@ -290,7 +285,7 @@ module Special
          print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
-    !
+!
       if (.not.lstarting.and.lgranulation.and.ipz == 0) then
         if (lhydro) then
           call set_driver_params()
@@ -307,12 +302,9 @@ module Special
 !  initialise special condition; called from start.f90
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
       intent(inout) :: f
 !
       call keep_compiler_quiet(f)
-!
-!  Initialization for the non-fourier heat transprot
 !
       if (ltemperature.and. (.not. ltemperature_nolog)) then
         Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
@@ -445,12 +437,16 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
+
+      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
       if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
 !
       if (R_hypernu/=0. .or. R_hyperchi/=0. .or. &
           R_hypereta/=0. .or. R_hyperdiffrho/=0.) lpenc_requested(i_u2)=.true.
 !
       if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
+!
+      if (R_hyper3 /= 0.) lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -469,12 +465,11 @@ module Special
     subroutine calc_pencils_special(f,p)
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2_mn, div
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case), intent(inout) :: p
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)       
 !
       if (lpencil(i_cVTrho1)) p%cVTrho1=gamma*p%cp1*exp(-p%lnrho-p%lnTT)
 !
@@ -553,11 +548,15 @@ module Special
       intent(in) :: p
       intent(inout) :: f,df
 !
+       call keep_compiler_quiet(p)
+!
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
       if (lfilter_farray) call filter_farray(f,df)
+!
+!  Add hyper diffusion with fixed Reynoldsnmumber
 !
       call keep_compiler_quiet(p)
 !
@@ -572,7 +571,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data), intent(inout) :: slices
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)       
 !
 !  Loop over slices
 !
