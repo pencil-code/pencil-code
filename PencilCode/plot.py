@@ -1,10 +1,11 @@
+#! /usr/bin/env python3
+# Last Modification: $Id$
 #=======================================================================
 # plot.py
 #
 # Facilities for plotting the Pencil Code data.
 #
 # Chao-Chin Yang, 2013-10-22
-# Last Modification: $Id$
 #=======================================================================
 def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     """Plots the space-time diagram of a 1D average.
