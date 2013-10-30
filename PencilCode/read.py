@@ -37,12 +37,11 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
     if verbose:
         print("Reading 1D averages", var, "...")
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
-    from collections import deque
-    queue = deque([float(a) for a in f.readline().split()])
+    queue = [float(a) for a in f.readline().split()]
     eof = False
     def pop(newline=False):
         nonlocal eof
-        x = float(queue.popleft())
+        x = float(queue.pop(0))
         if newline:
             queue.clear()
         if len(queue) == 0:
