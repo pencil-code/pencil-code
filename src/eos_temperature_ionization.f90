@@ -13,8 +13,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
+! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
+! PENCILS PROVIDED yH; del2ss; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
 ! PENCILS PROVIDED mu1; hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
 !
@@ -397,6 +397,14 @@ module EquationOfState
           p%ss = p%ss + xHe*(tmp + lnrho_He - log(xHe))
         endif
         p%ss = Rgas*mu1_0*p%ss
+      endif
+!
+      if (lpencil(i_gss)) then
+        call fatal_error('gss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
+      endif
+!
+      if (lpencil(i_del2ss)) then
+        call fatal_error('del2ss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
       endif
 !
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
