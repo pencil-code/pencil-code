@@ -194,7 +194,7 @@ def varname(datadir='./data', filename='varname.dat'):
         try:
             var.append(line.split()[1])
         except:
-            var.append(line.split()[0])
+            var.append(line.rstrip('\n'))
     f.close()
 
     return var
