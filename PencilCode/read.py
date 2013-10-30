@@ -67,7 +67,7 @@ def avg1d(datadir='./data', plane='xy'):
     # Close file.
     f.close()
 
-    return t, avg.view(np.recarray)
+    return np.array(t), avg.view(np.recarray)
 
 #=======================================================================
 def dimensions(datadir='./data'):
