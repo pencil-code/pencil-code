@@ -6,7 +6,7 @@
 # Chao-Chin Yang, 2013-10-22
 # Last Modification: $Id$
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', var=None, **kwargs):
+def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     """Plots the space-time diagram of a 1D average.
 
     Keyword Arguments:
@@ -14,6 +14,8 @@ def avg1d(datadir='./data', plane='xy', var=None, **kwargs):
             Name of the data directory.
         plane
             Plane of the average.
+        tsize
+            Number of regular time intervals.
         var
             Name of the variable; if None, first variable is used.
         **kwargs
@@ -33,13 +35,25 @@ def avg1d(datadir='./data', plane='xy', var=None, **kwargs):
 
     # Read the data.
     from . import read
-    t, avg = read.avg1d(datadir=datadir, plane=plane)
+    time, avg = read.avg1d(datadir=datadir, plane=plane)
+
+    # Default variable name.
+    if var is None:
+        var = avg.dtype.names[0]
+
+    # Interpolate the time series.
+    import numpy as np
+    from scipy.interpolate import interp1d
+    tmin, tmax = np.min(time), np.max(time)
+    ns = avg.shape[1]
+    t = tmin + (np.arange(tsize) + 0.5) * (tmax - tmin) / tsize
+    a = np.empty((tsize, ns))
+    for j in range(ns):
+        a[:,j] = interp1d(time, avg[var][:,j])(t)
 
     # Plot the space-time diagram.
     import matplotlib.pyplot as plt
-    if var is None:
-        var = avg.dtype.names[0]
-    img = plt.imshow(avg[var], origin='bottom', **kwargs)
+    img = plt.imshow(a, origin='bottom', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
