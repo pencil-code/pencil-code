@@ -558,7 +558,6 @@ module Testfield_general
 !  jg contains indices (out of {1,2,3}) for which geta has nonvanishing components
 !
 !   6-sep-13/MR: coded
-!  20-oct-13/MR: Minv for itestfield='1-alt' and 'linear' added
 !
       real, dimension(nx,3),intent(IN) :: del2Atest
       real, dimension(nx),  intent(IN) :: divatest,eta
@@ -581,6 +580,8 @@ module Testfield_general
     subroutine calc_inverse_matrix(x,z,ktestfield_x,ktestfield_z,xx0,zz0,Minv,cx,sx,cz,sz)
 !
 !  27-aug-13/MR: outsourced from testfield_xz:initialize_testfield for broader use
+!  20-oct-13/MR: Minv for itestfield='1-alt' and 'linear' added
+!  30-oct-13/MR: added Minv for another alternative testfield
 !
       real, dimension(:),       intent(in) :: x, z
       real,                     intent(in) :: ktestfield_x,ktestfield_z,xx0,zz0
@@ -602,7 +603,7 @@ module Testfield_general
       sz=sin(ktestfield_z*(z+zz0))
 !
       select case (itestfield)
-        case ('1''1-alt')    
+        case ('1','1-alt')    
           cx1=1./cx
           cz1=1./cz
         case default
@@ -624,26 +625,37 @@ module Testfield_general
 !                                    /), (/3,3/), ORDER=(/ 2, 1 /))
 
           case ('1-alt')
+            ! alt-I
             Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) - ktestfield_z*z(j)), sin(ktestfield_x*x(i) - ktestfield_z*z(j)), &
-                              -2*sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
-            Minv(i,j,2,:) = (/ -0.5*sin(2*ktestfield_x*x(i)), cx(i)**2  , -cos(2*ktestfield_x*x(i))/) &
-                             /cos(ktestfield_x*x(i) + ktestfield_z*z(j))
-            Minv(i,j,3,:) = (/ -0.5*sin(2*ktestfield_z*z(j)), sz(j)**2  ,  cos(2*ktestfield_z*z(j))/) &
-                             /cos(ktestfield_x*x(i) + ktestfield_z*z(j))
-            exit
-!           Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) + ktestfield_z*z(j))*(cos(ktestfield_x*x(i) - ktestfield_z*z(j)) &
+                              -sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
+
+            Minv(i,j,2,:) = (/ -cx(i)*sx(i), cx(i)**2, sx(i)**2 /) &
+                             /(cos(ktestfield_x*x(i) - ktestfield_z*z(j))*ktestfield_x)
+
+            Minv(i,j,3,:) = (/ -cz(j)*sz(j), sz(j)**2,  cz(j)**2 /) &
+                             /(cos(ktestfield_x*x(i) - ktestfield_z*z(j))*ktestfield_z)
+!
+            ! alt-II
+!            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) - ktestfield_z*z(j)), sin(ktestfield_x*x(i) - ktestfield_z*z(j)), &
+!                              -2*sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
+!            Minv(i,j,2,:) = (/ -0.5*sin(2*ktestfield_x*x(i)), cx(i)**2  , -cos(2*ktestfield_x*x(i))/) &
+!                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_x)
+!            Minv(i,j,3,:) = (/ -0.5*sin(2*ktestfield_z*z(j)), sz(j)**2  ,  cos(2*ktestfield_z*z(j))/) &
+!                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_z)
+!
+             !alt-III
+!            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) + ktestfield_z*z(j))*(cos(ktestfield_x*x(i) - ktestfield_z*z(j)) &
 !                            + sin(ktestfield_x*x(i) - ktestfield_z*z(j))), &
 !                              sin(ktestfield_x*x(i) - ktestfield_z*z(j))*(cos(ktestfield_x*x(i) + ktestfield_z*z(j)) &
 !                            + sin(ktestfield_x*x(i) + ktestfield_z*z(j))), &
 !                            - sin(2*ktestfield_x*x(i)) + sin(2*ktestfield_z*z(j))  /)&           
 !                           /(cos(ktestfield_x*x(i)) + sin(ktestfield_x*x(i)))/(cos(ktestfield_z*z(j)) - sin(ktestfield_z*z(j)))
-       
-!           Minv(i,j,2,:) = (/  -sx(i),  cx(i), -cx(i)) + sx(i) /) &
-!                           /ktestfield_x/(cz(j) - sz(j)) 
-                       
-!           Minv(i,j,3,:) = (/  -sz(j), -sz(j),  cz(j) + sz(j) /) &
-!                           /ktestfield_z/(cx(i) + sx(i)) 
-
+      
+!            Minv(i,j,2,:) = (/  -sx(i),  cx(i), -cx(i) + sx(i) /) &
+!                            /ktestfield_x/(cz(j) - sz(j)) 
+                      
+!            Minv(i,j,3,:) = (/  -sz(j), -sz(j),  cz(j) + sz(j) /) &
+!                            /ktestfield_z/(cx(i) + sx(i)) 
 !
           case ('2')    
           case ('3')    
@@ -661,11 +673,12 @@ module Testfield_general
       endsubroutine calc_inverse_matrix
 !***********************************************************************
     subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiag_Eij,idiag_alp11h,idiag_eta123h, &
-                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d)
+                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,nygrid)
 !  
-!  calculation of the turbulent coefficients for an average over one coordinate,
-!  takes subroutine ysum_xz for 1D and xysum_z for 2D averages as parameters;
-!  symbols chosen as the 2D average were over all y and the 1D average over all x and y
+!  calculation of the turbulent coefficients for an average over one coordinate.
+!  Note: symbols were chosen such as it were to be used in testfield_xz, that is
+!  as the 2D average were over all y and the 1D average over all x and y.
+!  takes subroutine ysum_xz for 1D and xysum_z for 2D averages as parameters.
 !
 !  26-feb-13/MR: determination of y-averaged components of alpha completed
 !   6-mar-13/MR: internal order of etas changed; calls to save_name, *sum_mn_name 
@@ -677,6 +690,7 @@ module Testfield_general
 !   3-sep-13/MR: outsourced from testfield_xz
 !  20-oct-13/MR: setting of lfirstpoint corrected; ny*temp_array --> nygrid*temp_array
 !                allowed for other cases of itestfield; calculation of Eij for diagnostic output corrected
+!  30-oct-13/MR: added parameter nygrid to allow correct application in testfield_xy
 ! 
     Use Diagnostics, only: sum_mn_name, save_name
     Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x, fnamexz
@@ -688,6 +702,7 @@ module Testfield_general
     logical, dimension(:),      intent(in):: twod_need_1d, twod_need_2d
     real,    dimension(:,:,:,:),intent(in):: uxbtestm, Minv
     external                              :: ysum_xz,xysum_z
+    integer                    ,intent(in):: nygrid
 !
     integer :: i, j, ij, count, nl, jtest, nx, nz, n, n1, n2
     real, dimension(2,size(uxbtestm,1)) :: temp_fft_z
