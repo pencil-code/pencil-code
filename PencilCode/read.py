@@ -106,6 +106,64 @@ def dimensions(datadir='./data'):
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
 #=======================================================================
+def parameters(datadir='./data'):
+    """Returns runtime parameters.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
+    # Chao-Chin Yang, 2013-10-31
+
+    # Function to convert a string to the correct type.
+    def convert(v):
+        if v == 'T' or v == ".TRUE.":
+            return True
+        elif v == 'F' or v == ".FALSE.":
+            return False
+        else:
+            try:
+                return int(v)
+            except ValueError:
+                try:
+                    return float(v)
+                except ValueError:
+                    return v.strip("' ")
+
+    # Function to parse the values.
+    def parse(v):
+        v = v.split(',')
+        u = []
+        for w in v:
+            w = w.strip()
+            if '*' in w:
+                nrep, sep, x = w.partition('*')
+                u += int(nrep) * [convert(x)]
+            else:
+                u += [convert(w)]
+        if len(u) == 1:
+            return u[0]
+        else:
+            return u
+
+    # Read the parameter file.
+    f = open(datadir.strip() + "/param2.nml")
+    keys, values = [], []
+    for line in f:
+        if '=' in line:
+            k, s, v = line.partition('=')
+            k = k.strip().lower()
+            if k not in keys:
+                keys.append(k)
+                values.append(parse(v.strip(" ,\n")))
+            else:
+                print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
+    f.close()
+
+    # Return a dictionary.
+    return dict(zip(keys, values))
+
+#=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
 
