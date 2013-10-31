@@ -202,6 +202,7 @@ module Testfield
 !                  added call to calc_pencils_hydro to enable work
 !                  with hydro_kinematic (restricted to p%uu)
 !  20-oct-13/MR  : call of calc_coefficients corrected
+!  30-oct-13/MR  : added parameter nygrid to call of calc_coefficients
 !
       use Sub, only: curl, cross_mn, finalize_aver
       use Diagnostics, only: ysum_mn_name_xz_npar,xysum_mn_name_z_npar
@@ -280,7 +281,7 @@ module Testfield
                                               idiags(idiag_base_end+1:idiag_base_end+4), &
                                               idiags(idiag_base_end+5:idiag_base_end+8), &
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
-                                              twod_need_1d,twod_need_2d,needed2d)
+                                              twod_need_1d,twod_need_2d,needed2d,nygrid)
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************
@@ -327,7 +328,8 @@ module Testfield
 !  tries of alternative testfields
 !
 !  23-oct-13/MR: coded
-!
+!  30-oct-13/MR: added another alternative
+!  
       real, dimension (nx,3) :: bbtest
       integer :: jtest
 !
@@ -343,17 +345,20 @@ module Testfield
       select case (jtest)
 !
       case (1); bbtest(:,1)=cx*cz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=sx*cz(nl)+cx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=cx*sz(nl); bbtest(:,2)=0.;           bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sx*cz(nl)          ; bbtest(:,2)=0.; bbtest(:,3)=0.
+!      case (2); bbtest(:,1)=sx*cz(nl)+cx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=cx*sz(nl);           bbtest(:,2)=0.; bbtest(:,3)=0.
 !      case (3); bbtest(:,1)=cx*sz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
 !
       case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cz(nl)+sx*sz(nl); bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(nl)+cx*sz(nl); bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(nl)          ; bbtest(:,3)=0.
+!      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(nl)+cx*sz(nl); bbtest(:,3)=0.
       case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(nl);           bbtest(:,3)=0.
 !      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(nl)+sx*sz(nl); bbtest(:,3)=0.
 !
       case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cz(nl)+sx*sz(nl)
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(nl)+cx*sz(nl)
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(nl)
+!      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(nl)+cx*sz(nl)
       case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(nl)
 !      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(nl)+sx*sz(nl)
 !
