@@ -27,10 +27,13 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     # Check the plane of the average.
     if plane == 'xy':
         xlabel = '$z$'
+        xdir = 2
     elif plane == 'xz':
         xlabel = '$y$'
+        xdir = 1
     elif plane == 'yz':
         xlabel = '$x$'
+        xdir = 0
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
 
@@ -38,6 +41,8 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     print("Reading 1D averages...")
     from . import read
     time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
+    par = read.parameters(datadir=datadir)
+    xmin, xmax = par['xyz0'][xdir], par['xyz1'][xdir]
 
     # Default variable name.
     if var is None:
@@ -57,7 +62,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     # Plot the space-time diagram.
     print("Plotting...")
     import matplotlib.pyplot as plt
-    img = plt.imshow(a, origin='bottom', extent=[-0.5,0.5,tmin,tmax], aspect='auto', **kwargs)
+    img = plt.imshow(a, origin='bottom', extent=[xmin,xmax,tmin,tmax], aspect='auto', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
