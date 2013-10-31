@@ -93,7 +93,7 @@ program start
   implicit none
 !
   real, allocatable, dimension (:,:,:,:) :: f, df
-  integer :: i, ifilter, stat
+  integer :: i, ifilter, stat,ierr
   logical :: lnoerase=.false.
 !
   lstart=.true.
@@ -158,9 +158,13 @@ program start
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
 !
+!  Define the lenergy logical
+!
+  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+!
 !  Read parameters from start.in.
 !
-  call read_startpars(FILE=.true.)
+  call read_startpars(FILE=.true.,IERR=ierr)
 !
 !  Initialise MPI communication.
 !
@@ -180,10 +184,6 @@ program start
 !  not yet defined. So we set it simply to lroot here.
 !
   headtt=lroot
-!
-!  Define the lenergy logical
-!
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
 !  Initialize start time.
 !
@@ -483,7 +483,7 @@ program start
     if (lparticles) &
         call write_snapshot_particles(directory_dist,f,ENUM=.false.,snapnum=0)
 !
-    call wsnap('VAR0',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.,FLIST='varN.list')
+    call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -495,9 +495,9 @@ program start
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(directory_dist,f,ENUM=.false.)
-    call wsnap('var.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
+    call wsnap('var.dat',f,mvar_io,ENUM=.false.)
   elseif (lmodify) then
-    call wsnap(modify_filename,f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
+    call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
   endif
   call wdim(trim(directory)//'/dim.dat')
 !
