@@ -60,7 +60,7 @@ module Param_IO
   public :: get_datadir, get_snapdir
   public :: read_startpars, print_startpars
   public :: read_runpars,   print_runpars
-  public :: rparam, wparam, wparam2, write_pencil_info
+  public :: wparam, wparam2, write_pencil_info
 !
 ! The following fixes namelist problems withi MIPSpro 7.3.1.3m
 ! under IRIX -- at least for the moment
@@ -917,98 +917,6 @@ module Param_IO
       call keep_compiler_quiet(lsolid_cells)
 !
     endsubroutine wparam
-!***********************************************************************
-    subroutine rparam()        !!! replace call by call read_startpars
-!
-!  Read startup parameters.
-!
-!  21-jan-02/wolf: coded
-!  31-oct-13/MR  : call of read_lorenz_gauge_init_pars added
-!
-      use Mpicomm, only: parallel_open, parallel_close
-!
-      integer :: unit=1
-!
-      call parallel_open(unit,trim(datadir)//'/param.nml')
-!
-      read(unit,NML=init_pars)
-      rewind(unit)
-      call read_streamlines_init_pars(unit)
-      rewind(unit)
-      call read_eos_init_pars(unit)
-      rewind(unit)
-      call read_hydro_init_pars(unit)
-      rewind(unit)
-      call read_density_init_pars(unit)
-      rewind(unit)
-      call read_forcing_init_pars(unit)
-      rewind(unit)
-      call read_gravity_init_pars(unit)
-      rewind(unit)
-      call read_selfgravity_init_pars(unit)
-      rewind(unit)
-      call read_poisson_init_pars(unit)
-      rewind(unit)
-      call read_energy_init_pars(unit)
-      rewind(unit)
-      call read_magnetic_init_pars(unit)
-      rewind(unit)
-      call read_lorenz_gauge_init_pars(unit)
-      rewind(unit)
-      call read_testscalar_init_pars(unit)
-      rewind(unit)
-      call read_testfield_init_pars(unit)
-      rewind(unit)
-      call read_testflow_init_pars(unit)
-      rewind(unit)
-      call read_radiation_init_pars(unit)
-      rewind(unit)
-      call read_pscalar_init_pars(unit)
-      rewind(unit)
-      call read_chiral_init_pars(unit)
-      rewind(unit)
-      call read_chemistry_init_pars(unit)
-      rewind(unit)
-      call read_signal_init_pars(unit)
-      rewind(unit)
-      call read_dustvelocity_init_pars(unit)
-      rewind(unit)
-      call read_dustdensity_init_pars(unit)
-      rewind(unit)
-      call read_neutralvelocity_init_pars(unit)
-      rewind(unit)
-      call read_neutraldensity_init_pars(unit)
-      rewind(unit)
-      call read_cosmicray_init_pars(unit)
-      rewind(unit)
-      call read_cosmicrayflux_init_pars(unit)
-      rewind(unit)
-      call read_interstellar_init_pars(unit)
-      rewind(unit)
-      call read_shear_init_pars(unit)
-      rewind(unit)
-      call read_testperturb_init_pars(unit)
-      rewind(unit)
-      call read_viscosity_init_pars(unit)
-      rewind(unit)
-      call read_special_init_pars(unit)
-      rewind(unit)
-      call read_shock_init_pars(unit)
-      rewind(unit)
-      call read_solid_cells_init_pars(unit)
-      rewind(unit)
-      call read_NSCBC_init_pars(unit)
-      rewind(unit)
-      call read_polymer_init_pars(unit)
-      rewind(unit)
-      call read_initial_condition_pars(unit)
-      rewind(unit)
-      call particles_rparam(unit)
-      rewind(unit)
-!
-      call parallel_close(unit)
-!
-    endsubroutine rparam
 !***********************************************************************
     subroutine wparam2()
 !
