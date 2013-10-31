@@ -143,7 +143,7 @@ module Param_IO
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, re_mesh, lreset_seed, &
-      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, & 
+      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec
@@ -210,7 +210,7 @@ module Param_IO
 !
     endsubroutine get_snapdir
 !***********************************************************************
-    subroutine read_startpars(print,file)
+    subroutine read_startpars(print,file,ierr)
 !
 !  read input parameters (done by each processor)
 !
@@ -223,178 +223,69 @@ module Param_IO
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
+!  31-oct-13/MR  : changed for use instead of rparam; shortened by use of read_pars
 !
       use Mpicomm, only: parallel_open, parallel_close
+      use Sub, only: loptest
 !
-      logical, optional :: print,file
+      logical, optional, intent(IN   ):: print,file
+      integer, optional, intent(INOUT):: ierr
 !
-      integer :: ierr, unit=1
+      integer, parameter :: unit=1
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
       if (lshear .and. lforce_shear_bc) bcx(:)='she'
 !
-!  Open namelist file.
+!  Open namelist file and read through all items that *may* be present in the various modules.
 !
-      call parallel_open(unit,'start.in','formatted')
-!
-!  Read through all items that *may* be present in the various modules.
-!
-      read(unit,NML=init_pars,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('init_pars',ierr)
+      if (present(ierr)) then
+        call parallel_open(unit,'start.in','formatted')
+        read(unit,NML=init_pars,IOSTAT=ierr)
+        if (ierr/=0) call sample_pars(ierr,'')
+      else
+        call parallel_open(unit,trim(datadir)//'/param.nml')
+        read(unit,NML=init_pars)
+      endif
       rewind(unit)
 !
-      call read_initial_condition_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
-      rewind(unit)
-!
-      call read_streamlines_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('initial_streamlines_pars',ierr)
-      rewind(unit)
-!
-      call read_eos_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('eos_init_pars',ierr)
-      rewind(unit)
-!
-      call read_hydro_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('hydro_init_pars',ierr)
-      rewind(unit)
-!
-      call read_density_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('density_init_pars',ierr)
-      rewind(unit)
-!
-      call read_forcing_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('forcing_init_pars',ierr)
-      rewind(unit)
-!
-      call read_gravity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('grav_init_pars',ierr)
-      rewind(unit)
-!
-      call read_selfgravity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('selfgrav_init_pars',ierr)
-      rewind(unit)
-!
-      call read_poisson_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('poisson_init_pars',ierr)
-      rewind(unit)
-!
-      call read_energy_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('entropy_init_pars',ierr)
-      rewind(unit)
-!
-      call read_energy_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('energy_init_pars',ierr)
-      rewind(unit)
-!
-      call read_magnetic_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('magnetic_init_pars',ierr)
-      rewind(unit)
-!
-      call read_lorenz_gauge_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('lorenz_gauge_init_pars',ierr)
-      rewind(unit)
-!
-      call read_testscalar_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('testscalar_init_pars',ierr)
-      rewind(unit)
-!
-      call read_testfield_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('testfield_init_pars',ierr)
-      rewind(unit)
-!
-      call read_testflow_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('testflow_init_pars',ierr)
-      rewind(unit)
-!
-      call read_radiation_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('radiation_init_pars',ierr)
-      rewind(unit)
-!
-      call read_pscalar_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('pscalar_init_pars',ierr)
-      rewind(unit)
-!
-      call read_chiral_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('chiral_init_pars',ierr)
-      rewind(unit)
-!
-      call read_chemistry_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('chemistry_init_pars',ierr)
-      rewind(unit)
-!
-      call read_signal_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('signal_init_pars',ierr)
-      rewind(unit)
-!
-      call read_dustvelocity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('dustvelocity_init_pars',ierr)
-      rewind(unit)
-!
-      call read_dustdensity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('dustdensity_init_pars',ierr)
-      rewind(unit)
-!
-      call read_neutralvelocity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('neutralvelocity_init_pars',ierr)
-      rewind(unit)
-!
-      call read_neutraldensity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('neutraldensity_init_pars',ierr)
-      rewind(unit)
-!
-      call read_cosmicray_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('cosmicray_init_pars',ierr)
-      rewind(unit)
-!
-      call read_cosmicrayflux_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('cosmicrayflux_init_pars',ierr)
-      rewind(unit)
-!
-      call read_heatflux_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('heatflux_init_pars',ierr)
-      rewind(unit)
-!
-      call read_interstellar_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('interstellar_init_pars',ierr)
-      rewind(unit)
-!
-      call read_shear_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('shear_init_pars',ierr)
-      rewind(unit)
-!
-      call read_testperturb_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('testperturb_init_pars',ierr)
-      rewind(unit)
-!
-      call read_viscosity_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('viscosity_init_pars',ierr)
-      rewind(unit)
-!
-      call read_special_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('special_init_pars',ierr)
-      rewind(unit)
-!
-      call read_shock_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('shock_init_pars',ierr)
-      rewind(unit)
-!
-      call read_solid_cells_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('solid_cells_init_pars',ierr)
-      rewind(unit)
-!
-      call read_NSCBC_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('NSCBC_init_pars',ierr)
-      rewind(unit)
-!
-      call read_polymer_init_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('polymer_init_pars',ierr)
-      rewind(unit)
-!
-      call particles_read_startpars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
-      rewind(unit)
+      call read_pars(unit,read_initial_condition_pars,'initial_condition_pars',ierr)
+      call read_pars(unit,read_streamlines_init_pars,'streamlines',ierr)
+      call read_pars(unit,read_eos_init_pars,'eos',ierr)
+      call read_pars(unit,read_hydro_init_pars,'hydro',ierr)
+      call read_pars(unit,read_density_init_pars,'density',ierr)
+      call read_pars(unit,read_forcing_init_pars,'forcing',ierr)
+      call read_pars(unit,read_gravity_init_pars,'grav_init_pars',ierr)
+      call read_pars(unit,read_selfgravity_init_pars,'selfgrav',ierr)
+      call read_pars(unit,read_poisson_init_pars,'poisson',ierr)
+      call read_pars(unit,read_energy_init_pars,'entropy',ierr)
+      call read_pars(unit,read_magnetic_init_pars,'magnetic',ierr)
+      call read_pars(unit,read_lorenz_gauge_init_pars,'lorenz_gauge',ierr)
+      call read_pars(unit,read_testscalar_init_pars,'testscalar',ierr)
+      call read_pars(unit,read_testfield_init_pars,'testfield',ierr)
+      call read_pars(unit,read_testflow_init_pars,'testflow',ierr)
+      call read_pars(unit,read_radiation_init_pars,'radiation',ierr)
+      call read_pars(unit,read_pscalar_init_pars,'pscalar',ierr)
+      call read_pars(unit,read_chiral_init_pars,'chiral',ierr)
+      call read_pars(unit,read_chemistry_init_pars,'chemistry',ierr)
+      call read_pars(unit,read_signal_init_pars,'signal',ierr)
+      call read_pars(unit,read_dustvelocity_init_pars,'dustvelocity',ierr)
+      call read_pars(unit,read_dustdensity_init_pars,'dustdensity',ierr)
+      call read_pars(unit,read_neutralvelocity_init_pars,'neutralvelocity',ierr)
+      call read_pars(unit,read_neutraldensity_init_pars,'neutraldensity',ierr)
+      call read_pars(unit,read_cosmicray_init_pars,'cosmicray',ierr)
+      call read_pars(unit,read_cosmicrayflux_init_pars,'cosmicrayflux',ierr)
+      call read_pars(unit,read_heatflux_init_pars,'heatflux',ierr)
+      call read_pars(unit,read_interstellar_init_pars,'interstellar',ierr)
+      call read_pars(unit,read_shear_init_pars,'shear',ierr)
+      call read_pars(unit,read_testperturb_init_pars,'testperturb',ierr)
+      call read_pars(unit,read_viscosity_init_pars,'viscosity',ierr)
+      call read_pars(unit,read_special_init_pars,'special',ierr)
+      call read_pars(unit,read_shock_init_pars,'shock',ierr)
+      call read_pars(unit,read_solid_cells_init_pars,'solid_cells',ierr)
+      call read_pars(unit,read_NSCBC_init_pars,'NSCBC',ierr)
+      call read_pars(unit,read_polymer_init_pars,'polymer',ierr)
+      call read_pars(unit,particles_read_startpars,'particles',ierr)
 !
       call parallel_close(unit)
 !
@@ -403,22 +294,12 @@ module Param_IO
       if (lroot) call svn_id(cvsid)
 !
 !  Give online feedback if called with the PRINT optional argument.
-!  Note: Some compiler's [like Compaq's] code crashes with the more
-!  compact `if (present(print) .and. print)'.
 !
-      if (present(print)) then
-        if (print) then
-          call print_startpars()
-        endif
-      endif
+      if (loptest(print)) call print_startpars()
 !
 !  Write parameters to log file.
 !
-      if (present(file)) then
-        if (file) then
-          call print_startpars(FILE=trim(datadir)//'/params.log')
-        endif
-      endif
+      if (loptest(file)) call print_startpars(FILE=trim(datadir)//'/params.log')
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -437,64 +318,6 @@ module Param_IO
       call check_consistency_of_lperi('read_startpars')
 !
     endsubroutine read_startpars
-!***********************************************************************
-    subroutine sample_startpars(label,iostat)
-!
-      character (len=*), optional :: label
-      integer, optional :: iostat
-!
-      if (lroot) then
-        print*
-        print*,'-----BEGIN sample namelist ------'
-                                print*,'&init_pars                 /'
-        if (linitial_condition) print*,'&initial_condition_pars    /'
-        if (ltracers          ) print*,'&streamlines_init_pars     /'
-        if (leos              ) print*,'&eos_init_pars             /'
-        if (lhydro            ) print*,'&hydro_init_pars           /'
-        if (ldensity          ) print*,'&density_init_pars         /'
-        if (lgrav             ) print*,'&grav_init_pars            /'
-        if (lselfgravity      ) print*,'&selfgrav_init_pars        /'
-        if (lpoisson          ) print*,'&poisson_init_pars         /'
-        if (lentropy          ) print*,'&entropy_init_pars         /'
-        if (ltemperature      ) print*,'&entropy_init_pars         /'
-        if (lenergy           ) print*,'&energy_init_pars          /'
-        if (lmagnetic         ) print*,'&magnetic_init_pars        /'
-        if (lmagn_mf          ) print*,'&magn_mf_init_pars         /'
-        if (lmagn_mf_demfdt   ) print*,'&magn_mf_demfdt_init_pars  /'
-        if (llorenz_gauge     ) print*,'&lorenz_gauge_init_pars    /'
-        if (ltestscalar       ) print*,'&testscalar_init_pars      /'
-        if (ltestfield        ) print*,'&testfield_init_pars       /'
-        if (ltestflow         ) print*,'&testflow_init_pars        /'
-        if (lradiation        ) print*,'&radiation_init_pars       /'
-        if (lpscalar          ) print*,'&pscalar_init_pars         /'
-        if (lchiral           ) print*,'&chiral_init_pars          /'
-        if (lchemistry        ) print*,'&chemistry_init_pars       /'
-        if (lsignal           ) print*,'&signal_init_pars          /'
-        if (ldustvelocity     ) print*,'&dustvelocity_init_pars    /'
-        if (ldustdensity      ) print*,'&dustdensity_init_pars     /'
-        if (lneutralvelocity  ) print*,'&neutralvelocity_init_pars /'
-        if (lneutraldensity   ) print*,'&neutraldensity_init_pars  /'
-        if (lcosmicray        ) print*,'&cosmicray_init_pars       /'
-        if (lcosmicrayflux    ) print*,'&cosmicrayflux_init_pars   /'
-        if (linterstellar     ) print*,'&interstellar_init_pars    /'
-        if (lshear            ) print*,'&shear_init_pars           /'
-        if (ltestperturb      ) print*,'&testperturb_init_pars     /'
-        if (lspecial          ) print*,'&special_init_pars         /'
-        if (lsolid_cells      ) print*,'&solid_cells_init_pars     /'
-        if (lnscbc            ) print*,'&NSCBC_init_pars           /'
-        if (lpolymer          ) print*,'&polymer_init_pars  /'
-        if (lparticles        ) print*,'&particles_init_pars_wrap  /'
-        print*,'------END sample namelist -------'
-        print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label) // '"'
-        if (present(iostat)) print*, 'iostat = ', iostat
-        if (present(iostat).or.present(label)) &
-                           print*,  '-- use sample above.'
-      endif
-!
-      call fatal_error('','')
-!
-    endsubroutine sample_startpars
 !***********************************************************************
     subroutine print_startpars(file)
 !
@@ -564,6 +387,126 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
+    subroutine read_pars(unit,reader,name,ierr)
+!
+!  encapsulates reading of pars + error handling
+!
+!  31-oct-13/MR: coded
+!
+    use Sub, only: ioptest
+
+    integer,                    intent(IN):: unit
+    external                              :: reader
+    character(LEN=*), optional, intent(IN):: name
+    integer,          optional, intent(IN):: ierr
+
+    integer :: ierrl
+
+    ierrl=ioptest(ierr)
+!
+    call reader(unit,ierrl)
+    if (ierrl/=0) call sample_pars(ierrl,name)
+
+    rewind(unit)
+
+    endsubroutine read_pars
+!***********************************************************************
+    subroutine sample_pars(iostat,label)
+!
+!  standardises handling of errors in namelist, both for init and run
+!
+!  31-oct-13/MR: coded
+!
+      integer         , optional :: iostat
+      character(len=*), optional :: label
+!
+      character(len=10):: partype
+      character(len=60):: msg
+
+      if (lroot) then
+
+        if (lrun) then
+          partype='run_pars'
+        elseif (lstart) then
+          partype='init_pars'
+        endif
+
+        print*
+        print*,'-----BEGIN sample namelist ------'
+        print*,'&'//partype//'                 /'
+        partype = '_'//partype
+!
+        if (lstart) then
+          if (lsignal           ) print*,'&signal_init_pars          /'
+          if (linitial_condition) print*,'&initial_condition_pars    /'
+        endif
+
+        if (ltracers        ) print*,'&streamlines    '//partype//' /'     !! questionable wg. ltracers
+        if (leos            ) print*,'&eos            '//partype//' /'
+        if (lhydro .or.                                                &
+            lhydro_kinematic) print*,'&hydro          '//partype//' /'
+        if (ldensity        ) print*,'&density        '//partype//' /'
+        if (lgrav           ) print*,'&grav           '//partype//' /'
+        if (lselfgravity    ) print*,'&selfgrav       '//partype//' /'
+        if (lpoisson        ) print*,'&poisson        '//partype//' /'
+        if (lentropy.or.                                               &
+            ltemperature    ) print*,'&entropy        '//partype//' /'
+        if (lthermal_energy ) print*,'&energy         '//partype//' /'
+        if (lconductivity   ) print*,'&conductivity   '//partype//' /'
+        if (lmagnetic       ) print*,'&magnetic       '//partype//' /'
+        if (lmagn_mf        ) print*,'&magn_mf        '//partype//' /'
+        if (llorenz_gauge   ) print*,'&lorenz_gauge   '//partype//' /'
+        if (ltestscalar     ) print*,'&testscalar     '//partype//' /'
+        if (ltestfield      ) print*,'&testfield      '//partype//' /'
+        if (ltestflow       ) print*,'&testflow       '//partype//' /'
+        if (lradiation      ) print*,'&radiation      '//partype//' /'
+        if (lpscalar        ) print*,'&pscalar        '//partype//' /'
+        if (lchiral         ) print*,'&chiral         '//partype//' /'
+        if (lchemistry      ) print*,'&chemistry      '//partype//' /'
+        if (ldustvelocity   ) print*,'&dustvelocity   '//partype//' /'
+        if (ldustdensity    ) print*,'&dustdensity    '//partype//' /'
+        if (lneutralvelocity) print*,'&neutralvelocity'//partype//' /'
+        if (lneutraldensity ) print*,'&neutraldensity '//partype//' /'
+        if (lcosmicray      ) print*,'&cosmicray      '//partype//' /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux  '//partype//' /'
+        if (linterstellar   ) print*,'&interstellar   '//partype//' /'
+        if (lshear          ) print*,'&shear          '//partype//' /'
+        if (ltestperturb    ) print*,'&testperturb    '//partype//' /'
+        if (lspecial        ) print*,'&special        '//partype//' /'
+        if (lsolid_cells    ) print*,'&solid_cells    '//partype//' /'
+        if (lnscbc          ) print*,'&NSCBC          '//partype//' /'
+        if (lpolymer        ) print*,'&polymer        '//partype//' /'
+        if (lparticles      ) print*,'&particles      '//partype//' /'
+!
+        if (lrun) then
+          if (lforcing      ) print*,'&forcing_run_pars          /'
+          if (lshock        ) print*,'&shock_run_pars            /'
+          if (lviscosity    ) print*,'&viscosity_run_pars        /'
+        endif
+
+!!!        if (lstart.and.linitial_condition.and.present(label)) partype=''
+
+        print*,'------END sample namelist -------'
+        print*
+!
+        if (present(label)) then
+          msg = 'Found error in input namelist "'
+          if (label=='') then
+            msg = trim(msg)//trim(partype(2:9))
+          else
+            msg = trim(msg)//trim(label)//trim(partype)
+          endif
+          print*, trim(msg)//'"'
+        endif
+        if (present(iostat)) print*, 'iostat = ', iostat
+        if (present(iostat).or.present(label)) &
+                             print*,  '-- use sample above.'
+      endif
+!
+      call fatal_error('sample'//partype,'')
+!
+    endsubroutine sample_pars
+!***********************************************************************
     subroutine read_runpars(logging)
 !
 !  Read input parameters.
@@ -576,7 +519,7 @@ module Param_IO
 !
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
-      use Sub, only: parse_bc
+      use Sub, only: parse_bc, loptest
 !
       logical, optional :: logging
 !
@@ -590,159 +533,47 @@ module Param_IO
 !  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
       read(unit,NML=run_pars,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('run_pars',ierr)
+      if (ierr/=0) call sample_pars(ierr,'')
       rewind(unit)
 !
-      call read_streamlines_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('streamlines_run_pars',ierr)
-      rewind(unit)
+      call read_pars(unit,read_streamlines_run_pars    ,'streamlines',ierr)
+      call read_pars(unit,read_eos_run_pars            ,'eos',ierr)
+      call read_pars(unit,read_hydro_run_pars          ,'hydro',ierr)
+      call read_pars(unit,read_density_run_pars        ,'density',ierr)
+      call read_pars(unit,read_forcing_run_pars        ,'forcing',ierr)
+      call read_pars(unit,read_gravity_run_pars        ,'grav',ierr)
+      call read_pars(unit,read_selfgravity_run_pars    ,'selfgrav',ierr)
+      call read_pars(unit,read_poisson_run_pars        ,'poisson',ierr)
+      call read_pars(unit,read_energy_run_pars         ,'entropy',ierr)
+      call read_pars(unit,read_conductivity_run_pars   ,'conductivity',ierr)
+      call read_pars(unit,read_magnetic_run_pars       ,'magnetic',ierr)
+      call read_pars(unit,read_lorenz_gauge_run_pars   ,'lorenz_gauge',ierr)
+      call read_pars(unit,read_testscalar_run_pars     ,'testscalar',ierr)
+      call read_pars(unit,read_testfield_run_pars      ,'testfield',ierr)
+      call read_pars(unit,read_testflow_run_pars       ,'testflow',ierr)
+      call read_pars(unit,read_radiation_run_pars      ,'radiation',ierr)
+      call read_pars(unit,read_pscalar_run_pars        ,'pscalar',ierr)
+      call read_pars(unit,read_chiral_run_pars         ,'chiral',ierr)
+      call read_pars(unit,read_chemistry_run_pars      ,'chemistry',ierr)
+      call read_pars(unit,read_dustvelocity_run_pars   ,'dustvelocity',ierr)
+      call read_pars(unit,read_dustdensity_run_pars    ,'dustdensity',ierr)
+      call read_pars(unit,read_neutralvelocity_run_pars,'neutralvelocity',ierr)
+      call read_pars(unit,read_neutraldensity_run_pars ,'neutraldensity',ierr)
+      call read_pars(unit,read_cosmicray_run_pars      ,'cosmicray',ierr)
+      call read_pars(unit,read_cosmicrayflux_run_pars  ,'cosmicrayflux',ierr)
+      call read_pars(unit,read_heatflux_run_pars       ,'heatflux',ierr)
+      call read_pars(unit,read_interstellar_run_pars   ,'interstellar',ierr)
+      call read_pars(unit,read_shear_run_pars          ,'shear',ierr)
+      call read_pars(unit,read_testperturb_run_pars    ,'testperturb',ierr)
+      call read_pars(unit,read_viscosity_run_pars      ,'viscosity',ierr)
+      call read_pars(unit,read_special_run_pars        ,'special',ierr)
+      call read_pars(unit,read_shock_run_pars          ,'shock',ierr)
+      call read_pars(unit,read_solid_cells_run_pars    ,'solid_cells',ierr)
+      call read_pars(unit,read_NSCBC_run_pars          ,'NSCBC',ierr)
+      call read_pars(unit,read_polymer_run_pars        ,'polymer',ierr)
+      call read_pars(unit,particles_read_runpars       ,'particles',ierr)
+      call read_pars(unit,read_power_spectrum_runpars  ,'power_spectrum',ierr)
 !
-      call read_eos_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('eos_run_pars',ierr)
-      rewind(unit)
-!
-      call read_hydro_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('hydro_run_pars',ierr)
-      rewind(unit)
-!
-      call read_density_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('density_run_pars',ierr)
-      rewind(unit)
-!
-      call read_forcing_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('forcing_run_pars',ierr)
-      rewind(unit)
-!
-      call read_gravity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('grav_run_pars',ierr)
-      rewind(unit)
-!
-      call read_selfgravity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('selfgrav_run_pars',ierr)
-      rewind(unit)
-!
-      call read_poisson_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('poisson_run_pars',ierr)
-      rewind(unit)
-!
-      call read_energy_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('entropy_run_pars',ierr)
-      rewind(unit)
-!
-      call read_energy_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('energy_run_pars',ierr)
-      rewind(unit)
-!
-      call read_conductivity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('conductivity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_magnetic_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('magnetic_run_pars',ierr)
-      rewind(unit)
-!
-      call read_lorenz_gauge_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('lorenz_gauge_run_pars',ierr)
-      rewind(unit)
-!
-      call read_testscalar_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('testscalar_run_pars',ierr)
-      rewind(unit)
-!
-      call read_testfield_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('testfield_run_pars',ierr)
-      rewind(unit)
-!
-      call read_testflow_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('testflow_run_pars',ierr)
-      rewind(unit)
-!
-      call read_radiation_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('radiation_run_pars',ierr)
-      rewind(unit)
-!
-      call read_pscalar_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('pscalar_run_pars',ierr)
-      rewind(unit)
-!
-      call read_chiral_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('chiral_run_pars',ierr)
-      rewind(unit)
-!
-      call read_chemistry_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('chemistry_run_pars',ierr)
-      rewind(unit)
-!
-      call read_dustvelocity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('dustvelocity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_dustdensity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('dustdensity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_neutralvelocity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('neutralvelocity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_neutraldensity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('neutraldensity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_cosmicray_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('cosmicray_run_pars',ierr)
-      rewind(unit)
-!
-      call read_cosmicrayflux_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('cosmicrayflux_run_pars',ierr)
-      rewind(unit)
-!
-      call read_heatflux_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('heatflux_run_pars',ierr)
-      rewind(unit)
-!
-      call read_interstellar_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('interstellar_run_pars',ierr)
-      rewind(unit)
-!
-      call read_shear_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('shear_run_pars',ierr)
-      rewind(unit)
-!
-      call read_testperturb_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('testperturb_run_pars',ierr)
-      rewind(unit)
-!
-      call read_viscosity_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('viscosity_run_pars',ierr)
-      rewind(unit)
-!
-      call read_special_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('special_run_pars',ierr)
-      rewind(unit)
-!
-      call read_shock_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('shock_run_pars',ierr)
-      rewind(unit)
-!
-      call read_solid_cells_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('solid_cells_run_pars',ierr)
-      rewind(unit)
-!
-      call read_NSCBC_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('NSCBC_run_pars',ierr)
-      rewind(unit)
-!
-      call read_polymer_run_pars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('polymer_run_pars',ierr)
-      rewind(unit)
-!
-      call particles_read_runpars(unit,IOSTAT=ierr)
-      if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
-      rewind(unit)
-!
-      call read_power_spectrum_runpars(unit,IOSTAT=ierr)
-      !if (ierr/=0) call sample_runpars('power_spectrum_run_pars_wrap',ierr)
       rewind(unit)
 !
       call parallel_close(unit)
@@ -757,9 +588,7 @@ module Param_IO
 !
 !  Write parameters to log file, if requested.
 !
-      if (present(logging)) then
-        if (logging) call print_runpars()
-      endif
+      if (loptest(logging)) call print_runpars()
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -777,65 +606,6 @@ module Param_IO
       call check_consistency_of_lperi('read_runpars')
 !
     endsubroutine read_runpars
-!***********************************************************************
-    subroutine sample_runpars(label,iostat)
-!
-      character (len=*), optional :: label
-      integer, optional :: iostat
-!
-      if (lroot) then
-        print*
-        print*,'-----BEGIN sample namelist ------'
-                              print*,'&run_pars                 /'
-        if (leos            ) print*,'&eos_run_pars             /'
-        if (lhydro          ) print*,'&hydro_run_pars           /'
-        if (lhydro_kinematic) print*,'&hydro_run_pars           /'
-        if (ldensity        ) print*,'&density_run_pars         /'
-        if (lforcing        ) print*,'&forcing_run_pars         /'
-        if (lgrav           ) print*,'&grav_run_pars            /'
-        if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
-        if (lpoisson        ) print*,'&poisson_run_pars         /'
-        if (lentropy        ) print*,'&entropy_run_pars         /'
-        if (lenergy         ) print*,'&energy_run_pars          /'
-        if (lconductivity   ) print*,'&conductivity_run_pars    /'
-        if (ltemperature    ) print*,'&entropy_run_pars         /'
-        if (lmagnetic       ) print*,'&magnetic_run_pars        /'
-        if (lmagn_mf        ) print*,'&magn_mf_run_pars         /'
-        if (llorenz_gauge   ) print*,'&lorenz_gauge_run_pars    /'
-        if (ltestscalar     ) print*,'&testscalar_run_pars      /'
-        if (ltestfield      ) print*,'&testfield_run_pars       /'
-        if (ltestflow       ) print*,'&testflow_run_pars        /'
-        if (lradiation      ) print*,'&radiation_run_pars       /'
-        if (lpscalar        ) print*,'&pscalar_run_pars         /'
-        if (lchiral         ) print*,'&chiral_run_pars          /'
-        if (lchemistry      ) print*,'&chemistry_run_pars       /'
-        if (ldustvelocity   ) print*,'&dustvelocity_run_pars    /'
-        if (ldustdensity    ) print*,'&dustdensity_run_pars     /'
-        if (lneutralvelocity) print*,'&neutralvelocity_run_pars /'
-        if (lneutraldensity ) print*,'&neutraldensity_run_pars  /'
-        if (lcosmicray      ) print*,'&cosmicray_run_pars       /'
-        if (lcosmicrayflux  ) print*,'&cosmicrayflux_run_pars   /'
-        if (linterstellar   ) print*,'&interstellar_run_pars    /'
-        if (lshear          ) print*,'&shear_run_pars           /'
-        if (ltestperturb    ) print*,'&testperturb_run_pars     /'
-        if (lviscosity      ) print*,'&viscosity_run_pars       /'
-        if (lspecial        ) print*,'&special_run_pars         /'
-        if (lshock          ) print*,'&shock_run_pars           /'
-        if (lsolid_cells    ) print*,'&solid_cells_run_pars     /'
-        if (lnscbc          ) print*,'&NSCBC_run_pars           /'
-        if (lpolymer        ) print*,'&polymer_run_pars         /'
-        if (lparticles      ) print*,'&particles_run_pars_wrap  /'
-        print*,'------END sample namelist -------'
-        print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label) // '"'
-        if (present(iostat)) print*, 'iostat = ', iostat
-        if (present(iostat).or.present(label)) &
-                           print*,  '-- use sample above.'
-      endif
-!
-      call fatal_error('sample_runpars','')
-!
-    endsubroutine sample_runpars
 !***********************************************************************
     subroutine print_runpars(file)
 !
@@ -1047,7 +817,7 @@ module Param_IO
       logical :: lneutraldensity  = lneutraldensity_var
       logical :: lpolymer         = lpolymer_var
       logical :: lsolid_cells     = lsolid_cells_var
-      integer :: unit=1
+      integer, parameter :: unit=1
 !
       namelist /lphysics/ &
           lhydro, ldensity, lentropy, lenergy, lmagnetic, lshear, &
@@ -1148,11 +918,12 @@ module Param_IO
 !
     endsubroutine wparam
 !***********************************************************************
-    subroutine rparam()
+    subroutine rparam()        !!! replace call by call read_startpars
 !
 !  Read startup parameters.
 !
 !  21-jan-02/wolf: coded
+!  31-oct-13/MR  : call of read_lorenz_gauge_init_pars added
 !
       use Mpicomm, only: parallel_open, parallel_close
 !
@@ -1181,6 +952,8 @@ module Param_IO
       call read_energy_init_pars(unit)
       rewind(unit)
       call read_magnetic_init_pars(unit)
+      rewind(unit)
+      call read_lorenz_gauge_init_pars(unit)
       rewind(unit)
       call read_testscalar_init_pars(unit)
       rewind(unit)
