@@ -98,8 +98,6 @@ module Testfield
            
       !!!if (reinitialize_aatest) f(:,:,:,iaatest:iaatest+ntestfield-1)=0.  !!! TBC
 !
-!!!      itestfield='1'
-!
 ! calculate inverse matrix for determination of the turbulent coefficients
 !
       call calc_inverse_matrix(x(l1:l2),y(m1:m2),ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
@@ -167,7 +165,7 @@ module Testfield
 !
         ml=m-m1+1
         select case (itestfield)
-          case ('1')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest)
+          case ('1','1-alt') ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest )
           case ('2')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest2)
           case ('3')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest3)
           case ('4','linear'); call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest4)
@@ -227,6 +225,7 @@ module Testfield
       if (.not.lsoca .or. need_output) then
 
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+!
         do jtest=1,njtest
 !
           iaxtest=iaatest+3*(jtest-1)
@@ -319,7 +318,7 @@ module Testfield
                               idiags(idiag_Eij_start:idiag_Eij_stop),    &
                               idiag_alp11h, idiag_eta122h, &
                               uxbtestm,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
-                              twod_need_1d,twod_need_2d,needed2d )
+                              twod_need_1d,twod_need_2d,needed2d,nzgrid )
 !
 !  mapping back and sign inversion if necessary
 !
@@ -334,7 +333,7 @@ module Testfield
           enddo; enddo
         endif
       endif
-
+      
 !      if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
          do i=1,ny; do j=1,nx
            where(idiags_xy(1:idiag_base_end)/=0) &
