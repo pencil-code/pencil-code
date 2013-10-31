@@ -45,8 +45,9 @@
 !***********************************************************************
 program run
 !
-! 8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
-!              address
+!  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
+!               address
+! 31-oct-13/MR: replaced rparam by read_startpars
 !
   use Boundcond,       only: update_ghosts
   use Cdata
@@ -124,7 +125,7 @@ program run
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call rparam()
+  call read_startpars
 !
 !  Read parameters and output parameter list.
 !
