@@ -18,7 +18,7 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
         verbose
             Whether or not to print information.
     """
-    # Chao-Chin Yang, 2013-10-28
+    # Chao-Chin Yang, 2013-10-31
 
     # Read the dimensions and check the plane of average.
     dim = dimensions(datadir=datadir)
@@ -33,32 +33,34 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
 
     # Read the names of the variables.
     var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
+    nvar = len(var)
 
     # Open file and define data stream.
-    if verbose:
-        print("Reading 1D averages", var, "...")
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
     import numpy as np
     def fetch(nval):
         return np.fromfile(f, count=nval, sep=' ')
 
-    # Read the data.
-    a = np.core.records.array(len(var) * [np.zeros(nc)], names=var)
-    t = fetch(1)
-    for v in var:
-        a[v] = fetch(nc)
-    avg = a
-    while True:
-        tnew = fetch(1)
-        if tnew.size == 0:
-            break
-        t = np.concatenate((t, tnew))
-        try:
-            for v in var:
-                a[v] = fetch(nc)
-        except ValueError:
+    # Check the data size.
+    if verbose:
+        print("Checking the data size...")
+    nt = 0
+    nblock = nvar * nc
+    while fetch(1).size:
+        if fetch(nblock).size != nblock:
             raise EOFError("incompatible data file")
-        avg = np.vstack((avg, a))
+        nt += 1
+    f.seek(0)
+
+    # Read the data.
+    if verbose:
+        print("Reading 1D averages", var, "...")
+    t = np.zeros(nt)
+    avg = np.core.records.array(len(var) * [np.zeros((nt,nc))], names=var)
+    for i in range(nt):
+        t[i] = fetch(1)
+        for v in var:
+            avg[v][i,:] = fetch(nc)
 
     # Close file.
     f.close()
