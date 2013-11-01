@@ -42,7 +42,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     from . import read
     time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
     par = read.parameters(datadir=datadir)
-    xmin, xmax = par['xyz0'][xdir], par['xyz1'][xdir]
+    xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
 
     # Default variable name.
     if var is None:

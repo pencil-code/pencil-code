@@ -160,8 +160,13 @@ def parameters(datadir='./data'):
                 print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
     f.close()
 
-    # Return a dictionary.
-    return dict(zip(keys, values))
+    # Define a container class and return the parameters in it.
+    class Parameter:
+        """A container class to hold the parameters of the Pencil Code data. """
+        def __init__(self, d):
+            for key, value in d.items():
+                setattr(self, key, value)
+    return Parameter(dict(zip(keys, values)))
 
 #=======================================================================
 def proc_dim(datadir='./data', proc=0):
