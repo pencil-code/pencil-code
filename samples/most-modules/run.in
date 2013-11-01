@@ -63,3 +63,5 @@
 /
 &particles_nbody_run_pars
 /
+&power_spectrum_run_pars
+/
