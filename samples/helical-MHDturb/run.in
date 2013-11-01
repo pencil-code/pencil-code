@@ -26,7 +26,7 @@
   iforce='helical', force=0.07, relhel=1.
 /
 &magnetic_run_pars
-  eta=5e-3,
+  eta=5e-3
 /
 &pscalar_run_pars
   pscalar_diff=1e-3
@@ -38,4 +38,6 @@
   lcheck_exact_frontier=T
 /
 &particles_stalker_run_pars
+/
+&power_spectrum_run_pars
 /
