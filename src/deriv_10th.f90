@@ -17,7 +17,7 @@ module Deriv
   private
 !
   public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
+  public :: der, der2, der3, der4, der5, der6, der10, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
   public :: der_upwind1st, der_z, der2_z
@@ -737,7 +737,7 @@ module Deriv
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
 !    The optional flag UPWIND is a variant thereof, which calculates
-!  D^(6)*dx^5/840, which is the upwind correction of centered derivatives.
+!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
@@ -776,9 +776,9 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0/840
+            fac=1.0/60
           else if (upwnd) then
-            fac=(1.0/840)*dx_1(l1:l2)
+            fac=(1.0/60)*dx_1(l1:l2)
           else
             fac=dx_1(l1:l2)**6
           endif
@@ -792,9 +792,9 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0/840
+            fac=1.0/60
           else if (upwnd) then
-            fac=(1.0/840)*dy_1(m)
+            fac=(1.0/60)*dy_1(m)
           else
             fac=dy_1(m)**6
           endif
@@ -808,9 +808,9 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.0/840
+            fac=1.0/60
           else if (upwnd) then
-            fac=(1.0/840)*dz_1(n)
+            fac=(1.0/60)*dz_1(n)
           else
             fac=dz_1(n)**6
           endif
@@ -834,7 +834,7 @@ module Deriv
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
 !    The optional flag UPWIND is a variant thereof, which calculates
-!  D^(6)*dx^5/840, which is the upwind correction of centered derivatives.
+!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
@@ -873,7 +873,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/840)*dx_1(l1:l2)
+            fac=(1.0/60)*dx_1(l1:l2)
           else
             fac=1/dx**6
           endif
@@ -889,7 +889,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/840)*dy_1(m)
+            fac=(1.0/60)*dy_1(m)
           else
             fac=1/dy**6
           endif
@@ -905,7 +905,7 @@ module Deriv
           if (igndx) then
             fac=1.0
           else if (upwnd) then
-            fac=(1.0/840)*dz_1(n)
+            fac=(1.0/60)*dz_1(n)
           else
             fac=1/dz**6
           endif
@@ -919,6 +919,108 @@ module Deriv
       endif
 !
     endsubroutine der6_other
+!***********************************************************************
+    subroutine der10(f,k,df,j,ignoredx,upwind)
+!
+!  Calculate 10th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!    The optional flag UPWIND is a variant thereof, which calculates
+!  D^(10)*dx^9/840, which is the upwind correction of centered derivatives.
+!
+! 30-oct-13/pete: adapted from der6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: df,fac
+      integer :: j,k
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        if (.not. lequidist(j)) then
+          call fatal_error('der10','NOT IMPLEMENTED for non-equidistant grid')
+        endif
+        igndx = .false.
+      endif
+!
+      if (present(upwind)) then
+        upwnd = upwind
+      else
+        upwnd = .false.
+        if ((.not.lcartesian_coords).and.(.not.igndx)) then
+          call fatal_error('der10','in non-cartesian coordinates '//&
+               'just works if upwinding is used')
+        endif
+      endif
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=1.0/840
+          else if (upwnd) then
+            fac=(1.0/840)*dx_1(l1:l2)
+          else
+            fac=dx_1(l1:l2)**10
+          endif
+          df=fac*(- 252.0* f(l1:l2,m,n,k) &
+              +210.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+              -120.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+              + 45.0*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
+              - 10.0*(f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)) &
+              +      (f(l1+5:l2+5,m,n,k)+f(l1-5:l2-5,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=1.0/840
+          else if (upwnd) then
+            fac=(1.0/840)*dy_1(m)
+          else
+            fac=dy_1(m)**10
+          endif
+          df=fac*(-252.0* f(l1:l2,m  ,n,k) &
+              +210.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+              -120.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+              + 45.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
+              - 10.0*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) &
+              +      (f(l1:l2,m+5,n,k)+f(l1:l2,m-5,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=1.0/840
+          else if (upwnd) then
+            fac=(1.0/840)*dz_1(n)
+          else
+            fac=dz_1(n)**10
+          endif
+          df=fac*(-252.0* f(l1:l2,m,n  ,k) &
+              +210.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+              -120.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+              + 45.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
+              - 10.0*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) &
+              +      (f(l1:l2,m,n+5,k)+f(l1:l2,m,n-5,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der10
 !***********************************************************************
     subroutine derij_main(f,k,df,i,j)
 !
