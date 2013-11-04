@@ -395,20 +395,18 @@ module Param_IO
 !
     use Sub, only: ioptest
 
-    integer,                    intent(IN):: unit
-    external                              :: reader
-    character(LEN=*), optional, intent(IN):: name
-    integer,          optional, intent(IN):: ierr
-
-    integer :: ierrl
-
-    ierrl=ioptest(ierr)
+    integer,                    intent(IN)   :: unit
+    external                                 :: reader
+    character(LEN=*), optional, intent(IN)   :: name
+    integer,          optional, intent(INOUT):: ierr
 !
-    call reader(unit,ierrl)
-    if (ierrl/=0) call sample_pars(ierrl,name)
-
+    call reader(unit,ierr)
+    if (present(ierr)) then
+      if (ierr/=0) call sample_pars(ierr,name)
+    endif
+!
     rewind(unit)
-
+!
     endsubroutine read_pars
 !***********************************************************************
     subroutine sample_pars(iostat,label)
