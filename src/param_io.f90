@@ -393,8 +393,6 @@ module Param_IO
 !
 !  31-oct-13/MR: coded
 !
-    use Sub, only: ioptest
-
     integer,                    intent(IN)   :: unit
     external                                 :: reader
     character(LEN=*), optional, intent(IN)   :: name
