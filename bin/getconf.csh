@@ -386,6 +386,11 @@ else if ($hn =~ gardar* ) then
   echo "GARDAR in Iceland "
   echo "Always use multiple of 12 processors!"
   echo " ******************************"
+  if (! $?PENCIL_HOME) setenv PENCIL_HOME $HOME/pencil-code
+  if (-r $PENCIL_HOME/sourceme.csh) then
+    set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
+  endif
+
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
   echo "Warp cluster (warp) - Pittsburgh"
