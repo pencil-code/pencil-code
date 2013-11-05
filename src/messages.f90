@@ -634,6 +634,8 @@ module Messages
       lread = lread .or. mode(1:5)=='openr'
       lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
       lclose = mode(1:5)=='close'
+    else
+      lclose=.false.
     endif
 !
     if (present(file)) curfile = file
