@@ -1,4 +1,4 @@
-! $Id:$
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -29,7 +29,7 @@ module Heatflux
 !  6-oct-03/tony: coded
 !
       if (lroot) call svn_id( &
-           "$Id:$")
+           "$Id$")
 !
     endsubroutine register_heatflux
 !***********************************************************************

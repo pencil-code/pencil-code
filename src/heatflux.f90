@@ -1,4 +1,4 @@
-! $Id:$
+! $Id$
 !
 ! This module computes the time depentend heat flux equation.
 ! The non-Fourier form is written
@@ -80,7 +80,7 @@ contains
     iqx=iqq; iqy=iqq+1; iqz=iqq+2
 !
     if (lroot) call svn_id( &
-        "$Id: 1D_loop.f90 20683 2013-06-24 16:16:51Z sven.bingert $")
+        "$Id$")
 !
   endsubroutine register_heatflux
 !***********************************************************************
