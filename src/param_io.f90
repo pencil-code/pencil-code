@@ -287,6 +287,7 @@ module Param_IO
       call read_pars(unit,read_polymer_init_pars,        'polymer',ierr)
       call read_pars(unit,particles_read_startpars,      'particles',ierr)
 !
+      if (present(ierr))  write (*,*) '***********',ierr
       call parallel_close(unit)
 !
 !  Print SVN id from first line.
