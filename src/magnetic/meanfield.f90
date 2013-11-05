@@ -778,6 +778,7 @@ module Magnetic_meanfield
         case ('J0x'); do l=l1,l2; alpha_tmp(l-l1+1)=bessj(0,k1bessel0*x(l)); enddo
         case ('J0x_2nd'); do l=l1,l2; alpha_tmp(l-l1+1)=bessj(0,k2bessel0*x(l)); enddo
         case ('cosy'); alpha_tmp=cos(y(m))
+        case ('cosy*sin2y'); alpha_tmp=cos(y(m))*sin(y(m))**2
         case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('surface_x2*cosy'); alpha_tmp=0.25 &
           *(1.-erfunc((x(l1:l2)-x_surface)/alpha_width)) &
