@@ -318,7 +318,7 @@ module Testfield
                               idiags(idiag_Eij_start:idiag_Eij_stop),    &
                               idiag_alp11h, idiag_eta122h, &
                               uxbtestm,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
-                              twod_need_1d,twod_need_2d,needed2d,nzgrid )
+                              twod_need_1d,twod_need_2d,needed2d,nz )
 !
 !  mapping back and sign inversion if necessary
 !
