@@ -914,6 +914,14 @@ module Magnetic
           write(3,*) 'ibx = ', ibx
           write(3,*) 'iby = ', iby
           write(3,*) 'ibz = ', ibz
+          write(3,*) 'iEE = ', iEE
+          write(3,*) 'iEEx = ', iEEx
+          write(3,*) 'iEEy = ', iEEy
+          write(3,*) 'iEEz = ', iEEz
+          write(3,*) 'ijj = ', ijj
+          write(3,*) 'ijx = ', ijx
+          write(3,*) 'ijy = ', ijy
+          write(3,*) 'ijz = ', ijz
         endif indices
       endif option
 !
