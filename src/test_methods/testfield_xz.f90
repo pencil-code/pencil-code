@@ -281,7 +281,7 @@ module Testfield
                                               idiags(idiag_base_end+1:idiag_base_end+4), &
                                               idiags(idiag_base_end+5:idiag_base_end+8), &
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
-                                              twod_need_1d,twod_need_2d,needed2d,nygrid*nprocy)
+                                              twod_need_1d,twod_need_2d,needed2d,ny)
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************
