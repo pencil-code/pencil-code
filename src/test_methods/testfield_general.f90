@@ -673,7 +673,7 @@ module Testfield_general
       endsubroutine calc_inverse_matrix
 !***********************************************************************
     subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiag_Eij,idiag_alp11h,idiag_eta123h, &
-                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,nygrid)
+                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,ny)
 !  
 !  calculation of the turbulent coefficients for an average over one coordinate.
 !  Note: symbols were chosen such as it were to be used in testfield_xz, that is
@@ -691,6 +691,7 @@ module Testfield_general
 !  20-oct-13/MR: setting of lfirstpoint corrected; ny*temp_array --> nygrid*temp_array
 !                allowed for other cases of itestfield; calculation of Eij for diagnostic output corrected
 !  30-oct-13/MR: added parameter nygrid to allow correct application in testfield_xy
+!   7-nov-13/MR: nygrid -> ny (a more speaking name)
 ! 
     Use Diagnostics, only: sum_mn_name, save_name
     Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x, fnamexz
@@ -702,7 +703,7 @@ module Testfield_general
     logical, dimension(:),      intent(in):: twod_need_1d, twod_need_2d
     real,    dimension(:,:,:,:),intent(in):: uxbtestm, Minv
     external                              :: ysum_xz,xysum_z
-    integer                    ,intent(in):: nygrid
+    integer                    ,intent(in):: ny
 !
     integer :: i, j, ij, count, nl, jtest, nx, nz, n, n1, n2
     real, dimension(2,size(uxbtestm,1)) :: temp_fft_z
@@ -728,7 +729,7 @@ module Testfield_general
 !
         do i=1,size(idiag_Eij),3                                            ! over all testfields
           do j=1,3                                                          ! over vector components
-            call ysum_xz(uxbtestm(:,nl,j,jtest)*nygrid,n,idiag_Eij(i+j-1))  ! but not over y, hence multiplied by nyrgid
+            call ysum_xz(uxbtestm(:,nl,j,jtest)*ny,n,idiag_Eij(i+j-1))      ! but not over y, hence multiplied by ny
           enddo
           jtest = jtest+1
         enddo
@@ -841,7 +842,7 @@ module Testfield_general
       endif
     endif
 !
-    temp_array = nygrid*temp_array    ! nygrid multiplied because we are in the following only in an n loop
+    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
 !
     if (ldiagnos .and. needed2d(1)) then
 !
