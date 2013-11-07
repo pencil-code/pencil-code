@@ -344,18 +344,17 @@ module Special
 !
       if (R_hyper3 /= 0.) then
         hyper3_coeff = sqrt(p%u2)/dxmax_pencil/R_hyper3
-        do j=1,3
-          call der6(f, ilnTT, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff * hc
-          call der6(f, ilnrho, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff * hc
-          call der6(f, iux, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + hyper3_coeff * hc
-          call der6(f, iuy, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + hyper3_coeff * hc
-          call der6(f, iuz, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + hyper3_coeff * hc
-        enddo
+        call del6(f, ilnTT, hc, IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff * hc
+        call del6(f, ilnrho, hc, IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff * hc
+        call del6(f, iux, hc, IGNOREDX=.true.)
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + hyper3_coeff * hc
+        call del6(f, iuy, hc, IGNOREDX=.true.)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + hyper3_coeff * hc
+        call del6(f, iuz, hc, IGNOREDX=.true.)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + hyper3_coeff * hc
+!
         if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
       endif
 !
@@ -487,6 +486,8 @@ module Special
                     j = j-1
                     if (j<=0) notdone=.false.
                   endif
+                elseif (lnTT_SI == intlnT(1)) then
+                  notdone=.false.
                 else
                   j = j + sign(1.,lnTT_SI-intlnT(j))
                   if (j <= 0) then
@@ -542,7 +543,7 @@ module Special
       else
         call fatal_error('hyper3_chi special','only for ltemperature')
       endif
-
+!
       if (hyper3_chi /= 0.) then
         call del6(f,itmp,hc,IGNOREDX=.true.)
           df(l1:l2,m,n,itmp) = df(l1:l2,m,n,itmp) + hyper3_chi*hc
@@ -1044,7 +1045,6 @@ module Special
             write (*,*) 'Exp heating, flux at z=4 Mm: ', heat_flux
             write (*,*) 'Exp heating, flux at z=0 Mm: ', heat_par_exp2(1)*heat_par_exp2(2)*1e6
           endif
-
 !
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
@@ -1151,42 +1151,40 @@ module Special
           !heating based on "Van Doorsselaere et al. 2007"
           !pi defined?
 !          heat_par_vandoors(1)=1.   !amplitude
-          !          heat_par_vandoors(2)=0.1  
+          !          heat_par_vandoors(2)=0.1
           !(temp) some amplitude to add a physical heating
-          !          heat_par_vandoors(3)=50. Mm, 
+          !          heat_par_vandoors(3)=50. Mm,
           !density scale height, later dynamic?
           !  if (headtt) print*,heat_par_vandoors,pi
-
+!
           ! --find a --
           !better in the header of the subroutine?
           a_arr(:,1)=(/0.5,0.6,0.7,0.8,0.9,1.,1.2,1.4,1.6,2.,2.4,2.8,3.2,3.6,1000. /) !L/pi/H
           a_arr(:,2)=(/0.03426,0.04169,0.04933,0.05717,0.06522,0.07349,0.09068,0.10877,&
-              0.12778,0.16853,0.21287,0.26046,0.31068,0.36260,125./) !a 
-     
+              0.12778,0.16853,0.21287,0.26046,0.31068,0.36260,125./) !a
+!
            if (notanumber(p%glnrho)) then
    !         print*,p%glnrho
             call fatal_error('p%glnrho','NaN found')
             print*,'-------------------------------'
           endif
-     
+!
           call dot2(p%glnrho,Htemp,FAST_SQRT=.true.)
 !          Htemp=sqrt(Htemp**2.)
-         
-     
           Hlength=(Htemp+tiny(0D0))**(-1.)/Ltot/pi
-
+!
           j=6
-          
+!
           do k=1,nx
             notdone=.true.
             !
             do while (notdone)
               if (Hlength(k) >= a_arr(j,1) .and. Hlength(k)<a_arr(j+1,1)) then
-                
-                notdone = .false. 
+!
+                notdone = .false.
               else
                 j=j+sign(1.,Hlength(k)-a_arr(j,1))
-                
+!
                 if (j <= 0) then
                   j=1
                   notdone=.false.
@@ -1199,37 +1197,36 @@ module Special
             slope=(a_arr(j+1,2)-a_arr(j,2))/(a_arr(j+1,1)-a_arr(j,1))
             doors_a(k)=slope*(Hlength(k)-a_arr(j,1))+a_arr(j,2)
           enddo
-          
-          
+!
           if (notanumber(doors_a)) then
             print*,Hlength
             call fatal_error('update points','NaN found')
             print*,'-------------------------------'
           endif
-          
-          where(doors_a < 0) 
+!
+          where(doors_a < 0)
             doors_a=0D0
           endwhere
-          where(doors_a > 0.5) 
+          where(doors_a > 0.5)
             doors_a=0.5
           endwhere
-          
+!
           doors_heat= heat_par_vandoors(1)* (cos(pi* height/Ltot)**2.+ &
                6.*doors_a*cos(pi*height/Ltot)*cos(3.*pi*height/Ltot))
-          where(doors_heat < 0) 
+          where(doors_heat < 0)
             doors_heat=0
           endwhere
-          
+!
           do k=0,nx
-            if (doors_heat(k) >1. ) then 
+            if (doors_heat(k) >1. ) then
               print*,doors_heat(k),k
               call fatal_error('doors_heat','toobig!')
             endif
           enddo
-          
+!
           heatinput=heatinput + doors_heat!/heat_unit
 !print*,max(transpose(heat_par_vandoors(1)*cos(pi* height/Ltot)**2.) )
-
+!
 !          print*,max((heat_par_vandoors(1)*cos(pi* height/ L)**2.+6.*heat_par_vandoors(2)*cos(pi*height/L)*cos(3.*pi*height/L))/&
  !             heat_unit)
 !---------------------------------------------------------------------
