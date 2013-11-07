@@ -6,10 +6,8 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 3
+! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-!
-! PENCILS PROVIDED qq(3); q2, divq
 !
 !***************************************************************
 !
@@ -37,7 +35,7 @@ module Special
   real :: bullets_h0=0.,hyper3_diffrho=0.
   logical :: lfilter_farray=.false.
   real, dimension(mvar) :: filter_strength=0.01
-  real :: Ltot
+  real :: Ltot,R_hyper3
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   character (len=labellen) :: loop_frac='full'
@@ -55,12 +53,13 @@ module Special
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
       lfilter_farray,filter_strength,loop_frac,&
-      heat_par_vandoors
+      heat_par_vandoors,R_hyper3
 !
 ! variables for print.in
 !
-  integer :: idiag_dtchi2=0   ! DIAG_DOC: heatconduction
+  integer :: idiag_dtchi2=0       ! DIAG_DOC: heatconduction
                                   ! DIAG DOC: in special module
+  integer :: idiag_dthyper3=0
   integer :: idiag_dtrad=0        ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtspitzer=0    ! DIAG_DOC: Spitzer heat conduction
                                   ! DIAG_DOC: time step
@@ -92,13 +91,6 @@ module Special
   contains
 !***********************************************************************
     subroutine register_special()
-!
-!  Set up indices for variables in special modules.
-!
-      use FArrayManager
-!
-      call farray_register_pde('spitzer',iqq,vector=3)
-      iqx=iqq; iqy=iqq+1; iqz=iqq+2
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -185,7 +177,6 @@ module Special
 !
       if (tau_inv_spitzer/=0.) then
         lpenc_requested(i_qq)=.true.
-        lpenc_requested(i_divq)=.true.
         lpenc_requested(i_uglnrho)=.true.
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -249,26 +240,25 @@ module Special
 !
       if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
 !
+      if (R_hyper3 /= 0.) lpenc_requested(i_u2)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (lpencil_in(i_q2)) lpencil_in(i_qq)=.true.
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-      use Sub, only: dot2_mn, div
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
-      if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
-      if (lpencil(i_divq)) call div(f,iqq,p%divq)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -292,6 +282,7 @@ module Special
 !
       if (lreset) then
         idiag_dtchi2=0.
+        idiag_dthyper3=0.
         idiag_dtrad=0.
         idiag_dtnewt=0
         idiag_dtspitzer=0
@@ -303,6 +294,7 @@ module Special
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
+        call parse_name(iname,cname(iname),cform(iname),'dthyper3',idiag_dthyper3)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
@@ -314,6 +306,7 @@ module Special
 !
       if (lwr) then
         write(3,*) 'i_dtchi2=',idiag_dtchi2
+        write(3,*) 'i_dthyper3=',idiag_dthyper3
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
         write(3,*) 'i_dtspitzer=',idiag_dtspitzer
@@ -328,15 +321,16 @@ module Special
 !  12-may-11/bingert: coded
 !
       use EquationOfState, only: gamma
+      use Deriv, only: der6
       use Diagnostics,     only : max_mn_name, sum_mn_name
-      use Sub, only: identify_bcs, multsv, dot
+      use Sub, only: identify_bcs, multsv, dot, del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: rhs,tmp
+      real, dimension (nx) :: rhs,tmp,hyper3_coeff,hc
       real, dimension (nx,3) :: K1
-      integer :: i
+      integer :: i,j
 !
       intent(in) :: p
       intent(inout) :: df
@@ -345,53 +339,66 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
-      if (headtt) then
-        call identify_bcs('spitzer',iqq)
-      endif
-!
       if (lfilter_farray) call filter_farray(f,df)
-
-      if (tau_inv_spitzer /= 0.) then
 !
-        call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+!  Add hyper diffusion with fixed Reynoldsnmumber
 !
-        do i=1,3
-          df(l1:l2,m,n,iqq-1+i) = df(l1:l2,m,n,iqq-1+i) + &
-              tau_inv_spitzer*(-p%qq(:,i)-K1(:,i)) +  &
-              p%qq(:,i)*(p%uglnrho + p%divu)
+      if (R_hyper3 /= 0.) then
+        hyper3_coeff = sqrt(p%u2)/R_hyper3
+        do j=1,3
+          call der6(f, ilnTT, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, ilnrho, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iux, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iuy, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iuz, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iqx, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iqy, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) + hyper3_coeff * hc * dline_1(:,j)
+          call der6(f, iqz, hc, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff * hc * dline_1(:,j)          
         enddo
+        if (lfirst .and. ldt) then
+          diffus_chi3 = diffus_chi3 + hyper3_coeff* &
+              (abs(dline_1(:,1))+abs(dline_1(:,2))+abs(dline_1(:,3)))
+          call max_mn_name(diffus_chi3/cdtv3,idiag_dthyper3,l_dt=.true.)
+         endif
+
 !
-        call dot(p%qq,p%glnrho,tmp)
-!
-        rhs = gamma*p%cp1*exp(-p%lnTT)*(p%divq+tmp)
-!
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-!
-        if (lvideo) then
-!
-! slices
-!
-          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
-          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
-          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
-          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
-          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
-          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
-        endif
-!
-        if (lfirst.and.ldt) then
-          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-              gamma*p%cp1*tau_inv_spitzer)
-          advec_uu = max(advec_uu,rhs/dxmax_pencil)
-          if (idiag_dtspitzer/=0) &
-              call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
-          !
-          dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
-        endif
+!         if (lheatflux) then 
+!           do i=0,2
+!             call del6(f,iqx+i,hc,IGNOREDX=.true.)
+!             df(l1:l2,m,n,iqx+i) = df(l1:l2,m,n,iqx+i) + hyper3_coeff*hc
+!           enddo
+!         endif
+!         if (lhydro) then
+!           do i=0,2
+!             call del6(f,iux+i,hc,IGNOREDX=.true.)
+!             df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_coeff*hc
+!           enddo
+!         endif
+!         if (ltemperature) then
+!           call del6(f,ilnTT,hc,IGNOREDX=.true.)
+!           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff*hc
+!         endif
+!         if (ldensity) then
+!           call del6(f,ilnrho,hc,IGNOREDX=.true.)
+!           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff*hc
+!         endif
+! !
+! !  due to ignoredx hyper3_eta has [1/s]
+! !
+!         if (lfirst.and.ldt) then
+!           dt1_max=max(dt1_max,hyper3_coeff/0.01)
+!           write (*,*) maxval(hyper3_coeff)
+!           call max_mn_name(hyper3_coeff/0.01,idiag_dthyper3,l_dt=.true.)
+!         endif
       endif
-!
-      if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
-      if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -407,22 +414,6 @@ module Special
 !  Loop over slices
 !
       select case (trim(slices%name))
-!
-      case ('sflux')
-        if (slices%index>=3) then
-          slices%ready=.false.
-        else
-          slices%index=slices%index+1
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index)
-          if (lwrite_slice_xy3) &
-              slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index)
-          if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index)
-          if (slices%index<=3) slices%ready=.true.
-        endif
 !
       case ('spitzer')
         slices%yz => spitzer_yz
@@ -544,18 +535,18 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: chi,glnTT2,rhs,u_spitzer
-      real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat,glnTT2_upwind
-      real, dimension (nx,3) :: tmpv2,tmpv,glnTT_upwind
+      real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat !,glnTT2_upwind
+      real, dimension (nx,3) :: tmpv2,tmpv !,glnTT_upwind
       real :: Ksatb,Kcb
       integer :: i,j
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
           cubic_step(real(t),init_time,init_time)*p%cp1
 !
-      do i=1,3
-        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
-      enddo
-      call dot2(glnTT_upwind,glnTT2_upwind)
+!      do i=1,3
+!        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+!      enddo
+!      call dot2(glnTT_upwind,glnTT2_upwind)
       call dot2(p%glnTT,glnTT2)
 !
       gKpara = 3.5 * glnTT2 !_upwind
@@ -726,7 +717,6 @@ module Special
 !
     lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
 !
-    !lnQ   = get_lnQ(lnTT_SI)
     call getlnQ(lnTT_SI,lnQ,delta_lnTT)
 !
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
