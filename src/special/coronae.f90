@@ -437,7 +437,6 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-
       if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
       if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
 !
@@ -469,7 +468,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case), intent(inout) :: p
 !
-      call keep_compiler_quiet(f)       
+      call keep_compiler_quiet(f)
 !
       if (lpencil(i_cVTrho1)) p%cVTrho1=gamma*p%cp1*exp(-p%lnrho-p%lnTT)
 !
@@ -571,7 +570,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data), intent(inout) :: slices
 !
-      call keep_compiler_quiet(f)       
+      call keep_compiler_quiet(f)
 !
 !  Loop over slices
 !
@@ -801,12 +800,15 @@ module Special
                     j = j-1
                     if (j<=0) notdone=.false.
                   endif
+                elseif (lnTT_SI == intlnT(1)) then
+                  notdone=.false.
                 else
                   j = j + sign(1.,lnTT_SI-intlnT(j))
                   if (j <= 0) then
                     j=1
                     notdone=.false.
                   elseif (j >= 37) then
+                    write (*,*) 'Warining: Temperatures may be to high!'
                     j=36
                     notdone=.false.
                   endif
