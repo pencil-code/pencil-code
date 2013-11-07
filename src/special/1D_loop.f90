@@ -33,7 +33,7 @@ module Special
   real :: bullets_x0=0.,bullets_dx=0.
   real :: bullets_t0=0.,bullets_dt=0.
   real :: bullets_h0=0.,hyper3_diffrho=0.
-  logical :: lfilter_farray=.false.
+  logical :: lfilter_farray=.false.,lrad_loss=.false.
   real, dimension(mvar) :: filter_strength=0.01
   real :: Ltot,R_hyper3
 !
@@ -53,7 +53,7 @@ module Special
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
       lfilter_farray,filter_strength,loop_frac,&
-      heat_par_vandoors,R_hyper3
+      heat_par_vandoors,R_hyper3,lrad_loss
 !
 ! variables for print.in
 !
@@ -86,7 +86,7 @@ module Special
   integer, save, dimension(mseed) :: nano_seed
 !
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
-  real :: Ksaturation_SI = 7e7,Ksaturation=0.
+  real :: Ksaturation_SI = 7e7,Ksaturation=0.,ln_unit_TT=0.
 !
   contains
 !***********************************************************************
@@ -111,6 +111,8 @@ module Special
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
       real :: dummy=1.
+!
+      ln_unit_TT = alog(real(unit_temperature))
 !
       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
@@ -176,7 +178,6 @@ module Special
 !  04-sep-10/bing: coded
 !
       if (tau_inv_spitzer/=0.) then
-        lpenc_requested(i_qq)=.true.
         lpenc_requested(i_uglnrho)=.true.
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -237,8 +238,6 @@ module Special
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
-!
-      if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
 !
       if (R_hyper3 /= 0.) lpenc_requested(i_u2)=.true.
 !
@@ -344,60 +343,20 @@ module Special
 !  Add hyper diffusion with fixed Reynoldsnmumber
 !
       if (R_hyper3 /= 0.) then
-        hyper3_coeff = sqrt(p%u2)/R_hyper3
+        hyper3_coeff = sqrt(p%u2)/dxmax_pencil/R_hyper3
         do j=1,3
           call der6(f, ilnTT, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff * hc * dline_1(:,j)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff * hc
           call der6(f, ilnrho, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff * hc * dline_1(:,j)
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff * hc
           call der6(f, iux, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + hyper3_coeff * hc * dline_1(:,j)
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + hyper3_coeff * hc
           call der6(f, iuy, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + hyper3_coeff * hc * dline_1(:,j)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + hyper3_coeff * hc
           call der6(f, iuz, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + hyper3_coeff * hc * dline_1(:,j)
-          call der6(f, iqx, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff * hc * dline_1(:,j)
-          call der6(f, iqy, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) + hyper3_coeff * hc * dline_1(:,j)
-          call der6(f, iqz, hc, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff * hc * dline_1(:,j)          
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + hyper3_coeff * hc
         enddo
-        if (lfirst .and. ldt) then
-          diffus_chi3 = diffus_chi3 + hyper3_coeff* &
-              (abs(dline_1(:,1))+abs(dline_1(:,2))+abs(dline_1(:,3)))
-          call max_mn_name(diffus_chi3/cdtv3,idiag_dthyper3,l_dt=.true.)
-         endif
-
-!
-!         if (lheatflux) then 
-!           do i=0,2
-!             call del6(f,iqx+i,hc,IGNOREDX=.true.)
-!             df(l1:l2,m,n,iqx+i) = df(l1:l2,m,n,iqx+i) + hyper3_coeff*hc
-!           enddo
-!         endif
-!         if (lhydro) then
-!           do i=0,2
-!             call del6(f,iux+i,hc,IGNOREDX=.true.)
-!             df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_coeff*hc
-!           enddo
-!         endif
-!         if (ltemperature) then
-!           call del6(f,ilnTT,hc,IGNOREDX=.true.)
-!           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_coeff*hc
-!         endif
-!         if (ldensity) then
-!           call del6(f,ilnrho,hc,IGNOREDX=.true.)
-!           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_coeff*hc
-!         endif
-! !
-! !  due to ignoredx hyper3_eta has [1/s]
-! !
-!         if (lfirst.and.ldt) then
-!           dt1_max=max(dt1_max,hyper3_coeff/0.01)
-!           write (*,*) maxval(hyper3_coeff)
-!           call max_mn_name(hyper3_coeff/0.01,idiag_dthyper3,l_dt=.true.)
-!         endif
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
       endif
 !
     endsubroutine dspecial_dt
@@ -447,6 +406,107 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+!  10-oct-12/bing: coded
+!
+      use EquationOfState, only: gamma
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+      integer,save :: j=35
+      real :: lnTT_SI,dt_step,dt_rad,ln_coeff,one_m_alpha,lnTT_res
+      integer :: l
+      logical :: notdone
+!
+      real, parameter, dimension (37) :: intlnT = (/ &
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
+          , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
+          , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
+          , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
+          , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
+          ,  15.6576,  69.0776 /)
+      real, parameter, dimension (36) :: alpha_rad = (/ &
+          67.4287,   40.0384,  21.3332, 20.0001,  9.33333,  4.66647 &
+          ,  2.33345,-0.566705,-0.199849, 0.199849, 0.899692,  1.33405 &
+          ,  1.66611, 0.833237,-0.166805, -1.49977,  0.00000, 0.566656 &
+          , 0.233155,-0.966534,-0.633508, 0.800159, 0.433348, -0.0998807 &
+          ,-0.499988, -1.00000, -1.96697, -3.06643, -3.60040, -5.80186 &
+          , -1.86549, -2.66724,-0.166734, 0.566900, 0.666504,  6.23231 /)
+      real, parameter, dimension (36) :: lnchi_rad = (/ &
+          -690.935, -448.121, -280.147, -268.022, -169.777, -125.719 &
+          , -103.157, -74.4422, -78.1590, -82.2545, -89.5060, -94.1066 &
+          , -97.7002, -88.4950, -77.2118, -61.8654, -79.4776, -86.2624 &
+          , -82.1925, -67.2755, -71.4930, -89.9794, -85.1652, -78.0439 &
+          , -72.6083, -65.7003, -52.1185, -36.4226, -28.6767,  3.51167 &
+          , -54.4966, -42.5892, -80.0138, -91.1629, -92.6996, -179.847 /)
+!
+      if (llast .and. lrad_loss) then
+!
+        do l=l1,l2
+          do m=m1,m2
+            do n=n1,n2
+              notdone=.true.
+              dt_rad = dt*unit_time
+              lnTT_SI = f(l,m,n,ilnTT) + ln_unit_TT
+              do while (notdone)
+!
+                if (lnTT_SI > intlnT(j) .and. &
+                    lnTT_SI <=  intlnT(j+1) ) then
+! we are the propper intervall, compute the factors
+!
+                  one_m_alpha = (1-alpha_rad(j))
+!
+                  ln_coeff = f(l,m,n,ilnrho) + alog(real(1.5**2./8.7*(gamma-1.)/0.6/m_p/k_B))+ lnchi_rad(j)
+                  ln_coeff = ln_coeff + alog(real(unit_temperature/unit_velocity**2./unit_density/unit_length**6.))
+!
+! compute resulting temperature in SI units
+!
+! first check if we would get negative temperatues
+                  if (-one_m_alpha*dt_rad*exp(ln_coeff)+exp(one_m_alpha*lnTT_SI) < 0) then
+                    lnTT_res = intlnT(j)*0.9
+                  else
+                    lnTT_res =1./one_m_alpha*alog(  &
+                        -one_m_alpha*dt_rad*exp(ln_coeff) &
+                        +exp(one_m_alpha*lnTT_SI))
+                  endif
+!
+                  if (lnTT_res >= intlnT(j)) then
+                    ! everything is fine
+                    f(l,m,n,ilnTT) = lnTT_res - ln_unit_TT
+                    notdone = .false.
+                  else
+                    ! timestep to large, we need to repeat for another intervall
+                    dt_step = exp(-ln_coeff)/one_m_alpha*  &
+                        (exp(one_m_alpha*lnTT_SI) - exp(one_m_alpha*intlnT(j)))
+                    dt_rad = dt_rad - dt_step
+                    f(l,m,n,ilnTT)  = intlnT(j)-ln_unit_TT
+                    lnTT_SI = f(l,m,n,ilnTT) + ln_unit_TT
+                    j = j-1
+                    if (j<=0) notdone=.false.
+                  endif
+                else
+                  j = j + sign(1.,lnTT_SI-intlnT(j))
+                  if (j <= 0) then
+                    j=1
+                    notdone=.false.
+                  elseif (j >= 37) then
+                    j=36
+                    notdone=.false.
+                  endif
+                endif
+              enddo  ! while loop
+            enddo
+          enddo
+        enddo
+      endif  ! if (llast)
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine  special_after_timestep
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
