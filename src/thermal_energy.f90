@@ -987,12 +987,12 @@ module Energy
       real, parameter :: safety = 0.9, errcon = (5. / safety)**5
       real, parameter :: a2 = .2, a3 = .3, a4 = .6, a5 = 1., a6 = .875
       real, parameter :: b2 = .2
-      real, dimension(2), parameter :: b3 = [.075, .225]
-      real, dimension(3), parameter :: b4 = [.3, -.9, 1.2]
-      real, dimension(4), parameter :: b5 = [-11./54., 2.5, -70./27., 35./27.]
-      real, dimension(5), parameter :: b6 = [1631./55296., 175./512., 575./13824., 44275./110592., 253./4096.]
-      real, dimension(6), parameter :: c = [37./378., 0., 250./621., 125./594., 0., 512./1771.]
-      real, dimension(6), parameter :: d = c - [2825./27648., 0., 18575./48384., 13525./55296., 277./14336., .25]
+      real, dimension(2), parameter :: b3 = (/ .075, .225 /)
+      real, dimension(3), parameter :: b4 = (/ .3, -.9, 1.2 /)
+      real, dimension(4), parameter :: b5 = (/ -11./54., 2.5, -70./27., 35./27. /)
+      real, dimension(5), parameter :: b6 = (/ 1631./55296., 175./512., 575./13824., 44275./110592., 253./4096. /)
+      real, dimension(6), parameter :: c = (/ 37./378., 0., 250./621., 125./594., 0., 512./1771. /)
+      real, dimension(6), parameter :: d = c - (/ 2825./27648., 0., 18575./48384., 13525./55296., 277./14336., .25 /)
 !
       real, dimension(6) :: de
       logical :: last, lovershoot
@@ -1173,8 +1173,10 @@ module Energy
 !  Initializes the tabulated cooling function of Sutherland and Dopita (1993).
 !
 !  02-feb-13/ccyang: coded.
+!   8-nov-13/axel: changed some calls to f95 standard
 !
       use Mpicomm
+      use Syscalls, only: get_env_var
       use EquationOfState, only: getmu
 !
       integer, parameter :: lun = 1
@@ -1188,17 +1190,21 @@ module Energy
 !  Find the number of table entries.
 !
       get_nt: if (lroot) then
-        call get_environment_variable('PENCIL_HOME', src)
+!-      call get_environment_variable('PENCIL_HOME', src)
+        call get_env_var('PENCIL_HOME', src)
         src = trim(src) // '/src/cooling_SD93_Z00.dat'
-        open (unit=lun, file=src, action='read', iostat=stat, iomsg=msg)
+!-      open (unit=lun, file=src, action='read', iostat=stat, iomsg=msg)
+        open (unit=lun, file=src, action='read', iostat=stat)
         if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot open the cooling table; ' // trim(msg), force=.true.)
         nline: do
-          read (lun,*,iostat=stat,iomsg=msg) col
+!-        read (lun,*,iostat=stat,iomsg=msg) col
+          read (lun,*,iostat=stat) col
           if (stat < 0) exit nline
           if (stat > 0) call fatal_error('init_cooling_SD93', 'error in reading the cooling table; ' // trim(msg), force=.true.)
           SD_nt = SD_nt + 1
         enddo nline
-        close (unit=lun, iostat=stat, iomsg=msg)
+!-      close (unit=lun, iostat=stat, iomsg=msg)
+        close (unit=lun, iostat=stat)
         if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; ' // trim(msg), force=.true.)
       endif get_nt
       call mpibcast_int(SD_nt)
