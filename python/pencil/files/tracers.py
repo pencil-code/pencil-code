@@ -15,13 +15,13 @@ import pencil as pc
 import pylab as plt
 
 
-def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
+def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_size = 3):
     """
     Reads the tracer files, composes a color map.
 
     call signature::
     
-      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim)
+      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim, head_size = 3)
     
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
@@ -41,6 +41,10 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
       *zlim*:
         The upper limit for the field line mapping at which a field line is considered
         to have reached the upper boundary.
+        
+      *head_size*:
+        Size of the Fortran header in binary data. Most of the time this is 3.
+        For the St Andrews cluster it is 5.
     """
     
     class data_struct:
@@ -56,6 +60,12 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
     data = []
     data = data_struct()
 
+    # compute the offset in order to skip Fortran's header byte
+    if (head_size == 3):
+        off = 2
+    if (head_size == 5):
+        off = 3
+    
     # read the cpu structure
     dim = pc.read_dim(datadir = dataDir)
     if (dim.nprocz > 1):
@@ -71,7 +81,8 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
     n_proc = dim.nprocx*dim.nprocy
     # sub sapling of the tracers
     trace_sub = params.trace_sub
-    n_times = os.path.getsize("data/proc0/tracers.dat")/(4*(3 + 7*dim.nx*dim.ny*trace_sub**2/dim.nprocx/dim.nprocy))
+    n_times = os.path.getsize("data/proc0/tracers.dat")/(4*(head_size + 7*dim.nx*dim.ny*trace_sub**2/dim.nprocx/dim.nprocy))
+    #print "n_times = ", n_times
 
     # prepare the output arrays
     tracers = np.zeros((dim.nx*trace_sub, dim.ny*trace_sub, n_times, 7))
@@ -90,24 +101,24 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
         # read the cpu structure
         dim_core = pc.read_dim(datadir = dataDir, proc = i)
         stride = dim_core.nx*dim_core.ny*trace_sub**2    
-        llen = 3 + 7*stride
+        llen = head_size + 7*stride
         
         tracer_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = array.array('f')
-        tmp.read(tracer_file, (3 + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times)
+        tmp.read(tracer_file, (head_size + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times)
         tracer_file.close()
         
         t = []
         
         for j in range(n_times):
-            t.append(tmp[1+j*llen])
-            data.xi = tmp[2+j*llen:2+stride + j*llen]
-            data.yi = tmp[2+stride+j*llen:2+2*stride+j*llen]
-            data.xf = tmp[2+2*stride+j*llen:2+3*stride+j*llen]
-            data.yf = tmp[2+3*stride+j*llen:2+4*stride+j*llen]
-            data.zf = tmp[2+4*stride+j*llen:2+5*stride+j*llen]
-            data.l = tmp[2+5*stride+j*llen:2+6*stride+j*llen]
-            data.q = tmp[2+6*stride+j*llen:2+7*stride+j*llen]
+            t.append(tmp[off-1+j*llen])
+            data.xi = tmp[off+j*llen          : off+1*stride + j*llen]
+            data.yi = tmp[off+1*stride+j*llen : off+2*stride+j*llen]
+            data.xf = tmp[off+2*stride+j*llen : off+3*stride+j*llen]
+            data.yf = tmp[off+3*stride+j*llen : off+4*stride+j*llen]
+            data.zf = tmp[off+4*stride+j*llen : off+5*stride+j*llen]
+            data.l  = tmp[off+5*stride+j*llen : off+6*stride+j*llen]
+            data.q  = tmp[off+6*stride+j*llen : off+7*stride+j*llen]
 
             # Squeeze the data into 2d array. This make the visualization much faster.
             for l in range(len(data.xi)):
@@ -234,13 +245,13 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
 
 
 
-def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
+def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
     """
     Reads the fixed points files.
 
     call signature::
     
-      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/')
+      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
     
     Reads from the fixed points files. Returns the fixed points positions.
     
@@ -251,6 +262,10 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
         
       *fileName*:
         Name of the fixed points file.
+        
+      *hm*:
+        Header multiplication factor in case Fortran's binary data writes extra large
+        header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
     """
     
 
@@ -274,7 +289,7 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
 
     # read the data
     fixed_file = open(dataDir+fileName, 'rb')
-    tmp = fixed_file.read(4)
+    tmp = fixed_file.read(4*hm)
     
     data = data_struct()
     eof = 0
@@ -283,22 +298,22 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     if tmp == '':
         eof = 1
     while (eof == 0):
-        data.t.append(struct.unpack("<ff", fixed_file.read(8))[0])
-        n_fixed = int(struct.unpack("<fff", fixed_file.read(12))[1])
+        data.t.append(struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0])
+        n_fixed = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+hm/2])
 
         x = list(np.zeros(n_fixed))
         y = list(np.zeros(n_fixed))
         q = list(np.zeros(n_fixed))
         for j in range(n_fixed):
-            x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
+            x[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[-1]
             y[j] = struct.unpack("<f", fixed_file.read(4))[0]
-            q[j] = struct.unpack("<ff", fixed_file.read(8))[0]
+            q[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0]
         data.x.append(x)
         data.y.append(y)
         data.q.append(q)
         data.fidx.append(n_fixed)
 
-        tmp = fixed_file.read(4)
+        tmp = fixed_file.read(4*hm)
         if tmp == '':
             eof = 1
             
@@ -329,6 +344,7 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
 
 def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
                  fixedFile = 'fixed_points.dat', zlim = [],
+                 head_size = 3, hm = 1,
                  imageDir = './', movieFile = 'fixed_points.mpg',
                  fps = 5.0, bitrate = 1800):
     """
@@ -339,6 +355,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     
       tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
                  fixedFile = 'fixed_points.dat', zlim = [],
+                 head_size = 3, hm = 1,
                  imageDir = './', movieFile = 'fixed_points.mpg',
                  fps = 5.0, bitrate = 1800)
     
@@ -358,6 +375,14 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
         The upper limit for the field line mapping at which a field line is considered
         to have reached the upper boundary.
       
+      *head_size*:
+        Size of the fortran header in binary data. Most of the time this is 3.
+        For the St Andrews cluster it is 5.
+        
+      *hm*:
+        Header multiplication factor in case Fortran's binary data writes extra large
+        header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
+        
       *imageDir*:
         Directory with the temporary png files.
         
@@ -374,8 +399,8 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     
     
     # read the mapping and the fixed point positions
-    tracers, mapping, t = read_tracers(dataDir = dataDir, fileName = tracerFile, zlim = zlim)
-    fixed = read_fixed_points(dataDir = dataDir, fileName = fixedFile)
+    tracers, mapping, t = read_tracers(dataDir = dataDir, fileName = tracerFile, zlim = zlim, head_size = head_size)
+    fixed = read_fixed_points(dataDir = dataDir, fileName = fixedFile, hm = hm)
     
     # read the parameters for the domain boundaries
     params = pc.read_param(quiet = True)
