@@ -21,6 +21,7 @@ module NSCBC
   use Messages
   use Mpicomm
   use EquationOfState
+  use Boundcond
 !
   implicit none
 !
@@ -983,10 +984,10 @@ include 'NSCBC.h'
 !
       real :: shift, grid_shift, weight, round
       integer :: iround, lowergrid, uppergrid
-      real, allocatable, dimension(:,:)   :: u_profile
+      real, allocatable, dimension(:,:)   :: u_profile,prof
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
-      real :: radius_mean, smooth, rad
+      real :: radius_mean, smooth, rad, vel
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
 !
@@ -995,6 +996,7 @@ include 'NSCBC.h'
       stat=0
       allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
       allocate(u_turb   (igrid,jgrid,3),STAT=stat(2))
+      allocate(prof(igrid,jgrid  ),STAT=stat(3))
       if (maxval(stat)>0) &
           call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")
 !
@@ -1094,6 +1096,7 @@ include 'NSCBC.h'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
             velo(2)=velo(1)/velocity_ratio
+!print*,'velo,jet_center,radius_profile=',velo,jet_center,radius_profile
             do jjj=imin,imax
               do kkk=jmin,jmax
                 if (dir==1) then
@@ -1117,6 +1120,70 @@ include 'NSCBC.h'
                   scalar_profile(jjj-imin+1,kkk-jmin+1)&
                       =0.5-0.5&
                       *tanh((rad-radius_profile(1)*1.2)/(momentum_thickness(1)))
+                endif
+              enddo
+            enddo
+!
+          case ('single_jet_no_coflow')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_profile: single_jet'
+            non_zero_transveral_velo=.true.
+            velo(1)=u_t
+            velo(2)=0.
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                   if (nzgrid>1) then 
+                      rad=sqrt((y(jjj)-jet_center(1))**2+&
+                           (z(kkk)-jet_center(1))**2)
+                   else
+                      rad=sqrt((y(jjj)-jet_center(1))**2)
+                   endif
+                elseif (dir==2) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+                elseif (dir==3) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(1))**2)
+                endif
+                  ! Add mean velocity profile
+                u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                    =u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                    +velo(1)*(1-tanh((rad-radius_profile(1))/&
+                    momentum_thickness(1)))*0.5
+                ! Define profile for turbulence on inlet
+                u_profile(jjj-imin+1,kkk-jmin+1)&
+                    =0.2*((velo(1))/2-(velo(1))/2&
+                    *tanh((rad-radius_profile(1)*1.3)&
+                    /(2*momentum_thickness(1))))
+                ! Define profile for passive scalar
+                if (lpscalar_nolog) then
+                  scalar_profile(jjj-imin+1,kkk-jmin+1)&
+                      =0.5-0.5&
+                      *tanh((rad-radius_profile(1)*1.2)&
+                      /(momentum_thickness(1)))
+                endif
+              enddo
+            enddo
+            print*,'1:u_in(*,1,1)=',u_in(:,1,1)
+! 
+         case ('single_jet_no_coflow2')
+            if (lroot .and. it==1 .and. lfirst) &
+                 print*,'inlet_profile: single_jet_no_coflow2'
+            non_zero_transveral_velo=.true.
+            velo(1)=u_t
+            velo(2)=0.
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                   vel = fbcx1(1)
+                   rad = fbcx2(1)
+                   call jet_x(prof,vel,rad)
+                   u_in(:,:,1)=prof
+                elseif (dir==2) then
+                   call fatal_error('find_velocity_at_inlet',&
+                        'single_jet_no_coflow2 not implemented for dir=2')
+                elseif (dir==3) then
+                   call fatal_error('find_velocity_at_inlet',&
+                        'single_jet_no_coflow2 not implemented for dir=3')
                 endif
               enddo
             enddo

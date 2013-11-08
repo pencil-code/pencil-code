@@ -22,6 +22,7 @@ module Boundcond
   public :: set_consistent_density_boundary
   public :: set_consistent_vel_boundary
   public :: set_periodic_boundcond_on_aux
+  public :: jet_x
 !
   interface update_ghosts
      module procedure update_ghosts_all
@@ -348,6 +349,10 @@ module Boundcond
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
                   call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
+                case ('jet')
+                  ! BCX_DOC: top hat jet profile in cartezian coordinate.
+                  !Defined only for the bottom boundary
+                  call bc_set_jet_x(f,j,topbot,fbcx12,fbcx2_12)
                 case ('spd')
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
@@ -2747,7 +2752,6 @@ module Boundcond
                 enddo
             enddo
           enddo
-!
         case ('top')               ! top boundary
           call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
           do i=1,nghost
@@ -2757,12 +2761,107 @@ module Boundcond
         case default
           call warning('bc_set_jethat_x',topbot//" should be 'top' or 'bot'")
         endselect
-!
-      else
+       
+     else
         call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
-      endif
+     endif
 !
     endsubroutine bc_set_jethat_x
+! **********************************************************************
+    subroutine bc_set_jet_x(f,jj,topbot,velocity,radius)
+!
+!  Sets tophat velocity profile at the inner (bot) boundary
+!
+!  06-nov-2013/nils: adapted from bc_set_jethat_x. Made this new routine 
+!                    because there some awckward choices made in the
+!                    other one, and the other one is for spherical geometries.
+!
+      use Sub, only: step
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (ny,nz) :: prof
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent(in) :: jj
+      integer :: i,j,k
+      real, dimension(mcom),intent(in) :: velocity,radius
+      real :: vel,rad
+!
+      vel = velocity(jj)
+      rad = radius(jj)
+!
+      if (lcartesian_coords) then
+         select case (topbot)
+         case ('bot')               ! bottom boundary
+            call jet_x(prof,vel,rad)
+            do j=m1,m2
+               do k=n1,n2
+                  f(l1,j,k,iux)= prof(j-nghost,k-nghost)
+                  do i=1,nghost
+                     f(l1-i,j,k,iux)= prof(j-nghost,k-nghost)
+                  enddo
+               enddo
+            enddo
+!
+         case ('top')               ! top boundary
+            call warning('bc_set_jet_x',&
+                 'Jet flowing out of the exit boundary ?')
+            do i=1,nghost
+               f(l2+i,:,:,jj)=0.
+            enddo
+!
+         case default
+            call warning('bc_set_jethat_x',topbot//" should be 'top' or 'bot'")
+         endselect
+!       
+      else
+         call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
+      endif
+!
+    endsubroutine bc_set_jet_x
+! **********************************************************************
+    subroutine jet_x(prof,vel,rad)
+!
+!  06-nov-2013/nils: Set jet profile 
+!
+      use Sub, only: step
+!
+      real, dimension (ny,nz), intent (out) :: prof
+      integer :: i,j,k
+      real :: vel,rad,ylim,ymid,y1,zlim,zmid,z1
+      real :: yhat_min,yhat_max,zhat_min,zhat_max
+      real :: width_hat
+      real, dimension (ny) :: hatprofy
+      real, dimension (nz) :: hatprofz
+!
+      y1 = xyz1(2)
+      z1 = xyz1(3)
+      width_hat=dy*2
+!
+      ymid = y0+(y1-y0)/2.
+      yhat_min=ymid-rad/2.
+      yhat_max=ymid+rad/2
+      hatprofy=step(y(m1:m2),yhat_min,width_hat)&
+           -step(y(m1:m2),yhat_max,width_hat)
+!
+      if (nzgrid>1) then
+         zlim = (z1-z0)*rad
+         zmid = z0+(z1-z0)/2.
+         zhat_min=zmid-zlim/2.
+         zhat_max=zmid+zlim/2
+         hatprofz=step(z(n1:n2),zhat_min,width_hat)&
+              -step(z(n1:n2),zhat_max,width_hat)
+      endif
+      do j=1,ny
+         do k=1,nz
+            if (nzgrid>1) then
+               prof(j,k)= vel*hatprofy(j)*hatprofz(k)
+            else
+               prof(j,k)= vel*hatprofy(j)
+            endif
+         enddo
+      enddo
+!
+    endsubroutine jet_x
 ! **********************************************************************
     subroutine bc_set_nfr_y(f,topbot,j)
 !
