@@ -50,6 +50,8 @@ module Particles_nbody
   logical :: laccrete_when_create=.true.
   logical :: ldust=.false.
   logical :: ltempering=.false.
+  logical :: lretrograde=.false.
+  logical :: lgas_gravity=T,ldust_gravity=T  
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
   namelist /particles_nbody_init_pars/ &
@@ -58,7 +60,7 @@ module Particles_nbody
       bcspx, bcspy, bcspz, ramp_orbits, lramp, final_ramped_mass, density_scale, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, maxsink, lcreate_sinks, icreate, lcreate_gas, &
-      lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody
+      lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody, lretrograde
 !
   namelist /particles_nbody_run_pars/ &
       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -67,7 +69,7 @@ module Particles_nbody
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
       laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction, &
-      ltempering
+      ltempering, lgas_gravity, ldust_gravity
 !
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -621,6 +623,10 @@ module Particles_nbody
         elseif (lspherical_coords) then
           velocity(istar,3)=-parc
         endif
+!
+!  Revert all velocities if retrograde
+!
+        if (lretrograde) velocity=-velocity        
 !
 !  Loop through ipar to allocate the nbody particles
 !
@@ -1191,11 +1197,12 @@ module Particles_nbody
 !  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
       density=0.
-      if (ldust) then !npar>mspar equals dust is being used
-        density=density+p%rhop
-      else
-        density=density+p%rho
-      endif
+      if (lgas_gravity) density=p%rho      
+!
+!  Add the particle gravity if npar>mspar (which means dust is being used)
+!
+      if (ldust.and.ldust_gravity) density=density+p%rhop 
+!
       selfgrav = GNewton*density_scale*&
            density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
 !
