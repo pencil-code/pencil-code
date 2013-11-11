@@ -6525,7 +6525,7 @@ module Magnetic
 !  19-aug-2013/wlad: adapted from eta_zdep
 !
       use General, only: erfcc
-      use Sub, only: step, der_step, cubic_step, cubic_der_step
+      use Sub, only: step, der_step
       use EquationOfState, only: cs0
 !
       character(len=labellen), intent(in) :: ydep_profile
