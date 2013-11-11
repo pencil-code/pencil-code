@@ -42,15 +42,13 @@ module InitialCondition
   include '../initial_condition.h'
 !
      real :: init_ux=0.,init_uy=0.,init_uz=0.
-     integer :: imass=1, spot_number=0
+     integer :: imass=1, spot_number=10
      integer :: index_H2O=3
      integer :: index_N2=4
-     integer :: index_O2=3
-     integer :: index_H2=1
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
-     real :: X_wind=impossible, spot_size=1.
+     real :: X_wind=impossible, spot_size=10.
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
      real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
@@ -64,7 +62,7 @@ module InitialCondition
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
-     ltanh_prof_xz,ltanh_prof_xy, Period, BB0
+     ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O
 !
   contains
 !***********************************************************************
@@ -567,10 +565,6 @@ module InitialCondition
 !
        if (init_TT2==0) init_TT2=init_TT1
 !
- 
-!       psat1=6.035e12*exp(-5938./init_TT1)
-!       psat2=6.035e12*exp(-5938./init_TT2)
-!
         T_tmp=init_TT1-273.15
         psat1=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
                    + aa3*T_tmp**3 + aa4*T_tmp**4  &
@@ -581,29 +575,18 @@ module InitialCondition
                    + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
         psf_1=psat1 
-!          *exp(AA/init_TT1/2./r0-BB0/(8.*r0**3))
         if (r02 /= 0) then
           psf_2=psat2
-!            *exp(AA/init_TT2/2./r02-BB0/(8.*r02**3))        
         else
           psf_2=psat2
-!            *exp(AA/init_TT2/2./r0-BB0/(8.*r0**3))
         endif
 !
 ! Recalculation of the air_mass for different boundary conditions
-!
-!           init_Yk_1(index_H2O)=psf_1 &
-!               /(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.)*dYw1
-!           init_Yk_2(index_H2O)=psf_2  & 
-!               /(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*init_TT2/18.)*dYw2
 !
         air_mass_1=air_mass
         air_mass_2=air_mass
 
         do iter=1,3
-!
-!
-!print*,'air_mass_1', air_mass_1,iter,PP*air_mass_1/18.
 !
           init_Yk_1(index_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
           init_Yk_2(index_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
@@ -636,10 +619,6 @@ module InitialCondition
 
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
-
-
-!print*,'NATA', init_Yk_1(index_H2O),psf_2, (PP*air_mass_2/18.), dYw1
-!
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
@@ -662,12 +641,15 @@ module InitialCondition
                    /(exp(x(i)/del)+exp(-x(i)/del))
              enddo
            elseif (lwet_spots) then
-!              call spot_init(f,PP,air_mass_ar,psf(:,:,:,ii_max),lmake_spot)
-!         
+              f(:,:,:,ilnTT)=log(init_TT1)
+              f(:,:,:,ichemspec(index_H2O))=init_water_1
+              call spot_init(f,init_TT2,init_water_2)
            elseif (.not. lwet_spots) then
 ! Initial conditions for the  0dcase: cond_evap
              f(:,:,:,ichemspec(index_H2O))=init_Yk_1(index_H2O)
            endif
+!
+!
            sum_Y=0.
            do k=1,nchemspec
              if (ichemspec(k)/=ichemspec(index_N2)) &
@@ -716,7 +698,7 @@ module InitialCondition
 !
     endsubroutine reinitialization
 !*********************************************************************************************************
-    subroutine spot_init(f,PP_,air_mass_ar_,psat_, lmake_spot_)
+    subroutine spot_init(f,init_TT_2,init_H2O_2)
 !
 !  Initialization of the dust spot positions and dust distribution
 !
@@ -726,24 +708,18 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: k, j, j1,j2,j3, lx=0,ly=0,lz=0
-      real ::  RR, PP_
+      real ::  RR, init_TT_2, init_H2O_2
       real, dimension (3,spot_number) :: spot_posit
-      real, dimension (mx,my,mz) :: air_mass_ar_, psat_
-      logical :: spot_exist=.true., lmake_spot_
+      logical :: spot_exist=.true.
 ! 
-       f(:,:,:,ichemspec(index_H2O)) = &
-           psat_/(PP_*air_mass_ar_/18.)*dYw1
-!
-      if (lmake_spot_) spot_posit(:,:)=0.0
+      spot_posit(:,:)=0.0
       do j=1,spot_number
         spot_exist=.true.
         lx=0;ly=0; lz=0
         if (nxgrid/=1) then
           lx=1
-          if (lmake_spot_) then
             call random_number_wrapper(spot_posit(1,j))
             spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
-          endif
           if ((spot_posit(1,j)-1.5*spot_size<xyz0(1)) .or. &
             (spot_posit(1,j)+1.5*spot_size>xyz0(1)+Lxyz(1)))  &
             spot_exist=.false.
@@ -754,21 +730,17 @@ module InitialCondition
         endif
         if (nygrid/=1) then
           ly=1
-          if (lmake_spot_) then
             call random_number_wrapper(spot_posit(2,j))
             spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
-          endif
-!          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
-!            (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
-!            spot_exist=.false.
-!            print*,'posity',spot_posit(2,j),spot_exist
+          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
+           (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
+          spot_exist=.false.
+            print*,'posity',spot_posit(2,j),spot_exist
         endif
         if (nzgrid/=1) then
           lz=1
-          if (lmake_spot_) then
             call random_number_wrapper(spot_posit(3,j))
             spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
-          endif
           if ((spot_posit(3,j)-1.5*spot_size<xyz0(3)) .or. &
            (spot_posit(3,j)+1.5*spot_size>xyz0(3)+Lxyz(3)))  &
            spot_exist=.false.
@@ -780,10 +752,11 @@ module InitialCondition
                RR=sqrt(RR)
 !
                if ((RR<spot_size) .and. (spot_exist)) then
-                f(j1,j2,j3,ichemspec(index_H2O)) = &
-                  psat_(j1,j2,j3)/(PP_*air_mass_ar_(j1,j2,j3)/18.)*dYw2
+                f(j1,j2,j3,ichemspec(index_H2O)) = init_H2O_2
+                f(j1,j2,j3,ilnTT)=log(init_TT_2)
                endif
              enddo; enddo; enddo
+
       enddo
 !
     endsubroutine spot_init
