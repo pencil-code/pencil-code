@@ -50,6 +50,7 @@ module Shock
   integer :: idiag_shockm=0        ! DIAG_DOC:
   integer :: idiag_shockmin=0      ! DIAG_DOC:
   integer :: idiag_shockmax=0      ! DIAG_DOC:
+  integer :: idiag_gshockmax = 0   ! DIAG_DOC: $\max\left|\nabla\nu_{shock}\right|$
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
@@ -255,6 +256,7 @@ module Shock
 !
       if (lreset) then
         idiag_shockm=0; idiag_shockmin=0; idiag_shockmax=0
+        idiag_gshockmax = 0
         idiag_shockmx=0; idiag_shockmy=0; idiag_shockmz=0
       endif
 !
@@ -268,6 +270,7 @@ module Shock
             'shockmin',idiag_shockmin)
         call parse_name(iname,cname(iname),cform(iname),&
             'shockmax',idiag_shockmax)
+        call parse_name(iname, cname(iname), cform(iname), 'gshockmax', idiag_gshockmax)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -337,6 +340,8 @@ module Shock
         lpenc_diagnos(i_shock)=.true.
       endif
 !
+      if (idiag_gshockmax /= 0) lpenc_diagnos(i_gshock) = .true.
+!
     endsubroutine pencil_criteria_shock
 !***********************************************************************
     subroutine pencil_interdep_shock(lpencil_in)
@@ -375,6 +380,7 @@ module Shock
         if (idiag_shockm/=0)   call sum_mn_name( p%shock,idiag_shockm)
         if (idiag_shockmin/=0) call max_mn_name(-p%shock,idiag_shockmin,lneg=.true.)
         if (idiag_shockmax/=0) call max_mn_name( p%shock,idiag_shockmax)
+        if (idiag_gshockmax /= 0) call max_mn_name(sqrt(sum(p%gshock**2, dim=2)), idiag_gshockmax)
       endif
 !
       if (l1davgfirst) then
