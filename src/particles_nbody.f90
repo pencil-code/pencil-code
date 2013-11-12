@@ -51,7 +51,7 @@ module Particles_nbody
   logical :: ldust=.false.
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
-  logical :: lgas_gravity=T,ldust_gravity=T  
+  logical :: lgas_gravity=.true.,ldust_gravity=.true.
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
   namelist /particles_nbody_init_pars/ &
