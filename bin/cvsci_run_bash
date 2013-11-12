@@ -34,7 +34,7 @@ for pdir in  $dirlist ; do
 #
 #  add directories and files to cvs
 #
-  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat *.sav data
+  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat  data
 #
   if [ -d "data" ]; then
       cd data
