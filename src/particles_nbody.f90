@@ -549,7 +549,7 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            if (ldebug) & 
+            if (ldebug) &
                  print*,'init_particles_nbody. Nbody particle ',ipar(k),&
                  ' located at ixp=',fp(k,ixp)
           endif
@@ -626,13 +626,13 @@ module Particles_nbody
 !
 !  Revert all velocities if retrograde
 !
-        if (lretrograde) velocity=-velocity        
+        if (lretrograde) velocity=-velocity
 !
 !  Loop through ipar to allocate the nbody particles
 !
          do k=1,npar_loc
            if (ipar(k)<=mspar) then
-             if (ldebug) & 
+             if (ldebug) &
                   print*,&
                   'init_particles_nbody. Slot for nbody particle ',ipar(k),&
                   ' was at fp position ', k, ' at processor ', iproc
@@ -1197,11 +1197,11 @@ module Particles_nbody
 !  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
 !
       density=0.
-      if (lgas_gravity) density=p%rho      
+      if (lgas_gravity) density=p%rho
 !
 !  Add the particle gravity if npar>mspar (which means dust is being used)
 !
-      if (ldust.and.ldust_gravity) density=density+p%rhop 
+      if (ldust.and.ldust_gravity) density=density+p%rhop
 !
       selfgrav = GNewton*density_scale*&
            density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
@@ -1445,18 +1445,18 @@ module Particles_nbody
       if (lcartesian_coords) then
         rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
         rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
-      elseif (lcylindrical_coords) then 
+      elseif (lcylindrical_coords) then
         rr_mn = x(l1:l2)     ; phi  = y(m)
         rr    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
         rpre  = rr_mn*rr*sin(phi-phip)
-      elseif (lspherical_coords) then  
+      elseif (lspherical_coords) then
         call fatal_error("calc_torque",&
              "not yet implemented for spherical coordinates")
       else
         call fatal_error("calc_torque",&
              "the world is flat and we should never gotten here")
       endif
-
+!
       w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
       smap  = 1./(2./rr - w2)
       hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
@@ -1466,7 +1466,7 @@ module Particles_nbody
       torque_gas = GNewton*pmass(ks)*p%rho*rpre*&
            (dist**2 + r_smooth(ks)**2)**(-1.5)
 !
-      if (ldust) then 
+      if (ldust) then
         torque_par = GNewton*pmass(ks)*p%rhop*rpre*&
              (dist**2 + r_smooth(ks)**2)**(-1.5)
       else
@@ -1481,7 +1481,7 @@ module Particles_nbody
 !
       if (lcartesian_coords) then
         do i=1,nx
-          if (p%rcyl_mn(i) > r_ext .or. p%rcyl_mn(i) < r_int) then 
+          if (p%rcyl_mn(i) > r_ext .or. p%rcyl_mn(i) < r_int) then
             torque_gas(i)=0.
             torque_par(i)=0.
           endif
@@ -1490,7 +1490,7 @@ module Particles_nbody
 !
 !  Exclude region inside a fraction (hills_tempering_fraction) of the Hill sphere.
 !
-      if (ltempering) then 
+      if (ltempering) then
         pcut=hills_tempering_fraction*hills
         tempering = 1./(exp(-(sqrt(dist**2)/hills - pcut)/(.1*pcut))+1.)
         torque_gas = torque_gas * tempering
@@ -1507,23 +1507,23 @@ module Particles_nbody
 !  Separate internal and external torques
 !
       do i=1,nx
-        if (p%rcyl_mn(i)>=rr) then 
+        if (p%rcyl_mn(i)>=rr) then
           torqext_gas(i) = torque_gas(i)
           torqext_par(i) = torque_par(i)
         else
           torqext_gas(i)=0.;torqext_par(i)=0.
         endif
-        if (p%rcyl_mn(i)<=rr) then 
+        if (p%rcyl_mn(i)<=rr) then
           torqint_gas(i) = torque_gas(i)
           torqint_par(i) = torque_par(i)
         else
-          torqint_gas(i)=0.;torqint_par(i)=0.         
+          torqint_gas(i)=0.;torqint_par(i)=0.
         endif
       enddo
 !
-!  Sum the different torque contributions. 
-! 
-      if (lcartesian_coords) then 
+!  Sum the different torque contributions.
+!
+      if (lcartesian_coords) then
         call sum_lim_mn_name(torqext_gas,idiag_torqext_gas(ks),p)
         call sum_lim_mn_name(torqext_par,idiag_torqext_par(ks),p)
         call sum_lim_mn_name(torqint_gas,idiag_torqint_gas(ks),p)
@@ -1536,7 +1536,7 @@ module Particles_nbody
       else
         !
         ! Hack for non-cartesian coordinates. sum_lim_mn_name is lagging
-        ! behind sum_mn_name, and whould be brought up to date. 
+        ! behind sum_mn_name, and whould be brought up to date.
         !
         call integrate_mn_name(torqext_gas,idiag_torqext_gas(ks))
         call integrate_mn_name(torqext_par,idiag_torqext_par(ks))
