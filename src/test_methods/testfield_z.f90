@@ -1257,7 +1257,7 @@ module Testfield
 !  16-aug-13/MR: MPI communication simplified; changes for iterative procedure
 !  20-aug-13/MR: changes for complex calculation: testfield loop then over njtest instead of njtestl
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...; removed p from parameter list
-!		 restricted pencil calculation; simplified communication
+!  restricted pencil calculation; simplified communication
 !
       use Sub
       use Cdata
