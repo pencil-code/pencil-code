@@ -33,7 +33,7 @@ module Energy
   real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
-  real :: rcool=0.0, wcool=0.1
+  real :: rcool=0.0, wcool=0.1, ppcool=1.
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
@@ -152,7 +152,7 @@ module Energy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, wcool, wcool2, Fbot, &
+      rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
       lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -2293,6 +2293,7 @@ module Energy
       if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) then
         lpenc_requested(i_cs2)=.true.
         if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
+        if (cooling_profile=='surface_pp') lpenc_requested(i_pp)=.true.
       endif
       if (lgravz .and. (luminosity/=0.0 .or. cool/=0.0)) &
           lpenc_requested(i_cs2)=.true.
@@ -4544,6 +4545,8 @@ module Energy
 !  Subroutine to do volume heating and cooling in a layer independent of
 !  gravity.
 !
+!  17-may-10/dhruba: coded
+!
       use Sub, only: erfunc
 !
       real, dimension (nx) :: heat
@@ -4569,10 +4572,15 @@ module Energy
       case ('sin-z')
         prof=spread(sin(z(n)/wcool),1,l2-l1+1)
 !
-!  Sinusoidal cooling profile (periodic).
+!  Error function cooling profile.
 !
       case ('surface_z')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
+!
+!  Error function cooling profile with respect to pressure.
+!
+      case ('surface_pp')
+        prof=.5*(1.-erfunc((p%pp-ppcool)/wcool))
 !
       endselect
 !
