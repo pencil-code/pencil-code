@@ -82,6 +82,7 @@ logical :: lcorona=.false.
       real, dimension (mx) :: lnrho, ss_prof, cs2_prof, dlnrhodr 
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
+      real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.6e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
@@ -220,6 +221,7 @@ logical :: lcorona=.false.
       L00=star_luminosity*rho0*gravx**1.5*sqrt(Rstar)
       Fbottom=L00/(4.*pi*x0**2)
       sigma=(L00/(4.*pi*Rsurf**2))/Tsurf**4
+      cs2_bot=T00*cv*gamma*(gamma-1.)
       cs2_top=Tsurf*cv*gamma*(gamma-1.)
       if (lcorona) then
         cs2_top=Tcor*cv*gamma*(gamma-1.)
@@ -241,6 +243,7 @@ logical :: lcorona=.false.
          print*,''
          print*,'initial_condition: Fbottom   =',Fbottom
          print*,'initial_condition: SigmaSBt  =',sigma
+         print*,'initial_condition: cs2bot    =',cs2_bot
          print*,'initial_condition: cs2top    =',cs2_top
          print*,'initial_condition: fluxratio =',fluxratio
          print*,'initial_condition: Omsim     =',Omsim
