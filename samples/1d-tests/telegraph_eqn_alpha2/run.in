@@ -15,5 +15,5 @@
   alpha_effect=1.2
 /
 &magn_mf_demfdt_run_pars
-  tau1_emf=.1, eta_emf=.0
+  tau1_emf=.1, eta_emf_over_etat=.0
 /
