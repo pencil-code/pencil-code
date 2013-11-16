@@ -1,8 +1,19 @@
 ! $Id$
 !
-!  reads in full snapshot and calculates power spetrum of u
+! MODULE_DOC: reads in full snapshot and calculates power spetrum of u
 !
-!-----------------------------------------------------------------------
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lpower_spectrum = .true.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED
+!
+!***************************************************************
 !    3-sep-02/axel+nils: coded
 !    5-sep-02/axel: loop first over all points, then distribute to k-shells
 !   23-sep-02/nils: adapted from postproc/src/power_spectrum.f90

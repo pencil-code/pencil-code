@@ -477,7 +477,7 @@ module Param_IO
           if (lforcing      ) print*,'&forcing_run_pars         /'
           if (lshock        ) print*,'&shock_run_pars           /'
           if (lviscosity    ) print*,'&viscosity_run_pars       /'
-          if (.true.        ) print*,'&power_spectrum_run_pars  /'     ! switch missing!!
+          if (lpower_spectrum)print*,'&power_spectrum_run_pars  /'
         endif
 
 !!!        if (lstart.and.linitial_condition.and.present(label)) partype=''

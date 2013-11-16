@@ -1,4 +1,20 @@
 ! $Id$
+!
+! MODULE_DOC: reads in full snapshot and calculates power spetrum of u
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lpower_spectrum = .false.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED
+!
+!***************************************************************
+!
 module power_spectrum
 !
   use Cdata
