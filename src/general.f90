@@ -2182,24 +2182,25 @@ module General
 !
     endfunction linear_interpolate
 !***********************************************************************
-    integer function parser( zeile, feld, lenf, tz )
+    integer function parser( zeile, feld, tz )
 !
 ! Parses string zeile according to separator character tz;
-! Puts up to lenf substrings consecutively into feld.
+! Puts up substrings consecutively into feld.
 ! Returns number of found substrings.
 !
 !  10-apr-11/MR: coded
-!
+!  18-nov-13/MR: removed dummy parameter lenf, can be inferred from feld 
+!                
       character (LEN=*),               intent(in)  :: zeile
-      character (LEN=*), dimension(*), intent(out) :: feld
-      integer,                         intent(in)  :: lenf
+      character (LEN=*), dimension(:), intent(out) :: feld
       character,                       intent(in)  :: tz
 !
-      integer :: ind, inda, lenz
+      integer :: ind, inda, lenz, lenf
 !
       parser = 0
       inda = 1
       lenz = len_trim(zeile)
+      lenf = size(feld)
 !
       do while ( inda <= lenz )
 !
@@ -2550,24 +2551,19 @@ module General
 ! determines total number of elements selected by all ranges in ranges
 !
 ! 20-apr-11/MR: coded
+! 18-nov-13/MR: made nr mandatory
 !
       integer, dimension(3,*), intent(in) :: ranges
-      integer,       optional, intent(in) :: nr
+      integer,                 intent(in) :: nr
 !
-      integer :: i, nrl
+      integer :: i
 !
       get_range_no = 0
 !
-      if ( present(nr) ) then
-        nrl = nr
-      else
-        nrl = 10
-      endif
-!
-      do i=1,nrl
+      do i=1,nr
         if ( ranges(1,i) > 0 ) &
           get_range_no = get_range_no + &
-                      ceiling( (ranges(2,i)-ranges(1,i)+1.)/ranges(3,i))
+                         ceiling( (ranges(2,i)-ranges(1,i)+1.)/ranges(3,i))
       enddo
 !
     endfunction get_range_no
