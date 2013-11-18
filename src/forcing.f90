@@ -1091,6 +1091,7 @@ module Forcing
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,j2f
+      real, save :: cs0eff
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
       real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
@@ -1124,6 +1125,16 @@ module Forcing
         extent(2)=ny/=1
         extent(3)=nz/=1
         lfirst_call=.false.
+!
+!  At the moment, cs0 is used for normalization.
+!
+        if (cs0==impossible) then
+          cs0eff=1.
+          if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
+        else
+          cs0eff=cs0
+        endif
+!
       endif
 !
 !  generate random coefficients -1 < fran < 1
@@ -1240,7 +1251,7 @@ module Forcing
 !  unaffected when changing k1_ff).
 !
       ffnorm=sqrt(1.+relhel**2) &
-        *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
+        *k*sqrt(k2-kde**2)/sqrt(kav*cs0eff**3)*(k/kav)**slope_ff
       if (ip<=9) print*,'forcing_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
       if (ip<=9) print*,'forcing_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
 !
