@@ -80,6 +80,7 @@ module Magnetic_meanfield
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0
   real, dimension(3) :: alpha_aniso=0.
+  real, dimension(3,3) :: alpha_tensor=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
@@ -87,13 +88,13 @@ module Magnetic_meanfield
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
-  logical :: ldelta_profile=.false.
+  logical :: ldelta_profile=.false., lalpha_tensor=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
-      alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
+      alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, qp_width, &
       x_surface, x_surface2, z_surface, &
@@ -195,6 +196,15 @@ module Magnetic_meanfield
         lalpha_aniso=.false.
       endif
       if (lroot) print*,'lalpha_aniso=',lalpha_aniso
+!
+!  check for (slightly less-simple minded) anisotropy
+!
+      if (any(alpha_tensor/=0.)) then
+        lalpha_tensor=.true.
+      else
+        lalpha_tensor=.false.
+      endif
+      if (lroot) print*,'lalpha_tensor=',lalpha_tensor
 !
 !  write profile (uncomment for debugging)
 !
@@ -329,6 +339,13 @@ module Magnetic_meanfield
           detat_x=1./(meanfield_etat_width*sqrtpi) &
             *exp(-((x(l1:l2)-x_surface2)/meanfield_etat_width)**2)
           detat_y=0.
+          detat_z=0.
+        case ('sin2y')
+          etat_x=meanfield_etat
+          etat_y=sin(y)**2
+          etat_z=1.
+          detat_x=0.
+          detat_y=2.*sin(y)*cos(y)
           detat_z=0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
@@ -617,7 +634,7 @@ module Magnetic_meanfield
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho, glnchit2
       real :: kx,fact
-      integer :: j,l
+      integer :: i,j,l
 !
       intent(inout) :: f,p
 !
@@ -902,6 +919,13 @@ module Magnetic_meanfield
         if (lalpha_aniso) then
           do j=1,3
             p%mf_EMF(:,j)=alpha_total*alpha_aniso(j)*p%bb(:,j)
+          enddo
+        elseif (lalpha_tensor) then
+          do i=1,3
+            p%mf_EMF(:,i)=0.
+            do j=1,3
+              p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total*alpha_tensor(i,j)*p%bb(:,j)
+            enddo
           enddo
         else
           call multsv_mn(alpha_total,p%bb,p%mf_EMF)
