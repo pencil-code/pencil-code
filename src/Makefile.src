@@ -1756,6 +1756,13 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE = -O3 #(plasmoid)
 ##
 ##
+## joern's laptop 2
+#FC=mpif90 #(warnecke-tmd3)
+#FFLAGS= -O0 #(warnecke-tmd3)
+#CFLAGS=-DFUNDERSC=1 #(warnecke-tmd3)
+#FFLAGS_DOUBLE = -O3 #(warnecke-tmd3)
+##
+##
 ## Nobumitsu's laptop
 #FC=mpif90 #(nobyokoi)
 #FFLAGS=-O3 #(nobyokoi)
