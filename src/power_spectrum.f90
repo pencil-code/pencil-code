@@ -35,13 +35,13 @@ module power_spectrum
   integer :: firstout = 0
 !
   character (LEN=20) :: ckxrange='', ckyrange='', czrange=''
-  integer, dimension(3,10) :: kxrange=0, kyrange=0, zrange=0
+  integer, parameter :: nk_max=10, nz_max=10
+  integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
+  integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
 !
-  real :: zpos=0.
-!
   namelist /power_spectrum_run_pars/ &
-      lintegrate_shell, lintegrate_z, lcomplex, zpos, ckxrange, ckyrange, czrange
+      lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange
 !
   contains
 !***********************************************************************
@@ -53,7 +53,7 @@ module power_spectrum
       integer, intent(inout), optional :: iostat
 !
       integer :: i
-      character (LEN=20), dimension(10) :: czranges
+      character (LEN=20), dimension(nz_max) :: czranges
 !
       if (present(iostat)) then
         read(unit,NML=power_spectrum_run_pars,ERR=99, IOSTAT=iostat)
@@ -72,12 +72,12 @@ module power_spectrum
         call get_kranges( ckxrange, kxrange, nxgrid )
         call get_kranges( ckyrange, kyrange, nygrid )
 !
-        print*, 'kxrange,kyrange=', kxrange, kyrange
+        !!print*, 'kxrange,kyrange=', kxrange, kyrange
 !
       endif
 !
-      if ( .not. lintegrate_z ) then
-        do i=1,parser( czrange, czranges, 10, ',' )
+      if ( .not.lintegrate_z ) then
+        do i=1,parser( czrange, czranges, ',' )
 !
           zrange(:,i) = (/1,nzgrid,1/)
 !
@@ -89,9 +89,9 @@ module power_spectrum
         enddo
       endif
 !
-      n_spectra = parser( xy_spec, xy_specs, 10, ',' )
+      n_spectra = parser( xy_spec, xy_specs, ',' )
 !
-      do i=1,10
+      do i=1,n_xy_specs_max
         if ( xy_specs(i) == 'u' ) then
           uxy_spec=.false.
         else if ( xy_specs(i) == 'jxb' ) then
@@ -113,16 +113,16 @@ module power_spectrum
 !
       use General, only : parser, read_range, merge_ranges
 !
-      character (LEN=*)      , intent(in)  :: ckrange
-      integer, dimension(3,*), intent(out) :: kranges
-      integer                , intent(in)  :: ngrid
+      character (LEN=*)      , intent(in) :: ckrange
+      integer, dimension(:,:), intent(out):: kranges
+      integer                , intent(in) :: ngrid
 !
       integer :: nr, nre, i, ie
-      character (LEN=20), dimension(10) :: ckranges
+      character (LEN=20), dimension(size(kranges,2)) :: ckranges
 !
       ckranges=''
 !
-      nr = parser( ckrange, ckranges, 10, ',' )
+      nr = parser( ckrange, ckranges, ',' )
       nre = nr
 !
       do i=1,nr
@@ -139,7 +139,7 @@ module power_spectrum
 !
             if ( kranges(2,i)>=0 ) then
 !
-              if ( nre<10 ) then
+              if ( nre<nk_max ) then
 !
                 nre = nre+1
                 kranges(:,nre) = (/1,kranges(2,i)+1,kranges(3,i)/)
@@ -148,7 +148,7 @@ module power_spectrum
                 call merge_ranges( kranges, nre-1, kranges(1,nre), nr+1 )
 !
               else
-                print*, 'Warning - subinterval could not be created!'
+                print*, 'get_kranges: Warning - subinterval could not be created!'
               endif
 !
               kranges(2,i) = -1
@@ -409,7 +409,7 @@ module power_spectrum
 !
 ! 18-Jan-11/MR: outsourced from power_xy
 !
-    use Sub,      only: curli
+    use Sub,      only: curli, ioptest
     use Fourier,  only: fourier_transform_xy
 !
     implicit none
@@ -426,11 +426,7 @@ module power_spectrum
     real, dimension(nx) :: bb
     integer :: m,n,ind,ivec
 !
-    if (.not.present(ivecp)) then
-      ivec = 1
-    else
-      ivec = ivecp
-    endif
+    ivec = ioptest(ivecp,1)
 !
     if (sp=='u') then
        if (iuu==0) goto 1
@@ -468,7 +464,7 @@ module power_spectrum
        return
     endif
 !
-    ai=0
+    ai=0.
 !
 !  Doing the Fourier transform
 !
@@ -711,8 +707,8 @@ module power_spectrum
 !
       write(1,'(a)') title
 !
-      nkx = get_range_no( kxrange )
-      nky = get_range_no( kyrange )
+      nkx = get_range_no( kxrange, nk_max )
+      nky = get_range_no( kyrange, nk_max )
 !
       write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
 !
@@ -726,10 +722,10 @@ module power_spectrum
 !
       endif
 !
-      if ( zrange(1,1)>0 .and. &
+      if (  zrange(1,1)>0 .and. &
            (zrange(1,1)>1 .or. zrange(2,1)<nzgrid .or. zrange(3,1)>1) ) then
 !
-        npz = get_range_no( zrange )
+        npz = get_range_no( zrange, nz_max )
 !
         write(1,'(a)') 'z-positions ('//trim(itoa(npz))//'):'
         call write_by_ranges( 1, zgrid, zrange )
@@ -1253,10 +1249,10 @@ module power_spectrum
     integer, optional :: ivar
 !
     integer, parameter :: nk=nx/2
-    integer :: ix,iy,iz,im,in,ikx,iky,ikz
+    integer :: ix,iy,iz,im,in,ikx,iky,ikz,nc
     real, dimension(nx,ny,nz) :: a1,b1,a2
     real, dimension(nx) :: bb
-    real, dimension(nk) :: spectrumx,spectrumx_sum
+    real, dimension(:,:), allocatable :: spectrumx,spectrumx_sum
     real, dimension(nk) :: spectrumy,spectrumy_sum
     real, dimension(nk) :: spectrumz,spectrumz_sum
     character (len=fnlen) :: suffix
@@ -1316,6 +1312,14 @@ module power_spectrum
     endif
     b1=0
     a2=a1
+ 
+    if (lcomplex) then
+      nc=2
+    else
+      nc=1
+    endif
+    allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
+
 !
 ! Need to initialize
 !
@@ -1338,11 +1342,20 @@ module power_spectrum
 !  Spectra in x-direction
 !
     do ikx=1,nk; do iy=1,ny; do iz=1,nz
-      spectrumx(ikx) = spectrumx(ikx) + &
-          sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
+!
+      if (lcomplex) then
+        spectrumx(:,ikx) = spectrumx(:,ikx) + &
+            (/a1(ikx,iy,iz), b1(ikx,iy,iz)/)
+      else
+        spectrumx(1,ikx) = spectrumx(1,ikx) + &
+            sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
+      endif
+!
     enddo; enddo; enddo
+!
 !  Multiply all modes, except the constant mode, by two.
-    spectrumx(2:nk)=2*spectrumx(2:nk)
+!
+    spectrumx(2:nk,:)=2*spectrumx(2:nk,:)
 !
 !  Doing fourier spectra in all directions if onedall=T
 !
@@ -1382,7 +1395,7 @@ module power_spectrum
 !  Summing up the results from the different processors
 !  The result is available only on root
 !
-    call mpireduce_sum(spectrumx,spectrumx_sum,nk)
+    call mpireduce_sum(spectrumx,spectrumx_sum,(/nc,nk/))
     if (onedall.and.nygrid/=1) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
     if (onedall.and.nzgrid/=1) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
 !
@@ -1399,14 +1412,21 @@ module power_spectrum
     else
       suffix='_x.dat'
     endif
+!
 !  Append to diagnostics file
+!
     if (iproc==root) then
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
           'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
           position='append')
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
+      if (lcomplex) then
+        write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
+      else
+        write(1,'(1p,8("(",e10.2,",",e10.2,")"))') spectrumx_sum/(nygrid*nzgrid)
+      endif
+!
       close(1)
     endif
 !
