@@ -82,7 +82,7 @@ module power_spectrum
           zrange(:,i) = (/1,nzgrid,1/)
 !
           if ( read_range( czranges(i), zrange(:,i), (/1,nzgrid,1/) ) ) then
-            call merge_ranges( zrange, i-1, zrange(1,i) )
+            call merge_ranges( zrange, i-1, zrange(:,i) )
             print*, 'zrange=', zrange(:,i)
           endif
 !
@@ -144,8 +144,8 @@ module power_spectrum
                 nre = nre+1
                 kranges(:,nre) = (/1,kranges(2,i)+1,kranges(3,i)/)
 !
-                call merge_ranges( kranges, i-1, kranges(1,nre) )
-                call merge_ranges( kranges, nre-1, kranges(1,nre), nr+1 )
+                call merge_ranges( kranges, i-1, kranges(:,nre) )
+                call merge_ranges( kranges, nre-1, kranges(:,nre), nr+1 )
 !
               else
                 print*, 'get_kranges: Warning - subinterval could not be created!'
@@ -161,8 +161,8 @@ module power_spectrum
 !
           kranges(2,i) = min(kranges(2,i),ngrid)
 !
-          call merge_ranges( kranges, i-1, kranges(1,i) )
-          call merge_ranges( kranges, ie, kranges(1,i), nr+1 )
+          call merge_ranges( kranges, i-1, kranges(:,i) )
+          call merge_ranges( kranges, ie, kranges(:,i), nr+1 )
 !
         endif
 !
