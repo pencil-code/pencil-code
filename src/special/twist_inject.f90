@@ -24,7 +24,7 @@
 !                                                  |
 !  Special term in the mass (density) equation     | special_calc_density
 !  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the entropy equation            | special_calc_energy
+!  Special term in the entropy equation            | special_calc_entropy
 !  Special term in the induction (magnetic)        | special_calc_magnetic
 !     equation                                     |
 !                                                  |
@@ -38,7 +38,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
 !
 !***************************************************************
 !
@@ -84,18 +84,21 @@ module Special
 !
 !!  namelist /special_init_pars/ dummy
 !
-  real :: fring=1e-3,r0=0.2,tilt=0.0,width=0.02,&
+  real :: fring=0.0d0,r0=0.2,tilt=0.0,width=0.02,&
           dIring=0.0,dposx=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
-  real :: posz=0.0
+  real :: posz=0.0,posy=0.0,alpha=1.25
   real, save :: posx,Iring
-  logical :: lset_boundary_emf=.false.
-  namelist /special_run_pars/ Iring,dIring,fring,r0,width,&
-           posx,dposx,posz,tilt,dtilt,Ilimit,poslimit,lset_boundary_emf
+  integer :: nwid=1,nwid2=1,nlf=4
+  logical :: lset_boundary_emf=.false.,lupin=.false.
+  real, dimension (mx) :: x12,dx12
+  namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
+           posx,dposx,posy,posz,tilt,dtilt,Ilimit,poslimit,&
+           lset_boundary_emf,lupin,nlf
 !
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
-!!   integer :: ispecaux=0
+   integer :: ispecaux=0
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -109,11 +112,13 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
+      use FArrayManager
       if (lroot) call svn_id( &
            "$Id: nospecial.f90 19193 2012-06-30 12:55:46Z wdobler $")
 !
+      if (ldensity.and..not.ldensity_nolog) &
+      call farray_register_auxiliary('specaux',ispecaux)
 !!      call farray_register_pde('special',ispecial)
-!!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
 !
     endsubroutine register_special
@@ -126,19 +131,34 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Sub, only: gij,curl_mn
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: aa,pbb
+      real, dimension(nx,3,3) :: aij
+      real, dimension(3) :: tmpv,vv,uu,bb,uxb
       logical :: lstarting
+      integer :: i
 !
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      dx12=0.0
+      if (.not.lstarting) then
+        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+!
+        x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
+        dx12(l1-2:l2+2) =x12(l1-1:l2+3)-x12(l1-2:l2+2)   
+        f(:,:,:,ispecaux)=0.0d0
+        do n=n1,n2
+          do m=m1,m2
+            call gij(f,iaa,aij,1)
+! bb
+            call curl_mn(aij,pbb,aa)
+            f(l1:l2,m,n,ibx  :ibz  )=pbb
+          enddo
+        enddo
+      else
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special()')
       endif
 !
     endsubroutine initialize_special
@@ -187,6 +207,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_y_mn)=.true.
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -364,7 +385,75 @@ module Special
 !
     endsubroutine calc_lspecial_pars
 !***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  momentum equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
     subroutine special_calc_density(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  continuity equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx) :: fdiff
+      type (pencil_case), intent(in) :: p
+!
+      if (headtt) print*,'special_calc_density: call div_diff_flux'
+      if (ldensity_nolog) then
+        call div_diff_flux(f,irho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+!
+!  Density is frozen at boundary
+!
+          df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
+        else
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+        endif
+      else
+!
+! Store the diffusive flux in a special aux array to be added later to
+! log-density in special_after_timestep
+!
+        call div_diff_flux(f,ilnrho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+          f(l1,m,n,ispecaux) = 0.0
+          f(l1+1:l2,m,n,ispecaux) = fdiff(2:nx)
+        else
+          f(l1:l2,m,n,ispecaux) = fdiff
+        endif
+      endif
+    
+!
+    endsubroutine special_calc_density
+!***********************************************************************
+    subroutine special_calc_dustdensity(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  continuity equation.
@@ -385,7 +474,143 @@ module Special
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine special_calc_density
+    endsubroutine special_calc_dustdensity
+!***********************************************************************
+    subroutine special_calc_entropy(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  entropy equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_entropy
+!***********************************************************************
+    subroutine special_calc_magnetic(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  induction equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_magnetic
+!***********************************************************************
+    subroutine special_calc_pscalar(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  passive scalar equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+!  15-jun-09/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_pscalar
+!***********************************************************************
+    subroutine special_calc_particles(fp)
+!
+!  Called before the loop, in case some particle value is needed
+!  for the special density/hydro/magnetic/entropy.
+!
+!  20-nov-08/wlad: coded
+!
+      real, dimension (:,:), intent(in) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine special_calc_particles
+!***********************************************************************
+    subroutine special_calc_particles_nbody(fsp)
+!
+!  Called before the loop, in case some massive particles value
+!  is needed for the special density/hydro/magnetic/entropy.
+!
+!  20-nov-08/wlad: coded
+!
+      real, dimension (:,:), intent(in) :: fsp
+!
+      call keep_compiler_quiet(fsp)
+!
+    endsubroutine special_calc_particles_nbody
+!***********************************************************************
+    subroutine special_calc_chemistry(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  induction equation.
+!
+!
+!  15-sep-10/natalia: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_chemistry
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_before_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -425,6 +650,7 @@ module Special
       bc%done=.true.
         end select
       end select
+
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -435,21 +661,24 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
+!      use Boundcond, only: update_ghosts 
       use Deriv, only: der
-      use Mpicomm, only: mpibcast_double
+      use Mpicomm, only: mpibcast_double,mpibcast_logical
       use Diagnostics, only: save_name
-!      use Sub, only: cross,curl_mn,gij,gij_etc
+      use Sub, only: cross,gij,curl_mn
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
-!      real, dimension(nx,3,3) :: aij,bij
+      real, dimension(mx,my,mz):: rho_tmp
       real, dimension(nx) :: dfy,dfz
-      real, dimension(3) :: tmpv,vv,uu
+      real, dimension (nx,3) :: aa,pbb
+      real, dimension(nx,3,3) :: aij
+      real, dimension(3) :: tmpv,vv,uu,bb,uxb
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
               prof,ymid,zmid,umax
       real :: tmpx,tmpy,tmpz,posxold,Iringold
-      logical :: lcorner,lcorner_y,lcorner_z
-      integer :: l,k
+      logical :: lring=.true.
+      integer :: l,k,ig
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part)
 !  (Yeates, Mackay and van Ballegooijen 2008, Sol. Phys, 247, 103)
@@ -461,6 +690,7 @@ module Special
         Iringold=Iring
         if (posxold.gt.poslimit) dposx=0.0
         if (Iringold.gt.Ilimit) dIring=0.0
+        if (lupin.and.(posxold.gt.1.0)) lring=.false.
         posx=posx+dposx*dt_
         Iring=Iring+dIring*dt_
         tilt=tilt+dtilt*dt_
@@ -471,6 +701,7 @@ module Special
       call mpibcast_double(Iringold)
       call mpibcast_double(Iring)
       call mpibcast_double(dIring)
+      call mpibcast_logical(lring)
       if (ldiagnos) then
         if (idiag_posx/=0) &
           call save_name(posx,idiag_posx)
@@ -495,45 +726,50 @@ module Special
 !  Then set up the helical field
 !
           if (lspherical_coords) then
-              xx0=x(l1)*sinth(m)*cos(z(n))
-              yy0=x(l1)*sinth(m)*sin(z(n))
-              zz0=x(l1)*costh(m)
+          call gij(f,iaa,aij,1)
+! bb
+          call curl_mn(aij,pbb,aa)
+          f(l1:l2,m,n,ibx  :ibz  )=pbb
+          do ig=0,nghost
+              xx0=x(l1-ig)*sinth(m)*cos(z(n))
+              yy0=x(l1-ig)*sinth(m)*sin(z(n))
+              zz0=x(l1-ig)*costh(m)
           ! Calculate D^(-1)*(xxx-disp)
-              xx1=xx0-posxold
-              yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*(zz0-posz)
-              zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*(zz0-posz)
-              phi=atan2(yy1,xx1)
+              xx1=xx0-posx
+              yy1=cos(tilt*pi/180.0)*(yy0-posy)+sin(tilt*pi/180.0)*(zz0-posz)
+              zz1=-sin(tilt*pi/180.0)*(yy0-posy)+cos(tilt*pi/180.0)*(zz0-posz)
             if (dposx.ne.0.or.dtilt.ne.0) then
-              call norm_ring(xx1,yy1,zz1,fring,Iringold,r0,width,posxold,tmpv,PROFILE='gaussian')
-            ! calculate D*tmpv
-              tmpx=tmpv(1)
-              tmpy=cos(tilt*pi/180.0)*tmpv(2)-sin(tilt*pi/180.0)*tmpv(3)
-              tmpz=sin(tilt*pi/180.0)*tmpv(2)+cos(tilt*pi/180.0)*tmpv(3)
               dist=sqrt(xx0**2+yy0**2+zz0**2)
               distxy=sqrt(xx0**2+yy0**2)
-! Subtract original ring
-              f(l1,m,n,iax)=f(l1,m,n,iax)-(xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              f(l1,m,n,iay)= f(l1,m,n,iay)-(xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
-                      -distxy*tmpz/dist)
-              f(l1,m,n,iaz) = f(l1,m,n,iaz)-(-yy0*tmpx/distxy+xx0*tmpy/distxy)
-! Add new ring
-              xx1=xx0-posx
-              phi=atan2(yy1,xx1)
-              call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,posx,tmpv,PROFILE='gaussian')
+! Set up new ring
+              if (lring) then
+                call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+              else
+                call norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+              endif
             ! calculate D*tmpv
               tmpx=tmpv(1)
               tmpy=cos(tilt*pi/180.0)*tmpv(2)-sin(tilt*pi/180.0)*tmpv(3)
               tmpz=sin(tilt*pi/180.0)*tmpv(2)+cos(tilt*pi/180.0)*tmpv(3)
-              f(l1,m,n,iax)=f(l1,m,n,iax)+(xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              f(l1,m,n,iay)= f(l1,m,n,iay)+(xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+              bb(1)=(xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+              bb(2)= (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                       -distxy*tmpz/dist)
-              f(l1,m,n,iaz) = f(l1,m,n,iaz)+(-yy0*tmpx/distxy+xx0*tmpy/distxy)
+              bb(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
             endif
 !
+            if (iuu.ne.0) then
             if (dposx.ne.0) then
           ! Calculate D^(-1)*(xxx-disp)
-              distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
-              if (distyz.lt.2*width) then
+              if (lring) then
+                distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
+              else
+                if (xx1.gt.0.0) then
+                  distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
+                else
+                  distyz=sqrt((sqrt((xx0-1.0d0)**2+yy1**2)-r0)**2+zz1**2)
+                endif
+              endif
+              if (distyz.lt.nwid2*width) then
                 vv(1)=dposx
                 vv(2)=0.0
                 vv(3)=0.0
@@ -543,57 +779,55 @@ module Special
               tmpx=vv(1)
               tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
               tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
-              f(l1,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
-                      -distxy*tmpz/dist)
-              f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+              f(l1-ig,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+              f(l1-ig,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                        -distxy*tmpz/dist)
+              f(l1-ig,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
             else if (dIring.eq.0.0.and.dposx.eq.0) then
-              f(l1,m,n,iux:iuz)=0.0
+              f(l1-ig,m,n,iux:iuz)=0.0
+            endif
             endif
 !
+! Uniform translation velocity for induction equation at boundary
+!
+            if (dposx.ne.0) then
+              vv(1)=dposx
+              vv(2)=0.0
+              vv(3)=0.0
+              tmpx=vv(1)
+              tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
+              tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
+              uu(1) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+              uu(2) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                        -distxy*tmpz/dist)
+              uu(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+              call cross(uu,bb,uxb)
+              f(l1-ig,m,n,iax:iaz)=f(l1-ig,m,n,iax:iaz)+uxb(1:3)*dt_
+            else
+              uu=0.0
+            endif
+!
+          enddo
           endif
         endif
           if (lset_boundary_emf) then
-            lcorner=.false.
-            lcorner_y=.false.
-            lcorner_z=.false.
-            if (llast_proc_y.and.m.eq.m2)  lcorner_y=.true.
-            if (lfirst_proc_y.and.m.eq.m1) lcorner_y=.true.
-            if (llast_proc_z.and.n.eq.n2)  lcorner_z=.true.
-            if (lfirst_proc_z.and.n.eq.n1) lcorner_z=.true.
-            if (lcorner_y.or.lcorner_z) lcorner=.true.
-            if (lcorner) then
-              do k=iay, iaz; call bc_nfc_x(f,'top',k); enddo
-            endif
             call bc_emf_x(f,df,dt_,'top',iax)
             call bc_emf_x(f,df,dt_,'top',iay)
             call bc_emf_x(f,df,dt_,'top',iaz)
           endif
         enddo
       enddo
-!      if (dIring.ne.0) then
-!        call update_ghosts(f)
-!        do n=n1,n2
-!          do m=m1,m2
-!            call der(f,iux,dfz,3)
-!            call der(f,iux,dfy,2)
-!!
-!! Normalize to unity.
-!!
-!            f(l1,m,n,iuy)=dfz(1)
-!            f(l1,m,n,iuz)=-dfy(1)
-!          enddo
-!        enddo
-!        f(l1,m1:m2,n1:n2,iux)=0.0
-!        call find_umax(f,umax)
-!        f(l1,m1:m2,n1:n2,iuy)=dIring*f(l1,m1:m2,n1:n2,iuy)/umax
-!        f(l1,m1:m2,n1:n2,iuz)=dIring*f(l1,m1:m2,n1:n2,iuz)/umax
-!      endif
-
+!
+!  Add slope limted diffusive flux to log density
+!
+      if (.not.ldensity_nolog) then
+        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+      endif
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
-    subroutine norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,posx,vv,profile)
+    subroutine norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,vv,profile)
 !
 !  Generate vector potential for a flux ring of magnetic flux FRING,
 !  current Iring (not correctly normalized), radius R0 and thickness
@@ -606,13 +840,16 @@ module Special
       use Sub, only: erfunc
 !
       real, dimension (3) :: vv
-      real :: xx1,yy1,zz1,phi,tmp,cs,sn
-      real :: fring,Iring,r0,width,posx,width2
+      real :: xx1,yy1,zz1,phi,tmp,pomega
+      real :: fring,Iring,r0,width,br,bphi
+      integer :: nwid
       character (len=*) :: profile
 !
 !  magnetic ring, define r-R
 !
       tmp = sqrt(xx1**2+yy1**2)-r0
+      pomega=sqrt(tmp**2+zz1**2)
+      phi = atan2(yy1,xx1)
 !
 !  choice of different profile functions
 !
@@ -622,51 +859,76 @@ module Special
 !  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
 !
       case ('gaussian')
-        width2=50.0*width
-        if (abs(zz1).le.width2) then
-          if (sqrt(tmp**2+zz1**2).le.width2) then
-            vv(3) = + fring * .5*(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))- &
-                      erfunc(tmp/(sqrt(2.)*width))) &
-                     *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-          else
-            if (tmp.lt.0) then
-              vv(3) = + fring *(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))) &
-                     *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
+            if (pomega.lt.nwid*width) then
+              br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
+              bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
+              vv(1) =  cos(phi)*br-sin(phi)*bphi
+              vv(2) =  sin(phi)*br+cos(phi)*bphi
+              vv(3) =  -Iring*fring*( & 
+                       tmp/(tmp+r0))*exp(-(pomega/width)**2)
             else
+              vv(1)=0.0
+              vv(2)=0.0
               vv(3)=0.0
             endif
-          endif
-        else
-          vv(3)=0.0
-        endif
-!
-!  tanh profile, so the delta function is approximated by 1/cosh^2.
-!  The name tanh is misleading, because the actual B frofile is
-!  1./cosh^2, but this is harder to write.
-!
-      case ('tanh')
-        vv(3) = - fring * 0.5*(1+tanh(tmp/width)) &
-                          * 0.5/width/cosh(zz1/width)**2
-!
-!  constant profile, so the delta function is approximated by the function
-!  delta(x) = 1/2w, if -w < x < w.
-!
-      case ('const')
-        vv(3) = - fring * 0.5*(1.+max(-1.,min(tmp/width,1.))) &
-                          * 0.25/width*(1.-sign(1.,abs(zz1)-width))
       case default
         call stop_it('norm_ring: No such fluxtube profile')
       endselect
 !
-!  current ring (to twist the B-lines)
-!
-      phi = atan2(yy1,xx1)
-      tmp = sqrt((xx1-r0*cos(phi))**2 + (yy1-r0*sin(phi))**2+zz1**2)
-      tmp = Iring*fring*exp(-0.5*(tmp/width)**2)/(sqrt(2.*pi)*width)  ! Now the A_phi component
-      vv(1) = - tmp*sin(phi)
-      vv(2) =   tmp*cos(phi)
-!
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,vv,profile)
+!
+!  Generate vector potential for a flux ring of magnetic flux FRING,
+!  current Iring , radius R0 and thickness
+!  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
+!
+!   1-may-02/wolf: coded (see the manual, Section C.3)
+!   7-jun-09/axel: added gaussian and constant (or box) profiles
+!
+      use Mpicomm, only: stop_it
+      use Sub, only: erfunc
+!
+      real, dimension (3) :: vv
+      real :: xx1,yy1,zz1,phi,tmp,pomega
+      real :: fring,Iring,r0,width,br,bphi
+      integer :: nwid
+      character (len=*) :: profile
+!
+!  magnetic ring, define r-R
+!
+      tmp = sqrt(yy1**2)-r0
+      pomega=sqrt(tmp**2+zz1**2)
+      if (yy1.ge.0)  then
+        phi = pi/2
+      else
+        phi=3*pi/2
+      endif
+!
+!  choice of different profile functions
+!
+      select case (profile)
+!
+!  gaussian profile, exp(-.5*(x/w)^2)/(sqrt(2*pi)*eps),
+!  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
+!
+      case ('gaussian')
+            if (pomega.lt.nwid*width) then
+              br=Iring*fring*zz1*exp(-(pomega/width)**2)/abs(yy1)
+              bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
+              vv(1) =  cos(phi)*br-sin(phi)*bphi
+              vv(2) =  sin(phi)*br+cos(phi)*bphi
+              vv(3) =  -Iring*fring*exp(-(pomega/width)**2)*(tmp/abs(yy1)+width**2/(2*yy1**2))
+            else
+              vv(1)=0.0
+              vv(2)=0.0
+              vv(3)=0.0
+            endif
+      case default
+        call stop_it('norm_upin: No such fluxtube profile')
+      endselect
+!
+    endsubroutine norm_upin
 !***********************************************************************
     subroutine find_umax(f,umax)
 !
@@ -720,28 +982,29 @@ module Special
         enddo
 !
      case ('top')               ! top boundary
-       x2=x(l2+1)
-       x3=x(l2+2)
-       do m=m1, m2
-         do n=n1,n2
-           mat(1,1:3)=[2*x2*(60*dx+197*x3),x2*(60*dx+167*x3),-(6*x2*x3)]/ &
+       if (llast_proc_x) then
+         x2=x(l2+1)
+         x3=x(l2+2)
+         do m=m1, m2
+           do n=n1,n2
+             mat(1,1:3)=[2*x2*(60*dx+197*x3),x2*(60*dx+167*x3),-(6*x2*x3)]/ &
                        (7500*dx*x2+10020*dx*x3+24475*x2*x3+3600*dx**2)
 !
-           mat(2,1:3)=[-10*x3*(12*dx+x2), 120*x2*x3, x3*(12*dx+25*x2)]/ &
+             mat(2,1:3)=[-10*x3*(12*dx+x2), 120*x2*x3, x3*(12*dx+25*x2)]/ &
                        (1500*dx*x2+2004*dx*x3+4895*x2*x3+720*dx**2)
 !
-           mat(3,1:3)=[420*dx*x2+924*dx*x3+1259*x2*x3+720*dx**2,   &
+             mat(3,1:3)=[420*dx*x2+924*dx*x3+1259*x2*x3+720*dx**2,   &
                        -(9*x2*(60*dx+47*x3)), 9*x3*(12*dx+31*x2)]/ &
                        (1500*dx*x2+2004*dx*x3+4895*x2*x3+720*dx**2)
-           if (llast_proc_x) then
 !
              rhs(1)=-f(l2,m,n,j)*60*dx/x(l2)+45*f(l2-1,m,n,j)-9*f(l2-2,m,n,j)+f(l2-3,m,n,j)
              rhs(2)=f(l2,m,n,j)*80-30*f(l2-1,m,n,j)+8*f(l2-2,m,n,j)-f(l2-3,m,n,j)
              rhs(3)=-f(l2,m,n,j)*100+50*f(l2-1,m,n,j)-15*f(l2-2,m,n,j)+2*f(l2-3,m,n,j)
              f(l2+1:l2+3,m,n,j)=matmul(mat,rhs)
-           endif
-        enddo
-      enddo
+           enddo
+         enddo
+       endif
+
 !
       case default
         print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
@@ -764,10 +1027,10 @@ module Special
       case ('top')               ! top boundary
         if (llast_proc_x) then
           do i=1,nghost
-            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_
+            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_ 
           enddo
         endif
-!
+      
       case default
         print*, "bc_emf_x: ", topbot, " should be 'top'"
       endselect
@@ -823,13 +1086,15 @@ module Special
           do iz=1,mz
             if (f(l2,iy,iz,j)>0.0) then
               do i=1,nghost
-                f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j)
+!                f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j)
+                f(l2+i,iy,iz,j)=+f(l2,iy,iz,j)
               enddo
             else
-              do i=1,nghost
-                f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j)
+              do i=1,nghost 
+!                f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j)
+                f(l2+i,iy,iz,j)=0.0
               enddo
-              f(l2,iy,iz,j)=0.0
+!              f(l2,iy,iz,j)=0.0
               if (lforce) then
                 do i = 1, nghost
                   if (f(l2+i,iy,iz,j) < 0.0) f(l2+i,iy,iz,j) = 0.0
@@ -848,5 +1113,321 @@ module Special
       endselect
 !
     endsubroutine bc_go_x
+!*******************************************************************************
+    subroutine div_diff_flux(f,j,p,div_flux)
+      intent(in) :: f,j
+!      intent(out) :: flux_im12,flux_ip12,div_flux
+      intent(out) :: div_flux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: flux_im12,flux_ip12
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: div_flux
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
+      real, dimension (nx) :: fim1,fip1,rfac,q1
+      type (pencil_case), intent(in) :: p
+      integer :: i,j,k
+!
+! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
+!
+        fim1=0
+        fip1=0
+        fim12_l=0
+        fim12_r=0
+        fip12_l=0
+        fip12_r=0
+        cmax_ip12=0
+        cmax_im12=0
+      do k=1,3
+!
+!
+        call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
+                                   fim1,fip1,k)      
+        call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+             fim1(ix))+tini)
+          else
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
+             fim1(ix))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+            f(ix+nghost,m,n,j))+tini)
+          else
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+            exp(f(ix+nghost,m,n,j)))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
+      enddo
+!        if (abs(z(n)+0.00068366832).lt.1.0e-6.and.abs(y(m)-1.5262493).lt.1.0e-6) then
+!          if (lfirst_proc_x) then
+!          print*, 'flux_1:'
+!          print*, cmax_im12(3,1),cmax_ip12(3,1),flux_ip12(3,1),flux_im12(3,1)
+!          print*, 'flux_2:'
+!          print*, cmax_im12(3,2),cmax_ip12(3,2),flux_ip12(3,2),flux_im12(3,2)
+!          print*, 'flux_3:'
+!          print*, cmax_im12(3,3),cmax_ip12(3,3),flux_ip12(3,3),flux_im12(3,3)
+!          endif
+!        endif
+!
+! Now calculate the 2nd order divergence
+!
+      if (lspherical_coords) then
+        div_flux=0.0
+        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
+        +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
+                sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
+!        if (abs(z(n)+0.00068366832).lt.1.0e-6.and.abs(y(m)-1.5262493).lt.1.0e-6) then
+!          if (lfirst_proc_x) then
+!          print*, 'div_flux:'
+!          print*, div_flux(2),div_flux(3)
+!          endif
+!        endif
+      else
+        call fatal_error('twist_inject:div_diff_flux','Not coded for cartesian and cylindrical')
+      endif
+!
+    endsubroutine div_diff_flux
+!*******************************************************************************
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
+                                     fip1,k)
+!
+! Reconstruction of a scalar by slope limited linear interpolation
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
+      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ix
+      real :: tmp0,tmp1,tmp2,tmp3
+! x-component
+      select case (k)
+        case(1)
+! Special case of non uniform grid only in the radial direction
+        if (ldensity_nolog) then
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))/(x(i)-x(i-1))
+            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))/(x(i+1)-x(i))
+            delfx(ix) = minmod(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = f(i,m,n,j)-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = f(i,m,n,j)+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = f(i-1,m,n,j)
+            fip1(ix) = f(i+1,m,n,j)
+          enddo
+        else
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(exp(f(i,m,n,j))-exp(f(i-1,m,n,j)))/(x(i)-x(i-1))
+            tmp2=(exp(f(i+1,m,n,j))-exp(f(i,m,n,j)))/(x(i+1)-x(i))
+            delfx(ix) = minmod(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = exp(f(i,m,n,j))-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = exp(f(i,m,n,j))+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = exp(f(i-1,m,n,j))
+            fip1(ix) = exp(f(i+1,m,n,j))
+          enddo
+        endif
+! y-component
+        case(2)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+            delfym1(ix) = minmod(tmp0,tmp1)
+            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+            delfy(ix) = minmod(tmp1,tmp2)
+            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+            delfyp1(ix) = minmod(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+            fim1(ix) = f(i,m-1,n,j)
+            fip1(ix) = f(i,m+1,n,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m-1,n,j))
+            delfym1(ix) = minmod(tmp0,tmp1)
+            tmp2=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
+            delfy(ix) = minmod(tmp1,tmp2)
+            tmp3=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+            delfyp1(ix) = minmod(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfy(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfy(ix)
+            fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
+            fim1(ix) = exp(f(i,m-1,n,j))
+            fip1(ix) = exp(f(i,m+1,n,j))
+          enddo
+        endif
+! z-component
+        case(3)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+            delfzm1(ix) = minmod(tmp0,tmp1)
+            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+            delfz(ix) = minmod(tmp1,tmp2)
+            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+            delfzp1(ix) = minmod(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+            fim1(ix) = f(i,m,n-1,j)
+            fip1(ix) = f(i,m,n+1,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m,n-1,j))
+            delfzm1(ix) = minmod(tmp0,tmp1)
+            tmp2=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
+            delfz(ix) = minmod(tmp1,tmp2)
+            tmp3=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+            delfzp1(ix) = minmod(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
+            fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
+            fim1(ix) = exp(f(i,m,n-1,j))
+            fip1(ix) = exp(f(i,m,n+1,j))
+          enddo
+        endif
+        case default
+          call fatal_error('twist_inject:slope_lim_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine slope_lim_lin_interpol
 !***********************************************************************
+    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+      intent(in) :: f,k
+      intent(out) :: cmax_im12,cmax_ip12
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: b1_tmp,b2_tmp,b3_tmp,rho_tmp
+      real, dimension (0:nx) :: b1_xtmp,b2_xtmp,b3_xtmp,rho_xtmp
+      type (pencil_case), intent(in) :: p
+      integer :: k
+      integer :: i,ix
+!
+      select case (k)
+! x-component
+        case(1)
+          b1_xtmp=0.5*(f(l1-1:l2,m,n,ibx)+f(l1:l2+1,m,n,ibx))
+          b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
+          b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
+          if (ldensity_nolog) then
+          rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
+          else
+          rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
+          endif
+          cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
+          cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
+! y-component
+        case(2)
+          b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m-1,n,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m-1,n,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m-1,n,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m-1,n,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m+1,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m+1,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m+1,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m+1,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m+1,n,ilnrho)))
+          endif
+          cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+! z-component
+        case(3)
+          b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n-1,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n-1,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n-1,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n-1,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m,n+1,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m,n+1,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m,n+1,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m,n+1,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m,n+1,ilnrho)))
+          endif
+          cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+        endselect
+    endsubroutine characteristic_speed
+!***********************************************************************
+    real function minmod(a,b)
+!
+!  minmod=max(0,min(abs(a),sign(1,a)*b))
+!
+      real :: a,b
+!
+      minmod=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+!
+    endfunction minmod
+!***********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include '../special_dummies.inc'
+!********************************************************************
 endmodule Special
