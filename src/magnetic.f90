@@ -1424,6 +1424,10 @@ module Magnetic
         case ('Bz-floor'); call mdi_init(f,.true.,z0aa)
         case ('magnetogram_nonperiodic'); call mdi_init(f,.false.,z0aa)
         case ('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case ('Bphi_cosy')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=amplaa(j)*(cos(2*pi*ky_aa(j)*(y(m)-y0)/Lxyz(2)))/Lxyz(2)
+          enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
         case ('read_arr_file'); call read_outside_vec_array(f, "aa.arr", iaa)
