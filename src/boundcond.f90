@@ -2865,11 +2865,11 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_nfr_y(f,topbot,j)
 !
-!  Stress-free boundary condition for spherical coordinate system.
-!  d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets
-!  B_{\theta}=0 in spherical polar
-!  coordinate system. This subroutine sets only the first part of this
-!  boundary condition for 'j'-th component of f.
+!  Normal field boundary condition for spherical coordinate system.
+!  d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r with A_{\theta} = 0 sets
+!  B_r = B_{\phi} = 0 in spherical polar coordinate system. This subroutine 
+!  sets only the first part of this boundary condition for 'j'-th component 
+!  of f.
 !
 !  25-Aug-2007/dhruba: coded
 !
