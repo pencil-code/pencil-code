@@ -19,7 +19,6 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MAUX CONTRIBUTION 0
 !***************************************************************
 
 module Testfield
@@ -34,10 +33,8 @@ module Testfield
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb11_xy
-  real, target, dimension (nx,ny,3) :: bb11_xy2
-  real, target, dimension (nx,nz,3) :: bb11_xz
-  real, target, dimension (ny,nz,3) :: bb11_yz
+  real, target, dimension(:,:,:), allocatable :: bb11_xy, bb11_xy2, &
+                                                 bb11_xz, bb11_yz
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -200,11 +197,13 @@ module Testfield
 !  Perform any post-parameter-read initialization
 !
 !   2-jun-05/axel: adapted from magnetic
-!   6-sep-3/MR: outsourced unspecific stuff to testfield_general
+!   6-sep-3 /MR: outsourced unspecific stuff to testfield_general
+!  19-nov-13/MR: slice buffers dynamically allocated
 !
       use Diagnostics, only: gen_form_legend
       use Cdata
       use FarrayManager, only: farray_register_auxiliary
+      use General, only: operator(.IN.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
@@ -313,7 +312,7 @@ module Testfield
 !
         if (any(f(:,:,:,iaatest2:iaatest2+3*njtestl-1)/=0.)) lfirst_iter=.false.
 !
-! indices of those diagnostics whose values accumulate
+! indices of those diagnostics whose values accumulate - 
 !
         idiag_keep = (/ idiag_alp11,idiag_alp12,idiag_alp21,idiag_alp22, &
                         idiag_eta11,idiag_eta12,idiag_eta21,idiag_eta22, &
@@ -382,6 +381,12 @@ module Testfield
         endif
       endif
 !
+!  allocate slice buffers
+!
+        if (('bb11'.IN.cnamev)/=0 ) &
+          allocate(bb11_xy(nx,ny,3), bb11_xy2(nx,ny,3), &
+                   bb11_xz(nx,nz,3), bb11_yz(ny,nz,3) )
+!
 !  write testfield information to a file (for convenient post-processing)
 !
       if (lroot) then
@@ -442,12 +447,14 @@ module Testfield
 !  16-aug-13/MR: iterative procedure and complex treatment for harmonic testfields added
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
+!  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
 !
       use Diagnostics
       use Cdata
       use Hydro, only: uumz,lcalc_uumeanz
       use Mpicomm, only: stop_it
       use Sub
+      use General, only: operator(.IN.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -472,8 +479,7 @@ module Testfield
       real, dimension (:,:),     allocatable :: daatest2,uxb2,bbtest2,duxbbtest2
 !
       integer :: jtest, j, iuxtest, iuztest
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, &
-                 iaxtest2, iaztest2
+      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, iaxtest2, iaztest2
 
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       integer      :: iswitch_iter=0, nl
@@ -675,13 +681,19 @@ module Testfield
 ! 
 !            df(l1:l2,m,n,iaxtest :iaztest )= df(l1:l2,m,n,iaxtest :iaztest )+f(l1:l2,m,n,iaxtest2:iaztest2)      ! \dot{b_test} = f2
  
-          else                     ! for complex formulation for harmonically time-dependent testfields (om_testfield/=0, constant velocity!) 
+          else                      ! complex formulation for harmonically time-dependent testfields (om_testfield/=0, constant velocity!) 
              
-            df(l1:l2,m,n,iaxtest2:iaztest2)=df(l1:l2,m,n,iaxtest2:iaztest2)+daatest2 &                           ! \dot{Im{a_test}} = 
-                                            -om_testfield*f(l1:l2,m,n,iaxtest:iaztest)                           ! Im{rhs} - omega*Re{a_test}
+            df(l1:l2,m,n,iaxtest2:iaztest2)= df(l1:l2,m,n,iaxtest2:iaztest2)+daatest2 &                           ! \dot{Im{a_test}} = 
+                                            -om_testfield*f(l1:l2,m,n,iaxtest:iaztest)                            ! Im{rhs} - omega*Re{a_test}
+            if (lam_testfield/=0.) &
+              df(l1:l2,m,n,iaxtest2:iaztest2)= df(l1:l2,m,n,iaxtest2:iaztest2) &                                  ! \dot{Im{a_test}} = 
+                                              -lam_testfield*f(l1:l2,m,n,iaxtest2:iaztest2)                       ! \dot{Im{a_test}} - lambda*Im{a_test}
 !
-            df(l1:l2,m,n,iaxtest :iaztest )=df(l1:l2,m,n,iaxtest :iaztest ) &                                    ! \dot{Re{a_test}} = 
-                                            +kdamp_2ndord*(daatest+om_testfield*f(l1:l2,m,n,iaxtest2:iaztest2))  ! kdamp_2ndord*(Re{rhs} + omega*Im{a_test})
+            df(l1:l2,m,n,iaxtest:iaztest )=df(l1:l2,m,n,iaxtest:iaztest ) &                                       ! \dot{Re{a_test}} = 
+                                            +kdamp_2ndord*(daatest+om_testfield*f(l1:l2,m,n,iaxtest2:iaztest2))   ! kdamp_2ndord*(Re{rhs} + omega*Im{a_test})
+            if (lam_testfield/=0.) &
+              df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &                                       ! \dot{Re{a_test}} = 
+                                              -(kdamp_2ndord*lam_testfield)*f(l1:l2,m,n,iaxtest:iaztest)          ! \dot{Re{a_test}} - kdamp_2ndord*lambda*Re{a_test})
           endif
 !
         else        ! unmodified test equations
@@ -1203,12 +1215,18 @@ module Testfield
 !  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst) then
-        do j=1,3
-          bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
-          if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)
-          if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
-          if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
-        enddo
+!
+        if (('bb11'.IN.cnamev)/=0) then
+!
+!  first test solution
+!
+          do j=1,3
+            bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
+            if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)
+            if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
+            if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
+          enddo
+        endif
       endif
 !
 !      if (lcomplex) deallocate(daatest2,uxb2,bbtest2,duxbbtest2)
