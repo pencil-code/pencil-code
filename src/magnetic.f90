@@ -234,7 +234,7 @@ module Magnetic
   logical :: lelectron_inertia=.false.
   logical :: lkinematic=.false.
   logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
-  logical :: lmean_friction=.false.
+  logical :: lmean_friction=.false.,llocal_friction=.false.
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
@@ -257,8 +257,8 @@ module Magnetic
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, epsilonaa, k1x_ff, k1y_ff, k1z_ff, &
       center1_x, center1_y, center1_z, lcheck_positive_va2, &
-      lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
-      lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
+      lmean_friction, llocal_friction, LLambda_aa, bthresh, bthresh_per_brms, &
+      iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
@@ -3134,10 +3134,11 @@ module Magnetic
             aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
           enddo
           dAdt = dAdt-LLambda_aa*aa_xyaver
-!          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-LLambda_aa*aa_xyaver
         else
           call stop_it("magnetic: lmean_friction works only for nprocxy=1")
         endif
+      elseif (llocal_friction) then
+        dAdt = dAdt-LLambda_aa*p%aa
       endif
 !
 !  Special contributions to this module are called here.
