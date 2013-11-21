@@ -212,6 +212,16 @@ module Gravity
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
 !
+! Linear gravity profile in x for planetary core dynamos
+!
+ case ('linear_x')      
+        if (lroot) print*,'initialize_gravity: linear x-grav, gravx=', gravx
+        gravx_xpencil = -gravx*x
+        potx_xpencil  = 0.5*gravx*(x**2-xinfty**2)
+        call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+!
 !  Linear gravity potential with additional z dependence.
 !  Calculate zdep here, but don't multiply it onto gravx_xpencil
 !  or potx_xpencil, so they will not be correct yet!
