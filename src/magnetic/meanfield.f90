@@ -489,7 +489,10 @@ module Magnetic_meanfield
 !
 !  In spherical coordinates, we also need grad(divA)
 !
-      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
+      if (lspherical_coords) then
+        lpenc_requested(i_graddiva)=.true.
+        lpenc_requested(i_x_mn)=lOmega_effect
+      endif
 !
 !  For mean-field modelling in momentum equation:
 !
@@ -1091,7 +1094,6 @@ module Magnetic_meanfield
               p%chiB_mf=p%cp*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2lnTT)
             else
               p%chiB_mf=p%cp*chi_t0/oneQbeta2*(g2+p%del2lnTT)
-!if (n==120) print*,'AXEL n,chi=',n,p%cp*chi_t0/oneQbeta2
             endif
 !
 !  Turbulent diffusion with entropy gradient and coefficient
@@ -1311,7 +1313,10 @@ module Magnetic_meanfield
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
       case ('(0,0,Sx)')
         if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
-        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iaz)
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iaz)
+      case ('(0,0,pomSx)')
+        if (headtt) print*,'Omega_effect: uniform shear in radius, S=',Omega_ampl
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iaz)*p%x_mn
       case ('(Sz,0,0)')
         if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
