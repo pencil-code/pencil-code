@@ -34,15 +34,17 @@ module Shock
   include 'shock.h'
 !
   integer :: ishock_max=1
+  logical :: lshock_linear = .false.
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
   logical :: lfix_Re_mesh=.false.
   real    :: div_threshold=0.0
+  real    :: shock_linear = 0.01
   logical :: lrewrite_shock_boundary=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
-      div_threshold, lrewrite_shock_boundary, lfix_Re_mesh
+      div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -403,6 +405,7 @@ module Shock
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry, &
                          mpiallreduce_max
       use Sub, only: div
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -424,6 +427,8 @@ module Shock
 !
       call initiate_isendrcv_bdry(f,iux,iuz)
 !
+      a1 = shock_linear / dxmax
+!
       do imn=1,ny*nz
 !
         n = nn(imn)
@@ -437,6 +442,13 @@ module Shock
 ! The following will calculate div u for any coordinate system.
         call div(f,iuu,penc)
         f(l1:l2,m,n,ishock) = max(0.0,-penc)
+!
+        linear: if (lshock_linear) then
+          call eoscalc(f, nx, cs2=penc)
+          if (lbfield .and. ldensity .and. ldensity_nolog) &
+            penc = penc + mu01 * sum(f(l1:l2,m,n,ibx:ibz)**2, dim=2) / f(l1:l2,m,n,irho)
+          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + a1 * sqrt(penc)
+        endif linear
 !
       enddo
 !
