@@ -67,6 +67,7 @@ module Shock
   integer :: idiag_shockmx=0       ! YZAVG_DOC:
 !
   real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
+  real, dimension(:), pointer :: B_ext
 !
   contains
 !***********************************************************************
@@ -99,16 +100,25 @@ module Shock
 !  20-nov-02/tony: coded
 !
       use Messages, only: fatal_error
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
       real, dimension (-3:3) :: weights
+      integer :: ierr
       integer :: i,j,k
 !
 !  Initialize shock profile to zero
 !
       f(:,:,:,ishock)=0.0
+!
+!  Get B_ext from Magnetic.
+!
+      bext: if (lshock_linear .and. lmagnetic) then
+        call get_shared_variable('B_ext', B_ext, ierr)
+        if (ierr /= 0) call fatal_error('initialize_shock', 'cannot get shared variable B_ext.')
+      endif bext
 !
 !  Calculate the smoothing factors
 !
@@ -404,12 +414,14 @@ module Shock
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry, &
                          mpiallreduce_max
-      use Sub, only: div
+      use Sub, only: div, gij, curl_mn
       use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       real, dimension (mx,my,mz) :: tmp
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: bb
       real, dimension (nx) :: penc, penc1
       integer :: imn
       integer :: i,j,k
@@ -445,8 +457,16 @@ module Shock
 !
         linear: if (lshock_linear) then
           call eoscalc(f, nx, cs2=penc)
-          if (lbfield .and. ldensity .and. ldensity_nolog) &
-            penc = penc + mu01 * sum(f(l1:l2,m,n,ibx:ibz)**2, dim=2) / f(l1:l2,m,n,irho)
+          alfven: if (lmagnetic .and. ldensity .and. ldensity_nolog) then
+            bfield: if (lbfield) then
+              bb = f(l1:l2,m,n,ibx:ibz)
+            else bfield
+              call gij(f, iaa, aij, 1)
+              call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+            endif bfield
+            bb = bb + spread(B_ext,1,nx)
+            penc = penc + mu01 * sum(bb**2, dim=2) / f(l1:l2,m,n,irho)
+          endif alfven
           f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + a1 * sqrt(penc)
         endif linear
 !
