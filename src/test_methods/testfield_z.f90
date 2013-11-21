@@ -448,6 +448,7 @@ module Testfield
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
+!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0 
 !
       use Diagnostics
       use Cdata
@@ -520,8 +521,10 @@ module Testfield
           om_testfield/=0..or.delta_testfield/=0.) then
         bamp=1.
         if (lam_testfield/=0.) then
-          taainit_previous=taainit-daainit
-          bamp=bamp*exp(lam_testfield*(t-taainit_previous))
+          if (.not.lcomplex) then
+            taainit_previous=taainit-daainit
+            bamp=bamp*exp(lam_testfield*(t-taainit_previous))
+          endif
           bamp1=1./bamp
         endif
         if (lin_testfield/=0.) then
