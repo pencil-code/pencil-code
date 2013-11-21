@@ -249,7 +249,7 @@ module Hydro
         
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 ! 
-        headtt=headtt_save
+        headtt_save=headtt
         do n=1,mz; do m=1,my
 !
           call calc_pencils_hydro(f,p(1),lpenc_loc)
