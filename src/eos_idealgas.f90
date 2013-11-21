@@ -1335,7 +1335,7 @@ module EquationOfState
       endif
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -1352,8 +1352,10 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
+      real, dimension(psize), intent(out), optional :: cs2
       real, dimension(psize) :: lnTT_, cs2_
       real, dimension(psize) :: lnrho_,ss_
+      real, dimension(psize) :: rho, eth
 !
 !ajwm this test should be done at initialization
 !      if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
@@ -1401,6 +1403,7 @@ module EquationOfState
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
+        if (present(cs2)) call fatal_error('eoscalc_farray', 'cs2 is not implemented. ')
 !
 ! Log rho and Log T
 !
@@ -1440,6 +1443,7 @@ module EquationOfState
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
+        if (present(cs2)) call fatal_error('eoscalc_farray', 'cs2 is not implemented. ')
 !
 ! Log rho or rho and T
 !
@@ -1488,6 +1492,32 @@ module EquationOfState
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
         if (present(ee)) ee=gamma1*cs2_/gamma_m1
         if (present(pp)) pp=gamma1*cs2_*exp(lnrho_)
+        if (present(cs2)) cs2 = cs2_
+!
+      case (irho_eth, ilnrho_eth)
+        select case (psize)
+        case (nx)
+          if (ieosvars == irho_eth) then
+            rho = f(l1:l2,m,n,irho)
+          else
+            rho = exp(f(l1:l2,m,n,ilnrho))
+          endif
+          eth = f(l1:l2,m,n,ieth)
+        case (mx)
+          if (ieosvars == irho_eth) then
+            rho = f(:,m,n,irho)
+          else
+            rho = exp(f(:,m,n,ilnrho))
+          endif
+          eth = f(:,m,n,ieth)
+        case default
+          call fatal_error('eoscalc_farray', 'no such pencil size')
+        endselect
+        if (present(lnrho)) lnrho = log(rho)
+        if (present(lnTT)) lnTT = log(cv1 * eth / rho)
+        if (present(ee)) ee = eth / rho
+        if (present(pp)) pp = gamma_m1 * eth
+        if (present(cs2)) cs2 = gamma * gamma_m1 * eth / rho
 !
       case default
         call fatal_error("eoscalc_farray",'Thermodynamic variable combination not implemented!')
