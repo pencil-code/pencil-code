@@ -679,39 +679,6 @@ else if ($hn =~ psi*) then
   set masternode=psi24
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 #--------------------------------------------------
-else if ($hn =~ sepeli.csc.fi) then
-  echo "Sepeli - CSC, Espoo, Finland"
-  set mpirunops = ''
-  set mpirun = 'mpirun'
-  set npops = "-np $ncpus"
-  set local_disc = 0
-  set one_local_disc = 0
-  set local_binary = 0
-else if ($hn =~ compute-*.local) then
-  echo "Sepeli Nodes - CSC, Espoo, Finland"
-  set mpirunops = "-machinefile `ls -d /tmp/${JOB_ID}*`/machines"
-  set mpirun = 'mpirun'
-  set npops = "-np $ncpus"
-  set local_disc = 0
-  set one_local_disc = 0
-  set local_binary = 0
-#  setenv SCRATCH_DIR $TMPDIR
-#----------------------------------------------
-else if ($hn =~ louhi-login*) then
-  echo "Louhi - CSC, Espoo, Finland"
-  if ( $?PBS_JOBID ) then
-    echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
-  endif
-  set mpirunops = ''
-  set mpirun = 'aprun'
-  set npops = "-n $ncpus"
-  set local_disc = 0
-  set one_local_disc = 0
-  set remote_top     = 1
-  set local_binary = 0
-#----------------------------------------------
 else if ($hn =~ clogin*) then
   echo "Sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
@@ -757,6 +724,22 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche)) then
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
+  echo "Alcyone - University of Helsinki, Finland"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = '--resv-ports'
   set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
@@ -880,17 +863,6 @@ else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   setenv SSH rsh
   setenv SCP rcp
 #--------------------------------------------------------------
-else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ mkorpi || $USER =~ aliljest || $USER =~ mvaisala || $USER =~ fagent)) then
-  echo "Murska - CSC, Espoo, Finland"
-  set mpirunops = '-srun'
-  set mpirun = 'nuripm'
-  set npops = ''
-  set remote_top     = 1
-  set local_disc = 0
-  set one_local_disc = 0
-  set local_binary = 0
-  setenv SSH rsh
-#-------------------------------------------------------------
 else if (($hn =~ c[0-9]*) && ($USER =~ csur || $USER =~ ckandu)) then
   echo "Cetus, Iucaa, India"
   set mpirunops = '-srun'
