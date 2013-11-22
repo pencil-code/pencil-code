@@ -549,6 +549,20 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  original Roberts III flow
+!
+      case ('Roberts-III-orig')
+        if (headtt) print*,'original Roberts-III flow; eps_kinflow=',eps_kinflow
+        fac=ampl_kinflow
+        fac2=ampl_kinflow*eps_kinflow*2.
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=fac2*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)=+fac*sin(kz_uukin*z(n))
+          p%uu(:,3)=+fac*sin(ky_uukin*y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Roberts III flow (from Tilgner 2004)
 !
       case ('Roberts-III')
