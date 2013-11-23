@@ -29,12 +29,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: Tin=5000., rhoin=1., A=0.1
+  real :: Tout=5000., rhoin=1., A=0.1
 ! non-dimensional paramethers
   real :: Ekman=1e-3, Rayleigh=100., Prandtl=1.0, mag_Prandtl=5.0
 !
   namelist /initial_condition_pars/ &
-      Ekman,Rayleigh,Prandtl, mag_Prandtl,Tin,rhoin, A
+      Ekman,Rayleigh,Prandtl, mag_Prandtl,Tout,rhoin, A
 !
   contains
 !***********************************************************************
@@ -76,7 +76,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof
-      real :: rin, rout, DeltaT, chi, eta, nu
+      real :: rin, rout, DeltaT, chi, eta, nu, Bnorm
       real, pointer :: gravx, cp, cv
       integer :: ierr, unit=1, i
 !
@@ -102,11 +102,11 @@ module InitialCondition
 !
 !  setting DeltaT
 !
-      DeltaT=Tin/400.
+      DeltaT=Tout/400.
 !
 !  radial temperature profile
 !
-      TT=Tin-DeltaT*(rout*rin/x(l1:l2)-rin)
+      TT=Tout+DeltaT*(rout*rin/x(l1:l2)-rin)
 !
 !  derivative
 !     
@@ -120,6 +120,16 @@ module InitialCondition
         lnrho(i)=lnrho(i-1)+dlnrhodr(i-1)/dx_1(i-1)
       enddo
 !
+!  Calculate the viscosity and chi
+!
+      nu=sqrt(DeltaT/Tout*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
+      chi=nu/Prandtl
+      eta=nu/mag_Prandtl
+!
+!  normalisation of the magentic field
+!
+      Bnorm=rho0*rhoin*eta
+
 !  loop over the pencils
 !
       do m=m1,m2
@@ -141,27 +151,24 @@ module InitialCondition
 !
           f(l1:l2,m,n,iax) = 0.
           f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
-                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(n))
-          f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(n))
+                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(n))*Bnorm
+          f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(n))*Bnorm
       enddo
       enddo
-!
-!  Calculate the viscosity and chi
-!
-      nu=sqrt(DeltaT/Tin*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
-      chi=nu/Prandtl
-      eta=nu/mag_Prandtl
 
 !
 !  print outs to put in run.in
 !
        if (iproc .eq. root) then
          print*,''
+         print*,'cs2top = ', cs20*(Tout)*cv*gamma*(gamma-1.)
+         print*,'cs2bot = ', cs20*(Tout+DeltaT)*cv*gamma*(gamma-1.)
          print*,'viscosity =', nu
          print*,'rotation rate =', nu/Ekman/Lxyz(1)**2
          print*,'mag. diffusivity =', eta
          print*,'thermal diffusivity =', chi
          print*,'density stratification =',exp(lnrho(1)-lnrho(nx))
+         print*,'B normalization =', Bnorm
          print*,''
        endif
 !
