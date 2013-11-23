@@ -414,14 +414,11 @@ module Shock
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry, &
                          mpiallreduce_max
-      use Sub, only: div, gij, curl_mn
-      use EquationOfState, only: eoscalc
+      use Sub, only: div
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       real, dimension (mx,my,mz) :: tmp
-      real, dimension(nx,3,3) :: aij
-      real, dimension(nx,3) :: bb
       real, dimension (nx) :: penc, penc1
       integer :: imn
       integer :: i,j,k
@@ -439,7 +436,7 @@ module Shock
 !
       call initiate_isendrcv_bdry(f,iux,iuz)
 !
-      a1 = shock_linear / dxmax
+      if (lshock_linear) a1 = shock_linear / dxmax
 !
       do imn=1,ny*nz
 !
@@ -455,20 +452,9 @@ module Shock
         call div(f,iuu,penc)
         f(l1:l2,m,n,ishock) = max(0.0,-penc)
 !
-        linear: if (lshock_linear) then
-          call eoscalc(f, nx, cs2=penc)
-          alfven: if (lmagnetic .and. ldensity .and. ldensity_nolog) then
-            bfield: if (lbfield) then
-              bb = f(l1:l2,m,n,ibx:ibz)
-            else bfield
-              call gij(f, iaa, aij, 1)
-              call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
-            endif bfield
-            bb = bb + spread(B_ext,1,nx)
-            penc = penc + mu01 * sum(bb**2, dim=2) / f(l1:l2,m,n,irho)
-          endif alfven
-          f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + a1 * sqrt(penc)
-        endif linear
+!  Add the linear term if requested
+!
+        if (lshock_linear) f(l1:l2,m,n,ishock) = f(l1:l2,m,n,ishock) + a1 * wave_speed(f)
 !
       enddo
 !
@@ -633,5 +619,53 @@ module Shock
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_shock_profile_simple
+!***********************************************************************
+    function wave_speed(f) result(speed)
+!
+!  Calculate the wave speeds along one pencil.
+!
+!  23-nov-13/ccyang: coded.
+!
+      use EquationOfState, only: eoscalc, rho0
+      use Sub, only: gij, curl_mn
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx) :: speed
+!
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: bb
+      real, dimension(nx) :: b2
+!
+!  Get the sound speed.
+!
+      call eoscalc(f, nx, cs2=speed)
+!
+!  Add the Alfven speed.
+!
+      alfven: if (lmagnetic) then
+!
+        bfield: if (lbfield) then
+          bb = f(l1:l2,m,n,ibx:ibz)
+        else bfield
+          call gij(f, iaa, aij, 1)
+          call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+        endif bfield
+        b2 = sum((bb + spread(B_ext,1,nx))**2, dim=2)
+!
+        density: if (ldensity) then
+          if (ldensity_nolog) then
+            speed = speed + mu01 * b2 / f(l1:l2,m,n,irho)
+          else
+            speed = speed + mu01 * b2 / exp(f(l1:l2,m,n,ilnrho))
+          endif
+        else density
+          speed = speed + mu01 / rho0 * b2
+        endif density
+!
+      endif alfven
+!
+      speed = sqrt(speed)
+!
+    endfunction wave_speed
 !***********************************************************************
 endmodule Shock
