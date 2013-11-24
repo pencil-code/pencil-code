@@ -1293,7 +1293,9 @@ sub check_for_datadir {
                     . "        removing and generating data -> $tmpdir\n";
                 system("rm", "data");
             } else {
-                print "        No data directory; generating data -> $tmpdir\n";
+                if ($debug) {
+                    print "        No data directory; generating data -> $tmpdir\n";
+                }
             }
             system("mkdir -p $tmpdir; ln -s $tmpdir data");
             $created_dir = 1;
