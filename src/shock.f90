@@ -182,24 +182,6 @@ module Shock
 !
     endsubroutine initialize_shock
 !***********************************************************************
-    subroutine read_shock_init_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
-!
-    endsubroutine read_shock_init_pars
-!***********************************************************************
-    subroutine write_shock_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_shock_init_pars
-!***********************************************************************
     subroutine read_shock_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
