@@ -107,7 +107,7 @@ sub notify_visually {
     my $cwd = getcwd();
     if (in_PATH('zenity')) {
         run_silently_in_bg(
-            'zenity', '--info', '--text', "Done $phase in $cwd"
+            'zenity', '--info', '--text', "'Done $phase in $cwd'"
         );
     } elsif (in_PATH('xmessage')) {
         run_silently_in_bg('xmessage', "Done $phase in $cwd");
