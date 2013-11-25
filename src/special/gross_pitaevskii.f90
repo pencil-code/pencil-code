@@ -373,6 +373,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
+      use Diagnostics, only: sum_mn_name
       use Mpicomm
       use Sub
       use Deriv
@@ -546,6 +547,7 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
+      use Diagnostics, only: parse_name
       use Sub
 !
       integer :: iname
