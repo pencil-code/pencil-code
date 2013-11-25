@@ -1312,7 +1312,9 @@ module power_spectrum
     endif
     b1=0
     a2=a1
- 
+!
+    !!print*,'checking lcomplex, oned',lcomplex,oned 
+!
     if (lcomplex) then
       nc=2
     else
@@ -1320,6 +1322,7 @@ module power_spectrum
     endif
     allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
 
+   !! print*,'nc=',nc
 !
 ! Need to initialize
 !
@@ -1355,7 +1358,7 @@ module power_spectrum
 !
 !  Multiply all modes, except the constant mode, by two.
 !
-    spectrumx(2:nk,:)=2*spectrumx(2:nk,:)
+!    spectrumx(2:nk,:)=2*spectrumx(2:nk,:) !commeneted by nishant
 !
 !  Doing fourier spectra in all directions if onedall=T
 !
@@ -1421,11 +1424,14 @@ module power_spectrum
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
           position='append')
       write(1,*) t
+!
       if (lcomplex) then
-        write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
-      else
         write(1,'(1p,8("(",e10.2,",",e10.2,")"))') spectrumx_sum/(nygrid*nzgrid)
+      else
+        write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
       endif
+!
+
 !
       close(1)
     endif
