@@ -1158,6 +1158,8 @@ module power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,icc)
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
+  elseif (sp=='sp') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
   elseif (sp=='hr') then
     a_re=0.
     do m=m1,m2

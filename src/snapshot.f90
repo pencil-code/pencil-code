@@ -316,6 +316,7 @@ module Snapshot
         if (ss_spec)  call powerscl(f,'ss')
         if (cc_spec)  call powerscl(f,'cc')
         if (cr_spec)  call powerscl(f,'cr')
+        if (sp_spec)  call powerscl(f,'sp')
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
         if (oned) then

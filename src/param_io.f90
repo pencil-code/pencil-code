@@ -105,7 +105,7 @@ module Param_IO
       uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
-      TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &
+      TT_spec, ss_spec, cc_spec, cr_spec, sp_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
       lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
