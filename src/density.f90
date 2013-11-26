@@ -44,6 +44,7 @@ module Density
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(nx) :: xmask_den
+  real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, ggamma=impossible
   real :: cdiffrho=0.0, diffrho=0.0
@@ -67,6 +68,7 @@ module Density
   real :: mass_cloud=0.0, T_cloud=0.0, T_cloud_out_rel=1.0, xi_coeff=1.0
   real :: temp_coeff=1.0, dens_coeff=1.0, temp_trans = 0.0
   real :: temp_coeff_out = 1.0
+  real :: rss_coef1=1.0, rss_coef2=1.0
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -87,6 +89,7 @@ module Density
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree=.false.
   logical, target :: lreduced_sound_speed=.false.
+  logical, target :: lscale_to_cs2top=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -111,7 +114,7 @@ module Density
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
-      lreduced_sound_speed
+      lreduced_sound_speed, lscale_to_cs2top
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -126,7 +129,8 @@ module Density
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
-      xblob, yblob, zblob, mass_source_omega
+      xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
+      rss_coef1, rss_coef2
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -519,6 +523,13 @@ module Density
 !
       if (lreduced_sound_speed) then
         call put_shared_variable('reduce_cs2',reduce_cs2,ierr)
+!
+        if (lscale_to_cs2top) then 
+           reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
+        else
+           reduce_cs2_profx=1.
+        endif
+        call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1804,9 +1815,9 @@ module Density
 !
       if (lcontinuity_gas .and. lreduced_sound_speed) then
         if (ldensity_nolog) then
-          density_rhs = - reduce_cs2*(p%ugrho + p%rho*p%divu)
+          density_rhs = - reduce_cs2*reduce_cs2_profx*(p%ugrho + p%rho*p%divu)
         else
-          density_rhs = - reduce_cs2*(p%uglnrho + p%divu)
+          density_rhs = - reduce_cs2*reduce_cs2_profx*(p%uglnrho + p%divu)
         endif
       endif
 !

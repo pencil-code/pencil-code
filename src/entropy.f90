@@ -111,6 +111,7 @@ module Energy
   logical :: lprestellar_cool_iso=.false.
   logical :: lphotoelectric_heating=.false.
   logical, pointer :: lreduced_sound_speed
+  logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
   logical :: lborder_heat_variable=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -928,6 +929,9 @@ module Energy
           call get_shared_variable('reduce_cs2',reduce_cs2,ierr)
           if (ierr/=0) call fatal_error('initialize_energy:',&
                'failed to get reduce_cs2 from density')
+          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
+          if (ierr/=0) call fatal_error('initialize_energy:',&
+               'failed to get lscale_to_cs2top from density')
         endif
       endif
 !
@@ -2703,11 +2707,15 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-!      if (lhydro.and.lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
-           advec_cs2=p%cs2*dxyz_2
-      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) &
-           advec_cs2=reduce_cs2*p%cs2*dxyz_2
+        advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
+        if (lscale_to_cs2top) then
+          advec_cs2=cs2top*dxyz_2
+        else
+          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+        endif
+      endif
       if (headtt.or.ldebug) &
           print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
