@@ -127,11 +127,17 @@ module Special
   namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl, &
                           test_sphere_radius
 !
-! run parameters
-  namelist /gpe_run_pars/ diff_boundary, &
-                          limag_time, &
-                          frame_Ux, test_sphere_radius
+  real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0.
+  real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
+  real, dimension(nx) :: cx_gpe
+  real, dimension(my) :: cy_gpe
+  real, dimension(mz) :: cz_gpe
 !
+! run parameters
+  namelist /gpe_run_pars/ &
+    diff_boundary, limag_time, frame_Ux, test_sphere_radius, &
+    mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
+    V0_gpe, n_gpe, eps_gpe
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -159,6 +165,7 @@ module Special
 !
       call farray_register_pde('psi_real',ipsi_real)
       call farray_register_pde('psi_imag',ipsi_imag)
+      ispecialvar=ipsi_real
 !
 !  Identify CVS/SVN version information.
 !
@@ -180,6 +187,15 @@ module Special
 !!
 !!  Initialize any module variables which are parameter dependent
 !!
+!
+!  cosine functions for GP potential
+!
+      cx_gpe=cos(kx_gpe*x(l1:l2))
+      cy_gpe=cos(ky_gpe*y)
+      cz_gpe=cos(kz_gpe*z)
+!
+!  other stuff
+!
       if (test_sphere_radius > 0.) ltest_sphere=.true.
 !
       if (ltest_sphere) then
@@ -248,6 +264,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
+      use Initcond
       use Mpicomm
       use Sub
 !
@@ -311,6 +328,7 @@ module Special
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_ring(vr1)
           enddo; enddo
+        case ('gaussian-noise'); call gaunoise(ampl,f,ipsi_imag,ipsi_imag)
         case default
           !
           !  Catch unknown values
@@ -380,7 +398,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: pimag, preal, diss, psi2
+      real, dimension (nx) :: pimag, preal, diss, psi2, pot_gpe
       real, dimension (nx) :: del2real, del2imag
       real, dimension (nx) :: drealdx, dimagdx
       real, dimension (nx) :: boundaries
@@ -397,81 +415,85 @@ module Special
         print*,'dspecial_dt: SOLVE dpsi_dt (Gross-Pitaevskii Equation)'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-    preal = f(l1:l2,m,n,ipsi_real)
-    pimag = f(l1:l2,m,n,ipsi_imag)
+      preal = f(l1:l2,m,n,ipsi_real)
+      pimag = f(l1:l2,m,n,ipsi_imag)
 !
 !  calculate dpsi/dx
 !
-     if (frame_Ux /= 0.) then
+      if (frame_Ux /= 0.) then
         call der(f,ipsi_real,drealdx,1)
         call der(f,ipsi_imag,dimagdx,1)
-     endif
+      endif
 !
 !  calculate the position 3 mesh points away from the boundaries
 !  in the positive x, y, and z directions
 !
-     a = 0.5*Lxyz(1)-3*dxmax
-     b = 0.5*Lxyz(2)-3*dxmax
-     c = 0.5*Lxyz(3)-3*dxmax
+      a = 0.5*Lxyz(1)-3*dxmax
+      b = 0.5*Lxyz(2)-3*dxmax
+      c = 0.5*Lxyz(3)-3*dxmax
 !
 !  calculate mask for damping term
 !
-     if (diff_boundary /= 0.) then
-       diss = diff_boundary *((1.0+tanh(x(l1:l2)-a)*tanh(x(l1:l2)+a)) + &
+      if (diff_boundary /= 0.) then
+        diss = diff_boundary *((1.0+tanh(x(l1:l2)-a)*tanh(x(l1:l2)+a)) + &
                    (1.0+tanh(y(m)-b)*tanh(y(m)+b)) + &
                    (1.0+tanh(z(n)-c)*tanh(z(n)+c)))
-     endif
+      elseif (gamma_gpe /=0. ) then
+        diss = gamma_gpe
+      endif
 !
 !  calculate del2(psi)
 !
 !    call der(f, ipsi_real, dpsi)
     !call deriv_z(in_var, dz)
-    call del2(f,ipsi_real,del2real)
-    call del2(f,ipsi_imag,del2imag)
+      call del2(f,ipsi_real,del2real)
+      call del2(f,ipsi_imag,del2imag)
 !
-    psi2 = preal**2 + pimag**2
+      psi2 = preal**2 + pimag**2
 !
 !    if (ltest_sphere) boundaries = sphere_sharp(0.,0.,0.)
 !
-    if (limag_time) then
-      df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-         (0.5 * ((del2real + diss * del2imag) &
+      if (limag_time) then
+        df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+          (0.5 * ((del2real + diss * del2imag) &
            + (1. - psi2) * (preal + diss * pimag))) !* boundaries
 !
-      df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         (0.5 * ((del2imag - diss * del2real) &
+        df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
+          (0.5 * ((del2imag - diss * del2real) &
            + (psi2 - 1.) * (diss * preal - pimag))) !* boundaries
 !
-      if (frame_Ux /= 0.) then
-        df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-           frame_Ux * dimagdx !* boundaries
+        if (frame_Ux /= 0.) then
+          df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+            frame_Ux * dimagdx !* boundaries
 !
-        df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) - &
-           frame_Ux * drealdx !* boundaries
-      endif
-    else
+          df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) - &
+            frame_Ux * drealdx !* boundaries
+        endif
+      else
 !
 !  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
 !  (but use hbar=m=1)
 !
-      df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-         (0.5 * ((diss * del2real - del2imag) &
-           + (1. - psi2) * (diss * preal - pimag))) !*boundaries
+        pot_gpe=mu_gpe+V0_gpe*tanh(n_gpe*(eps_gpe+cx_gpe*cy_gpe(m)*cz_gpe(n)))
 !
-      df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         (0.5 * ((del2real + diss * del2imag) &
-           + (1. - psi2) * (preal + diss * pimag))) !* boundaries
+        df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+          (0.5 * ((diss * del2real - del2imag) &
+           + (pot_gpe - g_gpe*psi2) * (diss * preal - pimag))) !*boundaries
+!
+        df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
+          (0.5 * ((del2real + diss * del2imag) &
+           + (pot_gpe - g_gpe*psi2) * (preal + diss * pimag))) !* boundaries
 !
 !  dpsi/dt = ... +Ux*dpsi/dx
 !
-      if (frame_Ux /= 0.) then
-        df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-           frame_Ux * drealdx !* boundaries
+        if (frame_Ux /= 0.) then
+          df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+            frame_Ux * drealdx !* boundaries
 !
-        df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-           frame_Ux * dimagdx !* boundaries
+          df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
+            frame_Ux * dimagdx !* boundaries
+        endif
       endif
-    endif
 !
 !    rhs = 0.5*(eye+diss) * ( laplacian(in_var) + &
 !                    (1.0-abs(in_var(:,jsta:jend,ksta:kend))**2)*&
@@ -495,8 +517,8 @@ module Special
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      !call keep_compiler_quiet(f)
+      !call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
