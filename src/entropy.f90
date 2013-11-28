@@ -2711,7 +2711,7 @@ module Energy
         advec_cs2=p%cs2*dxyz_2
       if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
         if (lscale_to_cs2top) then
-          advec_cs2=cs2top*dxyz_2
+          advec_cs2=reduce_cs2*cs2top*dxyz_2
         else
           advec_cs2=reduce_cs2*p%cs2*dxyz_2
         endif
