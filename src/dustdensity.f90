@@ -1886,13 +1886,13 @@ module Dustdensity
 ! NB: it is should be changed for the chemistry case
 ! one needs to make the corresponding pencil
 !
-          if (lpscalar_nolog) then
-            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
-          elseif (lpscalar) then
-            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
-          endif
+!          if (lpscalar_nolog) then
+!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
+!          elseif (lpscalar) then
+!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
+!          endif
 !
         enddo
       enddo
