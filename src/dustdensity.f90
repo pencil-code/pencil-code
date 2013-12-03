@@ -1371,7 +1371,7 @@ module Dustdensity
             p%udropav=0.
           else
             p%udropav(:,:)=p%uu(:,:)
-            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc**2
+!            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc(:)**2
           endif
         endif
 ! rhodsum
@@ -1897,13 +1897,17 @@ module Dustdensity
 ! NB: it is should be changed for the chemistry case
 ! one needs to make the corresponding pencil
 !
-          if (lpscalar_nolog) then
-            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
-          elseif (lpscalar) then
-            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
-          endif
+!DM This part is wrongly implemented. Additions to df(:,:,:,ilncc) should not 
+!DM be here. One must create a pencil which contains the rhs of the equation
+!DM below and then add that pencil to df(:,:,:,ilncc) in the passive scalar
+!DM module. I am now commenting this out.
+!          if (lpscalar_nolog) then
+!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
+!          elseif (lpscalar) then
+!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
+!          endif
 !
         enddo
       enddo
