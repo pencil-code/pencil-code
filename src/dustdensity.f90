@@ -1054,7 +1054,7 @@ module Dustdensity
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
       real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
-      integer :: i,k,mm,nn
+      integer :: i,k,mm,nn,ll1,l1p4
 !
       intent(inout) :: f,p
 ! nd
@@ -1296,18 +1296,21 @@ module Dustdensity
           if (dsize(k)>0.) then
           if (.not. ldcore) then
 !
-            if (dsize(k)>8e-6) then
-              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -BB0/(8.*dsize(k)**3))
-            else
-              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
-                                     -BB0/(8.*dsize(k)*8e-6**2))
+!            if (dsize(k)>8e-6) then
+!              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+!                                -BB0/(8.*dsize(k)**3))
+                p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+                                -2.75e-8*0.2/(dsize(k)-4e-6))
+
+!            else
+!              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
+!                                     -BB0/(8.*dsize(k)*8e-6**2))
 !
 !              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)) &
 !                                     -BB0*0.00001/(8.*dsize(k)**3))
 !
 !
-            endif
+!            endif
           endif
           endif
           enddo
@@ -1337,8 +1340,18 @@ module Dustdensity
                    ff_tmp(k)=p%nd(i,k)*dsize(k)  &
                       *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                   else
-                   ff_tmp(k)=p%nd(i,k)*dsize(k)  &
+                    if ((k>1.) .and. (k<ndustspec)) then
+                     ff_tmp(k)=0.25*(p%nd(i,k-1)*dsize(k-1)  &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k-1)/p%ppsat(i))) &
+                      +0.5*(p%nd(i,k)*dsize(k)  &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)))  &
+                      +0.25*(p%nd(i,k+1)*dsize(k+1)  &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i)))
+                    else
+                      ff_tmp(k)=p%nd(i,k)*dsize(k)  &
                       *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
+                    endif
+                    
                   endif
                 endif
               enddo
@@ -1362,6 +1375,8 @@ module Dustdensity
                 do k=1,ndustspec
                   p%dndr(:,k)=-Imr*dndr_tmp(:,k)
                 enddo
+
+!
               endif
             endif
         endif
@@ -1371,7 +1386,7 @@ module Dustdensity
             p%udropav=0.
           else
             p%udropav(:,:)=p%uu(:,:)
-!            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc(:)**2
+!            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc**2
           endif
         endif
 ! rhodsum
@@ -1458,8 +1473,6 @@ module Dustdensity
       elseif (latm_chemistry) then
 !
 !!
-!  nata
-!
 !  Beginning of the atmospheric case
 !
 !  Redistribution over the size in the atmospheric physics case
@@ -1493,33 +1506,9 @@ module Dustdensity
             enddo
           else
             do k=1,ndustspec
-            do i=1,nx
-              tmpl=p%dndr(i,k)
-              if (k<-6) then
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                     - p%udropgnd(:,k) + p%dndr(:,k)
 !
-                  df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
-                     - p%udropgnd(i,k) + p%dndr(i,k) &
-                     + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(5.*dt)
-!
-              elseif (k<-11) then
-!
-                  df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
-                     - p%udropgnd(i,k) + p%dndr(i,k) &
-                     + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(10.*dt)
-!
-              else
-!
-                if (f(l1+i-1,m,n,ind(k))+tmpl*dt<10.) then
-                  df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
-                     - p%udropgnd(i,k) &
-                     + (10.-f(l1+i-1,m,n,ind(k)))/(3.*dt)
-                else
-                  df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
-                     - p%udropgnd(i,k) + p%dndr(i,k)
-                endif
-              endif
-!
-            enddo
             enddo
           endif
 !
@@ -1897,17 +1886,13 @@ module Dustdensity
 ! NB: it is should be changed for the chemistry case
 ! one needs to make the corresponding pencil
 !
-!DM This part is wrongly implemented. Additions to df(:,:,:,ilncc) should not 
-!DM be here. One must create a pencil which contains the rhs of the equation
-!DM below and then add that pencil to df(:,:,:,ilncc) in the passive scalar
-!DM module. I am now commenting this out.
-!          if (lpscalar_nolog) then
-!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
-!          elseif (lpscalar) then
-!            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
-!                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
-!          endif
+          if (lpscalar_nolog) then
+            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
+          elseif (lpscalar) then
+            df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
+                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
+          endif
 !
         enddo
       enddo
@@ -2526,11 +2511,16 @@ module Dustdensity
 !
 !  10-may-10/Natalia: coded
 !
+      use General, only: spline
+ 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp, ff_tmp0
+      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp !, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i
-      integer :: k, i !, ind_tmp=6
+      integer :: k, i, jj, ll0=6 !, ind_tmp=6
+      real, dimension (35) ::  x2, S
+      real, dimension (6) ::  X1, Y1
+      real :: del =0.85
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
@@ -2551,122 +2541,36 @@ module Dustdensity
          do k=1,ndustspec
            if (ldcore) then
              ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
-             ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
-           else
-             ff_tmp(:,k)=p%nd(:,k) &
-                  *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
-             ff_tmp0(:,k)=init_distr(k) &
-                  *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
+!             ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
            endif
          enddo
+!
+              do jj=1,nx
+
+                do k=1,ndustspec
+                if ((k>2.) .and. (k<ndustspec-1))  then
+                 ff_tmp(jj,k)=1./16.*(p%nd(jj,k-2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-2))/dsize(k-2))  &
+                             +2./16.*(p%nd(jj,k-1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-1))/dsize(k-1))  &
+                            +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
+                             +2./16.*(p%nd(jj,k+1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+1))/dsize(k+1)) &
+                             +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
+                else
+                 ff_tmp(jj,k)=p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k)
+                endif
+                enddo
+              enddo
+!
            call deriv_size(ff_tmp,dndr_dr,p)
+
+! boundary onditions:
+
+           if (ndustspec >3) then 
+             dndr_dr(:,ndustspec-2:ndustspec)=0.
+           endif
 !
        endif
 !
     endsubroutine droplet_redistr
-!***********************************************************************
-    subroutine deriv_size_(ff,dff_dr,p)
-!
-!   Calculation of the derivative of the function ff on the size r
-!
-      use Mpicomm, only: stop_it
-      use General, only: spline
-!
-      real, dimension (nx,ndustspec) ::  ff,dff_dr
-      type (pencil_case) :: p
-      real, dimension (60) ::  x2, S
-      integer :: k,i1=1,i2=2,i3=3
-      integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
-      integer :: jmax=20, i,j
-      real :: rr1=0.,rr2=0.,rr3=0., ff_km1,ff_k,ff_kp1
-      real :: nd_km1,nd_k,nd_kp1, maxnd1, maxnd2
-      intent(out) :: dff_dr
-      logical :: case1=.false., case2=.false.
-!
-!df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
-! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
-!
-!
-      i1=1; i2=2; i3=3;
-!
-      rr1=dsize(i1)
-      rr2=dsize(i2)
-      rr3=dsize(i3)
-!
-      dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
-                    - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                    + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
-!
-      do i=1,nx
-      do k=2,ndustspec-1
-!
-       ff_km1=ff(i,k-1)
-       ff_k  =ff(i,k)
-       ff_kp1=ff(i,k+1)
-!
-       nd_km1=p%nd(i,k-1)
-       nd_k=p%nd(i,k)
-       nd_kp1=p%nd(i,k+1)
-!
-       maxnd1=min(nd_k,nd_km1)
-       maxnd2=min(nd_k,nd_kp1)
-!
-       rr1=dsize(k-1)
-       rr2=dsize(k)
-       rr3=dsize(k+1)
-!
-         case1=.false.; case2=.false.
-!
-           if ((nd_k+nd_km1)/2. > 2.*maxnd1) case1=.true.
-           if ((nd_k+nd_kp1)/2. > 2.*maxnd2) case2=.true.
-!
-!         case1=.true.; case2=.true.
-         case1=.false.; case2=.false.
-!
-        if (case1 .or. case2) then
-!
-           do j=1,jmax
-             x2(j)=dsize(k-1)+(j-1)*(dsize(k+1)-dsize(k-1))/(jmax-1)
-           enddo
-!
-           if (k<3) then
-             call  spline(dsize(k-1:k+1),p%nd(i,k-1:k+1),x2,S,3,jmax)
-           elseif (k>ndustspec-3) then
-             call  spline(dsize(k-1:k+1),p%nd(i,k-1:k+1),x2,S,3,jmax)
-           else
-             call  spline(dsize(k-1:k+1),p%nd(i,k-1:k+1),x2,S,3,jmax)
-           endif
-!
-           if (case1) then
-             j=5
-             ff_km1=S(j) &
-                 *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k-1)/p%ppsat(i))/x2(j)
-             rr1=x2(j)
-             if (x2(j)>dsize(k))  call stop_it('problem with spline points1')
-           endif
-!
-           if (case2) then
-             j=15
-             ff_kp1=S(j) &
-                 *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i))/x2(j)
-             rr3=x2(j)
-             if (x2(j)<dsize(k))  call stop_it('problem with spline points2')
-           endif
-!
-        endif
-!
-        dff_dr(i,k) = ff_km1*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                     +ff_k  *(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
-                     +ff_kp1*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
-!
-      enddo
-      enddo
-!
-      dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                          +ff(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                          -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
-!
-    endsubroutine deriv_size_
 !***********************************************************************
     subroutine deriv_size(ff,dff_dr, p)
 !
@@ -2693,16 +2597,16 @@ module Dustdensity
                     - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                     + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
 !
+
       do k=2,ndustspec-1
 !
         rr1=dsize(k-1)
         rr2=dsize(k)
         rr3=dsize(k+1)
-!
+ 
         dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                       +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
                       +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
-!
       enddo
 !
       dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
