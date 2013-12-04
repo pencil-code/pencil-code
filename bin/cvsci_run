@@ -36,7 +36,7 @@ foreach pdir ($dirlist)
 #
   if (-e data) then
       cd data
-      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro
+      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat
   else
       echo "no data directory found"
   endif

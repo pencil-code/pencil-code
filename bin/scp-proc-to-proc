@@ -8,12 +8,14 @@
 #
 #  to copy from here to another machine
 #
-#   scp-proc-to-proc dim.dat $nor50/pencil-code/auger/conv-slab/shear/c1cT_64c .
+#   scp-proc-to-proc dim.dat $nor52/pencil-code/axel/forced/kf8_helical/512_kf3_Pm20c .
+#   scp-proc-to-proc dim.dat $tri/pencil-code/axel/forced/LSrot/256om0a .
+# scp-proc-to-proc dim.dat $tri/pencil-code/illa/forced/rotation/TOm100_b0_th0 .
 #
 #  to copy from another machine to here
 #
-#     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/MRIexp/128d
-#     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/couette/strat128a_mu0.30_g2
+#   scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/MRIexp/128d
+#   scp-proc-to-proc dim.dat . $neo/pencil-code/simon/forced/alpha2_periodic/512_kf20_sig010
 
 #  will copy all var.dat files from current directory to var.dat in
 #  another run directory.
