@@ -1032,8 +1032,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CC=mpicc #(gardar*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(gardar*)
 #LD_MPI= #(gardar*)
-#FFLAGS_DOUBLE=-r8 #(gardar*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(gardar)
+#FFLAGS_DOUBLE=-r8 #(gardar*)
 #LIBMPISUFFIX=#(gardar*)
 ##
 ## Axel on Sanssouci (ifc 9.1)
