@@ -65,18 +65,19 @@ module Radiation
   real, target, dimension (ny,nz,mnu) :: Jrad_yz
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
+  real, dimension (mnu) :: scalefactor_Srad=1.0, kappa_cst=1.0
   real :: arad
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
   real :: tau_bot=0.0, TT_bot=0.0
-  real :: kappa_cst=1.0, kapparho_cst=1.0, kappa_Kconst=1.0
+  real :: kapparho_cst=1.0, kappa_Kconst=1.0
   real :: Srad_const=1.0, amplSrad=1.0, radius_Srad=1.0
   real :: kx_Srad=0.0, ky_Srad=0.0, kz_Srad=0.0
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
   real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.8
-  real :: scalefactor_Srad=1.0, scalefactor_cooling=1.0
+  real :: scalefactor_cooling=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
@@ -446,6 +447,7 @@ module Radiation
 !  given a better name). All rays start with zero intensity.
 !
 !  16-jun-03/axel+tobi: coded
+!   5-dec-13/axel: alterations to allow non-gray opacities
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -468,7 +470,7 @@ module Radiation
 !  Calculate source function and opacity.
 !
         call source_function(f,inu)
-        call opacity(f)
+        call opacity(f,inu)
 !
 !  Do the rest only if we do not do diffusion approximation.
 !  If *either* lrad_cool_diffus *or* lrad_pres_diffus, no rays are computed.
@@ -509,17 +511,19 @@ module Radiation
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
 !  In the paper the directional Q is defined with the opposite sign.
-!  For now, add contributions from all frequencies with the same weight.
+!  Turn this now into heating rate by multiplying with opacity.
+!  This allows the opacity to be frequency-dependent.
 !
-            f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
+            f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
 !
-!  Calculate radiative flux.
-!  For now, add contributions from all frequencies with the same weight.
+!  Calculate radiative flux. Multiply it here by opacity to have the correct
+!  frequency-dependent contributions from all frequencies.
 !
             if (lradflux) then
               do j=1,3
                 k=iFrad+(j-1)
-                f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
+                f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
+                  *(Qrad+Srad)*f(:,:,:,ikapparho)
               enddo
             endif
 !
@@ -1319,6 +1323,7 @@ module Radiation
 !  Add radiative cooling to entropy/temperature equation.
 !
 !  25-mar-03/axel+tobi: coded
+!   5-dec-13/axel: removed opacity multiplicaton to allow non-gray opacities
 !
       use Diagnostics
       use Sub
@@ -1333,12 +1338,8 @@ module Radiation
 !  Add radiative cooling, either from the intensity or in the diffusion
 !  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
-      if (lrad_cool_diffus.or.lrad_pres_diffus) then
-        call calc_rad_diffusion(f,p)
-        cooling=f(l1:l2,m,n,iQrad)
-      else
-        cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
-      endif
+      if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
+      cooling=f(l1:l2,m,n,iQrad)
 !
 !  Possibility of rescaling the radiative cooling term.
 !
@@ -1361,6 +1362,7 @@ module Radiation
         if (lfirst.and.ldt) then
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
+!  This is currently not correct in the non-gray case!
 !
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           do l=1,nx
@@ -1406,11 +1408,13 @@ module Radiation
       integer :: j,k
 !
 !  Radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c.
+!  Moved multiplication with opacity to earlier Frad calculation to
+!  allow opacities to be non-gray.
 !
       if (lradpressure) then
         do j=1,3
           k=iFrad+(j-1)
-          radpressure(:,j)=p%rho1*f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)/c_light
+          radpressure(:,j)=p%rho1*f(l1:l2,m,n,k)/c_light
         enddo
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
@@ -1439,6 +1443,7 @@ module Radiation
 !
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
+!   5-dec-13/axel: alterations to allow non-gray opacities
 !
       use EquationOfState, only: eoscalc
       use Debug_IO, only: output
@@ -1454,7 +1459,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
-          Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad
+          Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
         enddo
         enddo
 !
@@ -1505,7 +1510,7 @@ module Radiation
 !
     endsubroutine source_function
 !***********************************************************************
-    subroutine opacity(f)
+    subroutine opacity(f,inu)
 !
 !  Calculates opacity.
 !
@@ -1514,6 +1519,7 @@ module Radiation
 !
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
+!   5-dec-13/axel: alterations to allow non-gray opacities
 !
       use Debug_IO, only: output
       use EquationOfState, only: eoscalc
@@ -1523,7 +1529,7 @@ module Radiation
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-      integer :: i
+      integer :: i,inu
 !
       select case (opacity_type)
 !
@@ -1547,7 +1553,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
-          f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
+          f(:,m,n,ikapparho)=kappa_cst(inu)*exp(lnrho)
         enddo
         enddo
 !
@@ -1577,7 +1583,7 @@ module Radiation
           rho=exp(lnrho)
           TT=exp(lnTT)
           if (knee_temp_opa==0.0) then
-            f(:,m,n,ikapparho)=rho*kappa_cst* &
+            f(:,m,n,ikapparho)=rho*kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa
           else
@@ -1586,10 +1592,10 @@ module Radiation
 !  temperature.
 !
             profile=1.0-cubic_step(TT,knee_temp_opa,width_temp_opa)
-            f(:,m,n,ikapparho)=profile*rho*kappa_cst* &
+            f(:,m,n,ikapparho)=profile*rho*kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa + &
-                (1.0-profile)*rho*kappa_cst* &
+                (1.0-profile)*rho*kappa_cst(inu)* &
                 (knee_temp_opa/ref_temp_opa)**expo_temp_opa* &
                 (TT/knee_temp_opa)**expo_temp_opa_buff
           endif
