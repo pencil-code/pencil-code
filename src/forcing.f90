@@ -409,6 +409,16 @@ module Forcing
         profz_hel=1.
 !
 !  turn off forcing intensity above x=x0, and
+        profz_hel=1.
+!
+! turn on forcing in the bulk of the convection zone
+     elseif (iforce_profile=='forced_convection') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
+        profz_hel=1.
+!
+!  turn off forcing intensity above x=x0, and
 !  cosy profile of helicity
 !
       elseif (iforce_profile=='surface_x_cosy') then
@@ -875,6 +885,7 @@ module Forcing
 !
 !  10-sep-01/axel: coded
 !   6-feb-13/MR: can discard of wavevectors [0,0,kz] by lavoid_yxmean
+!  06-dec-13/nishant: made kkx etc allocatable
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
@@ -893,8 +904,7 @@ module Forcing
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
       logical, dimension (3), save :: extent
-      integer, parameter :: mk=3000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf
@@ -909,11 +919,7 @@ module Forcing
           open(9,file='k.dat',status='old')
           read(9,*) nk,kav
           if (lroot) print*,'forcing_irro: average k=',kav
-          if (nk>mk) then
-            if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
-            print*,'nk=',nk,'mk=',mk
-            call mpifinalize
-          endif
+          allocate(kkx(nk),kky(nk),kkz(nk))
           read(9,*) (kkx(ik),ik=1,nk)
           read(9,*) (kky(ik),ik=1,nk)
           read(9,*) (kkz(ik),ik=1,nk)
@@ -1064,6 +1070,7 @@ module Forcing
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !  23-feb-10/axel: added helicity profile with finite second derivative.
 !  13-jun-13/axel: option of symmetry of forcing function about z direction
+!  06-dec-13/nishant: made kkx etc allocatable
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1085,9 +1092,7 @@ module Forcing
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2,coef3
       logical, dimension (3), save :: extent
-!      integer, parameter :: mk=3000
-      integer, parameter :: mk=6000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,j2f
@@ -1108,11 +1113,7 @@ module Forcing
           open(9,file='k.dat',status='old')
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
-          if (nk>mk) then
-            if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
-            print*,'nk=',nk,'mk=',mk
-            call mpifinalize
-          endif
+          allocate(kkx(nk),kky(nk),kkz(nk))
           read(9,*) (kkx(ik),ik=1,nk)
           read(9,*) (kky(ik),ik=1,nk)
           read(9,*) (kkz(ik),ik=1,nk)
@@ -1600,6 +1601,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !  The forcing function is now normalized to unity (also for |relhel| < 1).
 !
 !  30-jan-11/axel: adapted from forcing_hel and added z-dependent scaling of k
+!  06-dec-13/nishant: made kkx etc allocatable
 !
       use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
@@ -1620,8 +1622,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2,coef3
       logical, dimension (3), save :: extent
-      integer, parameter :: mk=6000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,j2f
@@ -1642,11 +1643,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
           open(9,file='k.dat',status='old')
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_hel_kprof: average k=',kav
-          if (nk>mk) then
-            if (lroot) print*,'forcing_hel_kprof: mk in forcing_hel_kprof is set too small'
-            print*,'nk=',nk,'mk=',mk
-            call mpifinalize
-          endif
+          allocate(kkx(nk),kky(nk),kkz(nk))
           read(9,*) (kkx(ik),ik=1,nk)
           read(9,*) (kky(ik),ik=1,nk)
           read(9,*) (kkz(ik),ik=1,nk)
@@ -2024,6 +2021,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !  22-sep-08/dhruba: adapted from forcing_hel
 !   6-oct-09/MR: according to Axel, this routine is now superseded by forcing_hel and should be deleted
+!  06-dec-13/nishant: made kkx etc allocatable
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -2041,8 +2039,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2
       logical, dimension (3), save :: extent
-      integer, parameter :: mk=3000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf
@@ -2061,11 +2058,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         open(9,file='k.dat',status='old')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel_both: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*,'forcing_hel_both: mk in forcing_hel is set too small'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
-        endif
+        allocate(kkx(nk),kky(nk),kkz(nk))
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
@@ -3235,6 +3228,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  add helical forcing function, using a set of precomputed wavevectors
 !
 !  10-apr-00/axel: coded
+!  06-dec-13/nishant: made kkx etc allocatable
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -3251,8 +3245,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
-      integer, parameter :: mk=3000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
@@ -3265,11 +3258,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         open(9,file='k.dat',status='old')
         read(9,*) nk,kav
         if (lroot) print*,'force_hel_noshear: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*,'force_hel_noshear: dimension mk in forcing_hel is insufficient'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
-        endif
+        allocate(kkx(nk),kky(nk),kkz(nk))
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
@@ -3781,6 +3770,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       use Mpicomm
       use Sub
 !
+!  06-dec-13/nishant: made kkx etc allocatable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: force1,force2,force_vec
       real, dimension (nx) :: ruf,rho
@@ -3789,8 +3780,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real :: kx01,ky1,kz1,kx02,ky2,kz2
       real :: mulforce_vec,irufm
       real, dimension (1) :: fsum_tmp,fsum
-      integer, parameter :: mk=3000
-      real, dimension(mk), save :: kkx,kky,kkz
+      real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik1,ik2,ik
@@ -3801,12 +3791,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
         open(9,file='k.dat',status='old')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel_smooth: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*, &
-              'forcing_hel_smooth: dimension mk in forcing_hel_smooth is insufficient'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
-        endif
+        allocate(kkx(nk),kky(nk),kkz(nk))
         read(9,*) (kkx(ik),ik=1,nk)
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
