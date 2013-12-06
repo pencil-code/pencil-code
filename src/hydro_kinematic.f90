@@ -381,6 +381,7 @@ module Hydro
 !                   for which pencils are calculated, default: all
 !   21-sep-13/MR  : returned to pencil mask as parameter lpenc_loc
 !   20-oct-13/MR  : Glen Roberts flow w.r.t. x and z added
+!   06-dec-13/MR  : error message for eps_kinflow=0 in Roberts flow IV added
 !
       use Diagnostics
       use General
@@ -595,6 +596,9 @@ module Hydro
 !
       case ('Roberts-IV')
         if (headtt) print*,'Roberts-IV flow; eps_kinflow=',eps_kinflow
+        if (eps_kinflow==0.) &
+          call fatal_error('hydro_kinematic: kinflow = Roberts IV', &
+                           'eps_kinflow=0. ')
         fac=sqrt(2./eps_kinflow)*ampl_kinflow
         fac2=sqrt(eps_kinflow)*ampl_kinflow
 ! uu
