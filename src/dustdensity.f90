@@ -2517,7 +2517,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp !, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i
-      integer :: k, i, jj, ll0=6 !, ind_tmp=6
+      integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
       real, dimension (35) ::  x2, S
       real, dimension (6) ::  X1, Y1
       real :: del =0.85
@@ -2565,7 +2565,9 @@ module Dustdensity
 ! boundary onditions:
 
            if (ndustspec >3) then 
-             dndr_dr(:,ndustspec-2:ndustspec)=0.
+              kk1=ndustspec-2
+              kk2=ndustspec
+             dndr_dr(:,kk1:kk2)=0.
            endif
 !
        endif
