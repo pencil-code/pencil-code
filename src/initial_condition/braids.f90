@@ -16,7 +16,7 @@ module InitialCondition
   use Mpicomm
   use Messages
   use Streamlines
-  use Fixed_point
+  use Fixed_point ! module includes declaration of array 'fixed_points'
   use Boundcond ! for the core boundary communication
 !
   implicit none
@@ -29,7 +29,7 @@ module InitialCondition
 ! braid_shift_x = right shift of the braiding configuration in x-direction
 ! braid_shift_y = right shift of the braiding configuration in y-direction
 ! l_sigma = length of the twist region
-! steepnes = steepnes of the braiding
+! steepness = steepness of the braiding
 ! B_bkg = strength of the background field in z-direction
 ! word = sequence of the braid group
 ! prof = the amplitude profile across the tube
@@ -42,7 +42,7 @@ module InitialCondition
 !
   real :: ampl = 1.0, width_tube = 0.3, braid_margin = -1.
   real :: braid_shift_x = 0., braid_shift_y = 0.
-  real :: l_sigma = 0.3, steepnes = 1.0  
+  real :: l_sigma = 0.3, steepness = 1.0  
   real :: B_bkg = 0.0
   character (len=labellen) :: prof='gaussian'
   character (len=labellen) :: word = "AA"
@@ -53,7 +53,7 @@ module InitialCondition
 !
   namelist /initial_condition_pars/ &
     ampl,width_tube,braid_margin,braid_shift_x,braid_shift_y, &
-    l_sigma,steepnes,B_bkg,word,prof, &
+    l_sigma,steepness,B_bkg,word,prof, &
 !   blob variables
     n_blobs,xc,yc,zc,blob_sgn,l_blob,blob_scale
 !
@@ -116,22 +116,22 @@ module InitialCondition
 !    
     real, dimension (mx,my,mz,mfarray) :: f
 !        
-    real :: distance_tubes ! distance between the flux tubes
-    real :: l_straight ! length of the regions with a straight magnetic field
-    real :: a(5) ! the coefficients for the rotation polynomial
+    real :: distance_tubes  ! distance between the flux tubes
+    real :: l_straight      ! length of the regions with a straight magnetic field
+    real :: a(5)            ! the coefficients for the rotation polynomial
 !    
-    real :: phi ! the rotation angle for the braid
-    real :: phi_offset ! auxiliary variable for the rotation
-    real :: z_start ! auxiliary variable for the creation of the braid
-    integer :: rotation_sign ! sign of the rotation in the braid
-    real :: rotation_center(2) ! the center of the rotation for the braid
+    real    :: phi                 ! the rotation angle for the braid
+    real    :: phi_offset          ! auxiliary variable for the rotation
+    real    :: z_start             ! auxiliary variable for the creation of the braid
+    integer :: rotation_sign       ! sign of the rotation in the braid
+    real    :: rotation_center(2)  ! the center of the rotation for the braid
 !    
     integer :: word_len, idx, idx_strand
     character (len=len_trim(word)) :: wordn ! the trimmed word
 !
 !   keeps track of the current position of the strand
     integer :: strand_position
-!   position of the other strand in the braid
+!   position of the neighboring strand in the braid
     integer :: other_position, ierr
     integer :: braid_num ! auxiliary variable for the braid position
 !
@@ -142,19 +142,18 @@ module InitialCondition
     real, dimension(3) :: tube_pos, circle_pos, tangent, normal
 !   working variables for the strands
     integer :: n_strands, ascii_code
-    real, dimension(3) :: new_bb
+    real, dimension(3) :: new_bb ! magnetic field of the braid
 !
 !   The next variables are used for the uncurling.
     integer :: l, j, ju, k
     real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
 !
 !   In case field line tracing is applied, use this array.
-!   The last dimension is used for the following:
-!   2 for the initial seed position (x0,y0)
-!   3 for the current position in 3d space
-!   1 for the total length
-!   1 for the integrated quantity
-!     real, dimension (nx*ny,7) :: tracers
+!   The last axis is used for the following:
+!   1, 2    for the initial seed position (x0,y0)
+!   3, 4, 5 for the current position in 3d space
+!   6       for the streamline length
+!   7       for the integrated quantity
     real, pointer, dimension (:,:) :: tracers
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
@@ -165,7 +164,7 @@ module InitialCondition
     integer :: proc_idx
     integer, dimension (MPI_STATUS_SIZE) :: status
 !
-!   array with indices of fixed points to discard (double and too close ones)
+!   array with indices of fixed points to discard (doubles and too close ones)
     integer :: discard(1000)
 !
     real :: F_L ! auxiliary to make H=A.B gauge-independent
@@ -175,7 +174,7 @@ module InitialCondition
       allocate(vv(nx,ny,nz,3))
     endif
 !
-!   check the word
+!   check the braid word
     wordn = word
     word_len = len(wordn)
     if (verify(wordn, 'ABCDEFGHabcdefgh') >= word_len) then
@@ -200,24 +199,22 @@ module InitialCondition
 !
 !   compute the distance between the braids
     l_straight = (Lz - word_len*l_sigma) / (word_len+1)
-    if (l_straight <= 0.) then
+    if (l_straight <= 0) then
       call fatal_error("braids", "distance between braids is negative, check l_sigma")
     endif
 !
     if (braid_margin < 0) braid_margin = 0.5*Lx/n_strands
     if (braid_margin > Lx/2.) &
-        call fatal_error("braids", "braid margin is larger then Lx/2")
+        call fatal_error("braids", "braid margin is larger than Lx/2")
 !
     distance_tubes = (Lx-2*braid_margin)/(n_strands-1)
 !
 !   clear the magnetic field to zero
-!     f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.
-!     f(1:l2+nghost,1:m2+nghost,1:n2+nghost,iax:iaz) = 0.
     f(:,:,:,iax:iaz) = 0.
 !
 !
 !   set the coefficients for the rotation polynomial
-    a(1) = steepnes
+    a(1) = steepness
     a(2) = 0
     a(3) = -(a(1)*l_sigma + 5*l_sigma*a(1) - 15*pi) / (3*l_sigma*(l_sigma/2.)**2)
     a(4) = 0      
@@ -226,8 +223,8 @@ module InitialCondition
 !   Calculate the minimum step size of the curve parameters
 !   to avoid discretization issues, like mesh points without magnetic field
     delta_tube_param = min(dx, dy, dz)/2
-!   correct for the braid steepnes
-!     delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes * 8)
+!   correct for the braid steepness
+!     delta_tube_param = delta_tube_param * l_sigma / (steepness * pi * distance_tubes * 8)
     delta_tube_param = delta_tube_param * l_sigma / (1 * pi * distance_tubes * 8)
     delta_circle_radius = delta_tube_param*8
     delta_circle_param = delta_circle_radius/(width_tube/2.)
@@ -277,7 +274,7 @@ module InitialCondition
                   else if (prof == 'constant') then
                     new_bb = tangent*ampl
                   endif
-!                 Avoid issues in spots with high curvature.
+!                 Avoid issues in areas with high curvature.
                   if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
                       (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
                       f(l,m,n,iax:iaz) = new_bb
@@ -399,7 +396,7 @@ module InitialCondition
                     else if (prof == 'constant') then
                       new_bb = tangent*ampl
                     endif
-!                   Avoid issues in spots with high curvature.
+!                   Avoid issues in areas with high curvature.
                     if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
                         (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
                         f(l,m,n,iax:iaz) = new_bb
@@ -550,9 +547,8 @@ module InitialCondition
       if (int_q == 'curlyA') then
         call get_fixed_points(f,tracers,vv)
 !       communicate the fixed points to proc0
-!         MPI_BARRIER(MPI_comm_world, ierr)
+        call MPI_BARRIER(MPI_comm_world, ierr)
         if (iproc == 0) then
-!           allocate(fixed_points_all(1000,3))
           fixed_points_all(1:fidx,:) = fixed_points(1:fidx,:)
 !         receive the fixed_points from the other cores
           fidx_all = fidx
@@ -595,14 +591,10 @@ module InitialCondition
           do l=1,fidx_all
             if (discard(l) == 0) then
               write(1) fixed_points_all(l,:)
-!               write(*,*) "writing ", fixed_points_all(l,:)
-            else
-!               write(*,*) "discarding ", fixed_points_all(l,:)
             endif
           enddo
           close(1)
 !
-!           deallocate(fixed_points_all)
         else
           call MPI_SEND(fidx, 1, MPI_integer, 0, MERGE_FIXED, MPI_comm_world, ierr)
           if (ierr /= MPI_SUCCESS) &
