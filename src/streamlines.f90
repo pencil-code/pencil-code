@@ -28,7 +28,7 @@ module Streamlines
   integer, dimension (MPI_STATUS_SIZE) :: status
   integer :: request, flag, receive = 0
 !
-  real, public :: ttracers
+  real, public :: ttracers  ! time of the tracer calculation
   integer, public :: ntracers
 ! Time value to be written together with the tracers.
   real :: ttrace_write
@@ -80,7 +80,7 @@ module Streamlines
 !***********************************************************************
   subroutine get_grid_pos(phys_pos, grid_pos, n_int, outside)
 !
-! Determines the grid cell in this core for the physical location.
+! Determines the grid cell in this core for the physical location 'phys_pos'.
 !
 ! 13-feb-12/simon: coded
 !
@@ -163,7 +163,7 @@ module Streamlines
     grid_pos(:,3) = grid_pos(:,3) - nz*ipz
 !
     if ((n_int == 0) .and. (outside == 0)) write(*,*) iproc, &
-        "error: n_int == 0", phys_pos, delta, dz/(2-2.**(-15))
+        "error: n_int == 0: ", phys_pos, delta, dz/(2-2.**(-15))
 !
   endsubroutine get_grid_pos
 !***********************************************************************
@@ -301,11 +301,11 @@ module Streamlines
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
-    real, pointer, dimension (:,:,:,:) :: vv
+    real, pointer, dimension (:,:,:,:) :: vv   ! vector field which is beaing traced
     integer :: n_tracers, tracer_idx, j, ierr, proc_idx
-!   the "borrowed" vector from the other core
+!   the "borrowed" vector from the adjacent core
     real, dimension (3+mfarray) :: vvb
-!   the vector from the other adjacent grid points
+!   the vector from the adjacent grid points
     real, dimension (8,3+mfarray) :: vv_adj
 !   the interpolated vector from the adjacent value
     real, dimension (3+mfarray) :: vv_int
@@ -343,7 +343,6 @@ module Streamlines
 !       create a receive request for the core communication
         do
           if (receive == 0) then
-!           create a receive request
             grid_pos_b(:) = 0
             call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
             if (ierr /= MPI_SUCCESS) then
@@ -401,7 +400,7 @@ module Streamlines
             vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
           endif
         enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
         x_single = tracers(tracer_idx,3:5) + dh*vv_int(1:3)
 !
 !       (b) Two steps with half stepsize:
@@ -432,7 +431,7 @@ module Streamlines
             vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
           endif
         enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
         x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv_int(1:3)
 !
         call get_grid_pos(x_half,grid_pos,n_int,outside)
@@ -447,7 +446,7 @@ module Streamlines
             vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
           endif
         enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        call interpolate_vv(x_half,grid_pos,vv_adj,n_int,vv_int)
         x_mid = x_half + 0.25*dh*vv_int(1:3)
 !
         call get_grid_pos(x_mid,grid_pos,n_int,outside)
@@ -462,7 +461,7 @@ module Streamlines
             vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
           endif
         enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
         x_double = x_half + 0.5*dh*vv_int(1:3)
         fb = vv_int(4:)
 !
