@@ -125,6 +125,7 @@ module Magnetic
   real :: eta_jump=0.0, damp=0., two_step_factor=1.
   real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
+  real :: znoise_int=impossible,znoise_ext=impossible
   real :: mix_factor=0.
   real :: RFPradB=1., RFPradJ=1.
   real :: th_spot=PI/4
@@ -193,7 +194,7 @@ module Magnetic
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
-      tau_relprof,&
+      tau_relprof, znoise_int, znoise_ext, &
       lbx_ext_global,lby_ext_global,lbz_ext_global
 !
 ! Run parameters
@@ -1339,6 +1340,9 @@ module Magnetic
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
         case ('gaussian-noise-zprof')
           tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
+          call gaunoise(tmp,f,iax,iaz)
+        case ('gaussian-noise-zprof2')
+          tmp=amplaa(1)*0.5*(tanh((z-znoise_int)/0.05)-tanh((z-znoise_ext)/0.05))
           call gaunoise(tmp,f,iax,iaz)
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
