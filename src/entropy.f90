@@ -3297,9 +3297,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
-          diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
+          diffus_chi=diffus_chi+(gamma*chi+chi_t*chit_prof)*dxyz_2
         else
-          diffus_chi=diffus_chi+(chi+chi_t)*dxyz_2
+          diffus_chi=diffus_chi+(chi+chi_t*chit_prof)*dxyz_2
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -4320,7 +4320,7 @@ module Energy
 !    gamma*chix*del2ss.
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
+        diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
