@@ -98,9 +98,11 @@ module Magnetic
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
+  real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
   real, dimension(nx) :: xmask_mag
+  real, dimension(nz) :: zmask_mag
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
@@ -194,7 +196,7 @@ module Magnetic
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
-      tau_relprof, znoise_int, znoise_ext, &
+      tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global
 !
 ! Run parameters
@@ -275,7 +277,7 @@ module Magnetic
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
-      k_relprof,lmagneto_friction,numag, &
+      k_relprof,lmagneto_friction,numag, magnetic_zaver_range,&
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
@@ -557,6 +559,8 @@ module Magnetic
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
   integer :: idiag_brmsx=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the magnetic_xaver_range
+  integer :: idiag_brmsz=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
+                                ! DIAG_DOC: the magnetic_zaver_range
   Integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$
@@ -845,10 +849,28 @@ module Magnetic
         endif
       endif
 !
+!  Compute mask for z-averaging where z is in magnetic_zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      if (n1 == n2) then
+        zmask_mag = 1.
+      else
+         if (z(n) >= magnetic_zaver_range(1).and.z(n) <= magnetic_zaver_range(2)) then
+          zmask_mag = 1.
+        else
+          zmask_mag = 0.
+        endif
+        magnetic_zaver_range(1) = max(magnetic_zaver_range(1), xyz0(3))
+        magnetic_zaver_range(2) = min(magnetic_zaver_range(2), xyz1(3))
+        zmask_mag = zmask_mag*Lxyz(3)/(magnetic_zaver_range(2) - magnetic_zaver_range(1))
+      endif
+!
 !  debug output
 !
       if (lroot.and.ip<14) then
         print*,'xmask_mag=',xmask_mag
+        print*,'zmask_mag=',zmask_mag
       endif
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -1967,7 +1989,7 @@ module Magnetic
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
-          idiag_brmsx/=0 .or.&
+          idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
@@ -3510,6 +3532,7 @@ module Magnetic
           itype_name(idiag_brmss)=ilabel_sum_sqrt
         endif
         if (idiag_brmsx/=0) call sum_mn_name(p%b2*xmask_mag,idiag_brmsx,lsqrt=.true.)
+        if (idiag_brmsz/=0) call sum_mn_name(p%b2*zmask_mag(n),idiag_brmsz,lsqrt=.true.)
         if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
         if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
         if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
@@ -6932,7 +6955,7 @@ module Magnetic
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0; idiag_bmxy_rms=0
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
         idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
-        idiag_brmsx=0
+        idiag_brmsx=0; idiag_brmsz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
@@ -7001,6 +7024,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
         call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
         call parse_name(iname,cname(iname),cform(iname),'brmsx',idiag_brmsx)
+        call parse_name(iname,cname(iname),cform(iname),'brmsz',idiag_brmsz)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'bxmin',idiag_bxmin)
         call parse_name(iname,cname(iname),cform(iname),'bymin',idiag_bymin)
