@@ -81,8 +81,10 @@ module Hydro
   real, dimension (3) :: uu_const=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real, dimension(nx) :: xmask_hyd
+   real, dimension(nz) :: zmask_hyd
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
+  real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   integer :: nb_rings=0
@@ -128,7 +130,7 @@ module Hydro
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
-      amp_factor,kx_uu_perturb,llinearized_hydro
+      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range
 !
 !  Run parameters.
 !
@@ -190,7 +192,7 @@ module Hydro
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, & 
-      lpropagate_borderuu
+      lpropagate_borderuu, hydro_zaver_range
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -211,6 +213,8 @@ module Hydro
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_xaver_range
+  integer :: idiag_urmsz=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
+                                ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
@@ -779,10 +783,28 @@ module Hydro
         endif
       endif
 !
+!  Compute mask for z-averaging where z is in hydro_zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      if (n1 == n2) then
+        zmask_hyd = 1.
+      else
+        if (z(n) >= hydro_zaver_range(1).and.z(n) <= hydro_zaver_range(2)) then
+          zmask_hyd = 1.
+        else
+          zmask_hyd = 0.
+        endif
+        hydro_zaver_range(1) = max(hydro_zaver_range(1), xyz0(3))
+        hydro_zaver_range(2) = min(hydro_zaver_range(2), xyz1(3))
+        zmask_hyd = zmask_hyd*Lxyz(3)/(hydro_zaver_range(2) - hydro_zaver_range(1))
+      endif
+!
 !  debug output
 !
       if (lroot.and.ip<14) then
         print*,'xmask_hyd=',xmask_hyd
+        print*,'zmask_hyd=',zmask_hyd
       endif
 !
 !  Register an extra aux slot for uut if requested. This is needed
@@ -1704,7 +1726,7 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
-          idiag_urmsh/=0 .or. idiag_urmsx/=0) lpenc_diagnos(i_u2)=.true.
+          idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
@@ -2453,6 +2475,7 @@ module Hydro
         else
         endif
         if (idiag_urmsx/=0)   call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
+        if (idiag_urmsz/=0)   call sum_mn_name(p%u2*zmask_hyd(n),idiag_urmsz,lsqrt=.true.)
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
@@ -3796,6 +3819,7 @@ module Hydro
         idiag_urms=0
         idiag_durms=0
         idiag_urmsx=0
+        idiag_urmsz=0
         idiag_umax=0
         idiag_uzrms=0
         idiag_uzrmaxs=0
@@ -4051,6 +4075,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'durms',idiag_durms)
         call parse_name(iname,cname(iname),cform(iname),'urmsx',idiag_urmsx)
+        call parse_name(iname,cname(iname),cform(iname),'urmsz',idiag_urmsz)
         call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
         call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
