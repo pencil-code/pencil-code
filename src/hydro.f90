@@ -790,11 +790,11 @@ module Hydro
       if (n1 == n2) then
         zmask_hyd = 1.
       else
-        if (z(n) >= hydro_zaver_range(1).and.z(n) <= hydro_zaver_range(2)) then
+        where (z(n1:n2) >= hydro_zaver_range(1) .and. z(n1:n2) <= hydro_zaver_range(2))
           zmask_hyd = 1.
-        else
+        elsewhere
           zmask_hyd = 0.
-        endif
+        endwhere 
         hydro_zaver_range(1) = max(hydro_zaver_range(1), xyz0(3))
         hydro_zaver_range(2) = min(hydro_zaver_range(2), xyz1(3))
         zmask_hyd = zmask_hyd*Lxyz(3)/(hydro_zaver_range(2) - hydro_zaver_range(1))
@@ -2475,7 +2475,7 @@ module Hydro
         else
         endif
         if (idiag_urmsx/=0)   call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
-        if (idiag_urmsz/=0)   call sum_mn_name(p%u2*zmask_hyd(n),idiag_urmsz,lsqrt=.true.)
+        if (idiag_urmsz/=0)   call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)

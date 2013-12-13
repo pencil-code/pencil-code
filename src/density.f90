@@ -44,7 +44,7 @@ module Density
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(nx) :: xmask_den
-  real, dimension(nx) :: zmask_den
+  real, dimension(nz) :: zmask_den
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
@@ -303,11 +303,11 @@ module Density
       if (n1 == n2) then
         zmask_den = 1.
       else
-        if (z(n) >= density_zaver_range(1).and.z(n) <= density_zaver_range(2)) then
+        where (z(n1:n2) >= density_zaver_range(1) .and. z(n1:n2) <= density_zaver_range(2))
           zmask_den = 1.
-        else
+        elsewhere
           zmask_den = 0.
-        endif
+        endwhere
         density_zaver_range(1) = max(density_zaver_range(1), xyz0(3))
         density_zaver_range(2) = min(density_zaver_range(2), xyz1(3))
         zmask_den = zmask_den * Lxyz(3) / (density_zaver_range(2) - density_zaver_range(1))
@@ -2079,7 +2079,7 @@ module Density
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
         if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
-        if (idiag_rhomzmask/=0)call sum_mn_name(p%rho*zmask_den(n),idiag_rhomzmask)
+        if (idiag_rhomzmask/=0)call sum_mn_name(p%rho*zmask_den(n-n1+1),idiag_rhomzmask)
         if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
         if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_vol/=0)      call integrate_mn_name(unitpencil,idiag_vol)

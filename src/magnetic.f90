@@ -856,11 +856,11 @@ module Magnetic
       if (n1 == n2) then
         zmask_mag = 1.
       else
-         if (z(n) >= magnetic_zaver_range(1).and.z(n) <= magnetic_zaver_range(2)) then
+        where (z(n1:n2) >= magnetic_zaver_range(1) .and. z(n1:n2) <= magnetic_zaver_range(2))
           zmask_mag = 1.
-        else
+        elsewhere
           zmask_mag = 0.
-        endif
+        endwhere
         magnetic_zaver_range(1) = max(magnetic_zaver_range(1), xyz0(3))
         magnetic_zaver_range(2) = min(magnetic_zaver_range(2), xyz1(3))
         zmask_mag = zmask_mag*Lxyz(3)/(magnetic_zaver_range(2) - magnetic_zaver_range(1))
@@ -3532,7 +3532,7 @@ module Magnetic
           itype_name(idiag_brmss)=ilabel_sum_sqrt
         endif
         if (idiag_brmsx/=0) call sum_mn_name(p%b2*xmask_mag,idiag_brmsx,lsqrt=.true.)
-        if (idiag_brmsz/=0) call sum_mn_name(p%b2*zmask_mag(n),idiag_brmsz,lsqrt=.true.)
+        if (idiag_brmsz/=0) call sum_mn_name(p%b2*zmask_mag(n-n1+1),idiag_brmsz,lsqrt=.true.)
         if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
         if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
         if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
