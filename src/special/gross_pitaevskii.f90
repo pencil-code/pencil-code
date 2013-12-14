@@ -112,7 +112,7 @@ module Special
   integer, parameter :: nboundary_points = 3000
 !
   type (boundary_point), dimension(nboundary_points) :: boundary_pnts
-  integer :: nboundary_pnts = 0
+  integer :: nboundary_pnts=0, nvortices=2, vortex_quantization=1
 !
   logical :: ltest_sphere = .false.
   logical :: limag_time = .false.
@@ -121,17 +121,19 @@ module Special
   real :: ampl = 0.000
   real :: frame_Ux = 0.
   real :: test_sphere_radius = 0.
-  character(len=50) :: initgpe = 'constant'
-!
-! input parameters
-  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl, &
-                          test_sphere_radius
-!
-  real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0.
+  real :: mu_gpe=1., g_gpe=1., gamma_gpe=0., V0_gpe=0., radius_gpe=1.
   real :: kx_gpe=6., ky_gpe=6., kz_gpe=6., n_gpe=10., eps_gpe=.5
   real, dimension(nx) :: cx_gpe
   real, dimension(my) :: cy_gpe
   real, dimension(mz) :: cz_gpe
+  character(len=50) :: initgpe = 'constant'
+!
+! input parameters
+  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl, &
+    nvortices, vortex_quantization, &
+    mu_gpe, g_gpe, gamma_gpe, kx_gpe, ky_gpe, kz_gpe, &
+    V0_gpe, n_gpe, eps_gpe, radius_gpe, &
+    test_sphere_radius
 !
 ! run parameters
   namelist /gpe_run_pars/ &
@@ -147,6 +149,9 @@ module Special
 !! other variables (needs to be consistent with reset list below)
 !!
    integer :: i_modpsim=0
+   integer :: i_Egpe1=0
+   integer :: i_Egpe2=0
+   integer :: i_Egpe3=0
 !!
 !
   contains
@@ -266,9 +271,13 @@ module Special
 !
       use Initcond
       use Mpicomm
+      use General, only: random_number_wrapper
       use Sub
 !
+      integer, parameter :: mvortices=100
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (4*mvortices) :: tmp
+      integer :: ivortices, jvortices
 !
       intent(inout) :: f
 !
@@ -283,6 +292,7 @@ module Special
      ! type (line_param), parameter :: vl4 = line_param(-3.0,-3.0,-0.0,33.0, 1.0)
       type (ring_param) :: vr1
      ! type (line_param) :: vl1
+
       vl1 = line_param( 0.0, vortex_spacing*0.5,ampl,33.0, 1.0)
       vl3 = line_param( 0.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
       vl2 = line_param( -20.0, vortex_spacing*0.5,ampl,33.0, 1.0)
@@ -295,8 +305,16 @@ module Special
       select case (initgpe)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('constant', '0');
+          !f(:,:,:,ipsi_real) = 1./sqrt(2.)
+          !f(:,:,:,ipsi_imag) = 1./sqrt(2.)
           f(:,:,:,ipsi_real) = 1.
-          f(:,:,:,ipsi_imag) = 1.
+          f(:,:,:,ipsi_imag) = 0.
+        case ('potential');
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipsi_real) = 1.- &
+              V0_gpe*exp(-(x(l1:l2)**2+y(m)**2)/radius_gpe**2)/g_gpe
+            f(l1:l2,m,n,ipsi_imag) = 0.
+          enddo; enddo
         case ('vortex-line');
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_line(vl0)
@@ -306,6 +324,21 @@ module Special
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = complex_mult(vortex_line(vl1), &
                                                vortex_line(vl3))
           enddo; enddo
+        case ('vortices');
+          if (nvortices>mvortices) call fatal_error("gross_pitaevskii","init_special")
+          call random_number_wrapper(tmp)
+          tmp=(tmp-.5)*10.
+          jvortices=0
+          do ivortices=1,nvortices
+            vl1 = line_param(tmp(jvortices+1),tmp(jvortices+2),+ampl,33.0, 1.0)
+            !vl2 = line_param(tmp(jvortices+3),tmp(jvortices+4),-ampl,33.0,-1.0)
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
+              complex_mult (f(l1:l2,m,n,ipsi_real:ipsi_imag), &
+                !complex_mult(vortex_line(vl1),vortex_line(vl2)))
+                vortex_line(vl1))
+            enddo; enddo
+          enddo
         case ('sphere');
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real) = imaged_sphere(0.,0.,0.,1)
@@ -398,11 +431,12 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: pimag, preal, diss, psi2, pot_gpe
-      real, dimension (nx) :: del2real, del2imag
+      real, dimension (nx,3) :: gpreal, gpimag
+      real, dimension (nx) :: pimag, preal, diss, psi2, pot_gpe, pot_tot
+      real, dimension (nx) :: del2real, del2imag, gpreal2, gpimag2
       real, dimension (nx) :: drealdx, dimagdx
       real, dimension (nx) :: boundaries
-      real :: a, b, c
+      real :: a, b, c, del2prefactor=1.
       type (pencil_case) :: p
 !
 !
@@ -451,16 +485,24 @@ module Special
 !
       psi2 = preal**2 + pimag**2
 !
+      !pot_gpe=V0_gpe*tanh(n_gpe*(eps_gpe+cx_gpe*cy_gpe(m)*cz_gpe(n)))
+      !pot_gpe=V0_gpe*exp(-((x(l1:l2)-t)**2+y(m)**2)/radius_gpe**2)
+      pot_gpe=V0_gpe*(x(l1:l2)**2+y(m)**2)
+!
+      pot_tot=pot_gpe+g_gpe*psi2-mu_gpe
+!
 !    if (ltest_sphere) boundaries = sphere_sharp(0.,0.,0.)
 !
       if (limag_time) then
         df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-          (0.5 * ((del2real + diss * del2imag) &
-           + (1. - psi2) * (preal + diss * pimag))) !* boundaries
+          (del2prefactor * ((del2real + diss * del2imag) &
+           - pot_tot * (preal + diss * pimag))) !*boundaries
+           !+ (1. - psi2) * (preal + diss * pimag))) !* boundaries
 !
         df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-          (0.5 * ((del2imag - diss * del2real) &
-           + (psi2 - 1.) * (diss * preal - pimag))) !* boundaries
+          (del2prefactor * ((del2imag - diss * del2real) &
+           - pot_tot * (diss * preal - pimag))) !* boundaries
+           !+ (psi2 - 1.) * (diss * preal - pimag))) !* boundaries
 !
         if (frame_Ux /= 0.) then
           df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
@@ -474,15 +516,13 @@ module Special
 !  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
 !  (but use hbar=m=1)
 !
-        pot_gpe=mu_gpe+V0_gpe*tanh(n_gpe*(eps_gpe+cx_gpe*cy_gpe(m)*cz_gpe(n)))
-!
         df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-          (0.5 * ((diss * del2real - del2imag) &
-           + (pot_gpe - g_gpe*psi2) * (diss * preal - pimag))) !*boundaries
+          (del2prefactor * ((diss * del2real - del2imag) &
+           - pot_tot * (diss * preal - pimag))) !*boundaries
 !
         df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-          (0.5 * ((del2real + diss * del2imag) &
-           + (pot_gpe - g_gpe*psi2) * (preal + diss * pimag))) !* boundaries
+          (del2prefactor * ((del2real + diss * del2imag) &
+           - pot_tot * (preal + diss * pimag))) !* boundaries
 !
 !  dpsi/dt = ... +Ux*dpsi/dx
 !
@@ -514,6 +554,15 @@ module Special
           call sum_mn_name(sqrt(psi2),i_modpsim)
 ! see also integrate_mn_name
         endif
+        if (i_Egpe1/=0) then
+          call grad(f,ipsi_real,gpreal)
+          call grad(f,ipsi_imag,gpimag)
+          call dot2_mn(gpreal,gpreal2)
+          call dot2_mn(gpimag,gpimag2)
+          call sum_mn_name(.5*(gpreal2+gpimag2),i_Egpe1)
+        endif
+        if (i_Egpe2/=0) call sum_mn_name(pot_gpe*psi2,i_Egpe2)
+        if (i_Egpe3/=0) call sum_mn_name(.5*g_gpe*psi2**2,i_Egpe3)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
@@ -584,16 +633,18 @@ endsubroutine read_special_run_pars
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        i_modpsim=0
+        i_modpsim=0; i_Egpe1=0; i_Egpe2=0; i_Egpe3=0
       endif
 !!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'modpsim',i_modpsim)
+        call parse_name(iname,cname(iname),cform(iname),'Egpe1',i_Egpe1)
+        call parse_name(iname,cname(iname),cform(iname),'Egpe2',i_Egpe2)
+        call parse_name(iname,cname(iname),cform(iname),'Egpe3',i_Egpe3)
       enddo
 !!
 !!  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_modpsim=',i_modpsim
         write(3,*) 'ipsi_real=',ipsi_real
         write(3,*) 'ipsi_imag=',ipsi_imag
       endif
@@ -641,8 +692,8 @@ endsubroutine read_special_run_pars
       call get_r(vl%x0, vl%y0, vl%amp, vl%ll, vort_r)
       call get_theta(vl%x0, vl%y0, vl%amp, vl%ll, vl%sgn, vort_theta)
 !
-      vortex_line(:,1) = amp(vort_r) * cos(vort_theta)
-      vortex_line(:,2) = amp(vort_r) * sin(vort_theta)
+      vortex_line(:,1) = amp(vort_r) * cos(vortex_quantization*vort_theta)
+      vortex_line(:,2) = amp(vort_r) * sin(vortex_quantization*vort_theta)
 !
     endfunction vortex_line
 !***********************************************************************
@@ -778,7 +829,8 @@ endsubroutine read_special_run_pars
     real, parameter :: c1 = -0.7
     real, parameter :: c2 = 1.15
 !
-    amp = 1.0 - exp(c1*vort_r**c2)
+    !amp = 1.0 - exp(c1*vort_r**c2)
+    amp = vort_r/sqrt(2./g_gpe+vort_r**2)
 !
   endfunction amp
 !***********************************************************************

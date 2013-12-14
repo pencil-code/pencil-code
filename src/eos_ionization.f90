@@ -48,16 +48,16 @@ module EquationOfState
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
-  integer :: l
+  integer :: l,icp
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
 ! input parameters
-  namelist /eos_init_pars/ xHe,yMetals,yHacc
+  namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 ! run parameters
-  namelist /eos_run_pars/ xHe,yMetals,yHacc
+  namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Moved here from Density.f90
 !ajwm  Completely irrelevant to eos_ionization but density and entropy need
 !ajwm  reworking to be independent of these things first
@@ -65,7 +65,7 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp = .false.
+  logical :: lcalc_cp = .false., lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
@@ -138,6 +138,7 @@ module EquationOfState
 !
       use General
       use Mpicomm, only: stop_it
+      use Sub, only: register_report_aux
 !
       real :: mu1yHxHe
 !
@@ -169,6 +170,11 @@ module EquationOfState
       else
         xHe_term=0
       endif
+!
+!  pressure and cp as optional auxiliary variable
+!
+      if (lpp_as_aux) call register_report_aux('pp',ipp)
+      if (lcp_as_aux) call register_report_aux('cp',icp)
 !
       if (lroot.and.ip<14) then
         print*,'initialize_eos: reference values for ionization'
@@ -357,10 +363,15 @@ module EquationOfState
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
-!  02-04-06/tony: coded
+!  02-apr-06/tony: coded
 !
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
+!
+!  pp pencil if lpp_as_aux
+!
+      if (lpp_as_aux) lpenc_requested(i_pp)=.true.
+      if (lcp_as_aux) lpenc_requested(i_cp1tilde)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -399,7 +410,7 @@ module EquationOfState
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  02-04-06/tony: coded
+!  02-apr-06/tony: coded
 !
       use Sub
 !
@@ -407,7 +418,7 @@ module EquationOfState
       type (pencil_case) :: p
       integer :: i
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
@@ -464,6 +475,11 @@ module EquationOfState
       endif
 !
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+!
+!  pressure and cp as optional auxiliary pencils
+!
+      if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
+      if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp1tilde
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
@@ -786,7 +802,7 @@ module EquationOfState
 !
 !   Calculate thermodynamical quantities
 !
-!   2-feb-03/axel: simple example coded
+!    2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to

@@ -739,8 +739,16 @@ module Density
 !  use code to plot EoS
 !
         case ('lnrho_vs_lnT')
+          if (ilnTT==0) call fatal_error("init_lnrho","ilnTT==0")
           f(:,:,:,ilnrho)=spread(spread(y,1,mx),3,mz)
           f(:,:,:,ilnTT)=spread(spread(x,2,my),3,mz)
+!
+!  use code to plot EoS
+!
+        case ('lnrho_vs_ss')
+          if (iss==0) call fatal_error("init_lnrho","iss==0")
+          f(:,:,:,ilnrho)=spread(spread(y,1,mx),3,mz)
+          f(:,:,:,iss)=spread(spread(x,2,my),3,mz)
 !
 !  Noise, but just x-dependent.
 !

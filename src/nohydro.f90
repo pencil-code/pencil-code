@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3)
-! PENCILS PROVIDED del2u(3)
+! PENCILS PROVIDED del2u(3), curlo(3)
 !
 !***************************************************************
 module Hydro
@@ -257,6 +257,8 @@ module Hydro
       if (lpencil(i_ugu)) p%ugu=0.0
 ! del2u
       if (lpencil(i_del2u)) p%del2u=0.0
+! curlo
+      if (lpencil(i_curlo)) p%curlo=0.0
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !

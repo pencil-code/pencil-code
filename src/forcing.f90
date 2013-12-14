@@ -614,6 +614,10 @@ module Forcing
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
           profx_ampl1(l-l1+1)=ampl1_ff*bessj(1,k1bessel0*x(l))
         enddo
+      elseif (iforcing_cont=='gaussian-z') then
+        profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)*ampl_ff
+        profy_ampl=exp(-.5*y**2/radius_ff**2)
+        profz_ampl=exp(-.5*z**2/radius_ff**2)
       elseif (iforcing_cont=='fluxring_cylindrical') then
         if (lroot) print*,'forcing_cont: fluxring cylindrical'
       elseif (iforcing_cont=='counter_centrifugal') then
@@ -4519,6 +4523,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.0
           force(:,2)=profx_ampl1
           force(:,3)=profx_ampl
+!
+!  Gaussian blob in the z direction
+!
+        case('gaussian-z')
+          force(:,1)=0.0
+          force(:,2)=0.0
+          force(:,3)=profx_ampl*profy_ampl(m)*profz_ampl(n)
 !
 !  fluxring_cylindrical
 !

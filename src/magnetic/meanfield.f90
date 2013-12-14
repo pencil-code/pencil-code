@@ -631,7 +631,7 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: alpha_total
+      real, dimension (nx) :: alpha_total, rr, pp, pp0, spiral
       real, dimension (nx) :: meanfield_etat_tmp
       real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
       real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact, Beq21
@@ -833,6 +833,13 @@ module Magnetic_meanfield
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x(l1:l2)-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
+        case ('z/H*exp(-z2/2h2)'); alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)
+        case ('z/H*exp(-z2/2h2)*spiral')
+          rr=sqrt(x(l1:l2)**2+y(m)**2)
+          pp=atan2(y(m),x(l1:l2))
+          pp0=2.*alog(rr)
+          spiral=sin((pp-pp0))**2
+          alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*spiral
         case ('z/H*erfunc(H-z)'); alpha_tmp=z(n)/xyz1(3)*erfunc((xyz1(3)-abs(z(n)))/alpha_width)
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
         case ('nothing');

@@ -73,7 +73,7 @@ module Hydro
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
-  real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
+  real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4
   integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
@@ -90,7 +90,7 @@ module Hydro
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
-      eps_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11
+      eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -151,6 +151,7 @@ module Hydro
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: exp_kinflow1
       logical :: lstarting
 !
 !  Compute preparatory functions needed to assemble
@@ -161,6 +162,13 @@ module Hydro
 !  Spoke-like differential rotation profile.
 !  The minus sign is needed for equatorward acceleration.
 !
+      case ('Brandt')
+        if (lcylindrical_coords) then
+          exp_kinflow1=1./exp_kinflow
+          profx_kinflow1=+1./(1.+(x(l1:l2)/uphi_rbot)**exp_kinflow)**exp_kinflow1
+          profy_kinflow1=-1.
+          profz_kinflow1=+1.
+        endif
       case ('spoke-like')
         profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
         profy_kinflow1=-1.5*(5.*cos(y)**2-1.)
@@ -397,7 +405,7 @@ module Hydro
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
-      real, dimension(nx) :: rone, argx
+      real, dimension(nx) :: rone, argx, pom2
       real, dimension(nx) :: psi1,psi2,psi3,psi4,rho_prof
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
@@ -405,6 +413,7 @@ module Hydro
       real :: Balpha
       real :: ro
       real :: theta,theta1
+      real :: exp_kinflow1,exp_kinflow2
       integer :: modeN, ell
 !
 !  Choose from a list of different flow profiles.
@@ -1209,6 +1218,34 @@ module Hydro
           local_Omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- &
               ((pi/2-y(m))/gcs_psizero**2))
           p%uu(:,3)= local_Omega*x(l1:l2)*sinth(m)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Brandt rotation curve (cylindrical geometry)
+!
+      case ('Brandt')
+        if (lcylindrical_coords) then
+          if (headtt) print*,'Brandt (cylindrical coords)',ampl_kinflow
+! uu
+          if (lpenc_loc(i_uu)) then
+            local_Omega=ampl_kinflow*profx_kinflow1
+            p%uu(:,1)=0.
+            p%uu(:,2)=local_Omega*x(l1:l2)
+            p%uu(:,3)=0.
+          endif
+        else
+          if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
+            exp_kinflow1=1./exp_kinflow
+            exp_kinflow2=.5*exp_kinflow
+            pom2=x(l1:l2)**2+y(m)**2
+            profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+! uu
+          if (lpenc_loc(i_uu)) then
+            local_Omega=ampl_kinflow*profx_kinflow1
+            p%uu(:,1)=-local_Omega*y(m)
+            p%uu(:,2)=+local_Omega*x(l1:l2)
+            p%uu(:,3)=0.
+          endif
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
