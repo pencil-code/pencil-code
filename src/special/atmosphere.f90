@@ -72,7 +72,7 @@ module Special
   real :: dsize0_max=0.,dsize0_min=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
-  logical :: llog_distribution=.true.
+  logical :: llog_distribution=.true., lACTOS=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
@@ -84,7 +84,8 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
-      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
+      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
+      lACTOS
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -517,7 +518,7 @@ module Special
       integer :: j,  sz_l_x,sz_r_x,ll1,ll2
       real :: dt1, lnTT_ref
       real :: del
-      logical :: lzone=.false., lzone_left, lzone_right
+      logical :: lzone=.false., lzone_left, lzone_right, lnoACTOS=.true.
 !
        dt1=1./(3.*dt)
        del=0.1
@@ -532,7 +533,29 @@ module Special
          ll1=l1
          ll2=l2
 !
-        if (lbuffer_zone_T) then
+        if ((lbuffer_zone_T) .and. (lACTOS)) then
+         do j=1,2
+!
+         if (j==1) then
+           ll1=sz_r_x;   ll2=l2
+           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
+           if (lzone_right) then
+             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+              -(f(ll1:ll2,m,n,ilnTT)-f(ll1,m,n,ilnTT))*dt1
+           endif
+         elseif (j==2) then
+           ll1=l1;   ll2=sz_l_x
+           if (x(l1)==xyz0(1)) lzone_left=.true.
+           if (lzone_left) then
+               df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+                 -(f(ll1:ll2,m,n,ilnTT)-f(ll2,m,n,ilnTT))*dt1
+           endif
+         endif
+!
+!
+        enddo
+        
+        elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
         do j=1,2
 !
          if (j==1) then
@@ -670,20 +693,15 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-!      real, dimension (nx) :: fmax, rmax,ppsf_max
       real, dimension (nx,ndustspec) :: f_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
-!      real :: ff_tmp_sum
-!      logical :: lstop
       integer :: k,i
 !
         if (lpscalar) then
            do i=1,nx
-!            ff_tmp_sum=0.
           do k=1,ndustspec
            ff_tmp(k)= (p%ppwater(i)-p%ppsf(i,k)) &
               *f(l1+i-1,m,n,ind(k))/dsize(k)
-!           ff_tmp_sum=ff_tmp_sum + ff_tmp(k)
           enddo
 !
            ttt= spline_integral(dsize,ff_tmp)
@@ -692,7 +710,6 @@ module Special
            df(l1+i-1,m,n,ilncc) = df(l1+i-1,m,n,ilncc) &
                - p%rho(i)/Ntot*(Dwater*m_w/Rgas/p%TT(i)/rho_w) &
                *ttt(ndustspec)
-!                *ff_tmp_sum
           enddo
 !
         endif
@@ -774,21 +791,10 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
-      real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
-      real, dimension (4) :: ds_tmp, ff_tmp2
-      integer :: k,i,i1,i2,i3,j1,j2,j3
-      character (len=20) :: output_file="./data/nd.out"
-      character (len=20) :: output_file2="./data/nd2.out"
-      character (len=20) :: output_file3="./data/nd3.out"
-      character (len=20) :: output_file4="./data/nd4.out"
-      integer :: file_id=123
+      integer :: k,i,i1,i2,i3
       integer :: j
       real, dimension (ndustspec) :: S,x2
 !
-      j1=1
-      j2=2
-      j3=3
-
 !
       if (.not. ldustdensity_log) then
       do i1=l1,l2
@@ -796,35 +802,7 @@ module Special
       do i3=n1,n2
 !
          do k=1,ndustspec
-!
-            if (f(i1,i2,i3,ind(k))<1.) f(i1,i2,i3,ind(k))=1.
-!
-!             if (f(i1,i2,i3,ind(k))<0.) then
-!               j=k
-
-!               do while (f(i1,i2,i3,ind(j))<0.)
-!                 j=j-1
-!                 ff_tmp2(2)=f(i1,i2,i3,ind(j))
-!                 ds_tmp(2)=dsize(j)
-!                 ff_tmp2(1)=f(i1,i2,i3,ind(j-1))
-!                ds_tmp(1)=dsize(j-1)
-!               enddo
-!               do while (f(i1,i2,i3,ind(j))<0.)
-!                 j=j+1
-!                 ff_tmp2(3)=f(i1,i2,i3,ind(j))
-!                 ds_tmp(3)=dsize(j)
-!                 ff_tmp2(4)=f(i1,i2,i3,ind(j+1))
-!                 ds_tmp(4)=dsize(j+1)
-!               enddo
-!
-!
-!               x2(1)=ds_tmp(1); x2(2)=dsize(k); x2(3)=ds_tmp(4)
-!               call  spline(ds_tmp,ff_tmp2,x2,S,4,3)
-!
-!               f(i1,i2,i3,ind(k))=(ff_tmp2(2)+ff_tmp2(3))/2.
-!             endif
-!
-!
+          if (f(i1,i2,i3,ind(k))<1e-6) f(i1,i2,i3,ind(k))=1e-6
             if (ldcore) then
               do i=1, ndustspec0
                 if (f(i1,i2,i3,idcj(k,i))<1) f(i1,i2,i3,idcj(k,i))=1.
@@ -832,18 +810,13 @@ module Special
             endif
           enddo
 !
-!         f(i1,i2,i3,ind(j3))=f(i1,i2,i3,ind(j3+2))
-!         f(i1,i2,i3,ind(j2))=f(i1,i2,i3,ind(j3+3))
-!         f(i1,i2,i3,ind(j1))=f(i1,i2,i3,ind(j3+4))
-
-!
       enddo
       enddo
       enddo
       endif
 !
-!      call dustspec_normalization_(f)
-      call write_0d_result(f)
+      call dustspec_normalization_(f)
+!      call write_0d_result(f)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -1203,39 +1176,6 @@ module Special
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
-   !     if (vr==imd(1)) then
-   !      f(l1,m1:m2,n1:n2,imd)=value1
-   !!       do k=1,ndustspec
-   !        f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
-   !                *dds(k)/m_w &
-   !                *exp(f(l1,m1:m2,n1:n2,ilnrho)) &
-   !                *nd0*exp(-((dsize(k)-r0)/delta)**2)
-   !       enddo
-   !     endif
-!       if (vr==ichemspec(ind_H2O)) then
-!          psat=6.035e12*exp(-5938./exp(f(l1,m1:m2,n1:n2,ilnTT)))
-!          f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=psat/PP*dYw
-!          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-!       endif
-!
-!
-!      if (vr==iuud(1)+3) then
-!        f(l1-1,:,:,ind)=0.2*(9*f(l1,:,:,ind)-4*f(l1+2,:,:,ind)  &
-!                       -3*f(l1+3,:,:,ind)+3*f(l1+4,:,:,ind))
-!        f(l1-2,:,:,ind)=0.2*(15*f(l1,:,:,ind)-2*f(l1+1,:,:,ind)  &
-!                       -9*f(l1+2,:,:,ind)-6*f(l1+3,:,:,ind)+ 7*f(l1+4,:,:,ind))
-!        f(l1-3,:,:,ind)=1./35.*(157*f(l1,:,:,ind)-33*f(l1+1,:,:,ind)-108*f(l1+2,:,:,ind)  &
-!                     -68*f(l1+3,:,:,ind)+87*f(l1+4,:,:,ind))
-!      endif
-!      if (vr==iuud(1)+4) then
-!        f(l1-1,:,:,imd)=0.2*(  9*f(l1,:,:,imd)-4*f(l1+2,:,:,imd)-3*f(l1+3,:,:,imd)  &
-!                       +3*f(l1+4,:,:,imd))
-!        f(l1-2,:,:,imd)=0.2*( 15*f(l1,:,:,imd)-2*f(l1+1,:,:,imd)  &
-!                       -9*f(l1+2,:,:,imd)-6*f(l1+3,:,:,imd)+ 7*f(l1+4,:,:,imd))
-!        f(l1-3,:,:,imd)=1./35.*(157*f(l1,:,:,imd)-33*f(l1+1,:,:,imd)-108*f(l1+2,:,:,imd)  &
-!                     -68*f(l1+3,:,:,imd)+87*f(l1+4,:,:,imd))
-!      endif
-!
       elseif (bc%location==iBC_X_TOP) then
 ! top boundary
         if (vr==ind(1)) then
@@ -1502,8 +1442,14 @@ subroutine bc_satur_x(f,bc)
 !********************************************************************
    subroutine set_init_parameters(Ntot_,BB0_,dsize,init_distr, init_distr2)
 !
+
+     use General, only:  spline
+
       real, dimension (ndustspec), intent(out) :: dsize,init_distr, init_distr2
       real, dimension (ndustspec) ::  lnds
+      real, dimension (9) ::  X,Y
+      real, dimension (5) ::  X_tmp, Y_tmp
+       real, dimension (1) ::   x2, s
        real :: Ntot_, BB0_
       integer :: i,k
       real :: ddsize
@@ -1514,16 +1460,45 @@ subroutine bc_satur_x(f,bc)
          dsize(i+1)=exp(lnds(i+1))
        enddo
 !
-       do k=1,ndustspec
-          if (r0 /= 0.) then
-            init_distr(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-              *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))+10.
-          endif
-          if (r02 /= 0.) then
-            init_distr2(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-            *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))+10.
-          endif
-        enddo
+            if (lACTOS) then
+!
+!        X(1)=0.;X(2)=.5; X(3)=1.; X(4)=1.5; X(5)=2.;
+!        X(6)=2.5; X(7)=3.; X(8)=3.5; X(9)=4.
+!       
+!        Y(1)=1.;Y(2)=2.; Y(3)=7.; Y(4)=15.; Y(5)=39.;
+!        Y(6)=74.; Y(7)=40.; Y(8)=10.; Y(9)=2.
+!
+!               call  spline(X,Y,dsize,init_distr,9,nchemspec)
+!
+!              open(143,file="part_new.out")
+              do k=1,ndustspec
+!                read (142,fmt='(f12.6)'), disze(k), init_distr(k)
+!                 i=1
+!                 do while (X(i)<dsize(k)) 
+!                  i=i+1
+!                 enddo
+!                    X_tmp(1:5)=X(i-1:i+3)
+!                    Y_tmp(1:5)=Y(i-1:i+3) 
+!               call  spline(X_tmp,Y_tmp,x2,s,5,1)
+
+                init_distr(k)= 70.7811*exp(-0.5*((2.*dsize(k)/1e-4-4.98564)/0.995159)**2)+0.0962425
+              enddo
+!              close(143)
+            else
+              if (r0 /= 0.) then
+                do k=1,ndustspec
+                  init_distr(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                    *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
+                enddo
+              endif
+            endif
+            
+            if (r02 /= 0.) then
+              do k=1,ndustspec
+                init_distr2(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                  *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))!+0.0001
+              enddo
+            endif
 !
         Ntot_=Ntot
         BB0_=BB0
