@@ -113,6 +113,7 @@ module InitialCondition
 !  to avoid discretation issues, like mesh points without magnetic field
 !
       delta_knot_param = 1./max(domain_width,domain_depth,domain_height) * 3./n_foil
+!       delta_knot_param = min(dx, dy, dz)/2
       delta_circle_param = delta_knot_param/(width_ring/2.)
       delta_circle_radius = delta_circle_param
 !
@@ -180,15 +181,17 @@ module InitialCondition
 !
 !  Find the corresponding mesh point to this position.
 !
-            l = nint((circle_pos(1)+xshift)/(2.*pi)*domain_width*xscale + domain_width/2.0)
-            m = nint((circle_pos(2)+yshift)/(2.*pi)*domain_depth*yscale + domain_depth/2.0)
-            n = nint((circle_pos(3)+zshift)/(2.*pi)*domain_height*zscale + domain_height/2.0)
+            l = nint((circle_pos(1)*xscale+xshift)/(2*pi)*nxgrid + nxgrid/2.) + 1 - nx*ipx
+            m = nint((circle_pos(2)*yscale+yshift)/(2*pi)*nygrid + nygrid/2.) + 1 - ny*ipy
+            n = nint((circle_pos(3)*zscale+zshift)/(2*pi)*nzgrid + nzgrid/2.) + 1 - nz*ipz
 !
 !  Write the magnetic field B.
 !  Note that B is written in the f-array where A is stored. This is
 !  corrected further in the code.
 !
-            f(l,m,n,iax:iaz) = tangent*ampl
+            if ((l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) .eqv. .false.) then
+                f(l,m,n,iax:iaz) = tangent*ampl
+            endif
             circle_param = circle_param + delta_circle_param
           enddo
           circle_radius = circle_radius + delta_circle_radius
