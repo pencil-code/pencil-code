@@ -436,7 +436,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
-      real, dimension (mx) ::  PP_data, rhow_data
+      real, dimension (mx) ::  PP_data, rhow_data, TT_data
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -521,11 +521,22 @@ module InitialCondition
         do i=1,mx 
           read(143,'(29f15.6)'),input_data
 !          print*,input_data(1),i
-          f(i,:,:,ilnTT)=alog(input_data(10)+272.15)
-
+          TT_data=input_data(10)+272.15
+!
           PP_data(i)=input_data(7)*1e3   !dyn
-          rhow_data(i)=input_data(16)*1e-6
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/1e-2  !g/cm3
+!     print*,PP_data(i),i
+!
+          rhow_data(i)=input_data(16)*1e-6/1e-2 !g/cm3
+        enddo
+      close(143)
+ 
+        open(143,file="ACTOS_new.out")
+        do i=l1,l2 
+          read(143,'(29f15.6)'),input_data
+!          print*,input_data(1),i
+          f(i,:,:,ilnTT)=alog(TT_data(i))
+!
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)  !g/cm3
         enddo
       close(143)
 !
@@ -546,13 +557,13 @@ module InitialCondition
        enddo
        air_mass=1./sum_Y
 !
-         do i=1,mx
+         do i=l1,l2
            f(i,:,:,ilnrho)=alog(PP_data(i)/(k_B_cgs/m_u_cgs)*&
            air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
          enddo
 !
        if (iter<4) then
-         do i=1,mx
+         do i=l1,l2
            f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/exp(f(i,:,:,ilnrho))
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
@@ -560,7 +571,8 @@ module InitialCondition
 !
        enddo
 !
-      if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(:,:,:,ilnTT))), minval(exp(f(:,:,:,ilnTT)))
+      if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
+                                                     minval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT)))
       if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
       if (lroot) print*, 'local:Air density, g/cm^3:'
       if (lroot) print '(E10.3)',  maxval(exp(f(:,:,:,ilnrho))), minval(exp(f(:,:,:,ilnrho)))
