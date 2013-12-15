@@ -1256,10 +1256,8 @@ module Dustdensity
           if (lnoaerosol) then
             p%udrop=0.
           else
-!            if (.not. ldustdensity) then
               p%udrop(:,:,k)=p%uu(:,:)
               p%udrop(:,1,k)=p%udrop(:,1,k)-1e6*dsize(k)**2
-!            endif
           endif
         endif
 !
@@ -1381,14 +1379,14 @@ module Dustdensity
             endif
         endif
 ! udropav
-        if (lpencil(i_udropav)) then
-          if (lnoaerosol) then
-            p%udropav=0.
-          else
-            p%udropav(:,:)=p%uu(:,:)
+!        if (lpencil(i_udropav)) then
+!          if (lnoaerosol) then
+!            p%udropav=0.
+!          else
+!            p%udropav(:,:)=p%uu(:,:)
 !            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc**2
-          endif
-        endif
+!          endif
+!        endif
 ! rhodsum
         if (lpencil(i_rhodsum)) then
           do k=1,ndustspec
