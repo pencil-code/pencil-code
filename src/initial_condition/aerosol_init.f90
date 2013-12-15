@@ -56,13 +56,14 @@ module InitialCondition
      logical :: linit_temperature=.false., lcurved_xz=.false.
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true., lcurved_xy=.false.
+     logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
-     ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O
+     ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write
 !
   contains
 !***********************************************************************
@@ -105,9 +106,6 @@ module InitialCondition
          enddo
         endif
         if ((init_uz /=0.) .and. (nzgrid>1)) then
-!         do i=1,mz
-!           f(:,:,i,iux)=cos(Period*PI*z(i)/Lxyz(3))*init_ux
-!         enddo
          bs=9.81e2*(293.-290.)/293.
          do i=1,mx
             f(i,:,:,iuz)=-sqrt(Lxyz(1)*bs) &
@@ -121,12 +119,6 @@ module InitialCondition
               +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
               *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
               /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
-
-!            if (x(j)>X_wind) then
-!              f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
-!            else
-!              f(j,:,:,iuy)=f(j,:,:,iuy)
-!            endif
           enddo
         endif
 !
@@ -145,19 +137,6 @@ module InitialCondition
         if ((init_uz /=0.) .and. (X_wind == impossible)) then
           f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
         endif
-
-!
-!        if (init_uz /=0.) then
-!          do i=1,mz
-!          if (z(i)>0) then
-!            f(:,:,i,iuz)=f(:,:,i,iuz) &
-!                        +init_uz*(2.*z(i)/Lxyz(3))**2
-!          else
-!            f(:,:,i,iuz)=f(:,:,i,iuz) &
-!                        -init_uz*(2.*z(i)/Lxyz(3))**2
-!          endif
-!          enddo
-!        endif
 !
       call keep_compiler_quiet(f)
 !
@@ -207,13 +186,12 @@ module InitialCondition
       integer :: i, ii
       logical ::  lstart1=.false., lstart2=.false.
 !
-
       if (llog_distribution) then
         ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
       else
         ddsize=(dsize_max-dsize_min)/(max(ndustspec,2)-1) 
       endif
-
+!
       do i=0,(ndustspec-1)
         if (llog_distribution) then
           lnds(i+1)=alog(dsize_min)+i*ddsize
@@ -224,7 +202,11 @@ module InitialCondition
         endif
       enddo
 !
-      call air_field_local(f, air_mass, PP)
+      if (lACTOS) then
+       call ACTOS_data(f)
+      else
+       call air_field_local(f, air_mass, PP)
+      endif
 !
       call reinitialization(f, air_mass, PP)
 !
@@ -296,14 +278,10 @@ module InitialCondition
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-!***********************************************************************
     subroutine air_field_local(f, air_mass, PP)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y, tmp!, psat
-!      real, dimension (mx,my,mz) :: init_water1_,init_water2_
-!      real, dimension (mx,my,mz,ndustspec) :: psf
-!      real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
+      real, dimension (mx,my,mz) :: sum_Y, tmp
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -316,9 +294,6 @@ module InitialCondition
       real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
-!      logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
-!      real, dimension (ndustspec) ::  lnds
-!      real :: ddsize,ddsize0,del
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3
@@ -446,7 +421,6 @@ module InitialCondition
           f(:,:,:,ilnrho)=alog(tmp)
         endif
 !
-
       if (lroot) print*, 'local:Air temperature, K', TT
       if (lroot) print*, 'local:Air pressure, dyn', PP
       if (lroot) print*, 'local:Air density, g/cm^3:'
@@ -457,7 +431,147 @@ module InitialCondition
       close(file_id)
 !!
     endsubroutine air_field_local
-!*************************************!***********************************************************************
+!***********************************************************************
+    subroutine ACTOS_data(f)
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
+      real, dimension (mx) ::  PP_data, rhow_data
+!
+      logical :: emptyfile=.true.
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=800) :: ChemInpLine
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter
+      real ::  TT=300., tmp2
+!      real, intent(out) :: PP ! (in dynes = 1atm)
+      real, dimension(nchemspec)    :: stor2
+      integer, dimension(nchemspec) :: stor1
+      real, dimension(29)    :: input_data
+!
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      integer :: iostat, i1,i2,i3
+
+
+      if (lACTOS_write) then
+!
+!      air_mass=0.
+      StartInd_1=1; StopInd_1 =0
+!      open(file_id,file="ACTOS.out")
+!      open(143,file="ACTOS_new.out")
+      open(file_id,file="ACTOS_xyz.out")
+      open(143,file="ACTOS_xyz_new.out")
+!
+!      dataloop: do
+       j=1
+       i=1
+       do  while (j<780000) 
+!
+        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
+         StartInd=1; StopInd =0
+         StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
+!
+!        i=1
+        if (i==1) then
+        k=1
+        do  while (k<30) 
+!
+         if (StopInd==StartInd) then
+            StartInd=StartInd+1
+          else
+           if (k<29) then
+            StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
+           else
+            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+           endif
+            read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)'), tmp2
+             input_data(k)=tmp2
+
+            StartInd=StopInd
+            k=k+1
+          endif
+        enddo
+
+          if ((input_data(1)>3010.) .and. (input_data(1)<3500.)) then
+!           if ((input_data(1)>3540.) .and. (input_data(1)<3760.)) then
+           write(143,'(29f15.6)'),input_data
+         endif
+           i=i+1
+        elseif (i>1) then
+          i=i+1
+          if (i==25) i=1
+        endif
+        j=j+1
+        enddo
+
+      close(file_id)
+      close(143)
+
+     endif
+
+!
+!        emptyFile=.false.
+!      enddo dataloop
+
+!print*,input_data
+
+    if (lACTOS_read) then
+      
+      open(143,file="ACTOS_new.out")
+        do i=1,mx 
+          read(143,'(29f15.6)'),input_data
+!          print*,input_data(1),i
+          f(i,:,:,ilnTT)=alog(input_data(10)+272.15)
+
+          PP_data(i)=input_data(7)*1e3   !dyn
+          rhow_data(i)=input_data(16)*1e-6
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/1e-2  !g/cm3
+        enddo
+      close(143)
+!
+       f(:,:,:,ichemspec(index_N2))=0.7
+       f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
+
+!  Stop if air.dat is empty
+!
+!      if (emptyFile)  call fatal_error("ACTOS data", "I can only set existing fields")
+!      air_mass=1./air_mass
+!
+!         
+       do iter=1,4
+!   
+       sum_Y=0.
+       do k=1,nchemspec
+         sum_Y=sum_Y + f(:,:,:,ichemspec(k))/species_constants(k,imass)
+       enddo
+       air_mass=1./sum_Y
+!
+         do i=1,mx
+           f(i,:,:,ilnrho)=alog(PP_data(i)/(k_B_cgs/m_u_cgs)*&
+           air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
+         enddo
+!
+       if (iter<4) then
+         do i=1,mx
+           f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/exp(f(i,:,:,ilnrho))
+         enddo
+           f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
+       endif
+!
+       enddo
+!
+      if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(:,:,:,ilnTT))), minval(exp(f(:,:,:,ilnTT)))
+      if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
+      if (lroot) print*, 'local:Air density, g/cm^3:'
+      if (lroot) print '(E10.3)',  maxval(exp(f(:,:,:,ilnrho))), minval(exp(f(:,:,:,ilnrho)))
+      if (lroot) print*, 'local:Air mean weight, g/mol', maxval(air_mass),minval(air_mass)
+      if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
+!
+       endif
+!
+    endsubroutine ACTOS_data
+
+!***********************************************************************
     subroutine reinitialization(f, air_mass, PP)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -608,10 +722,8 @@ module InitialCondition
              sum1=0.
              sum2=0.
              do k=1,nchemspec
-               sum1=sum1 + init_Yk_1(k)&
-                  /species_constants(k,imass)
-               sum2=sum2 + init_Yk_2(k)&
-                  /species_constants(k,imass)
+               sum1=sum1 + init_Yk_1(k)/species_constants(k,imass)
+               sum2=sum2 + init_Yk_2(k)/species_constants(k,imass)
              enddo
                air_mass_1=1./sum1
                air_mass_2=1./sum2
@@ -621,14 +733,6 @@ module InitialCondition
            init_water_2=init_Yk_2(index_H2O)
 !
 ! End of Recalculation of the air_mass for different boundary conditions
-!
-!         do iter=1,3
-!           if (iter==1) then
-!             lmake_spot=.true.
-!             air_mass_ar=air_mass
-!           elseif (iter>1) then
-!             lmake_spot=.false.
-!           endif 
 !
 !  Different profiles
 !
@@ -760,11 +864,6 @@ module InitialCondition
       enddo
 !
     endsubroutine spot_init
-!***********************************************************************
-
-
-!***********************************************************************
-!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
