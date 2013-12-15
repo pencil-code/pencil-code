@@ -31,7 +31,7 @@
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
 ! are working on/using the additional physics with somebodyelse or
-! may require some assistance from one of the main Pencil-Code team.
+! may require some assistance from one of the main Pencil-Code team.=spline_integral(dsize,init_distr)
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
@@ -1443,10 +1443,10 @@ subroutine bc_satur_x(f,bc)
    subroutine set_init_parameters(Ntot_,BB0_,dsize,init_distr, init_distr2)
 !
 
-     use General, only:  spline
+     use General, only:  spline, spline_integral
 
       real, dimension (ndustspec), intent(out) :: dsize,init_distr, init_distr2
-      real, dimension (ndustspec) ::  lnds
+      real, dimension (ndustspec) ::  lnds, ttt
       real, dimension (9) ::  X,Y
       real, dimension (5) ::  X_tmp, Y_tmp
        real, dimension (1) ::   x2, s
@@ -1500,8 +1500,14 @@ subroutine bc_satur_x(f,bc)
               enddo
             endif
 !
-        Ntot_=Ntot
-        BB0_=BB0
+        if (lACTOS) then
+          ttt=spline_integral(dsize,init_distr)
+          Ntot_=ttt(ndustspec)
+          Ntot =Ntot_
+        else
+          Ntot_=Ntot
+          BB0_=BB0
+        endif
 !
      endsubroutine set_init_parameters
 !***********************************************************************
