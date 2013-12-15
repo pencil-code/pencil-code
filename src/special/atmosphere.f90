@@ -527,35 +527,31 @@ module Special
          lzone_left=.false.
          lzone_right=.false.
 !
-         sz_r_x=l1+nxgrid-int(del*nxgrid)
-         sz_l_x=int(del*nxgrid)+l1
+!         sz_r_x=l1+nxgrid-int(del*nxgrid)
+!         sz_l_x=int(del*nxgrid)+l1
 !
-         ll1=l1
-         ll2=l2
-!
-        if ((lbuffer_zone_T) .and. (lACTOS)) then
+         if ((lbuffer_zone_T) .and. (lACTOS)) then
          do j=1,2
-!
          if (j==1) then
-           ll1=sz_r_x;   ll2=l2
-           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
-           if (lzone_right) then
+           if (x(l2)==xyz0(1)+Lxyz(1)) then
+!             sz_r_x=3+nxgrid-int(del*nxgrid)
+             ll1=l2-int(del*nxgrid);   ll2=l2
              df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
               -(f(ll1:ll2,m,n,ilnTT)-f(ll1,m,n,ilnTT))*dt1
            endif
          elseif (j==2) then
-           ll1=l1;   ll2=sz_l_x
-           if (x(l1)==xyz0(1)) lzone_left=.true.
-           if (lzone_left) then
+           if (x(l1)==xyz0(1)) then
+!             sz_l_x=int(del*nxgrid)+3
+             ll1=l1;   ll2=l1+int(del*nxgrid)
                df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
                  -(f(ll1:ll2,m,n,ilnTT)-f(ll2,m,n,ilnTT))*dt1
            endif
          endif
-!
-!
         enddo
         
         elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
+         sz_r_x=l1+nxgrid-int(del*nxgrid)
+         sz_l_x=int(del*nxgrid)+l1
         do j=1,2
 !
          if (j==1) then
