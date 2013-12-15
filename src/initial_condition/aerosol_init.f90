@@ -521,12 +521,12 @@ module InitialCondition
         do i=1,mx 
           read(143,'(29f15.6)'),input_data
 !          print*,input_data(1),i
-          TT_data=input_data(10)+272.15
+          TT_data(i)=input_data(10)+272.15
 !
           PP_data(i)=input_data(7)*1e3   !dyn
 !     print*,PP_data(i),i
 !
-          rhow_data(i)=input_data(16)*1e-6/1e-2 !g/cm3
+          rhow_data(i)=input_data(16)*1e-6 !g/cm3
         enddo
       close(143)
  
@@ -536,7 +536,9 @@ module InitialCondition
 !          print*,input_data(1),i
           f(i,:,:,ilnTT)=alog(TT_data(i))
 !
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)  !g/cm3
+          print*,TT_data(i),i
+
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/1e-2  !g/cm3
         enddo
       close(143)
 !
