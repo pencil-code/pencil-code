@@ -543,7 +543,7 @@ module InitialCondition
 !
 !          print*,TT_data(i),i,ll1+3+i
 
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(i+3+i)/1e-2  !g/cm3
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+3+i)/1e-2  !g/cm3
         enddo
       close(143)
 !
