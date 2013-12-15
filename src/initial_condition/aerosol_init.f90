@@ -436,13 +436,13 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
-      real, dimension (mx) ::  PP_data, rhow_data, TT_data
+      real, dimension (2000) ::  PP_data, rhow_data, TT_data
 !
       logical :: emptyfile=.true.
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
       character (len=800) :: ChemInpLine
-      integer :: i,j,k=1,index_YY, j1,j2,j3, iter
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1
       real ::  TT=300., tmp2
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
@@ -518,7 +518,7 @@ module InitialCondition
     if (lACTOS_read) then
       
       open(143,file="ACTOS_new.out")
-        do i=1,mx 
+        do i=1,2000 
           read(143,'(29f15.6)'),input_data
 !          print*,input_data(1),i
           TT_data(i)=input_data(10)+272.15
@@ -529,16 +529,21 @@ module InitialCondition
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
         enddo
       close(143)
+
+!print*,'FAGA',mx,l1,l2,(x(l1)-xyz0(1))/dx
  
         open(143,file="ACTOS_new.out")
-        do i=l1,l2 
+        ll1=int((x(l1)-xyz0(1))/dx)
+
+        do i=l1,l2
+ 
           read(143,'(29f15.6)'),input_data
 !          print*,input_data(1),i
-          f(i,:,:,ilnTT)=alog(TT_data(i))
+          f(i,:,:,ilnTT)=alog(TT_data(ll1+3+i))
 !
-          print*,TT_data(i),i
+!          print*,TT_data(i),i,ll1+3+i
 
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/1e-2  !g/cm3
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(i+3+i)/1e-2  !g/cm3
         enddo
       close(143)
 !
@@ -560,13 +565,13 @@ module InitialCondition
        air_mass=1./sum_Y
 !
          do i=l1,l2
-           f(i,:,:,ilnrho)=alog(PP_data(i)/(k_B_cgs/m_u_cgs)*&
+           f(i,:,:,ilnrho)=alog(PP_data(ll1+3+i)/(k_B_cgs/m_u_cgs)*&
            air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
          enddo
 !
        if (iter<4) then
          do i=l1,l2
-           f(i,:,:,ichemspec(index_H2O))=rhow_data(i)/exp(f(i,:,:,ilnrho))
+           f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+3+i)/exp(f(i,:,:,ilnrho))
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
        endif
