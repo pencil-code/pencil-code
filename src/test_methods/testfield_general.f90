@@ -710,7 +710,7 @@ module Testfield_general
     real, dimension(2,2) :: temp_fft
     real, dimension (:,:,:), allocatable :: temp_array
     logical, dimension(size(idiags)) :: need_temp
-    integer, dimension (size(idiags)) :: twod_address
+    integer, dimension(size(idiags)) :: twod_address
 !
     nx = size(uxbtestm,1)
     nz = size(uxbtestm,2)
