@@ -390,15 +390,18 @@ module Param_IO
 !  encapsulates reading of pars + error handling
 !
 !  31-oct-13/MR: coded
+!  16-dec-13/MR: handling of optional ierr corrected
 !
     integer,                    intent(IN)   :: unit
     external                                 :: reader
     character(LEN=*), optional, intent(IN)   :: name
     integer,          optional, intent(INOUT):: ierr
 !
-    call reader(unit,ierr)
     if (present(ierr)) then
+      call reader(unit,ierr)
       if (ierr/=0) call sample_pars(ierr,name)
+    else
+      call reader(unit)
     endif
 !
     rewind(unit)
