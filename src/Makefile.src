@@ -1564,6 +1564,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-s default64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
+## alphacrucis cluster IAG-USP (alphacrucis)
+##
+#FC=mpif90 #(alphacrucis*)
+#F90=$(FC) #(alphacrucis*)
+#CC=mpicc #(alphacrucis*)
+#FFLAGS=-O3 #(alphacrucis*)
+#FFLAGS_DOUBLE=-r8 #(alphacrucis*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(alphacrucis*)
+##
 ## Hermit - CrayXE6 - (Stuttgart)
 ##
 #FC=ftn #(eslogin0*)
