@@ -64,11 +64,13 @@ module LsodeForChemistry
 !***********************************************************************
     subroutine lsode_fc(t0_,t1_,f,df)
 !
+! 18-dec-13/MR: corrected - ISTATE of DLSODE has attribute INOUT
+!
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
 !
     integer :: i,j,k
-    integer :: NEQ, LRW, LIW, MF
+    integer :: NEQ, LRW, LIW, MF, ISTATE
     DOUBLE PRECISION, dimension(nchemspec+1) :: Y, YDOT0
     DOUBLE PRECISION :: t0, t1, t
     real :: t0_, t1_
@@ -93,8 +95,9 @@ module LsodeForChemistry
       YDOT0(1)=df(i,j,k,ilntt)
       YDOT0(2:NEQ)=df(i,j,k,ilnTT+1:ilnTT+nchemspec)
 !
+      ISTATE=1
       call DLSODE (FINDY, NEQ, Y, t, t1, 1, RTOL, ATOL, 1,   &
-                   1, 0, RWORK, LRW, IWORK, LIW, JAC, MF,    &
+                   ISTATE, 0, RWORK, LRW, IWORK, LIW, JAC, MF,    &
                    YDOT0)
 !
       f(i,j,k,ilntt)=Y(1)
