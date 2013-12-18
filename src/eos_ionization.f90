@@ -1066,6 +1066,7 @@ module EquationOfState
     endsubroutine eoscalc_point
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
