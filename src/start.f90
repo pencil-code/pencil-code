@@ -93,7 +93,7 @@ program start
   implicit none
 !
   real, allocatable, dimension (:,:,:,:) :: f, df
-  integer :: i, ifilter, stat,ierr
+  integer :: i, ifilter, stat
   logical :: lnoerase=.false.
 !
   lstart=.true.
@@ -164,7 +164,7 @@ program start
 !
 !  Read parameters from start.in.
 !
-  call read_startpars(FILE=.true.,IERRP=ierr)
+  call read_startpars(FILE=.true.,IERRP=1)
 !
 !  Initialise MPI communication.
 !
