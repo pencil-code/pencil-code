@@ -136,6 +136,7 @@ module Hydro
 !
   real :: tdamp=0.,tfade_start=-1.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
+  real :: ydampint=impossible,ydampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
@@ -144,7 +145,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
-  real :: ekman_friction=0.0
+  real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
   integer :: novec,novecmax=nx*ny*nz/4
@@ -192,7 +193,8 @@ module Hydro
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, & 
-      lpropagate_borderuu, hydro_zaver_range
+      lpropagate_borderuu, hydro_zaver_range, &
+      uzjet, ydampint, ydampext
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -5049,7 +5051,7 @@ module Hydro
 !
       use Sub, only: step
 !
-      real :: slope,uinn,uext,zbot
+      real :: slope,uinn,uext,zbot,prof_amp_scl
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
@@ -5332,6 +5334,16 @@ module Hydro
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
              -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot &
              *cos(2.*pi*k_diffrot*(y(m)-y0)/Ly))
+      endif
+!
+!  Damp/enforce high latitude jets in spherical coordinates
+!
+      case ('damp_jets')
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("damp_jets","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+      else
+         prof_amp_scl=1.-0.5*(1+tanh((y(m)-(y0+ydampint))/wdamp)-(1+tanh((y(m)-(y0+Lxyz(2)-ydampext))/wdamp)))
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp_scl*(uumxy(l1:l2,m,3)-uzjet)
       endif
 !
 !  no profile matches
