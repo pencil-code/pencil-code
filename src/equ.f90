@@ -677,7 +677,7 @@ module Equ
           if (ldensity)         maxdiffus=max(maxdiffus,diffus_diffrho)
           if (lenergy)          maxdiffus=max(maxdiffus,diffus_chi)
           if (lmagnetic)        maxdiffus=max(maxdiffus,diffus_eta)
-          if (lpolymer)        maxdiffus=max(maxdiffus,diffus_eta_poly)
+          if (lpolymer)         maxdiffus=max(maxdiffus,diffus_eta_poly)
           if (ltestfield)       maxdiffus=max(maxdiffus,diffus_eta)
           if (ltestscalar)      maxdiffus=max(maxdiffus,diffus_eta)
           if (lpscalar)         maxdiffus=max(maxdiffus,diffus_pscalar)
