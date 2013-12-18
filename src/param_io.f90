@@ -210,7 +210,7 @@ module Param_IO
 !
     endsubroutine get_snapdir
 !***********************************************************************
-    subroutine read_startpars(print,file,ierr)
+    subroutine read_startpars(print,file,ierrp)
 !
 !  read input parameters (done by each processor)
 !
@@ -224,14 +224,16 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  31-oct-13/MR  : changed for use instead of rparam; shortened by use of read_pars
+!  18-dec-13/MR  : changed handling of ierr to avoid compiler trouble
 !
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: loptest
 !
-      logical, optional, intent(IN   ):: print,file
-      integer, optional, intent(INOUT):: ierr
+      logical, optional, intent(IN):: print,file
+      integer, optional, intent(IN):: ierrp
 !
       integer, parameter :: unit=1
+      integer :: ierr
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
@@ -239,52 +241,53 @@ module Param_IO
 !
 !  Open namelist file and read through all items that *may* be present in the various modules.
 !
-      if (present(ierr)) then
+      if (present(ierrp)) then
         call parallel_open(unit,'start.in','formatted')
         read(unit,NML=init_pars,IOSTAT=ierr)
         if (ierr/=0) call sample_pars(ierr,'')
       else
         call parallel_open(unit,trim(datadir)//'/param.nml')
         read(unit,NML=init_pars)
+        ierr=-1
       endif
       rewind(unit)
 !
-      call read_pars(unit,read_initial_condition_pars,   'initial_condition_pars',ierr)
-      call read_pars(unit,read_streamlines_init_pars,    'streamlines',ierr)
-      call read_pars(unit,read_eos_init_pars,            'eos',ierr)
-      call read_pars(unit,read_hydro_init_pars,          'hydro',ierr)
-      call read_pars(unit,read_density_init_pars,        'density',ierr)
-      call read_pars(unit,read_forcing_init_pars,        'forcing',ierr)
-      call read_pars(unit,read_gravity_init_pars,        'grav_init_pars',ierr)
-      call read_pars(unit,read_selfgravity_init_pars,    'selfgrav',ierr)
-      call read_pars(unit,read_poisson_init_pars,        'poisson',ierr)
-      call read_pars(unit,read_energy_init_pars,         'entropy',ierr)
-      call read_pars(unit,read_magnetic_init_pars,       'magnetic',ierr)
-      call read_pars(unit,read_lorenz_gauge_init_pars,   'lorenz_gauge',ierr)
-      call read_pars(unit,read_testscalar_init_pars,     'testscalar',ierr)
-      call read_pars(unit,read_testfield_init_pars,      'testfield',ierr)
-      call read_pars(unit,read_testflow_init_pars,       'testflow',ierr)
-      call read_pars(unit,read_radiation_init_pars,      'radiation',ierr)
-      call read_pars(unit,read_pscalar_init_pars,        'pscalar',ierr)
-      call read_pars(unit,read_chiral_init_pars,         'chiral',ierr)
-      call read_pars(unit,read_chemistry_init_pars,      'chemistry',ierr)
-      call read_pars(unit,read_signal_init_pars,         'signal',ierr)
-      call read_pars(unit,read_dustvelocity_init_pars,   'dustvelocity',ierr)
-      call read_pars(unit,read_dustdensity_init_pars,    'dustdensity',ierr)
+      call read_pars(unit,read_initial_condition_pars   ,'initial_condition_pars',ierr)
+      call read_pars(unit,read_streamlines_init_pars    ,'streamlines',ierr)
+      call read_pars(unit,read_eos_init_pars            ,'eos',ierr)
+      call read_pars(unit,read_hydro_init_pars          ,'hydro',ierr)
+      call read_pars(unit,read_density_init_pars        ,'density',ierr)
+      call read_pars(unit,read_forcing_init_pars        ,'forcing',ierr)
+      call read_pars(unit,read_gravity_init_pars        ,'grav_init_pars',ierr)
+      call read_pars(unit,read_selfgravity_init_pars    ,'selfgrav',ierr)
+      call read_pars(unit,read_poisson_init_pars        ,'poisson',ierr)
+      call read_pars(unit,read_energy_init_pars         ,'entropy',ierr)
+      call read_pars(unit,read_magnetic_init_pars       ,'magnetic',ierr)
+      call read_pars(unit,read_lorenz_gauge_init_pars   ,'lorenz_gauge',ierr)
+      call read_pars(unit,read_testscalar_init_pars     ,'testscalar',ierr)
+      call read_pars(unit,read_testfield_init_pars      ,'testfield',ierr)
+      call read_pars(unit,read_testflow_init_pars       ,'testflow',ierr)
+      call read_pars(unit,read_radiation_init_pars      ,'radiation',ierr)
+      call read_pars(unit,read_pscalar_init_pars        ,'pscalar',ierr)
+      call read_pars(unit,read_chiral_init_pars         ,'chiral',ierr)
+      call read_pars(unit,read_chemistry_init_pars      ,'chemistry',ierr)
+      call read_pars(unit,read_signal_init_pars         ,'signal',ierr)
+      call read_pars(unit,read_dustvelocity_init_pars   ,'dustvelocity',ierr)
+      call read_pars(unit,read_dustdensity_init_pars    ,'dustdensity',ierr)
       call read_pars(unit,read_neutralvelocity_init_pars,'neutralvelocity',ierr)
-      call read_pars(unit,read_neutraldensity_init_pars, 'neutraldensity',ierr)
-      call read_pars(unit,read_cosmicray_init_pars,      'cosmicray',ierr)
-      call read_pars(unit,read_cosmicrayflux_init_pars,  'cosmicrayflux',ierr)
-      call read_pars(unit,read_heatflux_init_pars,       'heatflux',ierr)
-      call read_pars(unit,read_interstellar_init_pars,   'interstellar',ierr)
-      call read_pars(unit,read_shear_init_pars,          'shear',ierr)
-      call read_pars(unit,read_testperturb_init_pars,    'testperturb',ierr)
-      call read_pars(unit,read_viscosity_init_pars,      'viscosity',ierr)
-      call read_pars(unit,read_special_init_pars,        'special',ierr)
-      call read_pars(unit,read_solid_cells_init_pars,    'solid_cells',ierr)
-      call read_pars(unit,read_NSCBC_init_pars,          'NSCBC',ierr)
-      call read_pars(unit,read_polymer_init_pars,        'polymer',ierr)
-      call read_pars(unit,particles_read_startpars,      'particles',ierr)
+      call read_pars(unit,read_neutraldensity_init_pars ,'neutraldensity',ierr)
+      call read_pars(unit,read_cosmicray_init_pars      ,'cosmicray',ierr)
+      call read_pars(unit,read_cosmicrayflux_init_pars  ,'cosmicrayflux',ierr)
+      call read_pars(unit,read_heatflux_init_pars       ,'heatflux',ierr)
+      call read_pars(unit,read_interstellar_init_pars   ,'interstellar',ierr)
+      call read_pars(unit,read_shear_init_pars          ,'shear',ierr)
+      call read_pars(unit,read_testperturb_init_pars    ,'testperturb',ierr)
+      call read_pars(unit,read_viscosity_init_pars      ,'viscosity',ierr)
+      call read_pars(unit,read_special_init_pars        ,'special',ierr)
+      call read_pars(unit,read_solid_cells_init_pars    ,'solid_cells',ierr)
+      call read_pars(unit,read_NSCBC_init_pars          ,'NSCBC',ierr)
+      call read_pars(unit,read_polymer_init_pars        ,'polymer',ierr)
+      call read_pars(unit,particles_read_startpars      ,'particles',ierr)
 !
       call parallel_close(unit)
 !
@@ -391,16 +394,18 @@ module Param_IO
 !
 !  31-oct-13/MR: coded
 !  16-dec-13/MR: handling of optional ierr corrected
+!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
 !
-    integer,                    intent(IN)   :: unit
-    external                                 :: reader
-    character(LEN=*), optional, intent(IN)   :: name
-    integer,          optional, intent(INOUT):: ierr
+    integer,          intent(IN)   :: unit
+    external                       :: reader
+    character(LEN=*), intent(IN)   :: name
+    integer,          intent(INOUT):: ierr
 !
-    if (present(ierr)) then
+    if (ierr/=-1) then
       call reader(unit,ierr)
       if (ierr/=0) call sample_pars(ierr,name)
     else
+      ierr=0             ! neeed to suppress errors from some compilers
       call reader(unit)
     endif
 !
@@ -512,7 +517,8 @@ module Param_IO
 !  31-may-02/wolf: renamed from cread to read_runpars
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!  12-nov-10/MR: added read and write calls for namelist power_spectrum_run_pars
+!  12-nov-10/MR  : added read and write calls for namelist power_spectrum_run_pars
+!  18-dec-13/MR  : changed handling of ierr to avoid compiler trouble
 !
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
