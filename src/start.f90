@@ -164,7 +164,7 @@ program start
 !
 !  Read parameters from start.in.
 !
-  call read_startpars(FILE=.true.,IERRP=1)
+  call read_startpars(FILE=.true.,LIERR=.true.)
 !
 !  Initialise MPI communication.
 !
