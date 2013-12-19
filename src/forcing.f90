@@ -664,6 +664,7 @@ module Forcing
         case ('diffrot');         call forcing_diffrot(f,force)
         case ('fountain', '3');   call forcing_fountain(f)
         case ('gaussianpot');     call forcing_gaussianpot(f,force)
+        case ('white_noise');     call forcing_white_noise(f)
         case ('GP');              call forcing_GP(f)
         case ('irrotational');    call forcing_irro(f,force)
         case ('helical', '2');    call forcing_hel(f)
@@ -3169,6 +3170,119 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       if (ip<=9) print*,'forcing_gaussianpot: forcing OK'
 !
     endsubroutine forcing_gaussianpot
+!***********************************************************************
+    subroutine forcing_white_noise(f)
+!
+!  gradient of gaussians as forcing function
+!
+!  19-dec-13/axel: added
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl
+!
+      real, dimension (nx) :: r,p,tmp,rho,ruf
+      real, dimension (nx,3) :: force_all,variable_rhs,forcing_rhs
+      real, dimension (1) :: fsum_tmp,fsum
+      logical, dimension (3), save :: extent
+      integer :: j,jf
+      real :: irufm
+!
+!  check length of time step
+!
+      if (ip<=6) print*,'forcing_white_noise: dt=',dt
+!
+!  check whether there is any extent in each of the three directions
+!
+      extent(1)=nx/=1
+      extent(2)=ny/=1
+      extent(3)=nz/=1
+!
+!  extent
+!
+      if (.not.extent(1)) location(1)=x(1)
+      if (.not.extent(2)) location(2)=y(1)
+      if (.not.extent(3)) location(3)=z(1)
+      if (ip<=6) print*,'forcing_white_noise: location=',location
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  We multiply the forcing term by dt and add to the right-hand side
+!  of the momentum equation for an Euler step, but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference.
+!  When dtforce is finite, take dtforce+.5*dt.
+!  The 1/2 factor takes care of round-off errors.
+!  Also define width_ff21 = 1/width^2
+!
+      ampl=force*sqrt(dt*cs0)*cs0
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+!
+!  loop over all pencils
+!
+      do n=n1,n2
+        do m=m1,m2
+          do j=1,3
+            if (extent(j)) then
+              jf=j+ifff-1
+              if (modulo(j-1,2)==0) then
+                call random_number_wrapper(r)
+                call random_number_wrapper(p)
+                tmp=sqrt(-2*log(r))*sin(2*pi*p)
+              else
+                tmp=sqrt(-2*log(r))*cos(2*pi*p)
+              endif
+              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+ampl*tmp
+              forcing_rhs(:,j)=ampl*tmp
+            endif
+          enddo
+!
+!  diagnostics
+!
+          if (lout) then
+            if (idiag_rufm/=0) then
+              variable_rhs=f(l1:l2,m,n,iffx:iffz)
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+!
+!  For printouts
+!
+      if (lout) then
+        if (idiag_rufm/=0) then
+          irufm=irufm/(nwgrid)
+!
+!  on different processors, irufm needs to be communicated
+!  to other processors
+!
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+!
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip<=9) print*,'forcing_white_noise: forcing OK'
+!
+    endsubroutine forcing_white_noise
 !***********************************************************************
     subroutine calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
 !
