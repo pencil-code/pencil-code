@@ -278,7 +278,7 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
             self.q = []
 
     # read the cpu structure
-    dim = pc.read_dim()
+    dim = pc.read_dim(datadir = dataDir)
     if (dim.nprocz > 1):
         print "error: number of cores in z-direction > 1"
 
