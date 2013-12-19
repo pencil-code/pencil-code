@@ -663,7 +663,7 @@ module Messages
           outlog = .true.
           call fatal_error(curloc, 'End-Of-File'//trim (filename)//trim (message))      !add mode?
         endif 
-      elseif (code > 0 .and. .not.(lread.and.lcontl)) then
+      elseif (code >= 0 .and. .not.(lread.and.lcontl)) then
         outlog = .true.
         call fatal_error(curloc, 'I/O error (code '//trim (itoa (code))//')'// &
                          trim (filename)//trim (message), .true.)  !add mode?
