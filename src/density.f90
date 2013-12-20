@@ -46,6 +46,7 @@ module Density
   real, dimension(nx) :: xmask_den
   real, dimension(nz) :: zmask_den
   real, dimension(nx) :: reduce_cs2_profx = 1.0
+  real, dimension(mz) :: reduce_cs2_profz = 1.0
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, ggamma=impossible
@@ -547,9 +548,11 @@ module Density
         call put_shared_variable('reduce_cs2',reduce_cs2,ierr)
 !
         if (lscale_to_cs2top) then 
-           reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
+           if (lgravx) reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
+           if (lgravz) reduce_cs2_profz(n1:n2)=cs2top/(rss_coef1-rss_coef2*(z(n1:n2)-z0))
         else
            reduce_cs2_profx=1.
+           reduce_cs2_profz=1.
         endif
         call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
       endif
@@ -1845,9 +1848,9 @@ module Density
 !
       if (lcontinuity_gas .and. lreduced_sound_speed) then
         if (ldensity_nolog) then
-          density_rhs = - reduce_cs2*reduce_cs2_profx*(p%ugrho + p%rho*p%divu)
+          density_rhs = - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
         else
-          density_rhs = - reduce_cs2*reduce_cs2_profx*(p%uglnrho + p%divu)
+          density_rhs = - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
         endif
       endif
 !
