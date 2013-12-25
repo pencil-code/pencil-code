@@ -437,6 +437,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (2000) ::  PP_data, rhow_data, TT_data
+      real, dimension (2000) ::  ux_data, uy_data, uz_data
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -457,10 +458,10 @@ module InitialCondition
 !
 !      air_mass=0.
       StartInd_1=1; StopInd_1 =0
-!      open(file_id,file="ACTOS.out")
-!      open(143,file="ACTOS_new.out")
-      open(file_id,file="ACTOS_xyz.out")
-      open(143,file="ACTOS_xyz_new.out")
+      open(file_id,file="ACTOS_data.out")
+      open(143,file="ACTOS_new.out")
+!      open(file_id,file="ACTOS_xyz_data.out")
+!      open(143,file="ACTOS_xyz_new.out")
 !
 !      dataloop: do
        j=1
@@ -471,7 +472,7 @@ module InitialCondition
          StartInd=1; StopInd =0
          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
 !
-!        i=1
+        i=1
         if (i==1) then
         k=1
         do  while (k<30) 
@@ -492,7 +493,9 @@ module InitialCondition
           endif
         enddo
 
-          if ((input_data(1)>3010.) .and. (input_data(1)<3500.)) then
+          if ((input_data(1)>3545.53) .and. (input_data(1)<3660.53)) then
+   
+!          if ((input_data(1)>3010.) .and. (input_data(1)<3500.)) then
 !           if ((input_data(1)>3540.) .and. (input_data(1)<3760.)) then
            write(143,'(29f15.6)'),input_data
          endif
@@ -517,7 +520,15 @@ module InitialCondition
 
     if (lACTOS_read) then
       
-      open(143,file="ACTOS_new.out")
+      open(143,file="ACTOS_xyz_new.out")
+        do i=1,2000 
+          read(143,'(29f15.6)'),input_data
+          ux_data(i)=input_data(28)*1e2/cos(input_data(19))/cos(input_data(20))
+        enddo
+      close(143)
+
+
+        open(143,file="ACTOS_new.out")
         do i=1,2000 
           read(143,'(29f15.6)'),input_data
 !          print*,input_data(1),i
@@ -532,20 +543,34 @@ module InitialCondition
 
 !print*,'FAGA',mx,l1,l2,(x(l1)-xyz0(1))/dx
  
-        open(143,file="ACTOS_new.out")
+!        open(143,file="ACTOS_new.out")
         ll1=int((x(l1)-xyz0(1))/dx)
 
         do i=l1,l2
  
-          read(143,'(29f15.6)'),input_data
-!          print*,input_data(1),i
           f(i,:,:,ilnTT)=alog(TT_data(ll1+3+i))
 !
 !          print*,TT_data(i),i,ll1+3+i
 
           f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+3+i)/1e-2  !g/cm3
+          f(i,:,:,iux)=ux_data(ll1+3+i)
         enddo
-      close(143)
+
+
+!        if (nygrid>1) then
+!          do i=m1,m2
+!           f(:,i,:,iuy)=uy_data(i)
+!          enddo
+!        endif
+
+!        if (nzgrid>1) then
+!          do i=n1,n2
+!           f(:,:,i,iuz)=uz_data(i)
+!          enddo
+!        endif
+        
+ 
+!      close(143)
 !
        f(:,:,:,ichemspec(index_N2))=0.7
        f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
