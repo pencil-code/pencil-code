@@ -448,7 +448,7 @@ module InitialCondition
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
-      real, dimension(29)    :: input_data
+      real, dimension(29)    :: input_data, input_data2
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3
@@ -520,12 +520,7 @@ module InitialCondition
 
     if (lACTOS_read) then
       
-      open(143,file="ACTOS_xyz_new.out")
-        do i=1,2000 
-          read(143,'(29f15.6)'),input_data
-          ux_data(i)=input_data(28)*1e2/cos(input_data(19))/cos(input_data(20))
-        enddo
-      close(143)
+      
 
 
         open(143,file="ACTOS_new.out")
@@ -538,6 +533,14 @@ module InitialCondition
 !     print*,PP_data(i),i
 !
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
+        enddo
+      close(143)
+
+
+      open(143,file="ACTOS_xyz_new.out")
+        do i=1,2000 
+          read(143,'(29f15.6)'),input_data2
+          ux_data(i)=input_data(28)*1e2/cos(input_data2(19))/cos(input_data2(20))
         enddo
       close(143)
 
