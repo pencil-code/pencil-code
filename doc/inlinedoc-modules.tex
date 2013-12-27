@@ -6,6 +6,8 @@
 %%   hydro.f90
 %%   noentropy.f90
 %%   nohydro.f90
+%%   nopower_spectrum.f90
+%%   power_spectrum.f90
 %%   timestep.f90
 %%   timestep_subcycle.f90
 
@@ -21,6 +23,10 @@
   \var{}          & polytropic equation of state $p=\text{const}\rho^{\Gamma}$. \\
 \midrule
   \var{nohydro.f90} & no variable $\uv$: useful for kinematic dynamo runs. \\
+\midrule
+  \var{nopower_spectrum.f90} & reads in full snapshot and calculates power spetrum of u \\
+\midrule
+  \var{power_spectrum.f90} & reads in full snapshot and calculates power spetrum of u \\
 \midrule
   \var{timestep.f90} & Runge-Kutta time advance, accurate to order itorder. \\
   \var{}          & At the moment, itorder can be 1, 2, or 3. \\

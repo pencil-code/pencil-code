@@ -18,6 +18,7 @@
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
 %%   gravity_simple.f90
+%%   heatflux.f90
 %%   lorenz_gauge.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
@@ -83,6 +84,8 @@
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
   \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
                     the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
   \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
@@ -217,6 +220,8 @@
                     \quad(mean density) \\
   \var{rhomxmask} & $\left<\varrho\right>$ for
                     the density_xaver_range \\
+  \var{rhomzmask} & $\left<\varrho\right>$ for
+                    the density_zaver_range \\
   \var{rhomin}    & $\min(\rho)$ \\
   \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
@@ -500,7 +505,9 @@
   \var{hjperpm}   & Mean value of the component
                     of $J_{\rm hyper}$ perpendicular to B \\
   \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
-                    the magnetic_xaver_range
+                    the magnetic_xaver_range \\
+  \var{brmsz}     & $\left<\Bv^2\right>^{1/2}$ for
+                    the magnetic_zaver_range
                     $\left<{\cal E}_x\right>_{z}$ \\
   \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
   \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
@@ -747,6 +754,11 @@
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
 \midrule
+  \multicolumn{2}{c}{Module \file{heatflux.f90}} \\
+\midrule
+  \var{qmax}      & max of heat flux vector \\
+  \var{qrms}      & rms of heat flux vector \\
+\midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
@@ -816,6 +828,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{shock_highorder.f90}} \\
 \midrule
+  \var{gshockmax} & $\max\left|\nabla\nu_{shock}\right|$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{solar_corona.f90}} \\
 \midrule

@@ -7,6 +7,7 @@
 %%   density.f90
 %%   entropy.f90
 %%   magnetic.f90
+%%   bfield.f90
 %%   gravity_simple.f90
 %%   meanfield.f90
 %%   shock_highorder.f90
@@ -48,6 +49,9 @@
   \var{uxuymz}    & $\left<u_x u_y\right>_{xy}$ \\
   \var{uxuzmz}    & $\left<u_x u_z\right>_{xy}$ \\
   \var{uyuzmz}    & $\left<u_y u_z\right>_{xy}$ \\
+  \var{ruxuymz}   & $\langle\rho u_x u_y\rangle_{xy}$ \\
+  \var{ruxuzmz}   & $\langle\rho u_x u_z\rangle_{xy}$ \\
+  \var{ruyuzmz}   & $\langle\rho u_y u_z\rangle_{xy}$ \\
   \var{oxuxxmz}   & $\left<\omega_x u_{x,x}\right>_{xy}$ \\
   \var{oyuxymz}   & $\left<\omega_y u_{x,y}\right>_{xy}$ \\
   \var{oxuyxmz}   & $\left<\omega_x u_{y,x}\right>_{xy}$ \\
@@ -146,6 +150,22 @@
   \var{j2mz}      & $\left<\jv^2\right>_{xy}$ \\
   \var{poynzmz}   & Averaged poynting flux in z direction \\
   \var{epsMmz}    & $\left<\eta\mu_0\jv^2\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{bfield.f90}} \\
+\midrule
+  \var{bmz}       & $\langle B\rangle_{xy}$ \\
+  \var{b2mz}      & $\langle B^2\rangle_{xy}$ \\
+  \var{bxmz}      & $\langle B_x\rangle_{xy}$ \\
+  \var{bymz}      & $\langle B_y\rangle_{xy}$ \\
+  \var{bzmz}      & $\langle B_z\rangle_{xy}$ \\
+  \var{bx2mz}     & $\langle B_x^2\rangle_{xy}$ \\
+  \var{by2mz}     & $\langle B_y^2\rangle_{xy}$ \\
+  \var{bz2mz}     & $\langle B_z^2\rangle_{xy}$ \\
+  \var{bxbymz}    & $\langle B_x B_y\rangle_{xy}$ \\
+  \var{bxbzmz}    & $\langle B_x B_z\rangle_{xy}$ \\
+  \var{bybzmz}    & $\langle B_y B_z\rangle_{xy}$ \\
+  \var{betamz}    & $\langle\beta\rangle_{xy}$ \\
+  \var{beta2mz}   & $\langle\beta^2\rangle_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule

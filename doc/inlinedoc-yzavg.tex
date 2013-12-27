@@ -7,6 +7,7 @@
 %%   density.f90
 %%   entropy.f90
 %%   magnetic.f90
+%%   bfield.f90
 %%   gravity_simple.f90
 %%   shock_highorder.f90
 %%   temperature_idealgas.f90
@@ -31,6 +32,7 @@
   \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
   \var{oumx}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{yz}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -57,6 +59,22 @@
   \var{bz2mx}     & $\left< B_z^2 \right>_{yz}$ \\
   \var{bxbymx}    & $\left<B_x B_y\right>_{yz}$ \\
   \var{etatotalmx} & $\left<\eta\right>_{yz}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{bfield.f90}} \\
+\midrule
+  \var{bmx}       & $\langle B\rangle_{yz}$ \\
+  \var{b2mx}      & $\langle B^2\rangle_{yz}$ \\
+  \var{bxmx}      & $\langle B_x\rangle_{yz}$ \\
+  \var{bymx}      & $\langle B_y\rangle_{yz}$ \\
+  \var{bzmx}      & $\langle B_z\rangle_{yz}$ \\
+  \var{bx2mx}     & $\langle B_x^2\rangle_{yz}$ \\
+  \var{by2mx}     & $\langle B_y^2\rangle_{yz}$ \\
+  \var{bz2mx}     & $\langle B_z^2\rangle_{yz}$ \\
+  \var{bxbymx}    & $\langle B_x B_y\rangle_{yz}$ \\
+  \var{bxbzmx}    & $\langle B_x B_z\rangle_{yz}$ \\
+  \var{bybzmx}    & $\langle B_y B_z\rangle_{yz}$ \\
+  \var{betamx}    & $\langle\beta\rangle_{yz}$ \\
+  \var{beta2mx}   & $\langle\beta^2\rangle_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
