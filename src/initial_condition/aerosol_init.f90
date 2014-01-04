@@ -1,4 +1,4 @@
-! $Id$
+! $Id: aerosol_init.f90 21410 2013-12-25 15:44:43Z Nbabkovskaia 
 !
 !  This module provide a way for users to specify custom initial
 !  conditions.
@@ -41,10 +41,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-     real :: init_ux=0.,init_uy=0.,init_uz=0.
+     real :: init_ux=impossible,init_uy=impossible,init_uz=impossible
      integer :: imass=1, spot_number=10
      integer :: index_H2O=3
-     integer :: index_N2=4
+     integer :: index_N2=4, i_point=1
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
@@ -63,7 +63,8 @@ module InitialCondition
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
-     ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write
+     ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
+     i_point
 !
   contains
 !***********************************************************************
@@ -100,12 +101,12 @@ module InitialCondition
       integer :: i,j
       real :: del=10.,bs
 !
-        if ((init_ux /=0.) .and. (nygrid>1)) then
+        if ((init_ux /=impossible) .and. (nygrid>1)) then
          do i=1,my
            f(:,i,:,iux)=cos(Period*PI*y(i)/Lxyz(2))*init_ux
          enddo
         endif
-        if ((init_uz /=0.) .and. (nzgrid>1)) then
+        if ((init_uz /=impossible) .and. (nzgrid>1)) then
          bs=9.81e2*(293.-290.)/293.
          do i=1,mx
             f(i,:,:,iuz)=-sqrt(Lxyz(1)*bs) &
@@ -113,7 +114,7 @@ module InitialCondition
          enddo
         endif
 !
-        if ((init_uy /=0.) .and. (X_wind /= impossible)) then
+        if ((init_uy /=impossible) .and. (X_wind /= impossible)) then
           do j=1,mx
              f(j,:,:,iuy)=f(j,:,:,iuy) &
               +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
@@ -122,7 +123,7 @@ module InitialCondition
           enddo
         endif
 !
-        if ((init_uz /=0.) .and. (X_wind /= impossible)) then
+        if ((init_uz /=impossible) .and. (X_wind /= impossible)) then
           do j=1,mx
              f(j,:,:,iuz)=f(j,:,:,iuz) &
               +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
@@ -131,10 +132,10 @@ module InitialCondition
           enddo
          endif
 !
-        if ((init_uy /=0.) .and. (X_wind == impossible)) then
+        if ((init_uy /=impossible) .and. (X_wind == impossible)) then
           f(:,:,:,iuy)=f(:,:,:,iuy)+init_uy
         endif
-        if ((init_uz /=0.) .and. (X_wind == impossible)) then
+        if ((init_uz /=impossible) .and. (X_wind == impossible)) then
           f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
         endif
 !
@@ -437,13 +438,13 @@ module InitialCondition
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (2000) ::  PP_data, rhow_data, TT_data
-      real, dimension (2000) ::  ux_data, uy_data, uz_data
+      real, dimension (2000) ::  ux_data, uy_data, uz_data,uhor
 !
       logical :: emptyfile=.true.
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
       character (len=800) :: ChemInpLine
-      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
       real ::  TT=300., tmp2
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
@@ -472,7 +473,10 @@ module InitialCondition
          StartInd=1; StopInd =0
          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
 !
-        i=1
+        if (i_point==1) then
+          i=1
+        endif
+        
         if (i==1) then
         k=1
         do  while (k<30) 
@@ -492,88 +496,92 @@ module InitialCondition
             k=k+1
           endif
         enddo
-
+!
           if ((input_data(1)>3545.53) .and. (input_data(1)<3660.53)) then
-   
-!          if ((input_data(1)>3010.) .and. (input_data(1)<3500.)) then
-!           if ((input_data(1)>3540.) .and. (input_data(1)<3760.)) then
            write(143,'(29f15.6)'),input_data
-         endif
+          endif
            i=i+1
         elseif (i>1) then
           i=i+1
-          if (i==25) i=1
+          if (i==i_point) i=1
         endif
         j=j+1
         enddo
-
+!
       close(file_id)
       close(143)
-
+!
      endif
 
 !
 !        emptyFile=.false.
 !      enddo dataloop
-
-!print*,input_data
-
+!
     if (lACTOS_read) then
-      
-      
-
-
-        open(143,file="ACTOS_new.out")
-        do i=1,2000 
+        open(143,file="ACTOS_new2.out")
+        do i=1,520 
           read(143,'(29f15.6)'),input_data
-!          print*,input_data(1),i
           TT_data(i)=input_data(10)+272.15
 !
           PP_data(i)=input_data(7)*1e3   !dyn
-!     print*,PP_data(i),i
 !
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
+          uhor(i)=input_data(29)*1e2
         enddo
       close(143)
-
-
-      open(143,file="ACTOS_xyz_new.out")
-        do i=1,2000 
-          read(143,'(29f15.6)'),input_data2
-          ux_data(i)=input_data(28)*1e2/cos(input_data2(19))/cos(input_data2(20))
-        enddo
-      close(143)
-
-!print*,'FAGA',mx,l1,l2,(x(l1)-xyz0(1))/dx
- 
-!        open(143,file="ACTOS_new.out")
-        ll1=int((x(l1)-xyz0(1))/dx)
-
-        do i=l1,l2
- 
-          f(i,:,:,ilnTT)=alog(TT_data(ll1+3+i))
 !
-!          print*,TT_data(i),i,ll1+3+i
-
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+3+i)/1e-2  !g/cm3
-          f(i,:,:,iux)=ux_data(ll1+3+i)
+      open(143,file="ACTOS_xyz_new.out")
+        do i=1,1100 
+          read(143,'(29f15.6)'),input_data2
+          ux_data(i)=uhor(i)/cos(input_data2(19))/cos(input_data2(20))
+          uy_data(i)=uhor(i)/cos(input_data2(19))/sin(input_data2(20))
+          uz_data(i)=uhor(i)/sin(input_data2(19))
+!
+!
+!print*,ux_data(i),uy_data(i),i, sin(input_data2(20)),input_data2(20),input_data2(20)*180./3.1415
+!     
+        enddo
+      close(143)
+        ll1=int((x(l1)-xyz0(1))/dx)
+        
+        do i=l1,l2
+          f(i,:,:,ilnTT)=alog(TT_data(ll1+i-3))
+          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/1e-2  !g/cm3
+!
+          if (init_ux /= impossible) then
+            f(i,:,:,iux)=init_ux
+          else
+            f(i,:,:,iux)=ux_data(ll1+i-3)
+          endif
+!          
         enddo
 
+        if (nygrid>1) then
+          mm1=int((y(m1)-xyz0(2))/dy)
+!          
+          if (init_uy /= impossible) then
+            f(:,:,:,iuy)=init_uy
+          else
+           do i=m1,m2
+            f(:,i,:,iuy)=uy_data(mm1+i-3)
+           enddo
+          endif
+!            
+        endif
 
-!        if (nygrid>1) then
-!          do i=m1,m2
-!           f(:,i,:,iuy)=uy_data(i)
-!          enddo
-!        endif
+        if (nzgrid>1) then
+          nn1=int((z(m1)-xyz0(3))/dz)
+!
+          if (init_uy /= impossible) then
+           f(:,:,:,iuz)=init_uz
+          else
+           do i=n1,n2
+            f(:,:,i,iuz)=uz_data(nn1+i-3)
+           enddo
+          endif
+!
+        endif
 
-!        if (nzgrid>1) then
-!          do i=n1,n2
-!           f(:,:,i,iuz)=uz_data(i)
-!          enddo
-!        endif
-        
- 
-!      close(143)
 !
        f(:,:,:,ichemspec(index_N2))=0.7
        f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
@@ -593,13 +601,14 @@ module InitialCondition
        air_mass=1./sum_Y
 !
          do i=l1,l2
-           f(i,:,:,ilnrho)=alog(PP_data(ll1+3+i)/(k_B_cgs/m_u_cgs)*&
+           f(i,:,:,ilnrho)=alog(PP_data(ll1+i-3)/(k_B_cgs/m_u_cgs)*&
            air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
+
          enddo
 !
        if (iter<4) then
          do i=l1,l2
-           f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+3+i)/exp(f(i,:,:,ilnrho))
+           f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/exp(f(i,:,:,ilnrho))
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
        endif
