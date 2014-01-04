@@ -1477,8 +1477,16 @@ subroutine bc_satur_x(f,bc)
 !                    Y_tmp(1:5)=Y(i-1:i+3) 
 !               call  spline(X_tmp,Y_tmp,x2,s,5,1)
 
-                init_distr(k)= 70.7811*exp(-0.5*((2.*dsize(k)/1e-4-4.98564)/0.995159)**2)+0.0962425
-              enddo
+                init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+
+!print*,dsize(k),init_distr(k),k
+!
+!31.1443      17.6595      6.25204   -0.0349555
+!                init_distr(k)= 70.7811*exp(-0.5*((2.*dsize(k)/1e-4-4.98564)/0.995159)**2)+0.0962425
+!83.4165      11.2452      2.68374      2.71016
+      !           init_distr(k)= 83.4165*exp(-0.5*((2.*dsize(k)/1e-4-11.2452)/2.68374)**2)+2.71016
+           
+               enddo
 !              close(143)
             else
               if (r0 /= 0.) then
