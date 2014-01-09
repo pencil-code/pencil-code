@@ -342,7 +342,7 @@ module Testfield
 !
 ! enable complex calculation for harmonic testfields 
 !
-      lcomplex = kdamp_2ndord/=0..and.om_testfield/=0.
+      lcomplex = kdamp_2ndord/=0..and.(om_testfield/=0. .or. lam_testfield/=0.)
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
