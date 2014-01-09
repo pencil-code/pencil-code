@@ -1,0 +1,10 @@
+$Id$
+
+Topics for Pencil code User Meeting in Göttingen 2014:
+
+% Notes: "-" means that this item is still open (nothing has happend)
+%        "+" means that it is already in progress (people working on it)
+%        "*" same, but high priority
+%        "/" postponed
+%        "x" means that it has been dealt with
+
