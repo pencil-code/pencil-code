@@ -243,6 +243,7 @@ module Magnetic
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
+  logical :: lremove_meanaz=.false.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -281,7 +282,7 @@ module Magnetic
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa
+      lpropagate_borderaa, lremove_meanaz
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1281,6 +1282,8 @@ module Magnetic
         sinkz=sin(k1_ff*z)
         coskz=cos(k1_ff*z)
       endif
+! When lremove_meanaz=T then set lcalc_aameanz also T
+      if (lremove_meanaz) lcalc_aameanz=.true.
 !
 !  When adding a magnetic field to a snapshot of a nomagnetic simulation,
 !  the code allows only the initialization of the field to zero. This
@@ -4375,12 +4378,12 @@ module Magnetic
 !  Calculate <A>, which is needed for test-field methods.
 !
 !   2-jan-10/axel: adapted from calc_lhydro_pars
+!  10-jan-13/MR: added possibility to remove evolving mean field
 !
       use Sub, only: finalize_aver
       use Deriv, only: der_z,der2_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: nxy=nxgrid*nygrid
       integer :: n,j
       real :: fact
       real, dimension (nz,3) :: gaamz,d2aamz
@@ -4391,29 +4394,36 @@ module Magnetic
 !  because they have just been set.
 !
       if (lcalc_aameanz) then
-        fact=1./nxy
+        fact=1./nxygrid
         do j=1,3
           do n=1,mz
             aamz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iax+j-1))
           enddo
         enddo
         call finalize_aver(nprocxy,12,aamz)
+
+        if (lremove_meanaz) then
+          do j=1,3
+            f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
+          enddo
+        else
 !
 !  Compute first and second derivatives.
 !
-        do j=1,3
-          call der_z(aamz(:,j),gaamz(:,j))
-          call der2_z(aamz(:,j),d2aamz(:,j))
-        enddo
+          do j=1,3
+            call der_z(aamz(:,j),gaamz(:,j))
+            call der2_z(aamz(:,j),d2aamz(:,j))
+          enddo
 !
 !  Compute mean magnetic field and current density.
 !
-        bbmz(:,1)=-gaamz(:,2)
-        bbmz(:,2)=+gaamz(:,1)
-        bbmz(:,3)=0.
-        jjmz(:,1)=-d2aamz(:,1)
-        jjmz(:,2)=-d2aamz(:,2)
-        jjmz(:,3)=0.
+          bbmz(:,1)=-gaamz(:,2)
+          bbmz(:,2)=+gaamz(:,1)
+          bbmz(:,3)=0.
+          jjmz(:,1)=-d2aamz(:,1)
+          jjmz(:,2)=-d2aamz(:,2)
+          jjmz(:,3)=0.
+        endif
       endif
 !
 !  put u.a into auxiliarry arry
