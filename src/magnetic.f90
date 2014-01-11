@@ -1282,8 +1282,6 @@ module Magnetic
         sinkz=sin(k1_ff*z)
         coskz=cos(k1_ff*z)
       endif
-! When lremove_meanaz=T then set lcalc_aameanz also T
-      if (lremove_meanaz) lcalc_aameanz=.true.
 !
 !  When adding a magnetic field to a snapshot of a nomagnetic simulation,
 !  the code allows only the initialization of the field to zero. This
@@ -4393,7 +4391,8 @@ module Magnetic
 !  Compute mean field for each component. Include the ghost zones,
 !  because they have just been set.
 !
-      if (lcalc_aameanz) then
+      if (lcalc_aameanz.or.lremove_meanaz) then
+!
         fact=1./nxygrid
         do j=1,3
           do n=1,mz
@@ -4406,7 +4405,8 @@ module Magnetic
           do j=1,3
             f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
           enddo
-        else
+        endif
+        if (lcalc_aameanz) then
 !
 !  Compute first and second derivatives.
 !
