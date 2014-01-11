@@ -2283,6 +2283,13 @@ module Particles_mpicomm
 !
       close(lun_output)
 !
+      if (t_block/=t) then
+        print*, 'input_blocks: block time is not equal to simulation time'
+        print*, 'input_blocks: iproc, t, t_block', iproc, t, t_block
+        call fatal_error_local('input_blocks','')
+      endif
+      call fatal_error_local_collect()
+!
     endsubroutine input_blocks
 !***********************************************************************
     subroutine sort_blocks()
