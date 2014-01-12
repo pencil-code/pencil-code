@@ -120,7 +120,7 @@ module Syscalls
         read(unit,'(a)',iostat=ierr) ch
         if (ierr==0) then
           if (present(comchars)) then
-            lcount=(ch.IN.comchars)==0
+            lcount = ((ch .IN. comchars) == 0)
           else
             lcount=.true.
           endif

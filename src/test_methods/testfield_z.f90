@@ -383,7 +383,7 @@ module Testfield
 !
 !  allocate slice buffers
 !
-        if (('bb11'.IN.cnamev)/=0 ) &
+      if (('bb11' .IN. cnamev) /= 0) &
           allocate(bb11_xy(nx,ny,3), bb11_xy2(nx,ny,3), &
                    bb11_xz(nx,nz,3), bb11_yz(ny,nz,3) )
 !
@@ -1219,7 +1219,7 @@ module Testfield
 !
       if (lvideo.and.lfirst) then
 !
-        if (('bb11'.IN.cnamev)/=0) then
+        if (('bb11' .IN. cnamev) /= 0) then
 !
 !  first test solution
 !
