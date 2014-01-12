@@ -383,6 +383,10 @@ module Testfield
 !
 !  allocate slice buffers
 !
+      if (.not. allocated(cnamev)) then
+        call fatal_error('initialize_testfield', &
+            'Cannot search through unallocated array CNAMEV')
+      endif
       if (('bb11' .IN. cnamev) /= 0) &
           allocate(bb11_xy(nx,ny,3), bb11_xy2(nx,ny,3), &
                    bb11_xz(nx,nz,3), bb11_yz(ny,nz,3) )
@@ -1219,6 +1223,10 @@ module Testfield
 !
       if (lvideo.and.lfirst) then
 !
+        if (.not. allocated(cnamev)) then
+          call fatal_error('initialize_testfield', &
+              'Cannot search through unallocated array CNAMEV')
+        endif
         if (('bb11' .IN. cnamev) /= 0) then
 !
 !  first test solution
