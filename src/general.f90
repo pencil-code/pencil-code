@@ -97,7 +97,7 @@ module General
   endinterface
 !
   interface operator (.IN.)
-    module procedure in
+    module procedure string_in_array
   endinterface
 !
 !  State and default generator of random numbers.
@@ -2775,7 +2775,7 @@ module General
 !
     endfunction lextend_vector_char
 !***********************************************************************
-  integer function in(str,cvec)
+  integer function string_in_array(str, cvec)
 !
 !  finds position of a string str in a vector of strings cvec,
 !  returns zero if not contained
@@ -2784,13 +2784,19 @@ module General
 !
     character (LEN=*), dimension(:), intent(IN) :: cvec
     character (LEN=*),               intent(IN) :: str
+    integer                                     :: i
 
-    do in=1,size(cvec)
-      if (cvec(in)==str) return
+    do i=1,size(cvec)
+      if (cvec(i)==str) then
+         string_in_array = i
+         write(0, *) '...Done 1.'
+         return
+      endif
+      write(0, *) '...Done 2.'
     enddo
 
-    in = 0
+    string_in_array = 0
 
-  endfunction in
+  endfunction string_in_array
 !***********************************************************************
 endmodule General
