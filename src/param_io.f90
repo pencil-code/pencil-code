@@ -111,7 +111,7 @@ module Param_IO
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       ltime_integrals, lnowrite, noghost_for_isave, nghost_read_fewer, &
-      lwrite_yaverages, lwrite_zaverages, lwrite_phiaverages, lwrite_slices, &
+      lwrite_yaverages, lwrite_zaverages, lwrite_phiaverages, &
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
