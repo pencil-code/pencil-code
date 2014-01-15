@@ -1691,7 +1691,11 @@ else if ($hn =~ hector*) then
 else if ($hn =~ norosx52) then
   echo "norosx52 pc, Stockholm"
   set mpirun = /opt/local/bin/openmpirun
-else 
+else if ($hn =~ mnode) then
+  echo "settings edited by Sven"
+  set mpirun = mpirun_rsh
+  set mpirunops = "-hostfile mpd.hosts"
+else
   echo "Generic setup; hostname is <$hn>"
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
