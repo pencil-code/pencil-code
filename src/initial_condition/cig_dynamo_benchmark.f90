@@ -6,7 +6,8 @@
 !  following Christensen et al. Physics of the Earth and Planetary 
 !  Interiors, 128, 25-34 (2001).
 !
-!  19-nov-13/joern: coded with adaptations from spherical_convection.f90za
+!  19-nov-13/joern: coded with adaptations from spherical_convection.f90
+!  does not work in x paralisation
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -29,12 +30,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: Tout=5000., rhoin=1., A=0.1
+  real :: rhoin=1., A=0.1, DeltaT0=0.1
 ! non-dimensional paramethers
   real :: Ekman=1e-3, Rayleigh=100., Prandtl=1.0, mag_Prandtl=5.0
 !
   namelist /initial_condition_pars/ &
-      Ekman,Rayleigh,Prandtl, mag_Prandtl,Tout,rhoin, A
+      Ekman,Rayleigh,Prandtl, mag_Prandtl,DeltaT0, rhoin, A
 !
   contains
 !***********************************************************************
@@ -76,7 +77,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof
-      real :: rin, rout, DeltaT, chi, eta, nu, Bnorm
+      real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, cs2top, Tout
       real, pointer :: gravx, cp, cv
       integer :: ierr, unit=1, i
 !
@@ -100,9 +101,14 @@ module InitialCondition
       rout=x0+Lxyz(1)
       xx=2*x(l1:l2)-rin-rout
 !
-!  setting DeltaT
+!  setting T0
+!  T0 is related to gravx to be sufficient in an anelastic regime.
+!     d*gravx*rout/cs = 0.01
+!     cs2= around 100*d^2*gravx^2*rout^2. ; cs2top=cs20*(Tout)*cv*gamma*(gamma-1.)
 !
-      DeltaT=Tout/400.
+    cs2top = 1.e3*Lxyz(1)**2.*gravx**2.*rout**2.
+    Tout = cs2top/cs20/(cv*gamma*(gamma-1.))
+    DeltaT = DeltaT0*Tout
 !
 !  radial temperature profile
 !
@@ -161,15 +167,15 @@ module InitialCondition
 !
        if (iproc .eq. root) then
          print*,''
-         print*,'cs2top = ', cs20*(Tout)*cv*gamma*(gamma-1.)
+         print*,'cs2top = ', cs2top
          print*,'cs2bot = ', cs20*(Tout+DeltaT)*cv*gamma*(gamma-1.)
-         print*,'viscosity =', nu
          print*,'rotation rate =', nu/Ekman/Lxyz(1)**2
+          print*,'viscosity =', nu
          print*,'mag. diffusivity =', eta
          print*,'thermal diffusivity =', chi
          print*,'density stratification =',exp(lnrho(1)-lnrho(nx))
          print*,'B normalization =', Bnorm
-         print*,''
+         print*,
        endif
 !
     endsubroutine initial_condition_all
