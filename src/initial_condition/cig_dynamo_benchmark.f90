@@ -175,7 +175,7 @@ module InitialCondition
          print*,'thermal diffusivity =', chi
          print*,'density stratification =',exp(lnrho(1)-lnrho(nx))
          print*,'B normalization =', Bnorm
-         print*,
+         print*,''
        endif
 !
     endsubroutine initial_condition_all
