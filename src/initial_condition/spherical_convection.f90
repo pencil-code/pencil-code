@@ -84,7 +84,7 @@ logical :: lcorona=.false.
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
-      real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.6e-6, Msun=2e30, cvsun=20786.1
+      real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
       real, pointer :: gravx, cp, cv
