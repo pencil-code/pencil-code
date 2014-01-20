@@ -590,7 +590,7 @@ module Magnetic
 !  Ohmic heating
 !
       ohmic: if (lresistivity .and. lenergy .and. lohmic_heat) then
-        call get_resistivity(f, eta_penc)
+        call get_resistivity(f, eta_penc, getall=.true.)
         eta_penc = mu0 * eta_penc
         eth: if (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_penc(l1:l2) * p%j2
@@ -1152,7 +1152,7 @@ module Magnetic
 !
     endsubroutine set_advec_va2
 !***********************************************************************
-    subroutine get_resistivity(f, eta_penc)
+    subroutine get_resistivity(f, eta_penc, getall)
 !
 !  Gets the total normal resistivity along one pencil.
 !  The unit of eta_penc is unit_length^2 / unit_time.
@@ -1161,6 +1161,17 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx), intent(out) :: eta_penc
+      logical, intent(in), optional :: getall
+!
+      logical :: lall
+!
+!  Check if all resistivities are requested.
+!
+      if (present(getall)) then
+          lall = getall .or. .not. limplicit_resistivity
+      else
+          lall = .not. limplicit_resistivity
+      endif
 !
 !  Shock resistivity
 !
@@ -1170,7 +1181,7 @@ module Magnetic
         eta_penc = 0.0
       endif
 !
-      explicit: if (.not. limplicit_resistivity) then
+      explicit: if (lall) then
 !
 !  Constant resistivity
 !
