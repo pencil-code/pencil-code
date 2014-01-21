@@ -30,12 +30,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: rhoin=1., A=0.1, DeltaT0=0.1
+  real :: rhoin=1., A=0.1, DeltaT0=0.1, Tout
 ! non-dimensional paramethers
   real :: Ekman=1e-3, Rayleigh=100., Prandtl=1.0, mag_Prandtl=5.0
 !
   namelist /initial_condition_pars/ &
-      Ekman,Rayleigh,Prandtl, mag_Prandtl,DeltaT0, rhoin, A
+      Ekman,Rayleigh,Prandtl, mag_Prandtl,DeltaT0, rhoin, A, Tout
 !
   contains
 !***********************************************************************
@@ -46,7 +46,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-           "$Id: spherical_convection.f90 21304 2013-11-15 22:10:55Z pkapyla $")
+           "$Id: cig_dynamo_benchmark.f90 21304 2013-11-15 22:10:55Z pkapyla $")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -77,7 +77,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof
-      real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, cs2top, Tout
+      real :: rin, rout, chi, eta, nu, Bnorm, DeltaT
       real, pointer :: gravx, cp, cv
       integer :: ierr, unit=1, i
 !
@@ -106,8 +106,9 @@ module InitialCondition
 !     d*gravx*rout/cs = 0.01
 !     cs2= around 100*d^2*gravx^2*rout^2. ; cs2top=cs20*(Tout)*cv*gamma*(gamma-1.)
 !
-    cs2top = 1.e3*Lxyz(1)**2.*gravx**2.*rout**2.
-    Tout = cs2top/cs20/(cv*gamma*(gamma-1.))
+!    cs2top = 1.e3*Lxyz(1)**2.*gravx**2.*rout**2.
+!
+!    Tout = cs2top/cs20/(cv*gamma*(gamma-1.))
     DeltaT = DeltaT0*Tout
 !
 !  radial temperature profile
@@ -167,7 +168,7 @@ module InitialCondition
 !
        if (iproc .eq. root) then
          print*,''
-         print*,'cs2top = ', cs2top
+         print*,'cs2top = ', cs20*(Tout)*cv*gamma*(gamma-1.)
          print*,'cs2bot = ', cs20*(Tout+DeltaT)*cv*gamma*(gamma-1.)
          print*,'rotation rate =', nu/Ekman/Lxyz(1)**2
           print*,'viscosity =', nu
