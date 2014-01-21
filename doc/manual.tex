@@ -7608,6 +7608,7 @@ where \code{nw=nx*ny*nz}.
 9216& Kraken&  0.00485 &$192{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x8 &13-jan-12 & WL\\
 9216& Kraken& 0.00158   &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 24x48x8 &17-jan-12 & WL\\
 9216& Kraken& $8.0{\!\times\!}10^{-4}$  &$1536{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 24x48x8 &18-jan-12 & WL\\
+9216&Lindgren&$2.4{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x48x48&21-jan-14&AB\\
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
@@ -11239,9 +11240,10 @@ the latest set of parameters, you need to look at the code.
                  added, since otherwise the vector potential $\Av$ has a
                  linear $\xv$-dependence which is incompatible with
                  periodicity). \\
-  \var{lignore_Bext_in_b2} [F] or \var{luse_Bext_in_b2} [T]
-               & add uniform background magnetic field when computing
-               $\bv^2$ pencils\\
+  \var{lignore_Bext_in_b2} [F]
+               & add uniform background magnetic field when \\
+  or \var{luse_Bext_in_b2} [T]
+               & computing $\bv^2$ pencils\\
   \var{eta} [$0.$]
                & magnetic diffusivity $\eta=1/(\mu_0\sigma)$, where
                  $\sigma$ is the electric conductivity. \\
