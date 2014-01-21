@@ -39,6 +39,8 @@ module Particles
   include 'particles.h'
 !
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
+  real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
+  real, dimension (3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
@@ -58,7 +60,8 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
-  real :: pdlaw=0.0
+  real :: pdlaw=0.0, rad_sphere=0.0
+  real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
@@ -97,6 +100,8 @@ module Particles
       lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
+      rad_sphere, pos_sphere, &
+      a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
@@ -499,6 +504,84 @@ module Particles
               fp(k,iyp)=xp0*sin(2*pi*r)
             endif
           enddo
+!
+        case ('random-sphere')
+          if (lroot) print*, 'init_particles: Random particle positions '// &
+              'in a sphere around ', pos_sphere, ' with radius=',rad_sphere
+          if (rad_sphere==0) then
+            call fatal_error('init_particles','random-sphere '// &
+                  'radius needs to be larger than zero')
+          endif
+          if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
+               rad_sphere+pos_sphere(1)>xyz1(1) .or. &
+              -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
+               rad_sphere+pos_sphere(2)>xyz1(2) .or. &
+              -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
+               rad_sphere+pos_sphere(3)>xyz1(3)) then
+            call fatal_error('init_particles','random-sphere '// &
+                 'sphere needs to fit in the box')
+          endif
+          if (lcartesian_coords) then
+            do k=1,npar_loc
+              rp2=2.*rad_sphere**2
+              do while (rp2>rad_sphere**2)
+                call random_number_wrapper(fp(k,ixp))
+                call random_number_wrapper(fp(k,iyp))
+                call random_number_wrapper(fp(k,izp))
+                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*rad_sphere
+                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*rad_sphere
+                fp(k,izp)=(fp(k,izp)-0.5)*2.*rad_sphere
+                rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
+              enddo
+              fp(k,ixp)=fp(k,ixp)+pos_sphere(1)
+              fp(k,iyp)=fp(k,iyp)+pos_sphere(2)
+              fp(k,izp)=fp(k,izp)+pos_sphere(3)
+            enddo
+          else
+            call fatal_error('init_particles','random-sphere '// &
+                 'only implemented for cartesian coordinates')
+          endif
+!
+        case ('random-ellipsoid')
+          if (lroot) print*, 'init_particles: Random particle positions '// &
+              'in an ellipsoid around ', pos_ellipsoid, ' with ' // &
+              'semi-principal axes a,b,c =',a_ellipsoid,b_ellipsoid,c_ellipsoid
+          if ((a_ellipsoid==0) .or. (b_ellipsoid==0) .or. (c_ellipsoid==0)) then
+            call fatal_error('init_particles','random-ellipsoid '// &
+                'all semi-principal axes need to be larger than zero')
+          endif
+          if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
+               a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
+              -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
+               b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
+              -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
+               c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
+            call fatal_error('init_particles','random-ellipsoid '// &
+                 'ellipsoid needs to fit in the box')
+          endif
+          if (lcartesian_coords) then
+            a_ell2=a_ellipsoid**2
+            b_ell2=b_ellipsoid**2
+            c_ell2=c_ellipsoid**2
+            do k=1,npar_loc
+              rp2=2.
+              do while (rp2>1.)
+                call random_number_wrapper(fp(k,ixp))
+                call random_number_wrapper(fp(k,iyp))
+                call random_number_wrapper(fp(k,izp))
+                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*a_ellipsoid
+                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*b_ellipsoid
+                fp(k,izp)=(fp(k,izp)-0.5)*2.*c_ellipsoid
+                rp2=fp(k,ixp)**2/a_ell2+fp(k,iyp)**2/b_ell2+fp(k,izp)**2/c_ell2
+              enddo
+              fp(k,ixp)=fp(k,ixp)+pos_ellipsoid(1)
+              fp(k,iyp)=fp(k,iyp)+pos_ellipsoid(2)
+              fp(k,izp)=fp(k,izp)+pos_ellipsoid(3)
+            enddo
+          else
+            call fatal_error('init_particles','random-ellipsoid '// &
+                 'only implemented for cartesian coordinates')
+          endif
 !
         case ('random-hole')
           if (lroot) print*, 'init_particles: Random particle positions '// &
