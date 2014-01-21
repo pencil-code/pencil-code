@@ -7,7 +7,7 @@
 !  Interiors, 128, 25-34 (2001).
 !
 !  19-nov-13/joern: coded with adaptations from spherical_convection.f90
-!  does not work in x paralisation
+!
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof
+      real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof, TT_prof
       real :: rin, rout, chi, eta, nu, Bnorm, DeltaT
       real, pointer :: gravx, cp, cv
       integer :: ierr, unit=1, i
@@ -142,12 +142,14 @@ module InitialCondition
       do m=m1,m2
       do n=n1,n2
 !
-!  using the full profile to calculate ss and put it and lnrho
+!  using the full profile to calculate ss and put it togehter with lnrho in the f-array
 !
-          TT=TT+DeltaT*(201.*A/sqrt(17920*pi)*(1.-3*xx**2+3*xx**4-xx**6) &
-               *sin(y(m))**4*cos(4*z(n)))
+          TT_prof = TT+DeltaT*(201.*A/sqrt(17920.*pi)*(1.-3.*xx**2.+3.*xx**4.-xx**6.) &
+                       *sin(y(m))**4*cos(4.*z(n)))
+!
           ss_prof=log(TT*cv*gamma*(gamma-1.))/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
+!
           f(l1:l2,m,n,ilnrho) = lnrho
           f(l1:l2,m,n,iss) = ss_prof
 !
