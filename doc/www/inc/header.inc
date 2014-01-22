@@ -1,4 +1,4 @@
-<?
+<?php
 	# $Id$
 
 	date_default_timezone_set ("Europe/Stockholm");
@@ -14,7 +14,7 @@
 	<title>The Pencil Code</title>
 	<meta name="Description" content="The Pencil Code is a high-order finite-difference code for compressible fluid dynamics (CFD) with magnetic fields (MHD).">
 	<meta name="Keywords" content="Pencil, Code, MHD">
-	<meta name="Copyright" content="&copy; Copyright 2001-<? echo strftime ('%Y'); ?> by the Pencil Code development team. The source code and all content of this website are unter GPL.">
+	<meta name="Copyright" content="&copy; Copyright 2001-<?php echo strftime ('%Y'); ?> by the Pencil Code development team. The source code and all content of this website are unter GPL.">
 	<meta name="author" content="Philippe-A. Bourdin, Illa Rivero Losada, and others">
 	<meta name="Robots" content="FOLLOW, All, Index">
 	<link rel="icon" type="image/png" href="/pics/pencils_32x32.png">
@@ -39,13 +39,13 @@
 <!-- left column stuff -->
 <div id="leftcolumn">
 <!-- Navigation Bar -->
-<?
+<?php
 	include "inc/menu.inc";
  ?>
 </div>
 
 <!-- right column stuff -->
-<?
+<?php
 	if ($right_column) { include $right_column.".inc"; }
  ?>
 

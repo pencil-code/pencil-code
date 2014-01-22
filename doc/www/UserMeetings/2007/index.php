@@ -1,4 +1,4 @@
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -33,6 +33,6 @@ svn co --username $USER https://norlx01.albanova.se/svn/pencil-code/trunk
 <li><a href=http://www.nordita.dk/conference/PencilCode06/>Notes from 2006 meeting</a>.<br>
 </small>
 <br>
-<?
+<?php
 	include "inc/footer.inc";
  ?>

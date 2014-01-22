@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -18,7 +18,7 @@ The Pencil Code can also be obtained from a <a href="http://code.google.com/p/pe
 <div class="centcolumnpad">
 Available as open source at our project page: <a href="http://pencil-code.googlecode.com/" target="_top">Pencil-Code.googlecode.com</a>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

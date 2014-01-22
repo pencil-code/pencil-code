@@ -1,4 +1,4 @@
-<?
+<?php
 	$menu = array(
 		"Home"                => "/",
 		"News"                => "/news.php",
@@ -17,11 +17,11 @@
 ?>
 <div class="mmenu">
 <ul>
-<?
+<?php
 	foreach ($menu as $text => $link) {
  ?>
-	<li><a href="<? echo $link; ?>"<? if ($own == $link) { echo ' class="mmenuselect"'; } ?>><? echo $text; ?></a></li>
-<?
+	<li><a href="<?php echo $link; ?>"<?php if ($own == $link) { echo ' class="mmenuselect"'; } ?>><?php echo $text; ?></a></li>
+<?php
 	}
  ?>
 </ul>

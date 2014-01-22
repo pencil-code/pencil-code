@@ -1,4 +1,4 @@
-<?
+<?php
 	# $Id$
 
         # Echoes "$pre$str$post$always" or just "$always$default" if $str is empty.

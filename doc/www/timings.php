@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -42,7 +42,7 @@ doesn't produce NaNs, of course...)</p>
 
 <p align="center"><img src="/pics/ptimings.png" border="0" width="510" height="340" alt="timings"></p>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

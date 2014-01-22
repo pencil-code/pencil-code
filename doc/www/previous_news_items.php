@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -29,7 +29,7 @@ that converts from the old files to the new ones.</li>
 </ul>
 
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

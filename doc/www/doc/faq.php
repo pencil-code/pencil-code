@@ -1,4 +1,4 @@
-<?
+<?php
 	include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -2894,6 +2894,6 @@ class="cmtt-12">&#x00A0;the</span><span
 class="cmtt-12">&#x00A0;code"</span></div>
                                                                                             
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>

@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -26,7 +26,7 @@ A non-helical hydro turbulence run, 512<sup>3</sup> meshpoints, 128 processors.
 </table>
 </div>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

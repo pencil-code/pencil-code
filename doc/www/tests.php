@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -64,11 +64,11 @@ the very minimal auto-test:</p>
 <div class="centcolumnpad">
 <h2>Results from tests</h2>
 We have prepared a quick overview on the results of some of our automatic tests:
-<?
+<?php
 	include "inc/samples_overview.inc";
 ?>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

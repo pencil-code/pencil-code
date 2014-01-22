@@ -1,8 +1,11 @@
 <!-- $Id$ -->
-<?
+<?php
 	include "inc/header.inc";
-
-	$meetings = array (
+        
+        // Make the code cleaner
+foreach(array('title','date','link','notes','videos','city','venue','country') as $item ) define($item,$item);
+	
+        $meetings = array (
 		array ( title => "10th meeting", date => "07-11 Jul, 2014", link => "http://agenda.albanova.se/conferenceDisplay.py?confId=4213", notes => "/meeting2014.php", city => "Göttingen", venue => "Max Planck Institute for Solar System Research", country => "Germany" ),
 		array ( title =>  "9th meeting", date => "17-20 Jun, 2013", link => "http://www.astro.lu.se/~michiel/PC2013/", notes => "/meeting2013.php", city => "Lund", venue => "Lund Observatory", country => "Sweden" ),
 		array ( title =>  "8th meeting", date => "18-21 Jun, 2012", link => "http://agenda.albanova.se/conferenceDisplay.py?confId=3128", notes => "/meeting2012.php", city => "Helsinki", venue => "Physics Department", country => "Finland" ),
@@ -23,16 +26,16 @@
 </p>
 
 <table border="0" cellspacing="10" cellpadding="0">
-<?
+<?php
 	foreach ($meetings as $meeting) {
  ?>
 <tr>
-<td align="right" STYLE="white-space:nowrap;"><? ifecho ("", $meeting['date'], ":"); ?></td>
-<td STYLE="white-space:nowrap;"><? echolink ($meeting['link'], $meeting['title']); ?></td>
-<td STYLE="white-space:nowrap;"><? iflink  ($meeting['notes'], "[notes]"); ?><? iflink ($meeting['videos'], "[videos]"); ?></td>
-<td STYLE="font-size:12px;"><? ifecho ("in ", $meeting['city'], ""); ?><? ifecho (", ", $meeting['venue'], ""); ?><? ifecho (" (", $meeting['country'], ")"); ?>.</td>
+<td align="right" STYLE="white-space:nowrap;"><?php ifecho ("", @$meeting['date'], ":"); ?></td>
+<td STYLE="white-space:nowrap;"><?php echolink (@$meeting['link'], @$meeting['title']); ?></td>
+<td STYLE="white-space:nowrap;"><?php iflink  (@$meeting['notes'], "[notes]"); ?><?php iflink (@$meeting['videos'], "[videos]"); ?></td>
+<td STYLE="font-size:12px;"><?php ifecho ("in ", @$meeting['city'], ""); ?><?php ifecho (", ", @$meeting['venue'], ""); ?><?php ifecho (" (", @$meeting['country'], ")"); ?>.</td>
 </tr>
-<?
+<?php
 	}
  ?>
 </table>
@@ -41,7 +44,7 @@
 <img src="/pics/2005a.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2005b.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2006a.jpg" width="240" height="180" border="0" alt="2006">
 </p>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

@@ -1,4 +1,4 @@
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -9,6 +9,6 @@
 <br>
 <br>
 
-<?
+<?php
 	include "inc/footer.inc";
  ?>

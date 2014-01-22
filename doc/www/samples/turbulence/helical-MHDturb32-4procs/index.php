@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -27,7 +27,7 @@ Low resolution helical MHD turbulence run, 2x2 processors, initial field: random
 </div>
 
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

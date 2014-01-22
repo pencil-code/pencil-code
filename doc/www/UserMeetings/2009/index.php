@@ -1,4 +1,4 @@
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -18,6 +18,6 @@
 <li><a href=../2008/>Notes from 2008 meeting</a>.<br>
 </small>
 <br>
-<?
+<?php
 	include "inc/footer.inc";
  ?>

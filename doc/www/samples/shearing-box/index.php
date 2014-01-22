@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -20,7 +20,7 @@ Shearing box simulation, 256<sup>3</sup> meshpoints, 32 processors.
 </table>
 </div>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

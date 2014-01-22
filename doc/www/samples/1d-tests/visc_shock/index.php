@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -31,6 +31,6 @@ In Makefile.local, set "VISCOSITY=visc_shock" to invoke shock viscosity.
 </table>
 </div>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>

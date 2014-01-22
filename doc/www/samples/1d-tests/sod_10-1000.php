@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -83,7 +83,7 @@ viscosity</a>, both compression and expansion shocks can be made as
 sharp as possible.</li>
 </ul>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

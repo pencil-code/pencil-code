@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -44,7 +44,7 @@ samples/2d-tests/conv-slab-2d and conv-slab-2d2).
 </li>
 </ul>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

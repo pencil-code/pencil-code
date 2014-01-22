@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -43,7 +43,7 @@ de Val-Borro, M. and 22 coauthors (incl. Lyra, W.):&nbsp;2006, ``A comparative s
 </ul>
 
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

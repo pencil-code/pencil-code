@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -54,7 +54,7 @@ For code problems, <a href="/doc/faq.php">here</a> an automatically generated ex
 Some helpful information are available on the Google
 Code <a href="http://code.google.com/p/pencil-code/w/list">wiki</a>.
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -121,7 +121,7 @@
 
 </form>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

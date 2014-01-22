@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<?
+<?php
 	 include "inc/header.inc";
  ?>
 <div class="centcolumnpad">
@@ -13,7 +13,7 @@ Welcome to the new Pencil Code homepage, designed and implemented during the Pen
 
 </ul>
 </div>
-<?
+<?php
 	include "inc/footer.inc";
  ?>
 

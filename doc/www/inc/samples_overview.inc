@@ -4,7 +4,7 @@
 	<li><a href="/samples/turbulence/helical-MHDturb32-4procs/">helical MHD turbulence</a></li>
 	<li><a href="/samples/turbulence/hydro512f/">non-helical hydro turbulence</a></li>
 	<li><a href="/samples/shearing-box/">Shearing box</a></li>
-        <li><a href="/samples/2d-tests/Rayleigh-Taylor/">Rayleigh-Taylor instability</a> [is this ^/samples/2d-tests/Rayleigh-Taylor/ ?]</li>
-        <li><a href="/samples/2d-tests/Kelvin-Helmholtz/">Kelvin-Helmholtz</a> [is this ^/samples/2d-tests/Kelvin-Helmholtz/ ?]</li>
+        <li><X href="/samples/2d-tests/Rayleigh-Taylor/">Rayleigh-Taylor instability</X> [is this ^/samples/2d-tests/Rayleigh-Taylor/ ?]</li>
+        <li><X href="/samples/2d-tests/Kelvin-Helmholtz/">Kelvin-Helmholtz</X> [is this ^/samples/2d-tests/Kelvin-Helmholtz/ ?]</li>
 </ul>
 
