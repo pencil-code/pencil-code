@@ -2789,10 +2789,8 @@ module General
     do i=1,size(cvec)
       if (cvec(i)==str) then
          string_in_array = i
-         write(0, *) '...Done 1.'
          return
       endif
-      write(0, *) '...Done 2.'
     enddo
 
     string_in_array = 0
