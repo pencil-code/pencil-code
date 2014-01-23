@@ -35,7 +35,6 @@ module power_spectrum
   integer :: firstout = 0
 !
   character (LEN=20) :: ckxrange='', ckyrange='', czrange=''
-  integer, parameter :: nk_max=10, nz_max=10
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
@@ -767,7 +766,7 @@ module power_spectrum
       if (lintegrate_z) then
         write(1,'(1p,8e15.7)') spectrum1_sum(1:nkl)
       else
-        do i=1,10
+        do i=1,nz_max
           if ( zrange(1,i) > 0 ) then
             do jl=zrange(1,i), zrange(2,i), zrange(3,i)
               write(1,'(1p,8e15.7)') (spectrum2_global(il,jl), il=1,nkl)
