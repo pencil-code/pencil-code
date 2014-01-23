@@ -79,7 +79,7 @@ module Sub
 !
   public :: tensor_diffusion_coef
 !
-  public :: smooth_kernel, despike
+  public :: smooth, smooth_kernel, despike
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
@@ -3341,6 +3341,85 @@ module Sub
       enddo
 !
     endsubroutine smooth_kernel
+!***********************************************************************
+    subroutine smooth(f, ivar)
+!
+!  Smoothes the f-variable ivar with a polynomial kernel.  It assumes
+!  that the boundary conditions for ivar have been applied, and the
+!  ghost cells are not treated upon return.
+!
+!  23-jan-14/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar
+!
+      integer, dimension(-nghost:nghost) :: b
+      real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kernel = 0.0
+      real, dimension(-nghost:nghost) :: weight
+      real, dimension(nx,ny,nz) :: work
+      logical :: lfirstcall = .true.
+      integer :: i1 = 0, i2 = 0, j1 = 0, j2 = 0, k1 = 0, k2 = 0
+      integer :: i, j, k
+!
+!  Initialization at first call.
+!
+      init: if (lfirstcall) then
+        call binomial(b)
+        weight = real(b)
+        kernel(0,0,0) = 1.0
+        k = 2 * nghost + 1
+        xdim: if (nxgrid > 1) then
+          kernel(:,0,0) = kernel(0,0,0) * weight
+          i1 = -nghost
+          i2 = nghost
+        endif xdim
+        ydim: if (nygrid > 1) then
+          kernel(:,:,0) = spread(kernel(:,0,0), 2, k) * spread(weight, 1, k)
+          j1 = -nghost
+          j2 = nghost
+        endif ydim
+        zdim: if (nzgrid > 1) then
+          kernel = spread(kernel(:,:,0), 3, k) * spread(spread(weight, 1, k), 1, k)
+          k1 = -nghost
+          k2 = nghost
+        endif zdim
+        kernel = kernel / sum(kernel)
+        lfirstcall = .false.
+      endif init
+!
+!  Smooth the field (assuming boundary conditions for ivar has been applied).
+!
+      work = 0.0
+      do k = k1, k2
+        do j = j1, j2
+          do i = i1, i2
+            work = work + kernel(i,j,k) * f(l1+i:l2+i,m1+j:m2+j,n1+k:n2+k,ivar)
+          enddo
+        enddo
+      enddo
+      f(l1:l2,m1:m2,n1:n2,ivar) = work
+!
+    endsubroutine smooth
+!***********************************************************************
+    subroutine binomial(b)
+!
+!  Finds the binomial coefficients.
+!
+!  23-jan-14/ccyang: coded.
+!
+      integer, dimension(:), intent(out) :: b
+!
+      integer :: n, i
+!
+      n = size(b) - 1
+!
+      b(1) = 1
+      do i = 1, n - 1
+        b(i+1) = b(i) * (n - i + 1) / i
+      enddo
+      b(n+1) = 1
+!
+    endsubroutine binomial
 !***********************************************************************
     subroutine identify_bcs(varname_input,idx)
 !
