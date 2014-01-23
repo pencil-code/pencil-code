@@ -165,7 +165,7 @@ module Cdata
   logical :: lformat=.false.
   logical :: lread_less=.false.
   logical :: loutput_varn_at_exact_tsnap=.false.
-  logical :: lread_from_other_prec=.false.
+  logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
 !
 !  Units (need to be in double precision).
 !
@@ -477,8 +477,8 @@ module Cdata
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   character (LEN=40) :: xy_spec=''
-  integer, parameter :: n_xy_specs_max=10
   character (LEN=10), dimension(n_xy_specs_max) :: xy_specs=''
+  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: sp_spec=.false.
