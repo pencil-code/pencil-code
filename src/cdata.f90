@@ -476,9 +476,9 @@ module Cdata
   logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
+  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=40) :: xy_spec=''
   character (LEN=10), dimension(n_xy_specs_max) :: xy_specs=''
-  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: sp_spec=.false.
