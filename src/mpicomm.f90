@@ -6968,9 +6968,11 @@ module Mpicomm
                               else if ( iproc==i ) then       ! if executing processor is hit by index i: send to root
                                 if (lcomplex) then
                                   print*, 'SEND: i, tag, iya, iye, iys,nsend=', i, tag,iya, iye, iys,iz-n1g+1, nsend
-                                  call MPI_SEND(sendbuf_cmplx(iya:iye:iys,:,iz-n1g+1,ic), nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                  call MPI_SEND(sendbuf_cmplx(iya:iye:iys,:,iz-n1g+1,ic), &
+                                                nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
                                 else
-                                  call MPI_SEND(sendbuf(iya:iye:iys,:,iz-n1g+1),nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                                  call MPI_SEND(sendbuf(iya:iye:iys,:,iz-n1g+1), &
+                                                nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                                 endif
                               endif
 
