@@ -2575,6 +2575,8 @@ module General
 !
 ! 10-may-11/MR: coded
 !
+    use Cdata, only: nk_max
+!
     integer,                           intent(in)           :: unit
     integer, dimension(3,*)          , intent(in)           :: xranges, yranges
     real,    dimension(nxgrid,nygrid), intent(in)           :: buffer
@@ -2599,7 +2601,7 @@ module General
       transl = .false.
     endif
 !
-    do j=1,10
+    do j=1,nk_max
       if ( yranges(1,j) > 0 ) then
         do jl=yranges(1,j),yranges(2,j),yranges(3,j)
           do i=1,10
@@ -2634,6 +2636,8 @@ module General
 !
 ! 10-may-11/MR: coded
 !
+    use Cdata, only: nk_max
+!
     integer,                 intent(in) :: unit
     real,    dimension(*)  , intent(in) :: buffer
     complex, dimension(*)  , intent(in) :: buffer_cmplx
@@ -2649,7 +2653,7 @@ module General
     lcomplex = .true.
 !
  1  unfilled = 0
-    do i=1,10
+    do i=1,nk_max
       if ( ranges(1,i) > 0 ) then
         if (lcomplex) then
           call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
