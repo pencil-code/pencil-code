@@ -6817,7 +6817,8 @@ module Mpicomm
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !
       use General, only: write_by_ranges_2d_cmplx, write_by_ranges_2d_real, &
-                         write_by_ranges_1d_cmplx, write_by_ranges_1d_real
+                         write_by_ranges_1d_cmplx, write_by_ranges_1d_real, &
+                         get_range_no
 !
       integer,                               intent(in   ) :: unit, ncomp
       real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
@@ -6829,7 +6830,7 @@ module Mpicomm
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
-      integer :: k,ii,ncompl,ic
+      integer :: k,ii,ncompl,ic, n1g, n2g, m1g, m2g, iya, iye, iys, nsend
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)
       complex, allocatable :: rowbuf_cmplx(:)
@@ -6874,19 +6875,19 @@ module Mpicomm
 !
       if (ltrans) then
         if (lcomplex) then
-          allocate( rowbuf(ny) )
+          allocate( rowbuf_cmplx(nxgrid) )
         else
-          allocate( rowbuf_cmplx(ny) )
+          allocate( rowbuf(nxgrid) )
         endif
       endif
 !
       nxy = nxgrid*ny
 !
-      iproca=1; iproce=-1
-!
 ! loop over all variables for which spectrum has been calculated
 !
       do ic=1,ncompl
+!
+        iproca=1; iproce=-1; n2g=0
 !
 ! loop over all processor array layers in z direction
 !
@@ -6895,6 +6896,8 @@ module Mpicomm
 ! iproca, iproce - start and end processor index in layer np
 !
           iproce = iproce + nprocxy
+          n1g = n2g+1; n2g = n2g+nz
+          !!print*, 'ic,np,iproca,iproce,n1g,n2g=', ic,np,iproca,iproce,n1g, n2g
 !
 ! loop over all ranges of z indices in zrangel
 !
@@ -6904,10 +6907,11 @@ module Mpicomm
 ! loop over all z indices in range k
 !
               do iz = zrangel(1,k), zrangel(2,k), zrangel(3,k)
+                !!print*, 'iz=', iz
 !
 ! check if z index iz is in local z index range of executing processor
 !
-                if ( iz >= n1 .and. iz <= n2 ) then
+                if ( iz >= n1g .and. iz <= n2g ) then
 !
 ! branch for transposed output
 !
@@ -6915,13 +6919,23 @@ module Mpicomm
 !
                     do ii=1,nk_max
                       if ( kyrangel(1,ii) > 0 ) then
-                        do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
+
+                        !!print*, 'ii, kyrangel(:,ii)=',ii, kyrangel(:,ii) 
+                        iys = kyrangel(3,ii)
+                        m1g=1; m2g=ny
+                        iya = max(m1g,kyrangel(1,ii))
+                        iye = min(m2g,kyrangel(2,ii))  
+
+                        if (iye>=iya) then
+                          !!print*, 'iya, iye, iys=', iya, iye, iys
+                        !!do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
 !
                           if ( lroot .and. np==1 ) then
+                            !!print*, 'iz, n1g, n2g,i=', iz, n1g, n2g, 'root'
                             if (lcomplex) then
-                              call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )
+                              call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iya:iye:iys,:,iz,ic), kxrangel )
                             else
-                              call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )
+                              call write_by_ranges_1d_real( 1, sendbuf(iya:iye:iys,:,iz), kxrangel )
                             endif
                           endif
 !
@@ -6929,31 +6943,40 @@ module Mpicomm
 !
                           do i=iproca,iproce
 !
+                            m1g=m2g+1; m2g=m2g+ny
+                            iya = max(m1g,kyrangel(1,ii))-m1g+1
+                            iye = min(m2g,kyrangel(2,ii))-m1g+1
+!
+                            !!print*, 'iproc, iz, n1g, n2g,i=', iproc, iz, n1g, n2g, i
+!
 !  overflow possible for large ncpuxy, nz, nxgrid (comment by Anders)
 !
-                            tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca
+                            if ( iye >= iya) then
 !
-                            if (lroot) then
-                              if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, ny, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
-                                call write_by_ranges_1d_cmplx( 1, rowbuf_cmplx, kxrangel )
-                              else
-                                call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-                                call write_by_ranges_1d_real( 1, rowbuf, kxrangel )
+                              nsend = get_range_no(kyrangel(1,ii),1)*ny
+                              tag = nprocxy*(iz+1)*iya + nprocxy*iz + i-iproca
+!
+                              if (lroot) then
+                                if (lcomplex) then
+                                  print*, 'RECV: i, tag, nsend=', i, tag, nsend
+                                  call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
+                                  call write_by_ranges_1d_cmplx( 1, rowbuf_cmplx, kxrangel )
+                                else
+                                  call MPI_RECV(rowbuf, nsend, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+                                  call write_by_ranges_1d_real( 1, rowbuf, kxrangel )
+                                endif
+                              else if ( iproc==i ) then       ! if executing processor is hit by index i: send to root
+                                if (lcomplex) then
+                                  print*, 'SEND: i, tag, iya, iye, iys,nsend=', i, tag,iya, iye, iys,iz-n1g+1, nsend
+                                  call MPI_SEND(sendbuf_cmplx(iya:iye:iys,:,iz-n1g+1,ic), nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                else
+                                  call MPI_SEND(sendbuf(iya:iye:iys,:,iz-n1g+1),nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                                endif
                               endif
-                            else if ( iproc==i ) then       ! if executing processor is hit by index i: send to root
-                              if (lcomplex) then
-                                rowbuf_cmplx=sendbuf_cmplx(iy,:,iz,ic)
-                                call MPI_SEND(rowbuf_cmplx, ny, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
-                              else
-                                rowbuf=sendbuf(iy,:,iz)
-                                call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
-                              endif
+
                             endif
-!
                           enddo
-!
-                        enddo
+                        endif
                       endif
                     enddo
 !
@@ -7003,8 +7026,6 @@ module Mpicomm
 !
         enddo
       enddo
-!
-      if (ltrans) deallocate(rowbuf)
 !
     contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -7148,8 +7169,6 @@ module Mpicomm
             endif
           enddo
         endif
-!
-        deallocate(flags)
 !
         if (count>0) then
           call safe_character_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
