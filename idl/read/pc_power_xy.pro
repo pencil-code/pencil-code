@@ -116,7 +116,7 @@ common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, lno_z_pos
 
 common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
@@ -125,6 +125,7 @@ common wavenrs, kxs, kys, kshell
 ;
 close,1
 
+        pc_read_grid,obj=grid,/trim
 openr,1, file, error=err
 if err ne 0 then return, 0
 
@@ -199,23 +200,26 @@ if err ne 0 then return, 0
 
     endif
 
-    if not lint_z then begin
-      readf, 1, headline
-      if strpos(strlowcase(headline),'positions') eq -1 then $
-        print, warn+' corrupt!' $
-      else if not lint_z then begin
-        ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
-        nz = fix(strmid(headline,ia,ie-ia+1))
-        
-        if nz le 0 then begin
-          print, warn+' corrupt! -- no positive number of z positions given!'
-          stop
-        endif else begin
-          zpos=fltarr(nz)
-          readf, 1, zpos
-        endelse  
-      endif
-    endif
+    if not lint_z then $
+      if lno_z_pos then begin
+        zpos=grid.z
+      endif else begin
+        readf, 1, headline
+        if strpos(strlowcase(headline),'positions') eq -1 then $
+          print, warn+' corrupt!' $
+        else if not lint_z then begin
+          ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
+          nz = fix(strmid(headline,ia,ie-ia+1))
+          
+          if nz le 0 then begin
+            print, warn+' corrupt! -- no positive number of z positions given!'
+            stop
+          endif else begin
+            zpos=fltarr(nz)
+            readf, 1, zpos
+          endelse  
+        endif
+      endelse
     
     point_lun, -1, pos 
    
@@ -303,7 +307,7 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir, $ 
-	  lint_shell=lint_shell, lint_z=lint_z, print=prnt
+	  lint_shell=lint_shell, lint_z=lint_z, print=prnt, lno_z_pos=lno_z_pos
 ;
 ;  $Id$
 ;
@@ -340,6 +344,7 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;  lint_shell: shell-integrated spectrum (default=1)
 ;  lint_z    : z-integrated spectrum (default=0)
 ;  print     : flag for print into PS file (default=0)
+;  lno_z_pos : read no z position
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -365,6 +370,7 @@ default,datatopdir,'data'
 default,lint_shell,1
 default,lint_z,0
 default, prnt, 0
+default, lno_z_pos, 1
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -440,7 +446,7 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1 )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, lno_z_pos )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
