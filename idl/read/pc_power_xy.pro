@@ -90,31 +90,35 @@ PRO plot_segs, x, y, seginds, styles=styles, colors=colors, overplot=overplot, _
 
 END
 ;******************************************************************************************
-PRO alloc_specs, specloc, spec, lint_shell, lint_z
+PRO alloc_specs, spec, lint_shell, lint_z, lcomplex, fullspec=fullspec
 
-common pars,  nx, ny, nz, nk, nt
+common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 
   if lint_shell then begin
-    if lint_z then begin
-      specloc=fltarr(nk)
-      spec=fltarr(nk,nt) 
-    endif else begin
-      specloc=fltarr(nk,nz)      
-      spec=fltarr(nk,nz,nt)
-    endelse
-  endif else if lint_z then begin
-    specloc=fltarr(nx,ny)
-    spec=fltarr(nx,ny,nt) 
-  endif else begin
-    specloc=fltarr(nx,ny,nz)
-    spec=fltarr(nx,ny,nz,nt)
-  endelse
+    if lint_z then $
+      dims='nk' $
+    else $
+      dims='nk,nz'      
+  endif else if lint_z then $
+    dims='nx,ny' $
+  else $
+    dims='nx,ny,nz'
+
+  if lcomplex then $
+    cmd = 'complex' $
+  else $
+    cmd = 'flt'
+
+  cmd = 'spec='+cmd+'arr('+dims
+
+  ierr = execute(cmd+')') 
+  if keyword_set(fullspec) then ierr = execute('full'+cmd+',nt)')
 
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, extr, startpos
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos
 
-common pars,  nx, ny, nz, nk
+common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
 ;
 ;  Looping through all the data to get number of spectral snapshots
@@ -126,12 +130,13 @@ if err ne 0 then return, 0
 
   headline = ''
   readf, 1, headline
-  witheader=strpos(strlowcase(headline),'power spectrum') ne -1
-  
+  headline = strlowcase(headline)
+  witheader=strpos(headline,'spectrum') ne -1
+
   if witheader then begin
     
     warn = 'Warning: File header of '+strtrim(file,2)
-    if (strpos(strlowcase(headline),'shell-integrated') ne -1) ne lint_shell then begin
+    if (strpos(headline,'shell-integrated') ne -1) ne lint_shell then begin
     
       if lint_shell then $
         print, warn+' says "not shell-integrated" - assume that' $
@@ -142,7 +147,7 @@ if err ne 0 then return, 0
       
     endif
     
-    if (strpos(strlowcase(headline),'z-integrated') ne -1) ne lint_z then begin
+    if (strpos(headline,'z-integrated') ne -1) ne lint_z then begin
 
       if lint_z then $
         print, warn+' says "not z-integrated" - assume that' $
@@ -152,6 +157,14 @@ if err ne 0 then return, 0
       lint_z = ~lint_z
       
     endif
+
+    lcomplex = strpos(headline,'complex') ne -1 
+
+    if strpos(headline,'componentwise') ne -1 then begin
+      ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
+      ncomp = fix(strmid(headline,ia,ie-ia+1))      
+    endif else $
+      ncomp = 1
   
     readf, 1, headline
 
@@ -185,6 +198,24 @@ if err ne 0 then return, 0
       readf, 1, kshell 
 
     endif
+
+    if not lint_z then begin
+      readf, 1, headline
+      if strpos(strlowcase(headline),'positions') eq -1 then $
+        print, warn+' corrupt!' $
+      else if not lint_z then begin
+        ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
+        nz = fix(strmid(headline,ia,ie-ia+1))
+        
+        if nz le 0 then begin
+          print, warn+' corrupt! -- no positive number of z positions given!'
+          stop
+        endif else begin
+          zpos=fltarr(nz)
+          readf, 1, zpos
+        endelse  
+      endif
+    endif
     
     point_lun, -1, pos 
    
@@ -210,58 +241,49 @@ if err ne 0 then return, 0
     
   endelse
 
-  if lint_shell then begin
+  alloc_specs, spectrum1, lint_shell, lint_z, lcomplex
     
-    if lint_z then $
-      spectrum1=fltarr(nk) $
-    else $
-      spectrum1=fltarr(nk,nz)
-      
-  endif else if lint_z then $
-    spectrum1=fltarr(nx,ny) $
-  else $
-    spectrum1=fltarr(nx,ny,nz)
-    
-  globalmin=1e12
-  globalmax=1e-30
+  globalmin=1e12+fltarr(ncomp)
+  globalmax=1e-30+fltarr(ncomp)
+
   nt=0L & time=0. & s0=1
   
   while not eof(1) do begin
   
-    if witheader then begin
-      
-      point_lun, -1, pos
-      readf,1,headline
-    
-      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
-        point_lun, 1, pos $
-      else begin
-        readf,1,headline
-        readf,1, kxs, kys
-        if (lint_shell) then begin
-        
-          readf, 1, headline
-          if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-            print, 'Warning: File header corrupt!'
-            
-          readf, 1, kshell 
-        endif
-      endelse
- 
-    endif
-
     if s0 then begin
+      if witheader then begin
+        
+        point_lun, -1, pos
+        readf,1,headline
+      
+        if strpos(strlowcase(headline),'spectrum') eq -1 then $
+          point_lun, 1, pos $
+        else begin
+          readf,1,headline
+          readf,1, kxs, kys
+          if lint_shell then begin       
+            readf, 1, headline
+            readf, 1, kshell 
+          endif
+          if lint_z then begin
+            readf,1,headline
+            readf,1, zpos
+          endif
+        endelse
+
+      endif
+
       point_lun, -1, startpos
       s0 = 0
     endif
 
-    readf,1,time  
-    readf,1,spectrum1
-    
-    ext = max(spectrum1)     ;!!!(1:*,*))
-    if (ext gt globalmax) then globalmax=ext
-    ext = min(spectrum1)     ;!!!(1:*,*))
-    if (ext lt globalmin) then globalmin=ext
+    readf,1,time 
+    for i=0,ncomp-1 do begin
+      readf,1,spectrum1 
+      if lcomplex then readf,1,spectrum1 
+      globalmax(i)=max(spectrum1) > globalmax(i)
+      globalmin(i)=min(spectrum1) < globalmin(i)
+    endfor
 
     nt=nt+1L
   
@@ -272,6 +294,7 @@ if err ne 0 then return, 0
 ; end first reading
 
   extr = [globalmin,globalmax]
+  
   return, nt
 
 END
@@ -323,7 +346,7 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;  29-nov-10/MR  : adaptions to different types of spectra (with/without headers), 
 ;                  keyword parameters lint_shell, lint_z and print added
 ;
-common pars,  nx, ny, nz, nk, nt
+common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
 
 default,var1,'u'
@@ -371,8 +394,8 @@ end else begin
       file2=''
 end 
 
-file1=file1+'_xy'
-if file2 ne '' then file2=file2+'_xy'
+;;file1=file1+'_xy'
+;;if file2 ne '' then file2=file2+'_xy'
 
 file1=file1+'.dat'
 if file2 ne '' then file2=file2+'.dat'
@@ -385,40 +408,23 @@ if keyword_set(noplot) then iplot=0 else iplot=1
 ;!p.multi=[0,1,1]
 ;!p.charsize=2
 
-mx=0L & my=0L & mz=0L & nvar=0L
-prec=''
-nghostx=0L & nghosty=0L & nghostz=0L
 ;
 ;  Reading number of grid points from 'data/dim.dat'
-;  Need both mx and nghostx to work out nx.
-;  Assume nx=ny=nz
 ;
-close,1
-openr,1,datatopdir+'/'+'dim.dat'
-readf,1,mx,my,mz,nvar
-readf,1,prec
-readf,1,nghostx,nghosty,nghostz
-close,1
+  pc_read_param,o=param,/quiet
+  
+  Lx=param.Lxyz[0]
+  Ly=param.Lxyz[1]
+  Lz=param.Lxyz[2]
+
+  pc_read_dim,o=param,/quiet
+  nx=param.nx
+  ny=param.ny
+  nz=param.nz
 ;
 ;  Calculating some variables
 ;
 first='true'
-nx=mx-nghostx*2
-ny=my-nghosty*2
-nz=mz-nghostz*2
-;print,'nx=',nx
-
-;if  keyword_set(v1) then begin
-  ;if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
-  ;     OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
-  ;     OR (v1 EQ "_phib") OR (v1 EQ "_phi_mag") ) then begin
-     pc_read_grid,o=grid,/quiet
-     
-     Lz=grid.Lz
-     Lx=grid.Lx
-     Ly=grid.Ly
-  ;end
-;end
 
 kxs = fltarr(nx) & kys = fltarr(ny) 
   
@@ -434,7 +440,7 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, global_ext1, startpos1 )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1 )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
@@ -450,7 +456,7 @@ default,yrange,[10.0^(floor(alog10(global_ext1(0)))),10.0^ceil(alog10(global_ext
 if (file2 ne '') then begin
 
   nk = nk0
-  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, global_ext2, startpos2 )
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2 )
  
   if nt2 eq 0 or nk ne nk1 then begin
 
@@ -474,7 +480,7 @@ if (file2 ne '') then begin
     endif else $
       nt = nt1
 
-    alloc_specs, spectrum2, spec2, lint_shell, lint_z 
+    alloc_specs, spectrum2, lint_shell, lint_z, lcomplex, fullspec=spec2 
     openr, 2, datatopdir+'/'+file2
     point_lun, 2, startpos2
 
@@ -485,7 +491,7 @@ endif
 tt=fltarr(nt)
 lasti=nt-1
 
-alloc_specs, spectrum1, spec1, lint_shell, lint_z 
+alloc_specs, spectrum1, lint_shell, lint_z, lcomplex, fullspec=spec1
 openr, 1, datatopdir+'/'+file1
 point_lun, 1, startpos1
 
