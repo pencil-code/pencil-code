@@ -7,7 +7,7 @@
 
 <h3>pencil-code/samples/helical-MHDturb</h3>
 
-<p>Most of the timings reported in the <a href="/doc/manual.pdf">manual</a>
+<p>Most of the timings reported in the <a href="">manual</a>
 of the <a href="http://pencil-code.nordita.com/">Pencil Code</a>
 (currently page 68) are based on the run checked in under
 <i>pencil-code/samples/helical-MHDturb</i>.</p>

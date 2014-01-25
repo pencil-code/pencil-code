@@ -7,6 +7,9 @@
 
 <ul>
 
+<li class="separated">20 Jun 2013:<br>
+Welcome to the new Pencil Code homepage, designed and implemented during the Pencil Code User Meeting 2013 on 17-20 June in Lund.</li>
+
 <li class="separated">21 Sep 2008:<br>
 Now the code is available under
 <a href="http://pencil-code.googlecode.com/">http://pencil-code.googlecode.com/</a>.
