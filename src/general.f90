@@ -2574,6 +2574,7 @@ module General
 ! xranges and yranges for each of the two dimensions; output optionally transposed
 !
 ! 10-may-11/MR: coded
+! 27-jan-14/MR: loops truncated if all valid ranges processed
 !
     use Cdata, only: nk_max
 !
@@ -2602,27 +2603,25 @@ module General
     endif
 !
     do j=1,nk_max
-      if ( yranges(1,j) > 0 ) then
-        do jl=yranges(1,j),yranges(2,j),yranges(3,j)
-          do i=1,10
-            if ( xranges(1,i) > 0 ) then
-              if ( transl ) then
-                if (lcomplex) then
-                  call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
-                else
-                  call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
-                endif
-              else
-                if (lcomplex) then
-                  call write_full_columns_cmplx( unit, buffer_cmplx(1,jl), xranges(1,i), unfilled )
-                else
-                  call write_full_columns_real( unit, buffer(1,jl), xranges(1,i), unfilled )
-                endif
-              endif
+      if ( yranges(1,j) == 0 ) exit
+      do jl=yranges(1,j),yranges(2,j),yranges(3,j)
+        do i=1,nk_max
+          if ( xranges(1,i) == 0 ) exit
+          if ( transl ) then
+            if (lcomplex) then
+              call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
+            else
+              call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
             endif
-          enddo
+          else
+            if (lcomplex) then
+              call write_full_columns_cmplx( unit, buffer_cmplx(1,jl), xranges(1,i), unfilled )
+            else
+              call write_full_columns_real( unit, buffer(1,jl), xranges(1,i), unfilled )
+            endif
+          endif
         enddo
-      endif
+      enddo
     enddo
 !
     if ( unfilled > 0 ) write( unit,'(a)')
@@ -2635,6 +2634,7 @@ module General
 ! output optionally transposed
 !
 ! 10-may-11/MR: coded
+! 27-jan-14/MR: loop truncated if all valid ranges processed
 !
     use Cdata, only: nk_max
 !
@@ -2654,12 +2654,11 @@ module General
 !
  1  unfilled = 0
     do i=1,nk_max
-      if ( ranges(1,i) > 0 ) then
-        if (lcomplex) then
-          call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
-        else
-          call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
-        endif
+      if ( ranges(1,i) == 0 ) exit
+      if (lcomplex) then
+        call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
+      else
+        call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
       endif
     enddo
 !
