@@ -913,6 +913,7 @@ module Pscalar
             slices%xy2= f(l1:l2 ,m1:m2 ,iz2_loc,icc1)
             if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,icc1)
             if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,icc1)
+            if (lwrite_slice_xz2) slices%xz2 = f(l1:l2,iy2_loc,n1:n2,icc1)
             slices%ready = .true.
           else
             slices%ready = .false.
@@ -928,10 +929,9 @@ module Pscalar
             slices%xz = alog(f(l1:l2 ,iy_loc,n1:n2  ,icc1))
             slices%xy = alog(f(l1:l2 ,m1:m2 ,iz_loc ,icc1))
             slices%xy2= alog(f(l1:l2 ,m1:m2 ,iz2_loc,icc1))
-            if (lwrite_slice_xy3) &
-                slices%xy3 = alog(f(l1:l2,m1:m2,iz3_loc,icc1))
-            if (lwrite_slice_xy4) &
-                slices%xy4 = alog(f(l1:l2,m1:m2,iz4_loc,icc1))
+            if (lwrite_slice_xy3) slices%xy3 = alog(f(l1:l2,m1:m2,iz3_loc,icc1))
+            if (lwrite_slice_xy4) slices%xy4 = alog(f(l1:l2,m1:m2,iz4_loc,icc1))
+            if (lwrite_slice_xz2) slices%xz2 = alog(f(l1:l2,iy2_loc,n1:n2,icc1))
             slices%ready = .true.
           else
             slices%ready = .false.
