@@ -24,7 +24,9 @@ program rvid_box
       real, dimension (ny,nz) :: yz_loc
 !
       integer :: ipx,ipy,ipz,iproc,it
-      integer :: ipy1,ipy2,ipx1,ipz1,ipz2,ipz3,ipz4
+      integer :: ipx1 = -1
+      integer :: ipy1 = -1, ipy2 = -1
+      integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
       integer :: lun_pos=33, lun_video=34, i
       integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
@@ -75,9 +77,6 @@ program rvid_box
 !
 ! Loop over all processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
-!
-      ipz1=-1; ipz2=-1; ipz3=-1
-      ipz4=-1; ipy1=-1; ipx1=-1
 !
       do ipx=0,nprocx-1
         do ipy=0,nprocy-1
