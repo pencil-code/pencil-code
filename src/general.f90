@@ -2320,7 +2320,7 @@ module General
     if ( rest<nd ) then
       str=itoa(ncoll)
       if (lcomplex) then
-        write(unit,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
       else
         write(unit,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3))
       endif
