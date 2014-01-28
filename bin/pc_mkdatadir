@@ -112,6 +112,8 @@ else if ($hn =~ nw*) then
 else if ($hn =~ fire) then
   echo $cwd/data >! .tmp
   set str='s/home\/parallab\/ntnu/work/g'
+else if ($hn =~ *stampede* ) then #stampede.tacc.utexas.edu
+  set str='s/home1/scratch/g'
 else if ($hn =~ login*) then
   echo $cwd/data >! .tmp
   set str='s/home/disk\/global/g'

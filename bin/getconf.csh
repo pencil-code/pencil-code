@@ -866,6 +866,13 @@ else if (($hn =~ aprun*) || ($hn =~ kraken*)) then
     cp $file $rundir/src
   end
 #----------------------------------------------
+else if ($hn =~ *stampede* ) then
+  echo "Stampede -- TACC, Texas, USA"
+  set mpirun = 'ibrun'
+  set mpirunops = ''
+  set npops = ''
+  set mpirunops2 = ''
+#--------------------------------------------------------------
 else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   echo "Vuori - CSC, Espoo, Finland"
   set mpirunops = ''
