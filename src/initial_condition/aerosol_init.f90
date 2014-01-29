@@ -438,7 +438,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (2000) ::  PP_data, rhow_data, TT_data
-      real, dimension (2000) ::  ux_data, uy_data, uz_data,uhor
+      real, dimension (2000) ::  ux_data, uy_data, uz_data,uvert
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -518,7 +518,7 @@ module InitialCondition
 !      enddo dataloop
 !
     if (lACTOS_read) then
-        open(143,file="ACTOS_new2.out")
+        open(143,file="ACTOS_new.out")
         do i=1,520 
           read(143,'(29f15.6)'),input_data
           TT_data(i)=input_data(10)+272.15
@@ -526,17 +526,20 @@ module InitialCondition
           PP_data(i)=input_data(7)*1e3   !dyn
 !
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
-          uhor(i)=input_data(29)*1e2
+          uvert(i)=input_data(26)*1e2
         enddo
       close(143)
 !
       open(143,file="ACTOS_xyz_new.out")
         do i=1,1100 
           read(143,'(29f15.6)'),input_data2
-          ux_data(i)=uhor(i)/cos(input_data2(19))/cos(input_data2(20))
-          uy_data(i)=uhor(i)/cos(input_data2(19))/sin(input_data2(20))
-          uz_data(i)=uhor(i)/sin(input_data2(19))
-!
+!          ux_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
+!          uy_data(i)=uvert(i)/cos(input_data2(19))/sin(input_data2(20))
+!          uz_data(i)=uvert(i)/sin(input_data2(19))
+          
+          ux_data(i)=uvert(i)/sin(input_data2(19))/cos(input_data2(20))
+          uy_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
+          uz_data(i)=uvert(i)/cos(input_data2(19))
 !
 !print*,ux_data(i),uy_data(i),i, sin(input_data2(20)),input_data2(20),input_data2(20)*180./3.1415
 !     
