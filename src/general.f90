@@ -2617,9 +2617,9 @@ module General
             endif
           else
             if (lcomplex) then
-              call write_full_columns_cmplx( unit, buffer_cmplx(1,jl), xranges(1,i), unfilled )
+              call write_full_columns_cmplx( unit, buffer_cmplx(:,jl), xranges(1,i), unfilled )
             else
-              call write_full_columns_real( unit, buffer(1,jl), xranges(1,i), unfilled )
+              call write_full_columns_real( unit, buffer(:,jl), xranges(1,i), unfilled )
             endif
           endif
 !
