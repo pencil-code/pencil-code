@@ -6935,10 +6935,10 @@ module Mpicomm
                             if ( lroot ) then
                               print*, 'iz, n1g, n2g,i=', iz, n1g, n2g, 'root'
                               if (lcomplex) then
-                                call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iya:iye:iys,:,iz,ic), kxrangel )
+                                !!call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iya:iye:iys,:,iz,ic), kxrangel )
                                 print*, 'nach write_by_ranges_1d_cmplx (root)'
                               else
-                                call write_by_ranges_1d_real( 1, sendbuf(iya:iye:iys,:,iz), kxrangel )
+                                !!call write_by_ranges_1d_real( 1, sendbuf(iya:iye:iys,:,iz), kxrangel )
                               endif
                             endif
                           endif
