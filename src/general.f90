@@ -33,6 +33,7 @@ module General
   public :: backskip
   public :: lextend_vector
   public :: operator(.IN.)
+  public :: loptest, ioptest, roptest, doptest
 !
   include 'record_types.h'
 !
@@ -2240,6 +2241,7 @@ module General
 ! unfilled (inout) - number of unfilled slots in last written line
 !
 !  20-apr-11/MR: coded
+!  29-jan-14/MR: introduced is for range step; inserted some trim calls
 !
     integer,                        intent(in)    :: unit
     real,    dimension(*),          intent(in)    :: buffer
@@ -2249,7 +2251,7 @@ module General
     integer,              optional, intent(in)    :: ncol
     character(LEN=*),     optional, intent(in)    :: fmt
 !
-    integer          :: ncoll, nd, ia, ie, rest
+    integer          :: ncoll, nd, ia, ie, is, rest
     character(LEN=intlen) :: str
     character(LEN=20):: fmtl, fmth
     logical          :: lcomplex
@@ -2277,17 +2279,14 @@ module General
  1  nd = get_range_no(range,1)
     if ( nd==0 ) return
 !
-    if ( present(ncol) ) then
-      ncoll = ncol
-    else
-      ncoll = 8
-    endif
+    ncoll = ioptest(ncol,8) 
 !
     if ( unfilled > 0 ) then
 !
+      is = range(3)
       fmth = fmtl
       if ( nd>unfilled ) then
-        ie = range(1)+(unfilled-1)*range(3)
+        ie = range(1)+(unfilled-1)*is
         str=itoa(unfilled)
       else
         ie = range(2)
@@ -2298,14 +2297,14 @@ module General
       nd = nd-unfilled
 !
       if (lcomplex) then
-        write(unit,'(1p,'//str//trim(fmth)//')') buffer_cmplx(range(1):ie:range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer_cmplx(range(1):ie:is)
       else
-        write(unit,'(1p,'//str//trim(fmth)//')') buffer(range(1):ie:range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
 !        print*, 'str,buffer, nd=', str, buffer(range(1):ie:range(3)), nd
       endif
 !
       if ( nd>0 ) then
-        ia = ie + range(3)
+        ia = ie + is
       else
         unfilled = -nd
         return
@@ -2320,9 +2319,9 @@ module General
     if ( rest<nd ) then
       str=itoa(ncoll)
       if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer_cmplx(ia:ie:is)
       else
-        write(unit,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
       endif
     endif
 !
@@ -2330,9 +2329,9 @@ module General
 !
       str=itoa(rest)
       if (lcomplex) then
-        write(unit,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer_cmplx(ie+is:range(2):is)
       else
-        write(unit,'(1p,'//str//trim(fmtl)//'$)') buffer(ie+range(3):range(2):range(3))
+        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
       endif
 !
       unfilled = ncoll-rest
@@ -2575,14 +2574,15 @@ module General
 !
 ! 10-may-11/MR: coded
 ! 27-jan-14/MR: loops truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
 !
     use Cdata, only: nk_max
 !
-    integer,                           intent(in)           :: unit
-    integer, dimension(3,*)          , intent(in)           :: xranges, yranges
-    real,    dimension(nxgrid,nygrid), intent(in)           :: buffer
-    complex, dimension(nxgrid,nygrid), intent(in)           :: buffer_cmplx
-    logical,                           intent(in), optional :: trans
+    integer,                 intent(in)           :: unit
+    integer, dimension(3,*), intent(in)           :: xranges, yranges
+    real,    dimension(:,:), intent(in)           :: buffer
+    complex, dimension(:,:), intent(in)           :: buffer_cmplx
+    logical,                 intent(in), optional :: trans
 !
     integer :: i,j,jl,unfilled
     logical :: transl, lcomplex
@@ -2604,9 +2604,11 @@ module General
 !
     do j=1,nk_max
       if ( yranges(1,j) == 0 ) exit
+!
       do jl=yranges(1,j),yranges(2,j),yranges(3,j)
         do i=1,nk_max
           if ( xranges(1,i) == 0 ) exit
+!
           if ( transl ) then
             if (lcomplex) then
               call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
@@ -2620,6 +2622,7 @@ module General
               call write_full_columns_real( unit, buffer(1,jl), xranges(1,i), unfilled )
             endif
           endif
+!
         enddo
       enddo
     enddo
@@ -2635,12 +2638,13 @@ module General
 !
 ! 10-may-11/MR: coded
 ! 27-jan-14/MR: loop truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
 !
     use Cdata, only: nk_max
 !
     integer,                 intent(in) :: unit
-    real,    dimension(*)  , intent(in) :: buffer
-    complex, dimension(*)  , intent(in) :: buffer_cmplx
+    real,    dimension(:)  , intent(in) :: buffer
+    complex, dimension(:)  , intent(in) :: buffer_cmplx
     integer, dimension(3,*), intent(in) :: ranges
 !
     integer :: unfilled, i
@@ -2799,5 +2803,82 @@ module General
     string_in_array = 0
 
   endfunction string_in_array
+!***********************************************************************
+    logical function loptest(lopt,ldef)
+!  
+!  returns value of optional logical parameter opt if present, 
+!  otherwise the default value ldef, if present, .false. if not
+!
+!  20-aug-13/MR: coded
+!  26-aug-13/MR: optional default value ldef added
+!
+      logical, optional, intent(IN) :: lopt, ldef
+
+      if (present(lopt)) then
+        loptest=lopt
+      else if (present(ldef)) then
+        loptest=ldef
+      else
+        loptest=.false.
+      endif
+
+    endfunction loptest
+!***********************************************************************
+    integer function ioptest(iopt,idef)
+!  
+!  returns value of optional integer parameter iopt if present, 
+!  otherwise the default value idef, if present, zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      integer, optional, intent(IN) :: iopt, idef
+
+      if (present(iopt)) then
+        ioptest=iopt
+      elseif (present(idef)) then
+        ioptest=idef
+      else
+        ioptest=0
+      endif
+
+    endfunction ioptest
+!***********************************************************************
+    real function roptest(ropt,rdef)
+!  
+!  returns value of optional real parameter ropt if present,
+!  otherwise the default value rdef, if present, zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      real, optional, intent(IN) :: ropt, rdef
+
+      if (present(ropt)) then
+        roptest=ropt
+      elseif (present(rdef)) then
+        roptest=rdef
+      else
+        roptest=0.
+      endif
+
+    endfunction roptest
+!***********************************************************************
+    real(KIND=8) function doptest(dopt,ddef)
+!  
+!  returns value of optional real*8 parameter dopt if present, 
+!  otherwise the default value ddef, if present, zero, if not.
+!
+!  20-aug-13/MR: coded
+!
+      real(KIND=8), optional, intent(IN) :: dopt, ddef
+
+      if (present(dopt)) then
+        doptest=dopt
+      elseif (present(ddef)) then
+        doptest=ddef
+      else
+        doptest=0.
+      endif
+
+    endfunction doptest
 !***********************************************************************
 endmodule General

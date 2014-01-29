@@ -87,7 +87,6 @@ module Sub
   public :: register_report_aux
   public :: fourier_single_mode
   public :: remove_mean,global_mean
-  public :: loptest, ioptest, roptest, doptest
   public :: insert
   public :: find_max_fvec
   public :: finalize_aver
@@ -481,6 +480,8 @@ module Sub
 !   3-apr-01/axel+gitta: coded
 !  24-jun-08/MR: ladd added for incremental work
 !
+      use General, only: loptest
+!    
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
 !
@@ -496,82 +497,6 @@ module Sub
       endif
 !
     endsubroutine dot_mn
-!***********************************************************************
-    logical function loptest(lopt,ldef)
-!  
-!  returns value of optional logical parameter opt if present, .false. otherwise.
-!
-!  20-aug-13/MR: coded
-!  26-aug-13/MR: optional default value ldef added
-!
-      logical, optional, intent(IN) :: lopt, ldef
-
-      if (present(lopt)) then
-        loptest=lopt
-      else if (present(ldef)) then
-        loptest=ldef
-      else
-        loptest=.false.
-      endif
-
-    endfunction loptest
-!***********************************************************************
-    integer function ioptest(iopt,idef)
-!  
-!  returns value of optional integer parameter iopt if present, otherwise the default value idef, if present, 
-!  zero, if not.
-!
-!  20-aug-13/MR: coded
-!
-      integer, optional, intent(IN) :: iopt, idef
-
-      if (present(iopt)) then
-        ioptest=iopt
-      elseif (present(idef)) then
-        ioptest=idef
-      else
-        ioptest=0
-      endif
-
-    endfunction ioptest
-!***********************************************************************
-    real function roptest(ropt,rdef)
-!  
-!  returns value of optional real parameter ropt if present, otherwise the default value rdef, if present, 
-!  zero, if not.
-!
-!  20-aug-13/MR: coded
-!
-      real, optional, intent(IN) :: ropt, rdef
-
-      if (present(ropt)) then
-        roptest=ropt
-      elseif (present(rdef)) then
-        roptest=rdef
-      else
-        roptest=0.
-      endif
-
-    endfunction roptest
-!***********************************************************************
-    real(KIND=8) function doptest(dopt,ddef)
-!  
-!  returns value of optional real*8 parameter dopt if present, otherwise the default value ddef, if present, 
-!  zero, if not.
-!
-!  20-aug-13/MR: coded
-!
-      real(KIND=8), optional, intent(IN) :: dopt, ddef
-
-      if (present(dopt)) then
-        doptest=dopt
-      elseif (present(ddef)) then
-        doptest=ddef
-      else
-        doptest=0.
-      endif
-
-    endfunction doptest
 !***********************************************************************
     subroutine transpose_mn(a,b)
 !
@@ -973,6 +898,8 @@ module Sub
 !   3-apr-01/axel+gitta: coded
 !  24-jun-08/MR: ladd added for incremental work
 !
+      use General, only: loptest
+!
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: tmp
@@ -1009,6 +936,8 @@ module Sub
 !
 !  21-jul-03/axel: adapted from multmv_mn
 !  24-jun-08/MR: ladd added for incremental work
+!
+      use General, only: loptest
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
@@ -2557,6 +2486,8 @@ module Sub
 !   7-mar-07/wlad: added cylindrical coordinates
 !  24-jun-08/MR: ladd added for incremental work
 !
+      use General, only: loptest
+!
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
@@ -2617,6 +2548,8 @@ module Sub
 !  21-feb-07/axel+dhruba: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
 !  24-jun-08/MR: ladd added for incremental work
+!
+      use General, only: loptest
 !
       intent(in) :: f,k,gradf,uu,iadvec
       intent(out) :: ugradf
@@ -2737,6 +2670,8 @@ module Sub
 !  28-Sep-2009/MR: ladd added for incremental work
 !  26-mar-12/MR: doupwind introduced
 !
+      use General, only: loptest
+!
       intent(in) :: f,k,gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
@@ -2773,6 +2708,8 @@ module Sub
 !  22-Jun-2011/dhruba: made this alternative version which also incorporated the
 ! kurganov-tadmore scheme.
 !  26-mar-12/MR: doupwind introduced
+!
+      use General, only: loptest
 !
       intent(in) :: f,k,gradf,uu,iadvec,ladd
       intent(out) :: ugradf
@@ -2862,6 +2799,8 @@ module Sub
 !  28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
 !  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 !  28-Sep-2009/MR: ladd added for incremental work
+!
+      use General, only: loptest
 !
       intent(in) :: gradf,uu,upwind,ladd
       intent(out) :: ugradf
@@ -3450,6 +3389,7 @@ module Sub
 !  26-aug-13/MR: unnecessary p descriptors removed from cform
 !
       use Cparam, only: max_col_width
+      use General, only: loptest
 !
       character (len=*) :: cname
       logical, optional :: lcomplex
@@ -5919,6 +5859,7 @@ nameloop: do
 !  25-aug-13/MR: removed allocatable attribute from mean to adhere to f95
 !
       use Mpicomm, only: mpiallreduce_sum
+      use General, only: ioptest, loptest
 !
       real, dimension (mx,my,mz,*), intent(in)           :: f
       integer,                      intent(in)           :: inda
@@ -5964,6 +5905,7 @@ nameloop: do
 !  08-may-12/MR: adapted from remove_mean_flow
 !
       use Mpicomm, only: mpiallreduce_sum
+      use General, only: ioptest
 !
       real, dimension (mx,my,mz,*), intent (inout)        :: f
       integer,                      intent (in)           :: inda
@@ -6225,13 +6167,13 @@ nameloop: do
 !
 !  12-sep-2013/MR: coded 
 !     
-      use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpiallreduce_sum, mpireduce_sum   !!, mpicomm 
 !
+!      include 'mpif.h'
       integer,                  intent(IN)   :: nproc,idir
       real, dimension(:,:,:,:), intent(INOUT):: arrm
 
-!!      real, dimension(:,:,:,:), allocatable :: temp
-      real, dimension(size(arrm,1),size(arrm,2),size(arrm,3),size(arrm,4)) :: temp
+      real, dimension(:,:,:,:), allocatable :: temp
 
       integer, dimension(4) :: sz
 !
@@ -6240,8 +6182,11 @@ nameloop: do
         if (nproc>1) then
 !
           sz=(/size(arrm,1),size(arrm,2),size(arrm,3),size(arrm,4)/)
-          !!allocate(temp(sz(1),sz(2),sz(3),sz(4)))
+          allocate(temp(sz(1),sz(2),sz(3),sz(4)))
           call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+!
+          !!call MPI_BCAST(temp, product(sz), MPI_REAL, iprocx+nprocx*ipy, &
+          !!mpicomm(idir),mpierr)
           arrm=temp
 !
         endif

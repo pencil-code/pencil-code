@@ -229,9 +229,9 @@ module Param_IO
 !                  adapted calls to read_pars
 !
       use Mpicomm, only: parallel_open, parallel_close
-      use Sub, only: loptest
+      use General, only: loptest
 !
-      logical, optional, intent(IN)   :: print,file,lierr
+      logical, optional, intent(IN) :: print,file,lierr
 !
       integer, parameter :: unit=1
       integer :: ierr
@@ -400,7 +400,7 @@ module Param_IO
 !  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
 !  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
 !
-    use Sub, only: loptest
+    use General, only: loptest
 !
     integer,          intent(IN):: unit
     external                    :: reader
@@ -532,7 +532,8 @@ module Param_IO
 !
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
-      use Sub, only: parse_bc, loptest
+      use Sub, only: parse_bc
+      use General, only: loptest
 !
       logical, optional :: logging
 !

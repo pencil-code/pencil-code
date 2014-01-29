@@ -408,7 +408,8 @@ module power_spectrum
 !
 ! 18-Jan-11/MR: outsourced from power_xy
 !
-    use Sub,      only: curli, ioptest
+    use Sub,      only: curli
+    use General,  only: ioptest
     use Fourier,  only: fourier_transform_xy
 !
     implicit none

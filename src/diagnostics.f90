@@ -521,7 +521,7 @@ module Diagnostics
 !  26-aug-13/MR:   moved calculation of dVol_rel1 to initialize_diagnostics
 !                  added optional parameter lcomplex for use with imaginary part
 !
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer,                 intent(in)   :: nlname
       real, dimension(nlname), intent(inout):: vname
@@ -2394,8 +2394,8 @@ module Diagnostics
 !  08-feb-12/ccyang: add option for integration
 !   3-sep-13/MR: derived from zsum_mn_name_xy
 !
-      use Sub  , only: loptest
-      use Cdata, only: n,m
+      use General, only: loptest
+      use Cdata,   only: n,m
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
