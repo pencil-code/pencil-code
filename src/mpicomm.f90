@@ -6995,9 +6995,9 @@ module Mpicomm
 !
                     if (lroot .and. np==1 ) then
                       if (lcomplex) then
-                        call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
+                        call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(:,:,iz,ic), kxrangel, kyrangel )
                       else
-                        call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                        call write_by_ranges_2d_real( 1, sendbuf(:,:,iz), kxrangel, kyrangel )
                       endif
                     endif
 !
@@ -7009,10 +7009,10 @@ module Mpicomm
                       if (lroot) then
                         if (lcomplex) then
                           call MPI_RECV(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
-                          call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
+                          call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(:,:,iz,ic), kxrangel, kyrangel )
                         else
                           call MPI_RECV(sendbuf(1,1,iz), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-                          call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                          call write_by_ranges_2d_real( 1, sendbuf(:,:,iz), kxrangel, kyrangel )
                         endif
                       else if ( iproc==i ) then       ! if executing processor is hit by index i: send to root
                         if (lcomplex) then

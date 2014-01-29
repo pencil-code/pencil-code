@@ -2476,9 +2476,9 @@ module Mpicomm
           if ( zrangel(1,k) > 0 ) then
             do kl=zrangel(1,k),zrangel(2,k),zrangel(3,k)
               if ( lcomplex ) then
-                call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,kl,ic), kxrangel, kyrangel, ltrans )
+                call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(:,:,kl,ic), kxrangel, kyrangel, ltrans )
               else
-                call write_by_ranges_2d_real( 1, sendbuf(1,1,kl), kxrangel, kyrangel, ltrans )
+                call write_by_ranges_2d_real( 1, sendbuf(:,:,kl), kxrangel, kyrangel, ltrans )
               endif
             enddo
           endif
