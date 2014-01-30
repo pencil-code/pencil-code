@@ -1035,7 +1035,7 @@ module Hydro
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      real :: dis, xold,yold
+      real :: dis, xold,yold,uprof
       integer :: j,i,l,ixy,ix,iy,iz
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1203,6 +1203,45 @@ module Hydro
               f(l1:l2,m,n,iux)=prof
             enddo
           enddo
+!
+        case ('cos_exp_perturbed')
+
+          if (lroot) print*,'init_uu: tanhy_perturbed'
+          do l=l1,l2;  do m=m1,m2
+            uprof=amp_factor*cos(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
+            do n=n1,n2
+              f(l,m,n,iuy)=uprof
+              f(l,m,n,iux)=0.0
+            enddo
+          enddo; enddo
+!
+        case ('sin_exp_perturbed')
+
+          if (lroot) print*,'init_uu: tanhy_perturbed'
+          do l=l1,l2;  do m=m1,m2
+            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
+            do n=n1,n2
+              f(l,m,n,iuy)=uprof
+              f(l,m,n,iux)=0.0
+            enddo
+          enddo; enddo
+!
+        case ('tanhy_perturbed')
+!
+!  A*( tanh(y/d)+amp_factor*sin(kx_uu*x)*exp(-abs(y/d)) ) profile in the x-direction
+!
+          if (lroot) print*,'init_uu: tanhy_perturbed'
+          do l=l1,l2;  do m=m1,m2
+            uprof=ampluu(j)*tanh(y(m)/widthuu) 
+            do n=n1,n2
+              f(l,m,n,iux)=uprof
+            enddo
+            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
+!            uprof=0.0001*sin(94.2477796*x(l))*exp(-0.1*abs(y(m))/widthuu) 
+            do n=n1,n2
+              f(l,m,n,iuy)=uprof
+            enddo
+          enddo; enddo
 !
         case ('shock-sphere')
 !

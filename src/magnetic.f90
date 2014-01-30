@@ -3350,12 +3350,11 @@ module Magnetic
       endif
 !
 !  Add Battery term.
-!
+!  corrected by Mikhail Modestov
       if (battery_term/=0.0) then
         if (headtt) print*,'daa_dt: battery_term=',battery_term
-        call cross_mn(p%fpres,p%glnrho,baroclinic)
+        call multsv_mn(p%rho1,p%fpres,baroclinic)
         dAdt = dAdt+battery_term*baroclinic
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+battery_term*baroclinic
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
             battery_term*maxval(baroclinic)
       endif
