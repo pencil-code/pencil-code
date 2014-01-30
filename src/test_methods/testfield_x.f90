@@ -1114,7 +1114,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer :: iname,inamex,inamez,inamexz
       logical :: lreset

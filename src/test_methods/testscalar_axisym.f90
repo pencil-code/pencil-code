@@ -1148,7 +1148,7 @@ module Testscalar
 !
       use Cdata
       use Diagnostics
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset
