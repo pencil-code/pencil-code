@@ -20,9 +20,6 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
-!
 !***************************************************************
 
 module Testfield
@@ -1440,14 +1437,8 @@ module Testfield
           do jtest=1,njtest
             iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
             iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-            do n=n1,n2
-              do j=iaxtest,iaztest
-                f(l1:l2,m1:m2,n,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n,j)
-              enddo
-              do j=iuxtest,iuztest
-                f(l1:l2,m1:m2,n,j)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n,j)
-              enddo
-            enddo
+            f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)
+            f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)
           enddo
 !
 !  Reinitialize reference fields with fluctuations of main run.
@@ -1457,13 +1448,11 @@ module Testfield
               jtest=iE0
               iaxtest=iaatest+3*(jtest-1)
               iuxtest=iuutest+3*(jtest-1)
-              do n=n1,n2
-                do j=1,3
-                  jaatest=iaxtest+j-1;  jaa=iax+j-1
-                  juutest=iuxtest+j-1;  juu=iux+j-1
-                  f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
-                  f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
-                enddo
+              do j=1,3
+                jaatest=iaxtest+j-1;  jaa=iax+j-1
+                juutest=iuxtest+j-1;  juu=iux+j-1
+                f(l1:l2,m1:m2,n1:n2,jaatest)=f(l1:l2,m1:m2,n1:n2,jaa)-aamz(n1:n2,j)
+                f(l1:l2,m1:m2,n1:n2,juutest)=f(l1:l2,m1:m2,n1:n2,juu)-uumz(n1:n2,j)
               enddo
             else
               call fatal_error('rescaling_testfield', &
@@ -1636,7 +1625,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset
