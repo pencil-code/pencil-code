@@ -45,6 +45,7 @@ module InitialCondition
      integer :: imass=1, spot_number=10
      integer :: index_H2O=3
      integer :: index_N2=4, i_point=1
+     integer :: Ndata=10
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
@@ -64,7 +65,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point
+     i_point,Ndata
 !
   contains
 !***********************************************************************
@@ -324,7 +325,7 @@ module InitialCondition
           StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
-          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), TT
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') TT
           if (lroot) print*, ' Temperature, K   ', TT
 !
         elseif (tmp_string == 'P') then
@@ -335,7 +336,7 @@ module InitialCondition
           StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
-          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') PP
           if (lroot) print*, ' Pressure, Pa   ', PP
 !
         else
@@ -349,7 +350,7 @@ module InitialCondition
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k
+            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
             if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
 !
@@ -437,8 +438,8 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
-      real, dimension (2000) ::  PP_data, rhow_data, TT_data
-      real, dimension (2000) ::  ux_data, uy_data, uz_data,uvert
+      real, dimension (20000) ::  PP_data, rhow_data, TT_data
+      real, dimension (20000) ::  ux_data, uy_data, uz_data,uvert
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -489,7 +490,7 @@ module InitialCondition
            else
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
            endif
-            read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)'), tmp2
+            read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)') tmp2
              input_data(k)=tmp2
 
             StartInd=StopInd
@@ -519,7 +520,7 @@ module InitialCondition
 !
     if (lACTOS_read) then
         open(143,file="ACTOS_new.out")
-        do i=1,520 
+        do i=1,Ndata 
           read(143,'(29f15.6)'),input_data
           TT_data(i)=input_data(10)+272.15
 !
@@ -531,7 +532,7 @@ module InitialCondition
       close(143)
 !
       open(143,file="ACTOS_xyz_new.out")
-        do i=1,1100 
+        do i=1,Ndata
           read(143,'(29f15.6)'),input_data2
 !          ux_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
 !          uy_data(i)=uvert(i)/cos(input_data2(19))/sin(input_data2(20))
