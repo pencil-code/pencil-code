@@ -8,10 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
-! CPARAM integer, parameter :: njtest=4
-!
-! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 12
 !
 !***************************************************************
 
@@ -58,7 +54,6 @@ module Testfield
   real :: ztestfield_offset=0.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   real :: delta_testfield_next=0., delta_testfield_time=0.
-  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
@@ -125,7 +120,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (mz,3,mtestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (nz,3,njtest) :: uxbtestm,jxbtestm
 
   contains
 
@@ -151,7 +146,7 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      ntestfield=mtestfield
+      ntestfield=3*njtest
       nvar=nvar+ntestfield
 !
       if ((ip<=8) .and. lroot) then
@@ -560,7 +555,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
+      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest, nl
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -623,6 +618,8 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
+      nl = n-n1+1
+!
       do jtest=1,njtest
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
@@ -666,7 +663,7 @@ module Testfield
             duxbtest(:,:)=uxbtest(:,:)
           else
             do j=1,3
-              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
+              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(nl,j,jtest)
             enddo
           endif
 !
@@ -912,12 +909,13 @@ module Testfield
 !
 !  21-jan-06/axel: coded
 !  25-sep-13/MR: removed parameter p, changed call of calc_pencils_hydro
+!  30-jan-14/MR: adapted use of uxbtestm, jxbtestm; modified for x parallelization
 !
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
       use Magnetic, only: idiag_bcosphz, idiag_bsinphz
-      use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
+      use Mpicomm, only: mpiallreduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -929,7 +927,7 @@ module Testfield
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
       real, dimension (nx,3) :: del2Atest2,graddivatest
-      integer :: jtest,j,nxy=nxgrid*nygrid,juxb,jjxb
+      integer :: jtest,j,juxb,jjxb,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
       type (pencil_case) :: p
@@ -939,7 +937,7 @@ module Testfield
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./nxy
+      fac=1./nxygrid
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -969,7 +967,8 @@ module Testfield
 !  so that does not currently work.
 !
           do n=n1,n2
-            uxbtestm(n,:,jtest)=0.
+            nl=n-n1+1
+            uxbtestm(nl,:,jtest)=0.
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
               call calc_pencils_hydro(f,p,lpenc_loc)
@@ -985,14 +984,10 @@ module Testfield
               else
                 if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
-              do j=1,3
-                uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
-              enddo
+              uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
               headtt=.false.
             enddo
-            do j=1,3
-              uxbtestm1(n-n1+1,ipz+1,j,jtest)=uxbtestm(n,j,jtest)
-            enddo
+            uxbtestm1(nl,ipz+1,:,jtest)=uxbtestm(nl,:,jtest)
           enddo
 !
 !  Update counter, but only when we are on the last substep.
@@ -1008,16 +1003,9 @@ module Testfield
 !  Do communication for array of size nz*nprocz*3*njtest.
 !  The factor 3 is because of the 3 components of each vector field.
 !
-      if (nprocy>1) then
-        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
-        do jtest=1,njtest
-          do n=n1,n2
-            do j=1,3
-              uxbtestm(n,j,jtest)=uxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
-            enddo
-          enddo
-        enddo
+      if (nprocxy>1) then
+        call mpiallreduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/),idir=12)
+        uxbtestm=uxbtestm1_tmp(:,ipz+1,:,:)
       endif
 !
 !  Do the same for jxb; do each of the 9 test fields at a time
@@ -1031,7 +1019,8 @@ module Testfield
           jxbtestm(:,:,jtest)=0.
         else
           do n=n1,n2
-            jxbtestm(n,:,jtest)=0.
+            nl=n-n1+1
+            jxbtestm(nl,:,jtest)=0.
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
               call gij(f,iaxtest,aijtest,1)
@@ -1041,30 +1030,19 @@ module Testfield
               call cross_mn(jjtest,bbtest,jxbtest)
               jjxb=ijxb+3*(jtest-1)
               if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-              do j=1,3
-                jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
-              enddo
+              jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)
               headtt=.false.
             enddo
-            do j=1,3
-              jxbtestm1(n-n1+1,ipz+1,j,jtest)=jxbtestm(n,j,jtest)
-            enddo
+            jxbtestm1(nl,ipz+1,:,jtest)=jxbtestm(nl,:,jtest)
           enddo
         endif
       enddo
 !
 !  do communication for array of size nz*nprocz*3*njtest
 !
-      if (nprocy>1) then
-        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
-        do jtest=1,njtest
-          do n=n1,n2
-            do j=1,3
-              jxbtestm(n,j,jtest)=jxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
-            enddo
-          enddo
-        enddo
+      if (nprocxy>1) then
+        call mpiallreduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/),idir=12)
+        jxbtestm=jxbtestm1_tmp(:,ipz+1,:,:)
       endif
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
@@ -1236,7 +1214,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset
