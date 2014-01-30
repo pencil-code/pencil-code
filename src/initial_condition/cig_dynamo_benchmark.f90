@@ -144,24 +144,24 @@ module InitialCondition
 !
 !  using the full profile to calculate ss and put it togehter with lnrho in the f-array
 !
-          TT_prof = TT+DeltaT*(201.*A/sqrt(17920.*pi)*(1.-3.*xx**2.+3.*xx**4.-xx**6.) &
+        TT_prof = TT+DeltaT*(201.*A/sqrt(17920.*pi)*(1.-3.*xx**2.+3.*xx**4.-xx**6.) &
                        *sin(y(m))**4*cos(4.*z(n)))
 !
-          ss_prof=log(TT*cv*gamma*(gamma-1.))/gamma - & 
+        ss_prof = log(TT_prof*cv*gamma*(gamma-1.))/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
 !
-          f(l1:l2,m,n,ilnrho) = lnrho
-          f(l1:l2,m,n,iss) = ss_prof
+        f(l1:l2,m,n,ilnrho) = lnrho
+        f(l1:l2,m,n,iss) = ss_prof
 !
 !  initial magnetic field
 !  Br =  5./8.*(8.*rout-6.*r-2*rin**4/r**3)*cos(y(n))
 !  Btheta = -5./8.*(8.*rout-9.*r+rin**4/r**3)*sin(y(n))
 !  Bphi = 5*sin(pi*(r-rin))*sin(2*y(n))
 !
-          f(l1:l2,m,n,iax) = 0.
-          f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
+        f(l1:l2,m,n,iax) = 0.
+        f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
                              -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(n))*Bnorm
-          f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(n))*Bnorm
+        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(n))*Bnorm
       enddo
       enddo
 
