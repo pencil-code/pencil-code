@@ -14,7 +14,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: linitial_condition = .true.
-!za
+!
 !***************************************************************
 !
 module InitialCondition
@@ -154,14 +154,14 @@ module InitialCondition
         f(l1:l2,m,n,iss) = ss_prof
 !
 !  initial magnetic field
-!  Br =  5./8.*(8.*rout-6.*r-2*rin**4/r**3)*cos(y(n))
-!  Btheta = -5./8.*(8.*rout-9.*r+rin**4/r**3)*sin(y(n))
-!  Bphi = 5*sin(pi*(r-rin))*sin(2*y(n))
+!  Br =  5./8.*(8.*rout-6.*r-2*rin**4/r**3)*cos(y(m))
+!  Btheta = -5./8.*(8.*rout-9.*r+rin**4/r**3)*sin(y(m))
+!  Bphi = 5*sin(pi*(r-rin))*sin(2*y(m))
 !
         f(l1:l2,m,n,iax) = 0.
         f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
-                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(n))*Bnorm
-        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(n))*Bnorm
+                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(m))
+        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(m))
       enddo
       enddo
 
@@ -173,7 +173,7 @@ module InitialCondition
          print*,'cs2top = ', cs20*(Tout)*cv*gamma*(gamma-1.)
          print*,'cs2bot = ', cs20*(Tout+DeltaT)*cv*gamma*(gamma-1.)
          print*,'rotation rate =', nu/Ekman/Lxyz(1)**2
-          print*,'viscosity =', nu
+         print*,'viscosity =', nu
          print*,'mag. diffusivity =', eta
          print*,'thermal diffusivity =', chi
          print*,'density stratification =',exp(lnrho(1)-lnrho(nx))
