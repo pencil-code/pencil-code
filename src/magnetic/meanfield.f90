@@ -890,13 +890,15 @@ module Magnetic_meanfield
 !  By default, lmeanfield_noalpm=F, so normally treat
 !  alpha_tmp as a general profile in front of the total alpha.
 !  Invoke lmeanfield_noalpm to treat magnetic alpha separately
-!  (which makes more phyiscal sense!)
+!  (which makes physically more sense!)
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
           if (lalpha_profile_total) then
              alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
+             if (headtt) print*,'use alp=(alpK+alpM)*profile'
            else
              alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
+             if (headtt) print*,'use alp=alpK*profile+alpM'
            endif
 !
 !  Possibility of *alternate* dynamical alpha.
