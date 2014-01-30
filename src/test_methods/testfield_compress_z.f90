@@ -20,9 +20,6 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
-!
 !***************************************************************
 
 module Testfield
@@ -1815,7 +1812,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use Sub, only: loptest
+      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset

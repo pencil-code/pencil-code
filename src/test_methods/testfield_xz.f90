@@ -489,7 +489,7 @@ module Testfield
 !   6-mar-13/MR  : alternative parse_name used
 !
       use Diagnostics, only: parse_name
-      use Sub, only: loptest
+      use General, only: loptest
 !
       logical :: lreset
       logical, optional :: lwrite
