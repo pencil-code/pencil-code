@@ -129,7 +129,7 @@ module InitialCondition
 !
 !  Calculate the viscosity and chi
 !
-      nu=sqrt(DeltaT/Tout*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
+      nu=sqrt(DeltaT/(Tout+DeltaT)*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
       chi=nu/Prandtl
       eta=nu/mag_Prandtl
 !
