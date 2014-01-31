@@ -73,6 +73,7 @@ module Special
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
   logical :: llog_distribution=.true., lACTOS=.false.
+  logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
@@ -85,7 +86,7 @@ module Special
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
-      lACTOS
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -1457,37 +1458,26 @@ subroutine bc_satur_x(f,bc)
        enddo
 !
             if (lACTOS) then
-!
-!        X(1)=0.;X(2)=.5; X(3)=1.; X(4)=1.5; X(5)=2.;
-!        X(6)=2.5; X(7)=3.; X(8)=3.5; X(9)=4.
-!       
-!        Y(1)=1.;Y(2)=2.; Y(3)=7.; Y(4)=15.; Y(5)=39.;
-!        Y(6)=74.; Y(7)=40.; Y(8)=10.; Y(9)=2.
-!
-!               call  spline(X,Y,dsize,init_distr,9,nchemspec)
-!
-!              open(143,file="part_new.out")
-              do k=1,ndustspec
-!                read (142,fmt='(f12.6)'), disze(k), init_distr(k)
-!                 i=1
-!                 do while (X(i)<dsize(k)) 
-!                  i=i+1
-!                 enddo
-!                    X_tmp(1:5)=X(i-1:i+3)
-!                    Y_tmp(1:5)=Y(i-1:i+3) 
-!               call  spline(X_tmp,Y_tmp,x2,s,5,1)
+              if (llarge_part) then
+                do k=1,ndustspec
+                  init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+                enddo
+              elseif (lsmall_part) then
+                do k=1,ndustspec
+                  init_distr(k)= Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                               * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+                enddo
+              elseif (lsmall_large_part) then
+                do k=1,ndustspec
+                  init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+                  init_distr(k)=init_distr(k) &
+                               + Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                               * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
 
-                init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+                enddo
 
-!print*,dsize(k),init_distr(k),k
-!
-!31.1443      17.6595      6.25204   -0.0349555
-!                init_distr(k)= 70.7811*exp(-0.5*((2.*dsize(k)/1e-4-4.98564)/0.995159)**2)+0.0962425
-!83.4165      11.2452      2.68374      2.71016
-      !           init_distr(k)= 83.4165*exp(-0.5*((2.*dsize(k)/1e-4-11.2452)/2.68374)**2)+2.71016
-           
-               enddo
-!              close(143)
+              endif
+
             else
               if (r0 /= 0.) then
                 do k=1,ndustspec
