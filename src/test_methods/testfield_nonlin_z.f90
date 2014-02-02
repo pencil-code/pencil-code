@@ -1451,8 +1451,10 @@ module Testfield
               do j=1,3
                 jaatest=iaxtest+j-1;  jaa=iax+j-1
                 juutest=iuxtest+j-1;  juu=iux+j-1
-                f(l1:l2,m1:m2,n1:n2,jaatest)=f(l1:l2,m1:m2,n1:n2,jaa)-aamz(n1:n2,j)
-                f(l1:l2,m1:m2,n1:n2,juutest)=f(l1:l2,m1:m2,n1:n2,juu)-uumz(n1:n2,j)
+                do n=n1,n2
+                  f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
+                  f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
+                enddo
               enddo
             else
               call fatal_error('rescaling_testfield', &
