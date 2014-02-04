@@ -153,15 +153,26 @@ module InitialCondition
         f(l1:l2,m,n,ilnrho) = lnrho
         f(l1:l2,m,n,iss) = ss_prof
 !
-!  initial magnetic field
+!  initial magnetic field for the insulation boundary case
 !  Br =  5./8.*(8.*rout-6.*r-2*rin**4/r**3)*cos(y(m))
 !  Btheta = -5./8.*(8.*rout-9.*r+rin**4/r**3)*sin(y(m))
 !  Bphi = 5*sin(pi*(r-rin))*sin(2*y(m))
 !
-        f(l1:l2,m,n,iax) = 0.
-        f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
-                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(m))
-        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(m))
+!        f(l1:l2,m,n,iax) = 0.
+!        f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
+!                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(m))*0.003
+!        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(m))*0.003
+!
+!  initial magnetic field for the pseudo-vacum boundary case
+!  The magnetic field is directly expressed in terms of the Vectorpotential
+!  following Jackson (2013) http://jupiter.ethz.ch/~ajackson/pseudo.pdf
+!  taking f1=f2=K=0
+!
+        f(l1:l2,m,n,iax) = 1./sqrt(2.)*15./16.*x(l1:l2)*sin(pi*(x(l1:l2)-rin))*cos(2*y(m))*bnorm
+        f(l1:l2,m,n,iay) = 0.
+        f(l1:l2,m,n,iaz) = 1./sqrt(2.)*5./16.*(-48*rin*rout+(4*rout+rin*(4+3*rout))*6*x(l1:l2) &
+                           -4*(4+3*(rin+rout))*x(l1:l2)**2.+9*x(l1:l2)**3.)*sin(y(m))*bnorm
+!
       enddo
       enddo
 
