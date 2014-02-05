@@ -29,6 +29,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
+  public :: quick_sort
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
@@ -2242,6 +2243,7 @@ module General
 !
 !  20-apr-11/MR: coded
 !  29-jan-14/MR: introduced is for range step; inserted some trim calls
+!  05-feb-14/MR: corrected wrong placement of is definition
 !
     integer,                        intent(in)    :: unit
     real,    dimension(*),          intent(in)    :: buffer
@@ -2251,10 +2253,10 @@ module General
     integer,              optional, intent(in)    :: ncol
     character(LEN=*),     optional, intent(in)    :: fmt
 !
-    integer          :: ncoll, nd, ia, ie, is, rest
-    character(LEN=intlen) :: str
-    character(LEN=20):: fmtl, fmth
-    logical          :: lcomplex
+    integer              :: ncoll, nd, ia, ie, is, rest
+    character(LEN=intlen):: str
+    character(LEN=intlen):: fmtl, fmth
+    logical              :: lcomplex
 !
     lcomplex = .false.
 !
@@ -2280,10 +2282,10 @@ module General
     if ( nd==0 ) return
 !
     ncoll = ioptest(ncol,8) 
+    is = range(3)
 !
     if ( unfilled > 0 ) then
 !
-      is = range(3)
       fmth = fmtl
       if ( nd>unfilled ) then
         ie = range(1)+(unfilled-1)*is
@@ -2300,7 +2302,6 @@ module General
         write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer_cmplx(range(1):ie:is)
       else
         write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
-!        print*, 'str,buffer, nd=', str, buffer(range(1):ie:range(3)), nd
       endif
 !
       if ( nd>0 ) then
@@ -2314,7 +2315,7 @@ module General
     endif
 !
     rest = mod(nd,ncoll)
-    ie = (nd-rest-1)*range(3) + ia
+    ie = (nd-rest-1)*is + ia
 !
     if ( rest<nd ) then
       str=itoa(ncoll)
@@ -2881,4 +2882,99 @@ module General
 
     endfunction doptest
 !***********************************************************************
+    RECURSIVE SUBROUTINE quick_sort(list, order)
+!
+! Quick sort routine from:
+! Brainerd, W.S., Goldberg, C.H. & Adams, J.C. (1990) "Programmer's Guide to
+! Fortran 90", McGraw-Hill  ISBN 0-07-000248-7, pages 149-150.
+! Modified by Alan Miller to include an associated integer array which gives
+! the positions of the elements in the original order.
+!
+! 5-feb-14/MR: added
+!
+      IMPLICIT NONE
+      INTEGER, DIMENSION(:), INTENT(INOUT):: list
+      INTEGER, DIMENSION(*), INTENT(OUT)  :: order
+!
+! Local variable
+!
+      INTEGER :: i
+
+      DO i = 1, SIZE(list)
+        order(i) = i
+      ENDDO
+!
+      CALL quick_sort_1(1, SIZE(list))
+!
+      CONTAINS
+!----------------------------------------------------------------------------
+        RECURSIVE SUBROUTINE quick_sort_1(left_end, right_end)
+!
+          INTEGER, INTENT(IN) :: left_end, right_end
+!
+! Local variables
+!
+          INTEGER             :: i, j, itemp, reference, temp
+          INTEGER, PARAMETER  :: max_simple_sort_size = 6
+!
+          IF (right_end < left_end + max_simple_sort_size) THEN
+! Use interchange sort for small lists
+            CALL interchange_sort(left_end, right_end)
+!
+          ELSE
+! Use partition ("quick") sort
+            reference = list((left_end + right_end)/2)
+            i = left_end - 1; j = right_end + 1
+!
+            DO
+! Scan list from left end until element >= reference is found
+              DO
+                i = i + 1
+                IF (list(i) >= reference) EXIT
+              ENDDO
+! Scan list from right end until element <= reference is found
+              DO
+                j = j - 1
+                IF (list(j) <= reference) EXIT
+              ENDDO
+!
+              IF (i < j) THEN
+! Swap two out-of-order elements
+                temp = list(i); list(i) = list(j); list(j) = temp
+                itemp = order(i); order(i) = order(j); order(j) = itemp
+              ELSE IF (i == j) THEN
+                i = i + 1
+                EXIT
+              ELSE
+                EXIT
+              ENDIF
+            ENDDO
+!
+            IF (left_end < j)  CALL quick_sort_1(left_end, j)
+            IF (i < right_end) CALL quick_sort_1(i, right_end)
+          ENDIF
+!
+        END SUBROUTINE quick_sort_1
+!----------------------------------------------------------------------------
+        SUBROUTINE interchange_sort(left_end, right_end)
+
+          INTEGER, INTENT(IN) :: left_end, right_end
+!
+! Local variables
+!
+          INTEGER :: i, j, itemp, temp
+!
+          DO i = left_end, right_end - 1
+            DO j = i+1, right_end
+              IF (list(i) > list(j)) THEN
+                temp = list(i); list(i) = list(j); list(j) = temp
+                itemp = order(i); order(i) = order(j); order(j) = itemp
+              ENDIF
+            ENDDO
+          ENDDO
+!
+        ENDSUBROUTINE interchange_sort
+!----------------------------------------------------------------------------
+    ENDSUBROUTINE quick_sort
+!****************************************************************************
 endmodule General
