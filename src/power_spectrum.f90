@@ -46,13 +46,16 @@ module power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_runpars(unit,iostat)
 !
-      use General, only : parser, read_range, merge_ranges
+! 05-feb-14/MR: added ordering of z ranges
+!
+      use General, only : parser, read_range, merge_ranges, quick_sort
 !
       integer, intent(in)              :: unit
       integer, intent(inout), optional :: iostat
 !
-      integer :: i
+      integer :: i, nzr
       character (LEN=20), dimension(nz_max) :: czranges
+      integer, dimension(nz_max) :: iperm
 !
       if (present(iostat)) then
         read(unit,NML=power_spectrum_run_pars,ERR=99, IOSTAT=iostat)
@@ -71,8 +74,6 @@ module power_spectrum
         call get_kranges( ckxrange, kxrange, nxgrid )
         call get_kranges( ckyrange, kyrange, nygrid )
 !
-        !!print*, 'kxrange,kyrange=', kxrange, kyrange
-!
       endif
 !
       if ( .not.lintegrate_z ) then
@@ -82,10 +83,23 @@ module power_spectrum
 !
           if ( read_range( czranges(i), zrange(:,i), (/1,nzgrid,1/) ) ) then
             call merge_ranges( zrange, i-1, zrange(:,i) )
-            print*, 'zrange=', zrange(:,i)
+            !!print*, 'zrange=', zrange(:,i)
           endif
 !
         enddo
+!
+        nzr=0
+        do i=1,nz_max
+          if (zrange(1,i)==0) then
+            exit
+          else
+            nzr = i
+          endif
+        enddo
+        if (nzr>0) then
+          call quick_sort(zrange(1,1:nzr),iperm)
+          zrange(2:3,1:nzr) = zrange(2:3,iperm(1:nzr))
+         endif
       endif
 !
       n_spectra = parser( xy_spec, xy_specs, ',' )
