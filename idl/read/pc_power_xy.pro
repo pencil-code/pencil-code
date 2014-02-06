@@ -112,25 +112,34 @@ common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
   cmd = 'spec='+cmd+'arr('+dims
 
   ierr = execute(cmd+')') 
-  if keyword_set(fullspec) then ierr = execute('full'+cmd+',nt)')
-
+  if ~ierr then begin
+    print, 'alloc_specs: Allocation '+cmd+') failed!!!'
+    stop
+  endif
+  
+  if keyword_set(fullspec) then begin
+    ierr = execute('full'+cmd+',ncomp,nt)')
+    if ~ierr then begin
+      print, 'alloc_specs: Allocation '+'full'+cmd+',nt) failed!!!'
+      stop
+    endif
+  endif
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, lno_z_pos
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, fmt=fmt
 
 common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
 ;
 ;  Looping through all the data to get number of spectral snapshots
 ;
-close,1
+close,2
 
-        pc_read_grid,obj=grid,/trim
-openr,1, file, error=err
+openr,2, file, error=err
 if err ne 0 then return, 0
 
   headline = ''
-  readf, 1, headline
+  readf, 2, headline
   headline = strlowcase(headline)
   witheader=strpos(headline,'spectrum') ne -1
 
@@ -167,18 +176,18 @@ if err ne 0 then return, 0
     endif else $
       ncomp = 1
   
-    readf, 1, headline
+    readf, 2, headline
 
     if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
       print, warn+' corrupt!'
      
-    readf, 1, kxs, kys 
+    readf, 2, kxs, kys 
     kxs = shift(kxs,nx/2)
     kys = shift(kys,ny/2)  
 
     if (lint_shell) then begin
     
-      readf, 1, headline
+      readf, 2, headline
       if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
         print, warn+' corrupt!' $
       else begin
@@ -187,7 +196,7 @@ if err ne 0 then return, 0
         len = cpos-opos-1
 
         if len le 0 then begin
-          print, warn+' corrupt! Number of shell wavenumbers missing -
+          print, warn+' corrupt! Number of shell wavenumbers missing -'
           print, '         will use nk=', strtrim(string(nk),2), ' which is perhaps by one too large.'
           print, '         Correct data file by hand (or nk in code if necessary).'
         endif else $
@@ -196,33 +205,38 @@ if err ne 0 then return, 0
       endelse
  
       kshell = fltarr(nk) 
-      readf, 1, kshell 
+      readf, 2, kshell 
 
     endif
 
-    if not lint_z then $
-      if lno_z_pos then begin
+    if not lint_z then begin
+      point_lun, -2, pos     
+      readf, 2, headline
+      if strpos(strlowcase(headline),'positions') eq -1 then begin
+;
+; no z-positions in data file -> spectra given for the whole z grid
+;
+        point_lun, 2, pos     
+        pc_read_grid,obj=grid,/trim,/quiet
         zpos=grid.z
+        nz = n_elements(zpos)
+        lzpos_exist=0
+;
       endif else begin
-        readf, 1, headline
-        if strpos(strlowcase(headline),'positions') eq -1 then $
-          print, warn+' corrupt!' $
-        else if not lint_z then begin
-          ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
-          nz = fix(strmid(headline,ia,ie-ia+1))
+        ia = strpos(headline,'(')+1 & ie = strpos(headline,')')-1
+        nz = fix(strmid(headline,ia,ie-ia+1))
           
-          if nz le 0 then begin
-            print, warn+' corrupt! -- no positive number of z positions given!'
-            stop
-          endif else begin
-            zpos=fltarr(nz)
-            readf, 1, zpos
-          endelse  
-        endif
+        if nz le 0 then begin
+          print, warn+' corrupt! -- no positive number of z positions given!'
+          stop
+        endif else begin
+          zpos=fltarr(nz)
+          readf, 2, zpos
+        endelse  
+        lzpos_exist=1
       endelse
-    
-    point_lun, -1, pos 
-   
+    endif
+  
   endif else begin
 
     kxs=(findgen(nx)-nx/2)*2*!pi/Lx                ;,(nx+1)/2)*2*!pi/Lx
@@ -241,59 +255,91 @@ if err ne 0 then return, 0
     endif
  
     pos=0L
-    point_lun, 1, pos
+    point_lun, 2, pos        ; set file position to top of file (i.e., at first time stamp)
     
   endelse
 
   alloc_specs, spectrum1, lint_shell, lint_z, lcomplex
-    
-  globalmin=1e12+fltarr(ncomp)
-  globalmax=1e-30+fltarr(ncomp)
+   
+  if lcomplex then begin  
+    globalmin=1e12 +complexarr(ncomp)
+    globalmax=1e-30+complexarr(ncomp)
+  endif else begin
+    globalmin=1e12 +fltarr(ncomp)
+    globalmax=1e-30+fltarr(ncomp)
+  endelse
 
   nt=0L & time=0. & s0=1
   
-  while not eof(1) do begin
-  
+  while not eof(2) do begin
+
     if s0 then begin
       if witheader then begin
         
-        point_lun, -1, pos
-        readf,1,headline
+        point_lun, -2, pos
+        readf,2,headline
       
         if strpos(strlowcase(headline),'spectrum') eq -1 then $
-          point_lun, 1, pos $
+          point_lun, 2, pos $
         else begin
-          readf,1,headline
-          readf,1, kxs, kys
+          readf,2,headline
+          readf,2, kxs, kys
           if lint_shell then begin       
-            readf, 1, headline
-            readf, 1, kshell 
+            readf, 2, headline
+            readf, 2, kshell 
           endif
-          if lint_z then begin
-            readf,1,headline
-            readf,1, zpos
+          if not lint_z and lzpos_exist then begin
+            readf,2,headline
+            readf,2, zpos
           endif
         endelse
 
       endif
 
-      point_lun, -1, startpos
+      point_lun, -2, startpos     ; save file position of first time stamp into startpos
+      nz = abs(nz)
+
+    endif
+
+    readf,2,time 
+   
+    if s0 then begin 
+      if lcomplex then begin
+;
+;  derive format for reading from data line (only needed for complex data)
+;
+        dataline = ''
+        point_lun, -2, pos 
+        readf, 2, dataline
+        point_lun, 2, pos 
+
+        inds = strsplit(dataline,' ',length=lens) 
+        num = n_elements(inds) & ends = inds+lens 
+        lens = ends-[0,ends(0:num-2)]
+        fmt = '(('
+        for ii=0,num-1,2 do $
+          fmt += '(e'+strtrim(string(lens(ii)),2)+''+'.1,e'+strtrim(string(lens(ii+1)),2)+'.1),'
+        fmt = strmid(fmt,0,strlen(fmt)-1)+'))'
+
+      endif else $
+        fmt=0
+
       s0 = 0
     endif
 
-    readf,1,time 
     for i=0,ncomp-1 do begin
-      readf,1,spectrum1 
-      if lcomplex then readf,1,spectrum1 
+      readf,2,spectrum1,format=fmt 
+      
       globalmax(i)=max(spectrum1) > globalmax(i)
       globalmin(i)=min(spectrum1) < globalmin(i)
+
     endfor
 
     nt=nt+1L
   
   endwhile
   
-  close, 1
+  close, 2
 
 ; end first reading
 
@@ -307,7 +353,7 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir, $ 
-	  lint_shell=lint_shell, lint_z=lint_z, print=prnt, lno_z_pos=lno_z_pos
+	  lint_shell=lint_shell, lint_z=lint_z, print=prnt
 ;
 ;  $Id$
 ;
@@ -344,7 +390,6 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;  lint_shell: shell-integrated spectrum (default=1)
 ;  lint_z    : z-integrated spectrum (default=0)
 ;  print     : flag for print into PS file (default=0)
-;  lno_z_pos : read no z position
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -370,7 +415,6 @@ default,datatopdir,'data'
 default,lint_shell,1
 default,lint_z,0
 default, prnt, 0
-default, lno_z_pos, 1
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -446,15 +490,15 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, lno_z_pos )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1 )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
   stop
 endif else $
   nk1 = nk
- 
-default,yrange,[10.0^(floor(alog10(global_ext1(0)))),10.0^ceil(alog10(global_ext1(1)))]
+
+default,yrange,[10.0^(floor(alog10(float(global_ext1(0))))),10.0^ceil(alog10(float(global_ext1(1))))]
 
 ;
 ;  Reading file 2 if it is defined
@@ -462,7 +506,7 @@ default,yrange,[10.0^(floor(alog10(global_ext1(0)))),10.0^ceil(alog10(global_ext
 if (file2 ne '') then begin
 
   nk = nk0
-  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2 )
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2, fmt=fmt2 )
  
   if nt2 eq 0 or nk ne nk1 then begin
 
@@ -485,7 +529,7 @@ if (file2 ne '') then begin
       nt = nt1<nt2
     endif else $
       nt = nt1
-
+    spec2=1
     alloc_specs, spectrum2, lint_shell, lint_z, lcomplex, fullspec=spec2 
     openr, 2, datatopdir+'/'+file2
     point_lun, 2, startpos2
@@ -496,8 +540,9 @@ endif
 
 tt=fltarr(nt)
 lasti=nt-1
-
+spec1=1
 alloc_specs, spectrum1, lint_shell, lint_z, lcomplex, fullspec=spec1
+
 openr, 1, datatopdir+'/'+file1
 point_lun, 1, startpos1
 
@@ -533,38 +578,48 @@ if lint_shell then begin
 
 endif
 
-  i=0L
+  it=0L
   while not eof(1) do begin 
     
     readf,1,time
-    readf,1,spectrum1
+    tt(it)=time
 
-    tt(i)=time
+    for ic=0,ncomp-1 do begin
+      if lcomplex then $
+        readf,1,spectrum1, format=fmt1 $
+      else $
+        readf,1,spectrum1
     
-    if lint_shell then $
-      spec1(*,*,i)=spectrum1 $
-    else if lint_z then $
-      spec1(*,*,i)=shift(spectrum1,nx/2,ny/2) $     ; why transpose necessary?
-    else $
-      spec1(*,*,*,i)=spectrum1
+      if lint_shell then $
+        spec1(*,*,ic,it)=spectrum1 $
+      else if lint_z then $
+        spec1(*,*,ic,it)=shift(spectrum1,nx/2,ny/2) $     ; why transpose necessary?
+      else $
+        spec1(*,*,*,ic,it)=spectrum1
     
-    maxy=max(spectrum1(1:*))
-    miny=min(spectrum1(1:*))
+      maxy=max(spectrum1(1:*))
+      miny=min(spectrum1(1:*))
+
+    end
 
     if (file2 ne '') then begin
 
       readf,2,time
-      if time ne tt(i) then $
+      if time ne tt(it) then $
         print, 'Warning: Times in '+datatopdir+'/'+file1+' and '+datatopdir+'/'+file2+' different!'
 
-      readf,2,spectrum2
+      if lcomplex then $
+        readf,2,spectrum2,format=fmt2 $
+      else $
+        readf,2,spectrum2
+       
 
       if lint_shell then $
-        spec2(*,*,i)=spectrum2 $
+        spec2(*,*,it)=spectrum2 $
       else if lint_z then $
-        spec2(*,*,i)=shift(spectrum2,nx/2,ny/2) $     ; why transpose necessary?
+        spec2(*,*,it)=shift(spectrum2,nx/2,ny/2) $     ; why transpose necessary?
       else $
-        spec2(*,*,*,i)=spectrum2
+        spec2(*,*,*,it)=spectrum2
 
     endif
     ;
@@ -581,7 +636,7 @@ endif
      
       if (time ge tmin and time le tmax) then begin
 
-    	if lint_shell and lint_z then begin
+    	if lint_shell and lint_z and not lcomplex then begin
 
     	  xrr=[1,nk*k0]
     	  yrr=global_ext
@@ -630,7 +685,7 @@ endif
       endif
     endif
     
-    i=i+1L
+    it=it+1L
     ;
     ;  check whether we want to write png file (for movies)
     ;
@@ -648,7 +703,7 @@ endif
     endif
     ;
   endwhile
-  
+   stop
   if not lint_shell then begin
     if lint_z then begin
   
