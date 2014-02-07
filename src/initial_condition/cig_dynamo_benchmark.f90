@@ -119,7 +119,7 @@ module InitialCondition
 !     
       dlnTdr=-rout*rin/x(l1:l2)**2*DeltaT/TT
 !
-!  calculating then density profile
+!  calculating the density profile
 !
       lnrho(1)=log(rhoin/rho0)
       dlnrhodr=-dlnTdr-gravx*x(l1:l2)/(cv*(gamma-1)*TT)
@@ -129,7 +129,7 @@ module InitialCondition
 !
 !  Calculate the viscosity and chi
 !
-      nu=sqrt(DeltaT/(Tout+DeltaT)*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
+      nu=sqrt((DeltaT-0.5*gravx*(rin-rout)**2)/(Tout+DeltaT)*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
       chi=nu/Prandtl
       eta=nu/mag_Prandtl
 !
@@ -160,8 +160,8 @@ module InitialCondition
 !
 !        f(l1:l2,m,n,iax) = 0.
 !        f(l1:l2,m,n,iay) = (5./pi**2/x(l1:l2)*sin(pi*(x(l1:l2)-rin)) &
-!                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(m))*0.003
-!        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(m))*0.003
+!                             -5./pi*cos(pi*(x(l1:l2)-rin)))*sin(2*y(m))*bnorm
+!        f(l1:l2,m,n,iaz)=5./4.*(8.*rout-6.*x(l1:l2)-2*rin**4/x(l1:l2)**3)*sin(y(m))*bnorm
 !
 !  initial magnetic field for the pseudo-vacum boundary case
 !  The magnetic field is directly expressed in terms of the Vectorpotential
