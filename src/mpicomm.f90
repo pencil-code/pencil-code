@@ -114,6 +114,10 @@ module Mpicomm
     module procedure mpibcast_double_arr
   endinterface
 !
+  interface mpibcast_cmplx
+    module procedure mpibcast_cmplx_arr_sgl
+  endinterface
+!
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
@@ -1863,12 +1867,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpibcast_cmplx_arr(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex*16, dimension(nbcast_array) :: bcast_array
+      complex(KIND=8), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -1881,7 +1885,27 @@ module Mpicomm
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_COMPLEX,ibcast_proc, &
           MPI_COMM_WORLD,mpierr)
 !
-    endsubroutine mpibcast_cmplx_arr
+    endsubroutine mpibcast_cmplx_arr_dbl
+!***********************************************************************
+    subroutine mpibcast_cmplx_arr_sgl(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array between processors.
+!
+      integer :: nbcast_array
+      complex, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_COMPLEX,ibcast_proc, &
+          MPI_COMM_WORLD,mpierr)
+!
+    endsubroutine mpibcast_cmplx_arr_sgl
 !***********************************************************************
     subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
 !
