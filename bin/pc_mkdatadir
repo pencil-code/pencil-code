@@ -153,6 +153,8 @@ else if ($hn =~ triton) then
   set str='s/home/var\/tmp/g'
 else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'
+else if (($hn =~ helios*) && ($USER =~ warnecke))then
+  set str='s/home\/warnecke\/pencil-code/scratch\/warnecke\/pcdata/g'
 else if ($hn =~ lfc*) then
   set str='s/\/home/\/nfs\/d12/g'
 else if ($hn =~ easymac) then
