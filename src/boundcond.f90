@@ -90,14 +90,20 @@ module Boundcond
 !
     endsubroutine zero_ghosts_all
 !***********************************************************************
-    subroutine zero_ghosts_range(f, ivar1, ivar2)
+    subroutine zero_ghosts_range(f, ivar1, ivar2_opt)
 !
 !  Zeros the ghost cells for variables ivar1:ivar2.
 !
 !  23-oct-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: ivar1, ivar2
+      integer, intent(in) :: ivar1
+      integer, intent(in), optional :: ivar2_opt
+!
+      integer :: ivar2
+!
+      ivar2 = ivar1
+      if (present(ivar2_opt)) ivar2 = ivar2_opt
 !
       f(1:nghost,:,:,ivar1:ivar2) = 0.0
       f(mx-nghost+1:mx,:,:,ivar1:ivar2) = 0.0
