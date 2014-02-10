@@ -29,14 +29,17 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: star_luminosity=1.0, Rstar=1.0, Rtran=1.2
+  real :: star_luminosity=1.0, Rstar=1.0, Rtran=1.2, chit0=1e8
   real :: xi0=1.0, npoly1=1.5, npoly_jump=1.0, nad=1.5
+  real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
-logical :: lcorona=.false.
+  logical :: lcorona=.false.
+  character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
-      lcorona, Rtran, wtran, Tcor_jump
+      lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
+      npoly_exp, chiSGS_top, chit0
 !
   contains
 !***********************************************************************
@@ -104,6 +107,14 @@ logical :: lcorona=.false.
       if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
            "there was a problem when getting gravx")
 !
+!  Select typo of stratification
+!
+      select case (strat_type)
+!
+!  Single polytrope for the convection zone
+!
+      case ('polytropic')
+!
 !  Surface of the star
 !
       if (lcorona) then
@@ -132,7 +143,7 @@ logical :: lcorona=.false.
          nsurf=l2
       endif
 !
-!  Temperature using polytropic index npoly1
+!  Temperature using a constant polytropic index npoly1
 !
       TT(l1:l2)=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x(l1:l2) - 1./Rsurf))
       T00=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x0 - 1./Rsurf))
@@ -203,6 +214,23 @@ logical :: lcorona=.false.
       kappa=coef1*(npoly2+1.)
       gkappa=coef1*gnpoly2
 !
+!  Thermal equilibrium condition
+!
+      case ('thermal_equilibrium')
+!
+!  Compute hcond and glhcond using global x-array
+!
+      coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
+!
+      do n=1,nxgrid
+         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+      enddo
+!
+      kappa=coef1*(npoly2+1.)
+      gkappa=coef1*gnpoly2
+      endselect
+!
 !  Write kappa and gkappa to file to be read by run.in
 !
       if (iproc .eq. root) then 
@@ -238,17 +266,19 @@ logical :: lcorona=.false.
       gratio=gravx/(GG*Msun)
       rratio=Rsun/Rstar
       Omsim=fluxratio**(1./3.)*sqrt(gratio)*rratio**(1.5)*Omsun
+      chiSGS_top=sqrt(gratio)*fluxratio**(1./3.)*chit0/sqrt(rratio)
 !
       if (iproc .eq. root) then
          print*,''
-         print*,'initial_condition: Fbottom   =',Fbottom
-         print*,'initial_condition: SigmaSBt  =',sigma
-         print*,'initial_condition: cs2bot    =',cs2_bot
-         print*,'initial_condition: cs2top    =',cs2_top
-         print*,'initial_condition: fluxratio =',fluxratio
-         print*,'initial_condition: Omsim     =',Omsim
-         print*,'initial_condition: gratio    =',gratio
-         print*,'initial_condition: rratio    =',rratio
+         print*,'initial_condition: Fbottom    =',Fbottom
+         print*,'initial_condition: SigmaSBt   =',sigma
+         print*,'initial_condition: cs2bot     =',cs2_bot
+         print*,'initial_condition: cs2top     =',cs2_top
+         print*,'initial_condition: fluxratio  =',fluxratio
+         print*,'initial_condition: Omsim      =',Omsim
+         print*,'initial_condition: chiSGS_top =',chiSGS_top
+         print*,'initial_condition: gratio     =',gratio
+         print*,'initial_condition: rratio     =',rratio
          if (lcorona) then
            print*,'initial_condition: rcool     =',Rmin
            print*,'initial_condition: wcool     =',wmin
@@ -262,15 +292,16 @@ logical :: lcorona=.false.
 !  Compute temperatures at the surface and in the corona assuming solar
 !  temperature at the base of the convection zone.
 !
-         print*,'initial_condition: Temperature at the surface                =',Tsurf*T00sun/T00, 'K'
-         print*,'initial_condition: Temperature at the bottom                 =',T00sun, 'K'
+         print*,'initial_condition: Temperature at the surface                 =',Tsurf*T00sun/T00, 'K'
+         print*,'initial_condition: Temperature at the bottom                  =',T00sun, 'K'
          if (lcorona) then
-           print*,'initial_condition: Temperature in the corona               =',Tcor*T00sun/T00, 'K'
+           print*,'initial_condition: Temperature in the corona                =',Tcor*T00sun/T00, 'K'
          endif
-         print*,'initial_condition: Density stratification in convection zone =',rho00/rho_surf
+         print*,'initial_condition: Density stratification in convection zone  =',rho00/rho_surf
          if (lcorona) then
-           print*,'initial_condition: Density stratification with corona      =',exp(log(rho00)-lnrho(l2))
+           print*,'initial_condition: Density stratification with corona       =',exp(log(rho00)-lnrho(l2))
          endif
+         print*,'initial_condition: Turbulent heat conductivity at the surface =',chit0, 'm^2/s'
          print*,''
       endif
 !
