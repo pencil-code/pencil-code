@@ -146,7 +146,7 @@ module Param_IO
       loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
-      lread_from_other_prec
+      lread_from_other_prec, downsampl
 !
   contains
 !***********************************************************************
@@ -537,7 +537,11 @@ module Param_IO
 !
       logical, optional :: logging
 !
-      integer :: ierr, unit=1
+      integer :: ierr, unit=1, n, ip, down, get_firstind
+!
+!  Statement function
+!
+      get_firstind(n,ip,down) = down - abs(mod(ip*n-1,down))
 !
 !  Open namelist file.
 !
@@ -618,6 +622,14 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_runpars')
+!
+      if ( any(downsampl/=1) ) then
+        ldownsampl  = .true.
+        firstind(1) = get_firstind(nx,ipx,downsampl(1))
+        firstind(2) = get_firstind(ny,ipy,downsampl(2))
+        firstind(3) = get_firstind(nz,ipz,downsampl(3))
+        print*, 'downsampl,firstind=', downsampl,firstind
+      endif
 !
     endsubroutine read_runpars
 !***********************************************************************

@@ -166,6 +166,8 @@ module Cdata
   logical :: lread_less=.false.
   logical :: loutput_varn_at_exact_tsnap=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
+  integer, dimension(3) :: downsampl=1, firstind=1
+  logical :: ldownsampl=.false.
 !
 !  Units (need to be in double precision).
 !
