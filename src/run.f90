@@ -48,6 +48,7 @@ program run
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
 !               address
 ! 31-oct-13/MR: replaced rparam by read_startpars
+! 10-feb-14/MR: initialize_mpicomm now called before read_runpars
 !
   use Boundcond,       only: update_ghosts
   use Cdata
@@ -122,6 +123,10 @@ program run
 !
   call initialize_messages()
 !
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm()
+!
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
@@ -130,10 +135,6 @@ program run
 !  Read parameters and output parameter list.
 !
   call read_runpars()
-!
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm()
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in rparam or
