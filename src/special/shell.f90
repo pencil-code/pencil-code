@@ -117,7 +117,7 @@ module Special
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr, stop_it, mpifinalize
+      Use Mpicomm, only: stop_it, mpifinalize
       use General
       use Sub, only: cross
       use SharedVariables, only: get_shared_variable
@@ -611,7 +611,7 @@ module Special
 !  Advance the shell model, with dt<deltm
 !  The physical system is advancing dt_
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr, mpibcast_real,stop_it
+      Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real,stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -648,8 +648,8 @@ module Special
         enddo
       endif
 !
-      call mpibcast_cmplx_arr(zu,nshell)
-      call mpibcast_cmplx_arr(zgprev,nshell)
+      call mpibcast_cmplx_arr_dbl(zu,nshell)
+      call mpibcast_cmplx_arr_dbl(zgprev,nshell)
       umod=zabs(zu); if (l_altu) call calc_altu()
       call calc_eddy_time()
       if (l_needspecialuu) then
@@ -828,7 +828,7 @@ module Special
 !***********************************************************************
     subroutine rsnap_GOY(filename)
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr, mpibcast_real
+      Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real
 !
       character (len=*) :: filename
       real :: t_goy
@@ -836,9 +836,9 @@ module Special
 !
       if (lroot) call input_GOY(filename,t_goy)
 !
-      call mpibcast_cmplx_arr(zu,nshell)
+      call mpibcast_cmplx_arr_dbl(zu,nshell)
       umod=abs(zu); if (l_altu) call calc_altu()
-      call mpibcast_cmplx_arr(zgprev,nshell)
+      call mpibcast_cmplx_arr_dbl(zgprev,nshell)
       call mpibcast_real(uav, nshell+1)
       if (l_needspecialuu) then
         call mpibcast_real(kvec, (/3,nshell,3/))
@@ -1160,7 +1160,7 @@ module Special
       real :: vc, vs, dotp
 !
       uup=0
-      if (present(shell1)) then; nstart=shell1; else; nstart=maxshell;  endif
+      if (present(shell1)) then; nstart=shell1; else; nstart=maxshell; endif
       if (present(shell2)) then; nend=shell2
       else if (minshell2 .gt. 0) then
         nend=minshell2
@@ -1182,7 +1182,6 @@ module Special
               aimag(zu(nsgg))*sin(dotp+phase_time(nsgg,ccount)))
         enddo; endif
       enddo
-endif
 !
     endsubroutine calc_gas_velocity
 !***********************************************************************
