@@ -137,8 +137,10 @@ module Io
 !
 !  11-apr-97/axel: coded
 !  13-Dec-2011/Bourdin.KIS: reworked
+!  11-feb-14/MR: downsampled output added
 !
       use Mpicomm, only: start_serialize, end_serialize
+      use General, only: get_range_no
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
@@ -166,6 +168,13 @@ module Io
           io_err = 0
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
+      elseif (ldownsampl .and. file(1:3)=='VAR') then
+!
+!  Downsampled ouput in VARn (n>0) snapshots
+!
+        write (lun_output, IOSTAT=io_err) a(firstind(1):l2:downsampl(1), &
+                                            firstind(2):m2:downsampl(2), &
+                                            firstind(3):n2:downsampl(3), :)
       else
         write (lun_output, IOSTAT=io_err) a
       endif
@@ -184,6 +193,19 @@ module Io
         lerror = outlog (io_err, 'write additional data')
       endif
 !
+! Append global start indices and number of data points *in downsampled grid* to snapshot
+!
+      if (ldownsampl .and. file(1:3)=='VAR') then
+        write (lun_output, IOSTAT=io_err) 'DOWNSAMPLING:',                    &
+               get_range_no( (/1,                 ipx*nx,downsampl(1)/),1)+1, &
+               get_range_no( (/firstind(1)-nghost,nx,    downsampl(1)/),1),   &
+               get_range_no( (/1,                 ipy*ny,downsampl(2)/),1)+1, &
+               get_range_no( (/firstind(2)-nghost,ny,    downsampl(2)/),1),   &
+               get_range_no( (/1,                 ipz*nz,downsampl(3)/),1)+1, &
+               get_range_no( (/firstind(3)-nghost,nz,    downsampl(3)/),1)
+        lerror = outlog (io_err, 'write downsampling control data')
+      endif
+
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_snap
