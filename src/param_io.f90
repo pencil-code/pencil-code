@@ -529,6 +529,7 @@ module Param_IO
 !  12-nov-10/MR  : added read and write calls for namelist power_spectrum_run_pars
 !  18-dec-13/MR  : changed handling of ierr to avoid compiler trouble
 !  19-dec-13/MR  : adapted calls to read_pars
+!  11-feb-14/MR  : changes for downsampled output
 !
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
@@ -537,11 +538,11 @@ module Param_IO
 !
       logical, optional :: logging
 !
-      integer :: ierr, unit=1, n, ip, down, get_firstind
+      integer :: ierr, unit=1, n, ipc, down, get_firstind
 !
-!  Statement function
+!  Statement function for calculation of first local index in downsampled output
 !
-      get_firstind(n,ip,down) = down - abs(mod(ip*n-1,down))
+      get_firstind(n,ipc,down) = down - modulo(ipc*n-1,down) + nghost
 !
 !  Open namelist file.
 !
@@ -624,11 +625,13 @@ module Param_IO
       call check_consistency_of_lperi('read_runpars')
 !
       if ( any(downsampl/=1) ) then
+!
+!  If downsampling, calculate first local output indices for each direction
+!
         ldownsampl  = .true.
         firstind(1) = get_firstind(nx,ipx,downsampl(1))
         firstind(2) = get_firstind(ny,ipy,downsampl(2))
         firstind(3) = get_firstind(nz,ipz,downsampl(3))
-        print*, 'downsampl,firstind=', downsampl,firstind
       endif
 !
     endsubroutine read_runpars
