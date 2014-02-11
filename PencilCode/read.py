@@ -169,6 +169,28 @@ def parameters(datadir='./data'):
     return Parameter(dict(zip(keys, values)))
 
 #=======================================================================
+def pdim(datadir='./data'):
+    """Returns the numbers associated with particles.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
+    # Chao-Chin Yang, 2014-02-11
+
+    # Read pdim.dat.
+    f = open(datadir.strip() + '/pdim.dat')
+    a = f.read().rsplit()
+    f.close()
+
+    # Extract the numbers.
+    npar, mpvar, npar_stalk = (int(b) for b in a)
+
+    # Define and return a named tuple.
+    from collections import namedtuple
+    ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk'])
+    return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk)
+#=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
 
