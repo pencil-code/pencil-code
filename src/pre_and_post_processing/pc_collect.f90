@@ -70,7 +70,7 @@ program pc_collect
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call rparam()
+  call read_startpars()
 !
 !  Read parameters and output parameter list.
 !
