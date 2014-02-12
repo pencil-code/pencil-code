@@ -77,7 +77,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof, TT_prof
-      real :: rin, rout, chi, eta, nu, Bnorm, DeltaT
+      real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, alpha, DeltaTad
       real, pointer :: gravx, cp, cv
       integer :: ierr, unit=1, i
 !
@@ -129,7 +129,14 @@ module InitialCondition
 !
 !  Calculate the viscosity and chi
 !
-      nu=sqrt((DeltaT-0.5*gravx*(rin-rout)**2)/(Tout+DeltaT)*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
+!
+      alpha=1./(Tout+DeltaT)
+!
+! adiabatic temperature gradient
+!
+      DeltaTad= -gravx*rout/(2.*cv*(gamma-1)*2.5)*(rin**2-rout**2)
+!
+      nu=sqrt((DeltaT-DeltaTad)*alpha*gravx*rout*Ekman/Rayleigh*Lxyz(1)**3)
       chi=nu/Prandtl
       eta=nu/mag_Prandtl
 !
