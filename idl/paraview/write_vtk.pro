@@ -90,12 +90,11 @@ pro write_vtk, obj, file, x=x, y=y, z=z, spacing=spacing, grid=grid
       ; Write scalar field.
       printf, lun, 'SCALARS ', strlowcase(tags[i]), ' ', data_type
       printf, lun, 'LOOKUP_TABLE default'
-      for j = 0, ntot - 1 do writeu, lun, (obj.(i))[j]
+      writeu, lun, swap_endian(obj.(i), /swap_if_big_endian)
     endif else begin
       ; Write vector field.
       printf, lun, 'VECTORS ', strlowcase(tags[i]), ' ', data_type
-      data = reform(obj.(i), [ntot,3])
-      for j = 0, ntot - 1 do writeu, lun, data[j,0], data[j,1], data[j,2]
+      writeu, lun, swap_endian(transpose(reform(obj.(i), [ntot,3])), /swap_if_big_endian)
     endelse
   endfor
   close, lun
