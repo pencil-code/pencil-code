@@ -147,7 +147,7 @@ module Cdata
   character (len=fnlen) :: directory='',datadir_snap=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
-  real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
+  real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
@@ -166,8 +166,8 @@ module Cdata
   logical :: lread_less=.false.
   logical :: loutput_varn_at_exact_tsnap=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
-  integer, dimension(3) :: downsampl=1, firstind=1
-  logical :: ldownsampl=.false.
+  integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, ndowni=0, startind=1
+  logical :: ldownsampl=.false., ldownsampling
 !
 !  Units (need to be in double precision).
 !
@@ -390,8 +390,8 @@ module Cdata
   integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)
 !  Coordinates of the point where some quantities can be printed.
-  integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2
-  integer :: lpoint2=(l1+l2)/4,mpoint2=(m1+m2)/4,npoint2=(n1+n2)/4
+  integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
+  integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4
 !
 !  Diagnostic variables (needs to be consistent with reset list in register.90).
 !
