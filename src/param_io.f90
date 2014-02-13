@@ -97,7 +97,7 @@ module Param_IO
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
-      cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
+      cdtc, isave, itorder, dsnap, dsnap_down, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
@@ -530,19 +530,15 @@ module Param_IO
 !  18-dec-13/MR  : changed handling of ierr to avoid compiler trouble
 !  19-dec-13/MR  : adapted calls to read_pars
 !  11-feb-14/MR  : changes for downsampled output
+!  13-feb-14/MR  : further preparations for downsampled output
 !
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
       use General, only: loptest
 !
+      integer :: ierr, unit=1
       logical, optional :: logging
-!
-      integer :: ierr, unit=1, n, ipc, down, get_firstind
-!
-!  Statement function for calculation of first local index in downsampled output
-!
-      get_firstind(n,ipc,down) = down - modulo(ipc*n-1,down) + nghost
 !
 !  Open namelist file.
 !
@@ -624,15 +620,54 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_runpars')
 !
-      if ( any(downsampl/=1) ) then
+      if ( any(downsampl>1) ) then
 !
-!  If downsampling, calculate first local output indices for each direction
+!  If downsampling, calculate local start indices and number of data in
+!  output for each direction; inner ghost zones are here disregarded
 !
         ldownsampl  = .true.
-        firstind(1) = get_firstind(nx,ipx,downsampl(1))
-        firstind(2) = get_firstind(ny,ipy,downsampl(2))
-        firstind(3) = get_firstind(nz,ipz,downsampl(3))
+        if (dsnap_down<=0.) dsnap_down=dsnap
+!
+        call get_downpars(1,nx,ipx,lfirst_proc_x,llast_proc_x)
+        call get_downpars(2,ny,ipy,lfirst_proc_y,llast_proc_y)
+        call get_downpars(3,nz,ipz,lfirst_proc_z,llast_proc_z)
+!
       endif
+!
+      contains
+!
+      subroutine get_downpars(ind,n,ip,lfirst_proc,llast_proc)
+!
+! Calculates start indices & lengths for downsampled output
+! 
+! 13-feb-14/MR: coded
+!
+        use General, only: get_range_no
+!
+! coordinate direction, number of inner grid points, processor number
+!
+        integer, intent(IN) :: ind, n, ip  
+        logical, intent(IN) :: lfirst_proc,llast_proc
+!
+! first index in direction ind in local farray for output 
+!
+        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind)) + nghost
+!
+! number of output items in direction ind without ghost zones
+!
+        ndowni(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
+!
+! number of output items in direction ind with ghost zones;
+! target index corresponing to firstind
+!
+        if (lfirst_proc) then
+          ndown(ind) = ndown(ind)+nghost; startind(ind)=nghost+1
+        else
+          startind(ind)=1
+        endif
+        if (llast_proc) ndown(ind) = ndown(ind)+nghost
+!
+      endsubroutine get_downpars
 !
     endsubroutine read_runpars
 !***********************************************************************
