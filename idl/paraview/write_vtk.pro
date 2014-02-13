@@ -88,11 +88,13 @@ pro write_vtk, obj, file, x=x, y=y, z=z, spacing=spacing, grid=grid
        tags[i] eq 'T' or tags[i] eq 'DELTAY' then continue
     if (size(obj.(i)))[0] eq ndim then begin
       ; Write scalar field.
+      print, 'SCALARS ', strlowcase(tags[i]), ' ', data_type, '...'
       printf, lun, 'SCALARS ', strlowcase(tags[i]), ' ', data_type
       printf, lun, 'LOOKUP_TABLE default'
       writeu, lun, swap_endian(obj.(i), /swap_if_big_endian)
     endif else begin
       ; Write vector field.
+      print, 'VECTORS ', strlowcase(tags[i]), ' ', data_type
       printf, lun, 'VECTORS ', strlowcase(tags[i]), ' ', data_type
       writeu, lun, swap_endian(transpose(reform(obj.(i), [ntot,3])), /swap_if_big_endian)
     endelse
