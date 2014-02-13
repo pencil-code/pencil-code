@@ -16,10 +16,126 @@ module Snapshot
 !
   private
 !
-  public :: rsnap, wsnap, powersnap
+  public :: rsnap, wsnap, wsnap_down, powersnap
   public :: shift_dt
 !
   contains
+!***********************************************************************
+    subroutine wsnap_down(a,msnap,flist)
+!
+!  Write downsampled snapshot file VARd*, labelled consecutively
+!
+!  13-feb-14/MR: coded
+!
+      use General, only: get_range_no
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      use General, only: safe_character_assign, loptest
+      use IO, only: output_snap, output_snap_finalize, log_filename_to_file, lun_output
+      use Persist, only: output_persistent
+      use Sub, only: read_snaptime, update_snaptime
+!
+      real, dimension (mx,my,mz,msnap) :: a
+      integer :: msnap
+      character (len=*), optional :: flist
+!
+      real, save :: tsnap
+      integer, save :: nsnap
+      logical, save :: lfirst_call=.true.
+      logical :: lsnap, lerror
+      character (len=fnlen) :: file
+      character (len=intlen) :: ch
+
+      integer :: ndxi, ndyi, ndzi, isx, isy, isz, iax, iay, iaz, &
+                 l2s, l2is, m2s, m2is, n2s,n2is, io_err
+      real, dimension(ndown(1),ndown(2),ndown(3),msnap) :: buffer
+
+      call safe_character_assign(file,trim(datadir)//'/tsnap_down.dat')
+!
+!  At first call, need to initialize tsnap.
+!  tsnap calculated in read_snaptime, but only available to root processor.
+!
+      if (lfirst_call) then
+        call read_snaptime(file,tsnap,nsnap,dsnap_down,t)
+        lfirst_call=.false.
+      endif
+!
+!  Check whether we want to output snapshot. If so, then
+!  update ghost zones for var.dat (cheap, since done infrequently).
+!
+      call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap,ch)
+      
+      if (lsnap) then
+!
+        if (msnap==mfarray) &
+          call update_auxiliaries(a) ! Not if e.g. dvar.dat.
+
+        ndxi= ndowni(1);    ndyi= ndowni(2);    ndzi= ndowni(3)
+        isx = downsampl(1); isy = downsampl(2); isz = downsampl(3)
+        iax = startind (1); iay = startind (2); iaz = startind (3)
+
+       !!print*, 'iproc=', iproc, iax, iax+ndxi-1, firstind(1), ndown(1),&
+        !!                       iay, iay+ndyi-1, firstind(2), ndown(2),&
+          !!                     iaz, iaz+ndzi-1, firstind(3), ndown(3)
+!
+! copy downsampled data from *inner* grid 
+!
+        buffer(iax:iax+ndxi-1,iay:iay+ndyi-1,iaz:iaz+ndzi-1,:) = &         
+            a(firstind(1):l2:isx,firstind(2):m2:isy,firstind(3):n2:isz,:)
+!
+! generate ghost zone data - not yet operational
+!TBD: periodic BC (?)
+!
+        ldownsampling=.true.
+        if (lfirst_proc_x.or.llast_proc_x) then
+          l2s=l2; l2is=l2i; !!l2=l1+ndxi-1; l2i=l2-nghost+1
+          !!call boundconds_x(buffer)
+          !!l2=l2s; l2i=l2is
+        endif
+        if (lfirst_proc_y.or.llast_proc_y) then
+          m2s=m2; m2is=m2i; !!m2=m1+ndyi-1; m2i=m2-nghost+1
+          !!call boundconds_y(buffer)
+          !!m2=m2s; m2i=m2is
+        endif
+        if (lfirst_proc_z.or.llast_proc_z) then
+          n2s=n2; n2is=n2i; !!n2=n1+ndzi-1; n2i=n2-nghost+1
+          !!call boundconds_z(buffer)
+!!print*, 'after bz'
+          !!n2=n2s; n2i=n2is
+        endif
+
+        ldownsampling=.false.
+!
+!  Downsampled ouput in VARd<n> (n>0) snapshot
+!
+        call safe_character_assign(file,'VARd'//ch)
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, &
+              FORM='unformatted', IOSTAT=io_err, status='replace')
+
+!
+! Write global start indices and number of data points *on downsampled global grid* to
+! snapshot
+!
+        write (lun_output, IOSTAT=io_err) &
+               get_range_no( (/1,ipx*nx,isx/),1)+1+nghost*min(ipx,1), ndown(1), &
+               get_range_no( (/1,ipy*ny,isy/),1)+1+nghost*min(ipy,1), ndown(2), &
+               get_range_no( (/1,ipz*nz,isz/),1)+1+nghost*min(ipz,1), ndown(3)
+        lerror = outlog(io_err, 'write downsampling control data')
+
+!print*, 'DOWNSAMPLING:',                    &
+!             get_range_no( (/1, ipx*nx,downsampl(1)/),1)+1, ndown(1), &
+!             get_range_no( (/1, ipy*ny,downsampl(2)/),1)+1, ndown(2), &
+!             get_range_no( (/1, ipz*nz,downsampl(3)/),1)+1, ndown(3)
+
+        call output_snap(buffer,msnap)
+
+        close(lun_output,IOSTAT=io_err)
+        if (outlog(io_err,'close')) continue
+!
+        if (present(flist)) call log_filename_to_file(file,flist)
+!
+      endif
+!
+    endsubroutine wsnap_down
 !***********************************************************************
     subroutine wsnap(chsnap,a,msnap,enum,flist,noghost)
 !
@@ -34,7 +150,7 @@ module Snapshot
 !   8-mar-13/MR  : made a assumed-size to work properly with calls in run.f90
 !
       use Boundcond, only: update_ghosts
-      use General, only: safe_character_assign
+      use General, only: safe_character_assign, loptest
       use IO, only: output_snap, output_snap_finalize, log_filename_to_file
       use Persist, only: output_persistent
       use Sub, only: read_snaptime, update_snaptime
@@ -83,7 +199,7 @@ module Snapshot
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
-          call output_snap(file,a,msnap)
+          call output_snap(a,msnap,file=file)
           call output_persistent(file)
           call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
@@ -96,20 +212,12 @@ module Snapshot
 !  make sure that ghost zones are not set on df!
 !
         if (msnap==mfarray) then
-          if (present(noghost)) then
-            if (.not. noghost) call update_ghosts(a)
-          else
-            call update_ghosts(a)
-          endif
+          if (.not.loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         endif
-        if (present(noghost)) then
-          if (.not. noghost) call update_ghosts(a)
-        else
-          call update_ghosts(a)
-        endif
+        if (.not.loptest(noghost)) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        call output_snap(file,a,msnap)
+        call output_snap(a,msnap,file=file)
         call output_persistent(file)
         call output_snap_finalize()
         if (present(flist)) call log_filename_to_file(file,flist)

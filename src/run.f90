@@ -49,6 +49,7 @@ program run
 !               address
 ! 31-oct-13/MR: replaced rparam by read_startpars
 ! 10-feb-14/MR: initialize_mpicomm now called before read_runpars
+! 13-feb-13/MR: call of wsnap_down added
 !
   use Boundcond,       only: update_ghosts
   use Cdata
@@ -675,6 +676,7 @@ program run
         call write_snapshot_particles(directory_dist,f,ENUM=.true.)
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
+    if (ldownsampl) call wsnap_down(f,mvar_io,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !
 !  Write slices (for animation purposes).

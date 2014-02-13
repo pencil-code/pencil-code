@@ -322,17 +322,18 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(file, a, nv, mode)
+    subroutine output_snap(a, nv, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
 !  10-Feb-2012/Bourdin.KIS: coded
+!  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real, mpi_precision
 !
-      character (len=*), intent(in) :: file
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
+      character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
@@ -340,6 +341,9 @@ module Io
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
+!
+      if (.not.present(file)) call fatal_error('output_snap', &
+          'downsampled output not implemented for IO_mpi2')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
@@ -1308,7 +1312,7 @@ module Io
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
 !
-      call output_snap (file, a, nv, 0)
+      call output_snap (a, nv, file, 0)
       call output_snap_finalize ()
 !
     endsubroutine output_globals

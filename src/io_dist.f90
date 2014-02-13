@@ -131,20 +131,21 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine output_snap(file,a,nv)
+    subroutine output_snap(a,nv,file)
 !
 !  Write snapshot file, always write time and mesh, could add other things.
 !
 !  11-apr-97/axel: coded
 !  13-Dec-2011/Bourdin.KIS: reworked
-!  11-feb-14/MR: downsampled output added
+!  13-feb-2014/MR: made 'file' optional, 'a' assumed-shape (for downsampled output);
+!                  moved donwsampling stuff to snapshot
 !
       use Mpicomm, only: start_serialize, end_serialize
       use General, only: get_range_no
 !
-      character (len=*), intent(in) :: file
+      character (len=*), intent(in), optional :: file
       integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      real, dimension (:,:,:,:), intent(in) :: a
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       integer :: io_err
@@ -154,8 +155,10 @@ module Io
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
-      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_snap')
+      if (present(file)) then
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
+        lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_snap')
+      endif
 !
       if (lwrite_2d) then
         if (nx == 1) then
@@ -168,18 +171,11 @@ module Io
           io_err = 0
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
-      elseif (ldownsampl .and. file(1:3)=='VAR') then
-!
-!  Downsampled ouput in VARn (n>0) snapshots
-!
-        write (lun_output, IOSTAT=io_err) a(firstind(1):l2:downsampl(1), &
-                                            firstind(2):m2:downsampl(2), &
-                                            firstind(3):n2:downsampl(3), :)
       else
         write (lun_output, IOSTAT=io_err) a
       endif
 !
-      lerror = outlog (io_err, 'write main data')
+      lerror = outlog(io_err, 'write main data')
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -187,25 +183,12 @@ module Io
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        lerror = outlog (io_err, 'write additional data plus deltay')
+        lerror = outlog(io_err, 'write additional data plus deltay')
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        lerror = outlog (io_err, 'write additional data')
+        lerror = outlog(io_err, 'write additional data')
       endif
 !
-! Append global start indices and number of data points *in downsampled grid* to snapshot
-!
-      if (ldownsampl .and. file(1:3)=='VAR') then
-        write (lun_output, IOSTAT=io_err) 'DOWNSAMPLING:',                    &
-               get_range_no( (/1,                 ipx*nx,downsampl(1)/),1)+1, &
-               get_range_no( (/firstind(1)-nghost,nx,    downsampl(1)/),1),   &
-               get_range_no( (/1,                 ipy*ny,downsampl(2)/),1)+1, &
-               get_range_no( (/firstind(2)-nghost,ny,    downsampl(2)/),1),   &
-               get_range_no( (/1,                 ipz*nz,downsampl(3)/),1)+1, &
-               get_range_no( (/firstind(3)-nghost,nz,    downsampl(3)/),1)
-        lerror = outlog (io_err, 'write downsampling control data')
-      endif
-
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_snap
