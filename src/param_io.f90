@@ -651,15 +651,18 @@ module Param_IO
 !
 ! first index in direction ind in local farray for output 
 !
-        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind)) + nghost
+        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind)) 
 !
 ! number of output items in direction ind without ghost zones
 !
         ndowni(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
 !
+        firstind(ind) = firstind(ind) + nghost
+!
 ! number of output items in direction ind with ghost zones;
 ! target index corresponing to firstind
 !
+        ndown(ind) = ndowni(ind)
         if (lfirst_proc) then
           ndown(ind) = ndown(ind)+nghost; startind(ind)=nghost+1
         else
