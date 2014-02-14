@@ -885,7 +885,7 @@ module Energy
 !
 !  19-jan-13/ccyang: coded
 !
-      use Boundcond, only: update_ghosts
+      use Boundcond, only: zero_ghosts, update_ghosts
       use Density, only: impose_density_floor
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -904,12 +904,15 @@ module Energy
 !
 !  Update the ghost cells.
 !
-        call update_ghosts(f, ieth, ieth)
-        if (ldensity_nolog) then
-            call update_ghosts(f, irho, irho)
-        else
-            call update_ghosts(f, ilnrho, ilnrho)
-        endif
+        call zero_ghosts(f, ieth)
+        call update_ghosts(f, ieth)
+        gcrho: if (ldensity_nolog) then
+          call zero_ghosts(f, irho)
+          call update_ghosts(f, irho)
+        else gcrho
+          call zero_ghosts(f, ilnrho)
+          call update_ghosts(f, ilnrho)
+        endif gcrho
 !
 !  Update the energy.
 !
