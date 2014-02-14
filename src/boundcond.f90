@@ -105,12 +105,20 @@ module Boundcond
       ivar2 = ivar1
       if (present(ivar2_opt)) ivar2 = ivar2_opt
 !
-      f(1:nghost,:,:,ivar1:ivar2) = 0.0
-      f(mx-nghost+1:mx,:,:,ivar1:ivar2) = 0.0
-      f(:,1:nghost,:,ivar1:ivar2) = 0.0
-      f(:,my-nghost+1:my,:,ivar1:ivar2) = 0.0
-      f(:,:,1:nghost,ivar1:ivar2) = 0.0
-      f(:,:,mz-nghost+1:mz,ivar1:ivar2) = 0.0
+      xdir: if (nxgrid > 1) then
+        f(1:nghost,m1:m2,n1:n2,ivar1:ivar2) = 0.0
+        f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2) = 0.0
+      endif xdir
+!
+      ydir: if (nygrid > 1) then
+        f(:,1:nghost,n1:n2,ivar1:ivar2) = 0.0
+        f(:,my-nghost+1:my,n1:n2,ivar1:ivar2) = 0.0
+      endif ydir
+!
+      zdir: if (nzgrid > 1) then
+        f(:,:,1:nghost,ivar1:ivar2) = 0.0
+        f(:,:,mz-nghost+1:mz,ivar1:ivar2) = 0.0
+      endif zdir
 !
     endsubroutine zero_ghosts_range
 !***********************************************************************
