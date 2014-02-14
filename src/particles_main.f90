@@ -409,7 +409,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
+      if (.not.(lparticles_nbody.and.(lcylindrical_coords.or.lspherical_coords))) then
+        fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
+      else
+        call advance_particles_in_cartesian(fp,dfp)
+      endif
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !
@@ -689,7 +693,7 @@ module Particles_main
 !
 !  Correct for curvilinear geometry.
 !
-      call correct_curvilinear
+      if (.not.lparticles_nbody) call correct_curvilinear
 !
 !  Output particle size distribution to file.
 !
@@ -818,6 +822,10 @@ module Particles_main
 !  Curvilinear corrections to acceleration only.
 !  Corrections to velocity were already taken into account
 !  in the dxx_dt of particles_dust.f90
+!
+!  In the case that the N-body code is used, the update in polar grids
+!  in done by transforming the variables first to Cartesian, to achieve a
+!  better conservation of the Jacobi constant, and this code is not called. 
 !
 !  15-sep-07/wlad: coded
 !

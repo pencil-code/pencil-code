@@ -232,6 +232,15 @@ module Particles_nbody
 !
     endsubroutine bcast_nbodyarray
 !************************************************************************
+    subroutine advance_particles_in_cartesian(fp,dfp)
+!
+      real, dimension(mpar_loc,mpvar) :: fp,dfp
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+!
+    endsubroutine advance_particles_in_cartesian
+!************************************************************************
     subroutine particles_nbody_special
 !
       real :: dummy_=0.

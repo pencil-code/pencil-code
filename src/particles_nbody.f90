@@ -7,6 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! MPVAR CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles_nbody=.true.
 !
 !***************************************************************
@@ -51,7 +52,7 @@ module Particles_nbody
   logical :: ldust=.false.
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
-  logical :: lgas_gravity=.true.,ldust_gravity=.true.
+  logical :: lgas_gravity=.false.,ldust_gravity=.false.
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
   namelist /particles_nbody_init_pars/ &
@@ -110,6 +111,18 @@ module Particles_nbody
              ' (npar). Increase npar to the minimum number (npar=npsar) needed'//&
              ' in cparam.local and recompile')
       endif
+!
+!  Auxiliary variables for polar coordinates
+!
+      !if (.not.lcartesian_coords) then
+        ivpx_cart = npvar+1
+        pvarname(npvar+1)='ivpx_cart'
+        ivpy_cart = npvar+2
+        pvarname(npvar+1)='ivpy_cart'
+        ivpz_cart = npvar+3
+        pvarname(npvar+1)='ivpz_cart'
+        npvar=npvar+3
+      !endif
 !
     endsubroutine register_particles_nbody
 !***********************************************************************
@@ -929,6 +942,8 @@ module Particles_nbody
     subroutine loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
 !
 !  Subroutine that adds the gravity from all massive particles.
+!  Particle gravity has always to be added in Cartesian, for better
+!  conservation of the Jacobi constant. 
 !
 !  07-mar-08/wlad:coded
 !
@@ -937,9 +952,10 @@ module Particles_nbody
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: evr
-      real :: r2_ij, rs2, invr3_ij, v_ij
+      real :: r2_ij, rs2, invr3_ij, v_ij,tmp1,tmp2
       integer :: ks
+!
+      real, dimension (3) :: evr_cart,acc_cart
 !
       intent(inout) :: fp, dfp
       intent(in)  :: k
@@ -947,64 +963,107 @@ module Particles_nbody
       do ks=1,mspar
         if (ipar(k)/=ks) then
 !
-          call get_particles_interdistance(fp(k,ixp:izp),fsp(ks,ixp:izp), &
-              VECTOR=evr,DISTANCE=r2_ij,lsquare=.true.)
+          call get_evr(fp(k,ixp:izp),fsp(ks,ixp:izp),evr_cart)
 !
 !  Particles relative distance from each other:
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !
-!  invr3_ij = r_ij**(-3)
+          tmp1=sum(evr_cart**2)
+          tmp2=r_smooth(ks)**2
+          r2_ij=max(tmp1,tmp2)
 !
-          rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
+!  If there is accretion, remove the accreted particles from the simulation, if any.
 !
-!  If there is accretion, remove the accreted particles from the simulation.
-!
-          if (laccretion(ks) .and. (r2_ij<=rs2)) then
-            call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
-            !add mass of the removed particle to the accreting particle
-            if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
-            return
-!            goto 99
-          else
-            r2_ij=r2_ij+r_smooth(ks)**2
-            if (r2_ij > 0) then
-              invr3_ij = r2_ij**(-1.5)
-            else                ! can happen during pencil_check
-              invr3_ij = 0.0
+          if (laccretion(ks)) then 
+            rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)            
+            if (r2_ij<=rs2) then
+              call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
+              !add mass of the removed particle to the accreting particle
+              if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
+              return
             endif
+          endif  
 !
-!  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
+!  Shortcut: invr3_ij = r_ij**(-3)
+!
+          if (r2_ij > 0) then
+            invr3_ij = r2_ij**(-1.5)
+          else                ! can happen during pencil_check
+            invr3_ij = 0.0
+          endif
+!
+!  Gravitational acceleration: g=-g0/|r-r0|^3 (r-r0)
 !
 !  The acceleration is in non-coordinate basis (all have dimension of length).
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
 !
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                GNewton*pmass(ks)*invr3_ij*evr(1:3)
+          acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
+          if (lcartesian_coords) then 
+            dfp(k,ivpx:ivpz) =  dfp(k,ivpx:ivpz) + acc_cart
+          else 
+            ! separate this N-body acceleration from other, added elsewhere in the code
+            dfp(k,ivpx_cart:ivpz_cart) =  dfp(k,ivpx_cart:ivpz_cart) + acc_cart
+          endif
 !
 !  Time-step constraint from N-body particles. We use both the criterion
 !  that the distance to the N-body particle must not change too much in
 !  one time-step and additionally we use the free-fall time-scale.
 !
-            if (lfirst.and.ldt.and.ldt_nbody) then
-              v_ij=sqrt(sum((fp(k,ivpx:ivpz)-fp(ks,ivpx:ivpz))**2))
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost),v_ij/sqrt(r2_ij)/cdtpnbody)
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost), &
-                  sqrt(GNewton*pmass(ks)*invr3_ij)/cdtpnbody)
-            endif
-!
-          endif !if accretion
+          if (lfirst.and.ldt.and.ldt_nbody) then
+            v_ij=sqrt(sum((fp(k,ivpx:ivpz)-fp(ks,ivpx:ivpz))**2))
+            dt1_max(ineargrid(k,1)-nghost)= &
+                 max(dt1_max(ineargrid(k,1)-nghost),v_ij/sqrt(r2_ij)/cdtpnbody)
+            dt1_max(ineargrid(k,1)-nghost)= &
+                 max(dt1_max(ineargrid(k,1)-nghost), &
+                 sqrt(GNewton*pmass(ks)*invr3_ij)/cdtpnbody)
+          endif
 !
         endif !if (ipar(k)/=ks)
 !
       enddo !nbody loop
 !
-!99    continue
-!
     endsubroutine loop_through_nbodies
+!**********************************************************
+    subroutine get_evr(xxp,xxsp,evr_cart)
+!
+!  Point-to-point vector distance, in different coordinate systems.
+!  Return always in Cartesian. 
+!
+!  14-feb-14/wlad: coded
+!
+      real, dimension(3), intent(in) :: xxp,xxsp
+      real, dimension(3), intent(out) :: evr_cart
+      real :: x1,y1,x2,y2,z1,z2
+!
+      if (lcartesian_coords) then
+        x1=xxp(1) ; x2=xxsp(1)
+        y1=xxp(2) ; y2=xxsp(2)
+        z1=xxp(3) ; z2=xxsp(3)
+      elseif (lcylindrical_coords) then
+        x1=xxp(1)*cos(xxp(2))
+        y1=xxp(1)*sin(xxp(2))
+        z1=xxp(3)
+!
+        x2=xxsp(1)*cos(xxsp(2))
+        y2=xxsp(1)*sin(xxsp(2))
+        z2=xxsp(3)
+      elseif (lspherical_coords) then 
+        x1=xxp(1)*sin(xxp(2))*cos(xxp(3))
+        y1=xxp(1)*sin(xxp(2))*sin(xxp(3))
+        z1=xxp(1)*cos(xxp(2))
+!
+        x2=xxsp(1)*sin(xxsp(2))*cos(xxsp(3))
+        y2=xxsp(1)*sin(xxsp(2))*sin(xxsp(3))
+        z2=xxsp(1)*cos(xxsp(2))
+      endif
+!
+      evr_cart(1)=x1-x2
+      evr_cart(2)=y1-y2
+      evr_cart(3)=z1-z2
+!
+    endsubroutine get_evr
 !**********************************************************
     subroutine point_par_name(a,iname)
 !
@@ -1647,6 +1706,376 @@ module Particles_nbody
       enddo
 !
     endsubroutine get_total_gravity
+!***********************************************************************
+    subroutine advance_particles_in_cartesian(fp,dfp)
+!
+! With N-body gravity, the particles should have their position advanced in 
+! Cartesian coordinates, for better conservation of the Jacobi constant, even 
+! if the grid is polar. 
+!
+! 14-feb-14/wlad: coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+!
+      real, dimension (npar_loc) :: rad,phi,tht,xp,yp,zp
+      real, dimension (npar_loc) :: vrad,vtht,vphi,vx,vy,vz
+      real, dimension (npar_loc) :: arad,atht,aphi,ax,ay,az
+      real, dimension (npar_loc) :: cosp,sinp,cost,sint
+!
+      if (lcylindrical_coords) then
+!
+!  The input position, velocities, and accelerations in cylindrical coordinates. 
+!
+        rad  = fp(1:npar_loc,ixp)   ; phi  = fp(1:npar_loc,iyp)
+        vrad = fp(1:npar_loc,ivpx)  ; vphi = fp(1:npar_loc,ivpy)
+        arad = dfp(1:npar_loc,ivpx) ; aphi = dfp(1:npar_loc,ivpy)
+!
+!  Shortcuts.
+!
+        cosp=cos(phi) ; sinp=sin(phi)
+! 
+!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!
+        xp=rad*cosp ; yp=rad*sinp ; zp=fp(1:npar_loc,izp)
+!
+        vx=vrad*cosp - vphi*sinp
+        vy=vrad*sinp + vphi*cosp      
+        vz=fp(1:npar_loc,izp)
+!
+!  Add the Cartesian acceleration.
+!
+        ax=arad*cosp - aphi*sinp + dfp(1:npar_loc,ivpx_cart)
+        ay=arad*sinp + aphi*cosp + dfp(1:npar_loc,ivpy_cart)
+        az=dfp(1:npar_loc,ivpz)
+!
+      else if (lspherical_coords) then
+!
+!  The input position, velocities, and accelerations in spherical coordinates. 
+!
+        rad  = fp(1:npar_loc,ixp)   ; tht  = fp(1:npar_loc,iyp)   ; phi  = fp(1:npar_loc,izp)       
+        vrad = fp(1:npar_loc,ivpx)  ; vtht = fp(1:npar_loc,ivpy)  ; vphi = fp(1:npar_loc,ivpz)
+        arad = dfp(1:npar_loc,ivpx) ; atht = dfp(1:npar_loc,ivpy) ; aphi = dfp(1:npar_loc,ivpz)    
+!
+!  Shortcuts.
+!
+        cosp=cos(phi) ; sinp=sin(phi)
+        cost=cos(tht) ; sint=sin(tht)
+!
+!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!
+        xp=rad*sint*cosp ; yp=rad*sint*sinp ; zp=rad*cost
+!
+        vx=vrad*sint*cosp + vtht*cost*cosp - vphi*sinp
+        vy=vrad*sint*sinp + vtht*cost*sinp + vphi*cosp      
+        vz=vrad*cost      - vtht*sint
+!
+!  Add the Cartesian acceleration.
+! 
+        ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfp(1:npar_loc,ivpx_cart)
+        ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfp(1:npar_loc,ivpy_cart)
+        az=arad*cost      - atht*sint                  + dfp(1:npar_loc,ivpz_cart)
+!
+      endif
+!
+!  Now the time-stepping in Cartesian coordinates.
+!
+      call update_position(fp,dfp,xp,yp,zp,vx,vy,vz)
+      call update_velocity(fp,vx,vy,vz,ax,ay,az)
+!
+    endsubroutine advance_particles_in_cartesian
+!***********************************************************************
+    subroutine update_position(fp,dfp,xp,yp,zp,vx,vy,vz)
+!
+!  Update position if N-body is used in polar coordinates.
+!
+!  14-feb-14:wlad/coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+!
+      real, dimension (npar_loc), intent(in) :: vx,vy,vz
+      real, dimension (npar_loc), intent(inout) :: xp,yp,zp
+!
+!  Input vx and vy into the dfp array, for the Runge-Kutta integration. 
+!  It is needed because of the high order of the RK integration (dfp is 
+!  updated every subtimestep. 
+!
+      dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + vx
+      dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + vy
+      dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + vz
+!
+!  Update.
+!
+      xp = xp + dt_beta_ts(itsub)*dfp(1:npar_loc,ixp)
+      yp = yp + dt_beta_ts(itsub)*dfp(1:npar_loc,iyp)
+      zp = zp + dt_beta_ts(itsub)*dfp(1:npar_loc,izp)
+!
+!  Convert back to polar coordinates.
+!
+      if (lcylindrical_coords) then
+        fp(1:npar_loc,ixp) = sqrt(xp**2+yp**2+zp**2)
+        fp(1:npar_loc,iyp) = atan2(yp,xp)
+        fp(1:npar_loc,izp) = zp
+      else if (lspherical_coords) then
+        fp(1:npar_loc,ixp) = sqrt(xp**2+yp**2+zp**2)
+        fp(1:npar_loc,iyp) = acos(zp/fp(1:npar_loc,ixp))
+        fp(1:npar_loc,izp) = atan2(yp,xp)
+      endif
+!
+    endsubroutine update_position
+!***********************************************************************
+    subroutine update_velocity(fp,vx,vy,vz,ax,ay,az)
+!
+!  Update velocity if N-body is used in polar coordinates.
+!
+!  14-feb-14:wlad/coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+!
+      real, dimension (npar_loc), intent(in) :: ax,ay,az
+      real, dimension (npar_loc), intent(inout) :: vx,vy,vz
+!
+      real, dimension (npar_loc) :: phi,tht
+      real, dimension (npar_loc) :: cosp,sinp,sint,cost
+!
+!  All accelerations in dfp are in Cartesian.
+!
+      vx = vx + dt_beta_ts(itsub)*ax !vxdot
+      vy = vy + dt_beta_ts(itsub)*ay !vydot
+      vz = vz + dt_beta_ts(itsub)*az !vydot
+!
+!  Convert back to polar coordinates.
+!
+      if (lcylindrical_coords) then
+        phi=fp(1:npar_loc,iyp)
+        cosp=cos(phi) ; sinp=sin(phi)
+        fp(1:npar_loc,ivpx) =  vx*cosp + vy*sinp !=vrad
+        fp(1:npar_loc,ivpy) = -vx*sinp + vy*cosp !=vphi
+        fp(1:npar_loc,ivpz) =  vz
+      else if (lspherical_coords) then
+        tht=fp(1:npar_loc,iyp)
+        phi=fp(1:npar_loc,izp)
+        cost=cos(tht) ; sint=sin(tht)
+        cosp=cos(phi) ; sinp=sin(phi)
+        fp(1:npar_loc,ivpx) =  vx*sint*cosp + vy*sint*sinp + vz*cost !=vrad
+        fp(1:npar_loc,ivpy) =  vx*cost*cosp + vy*cost*sinp - vz*sint !=vphi
+        fp(1:npar_loc,ivpz) = -vx*sinp      + vy*cosp                !=vz
+      endif
+!
+    endsubroutine update_velocity
+!***********************************************************************
+    subroutine particles_nbody_read_snapshot(filename)
+!
+!  Read nbody particle info
+!
+!  01-apr-08/wlad: dummy
+!
+      use Mpicomm, only:mpibcast_int,mpibcast_real
+!
+      character (len=*) :: filename
+!
+      if (lroot) then
+        open(1,FILE=filename,FORM='unformatted')
+        read(1) mspar
+        if (mspar/=0) read(1) fsp(1:mspar,:),ipar_nbody(1:mspar)
+        if (ip<=8) print*, 'read snapshot', filename
+        close(1)
+      endif
+!
+      call mpibcast_int(mspar,1)
+      call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
+      call mpibcast_int(ipar_nbody(1:mspar),mspar)
+!
+      if (ldebug) then
+        print*,'particles_nbody_read_snapshot'
+        print*,'mspar=',mspar
+        print*,'fsp(1:mspar)=',fsp(1:mspar,:)
+        print*,'ipar_nbody(1:mspar)=',ipar_nbody
+        print*,''
+      endif
+!
+    endsubroutine particles_nbody_read_snapshot
+!***********************************************************************
+    subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
+!
+      use General, only:safe_character_assign
+      use Sub, only: update_snaptime, read_snaptime
+!
+!  Input and output of information about the massive particles
+!
+!  01-apr-08/wlad: coded
+!
+      logical, save :: lfirst_call=.true.
+      integer, save :: nsnap
+      real, save :: tsnap
+      character (len=*) :: snapbase,flist
+      character (len=fnlen) :: snapname, filename_diag
+      logical :: enum,lsnap
+      character (len=intlen) :: nsnap_ch
+      optional :: flist
+!
+      if (enum) then
+        call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+        if (lfirst_call) then
+          call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
+          lfirst_call=.false.
+        endif
+        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
+        if (lsnap) then
+          snapname=snapbase//nsnap_ch
+!
+!  Write number of massive particles and their data
+!
+          open(lun_output,FILE=snapname,FORM='unformatted')
+          write(lun_output) mspar
+          if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
+          close(lun_output)
+          if (ip<=10 .and. lroot) &
+               print*,'written snapshot ', snapname
+        endif
+      else
+!
+!  Write snapshot without label
+!
+        snapname=snapbase
+        open(lun_output,FILE=snapname,FORM='unformatted')
+        write(lun_output) mspar
+        if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
+        close(lun_output)
+        if (ip<=10 .and. lroot) &
+             print*,'written snapshot ', snapname
+      endif
+!
+      call keep_compiler_quiet(flist)
+!
+    endsubroutine particles_nbody_write_snapshot
+!***********************************************************************
+    subroutine particles_nbody_write_spdim(filename)
+!
+!  Write nspar and mspvar to file.
+!
+!  01-apr-08/wlad: coded
+!
+      character (len=*) :: filename
+!
+      open(1,file=filename)
+      write(1,'(3i9)') nspar, mspvar
+      close(1)
+!
+    endsubroutine particles_nbody_write_spdim
+!***********************************************************************
+    subroutine rprint_particles_nbody(lreset,lwrite)
+!
+!  Read and register print parameters relevant for nbody particles.
+!
+!  17-nov-05/anders+wlad: adapted
+!
+      use Diagnostics
+      use General, only: itoa
+!
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      integer :: iname,ks,j
+      character :: str
+      character (len=intlen) :: sks
+!
+!  Write information to index.pro
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+      if (lwr) then
+        write(3,*) 'imass=', imass
+      endif
+!
+!  Reset everything in case of reset
+!
+      if (lreset) then
+        idiag_xxspar=0;idiag_vvspar=0
+        idiag_torqint=0;idiag_torqext=0
+        idiag_totenergy=0;idiag_totangmom=0
+        idiag_torqext_gas=0;idiag_torqext_par=0
+        idiag_torqint_gas=0;idiag_torqint_par=0
+      endif
+!
+!  Run through all possible names that may be listed in print.in
+!
+      if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
+!
+!  Now check diagnostics for specific particles
+!
+      do ks=1,nspar
+        sks=itoa(ks)
+        do j=1,3
+          if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
+          do iname=1,nname
+            call parse_name(iname,cname(iname),cform(iname),&
+                 trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
+            call parse_name(iname,cname(iname),cform(iname),&
+                 'v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
+          enddo
+!
+!  Run through parse list again
+!
+          if (lwr) then
+            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
+                 idiag_xxspar(ks,j)
+            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
+                 idiag_vvspar(ks,j)
+          endif
+!
+        enddo
+!
+        do iname=1,nname
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_'//trim(sks),idiag_torqint(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_'//trim(sks),idiag_torqext(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_gas_'//trim(sks),idiag_torqext_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqext_par_'//trim(sks),idiag_torqext_par(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),&
+               'torqint_par_'//trim(sks),idiag_torqint_par(ks))
+        enddo
+!
+        if (lwr) then
+          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
+          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
+          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
+          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
+        endif
+      enddo
+!
+!  Diagnostic related to quantities summed over all particles
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),&
+             'totenergy',idiag_totenergy)
+        call parse_name(iname,cname(iname),cform(iname),&
+             'totangmom',idiag_totangmom)
+      enddo
+!
+       if (lwr) then
+         write(3,*) 'i_totenergy=',idiag_totenergy
+         write(3,*) 'i_totangmom=',idiag_totangmom
+       endif
+!
+    endsubroutine rprint_particles_nbody
+!***********************************************************************
+!
+!***********************************************************************
+!***********************************************************************
+!  
+!  STUFF RELATED TO EARLY IMPLEMENTATION OF PARTICLE SINKS.
+!
+!***********************************************************************
+!***********************************************************************
+!
 !***********************************************************************
     subroutine create_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
@@ -2426,209 +2855,5 @@ module Particles_nbody
       particle(imass)    =mass
 !
     endsubroutine collapse_cluster
-!***********************************************************************
-    subroutine particles_nbody_read_snapshot(filename)
-!
-!  Read nbody particle info
-!
-!  01-apr-08/wlad: dummy
-!
-      use Mpicomm, only:mpibcast_int,mpibcast_real
-!
-      character (len=*) :: filename
-!
-      if (lroot) then
-        open(1,FILE=filename,FORM='unformatted')
-        read(1) mspar
-        if (mspar/=0) read(1) fsp(1:mspar,:),ipar_nbody(1:mspar)
-        if (ip<=8) print*, 'read snapshot', filename
-        close(1)
-      endif
-!
-      call mpibcast_int(mspar,1)
-      call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
-      call mpibcast_int(ipar_nbody(1:mspar),mspar)
-!
-      if (ldebug) then
-        print*,'particles_nbody_read_snapshot'
-        print*,'mspar=',mspar
-        print*,'fsp(1:mspar)=',fsp(1:mspar,:)
-        print*,'ipar_nbody(1:mspar)=',ipar_nbody
-        print*,''
-      endif
-!
-    endsubroutine particles_nbody_read_snapshot
-!***********************************************************************
-    subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
-!
-      use General, only:safe_character_assign
-      use Sub, only: update_snaptime, read_snaptime
-!
-!  Input and output of information about the massive particles
-!
-!  01-apr-08/wlad: coded
-!
-      logical, save :: lfirst_call=.true.
-      integer, save :: nsnap
-      real, save :: tsnap
-      character (len=*) :: snapbase,flist
-      character (len=fnlen) :: snapname, filename_diag
-      logical :: enum,lsnap
-      character (len=intlen) :: nsnap_ch
-      optional :: flist
-!
-      if (enum) then
-        call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
-        if (lfirst_call) then
-          call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
-          lfirst_call=.false.
-        endif
-        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
-        if (lsnap) then
-          snapname=snapbase//nsnap_ch
-!
-!  Write number of massive particles and their data
-!
-          open(lun_output,FILE=snapname,FORM='unformatted')
-          write(lun_output) mspar
-          if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
-          close(lun_output)
-          if (ip<=10 .and. lroot) &
-               print*,'written snapshot ', snapname
-        endif
-      else
-!
-!  Write snapshot without label
-!
-        snapname=snapbase
-        open(lun_output,FILE=snapname,FORM='unformatted')
-        write(lun_output) mspar
-        if (mspar/=0) write(lun_output) fsp(1:mspar,:),ipar_nbody(1:mspar)
-        close(lun_output)
-        if (ip<=10 .and. lroot) &
-             print*,'written snapshot ', snapname
-      endif
-!
-      call keep_compiler_quiet(flist)
-!
-    endsubroutine particles_nbody_write_snapshot
-!***********************************************************************
-    subroutine particles_nbody_write_spdim(filename)
-!
-!  Write nspar and mspvar to file.
-!
-!  01-apr-08/wlad: coded
-!
-      character (len=*) :: filename
-!
-      open(1,file=filename)
-      write(1,'(3i9)') nspar, mspvar
-      close(1)
-!
-    endsubroutine particles_nbody_write_spdim
-!***********************************************************************
-    subroutine rprint_particles_nbody(lreset,lwrite)
-!
-!  Read and register print parameters relevant for nbody particles.
-!
-!  17-nov-05/anders+wlad: adapted
-!
-      use Diagnostics
-      use General, only: itoa
-!
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      integer :: iname,ks,j
-      character :: str
-      character (len=intlen) :: sks
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'imass=', imass
-      endif
-!
-!  Reset everything in case of reset
-!
-      if (lreset) then
-        idiag_xxspar=0;idiag_vvspar=0
-        idiag_torqint=0;idiag_torqext=0
-        idiag_totenergy=0;idiag_totangmom=0
-        idiag_torqext_gas=0;idiag_torqext_par=0
-        idiag_torqint_gas=0;idiag_torqint_par=0
-      endif
-!
-!  Run through all possible names that may be listed in print.in
-!
-      if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
-!
-!  Now check diagnostics for specific particles
-!
-      do ks=1,nspar
-        sks=itoa(ks)
-        do j=1,3
-          if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
-          do iname=1,nname
-            call parse_name(iname,cname(iname),cform(iname),&
-                 trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
-            call parse_name(iname,cname(iname),cform(iname),&
-                 'v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
-          enddo
-!
-!  Run through parse list again
-!
-          if (lwr) then
-            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_xxspar(ks,j)
-            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_vvspar(ks,j)
-          endif
-!
-        enddo
-!
-        do iname=1,nname
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_'//trim(sks),idiag_torqint(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_'//trim(sks),idiag_torqext(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_gas_'//trim(sks),idiag_torqext_gas(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_par_'//trim(sks),idiag_torqext_par(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_par_'//trim(sks),idiag_torqint_par(ks))
-        enddo
-!
-        if (lwr) then
-          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
-        endif
-      enddo
-!
-!  Diagnostic related to quantities summed over all particles
-!
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),&
-             'totenergy',idiag_totenergy)
-        call parse_name(iname,cname(iname),cform(iname),&
-             'totangmom',idiag_totangmom)
-      enddo
-!
-       if (lwr) then
-         write(3,*) 'i_totenergy=',idiag_totenergy
-         write(3,*) 'i_totangmom=',idiag_totangmom
-       endif
-!
-    endsubroutine rprint_particles_nbody
 !***********************************************************************
  endmodule Particles_nbody

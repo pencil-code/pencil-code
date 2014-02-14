@@ -13,3 +13,4 @@
   public :: bcast_nbodyarray,get_totalmass,calc_nbodygravity_particles
   public :: particles_nbody_read_snapshot,particles_nbody_special
   public :: particles_nbody_write_snapshot,particles_nbody_write_spdim
+  public :: advance_particles_in_cartesian

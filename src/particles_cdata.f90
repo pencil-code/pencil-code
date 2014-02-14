@@ -33,6 +33,7 @@ module Particles_cdata
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0
+  integer :: ivpx_cart,ivpy_cart,ivpz_cart
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
   integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
