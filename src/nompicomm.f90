@@ -132,6 +132,10 @@ module Mpicomm
     module procedure mpiallreduce_max_arr
   endinterface
 !
+  interface mpiallreduce_or
+    module procedure mpiallreduce_or_scl
+  endinterface
+!
   interface mpireduce_min
     module procedure mpireduce_min_scl
     module procedure mpireduce_min_arr
@@ -856,6 +860,15 @@ module Mpicomm
       fmax=fmax_tmp
 !
     endsubroutine mpiallreduce_max_arr
+!***********************************************************************
+    subroutine mpiallreduce_or_scl(flor_tmp, flor)
+!
+      logical, intent(in) :: flor_tmp
+      logical, intent(out) :: flor
+!
+      flor = flor_tmp
+!
+    endsubroutine mpiallreduce_or_scl
 !***********************************************************************
     subroutine mpireduce_max_scl_int(fmax_tmp,fmax)
 !

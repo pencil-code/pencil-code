@@ -141,6 +141,10 @@ module Mpicomm
     module procedure mpiallreduce_max_arr
   endinterface
 !
+  interface mpiallreduce_or
+    module procedure mpiallreduce_or_scl
+  endinterface
+!
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
@@ -2068,6 +2072,23 @@ module Mpicomm
           MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_arr
+!***********************************************************************
+    subroutine mpiallreduce_or_scl(flor_tmp, flor)
+!
+!  Calculate logical or over all procs and return to all processors.
+!
+!  14-feb-14/ccyang: coded
+!
+      logical, intent(in) :: flor_tmp
+      logical, intent(out) :: flor
+!
+      if (nprocs == 1) then
+        flor = flor_tmp
+      else
+        call MPI_ALLREDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, mpierr)
+      endif
+!
+    endsubroutine mpiallreduce_or_scl
 !***********************************************************************
     subroutine mpireduce_max_scl(fmax_tmp,fmax)
 !
