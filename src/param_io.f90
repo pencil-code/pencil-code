@@ -649,6 +649,13 @@ module Param_IO
         integer, intent(IN) :: ind, n, ip  
         logical, intent(IN) :: lfirst_proc,llast_proc
 !
+      if ( downsampl(ind)>n ) then
+        print*, 'read_startpars: Warning - stepsize for downsampling in '// &
+        coornames(ind)//'-direction ', downsampl(ind), 'greater than grid size ', n, &
+        '! Set to grid size.'
+        downsampl(ind)=n
+      endif
+!
 ! first index in direction ind in local farray for output 
 !
         firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind)) 
