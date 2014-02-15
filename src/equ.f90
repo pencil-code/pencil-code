@@ -33,6 +33,7 @@ module Equ
       use Cosmicray
       use CosmicrayFlux
       use Density
+      use Detonate, only: detonate_before_boundary
       use Diagnostics
       use Dustvelocity
       use Dustdensity
@@ -205,6 +206,7 @@ module Equ
       if (lspecial)      call special_before_boundary(f)
       if (ltestflow)     call testflow_before_boundary(f)
       if (lparticles)    call particles_before_boundary(f)
+      if (ldetonate)     call detonate_before_boundary(f)
 !
 !  Fetch fp to the special module
 !

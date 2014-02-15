@@ -37,6 +37,7 @@ module Register
       use CosmicrayFlux,    only: register_cosmicrayflux
       use Cosmicray,        only: register_cosmicray
       use Density,          only: register_density
+      use Detonate,         only: register_detonate
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
       use Energy,           only: register_energy
@@ -129,6 +130,7 @@ module Register
       call register_forcing
       call register_energy
       call register_conductivity
+      call register_detonate
       call register_magnetic
       call register_lorenz_gauge          !(should go under magnetic)
       call register_polymer
@@ -201,6 +203,7 @@ module Register
       use Cosmicray,        only: initialize_cosmicray
       use Density,          only: initialize_density
       use Deriv,            only: initialize_deriv
+      use Detonate,         only: initialize_detonate
       use Diagnostics,      only: initialize_diagnostics
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
@@ -377,6 +380,7 @@ module Register
       call initialize_forcing(lstarting)
       call initialize_energy(f,lstarting)
       call initialize_conductivity(f,lstarting)
+      call initialize_detonate(f, lstarting)
       call initialize_magnetic(f,lstarting)
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f,lstarting)
@@ -761,6 +765,7 @@ module Register
       use Forcing,         only: rprint_forcing
       use Energy,          only: rprint_energy
       use Conductivity,    only: rprint_conductivity
+      use Detonate,        only: rprint_detonate
       use Magnetic,        only: rprint_magnetic
       use Lorenz_gauge,    only: rprint_lorenz_gauge
       use Polymer,         only: rprint_polymer
@@ -1006,6 +1011,7 @@ module Register
       call rprint_forcing         (lreset,LWRITE=lroot)
       call rprint_energy          (lreset,LWRITE=lroot)
       call rprint_conductivity    (lreset,LWRITE=lroot)
+      call rprint_detonate        (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_lorenz_gauge    (lreset,LWRITE=lroot)
       call rprint_polymer         (lreset,LWRITE=lroot)

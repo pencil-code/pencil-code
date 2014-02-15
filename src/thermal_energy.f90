@@ -14,8 +14,8 @@
 ! CPARAM logical, parameter :: lthermal_energy = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 1
-! COMMUNICATED AUXILIARIES 1
+! MAUX CONTRIBUTION 0
+! COMMUNICATED AUXILIARIES 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); transpeth
 !
@@ -36,12 +36,9 @@ module Energy
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., cs_z=0.
-  real :: detonation_factor = 1.
   real :: TTref = 0., tau_cool = 1.
   integer :: rk_nmax = 100
   integer :: njeans = 4
-  integer :: idet = 0
-  integer :: detonation_power = 0
   logical :: lsplit_update=.false.
   logical :: lviscosity_heat=.true.
   logical :: lupw_eth=.false.
@@ -50,7 +47,6 @@ module Energy
   logical :: lSD93 = .false.
   logical :: lconst_cooling_time = .false.
   logical :: ljeans_floor=.false.
-  logical :: ldetonate=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
   character(len=labellen) :: feedback = 'linear'
@@ -68,8 +64,7 @@ module Energy
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, lSD93, nu_z, cs_z, &
       lconst_cooling_time, TTref, tau_cool, &
-      ljeans_floor, njeans, &
-      ldetonate, detonation_factor, feedback
+      ljeans_floor, njeans
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -86,8 +81,6 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_detn=0     ! DIAG_DOC: Number of detonated cells
-  integer :: idiag_detot=0    ! DIAG_DOC: Total injected energy
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -139,14 +132,6 @@ module Energy
 !
   real :: Jeans_c0 = 0.
 !
-! Variables for the detonations.
-!
-  logical, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: mask_sphere = .false.
-  real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth = 0.
-  integer :: nxs = 0, nys = 0, nzs = 0, nyz = ny * nz
-  real :: deposit = 0.
-  real :: tselfgrav_gentle = 0.0
-!
   contains
 !***********************************************************************
     subroutine register_energy()
@@ -161,7 +146,6 @@ module Energy
       integer :: ierr
 !
       call farray_register_pde('eth',ieth)
-      call farray_register_auxiliary('det', idet, communicated=.true.)
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
@@ -250,46 +234,6 @@ module Energy
           Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
         endif
       endif Jeans
-!
-!  Initialize the variables for detonations.
-!
-      detonate: if (ldetonate) then
-!       Determine the amount of deposit into each cell to be detonated.
-        method: select case (feedback)
-        case ('linear') method
-          deposit = detonation_factor * cs20
-          detonation_power = 1
-        case ('binding') method
-          deposit = detonation_factor * Jeans_c0
-          detonation_power = 2
-        case default method
-          call fatal_error('detonate', 'unknown feedback method')
-        endselect method
-!       Smoothing kernal
-        smooth(0,0,0) = 1.
-        xdir: if (nxgrid > 1) then
-          nxs = nghost
-          forall (i=-nghost:nghost, i/=0) smooth(i,0,0) = smooth(0,0,0) * exp(-0.5 * real(i * i))
-        endif xdir
-        ydir: if (nygrid > 1) then
-          nys = nghost
-          forall (i=-nghost:nghost, j=-nghost:nghost, j/=0) smooth(i,j,0) = smooth(i,0,0) * exp(-0.5 * real(j * j))
-        endif ydir
-        zdir: if (nzgrid > 1) then
-          nzs = nghost
-          forall (i=-nghost:nghost, j=-nghost:nghost, k=-nghost:nghost, k/=0) &
-            smooth(i,j,k) = smooth(i,j,0) * exp(-0.5 * real(k * k))
-        endif zdir
-        smooth = smooth / sum(smooth)
-!       Spherical mask
-        forall (i=-nxs:nxs, j=-nys:nys, k=-nzs:nzs, i*i+j*j+k*k <= 2**2) mask_sphere(i,j,k) = .true.
-!       Get tselfgrav_gentle.
-        selfgrav: if (lselfgravity) then
-          call get_shared_variable('tselfgrav_gentle', tsg, istat)
-          if (istat /= 0) call warning('initialize_energy', 'unable to get tselfgrav_gentle')
-          tselfgrav_gentle = tsg
-        endif selfgrav
-      endif detonate
 !
       if (llocal_iso) &
            call fatal_error('initialize_energy', &
@@ -673,7 +617,6 @@ module Energy
         idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
         idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0; idiag_eem=0
         idiag_pdivum=0; idiag_ppm=0
-        idiag_detn=0; idiag_detot=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -688,8 +631,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
-        call parse_name(iname,cname(iname),cform(iname),'detn',idiag_detn)
-        call parse_name(iname,cname(iname),cform(iname),'detot',idiag_detot)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -940,10 +881,6 @@ module Energy
         endif
 !
         f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta_eth(l1:l2,m1:m2,n1:n2)
-!
-!  Detonate those cells violating the Jeans criterion.
-!
-        if (ldetonate) call detonate(f, status == 1)
       endif split_update
 !
     endsubroutine
@@ -1346,147 +1283,11 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine detonate(f, unstable)
-!
-!  Detonate specified cells by specified method.
-!
-!  20-jan-13/ccyang: coded.
-!
-      use Mpicomm
-      use Boundcond
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, dimension(mx,my,mz), intent(in) :: unstable
-!
-      real, dimension(nx,ny,nz) :: delta
-      real, dimension(nx) :: ps
-      real, dimension(-3:3) :: uu
-      integer :: ndet, ndet_sum
-      integer :: i, j, k, imn, m, n
-      integer :: ll1, ll2, mm1, mm2, nn1, nn2
-      real :: divu, r
-      real :: det, det_sum, dep
-!
-!  Scale the detonation energy with gentle selfgravity.
-!
-      gentle: if (tselfgrav_gentle > 0.0 .and. t < tselfgrav_gentle) then
-        dep = 0.5 * deposit * (1.0 - cos(pi * t / tselfgrav_gentle))
-      else gentle
-        dep = deposit
-      endif gentle
-!
-!  Prepare for communicating the cells that should be detonated.
-!
-      ndet = 0
-      det = 0.0
-      f(:,:,:,idet) = 0.
-      zscan: do k = n1, n2
-        nn1 = k - nzs
-        nn2 = k + nzs
-        yscan: do j = m1, m2
-          mm1 = j - nys
-          mm2 = j + nys
-          xscan: do i = l1, l2
-            ll1 = i - nxs
-            ll2 = i + nxs
-            trigger: if (maxval(f(ll1:ll2,mm1:mm2,nn1:nn2,irho), &
-                                mask=mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs)) == f(i,j,k,irho) .and. &
-                         all(unstable(ll1:ll2,mm1:mm2,nn1:nn2) .and. mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs) &
-                                                               .eqv. mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs))) then
-              divu = 0.
-              duxdx: if (nxs > 0) then
-                uu = f(ll1:ll2,j,k,iux)
-                divu = divu + derivative(uu, dx_1(i))
-              endif duxdx
-              duydy: if (nys > 0) then
-                uu = f(i,mm1:mm2,k,iuy)
-                divu = divu + derivative(uu, dy_1(j))
-              endif duydy
-              duzdz: if (nzs > 0) then
-                uu = f(i,j,nn1:nn2,iuz)
-                divu = divu + derivative(uu, dz_1(k))
-              endif duzdz
-              converge: if (divu < 0.) then
-                ndet = ndet + 1
-                f(i,j,k,idet) = dep * f(i,j,k,irho)**detonation_power
-                det = det + f(i,j,k,idet) * dVol_x(i) * dVol_y(j) * dVol_z(k)
-              endif converge
-            endif trigger
-          enddo xscan
-        enddo yscan
-      enddo zscan
-      if (ldebug .and. ndet > 0) print *, 'Detonated ', ndet, ' cells. '
-!
-!  Smooth out the detonation energy.
-!
-      shear: if (lshear) then
-        call boundconds_y(f, idet, idet)
-        call initiate_isendrcv_bdry(f, idet, idet)
-        call finalize_isendrcv_bdry(f, idet, idet)
-      endif shear
-      call boundconds_x(f, idet, idet)
-      call initiate_isendrcv_bdry(f, idet, idet)
-!
-      pencil: do imn = 1, nyz
-        n = nn(imn)
-        m = mm(imn)
-        final: if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f, idet, idet)
-          call boundconds_y(f, idet, idet)
-          call boundconds_z(f, idet, idet)
-        endif final
-!
-        ps = 0.
-        zdir: do k = -nzs, nzs
-          ydir: do j = -nys, nys
-            xdir: do i = -nxs, nxs
-              ps = ps + smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet)
-            enddo xdir
-          enddo ydir
-        enddo zdir
-        delta(:,m-nghost,n-nghost) = ps
-      enddo pencil
-!
-!  Make the deposit into the cells.
-!
-      f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta(:,:,:)
-!
-!  Diagnostics
-!
-      diagnos: if (lout) then
-        get_detn: if (idiag_detn /= 0) then
-          call mpireduce_sum_int(ndet, ndet_sum)
-          if (lroot) fname(idiag_detn) = real(ndet_sum)
-        endif get_detn
-        get_detot: if (idiag_detot /= 0) then
-          call mpireduce_sum(det, det_sum)
-          if (lroot) fname(idiag_detot) = det_sum
-        endif get_detot
-      endif diagnos
-!
-    endsubroutine detonate
-!***********************************************************************
     subroutine expand_shands_energy()
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
-!***********************************************************************
-    real function derivative(a, dx1)
-!
-!  Returns the first derivative at the center of a seven-point data
-!  array.
-!
-!  19-jan-13/ccyang: coded.
-!
-      real, dimension(-3:3), intent(in) :: a
-      real, intent(in) :: dx1
-!
-      real, parameter :: sixtieth = 1. / 60.
-!
-      derivative = sixtieth * dx1 * ((a(3) - a(-3)) - 9.0 * (a(2) - a(-2)) + 45.0 * (a(1) - a(-1)))
-!
-    endfunction
 !***********************************************************************
     pure real function get_temperature(eth, rho) result(temp)
 !
