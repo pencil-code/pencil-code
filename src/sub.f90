@@ -79,7 +79,8 @@ module Sub
 !
   public :: tensor_diffusion_coef
 !
-  public :: smooth, smooth_kernel, despike
+  public :: smooth_kernel, despike
+  public :: smooth, get_smooth_kernel
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
@@ -3292,9 +3293,7 @@ module Sub
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar
 !
-      integer, dimension(-nghost:nghost) :: b
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kernel = 0.0
-      real, dimension(-nghost:nghost) :: weight
       real, dimension(nx,ny,nz) :: work
       logical :: lfirstcall = .true.
       integer :: i1 = 0, i2 = 0, j1 = 0, j2 = 0, k1 = 0, k2 = 0
@@ -3303,26 +3302,19 @@ module Sub
 !  Initialization at first call.
 !
       init: if (lfirstcall) then
-        call binomial(b)
-        weight = real(b)
-        kernel(0,0,0) = 1.0
-        k = 2 * nghost + 1
+        call get_smooth_kernel(kernel)
         xdim: if (nxgrid > 1) then
-          kernel(:,0,0) = kernel(0,0,0) * weight
           i1 = -nghost
           i2 = nghost
         endif xdim
         ydim: if (nygrid > 1) then
-          kernel(:,:,0) = spread(kernel(:,0,0), 2, k) * spread(weight, 1, k)
           j1 = -nghost
           j2 = nghost
         endif ydim
         zdim: if (nzgrid > 1) then
-          kernel = spread(kernel(:,:,0), 3, k) * spread(spread(weight, 1, k), 1, k)
           k1 = -nghost
           k2 = nghost
         endif zdim
-        kernel = kernel / sum(kernel)
         lfirstcall = .false.
       endif init
 !
@@ -3339,6 +3331,30 @@ module Sub
       f(l1:l2,m1:m2,n1:n2,ivar) = work
 !
     endsubroutine smooth
+!***********************************************************************
+    subroutine get_smooth_kernel(kernel)
+!
+!  Gets the smooth kernel used by subroutine smooth.
+!
+!  15-feb-14/ccyang: coded
+!
+      real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(out) :: kernel
+!
+      integer, dimension(-nghost:nghost) :: b
+      real, dimension(-nghost:nghost) :: weight
+      integer :: k
+!
+      call binomial(b)
+      weight = real(b)
+      k = 2 * nghost + 1
+      kernel = 0.0
+      kernel(0,0,0) = 1.0
+      if (nxgrid > 1) kernel(:,0,0) = kernel(0,0,0) * weight
+      if (nygrid > 1) kernel(:,:,0) = spread(kernel(:,0,0), 2, k) * spread(weight, 1, k)
+      if (nzgrid > 1) kernel = spread(kernel(:,:,0), 3, k) * spread(spread(weight, 1, k), 1, k)
+      kernel = kernel / sum(kernel)
+!
+    endsubroutine get_smooth_kernel
 !***********************************************************************
     subroutine binomial(b)
 !
