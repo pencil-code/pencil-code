@@ -775,13 +775,15 @@ module Shear
 !
       ydir: if (nygrid > 1) then
         nvar = ivar2 - ivar1 + 1
-        call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay, shear_method)
-        call shift_ghostzones_nonfft_subtask(f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay, shear_method)
+        call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay, shear_method, &
+                                             posdef=lposdef(ivar1:ivar2))
+        call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay, shear_method, &
+                                             posdef=lposdef(ivar1:ivar2))
       endif ydir
 !
     endsubroutine shift_ghostzones_nonfft
 !***********************************************************************
-    subroutine shift_ghostzones_nonfft_subtask(a, nvar, shift, method)
+    subroutine shift_ghostzones_nonfft_subtask(a, nvar, shift, method, posdef)
 !
 !  Subtask for spline_shift_ghostzones.
 !
@@ -793,6 +795,7 @@ module Shear
 !
       integer, intent(in) :: nvar
       real, dimension(nghost,ny,nz,nvar), intent(inout) :: a
+      logical, dimension(nvar), intent(in) :: posdef
       character(len=*), intent(in) :: method
       real, intent(in) :: shift
 !
@@ -801,7 +804,7 @@ module Shear
       real, dimension(nygrid) :: ynew, penc, dpenc
       real, dimension(mygrid) :: worky
       character(len=256) :: message
-      logical :: error, posdef
+      logical :: error
       integer :: istat
       integer :: ivar, i, k
 !
@@ -825,9 +828,8 @@ module Shear
             case ('spline') dispatch
               call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
             case ('poly') dispatch
-              posdef = lposdef_advection .and. lposdef(ivar)
-              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
-                                            istatus=istat, message=message)
+              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                                            posdef=lposdef_advection.and.posdef(ivar), istatus=istat, message=message)
               error = istat /= 0
             case default dispatch
               call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
