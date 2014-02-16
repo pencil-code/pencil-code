@@ -32,10 +32,6 @@ module Detonate
 !
   namelist /detonate_run_pars/ det_scale, det_njeans, det_radius, det_factor
 !
-!  Index for detonation energy.
-!
-  integer :: idet = 0
-!
 !  Diagnostic variables
 !
   integer :: idiag_detn = 0      ! DIAG_DOC: Number of detonated sites
