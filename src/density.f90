@@ -169,6 +169,7 @@ module Density
 !
 ! yz averaged diagnostics given in yzaver.in
   integer :: idiag_rhomx=0      ! YZAVG_DOC: $\left<\varrho\right>_{yz}$
+  integer :: idiag_rho2mx=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{yz}$
 !
 ! y averaged diagnostics given in yaver.in
   integer :: idiag_rhomxz=0     ! YAVG_DOC: $\left<\varrho\right>_{y}$
@@ -1522,9 +1523,9 @@ module Density
 !
 !  Diagnostic pencils.
 !
-      if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
-           idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rho2mz/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
+      if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhomy/=0 .or. &
+           idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
+           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
@@ -2082,6 +2083,7 @@ module Density
         call xysum_mn_name_z(p%rho,idiag_rhomz)
         call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
+        call yzsum_mn_name_x(p%rho**2,idiag_rho2mx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
       endif
 !
@@ -2635,7 +2637,7 @@ module Density
         idiag_ugrhom=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0
+        idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0
         idiag_rhomxmask=0; idiag_rhomzmask=0
@@ -2682,8 +2684,8 @@ module Density
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx', &
-            idiag_rhomx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rhomx', idiag_rhomx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rho2mx', idiag_rho2mx)
       enddo
 !
 !  Check for those quantities for which we want phiz-averages.
