@@ -8,6 +8,7 @@
 ;
 ;  Parameters:
 ;   * data           Data cube of a vector field (4-dimensional: [nx,ny,nz,3]).
+;   * description    Description of the streamline (optional, Default: "").
 ;   * anchor         Anchor point in grid coordinates (2-dimensional: [3,num_lines]).
 ;   * grid           Grid structure (Default: equidistant grid spacing of unit length 1.0).
 ;   * direction      Direction (1: along, -1: against the vector field, Default: both).
@@ -50,7 +51,7 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, quiet=quiet
+function pc_get_streamline, data, description=description, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, quiet=quiet
 
         default, dir, 0
         default, precision, 0.1
@@ -60,6 +61,7 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
         default, nbox, 3.0
         default, max_packet_length, 1000000L
         default, display_packet, 1000L
+	default, description, ''
 
         ; Periodicity
         if (keyword_set (grid)) then periodic = grid.lperi
@@ -333,6 +335,6 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
         end
 
         if (keyword_set (return_indices)) then return, indices
-        return, { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
+        return, { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ], description:description }
 
 end
