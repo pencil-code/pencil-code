@@ -517,6 +517,14 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		return, dot (uu, F_Lorentz)
 	end
+	if (strcmp (quantity, 'Lorentz_angle', /fold_case)) then begin
+		; Angle between the current density and the magnetic field vectors [°]
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		B_abs = pc_compute_quantity (vars, index, 'B_abs')
+		j_abs = pc_compute_quantity (vars, index, 'j_abs')
+		return, acos (dot (jj, bb) / sqrt (j_abs * B_abs)) * (180 / !DPi)
+	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3 * (m/s)^3 / m]
