@@ -29,6 +29,7 @@ module Shear
   real, dimension(3) :: u0_advec = 0.0
   real, dimension(:), pointer :: B_ext
   character(len=6) :: shear_method = 'fft'
+  logical, dimension(mcom) :: lposdef = .false.
   logical :: lshearadvection_as_shift=.false.
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
@@ -40,13 +41,13 @@ module Shear
   namelist /shear_init_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, u0_advec, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
-      norder_poly, ltvd_advection, lposdef_advection, &
+      norder_poly, ltvd_advection, lposdef_advection, lposdef, &
       lmagnetic_stretching, sini
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
-      norder_poly, ltvd_advection, lposdef_advection, &
+      norder_poly, ltvd_advection, lposdef_advection, lposdef, &
       lmagnetic_stretching, lexternal_magnetic_field, sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -127,6 +128,15 @@ module Shear
         endif
         Sshear_sini=Sshear*sini
       endif
+!
+!  Turn on positive definiteness for some common sense variables.
+!
+      posdef: if (lposdef_advection .and. .not. any(lposdef)) then
+        if (ldensity .and. ldensity_nolog) lposdef(irho) = .true.
+        if (lenergy .and. lthermal_energy) lposdef(ieth) = .true.
+        if (lshock) lposdef(ishock) = .true.
+        if (ldetonate) lposdef(idet) = .true.
+      endif posdef
 !
     endsubroutine initialize_shear
 !***********************************************************************
@@ -491,7 +501,7 @@ module Shear
             call sheared_advection_fft(f, ivar, ivar, dt_shear)
             if (.not. llast) call sheared_advection_fft(df, ivar, ivar, dt_shear)
           case ('spline', 'poly') method
-            posdef = lposdef_advection .and. (ivar == irho .or. ivar == ieth)
+            posdef = lposdef_advection .and. lposdef(ivar)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
             if (.not. llast) call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
           case default method
@@ -815,7 +825,7 @@ module Shear
             case ('spline') dispatch
               call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
             case ('poly') dispatch
-              posdef = lposdef_advection .and. (ivar == irho .or. ivar == ieth)
+              posdef = lposdef_advection .and. lposdef(ivar)
               call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
                                             istatus=istat, message=message)
               error = istat /= 0
