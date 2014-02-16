@@ -395,8 +395,6 @@ module Detonate
 !  Add it to the energy field.
 !
       f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + f(l1:l2,m1:m2,n1:n2,idet)
-      call zero_ghosts(f, ieth)
-      call update_ghosts(f, ieth)
 !
     endsubroutine set_detonations
 !***********************************************************************
