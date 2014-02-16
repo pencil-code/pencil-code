@@ -232,6 +232,10 @@ module Detonate
       integer :: ndet
       real :: esum
 !
+!  Initialize the detonation energy to tiny positive value.
+!
+      f(l1:l2,m1:m2,n1:n2,idet) = tiny(1.0)
+!
 !  Detonate only before one full time-step.
 !
       first: if (lfirst) then
@@ -376,7 +380,6 @@ module Detonate
 !
 !  Put in point energy where mask is .true.
 !
-      f(l1:l2,m1:m2,n1:n2,idet) = 0.0
       if (ldensity_nolog) then
         where(mask(l1:l2,m1:m2,n1:n2)) f(l1:l2,m1:m2,n1:n2,idet) = deth * f(l1:l2,m1:m2,n1:n2,irho)**power
       else
