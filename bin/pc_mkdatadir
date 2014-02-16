@@ -197,7 +197,7 @@ else if ( ($hn =~ gardar*) ) then
 else if ($hn =~ darwin*) then
   set str='s/Users/var\/tmp/g'
 else if (($hn =~ hydra*) && ($USER =~ joernw))then # joern on hydra
-  set str='s/u/ptmp/g'
+  set str='s/u\//ptmp\//g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
