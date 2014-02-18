@@ -111,20 +111,20 @@ if (file_test(filename)) then begin
   endelse
   free_lun,file
 endif else begin
-  free_lun,file
   message, 'ERROR: cannot find file ' + filename
 endelse
 ;
 ; Build structure of all the variables
 ;
-object = create_struct(name=objectname, $
-    ['t','nblock_loc','nproc_parent','nproc_foster','iproc_foster_brick', $
-     'iproc_parent_block','ibrick_parent_block','xb','yb','zb', $
-     'dx1b','dy1b','dz1b','dVol1xb','dVol1yb','dVol1zb', $
-     'iproc_parent_list','iproc_foster_list'], $
-     t,nblock_loc,nproc_parent,nproc_foster,iproc_foster_brick, $
-     iproc_parent_block,ibrick_parent_block,xb,yb,zb, $
-     dx1b,dy1b,dz1b,dVol1xb,dVol1yb,dVol1zb, $
-     iproc_parent_list,iproc_foster_list)
+if nblock_loc gt 0 then $
+  object = create_struct(name=objectname, $
+      ['t','nblock_loc','nproc_parent','nproc_foster','iproc_foster_brick', $
+       'iproc_parent_block','ibrick_parent_block','xb','yb','zb', $
+       'dx1b','dy1b','dz1b','dVol1xb','dVol1yb','dVol1zb', $
+       'iproc_parent_list','iproc_foster_list'], $
+       t,nblock_loc,nproc_parent,nproc_foster,iproc_foster_brick, $
+       iproc_parent_block,ibrick_parent_block,xb,yb,zb, $
+       dx1b,dy1b,dz1b,dVol1xb,dVol1yb,dVol1zb, $
+       iproc_parent_list,iproc_foster_list)
 ;
 end
