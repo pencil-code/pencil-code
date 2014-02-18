@@ -77,7 +77,6 @@ pro write_vtk, obj, file, x=x, y=y, z=z, spacing=spacing, grid=grid
     printf, lun, 'ORIGIN ', origin
     printf, lun, 'SPACING ', spacing
   endelse
-  printf, lun, 'POINT_DATA ', ntot
 
 ; Write out each data field.
   tags = tag_names(obj)
@@ -86,6 +85,7 @@ pro write_vtk, obj, file, x=x, y=y, z=z, spacing=spacing, grid=grid
     if tags[i] eq 'X' or tags[i] eq 'Y' or tags[i] eq 'Z' or $
        tags[i] eq 'DX' or tags[i] eq 'DY' or tags[i] eq 'DZ' or $
        tags[i] eq 'T' or tags[i] eq 'DELTAY' then continue
+    printf, lun, 'POINT_DATA ', ntot
     if (size(obj.(i)))[0] eq ndim then begin
       ; Write scalar field.
       print, 'SCALARS ', strlowcase(tags[i]), ' ', data_type, '...'
