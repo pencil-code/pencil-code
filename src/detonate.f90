@@ -27,10 +27,11 @@ module Detonate
 !
   character(len=labellen) :: det_scale = 'linear'    ! Scaling of the energy input at detonation with density
   integer :: det_njeans = 4    ! Minimum number of cells per Jeans length for stability
+  integer :: det_nsmooth = 1   ! Number of times to smooth the point detonation
   integer :: det_radius = 2    ! Radius of a local region in number of cells
   real :: det_factor = 1.0     ! Scale factor of the energy input
 !
-  namelist /detonate_run_pars/ det_scale, det_njeans, det_radius, det_factor
+  namelist /detonate_run_pars/ det_scale, det_njeans, det_nsmooth, det_radius, det_factor
 !
 !  Diagnostic variables
 !
@@ -362,7 +363,7 @@ module Detonate
 !
 !  Detonates cells specified by mask.
 !
-!  14-feb-14/ccyang: dummy
+!  19-feb-14/ccyang: coded
 !
       use Boundcond, only: zero_ghosts, update_ghosts
       use Sub, only: smooth
@@ -370,6 +371,7 @@ module Detonate
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, dimension(mx,my,mz), intent(in) :: mask
 !
+      integer :: i
       real :: deth
 !
       if (t < tgentle) then
@@ -386,11 +388,13 @@ module Detonate
         where(mask(l1:l2,m1:m2,n1:n2)) f(l1:l2,m1:m2,n1:n2,idet) = deth * exp(power * f(l1:l2,m1:m2,n1:n2,ilnrho))
       endif
 !
-!  Smooth it.
+!  Smooth it by det_nsmooth times.
 !
-      call zero_ghosts(f, idet)
-      call update_ghosts(f, idet)
-      call smooth(f, idet)
+      rep: do i = 1, det_nsmooth
+        call zero_ghosts(f, idet)
+        call update_ghosts(f, idet)
+        call smooth(f, idet)
+      enddo rep
 !
 !  Add it to the energy field.
 !
