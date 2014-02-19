@@ -233,13 +233,13 @@ module Detonate
       integer :: ndet
       real :: esum
 !
-!  Initialize the detonation energy to tiny positive value.
-!
-      f(l1:l2,m1:m2,n1:n2,idet) = tiny(1.0)
-!
 !  Detonate only before one full time-step.
 !
       first: if (lfirst) then
+!
+!  Initialize the detonation energy to tiny positive value.
+!
+        f(l1:l2,m1:m2,n1:n2,idet) = tiny(1.0)
 !
 !  Check Jeans stability for each cell.
 !
