@@ -206,10 +206,10 @@ module Detonate
 !
 !  Parse names in print.in.
 !
-      diagnostics: do iname = 1, nname
+      diagnos: do iname = 1, nname
         call parse_name(iname, cname(iname), cform(iname), 'detn', idiag_detn)
         call parse_name(iname, cname(iname), cform(iname), 'dettot', idiag_dettot)
-      enddo diagnostics
+      enddo diagnos
 !
 !  lwrite should be phased out.
 !
