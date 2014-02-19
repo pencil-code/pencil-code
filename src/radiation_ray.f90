@@ -66,6 +66,8 @@ module Radiation
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
   real, dimension (mnu) :: scalefactor_Srad=1.0, kappa_cst=1.0
+  real, dimension (:), allocatable :: lnTT_table
+  real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
@@ -82,6 +84,7 @@ module Radiation
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
+  real :: lnTT_table0=0.0, dlnTT_table=0.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -94,6 +97,7 @@ module Radiation
   integer :: nnstart, nnstop, nn1, nn2, nsign
   integer :: ipzstart, ipzstop, ipystart, ipystop
   integer :: nIsurf=1
+  integer :: nlnTT_table=1
 !
   logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
   logical :: lfix_radweight_1d=.true.
@@ -101,7 +105,7 @@ module Radiation
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
-  logical :: lcheck_tau_division=.false.
+  logical :: lcheck_tau_division=.false., lread_source_function=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -133,7 +137,8 @@ module Radiation
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
-      ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa
+      ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
+      lread_source_function
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
@@ -146,7 +151,8 @@ module Radiation
       cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
-      width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling
+      width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
+      lread_source_function
 !
   contains
 !***********************************************************************
@@ -196,11 +202,14 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
+!  19-feb-14/axel: read tabulated source function
 !
       use Sub, only: parse_bc_rad
 !
+      integer :: itable
       real :: radlength,arad_normal
       logical :: periodic_xy_plane,bad_ray,ray_good
+      character (len=labellen) :: header
 !
 !  Check that the number of rays does not exceed maximum.
 !
@@ -343,6 +352,21 @@ module Radiation
       call calc_angle_weights
 !
       if (lroot.and.ip<=14) print*, 'initialize_radiation: ndir =', ndir
+!
+!  Read tabulated source function.
+!
+      if (lread_source_function) then
+        open (1,file='nnu2.dat')
+        read (1,*) nlnTT_table
+        read (1,*) header
+        allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
+        do itable=1,nlnTT_table
+          read(1,*) lnTT_table(itable),lnSS_table(itable,:)
+        enddo
+        close (1)
+        lnTT_table0=lnTT_table(1)
+        dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
+      endif
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -1450,10 +1474,13 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
+      integer, dimension(mx) :: ilnTT_table
       real, dimension(mx) :: lnTT
       integer :: inu
 !
       select case (source_function_type)
+!
+!  usual Planck function, S=sigmaSB*TT^4
 !
       case ('LTE')
         do n=n1-radz,n2+radz
@@ -1463,6 +1490,21 @@ module Radiation
         enddo
         enddo
 !
+!  read tabulated 2-colored source function for inu=1 and 2.
+!
+      case ('two-colored')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnTT=lnTT)
+          ilnTT_table=max(min(int((lnTT-lnTT_table0)*dlnTT_table),nlnTT_table-1),1)
+          Srad(:,m,n)=exp(lnSS_table(ilnTT_table,inu) &
+            +(lnSS_table(ilnTT_table+1,inu)-lnSS_table(ilnTT_table,inu)) &
+            *(lnTT-lnTT_table(ilnTT_table))/(lnTT_table(ilnTT_table+1)-lnTT_table(ilnTT_table)))/unit_flux
+        enddo
+        enddo
+!
+!  for testing purposes, a blob-like spatial profile
+!
       case ('blob')
         if (lfirst) then
           Srad=Srad_const &
@@ -1471,6 +1513,8 @@ module Radiation
                        *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
           lfirst=.false.
         endif
+!
+!  for testing purposes, a cosine-like spatial profile.
 !
       case ('cos')
         if (lfirst) then
@@ -1488,12 +1532,16 @@ module Radiation
       case ('B2')
         call calc_Srad_B2(f,Srad)
 !
+!  Combination of magnetic energy density and enstrophy.
+!
       case ('B2+W2')
         if (inu==1) then
           call calc_Srad_B2(f,Srad)
         elseif (inu==2) then
           call calc_Srad_W2(f,Srad)
         endif
+!
+!  Nothing.
 !
       case ('nothing')
         Srad=0.0
