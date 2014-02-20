@@ -754,13 +754,13 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
     varcontent[icooling2].idlinitloc = INIT_SCALAR_LOC
   endif
 ;
-  default, idet, 0
-  if (idet gt 0) then begin
-    varcontent[idet].variable   = 'Detonation Energy'
-    varcontent[idet].idlvar     = 'det'
-    varcontent[idet].idlinit    = INIT_SCALAR
-    varcontent[idet].idlvarloc  = 'det_loc'
-    varcontent[idet].idlinitloc = INIT_SCALAR_LOC
+  default, idetonate, 0
+  if (idetonate gt 0) then begin
+    varcontent[idetonate].variable   = 'Detonation Energy'
+    varcontent[idetonate].idlvar     = 'det'
+    varcontent[idetonate].idlinit    = INIT_SCALAR
+    varcontent[idetonate].idlvarloc  = 'det_loc'
+    varcontent[idetonate].idlinitloc = INIT_SCALAR_LOC
   endif
 ;
   default, inp, 0
