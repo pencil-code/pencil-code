@@ -237,9 +237,9 @@ module Detonate
 !
       first: if (lfirst) then
 !
-!  Initialize the detonation energy to tiny positive value.
+!  Initialize the detonation energy field to zero.
 !
-        f(l1:l2,m1:m2,n1:n2,idet) = tiny(1.0)
+        f(l1:l2,m1:m2,n1:n2,idet) = 0.0
 !
 !  Check Jeans stability for each cell.
 !
