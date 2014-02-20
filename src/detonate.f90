@@ -131,7 +131,7 @@ module Detonate
         if (nzgrid > 1) then
           call fatal_error('initialize_detonate', 'quadratic scaling for 3D is under construction. ')
         else
-          deth0 = det_factor * (8.0 * pi / 3.0) * G_Newton * (det_radius * dxmax)**3
+          deth0 = det_factor * (8.0 * pi / 3.0) * G_Newton * dxmax * det_radius**3
         endif
 !
       case default scale
