@@ -1615,7 +1615,7 @@ module General
 !
           ok = .true.
           if (tvd1 .and.  (y(i) - ya(ix1)) * (ya(ix2) - y(i)) < 0.0) ok = .false.
-          if (posdef1 .and. y(i) <= 0.0) ok = .false.
+          if (posdef1 .and. y(i) < 0.0) ok = .false.
           if (ok) exit order
           morder = morder - 1
         enddo order
