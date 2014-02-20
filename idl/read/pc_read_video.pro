@@ -162,6 +162,18 @@ if (xzread)  then close, 3
 if (yzread)  then close, 4
 if (xz2read) then close, 5
 ;
+; Truncate the data if less than nt slices were read.
+;
+if it lt nt then begin
+  it -= 1
+  xy = xy[*,*,0:it]
+  xz = xz[*,*,0:it]
+  yz = yz[*,*,0:it]
+  xy2 = xy2[*,*,0:it]
+  xz2 = xz2[*,*,0:it]
+  t = t[0:it]
+endif
+;
 ; Build structure of all the variables.
 ;
 object = create_struct(name=objectname,['t','xy','xy2','xz','yz','xz2'], $
