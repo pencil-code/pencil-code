@@ -260,6 +260,8 @@ if err ne 0 then return, 0
   endelse
 
   alloc_specs, spectrum1, lint_shell, lint_z, lcomplex
+  alloc_specs, spectrum1y, lint_shell, lint_z, lcomplex
+  alloc_specs, spectrum1z, lint_shell, lint_z, lcomplex
    
   if lcomplex then begin  
     globalmin=1e12 +complexarr(ncomp)
@@ -329,6 +331,10 @@ if err ne 0 then return, 0
 
     for i=0,ncomp-1 do begin
       readf,2,spectrum1,format=fmt 
+      readf,2,spectrum1y,format=fmt 
+      readf,2,spectrum1z,format=fmt 
+print,'AXEL1'
+stop
       
       globalmax(i)=max(spectrum1) > globalmax(i)
       globalmin(i)=min(spectrum1) < globalmin(i)
@@ -589,6 +595,8 @@ endif
         readf,1,spectrum1, format=fmt1 $
       else $
         readf,1,spectrum1
+print,'AXEL'
+stop
     
       if lint_shell then $
         spec1(*,*,ic,it)=spectrum1 $
