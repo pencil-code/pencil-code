@@ -94,7 +94,7 @@ module InitialCondition
   character (len=labellen) :: initcond_aa=''
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
   real :: rmode_mag=4.,zmode_mag=16.
-  real :: rm_int=0.0,rm_ext=impossible
+  real :: rm_int=-impossible,rm_ext=impossible
   real :: Bz_const=8d-3
   real, dimension(0:6) :: coeff_cs2=(/0.,0.,0.,0.,0.,0.,0./)
 !
@@ -838,7 +838,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: bz,aphi_mx,Breal
 !
-      call cap_field(bz,Breal)
+      call cap_field(Breal,bz)
       call integrate_field(bz*x,aphi_mx)
 !
       do n=1,mz;do m=1,my
@@ -907,16 +907,21 @@ module InitialCondition
 !
       use Sub, only: step_scalar
 !
-      real, dimension(mx) :: Bin,Bout
+      real, dimension(mx), intent(in) :: Bin
+      real, dimension(mx), intent(out) :: Bout
       real :: width
       integer :: i
 !      
-      do i=1,mx
-         width=5./dx_1(i)
-         Bout(i) = Bin(i) * &
-             (step_scalar(x(i),rm_int,width)-&
-              step_scalar(x(i),rm_ext,width))
-      enddo
+      if (rm_int==-impossible.and.rm_ext==impossible) then 
+        Bout=Bin
+      else
+        do i=1,mx
+          width=5./dx_1(i)
+          Bout(i) = Bin(i) * &
+               (step_scalar(x(i),rm_int,width)-&
+                step_scalar(x(i),rm_ext,width))
+        enddo
+      endif
 !
     endsubroutine cap_field
 !***********************************************************************
