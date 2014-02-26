@@ -35,8 +35,8 @@ module Detonate
 !
 !  Diagnostic variables
 !
-  integer :: idiag_detn = 0      ! DIAG_DOC: Number of detonated sites
-  integer :: idiag_dettot = 0    ! DIAG_DOC: Total energy input
+  integer :: idiag_detn = 0      ! DIAG_DOC: Number of detonated sites (summed over time steps between adjacent outputs)
+  integer :: idiag_dettot = 0    ! DIAG_DOC: Total energy input (summed over time steps between adjacent outputs)
 !
 !  Module variables
 !
@@ -230,8 +230,8 @@ module Detonate
 !
       logical, dimension(mx,my,mz) :: mask
       logical :: flag
-      integer :: ndet
-      real :: esum
+      integer :: ndet = 0, ndet_tot
+      real :: esum = 0.0, esum_tot
 !
 !  Detonate only before one full time-step.
 !
@@ -266,16 +266,23 @@ module Detonate
 !
 !  Diagnostics
 !
-        diagnos: if (ldiagnos .and. flag) then
+        accumulate: if (flag) then
+          if (idiag_detn /= 0) ndet = ndet + count(mask)
+          if (idiag_dettot /= 0) esum = esum + total_energy(f)
+        endif accumulate
+!
+        diagnos: if (ldiagnos) then
 !
           detn: if (idiag_detn /= 0) then
-            call mpireduce_sum_int(count(mask), ndet)
-            if (lroot) fname(idiag_detn) = real(ndet)
+            call mpireduce_sum_int(ndet, ndet_tot)
+            if (lroot) fname(idiag_detn) = real(ndet_tot)
+            ndet = 0
           endif detn
 !
           dettot: if (idiag_dettot /= 0) then
-            call mpireduce_sum(total_energy(f), esum)
-            if (lroot) fname(idiag_dettot) = esum
+            call mpireduce_sum(esum, esum_tot)
+            if (lroot) fname(idiag_dettot) = esum_tot
+            esum = 0.0
           endif dettot
 !
         endif diagnos
