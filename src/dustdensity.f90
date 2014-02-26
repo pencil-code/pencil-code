@@ -48,7 +48,8 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB
-  real, dimension(ndustspec) :: dsize,init_distr,init_distr2,init_distr_log
+  real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log
+  real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
@@ -377,7 +378,7 @@ module Dustdensity
         if (ldcore) then
             print*,'delta0',delta0, delta
           do i=1,ndustspec0; do k=1,ndustspec
-            init_distr_ki(k,i)=init_distr(k)/ndustspec0
+            init_distr_ki(k,i)=maxval(init_distr(:,k))/ndustspec0
           enddo
             Ntot_i(i)=Ntot/ndustspec0
             print*,'Ntot_i', Ntot_i(i),i
@@ -625,9 +626,11 @@ module Dustdensity
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
         case ('atm_drop_gauss')
+          do i=1,mx
           do k=1,ndustspec
-            f(:,:,:,ind(k)) = init_distr(k)/exp(f(:,:,:,ilnrho))
+            f(i,:,:,ind(k)) = init_distr(i,k)/exp(f(i,:,:,ilnrho))
 !print*,k,f(4,4,4,ind(k))
+          enddo
           enddo
           if (ldcore) then
             do i=1,ndustspec0; do k=1,ndustspec
@@ -638,8 +641,8 @@ module Dustdensity
           del=(init_x2-init_x1)*0.2
           do k=1,ndustspec
           do i=1,mx
-            f(i,:,:,ind(k))=(init_distr2(k)+init_distr(k))*0.5  &
-              + ((init_distr2(k)-init_distr(k))*0.5 )  &
+            f(i,:,:,ind(k))=(init_distr2(k)+init_distr(i,k))*0.5  &
+              + ((init_distr2(k)-init_distr(i,k))*0.5 )  &
               *(exp(x(i)/del)-exp(-x(i)/del)) &
               /(exp(x(i)/del)+exp(-x(i)/del))
           enddo
