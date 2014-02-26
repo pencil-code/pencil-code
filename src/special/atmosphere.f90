@@ -63,7 +63,8 @@ module Special
   logical :: lbuoyancy_z=.false.,lbuoyancy_z_model=.false.
 !
   character (len=labellen) :: initstream='default'
-  real, dimension(ndustspec) :: dsize, init_distr,init_distr2
+  real, dimension(ndustspec) :: dsize, init_distr2
+  real, dimension(mx,ndustspec) :: init_distr
   real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_H2O, ind_N2, imass=1! ind_cloud=0
@@ -74,6 +75,7 @@ module Special
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
   logical :: llog_distribution=.true., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
+  logical :: lACTOS_part=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
@@ -86,7 +88,7 @@ module Special
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, lACTOS_part
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -1169,7 +1171,7 @@ module Special
 ! bottom boundary
         if (vr==ind(1)) then
           do k=1,ndustspec
-            f(l1,m1:m2,n1:n2,ind(k))= init_distr(k)
+            f(l1,m1:m2,n1:n2,ind(k))= init_distr(l1,k)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
@@ -1442,14 +1444,16 @@ subroutine bc_satur_x(f,bc)
 
      use General, only:  spline, spline_integral
 
-      real, dimension (ndustspec), intent(out) :: dsize,init_distr, init_distr2
+      real, dimension (ndustspec), intent(out) :: dsize, init_distr2
+      real, dimension (mx,ndustspec), intent(out) :: init_distr
       real, dimension (ndustspec) ::  lnds, ttt
       real, dimension (9) ::  X,Y
       real, dimension (5) ::  X_tmp, Y_tmp
-       real, dimension (1) ::   x2, s
+       real, dimension (1) ::   x2, s 
+       real, dimension (6) ::   coeff
        real :: Ntot_, BB0_
       integer :: i,k
-      real :: ddsize
+      real :: ddsize, tmp
  !
        ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
        do i=0,(ndustspec-1)
@@ -1460,28 +1464,45 @@ subroutine bc_satur_x(f,bc)
             if (lACTOS) then
               if (llarge_part) then
                 do k=1,ndustspec
-                  init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+                  init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
                 enddo
               elseif (lsmall_part) then
                 do k=1,ndustspec
-                  init_distr(k)= Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                  init_distr(:,k)= Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
                                * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
                 enddo
               elseif (lsmall_large_part) then
                 do k=1,ndustspec
-                  init_distr(k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
-                  init_distr(k)=init_distr(k) &
+                  init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+                  init_distr(:,k)=init_distr(:,k) &
                                + Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
                                * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
 
                 enddo
+              elseif (lACTOS_part) then
+                open(143,file="coeff_part.dat")
+                  do i=1,mx
+                    read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),coeff
+!if (i .eq. 1) print*,'coef', coeff
+                  do k=1,ndustspec
+                    tmp=dsize(k)*1e4
+                    init_distr(i,k)=(coeff(1)*exp(-0.5*((tmp-coeff(2))/coeff(3))**2)  &
+                                     +coeff(4)+coeff(5)*tmp+coeff(6)*tmp**2)/1e-4 !1e-4=dsize
+                     if (init_distr(i,k) .le. 1e-10) init_distr(i,k)=1e-10
+!
+!                      init_distr(i,k)=init_distr(i,k) &
+!                      + Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+!                            * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
 
+                  enddo
+!
+                  enddo
+                close(143)
               endif
-
             else
               if (r0 /= 0.) then
                 do k=1,ndustspec
-                  init_distr(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                  init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
                     *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
                 enddo
               endif
@@ -1495,9 +1516,10 @@ subroutine bc_satur_x(f,bc)
             endif
 !
         if (lACTOS) then
-          ttt=spline_integral(dsize,init_distr)
-          Ntot_=ttt(ndustspec)
-          Ntot =Ntot_
+!          ttt=spline_integral(dsize,init_distr)
+!          Ntot_=ttt(ndustspec)
+!          Ntot =Ntot_
+!           Ntot=1e3
         else
           Ntot_=Ntot
           BB0_=BB0
