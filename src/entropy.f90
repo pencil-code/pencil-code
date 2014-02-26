@@ -957,13 +957,16 @@ module Energy
     subroutine rescale_TT_in_ss(f)
 !
 ! rescales implicitly temperature according to
-! S := alog(rescale_TTmeanxy) + <S>_z + (S-<S>_z)/rescale_TTmeanxy
+! S := c_P*alog(rescale_TTmeanxy)/gamma + <S>_z + (S-<S>_z)/rescale_TTmeanxy
 !
 !  26-feb-13/MR: coded following Axel's recipe
+!
+      use EquationOfState, only: get_cp1
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f 
 !
       real, dimension(mx,my) :: ssmxy
+      real :: cp1_
       integer :: n
       real :: fac
 !
@@ -974,7 +977,9 @@ module Energy
 !
       call calc_ssmeanxy(f,ssmxy)
 !
-      fac = alog(rescale_TTmeanxy)
+      call get_cp1(cp1_)
+!
+      fac = alog(rescale_TTmeanxy)/(cp1_*gamma)
 !
       do n=n1,n2
         f(:,:,n,iss) = (f(:,:,n,iss)-ssmxy)/rescale_TTmeanxy + ssmxy + fac
