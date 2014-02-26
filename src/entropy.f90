@@ -77,6 +77,7 @@ module Energy
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
+  real :: rescale_TTmeanxy=1.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -171,7 +172,7 @@ module Energy
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, center1_z, &
-      lborder_heat_variable
+      lborder_heat_variable,rescale_TTmeanxy
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -338,6 +339,7 @@ module Energy
 !
 !  21-jul-02/wolf: coded
 !  28-mar-13/axel: reinitialize_ss added
+!  26-feb-13/MR  : added temperature rescaling 
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
@@ -447,6 +449,7 @@ module Energy
 !  Calculate Fbot if it has not been set in run.in.
 !
           if (Fbot==impossible) then
+            !!if (bcz12(iss,1)=='c1') then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
@@ -465,6 +468,7 @@ module Energy
 !  Calculate Ftop if it has not been set in run.in.
 !
           if (Ftop==impossible) then
+            !!if (bcz12(iss,2)=='c1') then
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
@@ -489,6 +493,7 @@ module Energy
 !  Calculate Fbot if it has not been set in run.in.
 !
           if (Fbot==impossible) then
+            !!if (bcz12(iss,1)=='c1') then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
@@ -508,6 +513,7 @@ module Energy
 !
 !  Define hcond0 from the given value of Fbot.
 !
+            !!if (bcz12(iss,1)=='c1') then
             if (bcz1(iss)=='c1') then
               hcond0=-gamma_m1/gamma*(mpoly0+1.)*Fbot/gravz
               Kbot=hcond0
@@ -520,6 +526,7 @@ module Energy
 !  Calculate Ftop if it has not been set in run.in.
 !
           if (Ftop==impossible) then
+            !!if (bcz12(iss,2)=='c1') then
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
@@ -609,6 +616,7 @@ module Energy
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
         case ('cylind_layers')
+          !!if (bcx12(iss,1)=='c1') then
           if (bcx1(iss)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
@@ -664,6 +672,8 @@ module Energy
           select case (initss(j))
           case ('blob')
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          case ('TTrescl')
+            call rescale_TT_in_ss(f)
           case default
           endselect
         enddo
@@ -942,7 +952,35 @@ module Energy
 !
       call keep_compiler_quiet(lstarting)
 !
-      endsubroutine initialize_energy
+    endsubroutine initialize_energy
+!***********************************************************************
+    subroutine rescale_TT_in_ss(f)
+!
+! rescales implicitly temperature according to
+! S := alog(rescale_TTmeanxy) + <S>_z + (S-<S>_z)/rescale_TTmeanxy
+!
+!  26-feb-13/MR: coded following Axel's recipe
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f 
+!
+      real, dimension(mx,my) :: ssmxy
+      integer :: n
+      real :: fac
+!
+      if (rescale_TTmeanxy==1.) return
+      if (rescale_TTmeanxy<=0.) &
+        call fatal_error('rescale_TT_in_ss', &
+                         'rescale_TTmeanxy<=0')
+!
+      call calc_ssmeanxy(f,ssmxy)
+!
+      fac = alog(rescale_TTmeanxy)
+!
+      do n=n1,n2
+        f(:,:,n,iss) = (f(:,:,n,iss)-ssmxy)/rescale_TTmeanxy + ssmxy + fac
+      enddo
+!
+    endsubroutine rescale_TT_in_ss
 !***********************************************************************
     subroutine read_energy_init_pars(unit,iostat)
 !
@@ -3030,6 +3068,31 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
+    subroutine calc_ssmeanxy(f,ssmxy)
+!
+!  Calculate azimuthal (z) average of entropy
+!
+!  26-feb-14/MR: outsourced from calc_lenergy_pars
+!
+      use Sub, only: finalize_aver
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, dimension (mx,my),            intent(OUT):: ssmxy
+!
+      integer :: l,m
+      real :: fact
+!
+      fact=1./nzgrid
+      do l=1,mx
+        do m=1,my
+          ssmxy(l,m)=fact*sum(f(l,m,n1:n2,iss))
+        enddo
+      enddo
+!
+      call finalize_aver(nprocz,3,ssmxy)
+!
+    endsubroutine calc_ssmeanxy
+!***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
 !  Calculate <s>, which is needed for diffusion with respect to xy-flucts.
@@ -3041,8 +3104,6 @@ module Energy
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: nxy=nxgrid*nygrid
-      integer :: nyz=nygrid*nzgrid
       integer :: l,m,n
       real :: fact, cv1
       real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
@@ -3055,7 +3116,7 @@ module Energy
 !  because they have just been set.
 !
       if (lcalc_ssmean) then
-        fact=1./nxy
+        fact=1./nxygrid
         do n=1,mz
           ssmz(n)=fact*sum(f(l1:l2,m1:m2,n,iss))
         enddo
@@ -3080,7 +3141,7 @@ module Energy
 !
 !  Radial (yz) average
 !
-        fact=1./nyz
+        fact=1./nyzgrid
         do l=1,mx
           ssmx(l)=fact*sum(f(l,m1:m2,n1:n2,iss))
         enddo
@@ -3113,7 +3174,7 @@ module Energy
 !
       if (lcalc_cs2mean) then
         call get_cv1(cv1)
-        fact=1./nyz
+        fact=1./nyzgrid
         do l=1,mx
           cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
               -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
@@ -3150,7 +3211,7 @@ module Energy
 !  Compute average sound speed cs2(z)
 !
       if (lcalc_cs2mz_mean) then
-        fact=1./nxy
+        fact=1./nxygrid
         cs2mz=0.
         if (ldensity_nolog) then
           do n=1,mz
