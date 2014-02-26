@@ -250,7 +250,7 @@ module InitialCondition
        r0=2e-5
        delta=1.2
 ! 
-       ll1=int((x(l1)-xyz0(1))/dx)
+       ll1=anint((x(l1)-xyz0(1))/dx)
 !
        do i=l1,l2
        do k=1,ndustspec
@@ -626,7 +626,7 @@ module InitialCondition
 !        enddo
 !      close(143)
 !
-        ll1=int((x(l1)-xyz0(1))/dx)
+        ll1=anint((x(l1)-xyz0(1))/dx)
         
         do i=l1,l2
           f(i,:,:,ilnTT)=alog(TT_data(ll1+i-3))
@@ -641,7 +641,7 @@ module InitialCondition
         enddo
 
         if (nygrid>1) then
-          mm1=int((y(m1)-xyz0(2))/dy)
+          mm1=anint((y(m1)-xyz0(2))/dy)
 !          
           if (init_uy /= impossible) then
             f(:,:,:,iuy)=init_uy
@@ -654,7 +654,7 @@ module InitialCondition
         endif
 
         if (nzgrid>1) then
-          nn1=int((z(m1)-xyz0(3))/dz)
+          nn1=anint((z(m1)-xyz0(3))/dz)
 !
           if (init_uy /= impossible) then
            f(:,:,:,iuz)=init_uz
