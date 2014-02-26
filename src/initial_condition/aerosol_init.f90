@@ -53,11 +53,12 @@ module InitialCondition
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
      real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
+     real, dimension(2000) :: Ntot_data
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved_xz=.false.
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true., lcurved_xy=.false.
-     logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true.
+     logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
 
 !
     namelist /initial_condition_pars/ &
@@ -65,7 +66,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata
+     i_point,Ndata, lsinhron
 !
   contains
 !***********************************************************************
@@ -233,7 +234,22 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: i,k
+      real :: r0, delta
 !
+          
+       r0=2e-5
+       delta=1.2
+
+          do i=1,mx
+          do k=1,ndustspec
+            f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + Ntot_data(i)/(2.*pi)**0.5/dsize(k)/alog(delta) &
+             * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))  &
+             /exp(f(i,:,:,ilnrho))
+          enddo
+          enddo
+
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_nd
@@ -439,11 +455,13 @@ module InitialCondition
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (20000) ::  PP_data, rhow_data, TT_data
-      real, dimension (20000) ::  ux_data, uy_data, uz_data,uvert
+      real, dimension (20000) ::  ux_data, uy_data, uz_data, ttime2
+      real, dimension (1340) ::  ttime
+      real, dimension (6) ::  coeff
 !
-      logical :: emptyfile=.true.
+      logical :: emptyfile=.true., lfind
       logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
+      integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
       real ::  TT=300., tmp2
@@ -456,11 +474,24 @@ module InitialCondition
       integer :: iostat, i1,i2,i3
 
 
+
+
       if (lACTOS_write) then
+
+       if (lsinhron) then
+         open(143,file="coeff_part.dat")
+         do i=1,1300
+            read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),coeff,ttime(i)
+         enddo
+         close(143)
+
+
+       endif
+
 !
 !      air_mass=0.
-      StartInd_1=1; StopInd_1 =0
-      open(file_id,file="ACTOS_data.out")
+      StartInd_1=1; StopInd_1 =0 
+     open(file_id,file="ACTOS_data.out")
       open(143,file="ACTOS_new.out")
 !      open(file_id,file="ACTOS_xyz_data.out")
 !      open(143,file="ACTOS_xyz_new.out")
@@ -498,9 +529,34 @@ module InitialCondition
           endif
         enddo
 !
-          if ((input_data(1)>3545.53) .and. (input_data(1)<3660.53)) then
+         if (lsinhron) then
+!
+           ttime2(j)=input_data(23)
+           lfind=.false.
+!
+           do jj=1,1300 
+!print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
+            if (abs(ttime(jj)-input_data(23))<.05) then 
+              lfind=.true.
+            else
+              lfind=.false.
+            endif
+!
+            if ((ttime2(j) == ttime2(j-1)) .or. (j==1)) lfind=.false.
+            if (lfind) then 
+              write(143,'(29f15.6)'),input_data
+             print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
+            endif
+           enddo
+!
+         else
+!
+!          if ((input_data(1)>3545.53) .and. (input_data(1)<3660.53)) then
+          if ((input_data(1)>3130.) .and. (input_data(1)<6347.)) then
            write(143,'(29f15.6)'),input_data
           endif
+         endif
+
            i=i+1
         elseif (i>1) then
           i=i+1
@@ -527,25 +583,30 @@ module InitialCondition
           PP_data(i)=input_data(7)*1e3   !dyn
 !
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
-          uvert(i)=input_data(26)*1e2
+!          uvert(i)=input_data(26)*1e2
+
+          ux_data(i)=input_data(2)*1e2 
+          uy_data(i)=input_data(3)*1e2 
+          uz_data(i)=input_data(4)*1e2
+          Ntot_data(i)=input_data(11)
+
         enddo
       close(143)
 !
-      open(143,file="ACTOS_xyz_new.out")
-        do i=1,Ndata
-          read(143,'(29f15.6)'),input_data2
+!      open(143,file="ACTOS_xyz_new.out")
+!        do i=1,Ndata
+!          read(143,'(29f15.6)'),input_data2
 !          ux_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
 !          uy_data(i)=uvert(i)/cos(input_data2(19))/sin(input_data2(20))
 !          uz_data(i)=uvert(i)/sin(input_data2(19))
           
-          ux_data(i)=uvert(i)/sin(input_data2(19))/cos(input_data2(20))
-          uy_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
-          uz_data(i)=uvert(i)/cos(input_data2(19))
+         
 !
 !print*,ux_data(i),uy_data(i),i, sin(input_data2(20)),input_data2(20),input_data2(20)*180./3.1415
-!     
-        enddo
-      close(143)
+!!     
+!        enddo
+!      close(143)
+!
         ll1=int((x(l1)-xyz0(1))/dx)
         
         do i=l1,l2
