@@ -234,22 +234,41 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer :: i,k
-      real :: r0, delta
+      real, dimension (1300,6) :: coeff_loc
+      real, dimension (mx,nchemspec) :: init_distr_loc
+      real, dimension (6) :: ctmp
+      integer :: i,k,ll1
+      real :: r0, delta, tmp
 !
-          
+      open(143,file="coeff_part.dat")
+        do i=1,1300
+          read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),ctmp
+          coeff_loc(i,:)=ctmp
+        enddo
+      close(143)
+!          
        r0=2e-5
        delta=1.2
-
-          do i=1,mx
-          do k=1,ndustspec
-            f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + Ntot_data(i)/(2.*pi)**0.5/dsize(k)/alog(delta) &
+! 
+       ll1=int((x(l1)-xyz0(1))/dx)
+!
+       do i=l1,l2
+       do k=1,ndustspec
+         f(i,:,:,ind(k)) = Ntot_data(ll1+i-3)/(2.*pi)**0.5/dsize(k)/alog(delta) &
              * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))  &
              /exp(f(i,:,:,ilnrho))
-          enddo
-          enddo
-
-
+! 
+         tmp=dsize(k)*1e4
+          init_distr_loc(i,k)=(coeff_loc(ll1+i-3,1) &
+                    *exp(-0.5*( (tmp-coeff_loc(ll1+i-3,2)) /coeff_loc(ll1+i-3,3) )**2)  &
+                    +coeff_loc(ll1+i-3,4)+coeff_loc(ll1+i-3,5)*tmp+coeff_loc(ll1+i-3,6)*tmp**2)/1e-4                !1e-4=dsize
+          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
+!
+          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(i,k)/exp(f(i,:,:,ilnrho))
+        enddo
+!                     
+        enddo
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_nd
