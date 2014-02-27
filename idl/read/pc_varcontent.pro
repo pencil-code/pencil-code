@@ -128,6 +128,15 @@ if (ipp gt 0) then begin
   varcontent[ipp].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, icp, 0
+if (icp gt 0) then begin
+  varcontent[icp].variable   = 'cp1tilde'
+  varcontent[icp].idlvar     = 'cp'
+  varcontent[icp].idlinit    = INIT_SCALAR
+  varcontent[icp].idlvarloc  = 'cp_loc'
+  varcontent[icp].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, ilnrho, 0
 if (ilnrho gt 0) then begin
   varcontent[ilnrho].variable   = 'Log density (lnrho)'
