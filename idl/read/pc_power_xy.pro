@@ -126,7 +126,30 @@ common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
   endif
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, fmt=fmt
+FUNCTION find_no_wavenos, headline, text, symbol, no
+
+  opos = strpos(headline,'(') & cpos = strpos(headline,')')
+  len = cpos-opos-1
+  
+  if len le 0 then begin
+    print, warn+' corrupt! Number of '+strtrim(text,2)+' wavenumbers missing -
+    print, '         will use '+strtrim(symbol,2)+'='+strtrim(string(no),2)+' which is perhaps by one too large.'
+    print, '         Correct data file by hand (or '+strtrim(symbol,2)+' in code if necessary).'
+  endif else begin
+    nol=no
+    on_ioerror, readerr
+    reads, strmid(headline,opos+1,len), nol
+    no=nol
+    return, cpos+1
+
+readerr:
+    print, warn+' Error when reading '+strtrim(symbol,2)+': '+!ERROR_STATE.MSG
+    return, -1
+  endelse
+
+END
+;******************************************************************************************
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos
 
 common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
@@ -178,36 +201,36 @@ if err ne 0 then return, 0
   
     readf, 2, headline
 
-    if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-      print, warn+' corrupt!'
-     
-    readf, 2, kxs, kys 
-    kxs = shift(kxs,nx/2)
-    kys = shift(kys,ny/2)  
-
+    if strpos(strlowcase(headline),'wavenumbers') eq -1 then begin
+      print, warn+' corrupt (keyword "wavenumbers" missing!' 
+      lcorr=1
+    endif else $
+      lcorr=0
+   
     if (lint_shell) then begin
-    
-      readf, 2, headline
-      if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-        print, warn+' corrupt!' $
-      else begin
 
-        opos = strpos(headline,'(') & cpos = strpos(headline,')')
-        len = cpos-opos-1
-
-        if len le 0 then begin
-          print, warn+' corrupt! Number of shell wavenumbers missing -'
-          print, '         will use nk=', strtrim(string(nk),2), ' which is perhaps by one too large.'
-          print, '         Correct data file by hand (or nk in code if necessary).'
-        endif else $
-          nk = fix(strmid(headline,opos+1,len))
-
-      endelse
+      if not lcorr then $
+       ind=find_no_wavenos(headline, 'shell', 'nk', nk)
  
       kshell = fltarr(nk) 
       readf, 2, kshell 
 
-    endif
+    endif else begin
+
+      if not lcorr then begin
+        
+        ind=find_no_wavenos(headline, 'x', 'nx', nx)
+        if ind ge 0 then ind=find_no_wavenos(strmid(headline,ind), 'y', 'ny', ny)
+
+      endif
+
+      kxs = fltarr(nx) & kys = fltarr(ny)
+
+      readf, 1, kxs, kys 
+      kxs = shift(kxs,nx/2)
+      kys = shift(kys,ny/2)  
+
+    endelse
 
     if not lint_z then begin
       point_lun, -2, pos     
