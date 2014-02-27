@@ -252,7 +252,7 @@ module InitialCondition
       cs2_bot=T00*cv*gamma*(gamma-1.)
       cs2_top=Tsurf*cv*gamma*(gamma-1.)
       if (lcorona) then
-        cs2_top=T(l2)*cv*gamma*(gamma-1.)
+        cs2_top=TT(l2)*cv*gamma*(gamma-1.)
         cs2_surf=Tsurf*cv*gamma*(gamma-1.)
         cs2_cor=Tcor*cv*gamma*(gamma-1.)
       endif
