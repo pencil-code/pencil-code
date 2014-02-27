@@ -167,7 +167,7 @@ if err ne 0 then return, 0
   witheader=strpos(headline,'spectrum') ne -1
 
   if witheader then begin
-    
+stop    
     warn = 'Warning: File header of '+strtrim(file,2)
     if (strpos(headline,'shell-integrated') ne -1) ne lint_shell then begin
     
@@ -226,7 +226,7 @@ if err ne 0 then return, 0
 
       kxs = fltarr(nx) & kys = fltarr(ny)
 
-      readf, 1, kxs, kys 
+      readf, 2, kxs, kys 
       kxs = shift(kxs,nx/2)
       kys = shift(kys,ny/2)  
 
@@ -356,12 +356,9 @@ if err ne 0 then return, 0
       readf,2,spectrum1,format=fmt 
       readf,2,spectrum1y,format=fmt 
       readf,2,spectrum1z,format=fmt 
-print,'AXEL1'
-stop
-      
+stop, 'AXEL'
       globalmax(i)=max(spectrum1) > globalmax(i)
       globalmin(i)=min(spectrum1) < globalmin(i)
-
     endfor
 
     nt=nt+1L
@@ -519,7 +516,7 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1 )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1 )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
@@ -535,7 +532,7 @@ default,yrange,[10.0^(floor(alog10(float(global_ext1(0))))),10.0^ceil(alog10(flo
 if (file2 ne '') then begin
 
   nk = nk0
-  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2, fmt=fmt2 )
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2 )
  
   if nt2 eq 0 or nk ne nk1 then begin
 
