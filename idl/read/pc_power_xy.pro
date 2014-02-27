@@ -132,7 +132,7 @@ FUNCTION find_no_wavenos, headline, text, symbol, no
   len = cpos-opos-1
   
   if len le 0 then begin
-    print, warn+' corrupt! Number of '+strtrim(text,2)+' wavenumbers missing -
+    print, 'Warning - header corrupt: Number of '+strtrim(text,2)+' wavenumbers missing -'
     print, '         will use '+strtrim(symbol,2)+'='+strtrim(string(no),2)+' which is perhaps by one too large.'
     print, '         Correct data file by hand (or '+strtrim(symbol,2)+' in code if necessary).'
   endif else begin
@@ -143,7 +143,9 @@ FUNCTION find_no_wavenos, headline, text, symbol, no
     return, cpos+1
 
 readerr:
-    print, warn+' Error when reading '+strtrim(symbol,2)+': '+!ERROR_STATE.MSG
+    print, ' Error when reading '+strtrim(symbol,2)+': '+!ERROR_STATE.MSG
+    on_ioerror, NULL
+    stop
     return, -1
   endelse
 
@@ -167,7 +169,7 @@ if err ne 0 then return, 0
   witheader=strpos(headline,'spectrum') ne -1
 
   if witheader then begin
-stop    
+   
     warn = 'Warning: File header of '+strtrim(file,2)
     if (strpos(headline,'shell-integrated') ne -1) ne lint_shell then begin
     
@@ -354,9 +356,9 @@ stop
 
     for i=0,ncomp-1 do begin
       readf,2,spectrum1,format=fmt 
-      readf,2,spectrum1y,format=fmt 
-      readf,2,spectrum1z,format=fmt 
-stop, 'AXEL'
+      ;readf,2,spectrum1y,format=fmt 
+      ;readf,2,spectrum1z,format=fmt 
+;stop, 'AXEL'
       globalmax(i)=max(spectrum1) > globalmax(i)
       globalmin(i)=min(spectrum1) < globalmin(i)
     endfor
