@@ -562,7 +562,7 @@ module Magnetic
                                 ! DIAG_DOC: the magnetic_xaver_range
   integer :: idiag_brmsz=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the magnetic_zaver_range
-  Integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
+  integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$
 !
