@@ -616,10 +616,17 @@ module Gravity
       if (lanelastic) lpenc_requested(i_rho_anel)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
-          idiag_epotmz/=0 .or. idiag_epotmxy/=0) lpenc_diagnos(i_epot)=.true.
-      if (idiag_epotuzmz/=0 .or. idiag_epotuxmxy/=0) then
+          idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
+      if (idiag_epotuzmz/=0) then
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
+      endif
+      if (idiag_epotmxy/=0) then
+        lpenc_diagnos2d(i_epot)=.true.
+      endif
+      if (idiag_epotuxmxy/=0) then
+        lpenc_diagnos2d(i_epot)=.true.
+        lpenc_diagnos2d(i_uu)=.true.
       endif
 !
     endsubroutine pencil_criteria_gravity
