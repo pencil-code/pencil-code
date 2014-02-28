@@ -99,21 +99,35 @@ module Gravity
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
 !
-  integer :: idiag_epot=0          ! DIAG_DOC:
+  integer :: idiag_epot=0          ! DIAG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! DIAG_DOC: \right>$ \quad(mean potential
+                                   ! DIAG_DOC: energy)
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
-  integer :: idiag_epotmz=0        ! XYAVG_DOC:
-  integer :: idiag_epotuzmz=0      ! XYAVG_DOC:
+  integer :: idiag_epotmz=0        ! XYAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! XYAVG_DOC: \right>_{xy}$
+  integer :: idiag_epotuzmz=0      ! XYAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! XYAVG_DOC: u_z \right>_{xy}$ 
+                                   ! XYAVG_DOC: \quad(potential energy flux)
 !
 ! xz averaged diagnostics given in xzaver.in
 !
-  integer :: idiag_epotmy=0        ! XZAVG_DOC:
+  integer :: idiag_epotmy=0        ! XZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! XZAVG_DOC: \right>_{xz}$
 !
 ! yz averaged diagnostics given in yzaver.in
 !
-  integer :: idiag_epotmx=0        ! YZAVG_DOC:
+  integer :: idiag_epotmx=0        ! YZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! YZAVG_DOC: \right>_{yz}$
 !
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_epotmxy=0       ! ZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! ZAVG_DOC: \right>_{z}$
+  integer :: idiag_epotuxmxy=0     ! ZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! ZAVG_DOC: u_x \right>_{z}$ 
+                                   ! ZAVG_DOC: \quad(potential energy flux)
 !
   contains
 !***********************************************************************
@@ -602,8 +616,8 @@ module Gravity
       if (lanelastic) lpenc_requested(i_rho_anel)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
-          idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
-      if (idiag_epotuzmz/=0) then
+          idiag_epotmz/=0 .or. idiag_epotmxy/=0) lpenc_diagnos(i_epot)=.true.
+      if (idiag_epotuzmz/=0 .or. idiag_epotuxmxy/=0) then
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
@@ -730,6 +744,13 @@ module Gravity
         call xzsum_mn_name_y(p%epot,idiag_epotmy)
         call xysum_mn_name_z(p%epot,idiag_epotmz)
         call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
+      endif
+!
+!  Gravity 2-D diagnostics.
+!
+      if (l2davgfirst) then
+        call zsum_mn_name_xy(p%epot,idiag_epotmxy)
+        call zsum_mn_name_xy(p%epot*p%uu(:,1),idiag_epotuxmxy)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1013,7 +1034,7 @@ module Gravity
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamex, inamey, inamez
+      integer :: iname, inamex, inamey, inamez, inamexy
       logical :: lwr
 !
       lwr = .false.
@@ -1024,8 +1045,8 @@ module Gravity
 !
       if (lreset) then
         idiag_epot=0
-        idiag_epotmx=0; idiag_epotmy=0; idiag_epotmz=0
-        idiag_epotuzmz=0
+        idiag_epotmx=0; idiag_epotmy=0; idiag_epotmz=0; idiag_epotmxy=0
+        idiag_epotuzmz=0; idiag_epotuxmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -1055,6 +1076,15 @@ module Gravity
             idiag_epotmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotuzmz', &
             idiag_epotuzmz)
+      enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+            'epotmxy', idiag_epotmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+            'epotuxmxy', idiag_epotuxmxy)
       enddo
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
