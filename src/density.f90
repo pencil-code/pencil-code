@@ -72,6 +72,7 @@ module Density
   real :: temp_coeff=1.0, dens_coeff=1.0, temp_trans = 0.0
   real :: temp_coeff_out = 1.0
   real :: rss_coef1=1.0, rss_coef2=1.0
+  real :: total_mass=-1.
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -93,6 +94,7 @@ module Density
   logical :: lffree=.false.
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
+  logical :: lconserve_total_mass=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -117,7 +119,8 @@ module Density
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
-      lreduced_sound_speed, lscale_to_cs2top, density_zaver_range
+      lreduced_sound_speed, lscale_to_cs2top, density_zaver_range, &
+      lconserve_total_mass, total_mass
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -133,7 +136,8 @@ module Density
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, density_zaver_range, &
-      rss_coef1, rss_coef2
+      rss_coef1, rss_coef2, &
+      lconserve_total_mass, total_mass
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1190,30 +1194,34 @@ module Density
         call error('init_lnrho', 'Imaginary density values')
       endif
 !
+      if (total_mass<0.) &
+        total_mass=mean_density(f)*box_volume
+!
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine calc_ldensity_pars(f)
 !
 !   31-aug-09/MR: adapted from calc_lhydro_pars
 !    3-oct-12/MR: global averaging corrected
+!    3-mar-14/MR: correction of total mass added
 !
       use Sub, only: grad
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      intent(inout) :: f
 !
       real :: fact
       real, dimension (nx,3) :: gradlnrho
       real, dimension (nz) :: temp
 !
-      integer :: nxy=nxgrid*nygrid,nl
+      integer :: nl
 !
 !  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
 !
-        fact=1./nxy
+        fact=1./nxygrid
         do n=n1,n2
           nl = n-n1+1
           glnrhomz(nl)=0.
@@ -1233,8 +1241,59 @@ module Density
         glnrhomz = fact*glnrhomz
 !
       endif
+
+      if (lconserve_total_mass .and. total_mass > 0.) then
+!
+        fact=total_mass/(box_volume*mean_density(f))
+        if (ldensity_nolog) then
+          f(:,:,:,irho) = f(:,:,:,irho)*fact
+        else
+          f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
+        endif
+!
+      endif
 !
    endsubroutine calc_ldensity_pars
+!***********************************************************************
+   function mean_density(f)
+!
+!  Calculate mean density
+!
+!   3-mar-14/MR: coded
+!
+     use Mpicomm, only: mpiallreduce_sum
+!
+     real :: mean_density 
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      integer :: n,m
+      real :: tmp
+!
+      mean_density=0.
+!
+      do n=n1,n2
+        tmp=0.
+        do m=m1,m2
+          if (ldensity_nolog) then
+            tmp=tmp+sum(f(l1:l2,m,n,irho)*dVol_x(l1:l2))*dVol_y(m)
+          else
+            tmp=tmp+sum(exp(f(l1:l2,m,n,ilnrho))*dVol_x(l1:l2))*dVol_y(m)
+          endif
+        enddo
+        mean_density=mean_density+tmp*dVol_z(n)
+      enddo
+! 
+      mean_density = mean_density/box_volume
+!
+      if (ncpus>1) then
+        call mpiallreduce_sum(mean_density,tmp)
+        mean_density=tmp
+      endif
+      !!print*, 'mean_density=', mean_density
+!
+    endfunction mean_density
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
