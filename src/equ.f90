@@ -742,6 +742,13 @@ module Equ
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
           dt1_max    = max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 !
+!  time step constraint from the coagulation kernel
+!
+          if (ldustdensity) then
+            dt1_reac = reac_dust/cdtc
+            dt1_max = max(dt1_max,dt1_reac)
+          endif
+!
 !  time step constraint from speed of chemical reactions
 !
           if (lchemistry .and. .not.llsode) then

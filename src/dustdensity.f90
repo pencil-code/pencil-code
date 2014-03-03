@@ -77,7 +77,7 @@ module Dustdensity
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
-  logical :: ldiffusion_dust=.true.
+  logical :: ldiffusion_dust=.true., ldust_cdtc=.false.
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
@@ -86,7 +86,7 @@ module Dustdensity
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
   integer :: iadvec_ddensity=0
-  real    :: dustdensity_floor=-1
+  real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -96,13 +96,13 @@ module Dustdensity
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore,&
-      lnocondens_term, &
+      lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      idiffd, lupw_ndmdmi, deltavd_imposed, &
+      ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic
@@ -223,6 +223,9 @@ module Dustdensity
       integer :: i,j,k
 !      real :: ddsize, ddsize0
       logical :: lnothing
+      if (lroot) print*, 'initialize_dustdensity: '// &
+          'ldustcoagulation,ldustcondensation =', &
+          ldustcoagulation,ldustcondensation
 !
       if (.not. ldustvelocity) call copy_bcs_dust_short
 !
@@ -284,8 +287,21 @@ module Dustdensity
           enddo; enddo
           lcalcdkern = .false.
 !
+        case ('kernel_piecewise_lin')
+          do i=1,ndustspec; do k=1,ndustspec
+            dkern(:,i,k) = dkern_cst*max((md(i)+md(k))*abs(md(i)-md(k)),Kern_min)
+          enddo; enddo
+          lcalcdkern = .false.
+!
         endselect
       enddo
+!
+!  compute maximum value of the kernel
+!
+      if (ldust_cdtc) then
+        Kern_max=maxval(dkern)
+        if (lroot) print*,'Kern_max=',Kern_max
+      endif
 !
 !  Initialize dust diffusion.
 !
@@ -621,6 +637,13 @@ module Dustdensity
           enddo
           if (lroot) print*, &
               'init_nd: Test of dust coagulation with linear kernel'
+        case ('kernel_piecewise_lin')
+          do k=1,ndustspec
+            f(:,:,:,ind(k)) = &
+                nd0*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
+          enddo
+          if (lroot) print*, &
+              'init_nd: Test of dust coagulation with piecewiese linear kernel'
         case ('atm_drop_spot')
           call droplet_init(f)
           if (lroot) print*, &
@@ -1532,6 +1555,7 @@ module Dustdensity
 !  Loop over dust layers
 !  this is a non-atmospheric case (for latm_chemistry=F)
 !
+      reac_dust=0.
       if (.not. latm_chemistry) then
       do k=1,ndustspec
 !
@@ -1549,6 +1573,12 @@ module Dustdensity
           endif
           if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
         endif
+!
+!  calculate maximum of *relative* reaction rate
+!
+        if (ldust_cdtc) reac_dust=max(reac_dust,p%nd(:,k))
+!
+!  diffusive time step
 !
         if (ldiffd_simpl_anisotropic) then
           if (ldustdensity_log) then
@@ -1626,6 +1656,10 @@ module Dustdensity
         if (lborder_profiles) call set_border_dustdensity(f,df,p,k)
 !
       enddo
+!
+!  Maximum time step constrain is given by reac_dust*kern_max
+!
+      reac_dust=reac_dust*kern_max
 !
       if (lspecial) call special_calc_dustdensity(f,df,p)
 !
