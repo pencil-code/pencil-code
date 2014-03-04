@@ -32,6 +32,7 @@ module Grid
   public :: calc_pencils_grid
   public :: initialize_grid
   public :: get_grid_mn
+  public :: box_vol
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -784,6 +785,7 @@ module Grid
 !
 !  20-jul-10/wlad: moved here from register
 !  21-apr-11/axel: insert special ldegenerate_directions option for degenerate directions
+!  3-mar-14/MR: outsourced calculation of box_volume into box_vol
 !
       use Sub, only: remove_zprof
       use Mpicomm
@@ -811,6 +813,10 @@ module Grid
         call mpireduce_sum(z_allprocs_tmp,z_allprocs,(/nz,nprocz/))
       endif
 !
+! Box volume
+!
+      box_volume=box_vol()
+!
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !  Introduce new names (spherical_coords), in addition to the old ones.
 !
@@ -819,12 +825,10 @@ module Grid
         lspherical_coords=.false.
         lcylindrical_coords=.false.
 !
-!  Box volume and volume element.
+!  Volume element.
 !  x-extent
 !
-        box_volume=1.
         if (nxgrid/=1) then
-          box_volume = box_volume*Lxyz(1)
           dVol_x=xprim
         else
           dVol_x=1.
@@ -833,7 +837,6 @@ module Grid
 !  y-extent
 !
         if (nygrid/=1) then
-          box_volume = box_volume*Lxyz(2)
           dVol_y=yprim
         else
           dVol_y=1.
@@ -842,7 +845,6 @@ module Grid
 !  z-extent
 !
         if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
           dVol_z=zprim
         else
           dVol_z=1.
@@ -927,9 +929,7 @@ module Grid
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
 !  r extent:
 !
-        box_volume=1.
         if (nxgrid/=1) then
-          box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dVol_x=x**2*xprim
         else
 !
@@ -943,13 +943,11 @@ module Grid
 !  Theta extent (if non-radially symmetric)
 !
         if (nygrid/=1) then
-          box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
           dVol_y=sinth*yprim
         else
           if (ldegenerate_directions) then
             dVol_y=1.
           else
-            box_volume = box_volume*2.
             dVol_y=2.
           endif
         endif
@@ -957,13 +955,11 @@ module Grid
 !  phi extent (if non-axisymmetry)
 !
         if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
           dVol_z=zprim
         else
           if (ldegenerate_directions) then
             dVol_z=1.
           else
-            box_volume = box_volume*2.*pi
             dVol_z=2.*pi
           endif
         endif
@@ -1025,9 +1021,7 @@ module Grid
 !
 !  Box volume and volume element.
 !
-        box_volume=1.
         if (nxgrid/=1) then
-          box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
           dVol_x=x*xprim
         else
           if (ldegenerate_directions) then
@@ -1040,13 +1034,11 @@ module Grid
 !  theta extent (non-cylindrically symmetric)
 !
         if (nygrid/=1) then
-          box_volume = box_volume*Lxyz(2)
           dVol_y=yprim
         else
           if (ldegenerate_directions) then
             dVol_y=1.
           else
-            box_volume = box_volume*2.*pi
             dVol_y=2.*pi
           endif
         endif
@@ -1054,7 +1046,6 @@ module Grid
 !  z extent (vertically extended)
 !
         if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
           dVol_z=zprim
         else
           dVol_z=1.
@@ -1171,6 +1162,77 @@ module Grid
       call construct_serial_arrays()
 !
     endsubroutine initialize_grid
+!***********************************************************************
+    function box_vol()
+!
+! calculates box volume
+!
+! 3-mar-14/MR: outsourced from initialize_grid
+!
+    real :: box_vol
+!
+      box_vol=1.
+      if (coord_system=='cartesian') then
+!
+!  x,y,z-extent
+!
+        if (nxgrid/=1) box_vol = box_vol*Lxyz(1)
+        if (nygrid/=1) box_vol = box_vol*Lxyz(2)
+        if (nzgrid/=1) box_vol = box_vol*Lxyz(3)
+!
+!  Spherical coordinate system
+!
+      elseif (coord_system=='spherical' &
+          .or.coord_system=='spherical_coords') then
+!
+!  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
+!  and assume that sinth=1 if there is no theta extent.
+!  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
+!
+!  r extent
+!
+        if (nxgrid/=1) &
+          box_vol = box_vol*1./3.*(xyz1(1)**3-xyz0(1)**3)
+!
+!  theta extent (if non-radially symmetric)
+!
+        if (nygrid/=1) then
+          box_vol = box_vol*(-(cos(xyz1(2))  -cos(xyz0(2))))
+        else
+          if (.not.ldegenerate_directions) box_vol = box_vol*2.
+        endif
+!
+!  phi extent (if non-axisymmetry)
+!
+        if (nzgrid/=1) then
+          box_vol = box_vol*Lxyz(3)
+        else
+          if (.not.ldegenerate_directions) box_vol = box_vol*2.*pi
+        endif
+!
+      elseif (coord_system=='cylindric' &
+          .or.coord_system=='cylindrical_coords') then
+!
+!  Box volume and volume element.
+!
+        if (nxgrid/=1) &
+          box_vol = box_vol*.5*(xyz1(1)**2-xyz0(1)**2)
+!
+!  theta extent (non-cylindrically symmetric)
+!
+        if (nygrid/=1) then
+          box_vol = box_vol*Lxyz(2)
+        else
+          if (.not.ldegenerate_directions) box_vol = box_vol*2.*pi
+        endif
+!
+!  z extent (vertically extended)
+!
+        if (nzgrid/=1) box_vol = box_vol*Lxyz(3)
+!
+      endif
+!
+    endfunction box_vol
 !***********************************************************************
     subroutine pencil_criteria_grid()
 !

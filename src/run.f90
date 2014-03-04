@@ -85,7 +85,7 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Grid,            only: construct_grid
+  use Grid,            only: construct_grid, box_vol
   use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
@@ -289,8 +289,7 @@ program run
   if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print*, 'WARNING: Box volume correct only in cartesian coordinates!'
-  if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
+  if (lroot) print*, '      Vbox=', box_vol()
 !
 !  Get state length of random number generator and put the default value.
 !  With lreset_seed (which is not the default) we can reset the seed during 
