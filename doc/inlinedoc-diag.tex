@@ -15,6 +15,7 @@
 %%   bfield.f90
 %%   chemistry.f90
 %%   coronae.f90
+%%   detonate.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
 %%   gravity_simple.f90
@@ -507,8 +508,8 @@
   \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
                     the magnetic_xaver_range \\
   \var{brmsz}     & $\left<\Bv^2\right>^{1/2}$ for
-                    the magnetic_zaver_range
-                    $\left<{\cal E}_x\right>_{z}$ \\
+                    the magnetic_zaver_range \\
+  \var{Exmxy}     & $\left<{\cal E}_x\right>_{z}$ \\
   \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
   \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
 \midrule
@@ -714,6 +715,11 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
+\midrule
+  \multicolumn{2}{c}{Module \file{detonate.f90}} \\
+\midrule
+  \var{detn}      & Number of detonated sites (summed over time steps between adjacent outputs) \\
+  \var{dettot}    & Total energy input (summed over time steps between adjacent outputs) \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
@@ -1642,8 +1648,6 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
-  \var{detn}      & Number of detonated cells \\
-  \var{detot}     & Total injected energy \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule

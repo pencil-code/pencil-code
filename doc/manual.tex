@@ -4182,6 +4182,34 @@ prior to transposing, then transform the interpolated array and then
 interpolating it back (check \file{fourier_transform_y} in
 \file{fourier_fftpack.f90}).
 
+A feature of our current implementation with $x$ parallelization is
+that \code{fft_xyz_parallel_3D} requires {\rm nygrid to be an integer
+multiple of nprocy*nprocz}.
+Examples of good mesh layouts are listed in Table~\ref{GoodMeshes}.
+
+\begin{table}[h!]\caption{
+Examples of mesh layouts for which XXX
+}\vspace{12pt}\centerline{\begin{tabular}{r|rrr|rrrrrrrr}
+ny & nprocyx & nprocy & nprocz & ncpus \\
+\hline
+ 256 & 1 & 16 & 16 &  256 \\
+ 256 & 2 & 16 & 16 &  512 \\
+ 256 & 4 & 16 & 16 & 1024 \\
+ 512 & 2 & 16 & 32 & 1024 \\
+ 512 & 4 & 16 & 16 & 1024 \\
+ 512 & 4 & 16 & 32 & 2048 \\
+ 576 & 4 & 18 & 32 & 2304 \\  
+ 576 & 8 & 18 & 32 & 4608 \\  
+ 576 &16 & 18 & 32 & 9216 \\  
+1024 & 4 & 32 & 32 & 4096 \\
+1024 & 4 & 16 & 64 & 4096 \\
+1024 & 8 & 16 & 32 & 4096 \\
+1152 & 4 & 36 & 32 & 4608 \\
+2304 & 2 & 32 & 72 & 4608 \\
+2304 & 4 & 36 & 64 & 9216 \\
+2304 & 4 & 32 & 72 & 9216 \\
+\label{GoodMeshes}\end{tabular}}\end{table}
+
 To visualize with \name{IDL} just type
 \cmd{power} and you get the last snapshot of the three-dimensional
 power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro}
@@ -7535,6 +7563,9 @@ where \code{nw=nx*ny*nz}.
   16 & Luci  & 0.375& $128^3$ & magn/noentro &        & 28-oct-06 & AB \\
   16 & Lenn  & 0.284& $128^3$ & magn/noentro &        &  8-nov-06 & AB \\
   16 &Neolith& 0.180& $256^3$ & magn/noentro &        &  6-dec-07 & AB \\
+  16 &Triolith&0.075& $128^3$ & magn/noentro & 2x2x4  &  1-mar-14 & AB \\
+  16 &Triolith&0.065& $128^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
+  16 &Triolith&0.054& $256^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -7564,6 +7595,8 @@ where \code{nw=nx*ny*nz}.
   64 &Ferlin & 8.51&$150{\!\times\!}128^2$&Li mechanism& 8x8& 21-jun-09 & AB \\
   64 &Ferlin & 0.156& $256^3$ & magn/noentro &  8x8   & 14-jun-09 & AB \\
   64 & Akka  & 0.038&$256^2{\!\times\!}512$& magn/noentro & 8x8 & 27-dec-12 & AB \\
+  64 &Triolith&0.0146&$256^3$ & magn/noentro & 1x8x8  &  1-mar-14 & AB \\
+  64 &Triolith&0.0164&$256^3$ & magn/noentro & 2x4x8  &  1-mar-14 & AB \\
   72 &Kraken&0.093&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x12x2&12-jan-12&WL\\
   72 & Kraken& 0.151  &$96{\!\times\!}192{\!\times\!}16$ &magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.091  &$192{\!\times\!}384{\!\times\!}32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
@@ -7582,6 +7615,7 @@ where \code{nw=nx*ny*nz}.
  144 & Kraken& 0.044  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
+ 256 &Triolith&0.0049&$256^3$ & magn/noentro & 1x16x16&  1-mar-14 & AB \\
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
@@ -7592,24 +7626,40 @@ where \code{nw=nx*ny*nz}.
  576 &Kraken&0.0257&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x24x4&12-jan-12&WL\\
  576 &Kraken& 0.0317  &$192^2{\!\times\!}64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
  576 &Kraken& 0.0116  &$768^2{\!\times\!}256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+1024 &Triolith&0.00236&$256^3$ & magn/noentro & 4x16x16&  1-mar-14 & AB \\
+1024 &Triolith&0.00126&$512^3$ & magn/noentro & 2x16x32&  1-mar-14 & AB \\
+1024 &Triolith&0.00129&$512^3$ & magn/noentro & 4x16x16&  1-mar-14 & AB \\
 1152&Kraken&0.0212&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x4               &13-jan-12&WL\\
 1152&Kraken& 0.00856  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1152&Kraken& 0.00549  &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048&Lindgren&0.00129&$512^2{\!\times\!}1024$&magn/noentro&32x64&20-apr-13& AB \\
 2048&Lindgren&0.00129&$1024^2{\!\times\!}2048$&magn/noentro&32x64&31-jul-12& AB \\
+2304&Triolith&$1.07{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&4x18x32& 1-mar-14 & AB \\ %XXX
 2304&Kraken&0.02267&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x8&13-jan-12&WL\\
 2304&Kraken&  0.01233 &$192{\!\times\!}768{\!\times\!}64$ & magn/noentro & 12x48x4 &13-jan-12 & WL\\
 2304&Kraken& 0.00300  &$768{\!\times\!}3072{\!\times\!}256$ & magn/noentro & 12x48x4 &18-jan-12 & WL\\
+4608&Triolith&$7.4{\!\times\!}10^{-4}$&$ 576^3$&magn/noentro&8x18x32& 1-mar-14 & AB \\ %XXX
+4608&Triolith&$2.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x32x36& 1-mar-14 & AB \\ %XXX
+4608&Triolith&$3.0{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x36x32& 1-mar-14 & AB \\ %XXX
+4608&Triolith&$3.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x18x64& 1-mar-14 & AB \\ %XXX
+4608&Triolith&$2.36{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&2x32x72& 1-mar-14 & AB \\ %XXX
+4096&Triolith&$3.6{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x32x32& 1-mar-14 & AB \\
+4096&Triolith&$3.8{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&8x16x32& 1-mar-14 & AB \\
+4096&Triolith&$4.2{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x16x64& 1-mar-14 & AB \\
 4096&Lindgren&$4.6{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
 4608& Kraken&  0.00764 &$192{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x48x8 &13-jan-12 & WL\\
 4608& Kraken& 0.00144  &$768{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 12x48x8 &18-jan-12 & WL\\
 6144&Lindgren&$4.2{\!\times\!}10^{-4}$&$1024^3\times1536$&magn/noentro&4x16x64&21-oct-13&AB\\
 8192&Sisu&$4.1{\!\times\!}10^{-4}$&$1024\times2048\times1024$&spherical conv/magn&8x32x32&22-aug-13&PJK\\
+8192&Triolith&$1.48{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x32x64& 1-mar-14 & AB \\
 9216& Kraken&  0.00485 &$192{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x8 &13-jan-12 & WL\\
 9216& Kraken& 0.00158   &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 24x48x8 &17-jan-12 & WL\\
 9216& Kraken& $8.0{\!\times\!}10^{-4}$  &$1536{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 24x48x8 &18-jan-12 & WL\\
-9216&Lindgren&$2.4{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x48x48&21-jan-14&AB\\
+9216&Lindgren&$2.36{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x48x48&15-feb-14&AB\\
+9216&Triolith&$1.04{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&16x18x32& 1-mar-14 & AB \\
+9216&Triolith&$1.28{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x36x64& 1-mar-14 & AB \\
+9216&Triolith&$1.30{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x32x72& 1-mar-14 & AB \\
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
