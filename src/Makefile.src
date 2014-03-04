@@ -1373,9 +1373,24 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 # (copson)
 #LD_MPI= # (copson)
 ##
-#FC=ifc #(gwdu102)
-#FFLAGS=-O3 -I/opt/scali/include #(gwdu102)
-#LD_MPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
+##
+## GWDG Cluster in Goettingen
+##
+#FC = mpif90 -std95 # (gwdu101)
+#F77 = mpif90 # (gwdu101) 
+#FFLAGS = -implicitnone # (gwdu101) 
+#FFLAGS_DOUBLE = -r8 # (gwdu101) 
+#CC = mpicc # (gwdu101) 
+#CFLAGS = -DFUNDERSC=1 # (gwdu101) 
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION # (gwdu101) 
+##
+#FC = mpif90 -std95 # (gwdu102)
+#F77 = mpif90 # (gwdu102)
+#FFLAGS = -implicitnone # (gwdu102)
+#FFLAGS_DOUBLE = -r8 # (gwdu101)
+#CC = mpicc # (gwdu101)
+#CFLAGS = -DFUNDERSC=1 # (gwdu101)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION # (gwdu101)
 ##
 ## draco in oulu
 ## (for some reason this machine interpretes also ra[],

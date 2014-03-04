@@ -179,6 +179,26 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-O3 -I/opt/local/mpich/include
 #LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #F77=$(FC)
+## GWDG Cluster in Goettingen
+##
+#FC = mpif90 -std95 # (gwdu101)
+#F77 = mpif90 # (gwdu101)
+#FFLAGS = -implicitnone # (gwdu101)
+#FFLAGS_DOUBLE = -r8 # (gwdu101)
+#CC = mpicc # (gwdu101)
+#CFLAGS = -DFUNDERSC=1 # (gwdu101)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION # (gwdu101)
+#LDMPI=  # (gwdu101)
+##
+#FC = mpif90 -std95 # (gwdu102)
+#F77 = mpif90 # (gwdu102)
+#FFLAGS = -implicitnone # (gwdu102)
+#FFLAGS_DOUBLE = -r8 # (gwdu102)
+#CC = mpicc # (gwdu102)
+#CFLAGS = -DFUNDERSC=1 # (gwdu102)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION # (gwdu102)
+#LDMPI=  # (gwdu102)
+##
 
 ## UNICOS/mk:
 #FC=f90
