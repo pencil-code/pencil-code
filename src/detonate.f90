@@ -235,7 +235,7 @@ module Detonate
 !
 !  Detonate only before one full time-step.
 !
-      first: if (lfirst) then
+      first: if (lfirst .and. .not. lpencil_check_at_work) then
 !
 !  Initialize the detonation energy field to zero.
 !
