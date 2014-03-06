@@ -2549,10 +2549,14 @@ module Energy
           lpenc_diagnos(i_ee)=.true.
       endif
       if (idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. idiag_fturbz/=0) then
+          lpenc_diagnos(i_cp)=.true.
+          lpenc_diagnos(i_uu)=.true.
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
+          lpenc_diagnos2d(i_cp)=.true.
+          lpenc_diagnos2d(i_uu)=.true.
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
       endif
@@ -2560,6 +2564,7 @@ module Energy
           idiag_fturbthxy/=0 .or. idiag_fturbymxy/=0) then
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
+          lpenc_diagnos2d(i_gss)=.true.
       endif
       if (idiag_fradxy_Kprof/=0 .or. idiag_fradymxy_Kprof/=0) then
           lpenc_diagnos2d(i_TT)=.true.
@@ -2915,7 +2920,7 @@ module Energy
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_fconvm/=0) &
-            call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
+            call sum_mn_name(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
         if (idiag_ufpresm/=0) then
             ufpres=0.
             do i = 1, 3
@@ -3001,7 +3006,7 @@ module Energy
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
-        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
@@ -3034,11 +3039,11 @@ module Energy
         if (idiag_uzTTmxy/=0) &
             call zsum_mn_name_xy(p%uu(:,3)*p%TT,idiag_uzTTmxy)
         if (idiag_fconvxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
+            call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
         if (idiag_fconvyxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%TT,idiag_fconvyxy)
+            call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,2)*p%TT,idiag_fconvyxy)
         if (idiag_fconvzxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,3)*p%TT,idiag_fconvzxy)
+            call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvzxy)
         if (idiag_gTxmxy/=0) &
             call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
         if (idiag_gTymxy/=0) &
@@ -5764,7 +5769,7 @@ module Energy
                       + (chit_prof2-1)*step(z_mn,ztop,widthss)
       endif
 !
-      if (lspherical_coords) then
+      if (lspherical_coords.or.lconvection_gravx) then
         chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss) &
                       + (chit_prof2-1)*step(x(l1:l2),xtop,widthss)
       endif
@@ -5806,7 +5811,7 @@ module Energy
                          + (chit_prof2-1)*der_step(z_mn,ztop,widthss)
       endif
 !
-      if (lspherical_coords) then
+      if (lspherical_coords.or.lconvection_gravx) then
         glnchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss) &
                           + (chit_prof2-1)*der_step(x(l1:l2),xtop,widthss)
         glnchit_prof(:,2:3) = 0.
