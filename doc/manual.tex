@@ -7569,6 +7569,7 @@ where \code{nw=nx*ny*nz}.
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
+  32 &Hermit&0.200&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x8x4&22-aug-13&PJK\\
   32 & fe1   & 0.168& $512^3$ &nomag/noentro&        &  9-oct-02 & AB \\
   32 & fe1   & 1.26 & $64^2{\!\times\!}256$ &nomag/entro/rad/ion& & 7-sep-03 & AB \\
   32 & Luci  & 0.182& $256^3$ &magn/noentro &        & 26-feb-07 & AB \\
@@ -7597,6 +7598,8 @@ where \code{nw=nx*ny*nz}.
   64 & Akka  & 0.038&$256^2{\!\times\!}512$& magn/noentro & 8x8 & 27-dec-12 & AB \\
   64 &Triolith&0.0146&$256^3$ & magn/noentro & 1x8x8  &  1-mar-14 & AB \\
   64 &Triolith&0.0164&$256^3$ & magn/noentro & 2x4x8  &  1-mar-14 & AB \\
+  64 &Hermit&0.101&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x8x8&22-aug-13&PJK\\
+  64 & Sisu  & 0.00205&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x8x8&22-aug-13&PJK\\
   72 &Kraken&0.093&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x12x2&12-jan-12&WL\\
   72 & Kraken& 0.151  &$96{\!\times\!}192{\!\times\!}16$ &magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.091  &$192{\!\times\!}384{\!\times\!}32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
@@ -7610,48 +7613,82 @@ where \code{nw=nx*ny*nz}.
  128l& giga2 & 0.0605&$512^3$ & magn/noentro &4x32/ifc6&21-aug-04 & AB \\
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
+ 128 &Hermit&0.0532&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x8&22-aug-13&PJK\\
+ 128 &Hermit&0.0493&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x8x8&22-aug-13&PJK\\
+ 128 & Sisu  & 0.00108&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x8&22-aug-13&PJK\\
  144 & Kraken& 0.080  &$96{\!\times\!}192{\!\times\!}32$ & magn/noentro & 6x12x2 &13-jan-12 & WL\\
  144 & Kraken& 0.058  &$192{\!\times\!}384{\!\times\!}64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
  144 & Kraken& 0.044  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
+ 256 &Hermit&0.0328&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
+ 256 &Hermit&0.0285&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
+ 256 &Hermit&0.0262&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x16x8&22-aug-13&PJK\\
+ 256 &Hermit&0.0254&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&2x16x8&22-aug-13&PJK\\
+ 256 &Hermit&0.0226&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x8x8&22-aug-13&PJK\\
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
+ 256 &Sisu&0.00618&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
+ 256 &Sisu&0.00500&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 &Triolith&0.0049&$256^3$ & magn/noentro & 1x16x16&  1-mar-14 & AB \\
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
+ 512 &Hermit&0.01717&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
+ 512 &Hermit&0.0166&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
+ 512 &Hermit&0.0142&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x16x16&22-aug-13&PJK\\
+ 512 &Hermit&0.01340&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&2x16x16&22-aug-13&PJK\\
+ 512 &Hermit&0.01189&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x8x8&22-aug-13&PJK\\
+ 512 &Hermit&0.01165&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x16x8&22-aug-13&PJK\\
  512 & Akka  &0.0081& $512^3$ & magn/noentro & 16x32  & 10-sep-11 & AB \\
  512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
  512 &Gardar &0.0035& $512^3$ & magn/noentro &        & 14-jan-13 & AB \\
  512 &Lindgren&0.0040&$512^2{\!\times\!}1024$&magn/noentro&16x32& 8-jul-12 & AB \\
+ 512&Sisu&0.00446&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&4x16x8&22-aug-13&PJK\\
+ 512&Sisu&0.00435&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
+ 512&Sisu&0.00268&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  576 &Kraken&0.0257&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x24x4&12-jan-12&WL\\
  576 &Kraken& 0.0317  &$192^2{\!\times\!}64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
  576 &Kraken& 0.0116  &$768^2{\!\times\!}256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+1024&Hermit&0.00943&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x32&22-aug-13&PJK\\
+1024&Hermit&0.00707&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&2x32x16&22-aug-13&PJK\\
+1024&Hermit&0.00698&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&4x16x16&22-aug-13&PJK\\
+1024&Hermit&0.00630&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x16x16&22-aug-13&PJK\\
 1024 &Triolith&0.00236&$256^3$ & magn/noentro & 4x16x16&  1-mar-14 & AB \\
 1024 &Triolith&0.00126&$512^3$ & magn/noentro & 2x16x32&  1-mar-14 & AB \\
 1024 &Triolith&0.00129&$512^3$ & magn/noentro & 4x16x16&  1-mar-14 & AB \\
+1024&Sisu&0.00225&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
+1024&Sisu&0.00148&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&2x32x16&22-aug-13&PJK\\
 1152&Kraken&0.0212&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x4               &13-jan-12&WL\\
 1152&Kraken& 0.00856  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1152&Kraken& 0.00549  &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
+2048&Hermit&0.00451&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&2x32x32&22-aug-13&PJK\\
+2048&Hermit&0.00380&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x16x16&22-aug-13&PJK\\
+2048&Hermit&0.00355&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x32x16&22-aug-13&PJK\\
+2048&Hermit&0.00350&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&4x32x16&22-aug-13&PJK\\
 2048&Lindgren&0.00129&$512^2{\!\times\!}1024$&magn/noentro&32x64&20-apr-13& AB \\
 2048&Lindgren&0.00129&$1024^2{\!\times\!}2048$&magn/noentro&32x64&31-jul-12& AB \\
+2048&Sisu&0.00120&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
+2048&Sisu&$9.2{\!\times\!}10^{-4}$&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x32x16&22-aug-13&PJK\\
 2304&Triolith&$1.07{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&4x18x32& 1-mar-14 & AB \\ %XXX
 2304&Kraken&0.02267&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x8&13-jan-12&WL\\
 2304&Kraken&  0.01233 &$192{\!\times\!}768{\!\times\!}64$ & magn/noentro & 12x48x4 &13-jan-12 & WL\\
 2304&Kraken& 0.00300  &$768{\!\times\!}3072{\!\times\!}256$ & magn/noentro & 12x48x4 &18-jan-12 & WL\\
+4096&Hermit&0.00193&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&4x32x32&22-aug-13&PJK\\
+4096&Triolith&$3.6{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x32x32& 1-mar-14 & AB \\
+4096&Triolith&$3.8{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&8x16x32& 1-mar-14 & AB \\
+4096&Triolith&$4.2{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x16x64& 1-mar-14 & AB \\
+4096&Lindgren&$4.6{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
+4096&Sisu&$6.7{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
 4608&Triolith&$7.4{\!\times\!}10^{-4}$&$ 576^3$&magn/noentro&8x18x32& 1-mar-14 & AB \\ %XXX
 4608&Triolith&$2.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x32x36& 1-mar-14 & AB \\ %XXX
 4608&Triolith&$3.0{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x36x32& 1-mar-14 & AB \\ %XXX
 4608&Triolith&$3.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x18x64& 1-mar-14 & AB \\ %XXX
 4608&Triolith&$2.36{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&2x32x72& 1-mar-14 & AB \\ %XXX
-4096&Triolith&$3.6{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x32x32& 1-mar-14 & AB \\
-4096&Triolith&$3.8{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&8x16x32& 1-mar-14 & AB \\
-4096&Triolith&$4.2{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x16x64& 1-mar-14 & AB \\
-4096&Lindgren&$4.6{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
 4608& Kraken&  0.00764 &$192{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x48x8 &13-jan-12 & WL\\
 4608& Kraken& 0.00144  &$768{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 12x48x8 &18-jan-12 & WL\\
 6144&Lindgren&$4.2{\!\times\!}10^{-4}$&$1024^3\times1536$&magn/noentro&4x16x64&21-oct-13&AB\\
-8192&Sisu&$4.1{\!\times\!}10^{-4}$&$1024\times2048\times1024$&spherical conv/magn&8x32x32&22-aug-13&PJK\\
+8192&Hermit&0.00101&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&8x32x32&22-aug-13&PJK\\
+8192&Sisu&$4.1{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
 8192&Triolith&$1.48{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x32x64& 1-mar-14 & AB \\
 9216& Kraken&  0.00485 &$192{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x8 &13-jan-12 & WL\\
 9216& Kraken& 0.00158   &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 24x48x8 &17-jan-12 & WL\\
@@ -7660,6 +7697,7 @@ where \code{nw=nx*ny*nz}.
 9216&Triolith&$1.04{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&16x18x32& 1-mar-14 & AB \\
 9216&Triolith&$1.28{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x36x64& 1-mar-14 & AB \\
 9216&Triolith&$1.30{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x32x72& 1-mar-14 & AB \\
+16384&Hermit&$6.4{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&16x32x32&22-aug-13&PJK\\
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
@@ -7734,6 +7772,8 @@ A high performance Infiniband network from Mellanox is used for MPI traffic.
 the cluster has 112,896 cores, 147 TB of memory, in 9,408 nodes.  
 Each node has two 2.6 GHz six-core AMD Opteron processors (Istanbul), 12 cores, and 16 GB of memory. 
 Connection via Cray SeaStar2+ router. 
+\item[Hermit:] Cray XE6 with 7104 2.3 GHz AMD Interlagos 16 core processors (113,664 cores in total), nodes with either 1 or 2 GB of memory per core.
+\item[Sisu:] Cray XC30 with 1472 2.6 GHz Intel (Xeon) Sandy Bridge 8 core (E5-2670) processors (11,776 cores in total), 2 GB of memory per core.
 
 \end{description}
 
