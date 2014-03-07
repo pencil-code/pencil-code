@@ -286,10 +286,13 @@ program run
 !
 !  Print resolution and dimension of the simulation.
 !
-  if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-  if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print*, '      Vbox=', box_vol()
+  if (lroot) then
+    write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+    print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+    print*, 'Lx, Ly, Lz=', Lxyz
+    call box_vol
+    print*, '      Vbox=', box_volume
+  endif
 !
 !  Get state length of random number generator and put the default value.
 !  With lreset_seed (which is not the default) we can reset the seed during 
@@ -320,6 +323,7 @@ program run
 !  was also used above, so we really need to do it twice then.)
 !
   call rsnap('var.dat',f,mvar_in)
+!
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
 !
   if (lparticles) call read_snapshot_particles(directory_dist)

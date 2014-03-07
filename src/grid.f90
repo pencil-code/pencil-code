@@ -33,6 +33,7 @@ module Grid
   public :: initialize_grid
   public :: get_grid_mn
   public :: box_vol
+  public :: save_grid
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -815,7 +816,7 @@ module Grid
 !
 ! Box volume
 !
-      box_volume=box_vol()
+      call box_vol
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !  Introduce new names (spherical_coords), in addition to the old ones.
@@ -1163,22 +1164,168 @@ module Grid
 !
     endsubroutine initialize_grid
 !***********************************************************************
-    function box_vol()
+    subroutine save_grid(lrestore)
+!
+!  Saves grid into local statics (needed for downsampled output)
+!
+!  6-mar-14/MR: coded
+!
+      use General, only : loptest
+!
+      logical, optional :: lrestore
+!
+      real, dimension(mx), save :: xs,dx_1s,dx_tildes
+      real, dimension(my), save :: ys,dy_1s,dy_tildes
+      real, dimension(mz), save :: zs,dz_1s,dz_tildes
+      real, dimension(nx), save :: r_mns,r1_mns,r2_mns
+      real, dimension(my), save :: sinths,sin1ths,sin2ths,cosths, &
+                                   cotths,cos1ths,tanths
+      real, dimension(nx), save :: rcyl_mns,rcyl_mn1s,rcyl_mn2s
+
+      real, save :: dxs, dys, dzs
+
+      logical, save :: lfirst=.true.
+
+      if (loptest(lrestore)) then
+        if (lfirst) then
+          call fatal_error('save_grid','first call must have lrestore=F')
+        else
+          dx=dxs; dy=dys; dz=dzs
+          x=xs; y=ys; z=zs
+          dx_1=dx_1s; dy_1=dy_1s; dz_1=dz_1s
+          dx_tilde=dx_tildes; dy_tilde=dy_tildes; dz_tilde=dz_tildes
+
+          if (lspherical_coords) then
+            r_mn=r_mns; r1_mn=r1_mns; r2_mn=r2_mns
+            sinth=sinths; sin1th=sin1ths; sin2th=sin2ths; costh=cosths
+            cotth=cotths; cos1th=cos1ths; tanth=tanths
+          elseif (lcylindrical_coords) then
+            rcyl_mn=rcyl_mns; rcyl_mn1=rcyl_mn1s; rcyl_mn2=rcyl_mn2s
+          endif
+        endif
+      elseif (lfirst) then
+        lfirst=.false.
+        dxs=dx; dys=dy; dzs=dz
+        xs=x; ys=y; zs=z
+        dx_1s=dx_1; dy_1s=dy_1; dz_1s=dz_1
+        dx_tildes=dx_tilde; dy_tildes=dy_tilde; dz_tildes=dz_tilde
+
+        if (lspherical_coords) then
+          r_mns=r_mn; r1_mns=r1_mn; r2_mns=r2_mn
+          sinths=sinth; sin1ths=sin1th; sin2ths=sin2th; cosths=costh
+          cotths=cotth; cos1ths=cos1th; tanths=tanth
+        elseif (lcylindrical_coords) then
+          rcyl_mns=rcyl_mn; rcyl_mn1s=rcyl_mn1; rcyl_mn2s=rcyl_mn2
+        endif
+      endif
+
+    endsubroutine save_grid
+!***********************************************************************
+    subroutine coords_aux(x,y,z)
+!
+!  6-mar-14/MR: coded
+!
+      real, dimension(:) :: x,y,z
+!
+      real, dimension(size(y)) :: lat
+      real :: sinth_min=1e-5,costh_min=1e-5
+!
+      if (lspherical_coords) then
+!
+! For spherical coordinates
+!
+        r_mn=x(l1:l2)
+        if (x(l1)==0.) then
+          r1_mn(2:)=1./x(l1+1:l2)
+          r1_mn(1)=0.
+        else
+          r1_mn=1./x(l1:l2)
+        endif
+        r2_mn=r1_mn**2
+!
+!  Calculate sin(theta). Make sure that sinth=1 if there is no y extent,
+!  regardless of the value of y. This is needed for correct integrations.
+!
+        if (ny==1) then
+          sinth=1.
+        else
+          sinth=sin(y)
+        endif
+!
+!  Calculate cos(theta) via latitude, which allows us to ensure
+!  that sin(lat(midpoint)) = 0 exactly.
+!
+        if (luse_latitude) then
+          lat=pi/2-y
+          costh=sin(lat)
+        else
+          costh=cos(y)
+        endif
+!
+!  Calculate 1/sin(theta). To avoid the axis we check that sinth
+!  is always larger than a minmal value, sinth_min. The problem occurs
+!  on theta=pi, because the theta range is normally only specified
+!  with no more than 6 digits, e.g. theta = 0., 3.14159.
+!
+        where(abs(sinth)>sinth_min)
+          sin1th=1./sinth
+        elsewhere
+          sin1th=0.
+        endwhere
+        sin2th=sin1th**2
+!
+!  Calculate cot(theta).
+!
+        cotth=costh*sin1th
+!
+!  Calculate 1/cos(theta). To avoid the axis we check that costh
+!  is always larger than a minmal value, costh_min. The problem occurs
+!  on theta=pi, because the theta range is normally only specified
+!  with no more than 6 digits, e.g. theta = 0., 3.14159.
+!
+        where(abs(costh)>costh_min)
+          cos1th=1./costh
+        elsewhere
+          cos1th=0.
+        endwhere
+!
+!  Calculate tan(theta).
+!
+        tanth=sinth*cos1th
+!
+      elseif (lcylindrical_coords) then
+!
+!  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
+!  not rcyl_mn1.
+!
+        rcyl_mn=x(l1:l2)
+        if (x(l1)==0.) then
+          rcyl_mn1(2:)=1./x(l1+1:l2)
+          rcyl_mn1(1)=0.
+        else
+          rcyl_mn1=1./x(l1:l2)
+        endif
+        rcyl_mn2=rcyl_mn1**2
+
+      endif
+
+    endsubroutine coords_aux
+!***********************************************************************
+    subroutine box_vol
 !
 ! calculates box volume
 !
 ! 3-mar-14/MR: outsourced from initialize_grid
+! 6-mar-14/MR: changed into subroutine setting global variable box_volume
 !
-    real :: box_vol
-!
-      box_vol=1.
+      box_volume=1.
       if (coord_system=='cartesian') then
 !
 !  x,y,z-extent
 !
-        if (nxgrid/=1) box_vol = box_vol*Lxyz(1)
-        if (nygrid/=1) box_vol = box_vol*Lxyz(2)
-        if (nzgrid/=1) box_vol = box_vol*Lxyz(3)
+        if (nxgrid/=1) box_volume = box_volume*Lxyz(1)
+        if (nygrid/=1) box_volume = box_volume*Lxyz(2)
+        if (nzgrid/=1) box_volume = box_volume*Lxyz(3)
 !
 !  Spherical coordinate system
 !
@@ -1192,22 +1339,22 @@ module Grid
 !  r extent
 !
         if (nxgrid/=1) &
-          box_vol = box_vol*1./3.*(xyz1(1)**3-xyz0(1)**3)
+          box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
 !
 !  theta extent (if non-radially symmetric)
 !
         if (nygrid/=1) then
-          box_vol = box_vol*(-(cos(xyz1(2))  -cos(xyz0(2))))
+          box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
         else
-          if (.not.ldegenerate_directions) box_vol = box_vol*2.
+          if (.not.ldegenerate_directions) box_volume = box_volume*2.
         endif
 !
 !  phi extent (if non-axisymmetry)
 !
         if (nzgrid/=1) then
-          box_vol = box_vol*Lxyz(3)
+          box_volume = box_volume*Lxyz(3)
         else
-          if (.not.ldegenerate_directions) box_vol = box_vol*2.*pi
+          if (.not.ldegenerate_directions) box_volume = box_volume*2.*pi
         endif
 !
       elseif (coord_system=='cylindric' &
@@ -1216,23 +1363,23 @@ module Grid
 !  Box volume and volume element.
 !
         if (nxgrid/=1) &
-          box_vol = box_vol*.5*(xyz1(1)**2-xyz0(1)**2)
+          box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
 !
 !  theta extent (non-cylindrically symmetric)
 !
         if (nygrid/=1) then
-          box_vol = box_vol*Lxyz(2)
+          box_volume = box_volume*Lxyz(2)
         else
-          if (.not.ldegenerate_directions) box_vol = box_vol*2.*pi
+          if (.not.ldegenerate_directions) box_volume = box_volume*2.*pi
         endif
 !
 !  z extent (vertically extended)
 !
-        if (nzgrid/=1) box_vol = box_vol*Lxyz(3)
+        if (nzgrid/=1) box_volume = box_volume*Lxyz(3)
 !
       endif
 !
-    endfunction box_vol
+    endsubroutine box_vol
 !***********************************************************************
     subroutine pencil_criteria_grid()
 !
