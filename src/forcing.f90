@@ -539,12 +539,6 @@ module Forcing
         profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
         profx_hel=1.
 !
-!  tidal
-!
-      elseif (iforce_profile=='tidal') then
-        profz_ampl=1.; profz_hel=1.
-        profy_ampl=1.; profy_hel=1.
-        profx_ampl=1.; profx_hel=1.
       else
         call fatal_error('initialize_forcing','iforce_profile value does not exist')
       endif
@@ -4457,6 +4451,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use Viscosity, only: getnu
 !
       real, dimension (nx,3), intent(out) :: force
+      real, dimension (nx) :: tmp
 !
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       real, pointer   :: gravx
@@ -4651,6 +4646,22 @@ call fatal_error('hel_vec','radial profile should be quenched')
           call calc_fluxring_cylindrical(force)
         case('counter_centrifugal')
           call calc_counter_centrifugal(force)
+!
+!  blob-like disturbance (gradient of gaussian)
+!
+        case('blob')
+          tmp=exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff)
+          force(:,1)=-2.*x(l1:l2)*tmp
+          force(:,2)=-2.*y(m)*tmp
+          force(:,3)=-2.*z(n)*tmp
+!
+!  blob-like disturbance (gradient of gaussian)
+!
+        case('zblob')
+          tmp=ampl_ff*exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff**2)
+          force(:,1)=0.
+          force(:,2)=0.
+          force(:,3)=tmp
 !
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
