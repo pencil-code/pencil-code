@@ -4394,6 +4394,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  24-mar-08/axel: adapted from density.f90
 !
       if (lforcing_cont) lpenc_requested(i_fcont)=.true.
+      if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
 !
     endsubroutine pencil_criteria_forcing
 !***********************************************************************
@@ -4417,6 +4418,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
       use Debug_IO, only: output_pencil
+      use Sub, only: multsv_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -4426,23 +4428,25 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  calculate forcing
 !
       if (lpencil(i_fcont)) then
-!
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
         call forcing_cont(p%fcont)
-      endif
 !
-      call keep_compiler_quiet(f)
+!  divide by rho if lmomentum_ff=T
+!
+        if (lmomentum_ff) call multsv_mn(p%rho1,p%fcont,p%fcont)
+      endif
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
     subroutine forcing_cont(force)
 !
-! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
-! 4-nov-11/MR:                                  now also compensates Coriolis force
+!   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
+!                and u.grad u for Roberts geometry
+!   4-nov-11/MR: now also compensates Coriolis force
 !
-! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
-! one must also set  lforcing_cont_uu = T in hydro for the continuous is time
-! forcing to be added to velocity.
+!  Note: It is not enough to set lforcing_cont = T in input parameters of
+!  forcing one must also set  lforcing_cont_uu = T in hydro for the
+!  continuous-in-time forcing to be added to velocity.
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
@@ -4451,12 +4455,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use Viscosity, only: getnu
 !
       real, dimension (nx,3), intent(out) :: force
-      real, dimension (nx) :: tmp
+      real, pointer :: gravx
 !
-      real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
-      real, pointer   :: gravx
-      integer         :: ierr
+      real, dimension (nx) :: tmp
+      real :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
+      integer :: ierr
 !
         select case (iforcing_cont)
         case('Fz=const')
@@ -4650,10 +4654,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  blob-like disturbance (gradient of gaussian)
 !
         case('blob')
-          tmp=exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff)
-          force(:,1)=-2.*x(l1:l2)*tmp
-          force(:,2)=-2.*y(m)*tmp
-          force(:,3)=-2.*z(n)*tmp
+          fact=2.*ampl_ff/radius_ff**2
+          tmp=fact*exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff)
+          force(:,1)=tmp*x(l1:l2)
+          force(:,2)=tmp*y(m)
+          force(:,3)=tmp*z(n)
 !
 !  blob-like disturbance (gradient of gaussian)
 !
