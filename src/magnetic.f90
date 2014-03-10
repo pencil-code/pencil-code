@@ -819,10 +819,14 @@ module Magnetic
 !
 !  Share the external magnetic field with module Shear.
 !
-      if (lshock .or. lshear .or. (leos.and.lmagn_mf) .or. lspecial) then
+      if (lshock .or. (leos.and.lmagn_mf) .or. lspecial) then
         call put_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
       endif
+!
+!  Shear of B_ext,x is not implemented.
+!
+      if (lshear .and. B_ext(1) /= 0.0) call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
