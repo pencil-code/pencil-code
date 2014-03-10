@@ -114,6 +114,8 @@ module InitialCondition
   logical :: lcorrect_selfgravity=.false.
   logical :: lcorrect_lorentzforce=.false.
   logical :: lpolynomial_fit_cs2=.false.
+  logical :: ladd_noise_propto_cs=.false.
+  real :: ampluu_cs_factor=1d-3
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -123,7 +125,8 @@ module InitialCondition
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
-       lcorrect_pressuregradient,lpolynomial_fit_cs2
+       lcorrect_pressuregradient,lpolynomial_fit_cs2,&
+       ladd_noise_propto_cs, ampluu_cs_factor
 !
   contains
 !***********************************************************************
@@ -249,6 +252,68 @@ module InitialCondition
       enddo
 !
     endsubroutine initial_condition_uu
+!***********************************************************************
+    subroutine add_noise(f)
+!
+      use FArrayManager, only: farray_use_global
+      use EquationOfState, only: get_cv1
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: cs2
+      real :: cv1
+      integer, pointer :: iglobal_cs2
+!
+      if (llocal_iso) then
+        call farray_use_global('cs2',iglobal_cs2)
+      elseif (lentropy) then
+        call get_cv1(cv1)
+      endif
+!
+      do n=n1,n2; do m=m1,m2
+        if (llocal_iso) then
+          cs2=f(l1:l2,m,n,iglobal_cs2)
+        elseif (lentropy) then
+          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
+               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+        endif
+        call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
+      enddo; enddo
+!
+    endsubroutine add_noise
+!***********************************************************************
+    subroutine gaunoise_vect(ampl,f,i1,i2)
+!
+!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
+!
+!  23-may-02/axel: coded
+!  10-sep-03/axel: result only *added* to whatever f array had before
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+!
+      real, dimension (nx) :: r,p,tmp,ampl
+      integer :: i
+!
+      intent(in)    :: ampl,i1,i2
+      intent(inout) :: f
+!
+!  set gaussian random noise vector
+!
+      do i=i1,i2
+        if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
+        if (modulo(i-i1,2)==0) then
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+        else
+          tmp=sqrt(-2*log(r))*cos(2*pi*p)
+        endif
+        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*tmp
+      enddo
+!
+    endsubroutine gaunoise_vect
 !***********************************************************************
     subroutine poly_fit(cs2)
 !
@@ -626,6 +691,10 @@ module InitialCondition
 !
       if (lroot) &
            print*,"thermodynamical quantities successfully set"
+!
+!  Add noise if needed.
+!
+      if (ladd_noise_propto_cs) call add_noise(f)
 !
     endsubroutine set_thermodynamical_quantities
 !***********************************************************************
