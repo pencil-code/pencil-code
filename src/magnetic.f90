@@ -208,6 +208,7 @@ module Magnetic
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
+  real :: eta_xwidth0=0.0,eta_xwidth1=0.0
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
@@ -269,7 +270,7 @@ module Magnetic
       reinitialize_aa, rescale_aa, initaa, amplaa, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
-      eta_xwidth, eta_ywidth, eta_zwidth, &
+      eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
@@ -6695,18 +6696,29 @@ module Magnetic
 !
         case ('two_step','two-step')
 !
+!  Allow for the each step to have its width. If they are 
+!  not specified, then eta_xwidth takes precedence. 
+!
+           if (eta_xwidth .ne. 0.) then
+             eta_xwidth0 =eta_xwidth
+             eta_xwidth1 =eta_xwidth
+           endif
+!
 !  Default to spread gradient over ~5 grid cells,
 !
-           if (eta_xwidth == 0.) eta_xwidth = 5.*dx
+
+           if (eta_xwidth0 == 0.) eta_xwidth0 = 5.*dx
+           if (eta_xwidth1 == 0.) eta_xwidth1 = 5.*dx
+!
            eta_x = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-             (step(x,eta_x0,eta_xwidth)-step(x,eta_x1,eta_xwidth))
+             (step(x,eta_x0,eta_xwidth0)-step(x,eta_x1,eta_xwidth1))
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_xwidth.
 !  Note that geta_x points then only in the x direction.
 !
            geta_x(:,1) = eta*(eta_jump-two_step_factor)*( &
-             der_step(x,eta_x0,-eta_xwidth)+der_step(x,eta_x1,eta_xwidth))
+             der_step(x,eta_x0,-eta_xwidth0)+der_step(x,eta_x1,eta_xwidth1))
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
