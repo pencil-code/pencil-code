@@ -2536,12 +2536,6 @@ module Mpicomm
             enddo
           endif
         enddo
-!
-        if (unfilled>0) then
-          write(1,'(a)')
-          unfilled=0
-        endif
-!
       enddo
 !
       if (ALWAYS_FALSE) print*,unit,present(ltransp)
