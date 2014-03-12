@@ -141,6 +141,14 @@ module Mpicomm
     module procedure mpiallreduce_max_arr
   endinterface
 !
+  interface mpiallreduce_min_sgl
+    module procedure mpiallreduce_min_scl_sgl
+  endinterface
+!
+  interface mpiallreduce_min_dbl
+    module procedure mpiallreduce_min_scl_dbl
+  endinterface
+!
   interface mpiallreduce_or
     module procedure mpiallreduce_or_scl
   endinterface
@@ -2060,6 +2068,28 @@ module Mpicomm
           MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_scl
+!***********************************************************************
+    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
+!
+!  Calculate total minimum and return to all processors.
+!
+      real(KIND=4) :: fmin_tmp,fmin
+!
+      call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
+                         MPI_COMM_WORLD, mpierr)
+!
+    endsubroutine mpiallreduce_min_scl_sgl
+!***********************************************************************
+    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
+!
+!  Calculate total minimum and return to all processors.
+!
+      double precision :: fmin_tmp,fmin
+!
+      call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
+                         MPI_COMM_WORLD, mpierr)
+!
+    endsubroutine mpiallreduce_min_scl_dbl
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !
@@ -7059,6 +7089,12 @@ module Mpicomm
             enddo
           enddo
         enddo
+!
+        if (lroot.and.unfilled>0) then
+          write(1,'(a)') 
+          unfilled=0
+        endif
+!
       enddo
 !
     endsubroutine mpigather_and_out_real
