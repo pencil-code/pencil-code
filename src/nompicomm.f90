@@ -132,6 +132,14 @@ module Mpicomm
     module procedure mpiallreduce_max_arr
   endinterface
 !
+  interface mpiallreduce_min_sgl
+    module procedure mpiallreduce_min_scl_sgl
+  endinterface
+!
+  interface mpiallreduce_min_dbl
+    module procedure mpiallreduce_min_scl_dbl
+  endinterface
+!
   interface mpiallreduce_or
     module procedure mpiallreduce_or_scl
   endinterface
@@ -861,6 +869,22 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
+    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
+!
+      double precision :: fmin_tmp,fmin
+!
+      fmin=fmin_tmp
+!
+    endsubroutine mpiallreduce_min_scl_dbl
+!***********************************************************************
+    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
+!
+      real(KIND=4) :: fmin_tmp,fmin
+!
+      fmin=fmin_tmp
+!
+    endsubroutine mpiallreduce_min_scl_sgl
+!***********************************************************************
     subroutine mpiallreduce_or_scl(flor_tmp, flor)
 !
       logical, intent(in) :: flor_tmp
@@ -1460,7 +1484,7 @@ module Mpicomm
       integer :: j
 !
       do j=1,3
-        if ( bcz1(ivar+j-1)=='p' ) then
+        if ( bcz12(ivar+j-1,1)=='p' ) then
           vec(1:n1-1        ,j) = vec(n2i:n2,j)
           vec(n2+1:n2+nghost,j) = vec(n1:n1i,j)
         endif
@@ -2462,7 +2486,8 @@ module Mpicomm
 !
       integer :: k,kl,ncompl,ic
       logical :: ltrans, lcomplex
-      integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
+      integer, dimension(3,nk_max) :: kxrangel,kyrangel
+      integer, dimension(3,nz_max) :: zrangel
 !
       lcomplex = .false.
       ncompl = 1
@@ -2482,25 +2507,25 @@ module Mpicomm
         kxrangel = 0
         kxrangel(:,1) = (/1,nxgrid,1/)
       else
-        kxrangel=kxrange(:,1:10)
+        kxrangel=kxrange(:,1:nk_max)
       endif
 !
       if ( .not.present(kyrange) ) then
         kyrangel = 0
         kyrangel(:,1) = (/1,nygrid,1/)
       else
-        kyrangel=kyrange(:,1:10)
+        kyrangel=kyrange(:,1:nk_max)
       endif
 !
       if ( .not.present(zrange) ) then
         zrangel = 0
         zrangel(:,1) = (/1,nzgrid,1/)
       else
-        zrangel=zrange(:,1:10)
+        zrangel=zrange(:,1:nz_max)
       endif
 !
       do ic=1,ncompl
-        do k=1,10
+        do k=1,nz_max
           if ( zrangel(1,k) > 0 ) then
             do kl=zrangel(1,k),zrangel(2,k),zrangel(3,k)
               if ( lcomplex ) then
@@ -2511,6 +2536,12 @@ module Mpicomm
             enddo
           endif
         enddo
+!
+        if (unfilled>0) then
+          write(1,'(a)')
+          unfilled=0
+        endif
+!
       enddo
 !
       if (ALWAYS_FALSE) print*,unit,present(ltransp)
