@@ -35,6 +35,7 @@ module General
   public :: lextend_vector
   public :: operator(.IN.)
   public :: loptest, ioptest, roptest, doptest
+  public :: indgen
 !
   include 'record_types.h'
 !
@@ -2342,58 +2343,191 @@ module General
 !
   endsubroutine write_full_columns_real
 !***********************************************************************
-    subroutine merge_ranges( ranges, ie, range, ia )
+    function merge_ranges( ranges, ie, range, ia, istore )
 !
-! merges ranges ia through ie in vector ranges with range
+! merges ranges ia through ie in vector ranges with range;
+! return value indicates whether range has been modified
 !
 ! 20-apr-11/MR: coded
+! 10-feb-14/MR: case of different stepsizes implemented
 !
-      integer, dimension(3,*),          intent(inout) :: ranges
-      integer,                          intent(in)    :: ie
-      integer, dimension(3),            intent(inout) :: range
+      logical                                         :: merge_ranges
+      integer, dimension(:,:),          intent(inout) :: ranges
+      integer,                          intent(inout) :: ie
+      integer, dimension(3),            intent(in)    :: range
       integer,                optional, intent(in)    :: ia
-      integer :: i, step, ial
+      integer,                optional, intent(inout) :: istore
+
+      integer :: i, j, step, stepi, i1, ial, istl, iar, ier, i2, iai, iei, nor, ne, nstore, deleted
+      integer, dimension(:), allocatable :: store
 !
-      if ( present(ia) ) then
-        ial = ia
-      else
-        ial = 1
-      endif
+      merge_ranges=.false.
+      ial =ioptest(ia,1)
+      istl=ioptest(istore,ie)
+
+      iar=range(1); ier=range(2); step=range(3)
 !
       do i=ial,ie
 !
-        if ( ranges(1,i) > 0) then
+        iai=ranges(1,i); iei=ranges(2,i); stepi=ranges(3,i)
 !
-          step = range(3)
-          if ( ranges(3,i) == step ) then
+! has ranges(:,i) same stepsize as range?
+! 
+        if ( stepi == step ) then
 !
-            if ( range(1) <= ranges(2,i)+step .and. &
-                 range(2) >= ranges(1,i)-step .and. &
-                 mod(range(1)-ranges(1,i),step) == 0 ) then
+          if ( iar <= iei+stepi .and. &
+               ier >= iai-stepi .and. &
+               mod(iar-iai,stepi) == 0 ) then
 !
-              ranges(1,i) = min( ranges(1,i), range(1) )
-              ranges(2,i) = max( ranges(2,i), range(2) )
-              range = 0
+! join range with ranges(:,i)
 !
-            endif
+            ranges(1,i) = min(iai, iar)
+            ranges(2,i) = max(iei, ier)
 !
-          else
-!           no implementation yet
+! range absorbed
+!
+            merge_ranges=.true.
+            return
+!
           endif
+        endif
+      enddo
+!
+      nor  = get_range_no( range, 1 )
+      allocate( store(nor) )
+!
+! expand range into store
+!
+      j=1
+      do i=iar,ier,step
+        store(j)=i
+        j=j+1
+      enddo
+!
+! marker for deleted elements in store: safely not belonging to range
+!
+      deleted = iar-step
+      nstore = nor
+
+      do i=ial,ie
+!
+        iai=ranges(1,i); iei=ranges(2,i); stepi=ranges(3,i)
+
+        if (  iar <= iei .and. ier >= iai ) then
+!
+          do i2=1,nor
+            do i1=iai,iei,stepi
+              if (store(i2)==i1) then
+!
+! if element von range found in ranges(:,i) mark as deleted
+!
+                store(i2)=deleted
+                nstore=nstore-1.
+                exit
+              endif
+            enddo
+          enddo
+!
+! if nstore==0: range absorbed
+!
+          if (nstore==0)  then
+            merge_ranges=.true.
+            return
+          endif
+!
+        endif
+      enddo
+!
+      if ( nstore<nor ) then
+!
+! compress store by dropping deleted elements
+!
+        i=1; ne=nor
+        do while (i<=ne)
+          if ( store(i)==deleted ) then
+            if ( i<ne ) store(i:ne-1) = store(i+1:ne)
+            ne = ne-1
+          else
+            i=i+1
+          endif
+        enddo
+        call find_ranges(store(1:ne),ranges,istl)
+        merge_ranges=.true.
+!
+      elseif (istl==size(ranges,2)) then
+        print*, 'merge_ranges: Warning - cannot store further ranges!'
+        return
+      else
+!
+! range is stored without modification
+!
+        if (.not.present(istore)) then
+          istl=istl+1
+          ranges(:,istl) = range
+        endif
+      endif
+!
+      if (present(istore)) then
+        istore=istl
+      else
+        ie=istl
+      endif
+!
+    endfunction merge_ranges
+!***********************************************************************
+    subroutine find_ranges(list,ranges,ie)
+!
+! extracts ranges start:stop:stop from a list and adds them to array of 
+! ie ranges, updates ie accordingly 
+!
+! 4-feb-14/MR: coded
+!
+      integer, dimension(:),  intent(IN)   :: list
+      integer, dimension(:,:),intent(OUT)  :: ranges
+      integer,                intent(INOUT):: ie
+
+      integer :: i, j, ia, is, ja, len, sum
+
+      len=size(list); i=1
+
+      do while (i<=len)
+
+        ia=i
+        if (i<len) then
+          is = list(i+1)-list(i)
+          sum=list(i+1); ja=i+2
+
+          do j=ja,len
+            sum=sum+is
+            if (list(j)/=sum) exit
+          enddo
+        else
+          j=len+1; is=1
+        endif
+!
+        if (ie==size(ranges,2)) then
+          print*, 'find_ranges: Warning - cannot generate further ranges!'
+          return
+        else
+          ie=ie+1
+          ranges(:,ie) = (/list(ia),list(j-1),is/)
+          i=j
         endif
 !
       enddo
 !
-    endsubroutine merge_ranges
+    endsubroutine find_ranges
 !***********************************************************************
     logical function read_range_r( crange, range, defrange )
 !
 ! reads a range (start,stop,step) of reals from string crange of the shape  <start>:<stop>[:<step>]
 ! if <step> missing it is set to 1.
 ! adjusts range not to exceed limits of default range 'defrange'
-!
+! crange is interpreted as far as possible, missing data are taken from defrange
+! 
 ! 20-apr-11/MR: coded
 ! 20-sep-12/MR: made defrange optional, changed order of dummy arguments
+! 10-feb-14/MR: use of defrange debugged
 !
       character (LEN=20), intent(in)           :: crange
       real, dimension(3), intent(out)          :: range
@@ -2409,7 +2543,7 @@ module General
 !
       if ( crange /= '' ) then
 !
-        range = defrange
+        if (ldefr) range = defrange
 !
         isep = index(crange,':')
         lenrng = len_trim(crange)
@@ -2472,8 +2606,10 @@ module General
 ! reads a range (start,stop,step) of integers from string crange of the shape <start>:<stop>[:<step>]
 ! if <step> missing it is set to 1
 ! adjusts range not to exceed limits of default range defrange
+! crange is interpreted as far as possible, missing data are taken from defrange
 !
 ! 20-sep-12/MR: coded
+! 10-feb-14/MR: use of defrange debugged
 !
       character (LEN=20)   , intent(in)           :: crange
       integer, dimension(3), intent(out)          :: range
@@ -2488,7 +2624,7 @@ module General
 !
       if ( crange /= '' ) then
 !
-        range = defrange
+        if (ldefr) range = defrange
 !
         isep = index(crange,':')
         lenrng = len_trim(crange)
@@ -2497,7 +2633,7 @@ module General
 !
           if ( isep > 1 ) then
             read( crange(1:isep-1),*,IOSTAT=ios ) range(1)
-            if ( ios == 0 ) &
+            if ( ldefr.and.ios == 0 ) &
               range(1) = min(max(defrange(1),range(1)),defrange(2))
           endif
 !
@@ -2509,7 +2645,7 @@ module General
 !
             if ( isep1 > isep+1 ) then
               read( crange(isep+1:isep1-1),*,IOSTAT=ios1 ) range(2)
-              if ( ios1 == 0 ) &
+              if ( ldefr.and.ios1 == 0 ) &
                 range(2) = min(max(defrange(1),range(2)),defrange(2))
             endif
 !
@@ -2530,7 +2666,7 @@ module General
         else
 !
           read( crange, *,IOSTAT=ios ) range(1)
-          if ( ios == 0 ) &
+          if ( ldefr.and.ios == 0 ) &
             range(1) = min(max(defrange(1),range(1)),defrange(2))
           range(2) = range(1)
 !
@@ -2561,9 +2697,12 @@ module General
       get_range_no = 0
 !
       do i=1,nr
-        if ( ranges(1,i) > 0 ) &
+        if ( ranges(1,i) > 0 ) then
           get_range_no = get_range_no + &
                          ceiling( (ranges(2,i)-ranges(1,i)+1.)/ranges(3,i))
+        else
+          exit
+        endif
       enddo
 !
     endfunction get_range_no
@@ -2976,5 +3115,23 @@ module General
         ENDSUBROUTINE interchange_sort
 !----------------------------------------------------------------------------
     ENDSUBROUTINE quick_sort
+!****************************************************************************
+    function indgen(n)
+!
+! Generates vector of integers  1,...,n, analogous to IDL-indgen, but starting
+! at 1.
+!
+! 5-feb-14/MR: coded
+!
+      integer, intent(in) :: n
+      integer, dimension(n) :: indgen
+
+      integer :: i
+
+      do i=1,n
+        indgen(i)=i
+      enddo
+
+    endfunction indgen
 !****************************************************************************
 endmodule General
