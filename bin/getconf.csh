@@ -730,7 +730,7 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma)) then
+else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma || $USER =~ mvaisala)) then
   echo "Taito - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
