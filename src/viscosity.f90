@@ -93,6 +93,7 @@ module Viscosity
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
   logical, pointer:: lviscosity_heat
+  logical :: lKit_Olem
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
@@ -103,7 +104,7 @@ module Viscosity
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width
+      nnewton_tscale,nnewton_step_width,lKit_Olem
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -828,6 +829,7 @@ module Viscosity
       if (llambda_effect) then
         lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
+         if (lKit_Olem) lpenc_requested(i_dsdr) = .true.
       endif
       if (lvisc_mixture) then
         lpenc_requested(i_graddivu)=.true.
@@ -2019,6 +2021,9 @@ module Viscosity
 !  Calculates the lambda effect
 !
 !  20-apr-10/dhruba: coded
+! If lKit_Olem is true the lambda coefficients depends on dsdr which must be 
+! incorporated below. 
+!
 !
       use cdata, only: Omega
 !
