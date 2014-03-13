@@ -359,6 +359,12 @@ module Forcing
         profz_ampl=exp(z/width_ff)
         profz_hel=1.
 !
+      elseif (iforce_profile=='exp(-(z/H)^2)') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=exp(-(z/width_ff)**2)
+        profz_hel=1.
+!
       elseif (iforce_profile=='xybox') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
