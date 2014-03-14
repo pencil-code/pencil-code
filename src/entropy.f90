@@ -544,11 +544,22 @@ module Energy
           endif
 !
         endif
+!
 ! FbotKbot is required here for boundcond
+!
       elseif (lgravx) then
         if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) then
-             FbotKbot=Fbot/hcond0
-             hcondxbot = hcond0
+          if (iheatcond(1)=='K-const') then
+            hcondxbot=hcond0
+            hcondxtop=hcond0
+            FbotKbot=Fbot/hcond0
+            if (lroot) & 
+              print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
+                hcondxbot, hcondxtop, FbotKbot
+          else
+             call fatal_error('initialize_energy: setting hcondxbot,', &
+              'hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
+          endif
         endif
       endif
 !
