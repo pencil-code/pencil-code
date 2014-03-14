@@ -120,6 +120,9 @@ module Gravity
 !
   integer :: idiag_epotmx=0        ! YZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
                                    ! YZAVG_DOC: \right>_{yz}$
+  integer :: idiag_epotuxmx=0      ! YZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
+                                   ! YZAVG_DOC: u_x \right>_{yz}$ 
+                                   ! YZAVG_DOC: \quad(potential energy flux)
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -218,6 +221,11 @@ module Gravity
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx_xpencil')
 !
       case ('const_tilt')
         gravx=grav_amp*sin(grav_tilt*pi/180.)
@@ -225,6 +233,8 @@ module Gravity
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
 !
 ! Linear gravity profile in x for planetary core dynamos
 !
@@ -617,7 +627,7 @@ module Gravity
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
           idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
-      if (idiag_epotuzmz/=0) then
+      if (idiag_epotuxmx/=0 .or. idiag_epotuzmz/=0) then
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
@@ -748,6 +758,7 @@ module Gravity
 !
       if (l1davgfirst) then
         call yzsum_mn_name_x(p%epot,idiag_epotmx)
+        call yzsum_mn_name_x(p%epot*p%uu(:,1),idiag_epotuxmx)
         call xzsum_mn_name_y(p%epot,idiag_epotmy)
         call xysum_mn_name_z(p%epot,idiag_epotmz)
         call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
@@ -1052,8 +1063,8 @@ module Gravity
 !
       if (lreset) then
         idiag_epot=0
-        idiag_epotmx=0; idiag_epotmy=0; idiag_epotmz=0; idiag_epotmxy=0
-        idiag_epotuzmz=0; idiag_epotuxmxy=0
+        idiag_epotmx=0; idiag_epotuxmx=0; idiag_epotmy=0; idiag_epotmz=0;
+        idiag_epotmxy=0; idiag_epotuzmz=0; idiag_epotuxmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -1067,6 +1078,8 @@ module Gravity
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotmx', &
             idiag_epotmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotuxmx', &
+            idiag_epotuxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.

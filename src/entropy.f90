@@ -220,7 +220,7 @@ module Energy
   integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
-  integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
+  integer :: idiag_fconvm=0     ! DIAG_DOC: $\left< c_p \varrho u_z T \right>$
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
@@ -230,7 +230,7 @@ module Energy
 ! xy averaged diagnostics given in xyaver.in
 !
   integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
-  integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<\varrho u_z T \right>_{xy}$
+  integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
   integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
   integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left< p \right>_{xy}$
   integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left< T \right>_{xy}$
@@ -259,6 +259,9 @@ module Energy
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
   integer :: idiag_uxTTmx=0     ! YZAVG_DOC: $\left< u_x T \right>_{yz}$
+  integer :: idiag_uyTTmx=0     ! YZAVG_DOC: $\left< u_y T \right>_{yz}$
+  integer :: idiag_uzTTmx=0     ! YZAVG_DOC: $\left< u_z T \right>_{yz}$
+  integer :: idiag_fconvxmx=0   ! YZAVG_DOC: $\left< c_p \varrho u_x T \right>_{yz}$
   integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
@@ -285,9 +288,9 @@ module Energy
   integer :: idiag_gTxgsxmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_x\right>_{z}$
   integer :: idiag_gTxgsymxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_y\right>_{z}$
   integer :: idiag_gTxgszmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_z\right>_{z}$
-  integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<\varrho u_x T \right>_{z}$
-  integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<\varrho u_y T \right>_{z}$
-  integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<\varrho u_z T \right>_{z}$
+  integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<c_p \varrho u_x T \right>_{z}$
+  integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<c_p \varrho u_y T \right>_{z}$
+  integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<c_p \varrho u_z T \right>_{z}$
   integer :: idiag_fradxy_Kprof=0 ! ZAVG_DOC: $F^{\rm rad}_x$ ($x$-component of radiative flux, $z$-averaged, from Kprof)
   integer :: idiag_fradymxy_Kprof=0 ! ZAVG_DOC: $F^{\rm rad}_y$ ($y$-component of radiative flux, $z$-averaged, from Kprof)
   integer :: idiag_fradxy_kramers=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged,
@@ -2548,7 +2551,7 @@ module Energy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
-      if (idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. idiag_fturbz/=0) then
+      if (idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. idiag_fconvxmx/=0) then
           lpenc_diagnos(i_cp)=.true.
           lpenc_diagnos(i_uu)=.true.
           lpenc_diagnos(i_rho)=.true.
@@ -2559,6 +2562,11 @@ module Energy
           lpenc_diagnos2d(i_uu)=.true.
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
+      endif
+      if (idiag_fturbz/=0 .or. idiag_fturbmx/=0) then
+          lpenc_diagnos(i_rho)=.true.
+          lpenc_diagnos(i_TT)=.true.
+          lpenc_diagnos(i_gss)=.true.
       endif
       if (idiag_fturbxy/=0 .or. idiag_fturbrxy/=0 .or. &
           idiag_fturbthxy/=0 .or. idiag_fturbymxy/=0) then
@@ -2577,7 +2585,8 @@ module Energy
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
-          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0 .or. idiag_uxTTmx/=0) &
+          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0 .or. idiag_uxTTmx/=0 .or. &
+          idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_gTmax/=0) then
         lpenc_diagnos(i_glnTT) =.true.
@@ -3014,6 +3023,7 @@ module Energy
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
@@ -3026,6 +3036,8 @@ module Energy
         call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
         call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
+        call yzsum_mn_name_x(p%uu(:,2)*p%TT,idiag_uyTTmx)
+        call yzsum_mn_name_x(p%uu(:,3)*p%TT,idiag_uzTTmx)
         call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
         call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
         if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
@@ -3783,7 +3795,7 @@ module Energy
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
-      use Diagnostics, only: max_mn_name
+      use Diagnostics, only: max_mn_name, yzsum_mn_name_x
       use Sub, only: dot
 !
       type (pencil_case) :: p
@@ -3844,6 +3856,12 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_constK: added thdiff'
+!
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
+      endif
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
@@ -4253,7 +4271,6 @@ module Energy
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
-        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
         call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
       endif
@@ -5243,7 +5260,8 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0; 
+        idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0
@@ -5252,7 +5270,7 @@ module Energy
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
-        idiag_fradymxy_Kprof=0; idiag_fturbymxy=0
+        idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5297,7 +5315,10 @@ module Energy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fconvxmx',idiag_fconvxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxTTmx',idiag_uxTTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uyTTmx',idiag_uyTTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzTTmx',idiag_uzTTmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradmx',idiag_fradmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fturbmx',idiag_fturbmx)
       enddo

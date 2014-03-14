@@ -1291,7 +1291,6 @@ module Density
         call mpiallreduce_sum(mean_density,tmp)
         mean_density=tmp
       endif
-      !!print*, 'mean_density=', mean_density
 !
     endfunction mean_density
 !***********************************************************************
