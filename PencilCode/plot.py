@@ -71,7 +71,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     plt.show()
 
 #=======================================================================
-def time_series(datadir='./data', diagnostics='dt', trange=None):
+def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylog=False):
     """Plots diagnostic variable(s) as a function of time.
 
     Keyword Arguments:
@@ -82,6 +82,12 @@ def time_series(datadir='./data', diagnostics='dt', trange=None):
         trange
             A tuple of (tmin, tmax) for the time range to be shown; if
             None, all time is shown.
+        xlog
+            A boolean value for turning on or off logarithmic scale in
+            x axis.
+        ylog
+            A boolean value for turning on or off logarithmic scale in
+            y axis.
     """
     # Chao-Chin Yang, 2014-03-14
 
@@ -97,12 +103,22 @@ def time_series(datadir='./data', diagnostics='dt', trange=None):
     else:
         it = (trange[0] <= ts.t) & (ts.t <= trange[1])
 
+    # Determine the axis scales.
+    if xlog and ylog:
+        p = plt.loglog
+    elif xlog:
+        p = plt.semilogx
+    elif ylog:
+        p = plt.semilogy
+    else:
+        p = plt.plot
+
     # Plot the diagnostics.
     if type(diagnostics) is list:
         for diag in diagnostics:
-            plt.plot(ts.t[it], ts[diag][it], label=diag)
+            p(ts.t[it], ts[diag][it], label=diag)
     else:
-        plt.plot(ts.t[it], ts[diagnostics][it], label=diagnostics)
+        p(ts.t[it], ts[diagnostics][it], label=diagnostics)
     plt.xlabel('t')
     plt.legend(loc='best')
     plt.show()
