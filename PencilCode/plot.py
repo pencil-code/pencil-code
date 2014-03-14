@@ -71,7 +71,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     plt.show()
 
 #=======================================================================
-def time_series(datadir='./data', diagnostics='dt'):
+def time_series(datadir='./data', diagnostics='dt', trange=None):
     """Plots diagnostic variable(s) as a function of time.
 
     Keyword Arguments:
@@ -79,8 +79,11 @@ def time_series(datadir='./data', diagnostics='dt'):
             Name of the data directory.
         diagnostics
             (A list of) diagnostic variable(s).
+        trange
+            A tuple of (tmin, tmax) for the time range to be shown; if
+            None, all time is shown.
     """
-    # Chao-Chin Yang, 2013-10-22
+    # Chao-Chin Yang, 2014-03-14
 
     from . import read
     import matplotlib.pyplot as plt
@@ -88,12 +91,18 @@ def time_series(datadir='./data', diagnostics='dt'):
     # Read the time series.
     ts = read.time_series(datadir=datadir)
 
+    # Determine the time range.
+    if trange is None:
+        it = list(range(len(ts.t)))
+    else:
+        it = (trange[0] <= ts.t) & (ts.t <= trange[1])
+
     # Plot the diagnostics.
     if type(diagnostics) is list:
         for diag in diagnostics:
-            plt.plot(ts.t, ts[diag])
+            plt.plot(ts.t[it], ts[diag][it])
     else:
-        plt.plot(ts.t, ts[diagnostics])
+        plt.plot(ts.t[it], ts[diagnostics][it])
     plt.xlabel('t')
     plt.ylabel(diagnostics)
     plt.show()
