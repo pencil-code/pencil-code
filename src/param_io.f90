@@ -291,7 +291,7 @@ module Param_IO
       call read_pars(unit,read_solid_cells_init_pars    ,'solid_cells',lierrl)
       call read_pars(unit,read_NSCBC_init_pars          ,'NSCBC',lierrl)
       call read_pars(unit,read_polymer_init_pars        ,'polymer',lierrl)
-      call read_pars(unit,particles_read_startpars      ,'particles',lierr)
+      call read_pars(unit,particles_read_startpars      ,'particles',lierrl)
 !
       call parallel_close(unit)
 !
@@ -410,13 +410,14 @@ module Param_IO
 !
     integer :: ierr
 !
-    !!!if (lierr) then
-    if (loptest(lierr)) then    ! strangely enough needed to calm some compilers
+    !!if (loptest(lierr)) then    ! strangely enough needed to calm some compilers
+    if (lierr) then
       ierr=0
       call reader(unit,ierr)
       if (ierr/=0) call sample_pars(ierr,name)
     else
-      call reader(unit)
+      ierr=0
+      call reader(unit,ierr)
     endif
 !
     rewind(unit)
