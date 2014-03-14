@@ -34,7 +34,7 @@ module power_spectrum
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   integer :: firstout = 0
 !
-  character (LEN=20) :: ckxrange='', ckyrange='', czrange=''
+  character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
@@ -47,15 +47,18 @@ module power_spectrum
     subroutine read_power_spectrum_runpars(unit,iostat)
 !
 ! 05-feb-14/MR: added ordering of z ranges
+! 12-mar-14/MR: changed merge_ranges into function
 !
       use General, only : parser, read_range, merge_ranges, quick_sort
 !
       integer, intent(in)              :: unit
       integer, intent(inout), optional :: iostat
 !
-      integer :: i, nzr
+      integer :: i
       character (LEN=20), dimension(nz_max) :: czranges
+      integer, dimension(3) :: range
       integer, dimension(nz_max) :: iperm
+      logical :: ldum
 !
       if (present(iostat)) then
         read(unit,NML=power_spectrum_run_pars,ERR=99, IOSTAT=iostat)
@@ -65,41 +68,43 @@ module power_spectrum
 !
       kxrange(:,1) = (/1,nxgrid,1/)
       kyrange(:,1) = (/1,nygrid,1/)
-      zrange (:,1) = (/1,nzgrid,1/)
 !
       if ( lintegrate_shell .or. lintegrate_z ) lcomplex = .false.
 !
       if ( .not.lintegrate_shell ) then
-!
         call get_kranges( ckxrange, kxrange, nxgrid )
         call get_kranges( ckyrange, kyrange, nygrid )
-!
       endif
 !
       if ( .not.lintegrate_z ) then
+!
+        ie=0
         do i=1,parser( czrange, czranges, ',' )
 !
-          zrange(:,i) = (/1,nzgrid,1/)
-!
-          if ( read_range( czranges(i), zrange(:,i), (/1,nzgrid,1/) ) ) then
-            call merge_ranges( zrange, i-1, zrange(:,i) )
-            !!print*, 'zrange=', zrange(:,i)
-          endif
+          if ( read_range( czranges(i), range, (/1,nzgrid,1/) ) ) &
+            ldum =  merge_ranges( zrange, ie, range ) 
+            !!print*, 'ie, zrange(:,1:ie)=', ie, zrange(:,1:ie)
 !
         enddo
 !
-        nzr=0
-        do i=1,nz_max
-          if (zrange(1,i)==0) then
-            exit
-          else
-            nzr = i
-          endif
-        enddo
-        if (nzr>0) then
-          call quick_sort(zrange(1,1:nzr),iperm)
-          zrange(2:3,1:nzr) = zrange(2:3,iperm(1:nzr))
-         endif
+        if (ie>0) then
+!
+! try further merging (not yet implemented)
+!
+          do i=ie-1,1,-1
+          !!  ldum = merge_ranges( zrange, i, zrange(:,i+1), istore=ie )
+          enddo
+!
+! sort ranges by ascending start value
+!
+          call quick_sort(zrange(1,1:ie),iperm)
+          zrange(2:3,1:ie) = zrange(2:3,iperm(1:ie))
+        else
+!
+! if no ranges specified: range = whole zgrid
+!
+          zrange(:,1) = (/1,nzgrid,1/)
+        endif
       endif
 !
       n_spectra = parser( xy_spec, xy_specs, ',' )
@@ -140,8 +145,6 @@ module power_spectrum
 !
       do i=1,nr
 !
-        kranges(:,i) = (/1,ngrid,1/)
-!
         if ( read_range( ckranges(i), kranges(:,i), (/-ngrid/2,ngrid/2-1,1/) ) ) then
 !
           ie = nre
@@ -157,8 +160,9 @@ module power_spectrum
                 nre = nre+1
                 kranges(:,nre) = (/1,kranges(2,i)+1,kranges(3,i)/)
 !
-                call merge_ranges( kranges, i-1, kranges(:,nre) )
-                call merge_ranges( kranges, nre-1, kranges(:,nre), nr+1 )
+                !!!call merge_ranges( kranges, i-1, kranges(:,nre) )
+                !!!ldum =  merge_ranges( kranges, i-1, kranges(:,nre) )
+                !!!call merge_ranges( kranges, nre-1, kranges(:,nre), nr+1 )
 !
               else
                 print*, 'get_kranges: Warning - subinterval could not be created!'
@@ -174,8 +178,8 @@ module power_spectrum
 !
           kranges(2,i) = min(kranges(2,i),ngrid)
 !
-          call merge_ranges( kranges, i-1, kranges(:,i) )
-          call merge_ranges( kranges, ie, kranges(:,i), nr+1 )
+          !!!call merge_ranges( kranges, i-1, kranges(:,i) )
+          !!!call merge_ranges( kranges, ie, kranges(:,i), nr+1 )
 !
         endif
 !
