@@ -2204,7 +2204,9 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_flux_turb(f,topbot)
 !
-!  constant flux boundary condition for entropy (called when bcz='Fgs')
+!  Black body boundary condition for entropy (called when bcz='Fgs')
+!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the 
+!  Stefan-Boltzmann constant.
 !
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
@@ -2223,9 +2225,6 @@ module EquationOfState
       integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
 !
 !  Get the shared variables for magnetic quenching effect in a
 !  mean-field description of a radiative boundary condition.
@@ -2267,6 +2266,8 @@ module EquationOfState
       endif
 !
       select case (topbot)
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
 !
 !  bottom boundary
 !  ===============
@@ -2351,7 +2352,9 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_flux_turb_x(f,topbot)
 !
-!  constant flux boundary condition for entropy (called when bcz='Fgs')
+!  Black body boundary condition for entropy (called when bcx='Fgs')
+!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the 
+!  Stefan-Boltzmann constant.
 !
 !   31-may-2010/pete: adapted from bc_ss_flux_turb
 !   20-jul-2010/pete: expanded to take into account hcond/=0
@@ -2368,9 +2371,6 @@ module EquationOfState
       integer :: i=0,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `Fgs' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
 !
 !  Get the shared variables
 !
@@ -2392,6 +2392,8 @@ module EquationOfState
 !
       select case (topbot)
 !
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
 !  bottom boundary
 !  ===============
 !
@@ -2410,11 +2412,13 @@ module EquationOfState
           cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
           TT_yz=cs2_yz/(gamma_m1*cp)
           rho_yz=exp(f(l1,:,:,ilnrho))
+!
           fac=(1./60)*dx_1(l1)
           dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
                            -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
                            +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
-           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
+!
+          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
               (chit_prof1*chi_t*rho_yz+hcondxbot/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
@@ -2429,7 +2433,7 @@ module EquationOfState
 !
       case ('top')
 !
-! For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
+!  For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
 !
         if (pretend_lnTT) then
             f(l2-1,:,:,iss)=f(l2+i,:,:,iss) - &
@@ -2442,10 +2446,12 @@ module EquationOfState
           cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
           TT_yz=cs2_yz/(gamma_m1*cp)
           rho_yz=exp(f(l2,:,:,ilnrho))
+!
           fac=(1./60)*dx_1(l2)
           dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
                            -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
                            +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
+!
           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
               (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
 !
