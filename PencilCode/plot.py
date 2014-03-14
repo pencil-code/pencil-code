@@ -100,10 +100,10 @@ def time_series(datadir='./data', diagnostics='dt', trange=None):
     # Plot the diagnostics.
     if type(diagnostics) is list:
         for diag in diagnostics:
-            plt.plot(ts.t[it], ts[diag][it])
+            plt.plot(ts.t[it], ts[diag][it], label=diag)
     else:
-        plt.plot(ts.t[it], ts[diagnostics][it])
+        plt.plot(ts.t[it], ts[diagnostics][it], label=diagnostics)
     plt.xlabel('t')
-    plt.ylabel(diagnostics)
+    plt.legend(loc='best')
     plt.show()
 
