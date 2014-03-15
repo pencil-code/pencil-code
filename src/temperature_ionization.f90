@@ -82,6 +82,7 @@ module Energy
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
   integer :: idiag_mumz=0     ! XYAVG_DOC: $\left<\mu\right>_{xy}$
+  integer :: idiag_TTmz=0     ! XYAVG_DOC: $\left< T \right>_{xy}$
 !
   contains
 !***********************************************************************
@@ -412,6 +413,7 @@ module Energy
 !
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTmz/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
@@ -628,6 +630,7 @@ module Energy
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(1/p%mu1,idiag_mumz)
+        call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
     endsubroutine denergy_dt
@@ -764,7 +767,7 @@ module Energy
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
-        idiag_mum=0; idiag_mumz=0
+        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -794,6 +797,7 @@ module Energy
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'mumz',idiag_mumz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
 !  write column where which variable is stored
