@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos,dsdr
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos !,dsdr
 !
 !***************************************************************
 module Energy
@@ -2708,11 +2708,10 @@ module Energy
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
 ! dsdr
-      if (lpencil(i_dsdr)) then 
-          call grad(f,iss,gradS)
-          p%dsdr=gradS(:,1)
-      endif
-      
+     !if (lpencil(i_dsdr)) then 
+     !    call grad(f,iss,gradS)
+     !    p%dsdr=gradS(:,1)
+     !endif
 ! fpres
       if (lpencil(i_fpres)) then
         if (lfpres_from_pressure) then
