@@ -4188,7 +4188,8 @@ multiple of nprocy*nprocz}.
 Examples of good mesh layouts are listed in Table~\ref{GoodMeshes}.
 
 \begin{table}[h!]\caption{
-Examples of mesh layouts for which XXX
+Examples of mesh layouts for which Fourier transforms with
+$x$ parallelization is ppossible.
 }\vspace{12pt}\centerline{\begin{tabular}{r|rrr|rrrrrrrr}
 ny & nprocyx & nprocy & nprocz & ncpus \\
 \hline
@@ -7628,7 +7629,9 @@ where \code{nw=nx*ny*nz}.
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
  256 &Sisu&0.00618&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 &Sisu&0.00500&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
+ 256 &Triolith&0.030&$256^2\times512$ & magn/rad & 1x16x16& 17-mar-14 & AB \\
  256 &Triolith&0.0049&$256^3$ & magn/noentro & 1x16x16&  1-mar-14 & AB \\
+ 288 &Gardar&0.042&$576^2{\!\times\!}288$ & magn/rad & 1x18x16 & 17-mar-14&AB\\
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
@@ -7660,6 +7663,7 @@ where \code{nw=nx*ny*nz}.
 1152&Kraken&0.0212&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x4               &13-jan-12&WL\\
 1152&Kraken& 0.00856  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1152&Kraken& 0.00549  &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
+1152&Lindgren&0.016&$512^2{\!\times\!}512$&magn/rad&1x36x32&17-mar-14& AB \\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048&Hermit&0.00451&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&2x32x32&22-aug-13&PJK\\
 2048&Hermit&0.00380&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x16x16&22-aug-13&PJK\\
@@ -7667,9 +7671,10 @@ where \code{nw=nx*ny*nz}.
 2048&Hermit&0.00350&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&4x32x16&22-aug-13&PJK\\
 2048&Lindgren&0.00129&$512^2{\!\times\!}1024$&magn/noentro&32x64&20-apr-13& AB \\
 2048&Lindgren&0.00129&$1024^2{\!\times\!}2048$&magn/noentro&32x64&31-jul-12& AB \\
+2048 &Triolith&  $9.3{\!\times\!}10^{-4}$ &$ 512^3$&magn/noentro&4x16x32& 1-mar-14 & AB  \\
 2048&Sisu&0.00120&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
 2048&Sisu&$9.2{\!\times\!}10^{-4}$&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&4x32x16&22-aug-13&PJK\\
-2304&Triolith&$1.07{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&4x18x32& 1-mar-14 & AB \\ %XXX
+2304&Triolith&$1.07{\!\times\!}10^{-3}$&$ 576^3$&magn/noentro&4x18x32& 1-mar-14 & AB \\
 2304&Kraken&0.02267&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&12x24x8&13-jan-12&WL\\
 2304&Kraken&  0.01233 &$192{\!\times\!}768{\!\times\!}64$ & magn/noentro & 12x48x4 &13-jan-12 & WL\\
 2304&Kraken& 0.00300  &$768{\!\times\!}3072{\!\times\!}256$ & magn/noentro & 12x48x4 &18-jan-12 & WL\\
@@ -7679,11 +7684,11 @@ where \code{nw=nx*ny*nz}.
 4096&Triolith&$4.2{\!\times\!}10^{-4}$&$1024^3$&magn/noentro&4x16x64& 1-mar-14 & AB \\
 4096&Lindgren&$4.6{\!\times\!}10^{-4}$&$2048^3$&magn/noentro&4x16x64&26-mar-13&AB\\
 4096&Sisu&$6.7{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn& &22-aug-13&PJK\\
-4608&Triolith&$7.4{\!\times\!}10^{-4}$&$ 576^3$&magn/noentro&8x18x32& 1-mar-14 & AB \\ %XXX
-4608&Triolith&$2.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x32x36& 1-mar-14 & AB \\ %XXX
-4608&Triolith&$3.0{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x36x32& 1-mar-14 & AB \\ %XXX
-4608&Triolith&$3.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x18x64& 1-mar-14 & AB \\ %XXX
-4608&Triolith&$2.36{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&2x32x72& 1-mar-14 & AB \\ %XXX
+4608&Triolith&$7.4{\!\times\!}10^{-4}$&$ 576^3$&magn/noentro&8x18x32& 1-mar-14 & AB \\
+4608&Triolith&$2.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x32x36& 1-mar-14 & AB \\
+4608&Triolith&$3.0{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x36x32& 1-mar-14 & AB \\
+4608&Triolith&$3.7{\!\times\!}10^{-4}$&$1152^3$&magn/noentro&4x18x64& 1-mar-14 & AB \\
+4608&Triolith&$2.36{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&2x32x72& 1-mar-14 & AB \\
 4608& Kraken&  0.00764 &$192{\!\times\!}768{\!\times\!}128$ & magn/noentro & 12x48x8 &13-jan-12 & WL\\
 4608& Kraken& 0.00144  &$768{\!\times\!}3072{\!\times\!}512$ & magn/noentro & 12x48x8 &18-jan-12 & WL\\
 6144&Lindgren&$4.2{\!\times\!}10^{-4}$&$1024^3\times1536$&magn/noentro&4x16x64&21-oct-13&AB\\
