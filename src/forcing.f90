@@ -166,7 +166,7 @@ module Forcing
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
-      use Sub, only: step,step_scalar,erfunc
+      use Sub, only: step,step_scalar,erfunc,stepdown
 !
       real :: zstar
       integer :: l
@@ -382,6 +382,14 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
         profz_hel=1.
+!
+!  turn off helicity of forcing above z=0
+!
+      elseif (iforce_profile=='surface_helz') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        profz_hel=.5*(1.-erfunc((z-r_ff)/width_ff))
 !
 !  turn off forcing intensity above z=z0, and
 !  stepx profile of helicity
