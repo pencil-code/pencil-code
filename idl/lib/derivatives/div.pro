@@ -6,7 +6,7 @@
 function div,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+  common cdat, x, y, z, nx, ny, nz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_coords, coord_system
 ;
 ;  Default values.
