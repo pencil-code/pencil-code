@@ -548,7 +548,7 @@ module Energy
 ! FbotKbot is required here for boundcond
 !
       elseif (lgravx) then
-        if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) then
+        if ((coord_system=='spherical'.or.lconvection_gravx).and.(.not.lhcond_global)) then
           if (iheatcond(1)=='K-const') then
             hcondxbot=hcond0
             hcondxtop=hcond0
@@ -4281,6 +4281,7 @@ module Energy
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
         call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
       endif
