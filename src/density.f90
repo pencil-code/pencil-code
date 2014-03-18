@@ -1764,6 +1764,8 @@ module Density
       endif
 ! uglnrho
       if (lpencil(i_uglnrho)) then
+        if (lupw_rho) call fatal_error('calc_pencils_density', &
+            'you switched lupw_rho instead of lupw_lnrho')
         if (lupw_lnrho) then
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         else
