@@ -127,7 +127,7 @@ module InitialCondition
          endif
          Rtran=Rtran*Rstar
          wtran=wtran*Rstar
-         Rmin=Rsurf+(Rtran-Rsurf)/8
+         Rmin=Rsurf+(Rtran-Rsurf)/8.
          wmin=wtran/1.5
          if (iproc .eq. root) then
            print*,'initial_condition: you are using a coronal envelope'
@@ -280,9 +280,9 @@ module InitialCondition
          print*,'initial_condition: gratio     =',gratio
          print*,'initial_condition: rratio     =',rratio
          if (lcorona) then
-           print*,'initial_condition: rcool     =',Rmin
-           print*,'initial_condition: wcool     =',wmin
-           print*,'initial_condition: cs2cool   =',cs2_surf
+           print*,'initial_condition: rcool     =',Rsurf+(Rtran-Rsurf)/3.
+           print*,'initial_condition: wcool     =',wmin/2.
+           print*,'initial_condition: cs2cool   =',cs2_surf*0.85
            print*,'initial_condition: rcool2    =',Rtran
            print*,'initial_condition: wcool2    =',wtran
            print*,'initial_condition: cs2cool2  =',cs2_cor
