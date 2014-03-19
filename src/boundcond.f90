@@ -6158,7 +6158,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do ix=1,mx
+        do iz=1,mz; do ix=1,mx
           if (f(ix,m2,iz,j)>0.0) then  ! 's'
             do i=1,nghost; f(ix,m2+i,iz,j)=+f(ix,m2-i,iz,j); enddo
           else                         ! 'a'
