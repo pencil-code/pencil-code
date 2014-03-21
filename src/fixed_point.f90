@@ -164,7 +164,7 @@ module Fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   the points for the extrapolation
     real, pointer, dimension (:,:) :: tracers
-    integer :: iter
+    integer :: iter, j
     real :: dl
     real :: fjac(2,2), fjin(2,2)
     real :: det, ff(2), dpoint(2)
@@ -187,7 +187,9 @@ module Fixed_point
       tracers(3,:) = (/point(1)+1*dl,point(2),point(1)+1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
       tracers(4,:) = (/point(1),point(2)-1*dl,point(1),point(2)-1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
       tracers(5,:) = (/point(1),point(2)+1*dl,point(1),point(2)+1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      call trace_streamlines(f,tracers,5,vv)
+      do j=1,5
+        call trace_single(tracers(j,:),f,vv)
+      end do
 !
 !   compute Jacobian at x:
 !
@@ -277,7 +279,7 @@ module Fixed_point
       ym = 0.5*(sy(1)+sy(2))
 !     trace intermediate field line
       tracer(1,:) = (/xm,ym,xm,ym,z(1+nghost)-ipz*nz*dz+dz,0.,0./)
-      call trace_streamlines(f,tracer,1,vv)
+      call trace_single(tracer,f,vv)
       if ((tracer(1,6) >= l_max) .or. (tracer(1,5) < zt(nzgrid)-dz)) then
 !       discard any streamline which does not converge or hits the boundary
         dtot = 0.
@@ -335,7 +337,7 @@ module Fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the fixed point output
     real :: poincare, diff(4,2), phi_min
-    integer :: j, l, addx, addy, proc_idx, ierr, flag
+    integer :: j, l, m, addx, addy, proc_idx, ierr, flag
     integer, dimension (MPI_STATUS_SIZE) :: status
 !   array with all finished cores
     integer :: finished_rooting(nprocx*nprocy*nprocz)
@@ -382,7 +384,7 @@ module Fixed_point
       if (addx == 1) then
         do l=1,ny*trace_sub
           tracer_tmp(1,:) = (/x(nghost+nx+1),yt(l)+ipy*ny*dy,x(nghost+nx+1),yt(l)+ipy*ny*dy,0.,0.,0./)
-          call trace_streamlines(f,tracer_tmp,1,vv)
+          call trace_single(tracer_tmp,f,vv)
           tracers2(l*(nx*trace_sub+addx),:) = tracer_tmp(1,:)
         enddo
       endif
@@ -390,7 +392,7 @@ module Fixed_point
       if (addy == 1) then
         do j=1,nx*trace_sub
           tracer_tmp(1,:) = (/xt(j)+ipx*nx*dx,y(nghost+ny+1),xt(j)+ipx*nx*dx,y(nghost+ny+1),0.,0.,0./)
-          call trace_streamlines(f,tracer_tmp,1,vv)
+          call trace_single(tracer_tmp,f,vv)
           tracers2(j+(nx*trace_sub+addx)*ny*trace_sub,:) = tracer_tmp(1,:)
         enddo
       endif
@@ -398,57 +400,13 @@ module Fixed_point
       if (addx*addy == 1) then
         tracer_tmp(1,:) = &
             (/x(nghost+nx+1),y(nghost+ny+1),x(nghost+nx+1),y(nghost+ny+1),0.,0.,0./)
-        call trace_streamlines(f,tracer_tmp,1,vv)
+        call trace_single(tracer_tmp,f,vv)
         tracers2(nx*ny*trace_sub**2+trace_sub*(ny+nx)+1,:) = tracer_tmp(1,:)
       endif
     else
       allocate(tracers2(nx*ny*trace_sub**2,7))
       tracers2 = tracers
     endif
-!
-!   Tell every other core that we have finished.
-    finished_rooting(:) = 0
-    finished_rooting(iproc+1) = 1
-    do proc_idx=0,(nprocx*nprocy*nprocz-1)
-      if (proc_idx /= iproc) then
-        call MPI_ISEND(finished_rooting(iproc+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
-            MPI_comm_world, request_finished_send(proc_idx+1), ierr)
-        if (ierr /= MPI_SUCCESS) &
-            call fatal_error("streamlines", "MPI_ISEND could not send")
-        call MPI_IRECV(finished_rooting(proc_idx+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
-            MPI_comm_world, request_finished_rcv(proc_idx+1), ierr)
-        if (ierr /= MPI_SUCCESS) &
-            call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
-      endif
-    enddo
-!
-!   Trace a dummy field line to start a field receive request.
-    tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
-        (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-    call trace_streamlines(f,tracer_tmp,1,vv)
-!
-!   Wait for all cores to compute their missing stream lines.
-    do
-!     Check if a core has finished and update finished_rooting array.
-      do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if ((proc_idx /= iproc) .and. (finished_rooting(proc_idx+1) == 0)) then
-          flag = 0
-          call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
-          if (ierr /= MPI_SUCCESS) &
-              call fatal_error("fixed_points", "MPI_TEST failed")
-          if (flag == 1) then
-            finished_rooting(proc_idx+1) = 1
-          endif
-        endif
-      enddo
-      if (sum(finished_rooting) == nprocx*nprocy*nprocz) exit
-!     Trace a dummy field line to start a field receive request.
-      tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
-          (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(f,tracer_tmp,1,vv)
-    enddo
-!
-    call MPI_BARRIER(MPI_comm_world, ierr)
 !
 !   Find possible fixed points in each grid cell.
 !
@@ -495,7 +453,9 @@ module Fixed_point
                i1 = i1 + 1
              end do
           end do
-          call trace_streamlines(f,tracers3,nt3*nt3,vv)
+          do m=1,nt3*nt3
+            call trace_single(tracers3(m,:),f,vv)
+          end do
           min3 = 1.0e6
           minx = x3min
           miny = y3min
@@ -550,27 +510,24 @@ module Fixed_point
       endif
     enddo
 !
-!   Wait for all cores to compute their missing stream lines.
+!   make sure that we can receive any request as long as not all cores are finished
     do
-!     Trace a dummy field line to start a field receive request.
-      tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
-          (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(f,tracer_tmp,1,vv)
+      call send_vec(vv, f)
+!
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if (proc_idx /= iproc) then
+        if ((proc_idx /= iproc) .and. (finished_rooting(proc_idx+1) == 0)) then
           flag = 0
           call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
           if (ierr /= MPI_SUCCESS) &
-              call fatal_error("fixed_points", "MPI_TEST failed")
+              call fatal_error("streamlines", "MPI_TEST failed")
           if (flag == 1) then
             finished_rooting(proc_idx+1) = 1
           endif
         endif
       enddo
-      if (sum(finished_rooting) == nprocx*nprocy*nprocz) then
-        exit
-      endif
+!
+      if (sum(finished_rooting) == nprocx*nprocy*nprocz) exit
     enddo
 !
     close(1)
@@ -661,10 +618,8 @@ module Fixed_point
 !
 !   Wait for all cores to compute their missing stream lines.
     do
-!     Trace a dummy field line to start a field receive request.
-      tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
-          (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(f,tracer_tmp,1,vv)
+      call send_vec(vv, f)
+!
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
         if (proc_idx /= iproc) then
@@ -682,7 +637,7 @@ module Fixed_point
       endif
     enddo
 !
-!   Wait for other cores. This ensures that uncomplete fixed points wont get written out.
+!   Wait for other cores. This ensures that uncomplete fixed points won't get written out.
     call MPI_BARRIER(MPI_comm_world, ierr)
 !
 !   communicate the fixed points to proc0
