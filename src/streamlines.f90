@@ -22,11 +22,6 @@ module Streamlines
   integer :: VV_RQST = 10
   integer :: VV_RCV = 20
   integer :: FINISHED = 99
-! borrowed position on the grid
-  integer :: grid_pos_b(3)
-! variables for the non-blocking mpi communication
-  integer, dimension (MPI_STATUS_SIZE) :: status
-  integer :: request, flag, receive = 0
 !
   real, public :: ttracers  ! time of the tracer calculation
   integer, public :: ntracers
@@ -39,6 +34,9 @@ module Streamlines
 ! the integrated quantity along the field line
   character (len=labellen), public :: int_q = ''
   real, public :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
+! MPI stuff
+  integer, dimension (MPI_STATUS_SIZE) :: status
+  integer :: grid_pos_b(3), request, receive = 0
 !
   namelist /streamlines_init_pars/ &
     trace_field, trace_sub, h_max, h_min, l_max, tol, int_q
@@ -233,38 +231,8 @@ module Streamlines
     if (proc_id == iproc) call fatal_error("streamlines", "sending and receiving core are the same")
 !
     do
-!
 !     To avoid deadlocks check if there is any request to this core.
-      do
-        if (receive == 0) then
-!         create a receive request
-          grid_pos_b(:) = 0
-          call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-          if (ierr /= MPI_SUCCESS) then
-            call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
-            exit
-          endif
-          receive = 1
-        endif
-!
-!       check if there is any request for the vector field from another core
-        if (receive == 1) then
-          flag = 0
-          call MPI_TEST(request,flag,status,ierr)
-          if (flag == 1) then
-!           receive completed, send the vector field
-            vvb_send(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-            vvb_send(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-            call MPI_SEND(vvb_send,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-            if (ierr /= MPI_SUCCESS) then
-              call fatal_error("streamlines", "MPI_SEND could not send")
-              exit
-            endif
-            receive = 0
-          endif
-        endif
-        if (receive == 1) exit
-      enddo
+      call send_vec(vv, f)
 !
 !     Now it should be safe to make a blocking send request.
 !
@@ -291,18 +259,17 @@ module Streamlines
 !
   endsubroutine get_vector
 !***********************************************************************
-  subroutine trace_streamlines(f,tracers,n_tracers,vv)
+  subroutine trace_single(tracer,f,vv)
 !
-!   trace stream lines of the vetor field stored in vv
+!  Trace a single field line until it hits the core boundary.
 !
-!   13-feb-12/simon: coded
+!   20-mar-14/simon: coded
 !
-    use Mpicomm, only: mpibarrier
-!
+    real, dimension(7) :: tracer
     real, dimension (mx,my,mz,mfarray) :: f
-    real, pointer, dimension (:,:) :: tracers
     real, pointer, dimension (:,:,:,:) :: vv   ! vector field which is beaing traced
-    integer :: n_tracers, tracer_idx, j, ierr, proc_idx
+!
+    integer :: j
 !   the "borrowed" vector from the adjacent core
     real, dimension (3+mfarray) :: vvb
 !   the vector from the adjacent grid points
@@ -311,185 +278,199 @@ module Streamlines
     real, dimension (3+mfarray) :: vv_int
 !   the "borrowed" f-array at a given point for the field line integration
     real, dimension (mfarray) :: fb
-!     real :: h_max, h_min, l_max, tol
     real :: dh, dist2
 !   auxilliary vectors for the tracing
     real, dimension(3) :: x_mid, x_single, x_half, x_double
 !   adjacent grid point around this position
     integer :: grid_pos(8,3)
-    integer :: loop_count, outside = 0
+    integer :: loop_count, outside
 !   number of adjacent grid points for the field interpolation
     integer :: n_int
+    
+!   initial step length dh
+    dh = sqrt(h_max*h_min)
+    loop_count = 0
+    outside = 0
+!
+    call send_vec(vv, f)
+!
+    do
+!     (a) Single step (midpoint method):
+      call get_grid_pos(tracer(3:5),grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+            (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(tracer(3:5),grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_mid = tracer(3:5) + 0.5*dh*vv_int(1:3)
+!
+      call get_grid_pos(x_mid,grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+          (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_single = tracer(3:5) + dh*vv_int(1:3)
+!
+!     (b) Two steps with half stepsize:
+      call get_grid_pos(tracer(3:5),grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+            (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(tracer(3:5),grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_mid = tracer(3:5) + 0.25*dh*vv_int(1:3)
+!
+      call get_grid_pos(x_mid,grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+            (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_half = tracer(3:5) + 0.5*dh*vv_int(1:3)
+!
+      call get_grid_pos(x_half,grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+            (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(x_half,grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_mid = x_half + 0.25*dh*vv_int(1:3)
+!
+      call get_grid_pos(x_mid,grid_pos,n_int,outside)
+      if (outside == 1) exit
+      do j=1,n_int
+        if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+            (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+!           write(*,*) iproc, "grid_pos(j,:) = ", grid_pos(j,:), " outside = ", outside
+          call get_vector(f, grid_pos(j,:), vvb, vv)
+          vv_adj(j,:) = vvb
+        else
+          vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+        endif
+      enddo
+      call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
+      call send_vec(vv, f)
+      x_double = x_half + 0.5*dh*vv_int(1:3)
+      fb = vv_int(4:)
+!
+!     (c) Check error (difference between methods):
+      dist2 = dot_product((x_single-x_double),(x_single-x_double))
+      if (dist2 > tol**2) then
+        dh = 0.5*dh
+        if (abs(dh) < h_min) then
+          write(*,*) "Error: stepsize underflow"
+          exit
+        endif
+      else
+        tracer(6) = tracer(6) + &
+            sqrt(dot_product((tracer(3:5)-x_double), (tracer(3:5)-x_double)))
+!       integrate the requested quantity along the field line
+        if (int_q == 'curlyA') then
+          tracer(7) = tracer(7) + &
+              dot_product(fb(iax:iaz), (x_double - tracer(3:5)))
+        endif
+        tracer(3:5) = x_double
+        if (abs(dh) < h_min) dh = 2*dh
+!
+! !       check if the new point lies in another cpu domain
+!         call get_grid_pos(x_double, grid_pos, n_int, outside)
+!         if (.not. any((grid_pos(:,1) > 0) .and. (grid_pos(:,1) <= nx) .and. &
+!                       (grid_pos(:,2) > 0) .and. (grid_pos(:,2) <= ny) .and. &
+!                       (grid_pos(:,3) > 0) .and. (grid_pos(:,3) <= nz))) then
+!         communicate tracer to corresponding core
+            
+!         endif
+      endif
+!
+      if (tracer(6) >= l_max) exit
+!
+      loop_count = loop_count + 1
+    enddo   
+  endsubroutine trace_single
+!***********************************************************************
+  subroutine trace_streamlines(f,tracers,n_tracers,vv)
+!
+!   trace stream lines of the vetor field stored in vv
+!
+!   13-feb-12/simon: coded
+!   20-mar-14/simon: moved the bulk of it into 'trace_single' routine
+!
+    use Mpicomm, only: mpibarrier
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, pointer, dimension (:,:) :: tracers
+    integer :: n_tracers
+    real, pointer, dimension (:,:,:,:) :: vv   ! vector field which is beaing traced
+!   MPI communication
+    integer :: tracer_idx, ierr, proc_idx, flag
 !   array with all finished cores
     integer :: finished_tracing(nprocx*nprocy*nprocz)
 !   variables for the final non-blocking mpi communication
     integer :: request_finished_send(nprocx*nprocy*nprocz)
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
 !
-    intent(in) :: n_tracers
+    real, dimension (3+mfarray) :: vvb
+    integer :: grid_pos(3)
 !
-!   tracing stream lines
+!     receive = 0
 !
-!   make sure all threads are synchronized
-    call mpibarrier()
+    call send_vec(vv, f)
 !
     do tracer_idx=1,n_tracers
       tracers(tracer_idx, 6:7) = 0.
-!     initial step length dh
-      dh = sqrt(h_max*h_min)
-      loop_count = 0
-!
-      do
-!       create a receive request for the core communication
-        do
-          if (receive == 0) then
-            grid_pos_b(:) = 0
-            call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-            if (ierr /= MPI_SUCCESS) then
-              call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
-              exit
-            endif
-            receive = 1
-          endif
-!
-!         check if there is any request for the vector field from another core
-          if (receive == 1) then
-            flag = 0
-            call MPI_TEST(request,flag,status,ierr)
-            if (flag == 1) then
-!             receive completed, send the vector field
-              vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-              vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-              call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-              if (ierr /= MPI_SUCCESS) then
-                call fatal_error("streamlines", "MPI_SEND could not send")
-                exit
-              endif
-              receive = 0
-            endif
-          endif
-!
-          if (receive == 1) exit
-        enddo
-!
-!       (a) Single step (midpoint method):
-        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
-        x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vv_int(1:3)
-!
-        call get_grid_pos(x_mid,grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
-        x_single = tracers(tracer_idx,3:5) + dh*vv_int(1:3)
-!
-!       (b) Two steps with half stepsize:
-        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
-        x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vv_int(1:3)
-!
-        call get_grid_pos(x_mid,grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
-        x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv_int(1:3)
-!
-        call get_grid_pos(x_half,grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(x_half,grid_pos,vv_adj,n_int,vv_int)
-        x_mid = x_half + 0.25*dh*vv_int(1:3)
-!
-        call get_grid_pos(x_mid,grid_pos,n_int,outside)
-        if (outside == 1) exit
-        do j=1,n_int
-          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
-              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
-            call get_vector(f, grid_pos(j,:), vvb, vv)
-            vv_adj(j,:) = vvb
-          else
-            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
-          endif
-        enddo
-        call interpolate_vv(x_mid,grid_pos,vv_adj,n_int,vv_int)
-        x_double = x_half + 0.5*dh*vv_int(1:3)
-        fb = vv_int(4:)
-!
-!       (c) Check error (difference between methods):
-        dist2 = dot_product((x_single-x_double),(x_single-x_double))
-        if (dist2 > tol**2) then
-          dh = 0.5*dh
-          if (abs(dh) < h_min) then
-            write(*,*) "Error: stepsize underflow"
-            exit
-          endif
-        else
-          tracers(tracer_idx, 6) = tracers(tracer_idx, 6) + &
-              sqrt(dot_product((tracers(tracer_idx,3:5)-x_double), (tracers(tracer_idx,3:5)-x_double)))
-!         integrate the requested quantity along the field line
-          if (int_q == 'curlyA') then
-            tracers(tracer_idx, 7) = tracers(tracer_idx, 7) + &
-                dot_product(fb(iax:iaz), (x_double - tracers(tracer_idx,3:5)))
-          endif
-          tracers(tracer_idx,3:5) = x_double
-          if (abs(dh) < h_min) dh = 2*dh
-        endif
-!
-        if (tracers(tracer_idx, 6) >= l_max) exit
-!
-        loop_count = loop_count + 1
-      enddo
-!
+      call trace_single(tracers(tracer_idx,:), f, vv)
+!       
+!     check if tracer lies in different core
+!       if tracer in different core then
+!         communicate tracer to other core
+!       endif
     enddo
 !
 !   Tell every other core that we have finished.
@@ -510,33 +491,7 @@ module Streamlines
 !
 !   make sure that we can receive any request as long as not all cores are finished
     do
-      if (receive == 0) then
-!       create a receive request
-        grid_pos_b(:) = 0
-        call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-        if (ierr /= MPI_SUCCESS) then
-          call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
-          exit
-        endif
-        receive = 1
-      endif
-!
-!     check if there is any request for the vector field from another core
-      if (receive == 1) then
-        flag = 0
-        call MPI_TEST(request,flag,status,ierr)
-        if (flag == 1) then
-!         receive completed, send the vector field
-          vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-          vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-          call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-          if (ierr /= MPI_SUCCESS) then
-            call fatal_error("streamlines", "MPI_SEND could not send")
-            exit
-          endif
-          receive = 0
-        endif
-      endif
+      call send_vec(vv, f)
 !
 !     Check if a core has finished and update finished_tracing array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
@@ -555,6 +510,52 @@ module Streamlines
     enddo
 !
   endsubroutine trace_streamlines
+!***********************************************************************
+  subroutine send_vec(vv, f)
+!
+!  Create a receive request for asynchronous communication of field information
+!  and perform such communication if required.
+!
+!   20-mar-14/simon: coded
+!
+    real, pointer, dimension (:,:,:,:) :: vv   ! vector field which is beaing traced
+    real, dimension (mx,my,mz,mfarray) :: f
+!   borrowed position on the grid
+    integer :: ierr, flag
+!   the "borrowed" vector from the adjacent core
+    real, dimension (3+mfarray) :: vvb
+!    
+    do
+        if (receive == 0) then
+          grid_pos_b(:) = 0
+          call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
+          if (ierr /= MPI_SUCCESS) then
+              call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
+              exit
+          endif
+          receive = 1
+        endif
+!
+!       check if there is any request for the vector field from another core
+        if (receive == 1) then
+          flag = 0
+          call MPI_TEST(request,flag,status,ierr)
+          if (flag == 1) then
+!             receive completed, send the vector field
+              vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+              vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+              call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
+              if (ierr /= MPI_SUCCESS) then
+                call fatal_error("streamlines", "MPI_SEND could not send")
+                exit
+              endif
+              receive = 0
+          endif
+        endif
+!
+        if (receive == 1) exit
+    enddo
+  endsubroutine send_vec
 !***********************************************************************
   subroutine wtracers(f,path)
 !
