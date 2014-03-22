@@ -167,8 +167,13 @@ module InitialCondition
       p=-density_power_law 
       q=-temperature_power_law
 !
-      if (lroot) print*,&
-           'initial_condition_lnrho: locally isothermal approximation'
+      if (llocal_iso) then 
+        if (lroot) print*,&
+             'initial_condition_lnrho: locally isothermal approximation'
+      else
+        if (lroot) print*,&
+             'initial_condition_lnrho: gamma=',gamma
+      endif
       if (lroot) print*,'Radial density stratification with power law=',p
       if (lroot) print*,'Radial temperature stratification with power law=',q
 !
@@ -513,7 +518,6 @@ module InitialCondition
       use Sub, only: grad,get_radial_distance,&
                      gij,curl_mn,gij_etc,cross_mn,multsv_mn
       use FArrayManager, only: farray_use_global
-!      use BoundCond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f      
       real, dimension (nx,3,3) :: aij,bij
@@ -524,6 +528,10 @@ module InitialCondition
       integer, pointer :: iglobal_cs2, iglobal_glnTT
       integer :: j,irho,ics2,iglnTT
       logical :: lhd
+!
+      if (.not.llocal_iso) call fatal_error("enforce_numerical_equilibrium",&
+           "not coded for other than the local isothermal approximation."//&
+           "Switch lnumerical_mhsequilibrium=F in start.in")
 !
 !  Get the temperature globals
 !
@@ -542,8 +550,6 @@ module InitialCondition
       else
         irho=ilnrho
       endif
-!
-      !call update_ghosts(f)
 !
 !  Azimuthal speed that perfectly balances the pressure gradient. 
 !
