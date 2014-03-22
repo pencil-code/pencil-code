@@ -116,6 +116,7 @@ module InitialCondition
   logical :: lpolynomial_fit_cs2=.false.
   logical :: ladd_noise_propto_cs=.false.
   real :: ampluu_cs_factor=1d-3
+  real :: widthbb1=0.0,widthbb2=0.0
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -126,7 +127,7 @@ module InitialCondition
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs, ampluu_cs_factor
+       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2
 !
   contains
 !***********************************************************************
@@ -978,17 +979,17 @@ module InitialCondition
 !
       real, dimension(mx), intent(in) :: Bin
       real, dimension(mx), intent(out) :: Bout
-      real :: width
       integer :: i
 !      
       if (rm_int==-impossible.and.rm_ext==impossible) then 
         Bout=Bin
       else
         do i=1,mx
-          width=5./dx_1(i)
+          if (widthbb1==0.0) widthbb1=5./dx_1(i)
+          if (widthbb2==0.0) widthbb2=5./dx_1(i)
           Bout(i) = Bin(i) * &
-               (step_scalar(x(i),rm_int,width)-&
-                step_scalar(x(i),rm_ext,width))
+               (step_scalar(x(i),rm_int,widthbb1)-&
+                step_scalar(x(i),rm_ext,widthbb2))
         enddo
       endif
 !
