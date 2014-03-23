@@ -369,7 +369,7 @@ module Particles_nbody
       intent (in) :: f
       intent (out) :: fp
 !
-!  Initialize particles' positions and velocities.
+!  Break if there are N-body particles without mass. 
 !
       if (mspar < nspar) then
         call warning("init_particles_nbody", 'mspar < nspar:')
@@ -380,14 +380,16 @@ module Particles_nbody
         print*, ''
         print*, 'you should set pmass to non-zero values in start.in'
       endif
+!
+!  Shortcuts
+!
       if (mspar > 0) then
-        position(1:nspar,1) = xsp0
-        position(:,2) = ysp0
-        position(:,3) = zsp0
-        velocity(:,1) = vspx0
-        velocity(:,2) = vspy0
-        velocity(:,3) = vspz0
+        position(1:nspar,1) = xsp0 ; velocity(1:nspar,1) = vspx0
+        position(1:nspar,2) = ysp0 ; velocity(1:nspar,2) = vspy0
+        position(1:nspar,3) = zsp0 ; velocity(1:nspar,3) = vspz0        
       endif
+!
+!  Initialize particles' positions.
 !
       select case (initxxsp)
 !
@@ -1133,7 +1135,7 @@ module Particles_nbody
     subroutine reset_center_of_mass(dfp)
 !
 !  If the center of mass was accelerated, reset its position
-!  to the center of the grid. Must be called by a dxxp_dt_nbody?
+!  to the center of the grid.
 !
 !  Assumes that the total mass of the particles is one.
 !
@@ -1153,19 +1155,19 @@ module Particles_nbody
         vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivpy))
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
       else if (lcylindrical_coords) then
-!
-!  This is not really functional for other grids than Cartesian.
-!
-        xcm=sum(ftmp(:,imass)*(ftmp(:,ipx)*cos(ftmp(:,iyp))))
-        ycm=sum(ftmp(:,imass)*(ftmp(:,ipx)*sin(ftmp(:,iyp))))
+        xcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
+        ycm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))))
         phicm=atan2(ycm,xcm)
+!
         vxcm=sum(ftmp(:,imass)*(&
             ftmp(:,ivpx)*cos(ftmp(:,iyp))-ftmp(:,ivpy)*sin(ftmp(:,iyp))))
         vycm=sum(ftmp(:,imass)*(&
             ftmp(:,ivpx)*sin(ftmp(:,iyp))+ftmp(:,ivpy)*cos(ftmp(:,iyp))))
+!
         vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
         vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
+!
       else if (lspherical_coords) then
         vxcm=sum(ftmp(:,imass)*( &
               ftmp(:,ivpx)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))&
