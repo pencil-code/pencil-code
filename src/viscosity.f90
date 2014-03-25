@@ -830,7 +830,7 @@ module Viscosity
         lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
         !if (lKit_Olem) lpenc_requested(i_dsdr) = .true.
-        if (lKit_Olem) lpenc_requested(i_gss) = .true.
+        !if (lKit_Olem) lpenc_requested(i_gss) = .true.
       endif
       if (lvisc_mixture) then
         lpenc_requested(i_graddivu)=.true.
