@@ -42,6 +42,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad
   real, dimension(ndustspec) :: surfd, mi, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
+  real :: betad0=0.
   real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
@@ -52,6 +53,7 @@ module Dustvelocity
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
+  real :: mucube_graind=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
@@ -76,7 +78,7 @@ module Dustvelocity
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, coeff, &
       ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd, &
-      ldustvelocity_shorttausd, scaleHtaus, z0taus
+      ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
@@ -241,6 +243,23 @@ module Dustvelocity
           mdplus(k)  = md0*deltamd**k
           md(k) = 0.5*(mdminus(k)+mdplus(k))
         enddo
+!
+!  calculate the betad here too DMDM 
+!
+        select case (draglaw)
+        case ('stokes_varmass')
+          if (lroot) print*, 'initialize_dustvelocity: '// &
+            'draglaw=',draglaw
+          if (betad0 .ne. 0) then
+            betad(k) = betad0*md(k)**(-2./3.)
+          else
+            call fatal_error('initialize_dustdensity','please choose a non-zero betad0')
+          endif
+!
+        case default
+          if (lroot) print*, 'initialize_dustvelocity: '// &
+            'doing nothing'
+        endselect
 !
 !  Grain geometry
 !
@@ -1334,6 +1353,7 @@ module Dustvelocity
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
+      real :: stokes_prefactor
       integer :: k
 !
       select case (draglaw)
@@ -1344,6 +1364,12 @@ module Dustvelocity
         tausd1(:,k) = betad(k)/rhod
       case ('stokes_cst_tausd')
         tausd1(:,k) = betad(k)
+!DHRUBA
+      case ('stokes_varmass')
+        tausd1(:,k) = betad(k)
+!        stokes_prefactor=6*pi*mucube_by_four_third_pi_grain_density
+!        stokes_prefactor=6*pi*mucube_graind
+!        tausd1(:,k) = stokes_prefactor*p%md(:,k)**(-2./3.)
       case ('epstein_var')
         call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
         csrho       = sqrt(cs2+deltaud2)*rho
