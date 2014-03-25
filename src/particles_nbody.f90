@@ -1226,6 +1226,13 @@ module Particles_nbody
       if (lfirstcall) &
           print*,'Adding gas+dust gravity to the massive particles'
 !
+!  Sanity check
+!
+      if (.not.(lgas_gravity.or.ldust_gravity)) &
+           call fatal_error("lintegrate_selfgravity",&
+           "No gas gravity or dust gravity to add. "//&
+           "Switch on lgas_gravity or ldust_gravity in n-body parameters")
+!
       if (coord_system=='cartesian') then
         jac=1.;dqx=dx;dqy=dy;dqz=dz
         dist(:,1)=x(l1:l2)-xxpar(1)
