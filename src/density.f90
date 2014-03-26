@@ -369,7 +369,8 @@ module Density
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
         case ('','none')
-          if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
+          if (lroot .and. (.not. lnothing)) &
+              print*,'diffusion: nothing (i.e. no mass diffusion)'
         case default
           write(unit=errormsg,fmt=*) 'initialize_density: ', &
               'No such value for idiff(',i,'): ', trim(idiff(i))
@@ -415,7 +416,7 @@ module Density
 !  Do not allow inconsistency between rho0 (from eos) and rho_const
 !  or lnrho0 and lnrho_const.
 !
-      if (rho0/=rho_const) then
+      if (rho0/=rho_const .and. rho0/=impossible) then
         if (lroot) then
           print*,"WARNING!"
           print*,"inconsistency between the density constants from eos  "
