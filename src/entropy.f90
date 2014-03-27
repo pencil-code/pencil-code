@@ -108,6 +108,7 @@ module Energy
   logical :: lchiB_simplified=.false.
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
+  logical :: lread_hcond=.false.
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
   logical :: lphotoelectric_heating=.false.
@@ -147,7 +148,7 @@ module Energy
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, rho0ts, T0hs, lconvection_gravx, Fbot, &
-      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso
+      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond
 !
 !  Run parameters.
 !
@@ -171,8 +172,8 @@ module Energy
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
-      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, center1_z, &
-      lborder_heat_variable,rescale_TTmeanxy
+      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, & 
+      center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -360,8 +361,11 @@ module Energy
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
+      real, dimension (nz,3) :: glhcz
+      real, dimension (nz) :: hcondz
       real, dimension(5) :: star_params
       real :: beta1, cp1, beta0, TT_bcz, star_cte
+      real :: hcondbot, hcondtop
       integer :: i, j, ierr, q
       logical :: lnothing
       type (pencil_case) :: p
@@ -557,7 +561,7 @@ module Energy
               print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
                 hcondxbot, hcondxtop, FbotKbot
           else
-             call fatal_error('initialize_energy: setting hcondxbot,', &
+             call warning('initialize_energy: setting hcondxbot,', &
               'hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
           endif
         endif
@@ -824,15 +828,25 @@ module Energy
         call farray_register_auxiliary('hcond',iglobal_hcond)
         call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
         if (coord_system=='spherical' .or. lconvection_gravx) then
-          call read_hcond(hcond,glhc)
+          call read_hcond(hcond,glhc,hcondz,glhcz,hcondtop,hcondbot)
           do q=n1,n2; do m=m1,m2
             f(l1:l2,m,q,iglobal_hcond)=hcond
             f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
           enddo; enddo
-          FbotKbot=Fbot/hcond(1)
-          FtopKtop=Ftop/hcond(nx)
-          hcondxbot=hcond(1)
-          hcondxtop=hcond(nx)
+          FbotKbot=Fbot/hcondbot
+          FtopKtop=Ftop/hcondtop
+          hcondxbot=hcondbot
+          hcondxtop=hcondtop
+        else if (lgravz .and. lread_hcond) then
+          call read_hcond(hcond,glhc,hcondz,glhcz,hcondtop,hcondbot)
+          do q=l1,l2; do m=m1,m2
+            f(q,m,n1:n2,iglobal_hcond)=hcondz
+            f(q,m,n1:n2,iglobal_glhc:iglobal_glhc+2)=glhcz
+          enddo; enddo
+          FbotKbot=Fbot/hcondbot
+          FtopKtop=Ftop/hcondtop
+          hcondzbot=hcondbot
+          hcondztop=hcondtop
         else
           do n=n1,n2; do m=m1,m2
 !
@@ -849,8 +863,6 @@ module Energy
             f(l1:l2,m,n,iglobal_hcond)=hcond
             f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
           enddo; enddo
-          hcondxbot=hcond(1)
-          hcondxtop=hcond(nx)
         endif
       endif
 !
@@ -4179,7 +4191,7 @@ module Energy
 !
 !  Assume that a vertical K profile is given if lgravz is true.
 !
-        if (lgravz) then
+         if (lgravz) then
 !
 ! DM+GG Added routines to compute hcond and gradloghcond_zprof.
 ! When called for the first time calculate z dependent profile of
@@ -6232,16 +6244,22 @@ module Energy
 !
     endsubroutine single_polytrope
 !***********************************************************************
-    subroutine read_hcond(hcond,glhc)
+    subroutine read_hcond(hcond,glhc,hcondz,glhcz,hcondtop,hcondbot)
 !
 !  Read radial profiles of hcond and glhc from an ascii-file.
 !
 !  11-jun-09/pjk: coded
+!  19-mar-14/pjk: added reading z-dependent profiles
 !
-      real, dimension(nx) :: hcond
-      real, dimension(nx,3) :: glhc
+      real, dimension(nx), intent(out) :: hcond
+      real, dimension(nx,3), intent(out) :: glhc
+      real, dimension(nz), intent(out) :: hcondz
+      real, dimension(nz,3), intent(out) :: glhcz
+      real, intent(out) :: hcondbot, hcondtop
       integer, parameter :: ntotal=nx*nprocx
+      integer, parameter :: nztotal=nz*nprocz
       real, dimension(nx*nprocx) :: tmp1,tmp2
+      real, dimension(nz*nprocz) :: tmp1z,tmp2z
       real :: var1,var2
       logical :: exist
       integer :: stat
@@ -6263,27 +6281,61 @@ module Energy
 !
 !  Read profiles.
 !
-      do n=1,ntotal
-        read(31,*,iostat=stat) var1,var2
-        if (stat>=0) then
-          if (ip<5) print*,'hcond, glhc: ',var1,var2
-          tmp1(n)=var1
-          tmp2(n)=var2
-        else
-          exit
-        endif
-      enddo
+      if (lgravx) then
+        do n=1,ntotal
+          read(31,*,iostat=stat) var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,'hcond, glhc: ',var1,var2
+            tmp1(n)=var1
+            tmp2(n)=var2
+          else
+            exit
+          endif
+        enddo
 !
 !  Assuming no ghost zones in hcond_glhc.dat.
 !
-      do n=l1,l2
-        hcond(n-nghost)=tmp1(ipx*nx+n-nghost)
-        glhc(n-nghost,1)=tmp2(ipx*nx+n-nghost)
-        glhc(n-nghost,2)=0.0
-        glhc(n-nghost,3)=0.0
-      enddo
+        do n=l1,l2
+          hcond(n-nghost)=tmp1(ipx*nx+n-nghost)
+          glhc(n-nghost,1)=tmp2(ipx*nx+n-nghost)
+          glhc(n-nghost,2)=0.0
+          glhc(n-nghost,3)=0.0
+        enddo
 !
-      close(31)
+        hcondbot=tmp1(1)
+        hcondtop=tmp1(ntotal)
+!
+        close(31)
+!
+!  Gravity in the z-direction
+!
+      else if (lgravz) then
+        do n=1,nztotal
+          read(31,*,iostat=stat) var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,'hcond, glhc: ',var1,var2
+            tmp1z(n)=var1
+            tmp2z(n)=var2
+          else
+            exit
+          endif
+        enddo
+!
+!  Assuming no ghost zones in hcond_glhc.dat.
+!
+        do n=n1,n2
+          hcondz(n-nghost)=tmp1z(ipz*nz+n-nghost)
+          glhcz(n-nghost,1)=0.0
+          glhcz(n-nghost,2)=0.0
+          glhcz(n-nghost,3)=tmp2z(ipz*nz+n-nghost)
+        enddo
+!
+        hcondbot=tmp1z(1)
+        hcondtop=tmp1z(nztotal)
+!
+        close(31)
+!
+      endif
 !
     endsubroutine read_hcond
 !***********************************************************************
