@@ -34,8 +34,8 @@ module Snapshot
       use Persist, only: output_persistent
       use Sub, only: read_snaptime, update_snaptime
 !
-      real, dimension (mx,my,mz,msnap) :: a
       integer :: msnap
+      real, dimension (mx,my,mz,msnap) :: a
       character (len=*), optional :: flist
 !
       real, save :: tsnap

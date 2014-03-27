@@ -2323,6 +2323,7 @@ module Mpicomm
 !
       integer :: mpiprocs
       logical :: inplace_opt
+      logical :: MPI_IN_PLACE
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
