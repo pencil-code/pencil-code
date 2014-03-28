@@ -694,7 +694,7 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
-else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole)) then
+else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars1)) then
   echo "Sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
@@ -730,7 +730,7 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma || $USER =~ mvaisala)) then
+else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ jsnellma || $USER =~ mvaisala || $USER =~ cdstars1)) then
   echo "Taito - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
