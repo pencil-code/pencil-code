@@ -50,6 +50,39 @@ interpolation_scheme='ngp'
 if (cic) then interpolation_scheme='cic'
 if (tsc) then interpolation_scheme='tsc'
 ;;
+;;  Possible to map the particles on a finer grid.
+;;
+if (fine gt 1) then begin
+;
+  x0=param.xyz0[0] & y0=param.xyz0[1] & z0=param.xyz0[2]
+  x1=param.xyz1[0] & y1=param.xyz1[1] & z1=param.xyz1[2]
+;
+  if (nx gt 1) then begin
+    nx=fine*nx
+    dx=dx/fine
+    x=fltarr(nx)
+    for i=0,nx-1 do x[i]=x0+(i)*dx+dx/2
+  endif
+;
+  if (ny gt 1) then begin
+    ny=fine*ny
+    dy=dy/fine
+    y=fltarr(ny)
+    for i=0,ny-1 do y[i]=y0+(i)*dy+dy/2
+  endif
+;
+  if (nz gt 1) then begin
+    nz=fine*nz
+    dz=dz/fine
+    z=fltarr(nz)
+    for i=0,nz-1 do z[i]=z0+(i)*dz+dz/2
+  endif
+;
+  dx_1=1.0d/dx   & dy_1=1.0d/dy   & dz_1=1.0d/dz
+  dx_2=1.0d/dx^2 & dy_2=1.0d/dy^2 & dz_2=1.0d/dz^2
+;
+endif
+;;
 ;;  The CIC and TSC schemes work with ghost cells, so if x, y, z are given
 ;;  without ghost zones, add the ghost zones automatically.
 ;;
@@ -79,44 +112,6 @@ endif else begin
   my=ny & ny=my-6 & m1=3 & m2=m1+ny-1
   mz=nz & nz=mz-6 & n1=3 & n2=n1+nz-1
 endelse
-;;
-;;  Possible to map the particles on a finer grid.
-;;
-if (fine gt 1) then begin
-;
-  x0=param.xyz0[0] & y0=param.xyz0[1] & z0=param.xyz0[2]
-  x1=param.xyz1[0] & y1=param.xyz1[1] & z1=param.xyz1[2]
-;
-  if (nx gt 1) then begin
-    nx=fine*nx
-    mx=nx+6
-    dx=dx/fine
-    x=fltarr(nx)
-    for i=0,mx-1 do x[i]=(i-3)*dx+dx/2
-  endif
-;
-  if (ny gt 1) then begin
-    ny=fine*ny
-    my=ny+6
-    dy=dy/fine
-    y=fltarr(ny)
-    y[0]=y0+dy/2
-    for i=0,my-1 do y[i]=(i-3)*dy+dy/2
-  endif
-;
-  if (nz gt 1) then begin
-    nz=fine*nz
-    mz=nz+6
-    dz=dz/fine
-    z=fltarr(nz)
-    z[0]=z0+dz/2
-    for i=0,mz-1 do z[i]=(i-3)*dz+dz/2
-  endif
-;
-  dx_1=1.0d/dx   & dy_1=1.0d/dy   & dz_1=1.0d/dz
-  dx_2=1.0d/dx^2 & dy_2=1.0d/dy^2 & dz_2=1.0d/dz^2
-;
-endif
 ;;
 ;;  Define density array.
 ;;
