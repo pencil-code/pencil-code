@@ -163,6 +163,7 @@ module Energy
   integer :: idiag_uxTmz=0      ! XYAVG_DOC: $\left<u_x T\right>_{xy}$
   integer :: idiag_uyTmz=0      ! XYAVG_DOC: $\left<u_y T\right>_{xy}$
   integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
+  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -796,6 +797,10 @@ module Energy
         lpenc_diagnos(i_TT) =.true.
         lpenc_diagnos(i_gTT) =.true.
       endif
+      if (idiag_fradz/=0) then
+        lpenc_diagnos(i_TT) =.true.
+        lpenc_diagnos(i_glnTT) =.true.
+      endif
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
@@ -1168,6 +1173,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
+        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
@@ -1811,7 +1817,7 @@ module Energy
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
-        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0;
+        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1889,6 +1895,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTmz',idiag_uxTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTmz',idiag_uyTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTmz',idiag_uzTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
 !      
       enddo
 !
