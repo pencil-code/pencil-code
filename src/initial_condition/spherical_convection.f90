@@ -82,14 +82,16 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (mx) :: TT, TTc, rho_prof, dTdr, dTdr_cor, dlnTdr 
-      real, dimension (mx) :: lnrho, ss_prof, cs2_prof, dlnrhodr 
+      real, dimension (mx) :: lnrho, ss_prof, cs2_prof, dlnrhodr
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
+      real, dimension (nxgrid) :: rho_global, TT_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
+      real :: meanrho, volume, total_mass
       real, pointer :: gravx, cp, cv
       integer :: i, n, m, q, ix, ierr, unit=1, nsurf
 !
@@ -146,6 +148,7 @@ module InitialCondition
 !  Temperature using a constant polytropic index npoly1
 !
       TT(l1:l2)=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x(l1:l2) - 1./Rsurf))
+      TT_global=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./xglobal(nghost+1:nxgrid+nghost) - 1./Rsurf))
       T00=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x0 - 1./Rsurf))
       Tsurf=gravx/(cv*(gamma-1.))*xi0/Rstar
 !
@@ -268,6 +271,14 @@ module InitialCondition
       Omsim=fluxratio**(1./3.)*sqrt(gratio)*rratio**(1.5)*Omsun
       chiSGS_top=sqrt(gratio)*fluxratio**(1./3.)*chit0/sqrt(rratio)
 !
+!  Compute total mass. Need to compute global profile of density 
+!  (currently only works without a corona!)
+!
+      rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
+      meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+      volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
+      total_mass=meanrho*volume
+!
       if (iproc .eq. root) then
          print*,''
          print*,'initial_condition: Fbottom    =',Fbottom
@@ -279,6 +290,9 @@ module InitialCondition
          print*,'initial_condition: chiSGS_top =',chiSGS_top
          print*,'initial_condition: gratio     =',gratio
          print*,'initial_condition: rratio     =',rratio
+         print*,'initial_condition: volume     =',volume
+         print*,'initial_condition: meanrho    =',meanrho
+         print*,'initial_condition: total_mass =',total_mass
          if (lcorona) then
            print*,'initial_condition: rcool     =',Rsurf+(Rtran-Rsurf)/3.
            print*,'initial_condition: wcool     =',wmin/2.
