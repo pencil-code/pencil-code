@@ -27,7 +27,7 @@ our own tests. The latest test results for a can be seen online:</p>
 <!-- Boris Dintrans test (2) -->
 <li><a href="http://www.ast.obs-mip.fr/users/dintrans/tmp/our_tests.html">Copernic (Linux/CentOS5 on 4 x Hexacore Intel Xeon E7540@2.00GHz, ifort 64 bits v12.0.1.107, by Boris Dintrans, 16 separate tests)</a>
 <!-- Weekly (big) test -->
-<li><a href="http://www.svenbingert.de/auto-test.html">Linux/Ubuntu10.4 on Intel Core 2 Quad Q9000@2.00GHz, ifort 64bit v11.1 (Sven Bingert, standard + personal tests)</a>
+<li><a href="http://www.svenbingert.de/auto-test.html">Linux/Ubuntu13.4 on Intel Core 2 Quad Q9000@2.00GHz, ifort 64bit v13.0.1 (Sven Bingert, standard + personal tests)</a>
 <li><a href="http://norlx51.albanova.se/~brandenb/pencil-code/tests/g95_debug.html">Nordita Big Test (norlx51, gfortran, openmpi, by Wolfgang/Axel)</a>
 <!-- Weekly (big) test -->
 <li><a href="http://norlx51.albanova.se/~brandenb/pencil-code/tests/gfortran_hourly.html">Nordita Hourly Test (norlx51, gfortran, openmpi, by Wolfgang/Axel)</a>
