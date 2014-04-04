@@ -821,6 +821,13 @@ module Energy
         call warning('initialize_energy','chi_shock is zero!')
       endif
 !
+!  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
+!
+        if (ldynamical_diffusion.and..not.lheatc_hyper3ss_mesh) then
+          call fatal_error("initialize_energy",&
+               "Dynamical diffusion requires mesh hyper heat conductivity, switch iheatcond='hyper3-mesh'")
+        endif
+!
 !  Heat conduction calculated globally: if lhcond_global=.true., we
 !  compute hcond and glhc and put the results in global arrays.
 !
@@ -3724,15 +3731,25 @@ module Energy
       thdiff=0.0
       do j=1,3
         call der6(f,iss,tmp,j,IGNOREDX=.true.)
-        thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
+        if (ldynamical_diffusion) then
+          thdiff = thdiff + chi_hyper3_mesh * tmp * dline_1(:,j)
+        else
+          thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
+        endif
       enddo
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
 !
-      if (lfirst.and.ldt) &
+      if (lfirst.and.ldt) then
+        if (ldynamical_diffusion) then
+          diffus_chi3 = diffus_chi3 + chi_hyper3_mesh
+          advec_hypermesh_ss = 0.0
+        else
           advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        endif
+      endif
 !
     endsubroutine calc_heatcond_hyper3_mesh
 !***********************************************************************
@@ -6387,8 +6404,8 @@ module Energy
 !
       real, intent(in) :: umax
 !
-      call keep_compiler_quiet(umax)
-      call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
+      if (chi_hyper3 /= 0.) chi_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
+      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(3.0)
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
