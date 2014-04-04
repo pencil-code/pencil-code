@@ -257,8 +257,8 @@ module InitialCondition
     subroutine add_noise(f)
 !
       use FArrayManager, only: farray_use_global
-      use EquationOfState, only: get_cv1
-
+      use EquationOfState, only: get_cv1,cs20,gamma_m1,lnrho0
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
       real :: cv1
@@ -274,8 +274,9 @@ module InitialCondition
         if (llocal_iso) then
           cs2=f(l1:l2,m,n,iglobal_cs2)
         elseif (lentropy) then
+          !even with ldensity_nolog=T, this rho is in log
           cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
-               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+               gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))
         endif
         call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
       enddo; enddo
@@ -928,7 +929,7 @@ module InitialCondition
 !
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs20,get_cv1,lnrho0,gamma_m1
       use Boundcond,       only: update_ghosts
       use Messages,        only: fatal_error
 !
