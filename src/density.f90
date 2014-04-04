@@ -399,6 +399,14 @@ module Density
         if (ldiff_shock .and. diffrho_shock==0.0) &
             call fatal_error('initialize_density', &
             'diffusion coefficient diffrho_shock is zero!')
+!
+!  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
+!
+        if (ldynamical_diffusion.and..not.ldiff_hyper3_mesh) then
+          call fatal_error("initialize_density",&
+               "Dynamical diffusion requires mesh hyper-diffusion, switch idiff='hyper3-mesh'")
+        endif
+!        
       endif
 !
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
