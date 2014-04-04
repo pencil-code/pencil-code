@@ -84,7 +84,8 @@ module InitialCondition
       real, dimension (mx) :: TT, TTc, rho_prof, dTdr, dTdr_cor, dlnTdr 
       real, dimension (mx) :: lnrho, ss_prof, cs2_prof, dlnrhodr
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
-      real, dimension (nxgrid) :: rho_global, TT_global
+      real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
+      real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
@@ -93,7 +94,7 @@ module InitialCondition
       real :: T00sun=2.23e6
       real :: meanrho, volume, total_mass
       real, pointer :: gravx, cp, cv
-      integer :: i, n, m, q, ix, ierr, unit=1, nsurf
+      integer :: i, j, n, m, q, ix, ierr, unit=1, nsurf, nsurf_global
 !
       character (len=120) :: wfile
 !
@@ -124,7 +125,7 @@ module InitialCondition
          if (x0+Lxyz(1)<=Rstar) then
            write(unit=errormsg,fmt=*) &
            'initial_condition: your wedge has to have a radius bigger than Rstar'//& 
-           'for using a corona'
+           ' for using a corona'
            call fatal_error('initial_condition',errormsg)
          endif
          Rtran=Rtran*Rstar
@@ -134,15 +135,22 @@ module InitialCondition
          if (iproc .eq. root) then
            print*,'initial_condition: you are using a coronal envelope'
          endif
-         do i=l1,l2 
-           if (xglobal(i)>=Rsurf) then
+         do i=1,mx
+           if (x(i)>=Rsurf) then
              nsurf=i
+             exit
+           endif
+         enddo
+         do j=1, nxgrid 
+           if (xglobal(nghost+j)>=Rsurf) then
+             nsurf_global=j
              exit
            endif
          enddo
       else
          Rsurf=x0+Lxyz(1)
          nsurf=l2
+         nsurf_global=nxgrid
       endif
 !
 !  Temperature using a constant polytropic index npoly1
@@ -158,15 +166,32 @@ module InitialCondition
 !  and another step function to make a smooth transition.
 !
         Tcor=Tcor_jump*T00
+        TTc=0
         TTc(nsurf:l2)=Tsurf+(Tcor-Tsurf)*step(x(nsurf:l2),Rtran,wtran)
         TT(nsurf:l2)=TT(nsurf:l2)+(TTc(nsurf:l2)-TT(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin)
-! derivative
+!  global
+        TTc_global(nsurf_global:nxgrid)=Tsurf+(Tcor-Tsurf)*step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
+        TT_global(nsurf_global:nxgrid)=TT_global(nsurf_global:nxgrid) + & 
+                                      (TTc_global(nsurf_global:nxgrid)-TT_global(nsurf_global:nxgrid))* & 
+                                      step(xglobal(nghost+nsurf_global:nxgrid+nghost), Rmin, wmin)
+!  derivative
         dTdr(l1:l2)=-gravx/x(l1:l2)**2./(cv*(gamma-1)*(npoly1+1))
+        dTdr_cor=0
         dTdr_cor(nsurf:l2)=(Tcor-Tsurf)*der_step(x(nsurf:l2),Rtran,wtran)
         dTdr(nsurf:l2)=dTdr(nsurf:l2)+(dTdr_cor(nsurf:l2) - & 
                        dTdr(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin) + &
                        (TTc(nsurf:l2)-TT(nsurf:l2))*der_step(x(nsurf:l2),Rmin, wmin)
+       
         dlnTdr(l1:l2)=dTdr(l1:l2)/TT(l1:l2)
+!  global derivative
+        dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1))
+        dTdrc_global=0
+        dTdrc_global(nsurf_global:nxgrid)=(Tcor-Tsurf)*der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
+        dTdr_global(nsurf_global:nxgrid)=dTdr_global(nsurf_global:nxgrid)+(dTdrc_global(nsurf_global:nxgrid) - & 
+                       dTdr_global(nsurf_global:nxgrid))*step(xglobal(nghost+nsurf_global:nxgrid+nghost), Rmin, wmin) + &
+                       (TTc_global(nsurf_global:nxgrid)-TT_global(nsurf_global:nxgrid)) * &
+                       der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rmin, wmin)
+        dlnTdr_global=dTdr_global/TT_global
       endif
 !
 !  Density stratification assuming an isentropic atmosphere with ss=0. 
@@ -174,12 +199,18 @@ module InitialCondition
       rho_prof(l1:nsurf)=rho0*(TT(l1:nsurf)/T00)**(1./(gamma-1.))
       rho00=rho0*(T00/T00)**(1./(gamma-1.))
       rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
+      rho_global(1:nsurf_global)=rho0*(TT_global(1:nsurf_global)/T00)**(1./(gamma-1.))
 !
       lnrho(l1:nsurf)=log(rho_prof(l1:nsurf)/rho0)
+      lnrho_global(1:nsurf_global)=log(rho_global(1:nsurf_global)/rho0)
       if (lcorona) then
          dlnrhodr=-dlnTdr-gravx/x**2/(cv*(gamma-1)*TT)
+         dlnrhodr_global=-dlnTdr_global-gravx/xglobal(nghost+1:nxgrid+nghost)**2/(cv*(gamma-1)*TT_global)
          do i=nsurf-10, l2
            lnrho(i)=lnrho(i-1)+dlnrhodr(i-1)/dx_1(i-1)
+         enddo
+         do j=nsurf_global-10, nxgrid
+           lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
          enddo
       endif
 !
@@ -203,14 +234,14 @@ module InitialCondition
       coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
 !
       do n=1,nxgrid
-         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
-         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-         if (xglobal(nghost+n)>=Rstar) then
-           npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)+nad-npoly_jump
-!           npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)*exp(1./xglobal(nghost+n)-1./Rstar)+nad-npoly_jump
-           gnpoly2(n)=0
-!           gnpoly2(n)=(-1./xglobal(nghost+n))**2.*(nad-npoly_jump-npoly2(n))
-         endif
+        npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+        gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+        if (xglobal(nghost+n)>=Rstar) then
+          npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)+nad-npoly_jump
+!          npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)*exp(1./xglobal(nghost+n)-1./Rstar)+nad-npoly_jump
+          gnpoly2(n)=0
+!          gnpoly2(n)=(-1./xglobal(nghost+n))**2.*(nad-npoly_jump-npoly2(n))
+        endif
 
       enddo
 !
@@ -223,15 +254,15 @@ module InitialCondition
 !
 !  Compute hcond and glhcond using global x-array
 !
-      coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
+        coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
 !
-      do n=1,nxgrid
-         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
-         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-      enddo
+        do n=1,nxgrid
+           npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+           gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+        enddo
 !
-      kappa=coef1*(npoly2+1.)
-      gkappa=coef1*gnpoly2
+        kappa=coef1*(npoly2+1.)
+        gkappa=coef1*gnpoly2
       endselect
 !
 !  Write kappa and gkappa to file to be read by run.in
@@ -271,11 +302,13 @@ module InitialCondition
       Omsim=fluxratio**(1./3.)*sqrt(gratio)*rratio**(1.5)*Omsun
       chiSGS_top=sqrt(gratio)*fluxratio**(1./3.)*chit0/sqrt(rratio)
 !
-!  Compute total mass. Need to compute global profile of density 
-!  (currently only works without a corona!)
+!  Compute total mass.
 !
-      rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
-      meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+      if (lcorona) then
+         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*exp(lnrho_global))/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+      else
+         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+      endif
       volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
       total_mass=meanrho*volume
 !
@@ -294,7 +327,7 @@ module InitialCondition
          print*,'initial_condition: meanrho    =',meanrho
          print*,'initial_condition: total_mass =',total_mass
          if (lcorona) then
-           print*,'initial_condition: rcool     =',Rsurf+(Rtran-Rsurf)/3.
+           print*,'initial_condition: rcool     =',Rsurf+(Rtran-Rsurf)/6.
            print*,'initial_condition: wcool     =',wmin/2.
            print*,'initial_condition: cs2cool   =',cs2_surf*0.85
            print*,'initial_condition: rcool2    =',Rtran
