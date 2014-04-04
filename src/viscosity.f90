@@ -408,6 +408,14 @@ module Viscosity
         if (lvisc_nu_shock.and.nu_shock==0.0) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_shock is zero!')
+!
+!  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
+!
+        if (ldynamical_diffusion.and..not.lvisc_hyper3_mesh) then
+          call fatal_error("initialize_viscosity",&
+               "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh'")
+        endif
+!
       endif
 !
 !  Register an extra aux slot for dissipation rate if requested (so
