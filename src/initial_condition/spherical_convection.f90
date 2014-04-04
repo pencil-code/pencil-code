@@ -327,12 +327,13 @@ module InitialCondition
          print*,'initial_condition: meanrho    =',meanrho
          print*,'initial_condition: total_mass =',total_mass
          if (lcorona) then
-           print*,'initial_condition: rcool     =',Rsurf+(Rtran-Rsurf)/6.
-           print*,'initial_condition: wcool     =',wmin/2.
-           print*,'initial_condition: cs2cool   =',cs2_surf*0.85
-           print*,'initial_condition: rcool2    =',Rtran
-           print*,'initial_condition: wcool2    =',wtran
-           print*,'initial_condition: cs2cool2  =',cs2_cor
+           print*, ''
+           print*,'initial_condition: rcool      =',Rsurf+(Rtran-Rsurf)/6.
+           print*,'initial_condition: wcool      =',wmin/2.
+           print*,'initial_condition: cs2cool    =',cs2_surf*0.85
+           print*,'initial_condition: rcool2     =',Rtran
+           print*,'initial_condition: wcool2     =',wtran
+           print*,'initial_condition: cs2cool2   =',cs2_cor
          endif
          print*,''
 !
@@ -342,11 +343,12 @@ module InitialCondition
          print*,'initial_condition: Temperature at the surface                 =',Tsurf*T00sun/T00, 'K'
          print*,'initial_condition: Temperature at the bottom                  =',T00sun, 'K'
          if (lcorona) then
-           print*,'initial_condition: Temperature in the corona                =',Tcor*T00sun/T00, 'K'
+           print*,'initial_condition: Temperature in the corona                  =',Tcor*T00sun/T00, 'K'
          endif
          print*,'initial_condition: Density stratification in convection zone  =',rho00/rho_surf
          if (lcorona) then
-           print*,'initial_condition: Density stratification with corona       =',exp(log(rho00)-lnrho(l2))
+           print*,'initial_condition: Density stratification in the corona       =',exp(log(rho_surf)-lnrho(l2))
+           print*,'initial_condition: Density stratification with corona         =',exp(log(rho00)-lnrho(l2))
          endif
          print*,'initial_condition: Turbulent heat conductivity at the surface =',chit0, 'm^2/s'
          print*,''
