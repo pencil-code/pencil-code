@@ -13,7 +13,7 @@ module Param_IO
   use Cosmicray
   use CosmicrayFlux
   use Cparam
-  use Conductivity
+!  use Conductivity
   use Density
   use Detonate
   use Dustdensity
@@ -465,7 +465,7 @@ module Param_IO
         if (lentropy.or.                    &
             ltemperature    ) print*,'&entropy'//partype//'        /'
         if (lthermal_energy ) print*,'&energy'//partype//'         /'
-        if (lconductivity   ) print*,'&conductivity'//partype//'   /'
+!        if (lconductivity   ) print*,'&conductivity'//partype//'   /'
         if (ldetonate       ) print*,'&detonate'//partype//'       /'
         if (lmagnetic       ) print*,'&magnetic'//partype//'       /'
         if (lmagn_mf        ) print*,'&magn_mf'//partype//'        /'
@@ -563,7 +563,7 @@ module Param_IO
       call read_pars(unit,read_selfgravity_run_pars    ,'selfgrav',.true.)
       call read_pars(unit,read_poisson_run_pars        ,'poisson',.true.)
       call read_pars(unit,read_energy_run_pars         ,'entropy',.true.)
-      call read_pars(unit,read_conductivity_run_pars   ,'conductivity',.true.)
+!      call read_pars(unit,read_conductivity_run_pars   ,'conductivity',.true.)
       call read_pars(unit,read_detonate_run_pars       ,'detonate',.true.)
       call read_pars(unit,read_magnetic_run_pars       ,'magnetic',.true.)
       call read_pars(unit,read_lorenz_gauge_run_pars   ,'lorenz_gauge',.true.)
@@ -738,7 +738,7 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_energy_run_pars(unit)
-        call write_conductivity_run_pars(unit)
+!        call write_conductivity_run_pars(unit)
         call write_detonate_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_lorenz_gauge_run_pars(unit)
@@ -1018,7 +1018,7 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_energy_run_pars(unit)
-        call write_conductivity_run_pars(unit)
+!        call write_conductivity_run_pars(unit)
         call write_detonate_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_lorenz_gauge_run_pars(unit)

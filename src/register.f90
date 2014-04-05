@@ -33,7 +33,7 @@ module Register
       use Sub
       use Chemistry,        only: register_chemistry
       use Chiral,           only: register_chiral
-      use Conductivity,     only: register_conductivity
+!      use Conductivity,     only: register_conductivity
       use CosmicrayFlux,    only: register_cosmicrayflux
       use Cosmicray,        only: register_cosmicray
       use Density,          only: register_density
@@ -129,7 +129,7 @@ module Register
       call register_density
       call register_forcing
       call register_energy
-      call register_conductivity
+!      call register_conductivity
       call register_detonate
       call register_magnetic
       call register_lorenz_gauge          !(should go under magnetic)
@@ -198,7 +198,7 @@ module Register
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
-      use Conductivity,     only: initialize_conductivity
+!      use Conductivity,     only: initialize_conductivity
       use CosmicrayFlux,    only: initialize_cosmicrayflux
       use Cosmicray,        only: initialize_cosmicray
       use Density,          only: initialize_density
@@ -379,7 +379,7 @@ module Register
       call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)
       call initialize_energy(f,lstarting)
-      call initialize_conductivity(f,lstarting)
+!      call initialize_conductivity(f,lstarting)
       call initialize_detonate(f, lstarting)
       call initialize_magnetic(f,lstarting)
       call initialize_lorenz_gauge(f)
@@ -554,7 +554,7 @@ module Register
       use Shock,           only: pencil_criteria_shock
       use Viscosity,       only: pencil_criteria_viscosity
       use Energy,          only: pencil_criteria_energy
-      use Conductivity,    only: pencil_criteria_conductivity
+!      use Conductivity,    only: pencil_criteria_conductivity
       use Gravity,         only: pencil_criteria_gravity
       use Selfgravity,     only: pencil_criteria_selfgravity
       use Pscalar,         only: pencil_criteria_pscalar
@@ -589,7 +589,7 @@ module Register
       call pencil_criteria_shock()
       call pencil_criteria_viscosity()
       call pencil_criteria_energy()
-      call pencil_criteria_conductivity()
+!      call pencil_criteria_conductivity()
       call pencil_criteria_gravity()
       call pencil_criteria_selfgravity()
       call pencil_criteria_pscalar()
@@ -637,7 +637,7 @@ module Register
       use Shock, only: pencil_interdep_shock
       use Viscosity, only: pencil_interdep_viscosity
       use Energy, only: pencil_interdep_energy
-      use Conductivity, only: pencil_interdep_conductivity
+!      use Conductivity, only: pencil_interdep_conductivity
       use Gravity, only: pencil_interdep_gravity
       use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
@@ -672,7 +672,7 @@ module Register
       call pencil_interdep_shock(lpencil_in)
       call pencil_interdep_viscosity(lpencil_in)
       call pencil_interdep_energy(lpencil_in)
-      call pencil_interdep_conductivity(lpencil_in)
+!      call pencil_interdep_conductivity(lpencil_in)
       call pencil_interdep_gravity(lpencil_in)
       call pencil_interdep_selfgravity(lpencil_in)
       call pencil_interdep_chemistry(lpencil_in)
@@ -764,7 +764,7 @@ module Register
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
       use Energy,          only: rprint_energy
-      use Conductivity,    only: rprint_conductivity
+!      use Conductivity,    only: rprint_conductivity
       use Detonate,        only: rprint_detonate
       use Magnetic,        only: rprint_magnetic
       use Lorenz_gauge,    only: rprint_lorenz_gauge
@@ -1010,7 +1010,7 @@ module Register
       call rprint_density         (lreset,LWRITE=lroot)
       call rprint_forcing         (lreset,LWRITE=lroot)
       call rprint_energy          (lreset,LWRITE=lroot)
-      call rprint_conductivity    (lreset,LWRITE=lroot)
+!      call rprint_conductivity    (lreset,LWRITE=lroot)
       call rprint_detonate        (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_lorenz_gauge    (lreset,LWRITE=lroot)
