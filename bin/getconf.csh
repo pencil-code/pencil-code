@@ -762,7 +762,22 @@ else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if ($hn =~ eslogin*) then
+else if ((($hn =~ eslogin[0-9]*) || ($hn =~ nid[0-9]*) || ($hn =~ mom[0-9]*)) && ($USER =~ yangchen)) then
+  echo "archer - National Supercomputing Service, UK"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+else if ($hn =~ eslogin[0-9]*) then
   echo "Hermit - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
@@ -776,6 +791,7 @@ else if ($hn =~ eslogin*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
+#----------------------------------------------
 else if (($hn =~ nid*) && ($USER =~ iprpkapy)) then
   echo "Hermit - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
