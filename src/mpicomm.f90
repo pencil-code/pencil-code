@@ -6669,6 +6669,10 @@ module Mpicomm
       do pos=1,bytes
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
+!     *** Using CRAY compilers, comment the previous lines and uncomment:
+!     *** (The CRAY compilers add newlines after each record, really annoying!)
+!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='replace')
+!      write(unit, REC=1) buffer
       close(unit)
       deallocate(buffer)
 !
