@@ -6591,7 +6591,7 @@ module Mpicomm
 !  17-mar-10/Bourdin.KIS: implemented
 !
       use Cparam, only: fnlen
-      use Syscalls, only: file_size, get_tmp_prefix
+      use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
 !
       integer :: unit
       character (len=*) :: file
@@ -6657,23 +6657,7 @@ module Mpicomm
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
-!     *** WORK HERE:
-!     *** Instead of writing N records with one byte, we want to write 1 record with N bytes...
-!     *** Problem is that the record length is not neccessarily in bytes.
-!     *** Solution is => we need to devide by the number of bytes per record.
-!     *** But, how to determine the number of bytes per record?
-!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes/bpr, ACCESS='direct', STATUS='replace')
-!      write(unit, REC=1) buffer
-!     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
-      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', STATUS='replace')
-      do pos=1,bytes
-        write (unit, '(A)', REC=pos) buffer(pos)
-      enddo
-!     *** Using CRAY compilers, comment the previous lines and uncomment:
-!     *** (The CRAY compilers add newlines after each record, really annoying!)
-!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='replace')
-!      write(unit, REC=1) buffer
-      close(unit)
+      call write_binary_file(filename, bytes, buffer)
       deallocate(buffer)
 !
 !  Open temporary file.

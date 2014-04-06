@@ -47,6 +47,31 @@ void FTNIZE(file_size_c)
 
 /* ---------------------------------------------------------------------- */
 
+void FTNIZE(write_binary_file_c)
+     (char *filename, FINT *bytes, char *buffer, FINT *result)
+/* Writes a given buffer to a binary file.
+   Returns:
+   * positive integer containing the number of written bytes
+   * -2 if the file could not be opened
+   * -1 if writing the buffer failed
+*/
+{
+  int file = -1;
+  int written = 0;
+
+  *result = -2;
+  file = open (filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+  if(file == -1) return;
+
+  *result = -1;
+  written = (int) write (file, buffer, *bytes);
+  close (file);
+  if(written != *bytes) return;
+  *result = written;
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FTNIZE(get_pid_c)
      (FINT *pid)
 /* Determines the PID of the current process.
@@ -108,6 +133,7 @@ void FTNIZE(system_c) (char *command)
 */
 {
   int res=system(command);
+  if (res == -1) return; // some error handling is missing here [Bourdin.KIS]
 }
 
 /* ---------------------------------------------------------------------- */

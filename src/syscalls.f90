@@ -7,6 +7,7 @@ module Syscalls
   implicit none
 !
   external file_size_c
+  external write_binary_file_c
   external get_pid_c
   external get_env_var_c
   external is_nan_c
@@ -87,6 +88,30 @@ module Syscalls
       call file_size_c(trim(file)//char(0), file_size)
 !
     endfunction file_size
+!***********************************************************************
+    subroutine write_binary_file(file,bytes,buffer)
+!
+!  Writes a given buffer to a binary file.
+!
+!  06-Apr-2014/Bourdin.KIS: coded
+!
+      character (len=*) :: file
+      integer :: bytes, result
+      character, dimension(:) :: buffer
+!
+      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
+      if (result /= bytes) then
+        if (result < 0) then
+          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
+        elseif (result == 0) then
+          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
+        else
+          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"'
+        endif
+        stop
+      endif
+!
+    endsubroutine write_binary_file
 !***********************************************************************
     function count_lines(file,comchars)
 !
