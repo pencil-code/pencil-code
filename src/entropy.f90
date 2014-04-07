@@ -75,7 +75,7 @@ module Energy
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
-  real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
+  real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
   real :: rescale_TTmeanxy=1.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
@@ -2632,9 +2632,11 @@ module Energy
         lpenc_diagnos(i_cs2)=.true.
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
-      if (idiag_fradbot/=0) then
+      if (idiag_fradbot/=0 .or. idiag_fradtop/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cp)=.true.
+        lpenc_diagnos(i_TT)=.true.
+        lpenc_diagnos(i_glnTT)=.true.
       endif
       if (idiag_cs2mphi/=0) lpenc_diagnos(i_cs2)=.true.
 !
@@ -6047,7 +6049,8 @@ module Energy
       do iz=2,nzgrid
         zm=ztop-(iz-1)*dz
         zz(iz)=zm
-        if (zm<=z1) then
+!        if (zm<=z1) then
+        if (zm<z1) then
 !
 !  radiative zone=polytropic stratification
 !
@@ -6057,7 +6060,7 @@ module Energy
 !
 !  convective zone=mixing-length stratification
 !
-            del=delad+1.5*(fc/ &
+            del=delad+alpha_MLT*(fc/ &
                 (exp(lnrhom(iz-1))*(gamma_m1*tempm(iz-1))**1.5))**.6666667
           else
 !
