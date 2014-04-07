@@ -219,6 +219,7 @@ module Hydro
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
   integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
@@ -2528,6 +2529,8 @@ module Hydro
         if (idiag_urmsx/=0)   call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
         if (idiag_urmsz/=0)   call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_uxrms/=0) &
+            call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
         if (idiag_uzrmaxs/=0) &
@@ -3878,6 +3881,7 @@ module Hydro
         idiag_urmsx=0
         idiag_urmsz=0
         idiag_umax=0
+        idiag_uxrms=0
         idiag_uzrms=0
         idiag_uzrmaxs=0
         idiag_uxmin=0
@@ -4148,6 +4152,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxmax',idiag_uxmax)
         call parse_name(iname,cname(iname),cform(iname),'uymax',idiag_uymax)
         call parse_name(iname,cname(iname),cform(iname),'uzmax',idiag_uzmax)
+        call parse_name(iname,cname(iname),cform(iname),'uxrms',idiag_uxrms)
         call parse_name(iname,cname(iname),cform(iname),'uzrms',idiag_uzrms)
         call parse_name(iname,cname(iname),cform(iname),'uzrmaxs',idiag_uzrmaxs)
         call parse_name(iname,cname(iname),cform(iname),'uxm',idiag_uxm)
