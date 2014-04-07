@@ -89,8 +89,7 @@ def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylo
             A boolean value for turning on or off logarithmic scale in
             y axis.
     """
-    # Chao-Chin Yang, 2014-03-14
-
+    # Chao-Chin Yang, 2014-04-07
     from . import read
     import matplotlib.pyplot as plt
 
@@ -102,6 +101,9 @@ def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylo
         it = list(range(len(ts.t)))
     else:
         it = (trange[0] <= ts.t) & (ts.t <= trange[1])
+        if not it.any():
+            print("No data lies in the time range. ")
+            it = list(range(len(ts.t)))
 
     # Determine the axis scales.
     if xlog and ylog:
