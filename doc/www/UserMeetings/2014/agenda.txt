@@ -23,3 +23,6 @@ Topics for Pencil code User Meeting in Göttingen 2014:
   e.g. for labels, boundary conditions, filenames, etc.
   [Philippe]
 
+- Add missing content for "/doc/www/samples/" and "/doc/www/highlights/".
+  []
+
