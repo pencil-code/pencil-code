@@ -29,7 +29,7 @@ module Forcing
   include 'forcing.h'
 !
   real :: force=0.,force2=0., force1_scl=1., force2_scl=1.
-  real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
+  real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
   real :: radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
@@ -110,7 +110,8 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
+       iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
+       rcyl_ff,width_ff,nexp_ff, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -391,6 +392,14 @@ module Forcing
         profz_ampl=1.
         profz_hel=.5*(1.-erfunc((z-r_ff)/width_ff))
 !
+!  turn off helicity of forcing above z=0
+!
+      elseif (iforce_profile=='surface_amplhelz') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
+        profz_hel=.5*(1.-erfunc((z-r_ff_hel)/width_ff))
+!
 !  turn off forcing intensity above z=z0, and
 !  stepx profile of helicity
 !
@@ -610,6 +619,8 @@ module Forcing
           lgentle=.true.
           if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
         endif
+      elseif (iforcing_cont=='(0,sinx,0)') then
+        sinx=sin(k1_ff*x)
       elseif (iforcing_cont=='(0,0,cosx)') then
         cosx=cos(k1_ff*x)
       elseif (iforcing_cont=='(sinz,cosz,0)') then
@@ -4597,6 +4608,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=0.
           force(:,3)=ampl_ff*cosx(l1:l2)
 !
+!  f=(0,sinx,0)
+!
+        case ('(0,sinx,0)')
+          force(:,1)=0.
+          force(:,2)=ampl_ff*sinx(l1:l2)
+          force(:,3)=0.
+!
 !  f=(0,cosz,0)
 !
         case ('(0,cosz,0)')
@@ -4671,7 +4689,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           fact=2.*ampl_ff/radius_ff**2
           tmp=fact*exp(-.5*((x(l1:l2)-location_fixed(1))**2 &
                            +(y(m)    -location_fixed(2))**2 &
-                           +(z(n)    -location_fixed(3))**2)/radius_ff)
+                           +(z(n)    -location_fixed(3))**2)/radius_ff**2)
           force(:,1)=tmp*(x(l1:l2)-location_fixed(1))
           force(:,2)=tmp*(y(m)    -location_fixed(2))
           force(:,3)=tmp*(z(n)    -location_fixed(3))
