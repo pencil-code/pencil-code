@@ -267,6 +267,7 @@ module Energy
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
                                 ! YZAVG_DOC: heat flux)
+  integer :: idiag_dcoolx=0     ! YZAVG_DOC: surface cooling flux
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -4918,7 +4919,7 @@ module Energy
 !
 !   1-sep-08/dhruba: coded
 !
-      use Diagnostics, only: sum_mn_name, zsum_mn_name_xy
+      use Diagnostics, only: zsum_mn_name_xy, yzsum_mn_name_x
       use Debug_IO, only: output_pencil
       use Sub, only: step
 !
@@ -5022,6 +5023,10 @@ module Energy
       endselect
 !
 !  Write divergence of cooling flux.
+!
+      if (l1davgfirst) then
+        call yzsum_mn_name_x(heat,idiag_dcoolx)
+      endif
 !
       if (l2davgfirst) then
         if (idiag_dcoolxy/=0) call zsum_mn_name_xy(heat,idiag_dcoolxy)
@@ -5307,7 +5312,7 @@ module Energy
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0
-        idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
+        idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
@@ -5363,6 +5368,7 @@ module Energy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzTTmx',idiag_uzTTmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradmx',idiag_fradmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fturbmx',idiag_fturbmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'dcoolx',idiag_dcoolx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
