@@ -261,13 +261,15 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
-      real :: cv1
+      real :: cv1,cp1
       integer, pointer :: iglobal_cs2
 !
       if (llocal_iso) then
         call farray_use_global('cs2',iglobal_cs2)
       elseif (lentropy) then
         call get_cv1(cv1)
+      elseif (ltemperature) then 
+        call get_cp1(cp1)
       endif
 !
       do n=n1,n2; do m=m1,m2
@@ -277,6 +279,12 @@ module InitialCondition
           !even with ldensity_nolog=T, this rho is in log
           cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
                gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))
+        elseif (ltemperature) then 
+          if (ltemperature_nolog) then
+            cs2=f(l1:l2,m,n,iTT)*gamma_m1/cp1
+          else
+            cs2=exp(f(l1:l2,m,n,ilnTT))*gamma_m1/cp1
+          endif
         endif
         call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
       enddo; enddo
@@ -402,7 +410,11 @@ module InitialCondition
             call farray_use_global('cs2',iglobal_cs2)
             ics2=iglobal_cs2
           elseif (ltemperature) then
-            ics2=ilnTT
+            if (ltemperature_nolog) then 
+              ics2=iTT
+            else
+              ics2=ilnTT
+            endif
           elseif (lentropy) then
             ics2=iss
           endif
@@ -654,7 +666,11 @@ module InitialCondition
           endif
         elseif (ltemperature) then
 !  else do it as temperature ...
-          f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
+          if (ltemperature_nolog) then 
+            f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
+          else
+            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
+          endif
         elseif (lentropy) then
 !  ... or entropy
           lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
