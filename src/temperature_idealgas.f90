@@ -70,6 +70,7 @@ module Energy
   integer :: iglobal_glhc=0
   logical :: linitial_log=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
+  character (len=labellen) :: borderss='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   complex :: coef_lnTT=0.
   character (len=intlen) :: iinit_str
@@ -93,7 +94,7 @@ module Energy
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
-      cool, beta_bouss
+      cool, beta_bouss, borderss
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -200,6 +201,7 @@ module Energy
 !  6-nov-01/wolf: coded
 ! 18-may-12/MR: shared variable PrRa fetched from hydro
 !
+      use BorderProfiles, only: request_border_driving
       use FArrayManager, only: farray_register_pde
       use SharedVariables, only: get_shared_variable
 !
@@ -225,6 +227,11 @@ module Energy
         call get_shared_variable('PrRa',PrRa,ierr)
         if (ierr/=0) call fatal_error('register_energy','PrRa')
       endif
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderss/='nothing') call request_border_driving(borderss)
 !
 !  Identify version number.
 !
@@ -1104,6 +1111,10 @@ module Energy
         print*, 'denergy_dt: max(diffus_chi3) =', maxval(diffus_chi3)
       endif
 !
+!  Apply border profile
+!
+      if (lborder_profiles) call set_border_entropy(f,df,p)
+!
 !  Calculate temperature related diagnostics.
 !
       if (ldiagnos) then
@@ -1214,6 +1225,59 @@ module Energy
       endif
 !
     endsubroutine denergy_dt
+!***********************************************************************
+    subroutine set_border_entropy(f,df,p)
+!
+!  Calculates the driving term for the border profile
+!  of the ss variable.
+!
+!  28-jul-06/wlad: coded
+!
+      use BorderProfiles, only: border_driving, set_border_initcond
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx) :: f_target
+!
+      select case (borderss)
+!
+      case ('zero','0')
+        if (ltemperature_nolog) then
+          f_target=0.0
+        else
+          f_target=1.0
+        endif
+      case ('constant')
+        if (ltemperature_nolog) then
+          f_target=TT_const
+        else
+          f_target=lnTT_const
+        endif
+      case ('initial-condition')
+        if (ltemperature_nolog) then
+          call set_border_initcond(f,iTT,f_target)
+        else
+          call set_border_initcond(f,ilnTT,f_target)
+        endif
+      case ('nothing')
+        if (lroot.and.ip<=5) &
+            print*, "set_border_entropy: borderss='nothing'"
+      case default
+        write(unit=errormsg,fmt=*) &
+            'set_border_entropy: No such value for borderss: ', trim(borderss)
+        call fatal_error('set_border_entropy',errormsg)
+      endselect
+!
+      if (borderss/='nothing') then
+        if (ltemperature_nolog) then
+          call border_driving(f,df,p,f_target,iTT)
+        else
+          call border_driving(f,df,p,f_target,ilnTT)
+        endif
+      endif
+!
+    endsubroutine set_border_entropy
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
