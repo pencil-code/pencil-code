@@ -82,8 +82,8 @@ module Interstellar
   integer, parameter :: npreSN = 5
   integer, dimension(4,npreSN) :: preSN
 !
-  integer :: icooling=0
-  integer :: icooling2=0
+!  integer :: icooling=0
+!  integer :: icooling2=0
 !
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil

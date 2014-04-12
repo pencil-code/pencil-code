@@ -291,6 +291,7 @@ module Cdata
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer :: iglobal_jx_ext=0, iglobal_jy_ext=0, iglobal_jz_ext=0
   integer :: iglobal_ex_ext=0, iglobal_ey_ext=0, iglobal_ez_ext=0
+  integer :: icooling=0, icooling2=0
 !
 !  Parameters related to message passing.
 !
