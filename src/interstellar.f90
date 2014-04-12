@@ -93,7 +93,7 @@ module Interstellar
 !
 !  Allocate time of next SNI/II and intervals until next
 !
-  real :: t_next_SNI=0.0, t_next_SNII=0.0
+  real :: t_next_SNI=0.0, t_next_SNII=0.0, t_next_mass=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
 !
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
@@ -1358,7 +1358,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
 !
-      real :: logrho
+      double precision :: logrho
       real :: muhs
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -1394,13 +1394,13 @@ module Interstellar
         if (lthermal_hse) then
           logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
               log(T0hs/(g_A*g_B)* &
-              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)))
+              (g_A*sqrt(g_B**2+(z(n))**2)+0.5d0*g_C*(z(n))**2/g_D)))
         else
-          logrho = log(rho0ts)-0.015*(- &
+          logrho = log(rho0ts)-0.015d0*(- &
               g_A*g_B+ &
-              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
+              g_A*sqrt(g_B**2+(z(n))**2)+0.5d0*g_C*(z(n))**2/g_D)
         endif
-        logrho=max(logrho,-80.0)
+        if (logrho < -40.d0) logrho=-40.d0
         zrho(n)=exp(logrho)
       enddo
 !
@@ -1475,24 +1475,24 @@ module Interstellar
         lnTT(n)=log(TT(n))
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
       enddo
+      lam_loop: do j=1,ncool
+        if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
+        where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
+          lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
+        endwhere
+      enddo lam_loop
       if (lthermal_hse) then
-        lam_loop: do j=1,ncool
-          if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
-          where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1))
-            lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
-          endwhere
-        enddo lam_loop
         zheat=lambda*zrho
       endif
       if (lheatz_min) then
         where (zheat<1e-5*GammaUV) zheat=1e-5*GammaUV
       endif
-      do n=n1,n2
-        if (lstarting) then
+      if (lstarting) then
+        do n=n1,n2
           f(:,:,n,icooling)=zheat(n)
           f(:,:,n,icooling2)=zheat(n)-lambda(n)*zrho(n)
-        endif
-      enddo
+        enddo
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -1788,7 +1788,7 @@ module Interstellar
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=1
         SNRs(iSNR)%radius=width_SN
-        try_count=50
+        try_count=10
 !
         do while (try_count>0)
           ierr=iEXPLOSION_OK
@@ -1833,7 +1833,7 @@ module Interstellar
 !
         if (try_count==0) then
           if (lroot) print*, &
-              "check_SNI: 50 RETRIES OCCURED - skipping SNI insertion"
+              "check_SNI: 10 RETRIES OCCURED - skipping SNI insertion"
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -1869,7 +1869,7 @@ module Interstellar
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=2
         SNRs(iSNR)%radius=width_SN
-        try_count=50
+        try_count=10
 !
         do while (try_count>0)
           ierr=iEXPLOSION_OK
@@ -1913,7 +1913,7 @@ module Interstellar
 !
         if (try_count==0) then
           if (lroot) print*, &
-              "check_SNIIb: 50 RETRIES OCCURED - skipping SNII insertion"
+              "check_SNIIb: 10 RETRIES OCCURED - skipping SNII insertion"
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -2243,10 +2243,23 @@ module Interstellar
 !  Determine position for next SN (w/ fixed scale-height).
 !
     use General, only: random_number_wrapper
+    use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
+                       mpibcast_real
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) :: h_SN
     type (SNRemnant), intent(inout) :: SNR
+!
+!  parameters required to determine the vertical centre of mass of the disk
+!
+    real, dimension(nprocz) :: tmp3
+    real, dimension(nz) :: rhotmp
+    real :: zdisk, rhomax, maxrho, rhosum
+    real, dimension(1) :: mpirho, mpiz
+    real, dimension(ncpus):: tmp2
+    integer :: yzproc, itmp, icpu
+!  
+!  parameters for random location of SN - about zdisk
 !
     real, dimension(nzgrid) :: cum_prob_SN
     real :: zn, z00, x00, y00
@@ -2260,6 +2273,56 @@ module Interstellar
     if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
     if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
     if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+!
+!  The disk oscillates. to keep the random dist centred at the disk find
+!  zmode where the peak mean density(z) resides and shift gaussian up/down
+!
+    rhomax=0.0
+    zdisk=0.0
+!    
+    if (h_SN==h_SNII) then
+      if (ldensity_nolog) then
+        rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))
+      else
+        rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+      endif
+!      
+      do icpu=1,ncpus
+        mpirho=(/rhosum/)
+        call mpibcast_real(mpirho,1,icpu-1)
+        tmp2(icpu)=mpirho(1)
+      enddo
+!
+      do i=1,nprocz
+        tmp3(i)=sum(tmp2((i-1)*nprocy+1:i*nprocy))
+      enddo
+!
+      rhomax=maxval(tmp3)
+      do i=1,nprocz
+        if (tmp3(i)==rhomax) itmp=(i-1)*nprocy
+      enddo
+      rhomax=maxval(tmp2(itmp+1:itmp+nprocy))
+      do icpu=1,nprocy
+        if (tmp2(icpu+itmp) == rhomax) yzproc=icpu+itmp-1
+      enddo
+!
+      if (iproc==yzproc) then
+        rhomax=0.0
+        do i=n1,n2
+          if (ldensity_nolog) then
+            rhotmp(i-nghost)=sum(f(l1:l2,m1:m2,i,irho))
+          else
+            rhotmp(i-nghost)=sum(exp(f(l1:l2,m1:m2,i,ilnrho)))
+          endif
+          maxrho=max(rhomax,rhotmp(i-nghost))
+          rhomax=maxrho
+          if (rhotmp(i-nghost) == rhomax) zdisk = z(i)
+        enddo
+        mpiz=(/zdisk/)
+      endif
+      call mpibcast_real(mpiz,1,yzproc)
+      zdisk = mpiz(1)
+    endif
 !
 !  Pick SN position (SNR%l,SNR%m,SNR%n).
 !
@@ -2275,13 +2338,13 @@ module Interstellar
       SNR%ipy=(i-1)/ny  ! uses integer division
       SNR%m=i-(SNR%ipy*ny)+nghost
 !
-!  Cumulative probability function in z currently calculated each time.
-!  It's constant, and could be stored (and calculated in init).
+!  Cumulative probability function in z calculated each time for moving zdisk.
 !
+      print*,'position_SN_gaussianz: zdisk =',zdisk
       cum_prob_SN=0.0
       do i=nzskip+1,nzgrid-nzskip
         zn=z00+(i-1)*dz
-        cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-(zn/h_SN)**2)
+        cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
       enddo
       cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
@@ -2629,11 +2692,12 @@ module Interstellar
 !
 !  10-Jun-10/fred:
 !  Adjust radius according to density of explosion site to concentrate energy
-!  in dense locations.
+!  when locations are dense.
 !
         SNR%radius=width_SN
         if (lSN_scale_rad) &
-            SNR%radius=(solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
+            SNR%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
+        SNR%radius=max(SNR%radius,1.75*dxmax) ! minimum grid resolution
 !
         m=SNR%m
         n=SNR%n
@@ -2731,12 +2795,13 @@ module Interstellar
 !  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
-        do i=1,9
-          SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
+        do i=1,20       
+          SNR%radius=(0.75*solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
+          SNR%radius=max(SNR%radius,1.75*dxmax)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%rhom=rhom
         enddo
-        SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
+        SNR%radius=(0.75*solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
         SNR%radius=max(SNR%radius,1.75*dxmax)
       endif
       call get_properties(f,SNR,rhom,ekintot)
@@ -3071,13 +3136,6 @@ module Interstellar
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-!          if (maxTT>5.*TT_SN_new) then
-!            if (present(ierr)) then
-!              ierr=iEXPLOSION_TOO_UNEVEN
-!            endif
-!            return
-!          endif
-!
           if (maxTT>TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
@@ -3091,7 +3149,21 @@ module Interstellar
 !
       if (present(ierr)) then
         call mpibcast_int(ierr,1,SNR%iproc)
-        if (ierr==iEXPLOSION_TOO_UNEVEN.or.ierr==iEXPLOSION_TOO_HOT) return
+        if (ierr==iEXPLOSION_TOO_HOT) return
+      endif
+!
+      if (lSN_velocity)then
+        call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
+        if (ekintot_new-ekintot > 2.5*kampl_SN) then
+          if (present(ierr)) then
+            ierr=iEXPLOSION_TOO_UNEVEN
+          endif
+        endif
+      endif
+!
+      if (present(ierr)) then
+        call mpibcast_int(ierr,1,SNR%iproc)
+        if (ierr==iEXPLOSION_TOO_UNEVEN) return
       endif
 !
       mpi_tmp=(/ site_mass /)
@@ -3449,14 +3521,18 @@ module Interstellar
       double precision :: radius2
       double precision :: rhom, ekintot
       real, dimension(nx) :: rho, u2
+      real, dimension(nx,3) :: uu
+      double precision, dimension(nx) :: drho, dbu2
       integer, dimension(nx) :: mask
       double precision, dimension(3) :: tmp,tmp2
+      logical :: precise_sqrt=.true.
 !
-!  Obtain distance to SN and sum all points inside 1.5 * SNR radius and
+!  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      radius2 = (1.5*remnant%radius)**2
-      tmp=0.
+      radius2 = (remnant%radius)**2
+      tmp=0.d0
+      tmp2=0.d0
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(remnant)
@@ -3466,8 +3542,16 @@ module Interstellar
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        call dot2(f(l1:l2,m,n,iuu:iuu+2),u2)
-        tmp(3)=tmp(3)+sum(rho*u2)
+!
+!  Necessary to compute ekintot in double precision here as very low rho  
+!  can multiply very low u2 to make NaN. fred. 
+!
+        uu=f(l1:l2,m,n,iuu:iuu+2)
+        where (abs(f(l1:l2,m,n,iuu:iuu+2))<2e-19) uu=0.0
+        call dot2(uu,u2)
+        dbu2=u2
+        drho=rho
+        tmp(3)=tmp(3)+sum(drho*dbu2)
         where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
@@ -3483,15 +3567,99 @@ module Interstellar
       call mpireduce_sum_double(tmp,tmp2,3)
       call mpibcast_double(tmp2,3)
       ekintot=0.5*tmp2(3)*dv
-      if (abs(tmp2(2)) < 1e-30) then
+      if (abs(tmp2(2)) < 1.0D-30) then
         write(0,*) 'tmp = ', tmp
         call fatal_error("interstellar.get_properties","Dividing by zero?")
-        rhom=0.
+        rhom=0.D0
       else
         rhom=tmp2(1)/tmp2(2)
       endif
 !
     endsubroutine get_properties
+!*****************************************************************************
+    subroutine get_props_check(f,remnant,rhom,ekintot,cvelocity_SN,cmass_SN)
+!
+!  Calculate integral of mass cavity profile and total kinetic energy.
+!
+!  22-may-03/tony: coded
+!  10-oct-09/axel: return zero density if the volume is zero
+!
+      use Sub
+      use Mpicomm
+!
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      type (SNRemnant) :: remnant
+      double precision, intent(in) :: cvelocity_SN, cmass_SN
+      double precision :: radius2
+      double precision :: rhom, ekintot
+      double precision :: width_mass, width_velocity
+      real, dimension(nx) :: rho, u2
+      real, dimension(nx,3) :: uu
+      double precision, dimension(nx) :: drho, dbu2, deltarho
+      double precision, dimension(nx,3) :: deltauu
+      integer, dimension(nx) :: mask
+      double precision, dimension(3) :: tmp,tmp2
+      logical :: precise_sqrt=.true.
+!
+!  Obtain distance to SN and sum all points inside SNR radius and
+!  divide by number of points.
+!
+      width_mass     = remnant%radius*mass_width_ratio
+      width_velocity = remnant%radius*velocity_width_ratio
+      radius2 = (remnant%radius)**2
+      tmp=0.d0
+      tmp2=0.d0
+      do n=n1,n2
+      do m=m1,m2
+        call proximity_SN(remnant)
+        mask=1
+        if (ldensity_nolog) then
+          rho=f(l1:l2,m,n,irho)
+        else
+          rho=exp(f(l1:l2,m,n,ilnrho))
+        endif
+        if (lSN_mass) then
+          call injectmass_SN(deltarho,width_mass,cmass_SN,remnant%MM)
+          rho=rho+deltarho
+        endif
+!
+!  Necessary to compute ekintot in double precision here as very low rho  
+!  can multiply very low u2 to make NaN. fred. 
+!
+        uu=f(l1:l2,m,n,iuu:iuu+2)
+        if (lSN_velocity) then
+          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN)
+          uu=uu+deltauu
+        endif
+        where (abs(f(l1:l2,m,n,iuu:iuu+2))<2e-19) uu=0.0
+        call dot2(uu,u2)
+        dbu2=u2
+        drho=rho
+        tmp(3)=tmp(3)+sum(drho*dbu2)
+        where (dr2_SN(1:nx) > radius2)
+          rho(1:nx)=0.
+          mask(1:nx)=0
+        endwhere
+        tmp(1)=tmp(1)+sum(rho)
+        tmp(2)=tmp(2)+sum(mask)
+      enddo
+      enddo
+!
+!  Calculate mean density inside the remnant and return zero if the volume is
+!  zero.
+!
+      call mpireduce_sum_double(tmp,tmp2,3)
+      call mpibcast_double(tmp2,3)
+      ekintot=0.5*tmp2(3)*dv
+      if (abs(tmp2(2)) < 1.0D-30) then
+        write(0,*) 'tmp = ', tmp
+        call fatal_error("interstellar.get_properties","Dividing by zero?")
+        rhom=0.D0
+      else
+        rhom=tmp2(1)/tmp2(2)
+      endif
+!
+    endsubroutine get_props_check
 !*****************************************************************************
     subroutine get_lowest_rho(f,SNR,radius,rho_lowest)
 !
@@ -3571,7 +3739,7 @@ module Interstellar
         dr_SN=sqrt(dr2_SN)
         dr_SN=max(dr_SN(1:nx),tiny(0.d0))
 !
-!  Avoid dr_SN = 0 abovee to avoid div by zero below.
+!  Avoid dr_SN = 0 above to avoid div by zero below.
 !
         outward_normal_SN(:,1)=dx_SN/dr_SN
         where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
@@ -3957,131 +4125,182 @@ module Interstellar
 !  the mass flux proportionately throughout the volume to substitute mass
 !  which would otherwise be replaced over time by the galactic fountain.
 !
-!  12-Jul-10/fred: coded
-!
-      use Mpicomm, only: mpireduce_sum_double, mpibcast_double, &
-                         mpibcast_real, mpireduce_max
+!  23-Nov-11/fred: coded
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !
-      real :: prec_factor=1.0e-6
-      double precision, dimension(1) :: sum_tmp, rmpi
-      double precision :: bflux, bmass, add_ratio, rhosum
-      double precision, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
-      double precision :: newmass, oldmass
+      real :: prec_factor=1.0e-7
+      double precision :: add_ratio
       integer :: l,m,n
 !
 !  Skip this subroutine if not selected eg before turbulent pressure settles
 !
       if (.not. ladd_massflux) return
 !
-!  Calculate the total flux through the vertical boundaries to determine
-!  mass loss to the system. Sum the total mass in the domain.
+!  Only add boundary mass at intervals to reduce MPI operations and to
+!  ensure flux replacement are large enough to reduce losses at the limit
+!  of machine accuracy. At same frequency as SNII.
 !
-      if (ldensity_nolog) then
-        rhosum = sum(dble(f(l1:l2,m1:m2,n1:n2,irho)))
-      else
-        rhosum = sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
-      endif
-      sum_tmp=(/ rhosum /)
-      call mpireduce_sum_double(sum_tmp,rmpi,1)
-      call mpibcast_double(rmpi,1)
-      rhosum=rmpi(1)
-      oldmass=rhosum*dv
-!
-!  Calculate mass loss through the vertical boundaries rho*u_z
-!
-      bflux=0.d0
-      do n=n1,n2
-        if (z(n) == xyz0(3)) then
-          do l=l1,l2
-          do m=m1,m2
-            if (ldensity_nolog) then
-              bflux=bflux-dble(f(l,m,n,irho))*dble(f(l,m,n,iuz))
-            else
-              bflux=bflux-exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
-            endif
-          enddo
-          enddo
-        endif
-        if (z(n) == xyz1(3)) then
-          do l=l1,l2
-          do m=m1,m2
-            if (ldensity_nolog) then
-              bflux=bflux+dble(f(l,m,n,irho))*dble(f(l,m,n,iuz))
-            else
-              bflux=bflux+exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
-            endif
-          enddo
-          enddo
-        endif
-      enddo
-      sum_1tmp=(/ bflux /)
-!
-      if (ip<45.and.bflux /=0.0) print*,'addmassflux: bflux on iproc =', &
-                                                     bflux, iproc
-!
-!  Sum over all processors and communicate total to all.
-!
-      call mpireduce_sum_double(sum_1tmp,bfmpi,1)
-      call mpibcast_double(bfmpi,1)
-      bflux=bfmpi(1)
-      if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
-      if (bflux>0.d0) then
-!
-!  Multiply mass flux by area element and timestep to determine lost mass.
-!  Add unused flux mass from previous timesteps.
-!
-        bmass=bflux*dt*dx*dy+boldmass
+      if (t >= t_next_mass) then
 !
 !  Determine multiplier required to restore mass to level before boundary
 !  losses. addrate (default=1.0) can be increased to raise mass levels if
 !  required.
 !
-        add_ratio=(bmass*addrate+oldmass)/oldmass
-!
-        if (lroot.and.ip<45) print*, &
-            'addmassflux: bmass, add_ratio, timestep =', &
-            bmass, add_ratio, dt
+        add_ratio=1.d0+prec_factor*addrate
 !
 !  Add mass proportionally to the existing density throughout the
 !  volume to replace that lost through boundary.
 !  add_ratio needs to be large enough for single precision to record small
 !  changes, so accumulate small mass losses in boldmass until large enough.
 !
-        if (add_ratio>=prec_factor+1.d0) then
-          if (ldensity_nolog) then
-            f(l1:l2,m1:m2,n1:n2,irho)= &
-                dble(f(l1:l2,m1:m2,n1:n2,irho))*add_ratio
-          else
-            f(l1:l2,m1:m2,n1:n2,ilnrho)= &
-                dble(f(l1:l2,m1:m2,n1:n2,ilnrho))+log(add_ratio)
-          endif
-!
-!  For debugging purposes newmass can be calculated and compared to
-!  bmass+oldmass, which should be equal.
-!
-          if (ldensity_nolog) then
-            rhosum=sum(dble(f(l1:l2,m1:m2,n1:n2,irho)))
-          else
-            rhosum=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
-          endif
-          sum_3tmp=(/ rhosum /)
-          call mpireduce_sum_double(sum_3tmp,nmpi,1)
-          call mpibcast_double(nmpi,1)
-          rhosum=nmpi(1)
-          newmass=nmpi(1)*dv
-          if (lroot.and.ip<45) print*,'addmassflux: oldmass, newmass =', &
-              oldmass, newmass
-          if (lroot.and.ip<70) print*, &
-              'addmassflux: added mass vs mass flux=', &
-              newmass-oldmass, bmass
-          boldmass=0.d0
+        if (ldensity_nolog) then
+          f(l1:l2,m1:m2,n1:n2,irho)= &
+              dble(f(l1:l2,m1:m2,n1:n2,irho))*add_ratio
         else
-          boldmass=bmass
+          f(l1:l2,m1:m2,n1:n2,ilnrho)= &
+              dble(f(l1:l2,m1:m2,n1:n2,ilnrho))+log(add_ratio)
         endif
+        t_next_mass=t_next_SNII
       endif
 !
     endsubroutine addmassflux
 !*****************************************************************************
+!    subroutine addmassflux(f)
+!!
+!!  This routine calculates the mass flux through the vertical boundary.
+!!  As no inflow boundary condition precludes galactic fountain this adds
+!!  the mass flux proportionately throughout the volume to substitute mass
+!!  which would otherwise be replaced over time by the galactic fountain.
+!!
+!!  12-Jul-10/fred: coded
+!!  This older routine is numerically expensive and above was adopted using a
+!!  simple factor to keep the mean density steady following hydrodynamic 
+!!  steady turbulence 
+!
+!      use Mpicomm, only: mpireduce_sum_double, mpibcast_double, &
+!                         mpibcast_real, mpireduce_max
+!!
+!      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+!!
+!      real :: prec_factor=1.0e-6
+!      double precision, dimension(1) :: sum_tmp, rmpi
+!      double precision :: bflux, bmass, add_ratio, rhosum
+!      double precision, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
+!      double precision :: newmass, oldmass
+!      integer :: l,m,n
+!!
+!!  Skip this subroutine if not selected eg before turbulent pressure settles
+!!
+!      if (.not. ladd_massflux) return
+!!
+!!  Calculate the total flux through the vertical boundaries to determine
+!!  mass loss to the system. Sum the total mass in the domain.
+!!
+!      if (ldensity_nolog) then
+!        rhosum = sum(dble(f(l1:l2,m1:m2,n1:n2,irho)))
+!      else
+!        rhosum = sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
+!      endif
+!      sum_tmp=(/ rhosum /)
+!      call mpireduce_sum_double(sum_tmp,rmpi,1)
+!      call mpibcast_double(rmpi,1)
+!      rhosum=rmpi(1)
+!      oldmass=rhosum*dv
+!!
+!!  Calculate mass loss through the vertical boundaries rho*u_z
+!!
+!      bflux=0.d0
+!      do n=n1,n2
+!        if (z(n) == xyz0(3)) then
+!          do l=l1,l2
+!          do m=m1,m2
+!            if (ldensity_nolog) then
+!              bflux=bflux-dble(f(l,m,n,irho))*dble(f(l,m,n,iuz))
+!            else
+!              bflux=bflux-exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
+!            endif
+!          enddo
+!          enddo
+!        endif
+!        if (z(n) == xyz1(3)) then
+!          do l=l1,l2
+!          do m=m1,m2
+!            if (ldensity_nolog) then
+!              bflux=bflux+dble(f(l,m,n,irho))*dble(f(l,m,n,iuz))
+!            else
+!              bflux=bflux+exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
+!            endif
+!          enddo
+!          enddo
+!        endif
+!      enddo
+!      sum_1tmp=(/ bflux /)
+!!
+!      if (ip<45.and.bflux /=0.0) print*,'addmassflux: bflux on iproc =', &
+!                                                     bflux, iproc
+!!
+!!  Sum over all processors and communicate total to all.
+!!
+!      call mpireduce_sum_double(sum_1tmp,bfmpi,1)
+!      call mpibcast_double(bfmpi,1)
+!      bflux=bfmpi(1)
+!      if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
+!      if (bflux>0.d0) then
+!!
+!!  Multiply mass flux by area element and timestep to determine lost mass.
+!!  Add unused flux mass from previous timesteps.
+!!
+!        bmass=bflux*dt*dx*dy+boldmass
+!!
+!!  Determine multiplier required to restore mass to level before boundary
+!!  losses. addrate (default=1.0) can be increased to raise mass levels if
+!!  required.
+!!
+!        add_ratio=(bmass*addrate+oldmass)/oldmass
+!!
+!        if (lroot.and.ip<45) print*, &
+!            'addmassflux: bmass, add_ratio, timestep =', &
+!            bmass, add_ratio, dt
+!!
+!!  Add mass proportionally to the existing density throughout the
+!!  volume to replace that lost through boundary.
+!!  add_ratio needs to be large enough for single precision to record small
+!!  changes, so accumulate small mass losses in boldmass until large enough.
+!!
+!        if (add_ratio>=prec_factor+1.d0) then
+!          if (ldensity_nolog) then
+!            f(l1:l2,m1:m2,n1:n2,irho)= &
+!                dble(f(l1:l2,m1:m2,n1:n2,irho))*add_ratio
+!          else
+!            f(l1:l2,m1:m2,n1:n2,ilnrho)= &
+!                dble(f(l1:l2,m1:m2,n1:n2,ilnrho))+log(add_ratio)
+!          endif
+!!
+!!  For debugging purposes newmass can be calculated and compared to
+!!  bmass+oldmass, which should be equal.
+!!
+!          if (ldensity_nolog) then
+!            rhosum=sum(dble(f(l1:l2,m1:m2,n1:n2,irho)))
+!          else
+!            rhosum=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
+!          endif
+!          sum_3tmp=(/ rhosum /)
+!          call mpireduce_sum_double(sum_3tmp,nmpi,1)
+!          call mpibcast_double(nmpi,1)
+!          rhosum=nmpi(1)
+!          newmass=nmpi(1)*dv
+!          if (lroot.and.ip<45) print*,'addmassflux: oldmass, newmass =', &
+!              oldmass, newmass
+!          if (lroot.and.ip<70) print*, &
+!              'addmassflux: added mass vs mass flux=', &
+!              newmass-oldmass, bmass
+!          boldmass=0.d0
+!        else
+!          boldmass=bmass
+!        endif
+!      endif
+!!
+!    endsubroutine addmassflux
+!!*****************************************************************************
  endmodule Interstellar
