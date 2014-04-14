@@ -34,7 +34,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    newwindow=newwindow, sample=sample
+    sample=sample
 ;
 COMMON pc_precision, zero, one
 ;
@@ -92,14 +92,6 @@ if(keyword_set(doublebuffer)) then begin
 endif else $
 ;
 if (keyword_set(png_truecolor)) then png=1
-;
-; if png's are requested don't open a window
-;
-if (not keyword_set(png)) then begin
-  if (keyword_set(newwindow)) then begin
-    window, /free, xsize=wsx, ysize=wsy, title=title
-  endif
-endif
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat.
 ;
@@ -268,7 +260,7 @@ if (keyword_set(png)) then begin
   device, set_resolution=resolution ; set window size
   itpng=0 ;(image counter)
   dev='z'
-end else if (keyword_set(mpeg)) then begin
+endif else if (keyword_set(mpeg)) then begin
   Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   print,'z-buffer resolution (in pixels)=',resolution
@@ -280,7 +272,11 @@ end else if (keyword_set(mpeg)) then begin
   print,'write mpeg movie: ',mpeg_name
   mpegID = mpeg_open([Nwx,Nwy],filename=mpeg_name)
   itmpeg=0 ;(image counter)
-end
+endif else if (not keyword_set(doublebuffer)) then begin
+  Nwx = zoom * size_plane[1]
+  Nwy = zoom * size_plane[2]
+  window, xsize=Nwx, ysize=Nwy, title=title
+endif
 ;
 ;  Allow for skipping "stride" time slices.
 ;
