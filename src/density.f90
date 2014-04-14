@@ -73,6 +73,7 @@ module Density
   real :: temp_coeff_out = 1.0
   real :: rss_coef1=1.0, rss_coef2=1.0
   real :: total_mass=-1.
+  real :: rescale_rho=1.0
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -95,6 +96,7 @@ module Density
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
+  logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -135,9 +137,10 @@ module Density
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
-      xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, density_zaver_range, &
-      rss_coef1, rss_coef2, &
-      lconserve_total_mass, total_mass
+      xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
+      density_zaver_range, rss_coef1, rss_coef2, &
+      lconserve_total_mass, total_mass, &
+      lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -217,6 +220,7 @@ module Density
 !
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
+!  14-apr-14/axel: lreinitialize_lnrho and lreinitialize_rho added
 !
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
@@ -229,7 +233,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      integer :: i,ierr
+      integer :: i,j,ierr
       logical :: lnothing
 !
 !  Initialize cs2cool to cs20
@@ -274,6 +278,22 @@ module Density
         lcontinuity_gas=.false.
         if (lroot) print*,&
              'initialize_density: fargo used, turned off continuity equation'
+      endif
+!
+!  Rescale density by a factor rescale_rho.
+!
+      if (lreinitialize_lnrho.or.lreinitialize_rho) then
+        do j=1,ninit
+          if (ldensity_nolog) then
+            select case (initlnrho(j))
+            case ('rescale'); f(:,:,:,irho)=f(:,:,:,irho)*rescale_rho
+            endselect
+          else
+            select case (initlnrho(j))
+            case ('rescale'); f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+log(rescale_rho)
+            endselect
+          endif
+        enddo
       endif
 !
 !  Compute mask for x-averaging where x is in density_xaver_range.

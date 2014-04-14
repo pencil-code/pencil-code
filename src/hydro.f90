@@ -642,7 +642,7 @@ module Hydro
       c2z=c**2
       s2z=s**2
 !
-!  Rescale magnetic field by a factor reinitialize_aa.
+!  Rescale velocity by a factor reinitialize_uu.
 !
       if (lreinitialize_uu) then
         do j=1,ninit
