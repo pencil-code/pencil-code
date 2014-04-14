@@ -257,7 +257,7 @@ module Interstellar
   real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
 !
 !  04-jan-10/fred:
-!  Amended cool dim from 7 to 11 to accomodate SS-Slyz dimension.
+!  Amended cool dim from 7 to 11 to accomodate WSW dimension.
 !  Appended null last term to all arrays for RB and SS cooling
 !
   double precision, dimension(11) :: coolT_cgs, coolH_cgs
@@ -671,8 +671,8 @@ module Interstellar
 !  Combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
 !  as Gressel simulation (2008) with constants revised for continuity
 !
-      else if (cooling_select == 'SS-Slyz') then
-        if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
+      else if (cooling_select == 'WSW') then
+        if (lroot) print*,'initialize_interstellar: WSW cooling fct'
         coolT_cgs = (/  10.D0,       &
                         141.D0,      &
                         313.D0,      &
@@ -710,8 +710,8 @@ module Interstellar
 !
 !  As above but with higher minimum temperature 90K instead of 10K
 !
-      else if (cooling_select == 'SS-Slyzr') then
-        if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
+      else if (cooling_select == 'WSWr') then
+        if (lroot) print*,'initialize_interstellar: WSWr cooling fct'
         coolT_cgs = (/  90.D0,       &
                         141.D0,      &
                         313.D0,      &
@@ -1679,7 +1679,9 @@ module Interstellar
 !  This routine calculates the temperature dependent radiative cooling.
 !  Applies Rosen et al., ApJ, 413, 137, 1993 ('RB') OR
 !  Sanchez-Salcedo et al. ApJ, 577, 768, 2002 ('SS') OR
-!  Slyz et al MNRAS, 356 2005 ('SS-Slyz')
+!  Slyz et al MNRAS, 356 2005 ('WSW') fit of Wolfire with Sarazin & White
+!  ApJ, 443:152-168, 1985 and ApJ, 320:32-48, 1987
+!
 !
 !  Cooling is Lambda*rho^2, with (eq 7) & Lambda=coolH(i)*TT**coolB(i),
 !  for coolT(i) <= TT < coolT(i+1). Nb: our coefficients coolH(i) differ from
