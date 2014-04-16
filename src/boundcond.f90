@@ -7892,6 +7892,9 @@ module Boundcond
 !  induces mass inflows which are too high to be physically sustainable.
 !
 !  13-feb-11/fred: adapted from bc_ctz
+!  16-apr-14/fred: revised constant from 10. to 1.11 to preserve exponential 
+!                  reduction in density with height ref Ferriere Review 2001
+!                  Eq.(5)
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7901,12 +7904,12 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
           do k=1,3
-            f(:,:,n1-k,j)=f(:,:,n1-k+1,j)*(1.0-10.*dz)
+            f(:,:,n1-k,j)=f(:,:,n1-k+1,j)*(1.0-1.11*dz)
           enddo
 !
       case ('top')               ! top boundary
           do k=1,3
-            f(:,:,n2+k,j)=f(:,:,n2+k-1,j)*(1.0-10.*dz)
+            f(:,:,n2+k,j)=f(:,:,n2+k-1,j)*(1.0-1.11*dz)
           enddo
 !
       case default
