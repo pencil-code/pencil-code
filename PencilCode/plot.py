@@ -121,7 +121,7 @@ def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylo
             p(ts.t[it], ts[diag][it], label=diag)
     else:
         p(ts.t[it], ts[diagnostics][it], label=diagnostics)
+    plt.minorticks_on()
     plt.xlabel('t')
     plt.legend(loc='best')
     plt.show()
-
