@@ -26,3 +26,7 @@ Topics for Pencil code User Meeting in Göttingen 2014:
 - Add missing content for "/doc/www/samples/" and "/doc/www/highlights/".
   []
 
+- HighQ Project
+
+- Ongoing work on pc_tecplot.f90  
+
