@@ -1987,7 +1987,7 @@ module Viscosity
 !  Hyper-viscosity coefficient
 !
       if (nu_hyper3/=0.0) nu_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(3.0)
+      if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************

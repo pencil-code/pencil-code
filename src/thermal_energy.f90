@@ -815,7 +815,7 @@ module Energy
 !
 !  Hyper-diffusion coefficient
 !
-      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(3.0)
+      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
