@@ -1,0 +1,12 @@
+#!/bin/csh
+#
+#  $Id: tsnap-all 10867 2009-05-17 04:45:28Z AxelBrandenburg $
+#
+#  Runs pc_tsnap (to get time of snapshot) for all var.dat files
+#  If a number is given as argument it runs pc_tsnap for all VAR files
+#
+if ($#argv == 1) then
+  pc_tsnap -d data/proc*/VAR$1 | sort -nk 1.10
+else
+  pc_tsnap -d data/proc*/var.dat | sort -nk 1.10
+endif
