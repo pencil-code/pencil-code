@@ -1766,11 +1766,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O3 #(Chandrasekhar)
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
 ##
-## Petri's job laptop (MacBook Pro)
+## Petri's work laptop (MacBook Pro)
 ##
-#FC=mpif90 #(lm3-huckleberry)
-#FFLAGS= -O3 #(lm3-huckleberry)
-#CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry)
+#FC=mpif90 #(lm3-huckleberry|dhcp-eduroam-hy*)
+#FFLAGS= -O3 #(lm3-huckleberry|dhcp-eduroam-hy*)
+#CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry|dhcp-eduroam-hy*)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(lm3-huckleberry|dhcp-eduroam-hy*)
 ##
 ## Gustavo's laptop
 #FC=mpif90 #(Plato)
