@@ -2123,38 +2123,46 @@ module EquationOfState
 !
 !  calculate Fbot/(K*cs2)
 !
-        if (ldensity_nolog) then
-          rho_xy=f(:,:,n1,irho)
-          cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
+        if (pretend_lnTT) then
+          tmp_xy=-FbotKbot/exp(f(:,:,n1,iss))
+          do i=1,nghost
+             f(:,:,n1-i,iss)=f(:,:,n1+i,iss)-2.*i*dz*tmp_xy
+          enddo
         else
-          rho_xy=exp(f(:,:,n1,ilnrho))
-          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-        endif
+!
+          if (ldensity_nolog) then
+            rho_xy=f(:,:,n1,irho)
+            cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
+          else
+            rho_xy=exp(f(:,:,n1,ilnrho))
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+          endif
 !
 !  Check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !  Check also whether Kramers opacity is used, then hcond itself depends
 !  on density and temperature.
 !
-        if (lheatc_chiconst) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else if (lheatc_kramers) then
-          tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
+          if (lheatc_chiconst) then
+            tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+          else if (lheatc_kramers) then
+            tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+          else
+            tmp_xy=FbotKbot/cs2_xy
+          endif
 !
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-        do i=1,nghost
-          if (ldensity_nolog) then
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-              (log(f(:,:,n1+i,irho)/f(:,:,n1-i,irho))+2*i*dz*tmp_xy)
-          else
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
-          endif
-        enddo
+          do i=1,nghost
+            if (ldensity_nolog) then
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+                (log(f(:,:,n1+i,irho)/f(:,:,n1-i,irho))+2*i*dz*tmp_xy)
+            else
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+                (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+            endif
+          enddo
+        endif
 !
 !  top boundary
 !  ============
@@ -2163,38 +2171,45 @@ module EquationOfState
 !
 !  calculate Fbot/(K*cs2)
 !
-        if (ldensity_nolog) then
-          rho_xy=f(:,:,n2,irho)
-          cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n2,irho))-lnrho0)+cv1*f(:,:,n2,iss))
+        if (pretend_lnTT) then
+          tmp_xy=-FtopKtop/exp(f(:,:,n2,iss))
+          do i=1,nghost
+             f(:,:,n2-i,iss)=f(:,:,n2+i,iss)-2.*i*dz*tmp_xy
+          enddo
         else
-          rho_xy=exp(f(:,:,n2,ilnrho))
-          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-        endif
+          if (ldensity_nolog) then
+            rho_xy=f(:,:,n2,irho)
+            cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n2,irho))-lnrho0)+cv1*f(:,:,n2,iss))
+          else
+            rho_xy=exp(f(:,:,n2,ilnrho))
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+          endif
 !
 !  Check whether we have chi=constant at top, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !  Check also whether Kramers opacity is used, then hcond itself depends
 !  on density and temperature.
 !
-        if (lheatc_chiconst) then
-          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
-        else if (lheatc_kramers) then
-          tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
-        else
-          tmp_xy=FtopKtop/cs2_xy
-        endif
+          if (lheatc_chiconst) then
+            tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
+          else if (lheatc_kramers) then
+            tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+          else
+            tmp_xy=FtopKtop/cs2_xy
+          endif
 !
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-        do i=1,nghost
-          if (ldensity_nolog) then
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-              (log(f(:,:,n2-i,irho)/f(:,:,n2+i,irho))+2*i*dz*tmp_xy)
-          else
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
-          endif
-        enddo
+          do i=1,nghost
+            if (ldensity_nolog) then
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
+                (log(f(:,:,n2-i,irho)/f(:,:,n2+i,irho))+2*i*dz*tmp_xy)
+            else
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
+                (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
+            endif
+          enddo
+        endif
 !
       case default
         call fatal_error('bc_ss_flux','invalid argument')
@@ -2469,6 +2484,102 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_flux_turb_x
+!***********************************************************************
+    subroutine bc_ss_flux_condturb_x(f,topbot)
+!
+!   Constant conductive + turbulent flux through the surface
+!
+!   08-apr-2014/pete: coded
+!
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
+      real, pointer :: Fbot, Ftop
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: dsdx_yz, cs2_yz, rho_yz, dlnrhodx_yz
+      real :: fac
+      integer :: i=0,ierr
+!
+      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Get the shared variables
+!
+      call get_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chi_t")
+      call get_shared_variable('chit_prof1',chit_prof1,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chit_prof1")
+      call get_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chit_prof2")
+      call get_shared_variable('hcondxbot',hcondxbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting hcondxbot")
+      call get_shared_variable('hcondxtop',hcondxtop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting hcondxtop")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting Fbot")
+      call get_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting Ftop")
+!
+      select case (topbot)
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+!  bottom boundary
+!  ===============
+!
+      case ('bot')
+!
+! Do the pretend_lnTT=T case first
+!
+        if (pretend_lnTT) then
+           call stop_it("bc_ss_flux_condturb_x: not implemented for pretend_lnTT=T")
+        else
+!
+!  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
+!
+          cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+          rho_yz=exp(f(l1,:,:,ilnrho))
+!
+          fac=(1./60)*dx_1(l1)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
+                           -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
+                           +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
+!
+          dsdx_yz=(cp*gamma_m1*Fbot/cs2_yz)/ &
+              (chit_prof1*chi_t*rho_yz + hcondxbot*gamma)
+!
+!  Enforce ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
+!
+          do i=1,nghost
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+ &
+               (hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
+               (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))+2*i*dx*dsdx_yz
+          enddo
+        endif
+!
+!  top boundary
+!  ============
+!
+      case ('top')
+!
+         call stop_it("bc_ss_flux_condturb_x: not implemented for the top boundary")
+!
+!  capture undefined entries
+!
+      case default
+        call fatal_error('bc_ss_flux_condturb_x','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_condturb_x
 !***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !

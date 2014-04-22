@@ -295,6 +295,9 @@ module Boundcond
                 case ('Fgs')
                   ! BCX_DOC: Fconv = - chi_t*rho*T*grad(s)
                   if (j==iss) call bc_ss_flux_turb_x(f,topbot)
+                case ('Fct')
+                  ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
+                  if (j==iss) call bc_ss_flux_condturb_x(f,topbot)
                 case ('sT')
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
