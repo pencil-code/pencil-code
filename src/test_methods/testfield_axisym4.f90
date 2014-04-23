@@ -118,10 +118,16 @@ module Testfield
   integer :: idiag_b2rms=0      ! DIAG_DOC: $\left<b_{2}^2\right>^{1/2}$
   integer :: idiag_b3rms=0      ! DIAG_DOC: $\left<b_{3}^2\right>^{1/2}$
 !
+  logical :: lcalc_zdep_coeffs=.false.
+!
 !  arrays for horizontally averaged uxb and jxb
 !
   real, dimension (nz,3,njtest) :: uxbtestm,jxbtestm
-
+!
+!  array for Fourier amplitudes of mean EMF w.r.t. z
+!
+  real, dimension(nx,ny,3,njtest,2) :: Eampz
+!
   contains
 
 !***********************************************************************
@@ -383,6 +389,12 @@ module Testfield
           close(3)
         endif
       endif
+!
+!     determine whether any z dependent coefficient is requested
+!
+      lcalc_zdep_coeffs = any((/idiag_gamz, idiag_alpPERPz, idiag_alpPARAz, &
+                                idiag_muz, idiag_betPERPz, idiag_delz,      &
+                                idiag_kapPERPz, idiag_betPARAz, idiag_kapPARAz /).gt.0)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -806,25 +818,6 @@ module Testfield
              kz1*sy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) &
              *zmask(n),idiag_kapPARA)
 !
-!  xy-averages next.
-!
-          if (idiag_gamz    /=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_gamz    )
-          if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alpPERPz)
-          if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipq(:,3,3)+sz(n)*Eipq(:,3,4)),idiag_alpPARAz)
-!
-          if (idiag_muz     /=0) call xysum_mn_name_z(+4*sx*(-kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_muz)
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_betPERPz)
-!
-          if (idiag_delz    /=0) call xysum_mn_name_z(+2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-                                                             -ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_delz)
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_kapPERPz)
-!
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4*sx*  ky1*cy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) ,idiag_betPARAz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4*sx*  kz1*sy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) ,idiag_kapPARAz)
-!
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -869,6 +862,46 @@ module Testfield
 !
     endsubroutine daatest_dt
 !***********************************************************************
+    subroutine calc_coeffs_z
+!
+!  calculates z dependent coefficients
+!
+!  23-apr-14/MR: outsourced from daatest_dt
+!
+      use Cdata
+      use Diagnostics, only: xysum_mn_name_z
+!
+      real, dimension(nx,3,njtest) :: Eipqm
+!
+      do n=n1,n2
+        do m=m1,m2
+!
+!  calculate mean EMF from its Fourier amplitudes w.r.t. z at each (x,y) and for each testfield
+!
+          Eipqm = Eampz(:,m-m1+1,:,:,1)*cz(n) + Eampz(:,m-m1+1,:,:,2)*sz(n)
+!
+          if (idiag_gamz    /=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipqm(:,2,1)+sz(n)*Eipqm(:,2,2)),idiag_gamz    )
+          if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipqm(:,1,1)+sz(n)*Eipqm(:,1,2)),idiag_alpPERPz)
+          if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipqm(:,3,3)+sz(n)*Eipqm(:,3,4)),idiag_alpPARAz)
+!
+          if (idiag_muz     /=0) call xysum_mn_name_z(+4*sx*(-kz1*sy(m)*(-sz(n)*Eipqm(:,2,1)+cz(n)*Eipqm(:,2,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipqm(:,1,3)+sz(n)*Eipqm(:,1,4))),idiag_muz)
+          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2*sx*(+kz1*sy(m)*(-sz(n)*Eipqm(:,2,1)+cz(n)*Eipqm(:,2,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipqm(:,1,3)+sz(n)*Eipqm(:,1,4))),idiag_betPERPz)
+!
+          if (idiag_delz    /=0) call xysum_mn_name_z(+2*sx*(+kz1*sy(m)*(-sz(n)*Eipqm(:,1,1)+cz(n)*Eipqm(:,1,2)) &
+                                                             -ky1*cy(m)*(+cz(n)*Eipqm(:,2,3)+sz(n)*Eipqm(:,2,4))),idiag_delz)
+          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4*sx*(+kz1*sy(m)*(-sz(n)*Eipqm(:,1,1)+cz(n)*Eipqm(:,1,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipqm(:,2,3)+sz(n)*Eipqm(:,2,4))),idiag_kapPERPz)
+!
+          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4*sx*  ky1*cy(m)*(+cz(n)*Eipqm(:,3,1)+sz(n)*Eipqm(:,3,2)) ,idiag_betPARAz)
+          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4*sx*  kz1*sy(m)*(-sz(n)*Eipqm(:,3,3)+cz(n)*Eipqm(:,3,4)) ,idiag_kapPARAz)
+!
+        enddo    
+      enddo
+
+    end subroutine calc_coeffs_z
+!***********************************************************************
     subroutine get_slices_testfield(f,slices)
 ! 
 !  Write slices for animation of magnetic variables.
@@ -910,6 +943,7 @@ module Testfield
 !  21-jan-06/axel: coded
 !  25-sep-13/MR: removed parameter p, changed call of calc_pencils_hydro
 !  30-jan-14/MR: adapted use of uxbtestm, jxbtestm; modified for x parallelization
+!  23-apr-14/MR: calculation of Fourier amplitudes of mean EMF w.r.t. z added
 !
       use Cdata
       use Sub
@@ -932,6 +966,8 @@ module Testfield
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+
+      real, dimension(:,:,:,:,:), allocatable :: Eampz_tmp
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -984,6 +1020,14 @@ module Testfield
               else
                 if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
+!
+! if z dependent coefficients requested, calculate Fourier amplitudes of uxbtest w.r.t. z at each (x,y) and for each testcase
+!
+              if ( ldiagnos.and.lcalc_zdep_coeffs ) then
+                Eampz(:,m-m1+1,:,jtest,1) = uxbtest*cz(n)
+                Eampz(:,m-m1+1,:,jtest,2) = uxbtest*sz(n) 
+              endif
+
               uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
               headtt=.false.
             enddo
@@ -1071,6 +1115,23 @@ module Testfield
         s2z=s**2
         csz=c*s
       endif
+! 
+      if ( ldiagnos.and.lcalc_zdep_coeffs ) then
+        if (ncpus>1) then
+!
+! if z dependent coefficients requested, finalize calculation of Fourier amplitudes of uxbtest w.r.t. z
+!
+          allocate( Eampz_tmp(nx,ny,3,njtest,2) )
+          Eampz_tmp=Eampz
+          call mpiallreduce_sum(Eampz_tmp,Eampz,(/nx,ny,3,njtest,2/),idir=3)
+        endif
+        Eampz = Eampz*(2./nzgrid)
+!
+! calculate z dependent coefficients
+!
+        call calc_coeffs_z
+      endif
+!
       if (ip<13) print*,'iproc,phase_testfield=',iproc,phase_testfield
 !
 !  reset headtt
