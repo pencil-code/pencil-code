@@ -129,11 +129,12 @@ module Mpicomm
     module procedure mpiallreduce_sum_arr2
     module procedure mpiallreduce_sum_arr3
     module procedure mpiallreduce_sum_arr4
+    module procedure mpiallreduce_sum_arr5
   endinterface
 !
   interface mpiallreduce_sum_int
-     module procedure mpiallreduce_sum_int_scl
-     module procedure mpiallreduce_sum_int_arr
+    module procedure mpiallreduce_sum_int_scl
+    module procedure mpiallreduce_sum_int_arr
   endinterface
 !
   interface mpiallreduce_max
@@ -2034,6 +2035,29 @@ module Mpicomm
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr4
+!***********************************************************************
+    subroutine mpiallreduce_sum_arr5(fsum_tmp,fsum,nreduce,idir)
+!
+!  Calculate total sum for each array element and return to all processors.
+!
+!  23-apr-14/MR: derived from mpiallreduce_sum_arr4
+!
+      integer, dimension(5) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4),nreduce(5)) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
+!
+      if (present(idir)) then
+        mpiprocs=mpigetcomm(idir)
+      else
+        mpiprocs=MPI_COMM_WORLD
+      endif
+!
+      call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
+                         mpiprocs, mpierr)
+!
+    endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
 !

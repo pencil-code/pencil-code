@@ -120,6 +120,7 @@ module Mpicomm
     module procedure mpiallreduce_sum_arr2
     module procedure mpiallreduce_sum_arr3
     module procedure mpiallreduce_sum_arr4
+    module procedure mpiallreduce_sum_arr5
   endinterface
 !
   interface mpiallreduce_sum_int
@@ -834,6 +835,17 @@ module Mpicomm
       if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr4
+!***********************************************************************
+    subroutine mpiallreduce_sum_arr5(fsum_tmp,fsum,nreduce,idir)
+!
+      integer, dimension(5) :: nreduce
+      real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4),nreduce(5)) :: fsum_tmp, fsum
+      integer, optional :: idir
+!
+      fsum=fsum_tmp
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
+!
+    endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
 !
