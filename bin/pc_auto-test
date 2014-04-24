@@ -99,6 +99,7 @@ my %tests = (
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
                          spherical-globaldisk
+                         spherical-globaldisk-mhd
                          0d-tests/solar_system
                          mdwarf
                          sedimentation
