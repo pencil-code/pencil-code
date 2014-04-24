@@ -868,7 +868,7 @@ module Testfield
 !
 !  23-apr-14/MR: outsourced from daatest_dt
 !
-      use Cdata
+      use Cdata, only: n,m
       use Diagnostics, only: xysum_mn_name_z
 !
       real, dimension(nx,3,njtest) :: Eipqm
@@ -981,6 +981,8 @@ module Testfield
 !
       lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
+      if ( ldiagnos.and.lcalc_zdep_coeffs ) Eampz=0.
+
       do jtest=1,njtest
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
@@ -1024,8 +1026,8 @@ module Testfield
 ! if z dependent coefficients requested, calculate Fourier amplitudes of uxbtest w.r.t. z at each (x,y) and for each testcase
 !
               if ( ldiagnos.and.lcalc_zdep_coeffs ) then
-                Eampz(:,m-m1+1,:,jtest,1) = uxbtest*cz(n)
-                Eampz(:,m-m1+1,:,jtest,2) = uxbtest*sz(n) 
+                Eampz(:,m-m1+1,:,jtest,1) = Eampz(:,m-m1+1,:,jtest,1)+uxbtest*cz(n)
+                Eampz(:,m-m1+1,:,jtest,2) = Eampz(:,m-m1+1,:,jtest,2)+uxbtest*sz(n) 
               endif
 
               uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
@@ -1138,7 +1140,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-    endsubroutine testfield_after_boundary
+    end subroutine testfield_after_boundary
 !***********************************************************************
     subroutine rescaling_testfield(f)
 !
