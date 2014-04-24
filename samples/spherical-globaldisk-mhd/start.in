@@ -1,0 +1,51 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2014/04/24 15:15:40 wlyra Exp $',
+  ip=14,                          ! debugging parameter
+  xyz0  =  1.000, 1.2707963,-0.3
+  xyz1  =  4.875, 1.8707963, 0.3
+  lperi = F  , F  , T,            ! periodic direction?
+!
+  bcx='a','s','e3', 'e3' ,'s','a2','a', 's'
+  bcy='a','out','s' , 'str' ,'a','s','a', 's'
+!
+  lwrite_ic=T
+  coord_system='spherical'
+  luse_latitude=T
+  lwrite_aux=T
+  llocal_iso=T
+  
+  grid_func='power-law', ,
+  coeff_grid=1e-3, ,
+/
+&initial_condition_pars
+  density_power_law=1.5
+  temperature_power_law=1.0
+  plasma_beta=25
+  lnumerical_mhsequilibrium=F
+  lcap_field_radius=T
+  rm_int=1.0500
+  rm_ext=4.375
+  ladd_noise_propto_cs=T
+  ampluu_cs_factor=1e-3
+/
+&eos_init_pars
+  cs0  = 0.07
+  rho0 = 1.
+  gamma= 1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  density_floor=-100
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&magnetic_init_pars
+/

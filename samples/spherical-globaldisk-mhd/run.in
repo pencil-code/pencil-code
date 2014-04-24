@@ -1,0 +1,56 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2014/04/24 15:15:40 wlyra Exp $',
+  ip=14,
+ !nt=10000000, it1=50, isave=1000, itorder=3
+  nt=10, it1=1, isave=1000, itorder=3
+  cdt=0.4,
+  cdtv=0.4,
+  cdtv3=0.4
+  dtmin=1e-6,
+  dsnap=6.2831
+  dvid=0.062831
+  tmax=1727.88
+  slice_position='d'
+  wborder_int=0.025
+  wborder_ext=0.25
+  max_walltime=42750
+  lwrite_dvar=T
+  crash_file_dtmin_factor=10.
+!
+  fraction_tborder=0.16
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='zero','zero','initial-condition'
+/
+&density_run_pars
+  idiff='hyper3-sph' , 'shock'
+  diffrho_hyper3=3e-4 , diffrho_shock=10.
+  borderlnrho='initial-condition'
+  density_floor=2e-6
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-sph' , 'nu-shock'
+  nu_hyper3=3e-4 , nu_shock=10.
+/
+&shock_run_pars
+/
+&magnetic_run_pars
+  iresistivity='hyper3-sph' 'shock' ,'xdep'
+  eta_hyper3=3e-4 , eta_shock=10.
+  xdep_profile='two-step'
+  eta=1e-3       !resistivity that quenches the MRI
+                  !eta = 4*pi/sqrt(3) * 1/Re * cs2/Omega * 1/beta
+  eta_jump=1.    !for this too. Resisitive boundary.
+  two_step_factor=0.
+!
+  eta_x0=1.05
+  eta_x1=4.65
+/
