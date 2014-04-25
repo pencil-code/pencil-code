@@ -32,8 +32,8 @@ module Forcing
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
-  real :: radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
-  real :: omega_ff=1.
+  real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1.
+  real :: slope_ff=0.,work_ff=0.,omega_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
@@ -114,7 +114,7 @@ module Forcing
        rcyl_ff,width_ff,nexp_ff, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
-       radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
+       radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
@@ -135,8 +135,8 @@ module Forcing
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
-       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, lavoid_xymean, &
-       omega_tidal, R0_tidal, phi_tidal
+       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
+       lavoid_xymean, omega_tidal, R0_tidal, phi_tidal
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -626,8 +626,9 @@ module Forcing
       elseif (iforcing_cont=='(sinz,cosz,0)') then
         sinz=sin(k1_ff*z)
         cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='(0,cosz,0)') then
-        cosz=cos(k1_ff*z)
+      elseif (iforcing_cont=='(0,cosx*cosz,0)') then
+        cosx=cos(kx_ff*x)
+        cosz=cos(kz_ff*z)
       elseif (iforcing_cont=='J0_k1x') then
         do l=l1,l2
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
@@ -4615,11 +4616,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=ampl_ff*sinx(l1:l2)
           force(:,3)=0.
 !
-!  f=(0,cosz,0)
+!  f=(0,cosx*cosz,0)
 !
-        case ('(0,cosz,0)')
+        case ('(0,cosx*cosz,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff*cosz(n)
+          force(:,2)=ampl_ff*cosx(l1:l2)*cosz(n)
           force(:,3)=0.
 !
 !  f=(sinz,cosz,0)
