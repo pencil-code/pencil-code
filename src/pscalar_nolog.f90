@@ -36,6 +36,7 @@ module Pscalar
   real :: ampllncc2=impossible, radius_lncc=impossible
   real :: kx_lncc=impossible, ky_lncc=impossible,kz_lncc=impossible
   real :: epsilon_lncc=impossible
+  real :: cc_left=1., cc_right=0.
   real :: amplcc=0.1, widthcc=0.5, cc_min=0.0
   real :: amplcc2=0.0, kx_cc=1.0, ky_cc=1.0, kz_cc=1.0, radius_cc=0.0
   real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
@@ -49,6 +50,7 @@ module Pscalar
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
+      cc_left, cc_right, &
       epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
       ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
       widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh
@@ -225,7 +227,7 @@ module Pscalar
             f(l1:l2,m,n,icc)=-1.0+2*.5*(1.+tanh(z(n)/widthcc))
           enddo; enddo
         case ('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
-        case ('jump-x'); call jump(f,icc,cc_const,0.,widthcc,'x')
+        case ('jump-x'); call jump(f,icc,cc_left,cc_right,widthcc,'x')
         case ('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,'x')
         case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
         case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
