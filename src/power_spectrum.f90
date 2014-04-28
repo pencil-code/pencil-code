@@ -38,9 +38,11 @@ module power_spectrum
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
+  integer :: inz=0
 !
   namelist /power_spectrum_run_pars/ &
-      lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange
+      lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
+      inz
 !
   contains
 !***********************************************************************
@@ -1259,6 +1261,8 @@ module power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
+!    27-apr-14/nishant: added inz to compute power_x at a given z
+!
     use Fourier, only: fourier_transform_x
     use Mpicomm, only: mpireduce_sum, stop_it, transp
     use Sub, only: curli
@@ -1364,8 +1368,20 @@ module power_spectrum
 !
 !  Spectra in x-direction
 !
+!NS: added
+   if (.not.lintegrate_z) then
+    !print*,'NISHANT inz=',inz
+    do ikx=1,nk; do iy=1,ny
+      if (lcomplex) then
+        spectrumx(:,ikx) = spectrumx(:,ikx) + &
+            (/a1(ikx,iy,inz), b1(ikx,iy,inz)/)
+      else
+        spectrumx(1,ikx) = spectrumx(1,ikx) + &
+            sqrt(a1(ikx,iy,inz)**2 + b1(ikx,iy,inz)**2)
+      endif
+    enddo; enddo
+   else
     do ikx=1,nk; do iy=1,ny; do iz=1,nz
-!
       if (lcomplex) then
         spectrumx(:,ikx) = spectrumx(:,ikx) + &
             (/a1(ikx,iy,iz), b1(ikx,iy,iz)/)
@@ -1373,12 +1389,12 @@ module power_spectrum
         spectrumx(1,ikx) = spectrumx(1,ikx) + &
             sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
       endif
-!
     enddo; enddo; enddo
+   endif
 !
 !  Multiply all modes, except the constant mode, by two.
 !
-!    spectrumx(2:nk,:)=2*spectrumx(2:nk,:) !commeneted by nishant
+    spectrumx(:,2:nk)=2*spectrumx(:,2:nk)
 !
 !  Doing fourier spectra in all directions if onedall=T
 !
