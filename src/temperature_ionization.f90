@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond
 !
 !***************************************************************
 module Energy
@@ -487,6 +487,15 @@ module Energy
 !
       if (lpencil(i_ugTT)) then
         call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+      endif
+! tcond
+      if (lpencil(i_tcond)) then
+        if (lheatc_chiconst) then
+          p%tcond=chi*p%rho/p%cp1
+        else
+          call fatal_error('calc_pencils_energy',  &
+              'This heatcond is not implemented to work with lpencil(i_cond)!')
+        endif
       endif
 !
       if (lpencil(i_fpres)) &
