@@ -270,10 +270,10 @@ module Equ
 !
       if (ldynamical_diffusion) then
         umax = find_max_fvec(f,iux)
-        shear: if (lshear) then
+        shrvel: if (lshear) then
           dxs = 3e-3 * cs0 / Omega
           umax = umax + abs(Sshear * dx) * (dx / dxs) * sqrt(real(dimensionality))
-        endif shear
+        endif shrvel
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
         if (lmagnetic) call dynamical_resistivity(umax)
