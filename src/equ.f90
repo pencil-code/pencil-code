@@ -88,7 +88,8 @@ module Equ
       real, dimension(1)   :: mass_per_proc
       integer :: iv
       integer :: ivar1,ivar2
-      real :: umax = 0.
+      real :: umax = 0.0
+      real :: dxs
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -269,6 +270,10 @@ module Equ
 !
       if (ldynamical_diffusion) then
         umax = find_max_fvec(f,iux)
+        shear: if (lshear) then
+          dxs = 3e-3 * cs0 / Omega
+          umax = umax + abs(Sshear * dx) * (dx / dxs) * sqrt(real(dimensionality))
+        endif shear
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
         if (lmagnetic) call dynamical_resistivity(umax)
