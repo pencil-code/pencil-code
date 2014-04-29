@@ -72,7 +72,9 @@ module Testfield
   logical :: ltestfield_taver=.false.
   logical :: llorentzforce_testfield=.false.
   logical :: lforcing_cont_aatest=.false.
-  logical :: ltestfield_artifric=.false.
+  logical :: ltestfield_artifric=.false., &
+             lcalc_uumean=.true.
+!
   namelist /testfield_run_pars/ &
        B_ext,testfield_zaver_range, &
        reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
@@ -86,7 +88,7 @@ module Testfield
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,tau_aatest
+       rescale_aatest,tau_aatest, lcalc_uumean
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpPERP=0    ! DIAG_DOC: $\alpha_\perp$
@@ -124,9 +126,10 @@ module Testfield
 !
   real, dimension (nz,3,njtest) :: jxbtestm
 !
-!  array for Fourier amplitudes of mean EMF 
+!  array for Fourier amplitudes of mean EMF and mean flow 
 !
   real, dimension(nz,3,njtest,4) :: Eampxy
+  real, dimension(nz,3,4) :: Umeanampxy
 !
   contains
 
@@ -548,10 +551,10 @@ module Testfield
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !  23-apr-14/MR: calculation of z dependent coefficients outsourced into calc_coeffs_z
+!  29-apr-14/MR: proper calculation of mean(uu) for uufluct coded
 !
       use Cdata
       use Diagnostics
-      use Hydro, only: uumz,lcalc_uumeanz
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -559,20 +562,16 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: uxB,B0test=0,bbtest
-      real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
-      real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
-      real, dimension (nx,3,3,njtest) :: Mijpq
+      real, dimension (nx,3) :: uxB,B0test=0,bbtest,uxbtest,duxbtest
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
-      real, dimension (nx,3) :: del2Atest,uufluct
-      real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
-      real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest, nl
+      real, dimension (nx,3) :: del2Atest,uufluct,aatest,jjtest
+      real, dimension (nx,3,3) :: aijtest
+      real, dimension (nx) :: bpq2
+      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, nl
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
-      intent(in)     :: f,p
-      intent(inout)  :: df
+      intent(in)   :: f,p
+      intent(inout):: df
 !
 !  identify module and boundary conditions
 !
@@ -585,9 +584,10 @@ module Testfield
 !
 !  calculate uufluct=U-Umean
 !
-      if (lcalc_uumeanz) then
+      if (lcalc_uumean) then
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n,j)    ! MR: not yet correct
+          uufluct(:,j)=p%uu(:,j)-(Umeanampxy(nl,j,1)*cx+Umeanampxy(nl,j,2)*sx)*cy(m) &
+                                -(Umeanampxy(nl,j,3)*cx+Umeanampxy(nl,j,4)*sx)*sy(m)
         enddo
       else
         uufluct=p%uu
@@ -676,8 +676,8 @@ module Testfield
             duxbtest(:,:)=uxbtest(:,:)
           else
             do j=1,3
-              duxbtest(:,j)=uxbtest(:,j)-Eampxy(n,j,jtest,1)*cx*cy(m)-Eampxy(n,j,jtest,2)*sx*cy(m) &
-                                        -Eampxy(n,j,jtest,3)*cx*sy(m)-Eampxy(n,j,jtest,4)*sx*sy(m)
+              duxbtest(:,j)=uxbtest(:,j)-(Eampxy(nl,j,jtest,1)*cx+Eampxy(nl,j,jtest,2)*sx)*cy(m) &
+                                        -(Eampxy(nl,j,jtest,3)*cx+Eampxy(nl,j,jtest,4)*sx)*sy(m)
             enddo
           endif
 !
@@ -940,6 +940,7 @@ module Testfield
 !  25-sep-13/MR: removed parameter p, changed call of calc_pencils_hydro
 !  30-jan-14/MR: adapted use of uxbtestm, jxbtestm; modified for x parallelization
 !  23-apr-14/MR: calculation of Fourier amplitudes of mean EMF w.r.t. x,y added
+!  29-apr-14/MR: proper calculation of mean(uu) for uufluct coded
 !
       use Cdata
       use Sub
@@ -953,10 +954,10 @@ module Testfield
 !
       real, dimension(nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
 !
-      real, dimension(nx,3,3) :: aijtest,bijtest
-      real, dimension(nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
-      real, dimension(nx,3) :: del2Atest2,graddivatest
-      real, dimension(3) :: uxbtestcx, uxbtestsx
+      real, dimension(nx,3,3):: aijtest,bijtest
+      real, dimension(nx,3)  :: aatest,bbtest,jjtest,uxbtest,jxbtest,uufluct
+      real, dimension(nx,3)  :: del2Atest2,graddivatest
+      real, dimension(3)     :: uxbtestcx, uxbtestsx
       integer :: jtest,j,juxb,jjxb,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
@@ -964,6 +965,7 @@ module Testfield
       logical, dimension(npencils) :: lpenc_loc
 
       real, dimension(nz,3,njtest,4) :: Eampxy1
+      real, dimension(nz,3,4) :: Umeanampxy1
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -977,8 +979,35 @@ module Testfield
 !
       lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 !
+      if (lcalc_uumean) then
+!
+        Umeanampxy=0.
+        do n=n1,n2
+          nl=n-n1+1
+          do m=m1,m2
+!
+            do j=1,3 
+              uxbtestcx(j)=sum(f(l1:l2,m,n,iux+j-1)*cx); uxbtestsx(j)=sum(f(l1:l2,m,n,iux+j-1)*sx)
+            enddo
+!
+            Umeanampxy(nl,:,1) = Umeanampxy(nl,:,1)+uxbtestcx*cy(m)
+            Umeanampxy(nl,:,2) = Umeanampxy(nl,:,2)+uxbtestsx*cy(m) 
+            Umeanampxy(nl,:,3) = Umeanampxy(nl,:,3)+uxbtestcx*sy(m)
+            Umeanampxy(nl,:,4) = Umeanampxy(nl,:,4)+uxbtestsx*sy(m) 
+!
+          enddo
+        enddo
+!
+        if (nprocxy>1) then
+          Umeanampxy1=Umeanampxy
+          call mpiallreduce_sum(Umeanampxy1,Umeanampxy,(/nz,3,4/),idir=12)
+        endif
+        Umeanampxy=Umeanampxy/(4.*nxygrid)
+!
+      endif
+     
       Eampxy=0.
-      if (.not.lsoca .or. ldiagnos.and.lcalc_zdep_coeffs) then 
+      if (.not.lsoca) then 
 !
         do jtest=1,njtest
 !
@@ -1007,7 +1036,15 @@ module Testfield
               call calc_pencils_hydro(f,p,lpenc_loc)
               call gij(f,iaxtest,aijtest,1)
               call curl_mn(aijtest,bbtest,aatest)
-              call cross_mn(p%uu,bbtest,uxbtest)
+              if (lcalc_uumean) then
+                do j=1,3
+                  uufluct(:,j)=p%uu(:,j)-(Umeanampxy(nl,j,1)*cx+Umeanampxy(nl,j,2)*sx)*cy(m) &
+                                        -(Umeanampxy(nl,j,3)*cx+Umeanampxy(nl,j,4)*sx)*sy(m)
+                enddo
+              else
+                uufluct=p%uu
+              endif
+              call cross_mn(uufluct,bbtest,uxbtest)
               juxb=iuxb+3*(jtest-1)
               if (ltestfield_taver) then
                 if (llast) then
@@ -1024,10 +1061,10 @@ module Testfield
                   uxbtestcx(j)=sum(uxbtest(:,j)*cx); uxbtestsx(j)=sum(uxbtest(:,j)*sx)
                 enddo
 !
-                Eampxy(n,:,jtest,1) = Eampxy(n,:,jtest,1)+uxbtestcx*cy(m)
-                Eampxy(n,:,jtest,2) = Eampxy(n,:,jtest,2)+uxbtestsx*cy(m) 
-                Eampxy(n,:,jtest,3) = Eampxy(n,:,jtest,3)+uxbtestcx*sy(m)
-                Eampxy(n,:,jtest,4) = Eampxy(n,:,jtest,4)+uxbtestsx*sy(m) 
+                Eampxy(nl,:,jtest,1) = Eampxy(nl,:,jtest,1)+uxbtestcx*cy(m)
+                Eampxy(nl,:,jtest,2) = Eampxy(nl,:,jtest,2)+uxbtestsx*cy(m) 
+                Eampxy(nl,:,jtest,3) = Eampxy(nl,:,jtest,3)+uxbtestcx*sy(m)
+                Eampxy(nl,:,jtest,4) = Eampxy(nl,:,jtest,4)+uxbtestsx*sy(m) 
 ! 
               endif
               headtt=.false.
@@ -1078,7 +1115,7 @@ module Testfield
               call cross_mn(jjtest,bbtest,jxbtest)
               jjxb=ijxb+3*(jtest-1)
               if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-              jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)
+              jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)   !MR: not yet correct
               headtt=.false.
             enddo
             jxbtestm1(nl,ipz+1,:,jtest)=jxbtestm(nl,:,jtest)
