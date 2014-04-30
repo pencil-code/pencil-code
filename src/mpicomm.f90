@@ -4010,11 +4010,11 @@ module Mpicomm
             partner = px + py*nprocx + ipz*nprocxy
             if (iproc == partner) then
               ! data is local
-              out(px,py) = in
+              out(px+1,py+1) = in
             else
               ! receive from partner
               call MPI_RECV (buffer, 1, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-              out(px,py) = buffer
+              out(px+1,py+1) = buffer
             endif
           enddo
         enddo
