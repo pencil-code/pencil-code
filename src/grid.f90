@@ -793,7 +793,7 @@ module Grid
 !
       real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
-      real :: sinth_min=1e-5,costh_min=1e-5
+      real :: sinth_min=1e-5,costh_min=1e-5, fact
       integer :: xj,yj,zj,itheta
 !
 ! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe
@@ -825,6 +825,7 @@ module Grid
         lcartesian_coords=.true.
         lspherical_coords=.false.
         lcylindrical_coords=.false.
+        lpipe_coords=.false.
 !
 !  Volume element.
 !  x-extent
@@ -858,6 +859,7 @@ module Grid
         lcartesian_coords=.false.
         lspherical_coords=.true.
         lcylindrical_coords=.false.
+        lpipe_coords=.false.
 !
 ! For spherical coordinates
 !
@@ -1002,11 +1004,11 @@ module Grid
 !  End of coord_system=='spherical_coords' query.
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
+      elseif (coord_system=='cylindric') then
         lcartesian_coords=.false.
         lspherical_coords=.false.
         lcylindrical_coords=.true.
+        lpipe_coords=.false.
 !
 !  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
 !  not rcyl_mn1.
@@ -1058,13 +1060,41 @@ module Grid
         if (lfirst_proc_x)  rcyl_weight( 1)=.5*rcyl_weight( 1)
         if (llast_proc_x) rcyl_weight(nx)=.5*rcyl_weight(nx)
 !
+!  Pipe coordinates (for hydraulic applications)
+!
+      elseif (coord_system=='pipeflows') then
+        lcartesian_coords=.false.
+        lspherical_coords=.false.
+        lcylindrical_coords=.false.
+        lpipe_coords=.true.
+!
+!  Compute profile function.
+!
+        select case (pipe_func)
+!
+        case ('error_function')
+          fact=.5/CrossSec_w**2
+          glnCrossSec=glnCrossSec0*(-exp(-fact*(x(l1:l2)-CrossSec_x1)**2) &
+                                    +exp(-fact*(x(l1:l2)-CrossSec_x2)**2))
+!
+        case default
+          call fatal_error('initialize_grid', &
+                           'no such pipe function - '//pipe_func)
+        endselect
+!
 !  Lobachevskii space
 !
       elseif (coord_system=='Lobachevskii') then
         lcartesian_coords=.false.
         lspherical_coords=.false.
         lcylindrical_coords=.false.
+        lpipe_coords=.false.
 !
+!  Stop if no existing coordinate system is specified
+!
+      else
+        call fatal_error('initialize_grid', &
+                         'no such coordinate system: '//coord_system)
       endif
 !
 !  Inverse volume elements
@@ -1995,6 +2025,10 @@ module Grid
           dline_1(:,2) = rcyl_mn1 * dy_1(m)
           dline_1(:,3) = dz_1(n)
         else if (lcartesian_coords) then dline
+          dline_1(:,1) = dx_1(l1:l2)
+          dline_1(:,2) = dy_1(m)
+          dline_1(:,3) = dz_1(n)
+        else if (lpipe_coords) then dline
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = dy_1(m)
           dline_1(:,3) = dz_1(n)

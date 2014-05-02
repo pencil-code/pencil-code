@@ -1290,7 +1290,7 @@ module Sub
 !
       b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
 !
-!  Adjustments for spherical coordinate system.
+!  Adjustments for other coordinate systems.
 !
       if (lspherical_coords) then
         b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
@@ -1298,6 +1298,10 @@ module Sub
 !
       if (lcylindrical_coords) then
         b=b+rcyl_mn1*a(:,1)
+      endif
+!
+      if (lpipe_coords) then
+        b=b+glnCrossSec*a(:,1)
       endif
 !
     endsubroutine div_mn

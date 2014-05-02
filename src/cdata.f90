@@ -47,6 +47,7 @@ module Cdata
   character (len=9) :: coord_system='cartesian'
   logical :: lcartesian_coords=.true.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
+  logical :: lpipe_coords=.false.
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
@@ -57,6 +58,7 @@ module Cdata
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
+  real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
 !
@@ -70,9 +72,11 @@ module Cdata
   real :: xbot_slice=0.0,xtop_slice=1.0
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
+  real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
   logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
+  character (len=labellen) :: pipe_func='error_function'
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds

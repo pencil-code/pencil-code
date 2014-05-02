@@ -93,7 +93,8 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lforce_shear_bc,lread_from_other_prec
+      lforce_shear_bc,lread_from_other_prec, &
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &

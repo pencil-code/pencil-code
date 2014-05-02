@@ -443,7 +443,7 @@ module Equ
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
 !  this is calculated before the (m,n) loop.
 !
-        if (lspherical_coords .or. lcylindrical_coords .or. .not.all(lequidist)) call get_grid_mn
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
 !  lwrite_phiaverages=T is required, and perhaps only that.]
