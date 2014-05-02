@@ -77,8 +77,8 @@ program pc_collect
   call read_runpars()
 !
 !  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly even in rparam or
-!  read_runpars]
+!  [might better be put into another routine, possibly even in read_startpars
+!  or read_runpars]
 !
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
