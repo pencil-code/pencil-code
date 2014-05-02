@@ -35,11 +35,13 @@ module ImplicitPhysics
     module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
   end interface
 !
-  real, pointer :: hcond0, Fbot
-  logical, pointer :: lADI_mixed
+  real, pointer :: hcond0, Fbot, hcond1, hcond2, widthlnTT
+  logical, pointer :: lADI_mixed, lmultilayer
   real :: Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
-  real :: dx_2, dz_2, cp1
+  real :: dx_2, dy_2, dz_2, cp1
   logical :: lyakonov=.true.
+!
+  real, dimension(mz) :: hcondz, dhcondz
 !
   contains
 !***********************************************************************
@@ -67,14 +69,24 @@ module ImplicitPhysics
       use SharedVariables, only: get_shared_variable
       use MpiComm, only: stop_it
       use EquationOfState, only: get_cp1
+      use Gravity, only: z1, z2
+      use Sub, only: step,der_step,write_zprof_once
 !
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: ierr
       real, dimension(:), pointer :: hole_params
+      real, dimension(mz) :: profz
 !
       call get_shared_variable('hcond0', hcond0, ierr)
+      call get_shared_variable('hcond1', hcond1, ierr)
+      call get_shared_variable('hcond2', hcond2, ierr)
+      call get_shared_variable('widthlnTT', widthlnTT, ierr)
+      call get_shared_variable('lmultilayer', lmultilayer, ierr)
+      print*,'***********************************'
+      print*, hcond0, hcond1, hcond2, widthlnTT, lmultilayer
+      print*,'***********************************'
       if (ierr/=0) call stop_it("implicit_physics: "//&
                  "there was a problem when getting hcond0")
       call get_shared_variable('Fbot', Fbot, ierr)
@@ -114,10 +126,31 @@ module ImplicitPhysics
       else
          dx_2 = 0.0
       endif
+      if (dy>0.) then 
+         dy_2 = 1.0 / dy**2
+      else
+         dy_2 = 0.0
+      endif
       if (dz>0.) then
          dz_2 = 1.0 / dz**2
       else
          dz_2 = 0.0
+      endif
+!
+      if (lrun) then
+        if (lmultilayer) then
+          profz = 1. + (hcond1-1.)*step(z,z1,-widthlnTT) &
+                   + (hcond2-1.)*step(z,z2,widthlnTT)
+          hcondz = hcond0*profz
+          dhcondz = (hcond1-1.)*der_step(z,z1,-widthlnTT) &
+                   + (hcond2-1.)*der_step(z,z2,widthlnTT)
+          dhcondz = hcond0*dhcondz
+        else
+          hcondz=hcond0
+          dhcondz=0.0
+        endif
+        call write_zprof_once('hcond',hcondz)
+        call write_zprof_once('dhcond',dhcondz)
       endif
 !
     endsubroutine initialize_implicit_physics
@@ -127,26 +160,45 @@ module ImplicitPhysics
 !  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
 !  ADI_Kconst: constant radiative conductivity
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
+!  02/05/14-dintrans: added the polytropic superposed layers (MPI or not)
 !
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
       if (hcond0 /= impossible) then
+!
+! polytropic setup (single layer or superposed layers)
+!
         if (nx == 1) then
-          call ADI_Kconst_1d(f)
+           if (lmultilayer) then
+             call crank_poly(f)
+           else
+             call ADI_Kconst_1d(f)
+           endif
         else
           if (nprocz>1) then
-            call ADI_Kconst_MPI(f)
+             if (lmultilayer) then
+               call ADI_poly_MPI(f)
+             else
+               call ADI_Kconst_MPI(f)
+             endif
           else
             if (lyakonov) then
-              call ADI_Kconst_yakonov(f)
+               if (lmultilayer) then
+                  call ADI_poly(f)
+               else
+                  call ADI_Kconst_yakonov(f)
+               endif
             else
               call ADI_Kconst(f)
             endif
           endif
         endif
       else
+!
+! kappa-mechanism with a conductivity hollow
+!
         if (nx == 1) then
           if (lADI_mixed) then
             call ADI_Kprof_1d_mixed(f)
@@ -706,8 +758,8 @@ module ImplicitPhysics
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz)      :: finter, source, rho, TT
       real, dimension(nzgrid,nxt) :: fintert, rhot, wtmp
-      real, dimension(nx)         :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz, workz
+      real, dimension(nx)         :: ax, bx, cx, wx, rhsx
+      real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz
       real :: aalpha, bbeta
       logical :: err
       character(len=255) :: msg
@@ -725,21 +777,19 @@ module ImplicitPhysics
 ! Rows dealt implicitly
 !
       do j=n1,n2
-        wx=dt*gamma*hcond0*cp1/rho(l1:l2,j)
-        ax=-wx*dx_2/2
-        bx=1.+wx*dx_2
+        wx=0.5*dt*cp1*gamma*hcond0/rho(l1:l2,j)
+        ax=-wx*dx_2
+        bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)+ &  
-             wx*dz_2/2.*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
-        rhsx=rhsx+wx*dx_2/2.*                                 &
-             (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-             +dt*source(l1:l2,j)
+        rhsx=TT(l1:l2,j) &  
+          +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+          +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
+          +dt*source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
         aalpha=cx(nx) ; bbeta=ax(1)
-        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
-        finter(l1:l2,j)=workx(1:nx)
+        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, finter(l1:l2,j), nx)
       enddo
 !
 ! Do the transpositions x <--> z
@@ -750,33 +800,27 @@ module ImplicitPhysics
 ! Columns dealt implicitly
 !
       do i=1,nxt
-        wz=dt*gamma*hcond0*cp1/rhot(:,i)
-        az=-wz*dz_2/2
-        bz=1.+wz*dz_2
+        wz=0.5*dz_2*dt*cp1*gamma*hcond0/rhot(:,i)
+        az=-wz
+        bz=1.+2.*wz
         cz=az
         rhsz=fintert(:,i)
         !
         ! z boundary conditions
         ! Always constant temperature at the top
         !
-        bz(nzgrid)=1. ; az(nzgrid)=0.
-        rhsz(nzgrid)=cs2top/gamma_m1
+        bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
         select case (bcz1(ilnTT))
-          ! Constant temperature at the bottom
-          case ('cT')
-            bz(1)=1.  ; cz(1)=0. 
-            rhsz(1)=cs2bot/gamma_m1
-          ! Constant flux at the bottom
-          case ('c1')
-            bz(1)=1.   ; cz(1)=-1
-            rhsz(1)=dz*Fbot/hcond0
+          case ('cT') ! Constant temperature at the bottom
+            bz(1)=1.  ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+          case ('c1') ! Constant flux at the bottom
+            bz(1)=1.  ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
           case default 
             call fatal_error('ADI_Kconst_MPI','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az, bz, cz, rhsz, workz, err, msg)
+        call tridag(az, bz, cz, rhsz, wtmp(:,i), err, msg)
         if (err) call warning('ADI_Kconst_MPI', trim(msg))
-        wtmp(:,i)=workz
       enddo
       call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
 !
@@ -1104,5 +1148,446 @@ module ImplicitPhysics
       enddo
 !
     endsubroutine ADI_Kconst_yakonov
+!***********************************************************************
+    subroutine crank_poly(f)
+!
+! 01-may-14/dintrans: coded
+!
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+!
+      implicit none
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mz) :: TT
+      real, dimension(nz) :: az, bz, cz, rhsz, chi, dchi
+      logical :: err
+      character(len=255) :: msg
+!
+      TT=f(4,4,:,iTT)
+!
+      chi=0.5*dt*dz_2*gamma*hcondz(n1:n2)*cp1/exp(f(4,4,n1:n2,ilnrho))
+      dchi=0.25*dt/dz*gamma*dhcondz(n1:n2)*cp1/exp(f(4,4,n1:n2,ilnrho))
+      az=-chi+dchi
+      bz=1.+2.*chi
+      cz=-chi-dchi
+      do n=n1,n2
+        rhsz(n-nghost)=TT(n)+chi(n-nghost)*(TT(n+1)-2.*TT(n)+TT(n-1)) &
+                            +dchi(n-nghost)*(TT(n+1)-TT(n-1))
+      enddo
+      bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1 ! T = Ttop
+      if (bcz1(iTT)=='cT') then
+        bz(1)=1. ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1 ! T = Tbot
+      else
+!        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(n1)*dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
+        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
+      endif
+      call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
+      if (err) call warning('crank_poly', trim(msg))
+!
+    endsubroutine crank_poly
+!***********************************************************************
+    subroutine ADI_poly(f)
+!
+!  01-may-14/dintrans: coded
+!  2-D ADI scheme for the radiative diffusion term for a variable
+!  radiative conductivity K(z). The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*Lamba_x)*T^(n+1/2) = T^n + Lambda_x(T^n) + Lambda_z(T^n) + source
+!    (1-dt/2*Lamba_z)*T^(n+1)   = T^(n+1/2)
+!
+!  where Lambda_x and Lambda_z denote diffusion operators and the source
+!  term comes from the explicit advance.
+!
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
+!
+      implicit none
+!
+      integer :: i,j
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz) :: source, finter, TT, chi, dchi
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, wx1
+      real, dimension(nz)    :: az, bz, cz, wz, rhsz, wz1
+      real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
+!
+      call update_ghosts(f)
+!
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
+      TT=f(:,4,:,iTTold)
+!
+! x-direction
+!
+      do j=n1,n2
+        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        wx=0.5*chi(l1:l2,j)
+        wx1=0.25*dchi(l1:l2,j)
+        ax=-wx*dx_2
+        bx=1.+2.*wx*dx_2
+        cx=ax
+        rhsx=TT(l1:l2,j)   &
+            +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+            +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
+            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))                     &
+            +dt*source(l1:l2,j)
+!
+! x boundary conditions: periodic
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,j),nx)
+      enddo
+!
+! z-direction
+!
+      do i=l1,l2
+        wz=0.5*dz_2*chi(i,n1:n2)
+        wz1=0.25/dz*dchi(i,n1:n2)
+        az=-wz+wz1
+        bz=1.+2.*wz
+        cz=-wz-wz1
+        rhsz=finter(i,n1:n2)
+!
+! z boundary conditions
+!
+! Constant temperature at the top
+        bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1
+! bottom
+        select case (bcz1(ilnTT))
+          ! Constant temperature at the bottom
+          case ('cT')
+            bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+          ! Constant flux at the bottom: c1 condition
+          case ('c1')
+            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
+          case default 
+            call fatal_error('ADI_poly','bcz on TT must be cT or c1')
+        endselect
+!
+        call tridag(az,bz,cz,rhsz,f(i,4,n1:n2,ilnTT),err,msg)
+        if (err) call warning('ADI_poly', trim(msg))
+      enddo
+!
+    endsubroutine ADI_poly
+!***********************************************************************
+    subroutine ADI_poly_MPI(f)
+!
+!  01-may-14/dintrans: coded
+!  Parallel version in the z-direction of ADI_poly.
+!
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
+      use Mpicomm, only: transp_xz, transp_zx
+!
+      implicit none
+!
+      integer :: i,j
+      integer, parameter :: nxt=nx/nprocz
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz)      :: source, finter, TT, chi, dchi
+      real, dimension(nx)         :: ax, bx, cx, wx, rhsx, wx1
+      real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz, wz1
+      real, dimension(nzgrid,nxt) :: fintert, chit, dchit, wtmp
+      real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
+!
+      call update_ghosts(f)
+!
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
+      TT=f(:,4,:,iTTold)
+!
+! x-direction
+!
+      do j=n1,n2
+        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        wx=0.5*chi(l1:l2,j)
+        wx1=0.25*dchi(l1:l2,j)
+        ax=-wx*dx_2
+        bx=1.+2.*wx*dx_2
+        cx=ax
+        rhsx=TT(l1:l2,j)+   &
+            +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+            +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
+            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))                     &
+            +dt*source(l1:l2,j)
+!
+! x boundary conditions: periodic
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,j),nx)
+      enddo
+!
+! do the transpositions x <--> z
+!
+      call transp_xz(finter(l1:l2,n1:n2), fintert)
+      call transp_xz(chi(l1:l2,n1:n2), chit)
+      call transp_xz(dchi(l1:l2,n1:n2), dchit)
+!
+! z-direction
+!
+      do i=1,nxt
+        wz=0.5*dz_2*chit(:,i)
+        wz1=0.25/dz*dchit(:,i)
+        az=-wz+wz1
+        bz=1.+2.*wz
+        cz=-wz-wz1
+        rhsz=fintert(:,i)
+!
+! z boundary conditions
+!
+! Constant temperature at the top
+        bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
+! bottom
+        select case (bcz1(ilnTT))
+          ! Constant temperature at the bottom
+          case ('cT')
+            bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+          ! Constant flux at the bottom: c1 condition
+          case ('c1')
+!            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
+            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
+          case default 
+            call fatal_error('ADI_poly_MPI','bcz on TT must be cT or c1')
+        endselect
+!
+        call tridag(az,bz,cz,rhsz,wtmp(:,i),err,msg)
+        if (err) call warning('ADI_poly_MPI', trim(msg))
+      enddo
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
+!
+    endsubroutine ADI_poly_MPI
+!***********************************************************************
+    subroutine ADI3D(f)
+!
+!  02-may-14/dintrans: coded
+!  3-D ADI scheme for the radiative diffusion term for a variable
+!  radiative conductivity K(z). The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*L_x)*T^(n+1/3) = T^n + L_x(T^n) + + L_y(T^n) + L_z(T^n) + source
+!    (1-dt/2*L_y)*T^(n+2/3) = T^(n+1/3)
+!    (1-dt/2*L_z)*T^(n+1)   = T^(n+2/3)
+!
+!  where L_x, L_y and L_z denote diffusion operators and the source
+!  term comes from the explicit advance.
+!
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
+!
+      implicit none
+!
+      integer :: l,m,n
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: source, finterx, fintery, TT, chi, dchi
+      real, dimension(nx)     :: ax, bx, cx, rhsx, wx, wx1
+      real, dimension(ny)     :: ay, by, cy, rhsy, wy, wy1
+      real, dimension(nz)     :: az, bz, cz, rhsz, wz, wz1
+      real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
+!
+      call update_ghosts(f)
+!
+      source=(f(:,:,:,ilnTT)-f(:,:,:,iTTold))/dt
+      TT=f(:,:,:,iTTold)
+!
+!  x-direction
+!
+      do n=n1,n2
+      do m=m1,m2
+        chi(l1:l2,m,n)=dt*cp1*gamma*hcondz(n)/exp(f(l1:l2,m,n,ilnrho))
+        dchi(l1:l2,m,n)=dt*cp1*gamma*dhcondz(n)/exp(f(l1:l2,m,n,ilnrho))
+        wx=0.5*chi(l1:l2,m,n)
+        wx1=0.25*dchi(l1:l2,m,n)
+        ax=-wx*dx_2
+        bx=1.+2.*wx*dx_2
+        cx=ax
+        rhsx=TT(l1:l2,m,n)+ &
+             wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
+            +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
+            +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
+        rhsx=rhsx+wx*dx_2*                                    &
+             (TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n)) &
+             +dt*source(l1:l2,m,n)
+!
+! x boundary conditions: periodic
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finterx(l1:l2,m,n),nx)
+      enddo
+      enddo
+!
+!  y-direction
+!
+      do n=n1,n2
+      do l=l1,l2
+        wy=0.5*chi(l,m1:m2,n)
+        wy1=0.25*dchi(l,m1:m2,n)
+        ay=-wy*dy_2
+        by=1.+2.*wy*dy_2
+        cy=ay
+        rhsy=finterx(l,m1:m2,n)
+!
+! y boundary conditions: periodic
+!
+        aalpha=cy(ny) ; bbeta=ay(1)
+        call cyclic(ay,by,cy,aalpha,bbeta,rhsy,fintery(l,m1:m2,n),ny)
+      enddo
+      enddo
+!
+!  z-direction
+!
+      do m=m1,m2
+      do l=l1,l2
+        wz=0.5*dz_2*chi(l,m,n1:n2)
+        wz1=0.25/dz*dchi(l,m,n1:n2)
+        az=-wz+wz1
+        bz=1.+2.*wz
+        cz=-wz-wz1
+        rhsz=fintery(l,m,n1:n2)
+!
+! z boundary conditions
+!
+! Constant temperature at the top
+        bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1
+! bottom
+        select case (bcz1(ilnTT))
+          ! Constant temperature at the bottom
+          case ('cT')
+            bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+          ! Constant flux at the bottom: c1 condition
+          case ('c1')
+            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
+          case default 
+            call fatal_error('ADI_poly','bcz on TT must be cT or c1')
+        endselect
+!
+        call tridag(az,bz,cz,rhsz,f(l,m,n1:n2,ilnTT),err,msg)
+        if (err) call warning('ADI_poly', trim(msg))
+      enddo
+      enddo
+!
+    endsubroutine ADI3D
+!***********************************************************************
+    subroutine ADI3D_MPI(f)
+!
+!  02-may-14/dintrans: coded
+!  3-D ADI scheme for the radiative diffusion term for a variable
+!  radiative conductivity K(z). The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*L_x)*T^(n+1/3) = T^n + L_x(T^n) + + L_y(T^n) + L_z(T^n) + source
+!    (1-dt/2*L_y)*T^(n+2/3) = T^(n+1/3)
+!    (1-dt/2*L_z)*T^(n+1)   = T^(n+2/3)
+!
+!  where L_x, L_y and L_z denote diffusion operators and the source
+!  term comes from the explicit advance.
+!
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
+      use Mpicomm, only: transp_xz, transp_zx
+!
+      implicit none
+!
+      integer, parameter :: nxt=nx/nprocz
+      integer :: l,m,n
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: source, finterx, fintery, TT, chi, dchi
+      real, dimension(nx)     :: ax, bx, cx, rhsx, wx, wx1
+      real, dimension(ny)     :: ay, by, cy, rhsy, wy, wy1
+      real, dimension(nzgrid) :: az, bz, cz, rhsz, wz, wz1
+      real, dimension(nzgrid,nxt) :: finteryt, chit, dchit, wtmp
+      real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
+!
+      call update_ghosts(f)
+!
+      source=(f(:,:,:,ilnTT)-f(:,:,:,iTTold))/dt
+      TT=f(:,:,:,iTTold)
+!
+!  x-direction
+!
+      do n=n1,n2
+      do m=m1,m2
+        chi(l1:l2,m,n)=dt*cp1*gamma*hcondz(n)/exp(f(l1:l2,m,n,ilnrho))
+        dchi(l1:l2,m,n)=dt*cp1*gamma*dhcondz(n)/exp(f(l1:l2,m,n,ilnrho))
+        wx=0.5*chi(l1:l2,m,n)
+        wx1=0.25*dchi(l1:l2,m,n)
+        ax=-wx*dx_2
+        bx=1.+2.*wx*dx_2
+        cx=ax
+        rhsx=TT(l1:l2,m,n)+ &
+             wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
+            +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
+            +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
+        rhsx=rhsx+wx*dx_2*                                    &
+             (TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n)) &
+             +dt*source(l1:l2,m,n)
+!
+! x boundary conditions: periodic
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finterx(l1:l2,m,n),nx)
+      enddo
+      enddo
+!
+!  y-direction
+!
+      do n=n1,n2
+      do l=l1,l2
+        wy=0.5*chi(l,m1:m2,n)
+        wy1=0.25*dchi(l,m1:m2,n)
+        ay=-wy*dy_2
+        by=1.+2.*wy*dy_2
+        cy=ay
+        rhsy=finterx(l,m1:m2,n)
+!
+! y boundary conditions: periodic
+!
+        aalpha=cy(ny) ; bbeta=ay(1)
+        call cyclic(ay,by,cy,aalpha,bbeta,rhsy,fintery(l,m1:m2,n),ny)
+      enddo
+      enddo
+!
+!  z-direction
+!
+      do m=m1,m2
+      call transp_xz(fintery(l1:l2,m,n1:n2), finteryt)
+      call transp_xz(chi(l1:l2,m,n1:n2), chit)
+      call transp_xz(dchi(l1:l2,m,n1:n2), dchit)
+      do l=1,nxt
+        wz=0.5*dz_2*chit(:,l)
+        wz1=0.25/dz*dchit(:,l)
+        az=-wz+wz1
+        bz=1.+2.*wz
+        cz=-wz-wz1
+        rhsz=finteryt(:,l)
+!
+! z boundary conditions
+!
+! Constant temperature at the top
+        bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
+! bottom
+        select case (bcz1(ilnTT))
+          ! Constant temperature at the bottom
+          case ('cT')
+            bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+          ! Constant flux at the bottom: c1 condition
+          case ('c1')
+!            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
+            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
+          case default 
+            call fatal_error('ADI_poly','bcz on TT must be cT or c1')
+        endselect
+!
+        call tridag(az,bz,cz,rhsz,wtmp(:,l),err,msg)
+        if (err) call warning('ADI_poly', trim(msg))
+      enddo
+      call transp_zx(wtmp, f(l1:l2,m,n1:n2,ilnTT))
+      enddo
+!
+    endsubroutine ADI3D_MPI
 !***********************************************************************
 endmodule ImplicitPhysics

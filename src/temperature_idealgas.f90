@@ -75,7 +75,7 @@ module Energy
   complex :: coef_lnTT=0.
   character (len=intlen) :: iinit_str
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
-  logical :: lADI_mixed=.false.
+  logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
 !
 !  Input parameters.
@@ -94,7 +94,7 @@ module Energy
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
-      cool, beta_bouss, borderss
+      cool, beta_bouss, borderss, lmultilayer
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -259,7 +259,7 @@ module Energy
 !  21-jul-2002/wolf: coded
 !
       use FArrayManager, only: farray_register_global
-      use Gravity, only: g0, gravz, compute_gravity_star
+      use Gravity, only: gravz, compute_gravity_star
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
@@ -321,12 +321,9 @@ module Energy
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
         case ('K-profile')
           lheatc_Kprof=.true.
-!  11-Aug-2008/dintrans: better somewhere else?
-          hcond1=(mpoly1+1.)/(mpoly0+1.)
-          hcond2=(mpoly2+1.)/(mpoly0+1.)
-          Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
-          if (lroot) &
-              call information('initialize_energy',' heat conduction: K=K(r)')
+          lmultilayer=.true.
+          if (lroot) call information('initialize_energy', &
+                ' heat conduction: K=K(z) or K=K(r)')
         case ('K-arctan')
           lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
@@ -424,10 +421,19 @@ module Energy
         call compute_gravity_star(f, wheat, luminosity, star_cte)
         if (rcool==0.) rcool=r_ext
       endif
+!     
+      if (lmultilayer) then
+        hcond1=(mpoly1+1.)/(mpoly0+1.)
+        hcond2=(mpoly2+1.)/(mpoly0+1.)
+      endif
 !
 !  Now we share several variables.
 !
       call put_shared_variable('hcond0', hcond0, ierr)
+      call put_shared_variable('hcond1', hcond1, ierr)
+      call put_shared_variable('hcond2', hcond2, ierr)
+      call put_shared_variable('lmultilayer', lmultilayer, ierr)
+      call put_shared_variable('widthlnTT', widthlnTT, ierr)
       if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcond0')
       call put_shared_variable('Fbot', Fbot, ierr)
@@ -1174,6 +1180,7 @@ module Energy
               hcond=1.
             endif
             fradtop=sum(-hcond*p%gTT(:,3))/nx
+!            fradtop=sum(-p%gTT(:,3))/nx
           else
             fradtop=0.
           endif
