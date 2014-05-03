@@ -205,7 +205,11 @@ module Energy
       endif
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
-        lpencil_in(i_glnrho)=.true.
+        if (lstratified) then
+          lpencil_in(i_glnrhos)=.true.
+        else
+          lpencil_in(i_glnrho)=.true.
+        endif
         if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
       if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
@@ -232,22 +236,26 @@ module Energy
 !
 !  fpres (=pressure gradient force)
 !
-      if (lpencil(i_fpres)) then
-        do j=1,3
-          if (llocal_iso) then
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
-          else
-            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
-          endif
+      fpres: if (lpencil(i_fpres)) then
+        strat: if (lstratified) then
+          p%fpres = -spread(p%cs2,2,3) * p%glnrhos
+        else strat
+          do j=1,3
+            if (llocal_iso) then
+              p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+            else
+              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+            endif
 !
 !  multiply previous p%fpres pencil with profiles
 !
-          if (ldensity) then
-            if (lffree) p%fpres(:,j)=p%fpres(:,j) &
-                *profx_ffree*profy_ffree(m)*profz_ffree(n)
-          endif
-        enddo
-      endif
+            if (ldensity) then
+              if (lffree) p%fpres(:,j)=p%fpres(:,j) &
+                  *profx_ffree*profy_ffree(m)*profz_ffree(n)
+            endif
+          enddo
+        endif strat
+      endif fpres
 !
 ! tcond (dummy)
 !

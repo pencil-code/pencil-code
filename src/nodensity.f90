@@ -7,6 +7,7 @@
 ! CPARAM logical, parameter :: ldensity = .false.
 ! CPARAM logical, parameter :: lanelastic = .false.
 ! CPARAM logical, parameter :: lboussinesq = .false.
+! CPARAM logical, parameter :: lstratified = .false.
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -14,6 +15,7 @@
 ! PENCILS PROVIDED hlnrho(3,3); grho(3); glnrho2
 ! PENCILS PROVIDED del6lnrho; uij5glnrho(3); uglnrho; ugrho; sglnrho(3)
 ! PENCILS PROVIDED ekin; transprho
+! PENCILS PROVIDED glnrhos(3)
 !
 !***************************************************************
 module Density
