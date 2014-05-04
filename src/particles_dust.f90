@@ -511,7 +511,8 @@ module Particles
 !
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
-      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number)) then
+      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
+          .and..not.lparticles_mass) then
         if (lroot) print*, 'initialize_particles: drag force on gas is '// &
             'not yet implemented for variable particle radius or number'
         call fatal_error('initialize_particles','')
