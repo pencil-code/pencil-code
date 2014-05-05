@@ -70,6 +70,7 @@ module Viscosity
   logical :: lvisc_nu_profr_twosteps=.false.
   logical :: lvisc_nut_from_magnetic=.false.
   logical :: lvisc_nu_shock=.false.
+  logical :: lvisc_shock_simple=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_polar=.false.
@@ -205,6 +206,7 @@ module Viscosity
       lvisc_nu_profr_twosteps=.false.
       lvisc_nut_from_magnetic=.false.
       lvisc_nu_shock=.false.
+      lvisc_shock_simple=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_polar=.false.
@@ -287,6 +289,10 @@ module Viscosity
           if (.not. lshock) &
            call stop_it('initialize_viscosity: shock viscosity'// &
                            ' but module setting SHOCK=noshock')
+        case ('shock_simple', 'shock-simple')
+          if (lroot) print *, 'viscous force: div(nu_shock*grad(uu_i)))'
+          lvisc_shock_simple = .true.
+          if (.not. lshock) call stop_it('initialize_viscosity: a SHOCK module is required. ')
         case ('hyper2-simplified','hyper2_simplified', 'hyper4')
           if (lroot) print*,'viscous force: nu_hyper*del4v'
           lvisc_hyper2_simplified=.true.
@@ -408,6 +414,7 @@ module Viscosity
         if (lvisc_nu_shock.and.nu_shock==0.0) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_shock is zero!')
+        if (lvisc_shock_simple .and. nu_shock == 0.0) call fatal_error('initialize_viscosity', 'nu_shock is zero. ')
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
 !
@@ -834,6 +841,12 @@ module Viscosity
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      shksmp: if (lvisc_shock_simple) then
+        lpenc_requested(i_shock) = .true.
+        lpenc_requested(i_gshock) = .true.
+        lpenc_requested(i_uij) = .true.
+        lpenc_requested(i_del2u) = .true.
+      endif shksmp
       if (llambda_effect) then
         lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -1331,6 +1344,18 @@ module Viscosity
               p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
         endif
       endif
+!
+!  viscous force: div(nu_shock * grad(uu_i))
+!
+      shksmp: if (lvisc_shock_simple) then
+        do i = 1, 3
+          call dot(p%gshock, p%uij(:,i,:), tmp3)
+          tmp(:,i) = tmp3 + p%shock * p%del2u(:,i)
+        enddo
+        p%fvisc = p%fvisc + nu_shock * tmp
+        if (lfirst .and. ldt) p%diffus_total = p%diffus_total + nu_shock * p%shock
+        if (lpencil(i_visc_heat)) call warning('calc_pencils_viscosity', 'shock heating does not exist. ')
+      endif shksmp
 !
 !  viscous force: nu_hyper2*de46v (not momentum-conserving)
 !
