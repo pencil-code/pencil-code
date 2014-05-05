@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2013-10-22
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
+def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, logscale=False, **kwargs):
     """Plots the space-time diagram of a 1D average.
 
     Keyword Arguments:
@@ -19,10 +19,12 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
             Number of regular time intervals.
         var
             Name of the variable; if None, first variable is used.
+        logscale
+            Take logarithm or not.
         **kwargs
             Sent to matplotlib.pyplot.imshow.
     """
-    # Chao-Chin Yang, 2013-10-29
+    # Chao-Chin Yang, 2014-05-05
 
     # Check the plane of the average.
     if plane == 'xy':
@@ -48,6 +50,12 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     if var is None:
         var = avg.dtype.names[0]
 
+    # Set colorbar label.
+    if logscale:
+        cblabel = r'$\log(\tt{' + var + '})$'
+    else:
+        cblabel = var
+
     # Interpolate the time series.
     print("Interpolating", var, "...")
     import numpy as np
@@ -57,7 +65,10 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     t = np.linspace(tmin, tmax, tsize)
     a = np.empty((tsize, ns))
     for j in range(ns):
-        a[:,j] = interp1d(time, avg[var][:,j])(t)
+        if logscale:
+            a[:,j] = interp1d(time, np.log10(avg[var][:,j]))(t)
+        else:
+            a[:,j] = interp1d(time, avg[var][:,j])(t)
 
     # Plot the space-time diagram.
     print("Plotting...")
@@ -67,7 +78,7 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, **kwargs):
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
     cb = plt.colorbar(img)
-    cb.set_label(var)
+    cb.set_label(cblabel)
     plt.show()
 
 #=======================================================================
