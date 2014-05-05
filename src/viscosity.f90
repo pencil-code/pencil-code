@@ -1354,7 +1354,7 @@ module Viscosity
         enddo
         p%fvisc = p%fvisc + nu_shock * tmp
         if (lfirst .and. ldt) p%diffus_total = p%diffus_total + nu_shock * p%shock
-        if (lpencil(i_visc_heat)) call warning('calc_pencils_viscosity', 'shock heating does not exist. ')
+        if (lpencil(i_visc_heat) .and. headtt) call warning('calc_pencils_viscosity', 'shock heating does not exist. ')
       endif shksmp
 !
 !  viscous force: nu_hyper2*de46v (not momentum-conserving)
