@@ -411,13 +411,13 @@ module power_spectrum
 !  append to diagnostics file
 !
   if (iproc==root) then
-     if (ip<10) print*,'Writing power spectra of variable',sp &
-          ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
-     spectrum_sum=.5*spectrum_sum
-     open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
-     write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
-     close(1)
+    if (ip<10) print*,'Writing power spectra of variable',sp &
+         ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') spectrum_sum
+    close(1)
   endif
   !
   endsubroutine power_2d
@@ -506,9 +506,10 @@ module power_spectrum
 !   11-nov-10/MR: extended to arbitrary combinations of shell/2d and z dependent/integrated spectra
 !                 additional information about kind of spectrum + wavenumber vectors in output file;
 !                 extended shell-integrated spectra to anisotropic boxes, extended k range to k_x,max^2 + k_y,max^2
-!   18-Jan-11/MR: modified for calculation of power spectra of scalar products
-!   10-May-11/MR: modified for use with ranges in kx, ky, z; for output of true
+!   18-jan-11/MR: modified for calculation of power spectra of scalar products
+!   10-may-11/MR: modified for use with ranges in kx, ky, z; for output of true
 !                 (complex and componentwise) instead of power spectra
+!    5-may-14/MR: modifications for request of individual components of a vector field 
 !
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
@@ -522,7 +523,7 @@ module power_spectrum
 !
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 !
-  integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl
+  integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl,iveca,cpos
   real,    dimension(nx,ny,nz)            :: ar,ai
   real,    dimension(:,:,:), allocatable  :: br,bi
   real,    allocatable, dimension(:)      :: spectrum1,spectrum1_sum, kshell
@@ -535,9 +536,10 @@ module power_spectrum
   real, dimension(nx,ny)  :: prod
   real                    :: prods
 !
-  character (len=80)  :: title
-  character (len=fnlen) :: filename
-  logical             :: l2nd
+  character (len=80)   :: title
+  character (len=fnlen):: filename
+  character (len=3)    :: sp_field
+  logical              :: l2nd
   !
   !  identify version
   !
@@ -551,10 +553,37 @@ module power_spectrum
 !
   if (l2nd) allocate(br(nx,ny,nz),bi(nx,ny,nz))
 !
-  if ( sp=='u' .or. sp=='b' .or. sp=='a' ) then
-    ncomp=3
+  cpos=0
+!
+!  to add further fields, modify here!
+!
+  if ( sp(1:1)=='u' .or. sp(1:1)=='b' .or. sp(1:1)=='a' .or. sp(1:1)=='s' ) then
+    sp_field=sp(1:1)
+    cpos=2
+  elseif (len(trim(sp))>=3) then
+    if ( sp(1:3)=='rho' .or. sp(1:3)=='jxb' ) then
+      sp_field=sp(1:3)
+      cpos=4
+    endif
+  endif
+  if (cpos==0) &
+    call fatal_error('power_xy','no implementation for field '//trim(sp))
+    
+  if ( sp_field=='u' .or. sp_field=='b' .or.  &
+       sp_field=='a' .or. sp_field=='jxb' ) then  ! for vector fields
+    if (len(trim(sp))>=cpos) then                 ! component specification expected
+      ncomp=1
+      select case (sp(cpos:cpos))
+      case ('x')  ; iveca=1 
+      case ('y')  ; iveca=2 
+      case ('z')  ; iveca=3
+      case default; call fatal_error('power_xy','no components other than x,y,z may be selected')      
+      end select
+    else                                        ! no component specified -> all three components
+      ncomp=3; iveca=1
+    endif
   else
-    ncomp=1
+    ncomp=1; iveca=1
   endif
 !
   if (lintegrate_shell) then
@@ -637,66 +666,66 @@ module power_spectrum
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part ar1-ar3; and put imaginary part, ai1-ai3, to zero
   !
-  do ivec=1,ncomp
+  do ivec=iveca,iveca+ncomp-1
 !
-    call comp_spectrum_xy( f, sp, ar, ai, ivec )
+    call comp_spectrum_xy( f, sp_field, ar, ai, ivec )
     if (l2nd) call comp_spectrum_xy( f, sp2, br, bi, ivec )
 !
 !  integration over shells
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
 !
-     if (lroot .AND. ip<10) print*,'fft done; now collect/integrate over circles...'
+    if (lroot .AND. ip<10) print*,'fft done; now collect/integrate over circles...'
 !
 !  Summing up the results from the different processors
 !  The result is available only on root  !!??
 !
-     do ikz=1,nz
-       if (lintegrate_shell) then
+    do ikz=1,nz
+      if (lintegrate_shell) then
 !
-         do iky=1,ny
-           do ikx=1,nx
+        do iky=1,ny
+          do ikx=1,nx
 !
-             !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-             k=nint( sqrt( (kx(ikx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
-                                                                         ! is |\vec{k}|/(2*pi/Lx)
-             if ( k>=0 .and. k<=nk-1 ) then
+            !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
+            k=nint( sqrt( (kx(ikx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
+                                                                        ! is |\vec{k}|/(2*pi/Lx)
+            if ( k>=0 .and. k<=nk-1 ) then
 !
-               kshell(k+1) = k*2*pi/Lx
+              kshell(k+1) = k*2*pi/Lx
 !
-               if (l2nd) then
-                 prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
-               else
-                 prods = 0.5*(ar(ikx,iky,ikz)**2+ai(ikx,iky,ikz)**2)
-               endif
+              if (l2nd) then
+                prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
+              else
+                prods = 0.5*(ar(ikx,iky,ikz)**2+ai(ikx,iky,ikz)**2)
+              endif
 !
-               if (lintegrate_z) then
-                 spectrum1(k+1) = spectrum1(k+1)+prods*dz              ! equidistant grid required
-               else
-                 spectrum2(k+1,ikz) = spectrum2(k+1,ikz) + prods
-               endif
-             endif
-           enddo
-         enddo
+              if (lintegrate_z) then
+                spectrum1(k+1) = spectrum1(k+1)+prods*dz              ! equidistant grid required
+              else
+                spectrum2(k+1,ikz) = spectrum2(k+1,ikz) + prods
+              endif
+            endif
+          enddo
+        enddo
 !
-       else
+      else
 !
-         if (l2nd) then
-           prod = ar(:,:,ikz)*br(:,:,ikz)+ai(:,:,ikz)*bi(:,:,ikz)
-         elseif ( .not. lcomplex ) then
-           prod = ar(:,:,ikz)**2+ai(:,:,ikz)**2
-         endif
+        if (l2nd) then
+          prod = ar(:,:,ikz)*br(:,:,ikz)+ai(:,:,ikz)*bi(:,:,ikz)
+        elseif ( .not. lcomplex ) then
+          prod = ar(:,:,ikz)**2+ai(:,:,ikz)**2
+        endif
 !
-         if (lintegrate_z) then
-           spectrum2(:,:)=spectrum2(:,:)+(0.5*dz)*prod                 ! equidistant grid required
-         elseif ( lcomplex ) then
-           spectrum3_cmplx(:,:,ikz,ivec)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
-         else
-           spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*prod
-         endif
+        if (lintegrate_z) then
+          spectrum2(:,:)=spectrum2(:,:)+(0.5*dz)*prod                 ! equidistant grid required
+        elseif ( lcomplex ) then
+          spectrum3_cmplx(:,:,ikz,ivec)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
+        else
+          spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*prod
+        endif
 !
-       endif
+      endif
 !
-     enddo
+    enddo
 !
   enddo !(of loop over ivec)
 !
