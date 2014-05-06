@@ -33,7 +33,7 @@ module Energy
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id")
+      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_energy
 !***********************************************************************
