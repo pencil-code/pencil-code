@@ -100,7 +100,7 @@ module Particles
       lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
-      rad_sphere, pos_sphere, &
+      rad_sphere, pos_sphere, rhopmat, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
@@ -117,7 +117,7 @@ module Particles
       tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, &
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
-      ldt_grav_par, lsinkpoint, &
+      ldt_grav_par, lsinkpoint, rhopmat, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
@@ -2271,47 +2271,51 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Epstein drag law.
 !
       if (ldraglaw_epstein) then
-        if (npar_species>1) then
-          jspec=npar_species*(ipar(k)-1)/npar+1
-          tmp=tausp1_species(jspec)
+        if (iap/=0) then
+          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
         else
-          tmp=tausp1
-        endif
+          if (npar_species>1) then
+            jspec=npar_species*(ipar(k)-1)/npar+1
+            tmp=tausp1_species(jspec)
+          else
+            tmp=tausp1
+          endif
 !
 !  Scale friction time with local density.
 !
-        if (ldraglaw_variable_density) then
-          if (ldensity_nolog) then
-            tausp1_par=tmp*fb(ix0,iy0,iz0,irho,inearblock(k))
-          else
-            tausp1_par=tmp*exp(fb(ix0,iy0,iz0,ilnrho,inearblock(k)))
-          endif
+          if (ldraglaw_variable_density) then
+            if (ldensity_nolog) then
+              tausp1_par=tmp*fb(ix0,iy0,iz0,irho,inearblock(k))
+            else
+              tausp1_par=tmp*exp(fb(ix0,iy0,iz0,ilnrho,inearblock(k)))
+            endif
 !
 !  Discriminate between constant tau and special case for
 !  1/tau=omega when omega is not constant (as, for instance,
 !  global Keplerian disks, for which omega=rad**(-3/2)
 !
-        elseif (ldraglaw_variable) then 
-          if (lcartesian_coords) then
-            OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
-          elseif (lcylindrical_coords) then
-            OO=fp(k,ixp)**(-1.5)
-          elseif (lspherical_coords) then
-            call fatal_error("get_frictiontime",&
-                 "variable draglaw not implemented for"//&
-                 "spherical coordinates")
-            OO=0.
+          elseif (ldraglaw_variable) then 
+            if (lcartesian_coords) then
+              OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
+            elseif (lcylindrical_coords) then
+              OO=fp(k,ixp)**(-1.5)
+            elseif (lspherical_coords) then
+              call fatal_error("get_frictiontime",&
+                   "variable draglaw not implemented for"//&
+                   "spherical coordinates")
+              OO=0.
+            else
+              call fatal_error("get_frictiontime", &
+                   "no valid coord system")
+              OO=0.
+            endif
+            tausp1_par=tmp*OO
           else
-            call fatal_error("get_frictiontime", &
-                 "no valid coord system")
-            OO=0.
-          endif
-          tausp1_par=tmp*OO
-        else
 !
 !  Constant friction time
 !
-          tausp1_par=tmp
+            tausp1_par=tmp
+          endif
         endif
       endif
 !
