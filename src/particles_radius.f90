@@ -34,7 +34,7 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0
+  real :: ap1=1.0, qplaw=0.0, eps_dtog=0.01
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -46,7 +46,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1
+      aplow, aphigh, mbar, ap1, qplaw, eps_dtog
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -144,7 +144,7 @@ module Particles_radius
       logical, optional :: init
 !
       real, dimension (ninit) :: radii_cumulative
-      real :: radius_fraction, mcen, mmin, mmax, fcen, p
+      real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
       integer :: i, j, k, ind
       logical :: initial
 !
@@ -183,6 +183,27 @@ module Particles_radius
             call random_number_wrapper(fp(k,iap))
             fp(k,iap)=fp(k,iap)*(aphigh-aplow)+aplow
           enddo
+!
+        case ('logarithmically-spaced')
+          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+              'logarithmically spaced with ap0, ap1=', ap0(j), ap1
+          do k=npar_low,npar_high
+            fp(k,iap)=10**(alog10(ap0(j))+(ipar(k)-0.5)* &
+                (alog10(ap1)-alog10(ap0(j)))/npar)
+          enddo
+          if (lparticles_mass) then 
+            if (lgravz .and. lgravz_gas) then
+              rhopm = eps_dtog*sqrt(2*pi)*1.0/Lz
+            else
+              rhopm = eps_dtog*1.0
+            endif
+            do k=npar_low,npar_high
+              aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
+              aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
+              fp(k,irhopswarm)=(aphigh**(4-qplaw)-aplow**(4-qplaw))/ &
+                  (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhopm*nwgrid
+            enddo
+          endif
 !
         case ('specify')
 !
