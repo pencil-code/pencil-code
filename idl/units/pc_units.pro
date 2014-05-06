@@ -53,7 +53,7 @@ COMPILE_OPT IDL2,HIDDEN
                energy:density*velocity^2*length^3, $
                specific_energy:velocity^2, $
                magnetic_field:magnetic, $
-               current_density:velocity*param.mu0*0.25/double(!Pi)*sqrt(1.e7*density)/length*29979245800.0d0^2*10.0 }
+               current_density:2.99792458d5*velocity/length^3 }
     pc_check_math,location='pc_units - cgs unit calculation'
     tex=texsyms()
     symbols = { temperature:'T', $
@@ -65,7 +65,7 @@ COMPILE_OPT IDL2,HIDDEN
                 energy:'ergs', $
                 specific_energy:'ergs/g', $
                 magnetic_field:'G', $
-                current_density:'statamp/cm^2' }
+                current_density:'esE/s/cm^2' }
 ;
   end else if (param.unit_system eq "SI") then begin
 ;
