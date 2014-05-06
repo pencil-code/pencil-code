@@ -792,7 +792,7 @@ else if ($hn =~ eslogin[0-9]*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ nid*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
+else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   echo "Hermit - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
