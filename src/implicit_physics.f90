@@ -1308,7 +1308,7 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)+   &
+        rhsx=TT(l1:l2,j)    &
             +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
             +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
             +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))                     &
