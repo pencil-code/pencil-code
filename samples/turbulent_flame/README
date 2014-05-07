@@ -29,10 +29,10 @@ Comments:
        2) Run the isotropic box (./turbulent_box) to be used as 
           inlet condition. This is done in typically half an hour.
           Since this is a 8 processor job (as all the remaining jobs)
-          it should normally be submitted to the que of your cluster.
-          See that it has reach statistically steady state by typing
-          > .r ts
-          in IDL.
+          it should normally be submitted to the queue of your cluster.
+          See that it has reached statistically steady state by typing
+          > pc_show_ts
+          in IDL and check for 'urms' and 'umax'.
        3) Run the 3D initial condition setup (./init_cond_3D) in order
           to fill the domain with turbulence before the flame is introduced.
           For visualizing e.g. the velocity in the y direction in a 2D
