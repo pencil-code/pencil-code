@@ -103,7 +103,7 @@ pro cslice_event, event
 		break
 	end
 	'SHOW_TIME': begin
-		pc_show_ts, unit=unit, param=param, run_param=run_param, datadir=datadir
+		pc_show_ts, unit=unit, start_param=param, run_param=run_param, datadir=datadir
 		break
 	end
 	'COT':
