@@ -578,10 +578,10 @@ pro pc_show_ts, object=time_series, unit=unit, start_param=start_param, run_para
 	num_plots = n_elements (plots)
 
 	; Usually, the first column (0) is 'it', the second (1) is 't', and additional quantities follow (2, ...):
-	l_sx = 0
+	l_sx = 1
 	l_sy = 2 < (num_plots-1)
 	r_sx = 1 < (num_plots-1)
-	r_sy = 2 < (num_plots-1)
+	r_sy = 3 < (num_plots-1)
 	lx_range = float (minmax (ts.(l_sx)))
 	ly_range = float (minmax (ts.(l_sy)))
 	rx_range = float (minmax (ts.(r_sx)))
