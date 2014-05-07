@@ -718,7 +718,7 @@ module power_spectrum
         if (lintegrate_z) then
           spectrum2(:,:)=spectrum2(:,:)+(0.5*dz)*prod                 ! equidistant grid required
         elseif ( lcomplex ) then
-          spectrum3_cmplx(:,:,ikz,ivec)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
+          spectrum3_cmplx(:,:,ikz,ivec-iveca+1)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
         else
           spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*prod
         endif

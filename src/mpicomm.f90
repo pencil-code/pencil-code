@@ -6919,7 +6919,7 @@ module Mpicomm
       integer :: k,ipz, ipy, ipx, ic, ncompl, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
                  irz, iry, irx, iza, ize, iya, iye, ixa, ixe, ixs, nsend, tag, unfilled
       logical :: ltrans, lcomplex
-      real :: rowbuf(nx)
+      real,    allocatable :: rowbuf(:)
       complex, allocatable :: rowbuf_cmplx(:)
 !
       lcomplex = .false.
@@ -6960,7 +6960,11 @@ module Mpicomm
         zrangel = zrange(:,1:nz_max)
       endif
 !
-      if (lcomplex) allocate( rowbuf_cmplx(nx) )
+      if (lcomplex) then
+        allocate( rowbuf_cmplx(nx) )
+      else
+        allocate( rowbuf(nx) )
+      endif
 !
       unfilled=0
 !
