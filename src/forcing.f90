@@ -1214,7 +1214,7 @@ module Forcing
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
       if (ip<4) then
-        open(89,file='forcing_hel_output.dat',access='append')
+        open(89,file='forcing_hel_output.dat',position='append')
         write(89,'(6f10.5)') k,kx0,kx,ky,kz,deltay
         close(89)
       endif
@@ -1758,7 +1758,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
       if (ip<4) then
-        open(89,file='forcing_hel_kprof_output.dat',access='append')
+        open(89,file='forcing_hel_kprof_output.dat',position='append')
         write(89,'(6f10.5)') k,kx0,kx,ky,kz,deltay
         close(89)
       endif
