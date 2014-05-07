@@ -801,12 +801,14 @@ module power_spectrum
   else if (lintegrate_z) then
          call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
          call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
+!
+!  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
+!  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
+!
        elseif (lcomplex) then
-         call mpigather_and_out_cmplx(spectrum3_cmplx,ncomp,1,.true.,kxrange,kyrange,zrange)
+         call mpigather_and_out_cmplx(spectrum3_cmplx,ncomp,1,.not.(nygrid==1),kxrange,kyrange,zrange)
        else
-         call mpigather_and_out_real(spectrum3,1,.true.,kxrange,kyrange,zrange)
-                                            ! transposing output, as in fourier_transform_xy
-                                            ! an unreverted transposition is performed
+         call mpigather_and_out_real(spectrum3,1,.not.(nygrid==1),kxrange,kyrange,zrange)
        endif
 !
   if (lroot) then
