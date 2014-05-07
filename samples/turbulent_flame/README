@@ -9,7 +9,7 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    128x64x64 
+    128x64x64
 Comments:
     Before running the main simulation three other simulations have
     to be performed in order to:
@@ -22,11 +22,11 @@ Comments:
           to set up a good initial profile for the flame front. (This very
           run is run on only one processor and without MPI.) This takes
           typically 5 minutes. The results can be visualized in IDL by
-          e.g. "temperature.pro" or "species.pro". The first script is run 
+          e.g. "temperature.pro" or "species.pro". The first script is run
           by typing
           > .r temperature
           in the IDL prompt.
-       2) Run the isotropic box (./turbulent_box) to be used as 
+       2) Run the isotropic box (./turbulent_box) to be used as
           inlet condition. This is done in typically half an hour.
           Since this is a 8 processor job (as all the remaining jobs)
           it should normally be submitted to the queue of your cluster.
@@ -40,21 +40,19 @@ Comments:
           > ./src/read_videofiles.x
           on the linux prompt. Answer 'uu2' on the query.
           Then open IDL and run the script "uy".
-       4) Run the startscript of the main simulation. 
-       5) When the startscript finalizes your should use pc_copyvar 
-            > pc_copyvar var.dat var.dat ./init_cond_3D . -e
-          in order to copy the 3D initial condition to the main simulation.
+       4) Start the main simulation in the main directory: "./start.csh".
+       5) Copy the generated 3D initial condition to the main simulation:
+          > pc_copyvar var.dat var.dat ./init_cond_3D . -e
        6) Run the main simulation. Please remember that if you want to
-          continue running the simulation even after it has finalized 
-          once you must turn off the reinitialization of the chemistry
-          in run.in. 
+          continue running the simulation over multiple runs, you need to
+          turn off the reinitialization of the chemistry in run.in.
           E.g. the species can now be visualized by running
           > pc_visualize_species
           in IDL. (Remember to run ./src/read_videofiles.x on the
-          linux prompt first.) 
+          linux prompt first.)
 
 
-       If you are intersted in a flame in an isotropic box, instead of 
+       If you are intersted in a flame in an isotropic box, instead of
        a flame in flow of decaying turbulence you can jump from 1) to 7).
        Unfortunately this has not been very well tested but I think it should
        work relatively fine.
@@ -63,10 +61,10 @@ Comments:
           > .r ts
           in IDL.
        8) Run the startscript of the main simulation (found in 3D_isotropic).
-       9) When the startscript finalizes your should use pc_copyvar 
+       9) When the startscript finalizes your should use pc_copyvar
             > pc_copyvar var.dat var.dat ../init_cond_3D_isotropic . -e
           in order to copy the 3D initial condition to the main simulation.
       10) Run the main simulation. Please remember that if you want to
-          continue running the simulation even after it has finalized 
+          continue running the simulation even after it has finalized
           once you must turn off the reinitialization of the chemistry
           in run.in.
