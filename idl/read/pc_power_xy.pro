@@ -518,7 +518,7 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1 )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1 )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
@@ -534,7 +534,7 @@ default,yrange,[10.0^(floor(alog10(float(global_ext1(0))))),10.0^ceil(alog10(flo
 if (file2 ne '') then begin
 
   nk = nk0
-  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2 )
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2, fmt=fmt2 )
  
   if nt2 eq 0 or nk ne nk1 then begin
 
