@@ -151,7 +151,7 @@ readerr:
 
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, fmt=fmt
 
 common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
