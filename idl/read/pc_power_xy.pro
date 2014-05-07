@@ -739,7 +739,8 @@ print,'AXEL1'
 ;if keyword_set(obj) then 
 obj = CREATE_STRUCT(name=filename,['tt','spec1'],tt,spec1)
 
-   stop
+return
+   ;stop
   if not lint_shell then begin
     if lint_z then begin
   
