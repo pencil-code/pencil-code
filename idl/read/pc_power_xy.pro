@@ -617,8 +617,9 @@ endif
         readf,1,spectrum1, format=fmt1 $
       else $
         readf,1,spectrum1
-print,'AXEL'
-stop
+;print,'AXEL'
+;stop
+print,it
     
       if lint_shell then $
         spec1(*,*,ic,it)=spectrum1 $
@@ -733,6 +734,11 @@ stop
     endif
     ;
   endwhile
+;if keyword_set(obj) then obj = {T: tt, SPEC1: spec1}
+print,'AXEL1'
+;if keyword_set(obj) then 
+obj = CREATE_STRUCT(name=filename,['tt','spec1'],tt,spec1)
+
    stop
   if not lint_shell then begin
     if lint_z then begin
