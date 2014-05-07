@@ -338,6 +338,7 @@ pro pc_show_ts_analyze
 	plot, ts.dt, title = 'dt', xc=charsize, yc=charsize, /yl
 
 	tags = tag_names (ts)
+	num_tags = n_elements (tags)
 	if (any (strcmp (tags, 't', /fold_case))) then begin
 		time = ts.t
 	endif else begin
@@ -405,7 +406,9 @@ pro pc_show_ts_analyze
 	end
 
 	window, 12, xsize=1000, ysize=800, title='time series analysis', retain=2
-	!P.MULTI = [0, 2, 2, 0, 0]
+	multi_x = 2
+	multi_y = 2
+	!P.MULTI = [0, multi_x, multi_y, 0, 0]
 
 	max_subplots = 4
 	num_subplots = 0
@@ -421,7 +424,7 @@ pro pc_show_ts_analyze
 		plot, time, energy_therm, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='<E/V> [J/m^3]'
 		plot, time, energy_int, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
-		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		!P.MULTI = [max_subplots-num_subplots, multi_x, multi_y, 0, 0]
 	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		mass = ts.totmass * units.mass / units.default_mass
@@ -430,7 +433,7 @@ pro pc_show_ts_analyze
 		plot, time, mass, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='total mass ['+units.default_mass_str+']'
 		plot, time, energy, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
-		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		!P.MULTI = [max_subplots-num_subplots, multi_x, multi_y, 0, 0]
 	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		energy = (ts.eem*N + ts.ekintot) * units.mass * units.velocity^2
@@ -448,7 +451,7 @@ pro pc_show_ts_analyze
 		plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+units.default_density_str+']'
 		plot, time, Temp_max, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
-		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		!P.MULTI = [max_subplots-num_subplots, multi_x, multi_y, 0, 0]
 	end else if (any (strcmp (tags, 'TTm', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		Temp_mean = ts.TTm * units.temperature
@@ -457,7 +460,7 @@ pro pc_show_ts_analyze
 		plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+units.default_density_str+']'
 		plot, time, Temp_mean, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
-		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		!P.MULTI = [max_subplots-num_subplots, multi_x, multi_y, 0, 0]
 	end else if (any (strcmp (tags, 'TTm', /fold_case)) and any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		Temp_max = ts.TTmax * units.temperature
@@ -496,7 +499,7 @@ pro pc_show_ts_analyze
 		plot, time, j_abs, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='sqrt(<j^2>) [A/m^2]'
 		plot, time, HR_ohm, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
-		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		!P.MULTI = [max_subplots-num_subplots, multi_x, multi_y, 0, 0]
 	end else if (any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		visc_heat_mean = ts.visc_heatm * units.density * units.velocity^3 / units.length
@@ -524,6 +527,13 @@ pro pc_show_ts_analyze
 		num_subplots += 1
 		mass = ts.totmass * units.mass / units.default_mass
 		plot, time, mass, title = 'Mass conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize
+	end
+
+	skip_ts = 2
+	while ((num_subplots lt max_subplots) and (skip_ts+1 lt num_tags)) do begin
+		num_subplots += 1
+		skip_ts += 1
+		plot, time, ts.(skip_ts), title = tags[skip_ts], xrange=x_minmax, /xs, xc=charsize, yc=charsize
 	end
 
 	!X.margin = old_x_margin
