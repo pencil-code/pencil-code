@@ -377,7 +377,7 @@ if err ne 0 then return, 0
 
 END
 ;******************************************************************************************
-PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
+FUNCTION pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir, $ 
@@ -867,6 +867,8 @@ if !d.name eq 'PS' then device, /close
 !p.title=''
 !x.range=''
 !y.range=''
+
+return, {T: tt, SPEC1: spec1}
 
 END
 
