@@ -455,7 +455,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
             ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
             yaxis=0,char=1.5,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
           xyouts,20,380,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=2
-          wait,.05
+          wait,wait
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
