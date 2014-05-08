@@ -33,7 +33,7 @@ module Energy
   real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
-  real :: rcool=0.0, wcool=0.1, ppcool=1.
+  real :: rcool=0.0, wcool=0.1, ppcool=1., zcool2=0.0
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
@@ -156,7 +156,7 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
+      lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -2374,6 +2374,7 @@ module Energy
       if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) then
         lpenc_requested(i_cs2)=.true.
         if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
+        if (cooltype=='two-layer') lpenc_requested(i_rho)=.true.
         if (cooling_profile=='surface_pp') lpenc_requested(i_pp)=.true.
       endif
       if (lgravz .and. (luminosity/=0.0 .or. cool/=0.0)) &
@@ -4698,7 +4699,7 @@ module Energy
       real, dimension (nx) :: heat
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: prof
+      real, dimension (nx) :: prof,prof2
 !
       intent(in) :: p
 !
@@ -4723,6 +4724,13 @@ module Energy
       case ('surface_z')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
 !
+!  Error function cooling profile (two-layer).
+!
+      case ('z1-z2')
+        prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
+        prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
+!
+!
 !  Error function cooling profile with respect to pressure.
 !
       case ('surface_pp')
@@ -4746,6 +4754,11 @@ module Energy
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
      case('rho_cs2')
        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
+!   16-nov-13/nishant: coded
+! two layers (jumps) at arb heights and arb temperatures
+      case ('two-layer')
+        heat = heat - cool*prof*p%rho*(p%cs2-cs2cool)-cool2*prof2*p%rho*(p%cs2-cs2cool2)
+!
      case('plain')
        heat=heat-cool*prof
      case default
@@ -4844,7 +4857,7 @@ module Energy
       use Sub, only: step
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat,prof,theta_profile
+      real, dimension (nx) :: heat,prof,theta_profile,prof2
 !      real :: zbot,ztop
       intent(in) :: p
 !
