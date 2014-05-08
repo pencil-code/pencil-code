@@ -734,13 +734,12 @@ print,it
     endif
     ;
   endwhile
-;if keyword_set(obj) then obj = {T: tt, SPEC1: spec1}
+  
 print,'AXEL1'
-;if keyword_set(obj) then 
-obj = CREATE_STRUCT(name=filename,['tt','spec1'],tt,spec1)
-
+  if arg_present(obj) then obj = {filename, TT: tt, SPEC1: spec1}
+; MR: would prefer the name 'T' for the time as it is also use elsewhere
 return
-   ;stop
+
   if not lint_shell then begin
     if lint_z then begin
   
@@ -874,8 +873,6 @@ if !d.name eq 'PS' then device, /close
 !p.title=''
 !x.range=''
 !y.range=''
-
-if keyword_set(obj) then obj = {T: tt, SPEC1: spec1}
 
 END
 
