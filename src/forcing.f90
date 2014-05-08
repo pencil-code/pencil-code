@@ -4695,7 +4695,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  blob-like disturbance (gradient of gaussian)
 !
         case('blob')
-          fact=2.*ampl_ff/radius_ff**2
+          fact=ampl_ff/radius_ff**2
           tmp=fact*exp(-.5*((x(l1:l2)-location_fixed(1))**2 &
                            +(y(m)    -location_fixed(2))**2 &
                            +(z(n)    -location_fixed(3))**2)/radius_ff**2)
