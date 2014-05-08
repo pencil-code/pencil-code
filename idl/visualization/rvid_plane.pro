@@ -30,8 +30,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     global_scaling=global_scaling,shell=shell,r_int=r_int, $
     r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
     contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
-    nsmooth=nsmooth, textsize=textsize, _extra=_extra, polar=polar, $
-    anglecoord=anglecoord, style_polar=style_polar, $
+    nsmooth=nsmooth, cubic=cubic, textsize=textsize, _extra=_extra, $
+    polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
     sample=sample
@@ -375,8 +375,11 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
     plane2=rebin(sqrt(plane),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(log)) then begin
      plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane,sample=sample)
+  endif else if (keyword_set(cubic)) then begin
+     if (cubic gt 0.0) then cubic = -0.5
+     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,cubic=cubic)
   endif else begin
-     plane2=rebin(plane,zoom*nx_plane,zoom*ny_plane,sample=sample)
+     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center)
   endelse
 ;
 ;  Do masking, if shell set.
