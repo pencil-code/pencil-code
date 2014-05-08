@@ -4726,7 +4726,7 @@ module Energy
 !
 !  Error function cooling profile (two-layer).
 !
-      case ('z1-z2')
+      case ('two-layer')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
         prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
 !
