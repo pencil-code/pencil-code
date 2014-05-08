@@ -56,7 +56,7 @@ module power_spectrum
       integer, intent(in)              :: unit
       integer, intent(inout), optional :: iostat
 !
-      integer :: i
+      integer :: i, iend_zrange
       character (LEN=20), dimension(nz_max) :: czranges
       integer, dimension(3) :: range
       integer, dimension(nz_max) :: iperm
@@ -80,27 +80,28 @@ module power_spectrum
 !
       if ( .not.lintegrate_z ) then
 !
-        ie=0
+!--     ie=0
+        iend_zrange=0
         do i=1,parser( czrange, czranges, ',' )
 !
           if ( read_range( czranges(i), range, (/1,nzgrid,1/) ) ) &
-            ldum =  merge_ranges( zrange, ie, range ) 
-            !!print*, 'ie, zrange(:,1:ie)=', ie, zrange(:,1:ie)
+            ldum =  merge_ranges( zrange, iend_zrange, range ) 
+            !!print*, 'iend_zrange, zrange(:,1:iend_zrange)=', iend_zrange, zrange(:,1:iend_zrange)
 !
         enddo
 !
-        if (ie>0) then
+        if (iend_zrange>0) then
 !
 ! try further merging (not yet implemented)
 !
-          do i=ie-1,1,-1
-          !!  ldum = merge_ranges( zrange, i, zrange(:,i+1), istore=ie )
+          do i=iend_zrange-1,1,-1
+          !!  ldum = merge_ranges( zrange, i, zrange(:,i+1), istore=iend_zrange )
           enddo
 !
 ! sort ranges by ascending start value
 !
-          call quick_sort(zrange(1,1:ie),iperm)
-          zrange(2:3,1:ie) = zrange(2:3,iperm(1:ie))
+          call quick_sort(zrange(1,1:iend_zrange),iperm)
+          zrange(2:3,1:iend_zrange) = zrange(2:3,iperm(1:iend_zrange))
         else
 !
 ! if no ranges specified: range = whole zgrid
@@ -137,7 +138,7 @@ module power_spectrum
       integer, dimension(:,:), intent(out):: kranges
       integer                , intent(in) :: ngrid
 !
-      integer :: nr, nre, i, ie
+      integer :: nr, nre, i !--, ie
       character (LEN=20), dimension(size(kranges,2)) :: ckranges
 !
       ckranges=''
@@ -149,7 +150,7 @@ module power_spectrum
 !
         if ( read_range( ckranges(i), kranges(:,i), (/-ngrid/2,ngrid/2-1,1/) ) ) then
 !
-          ie = nre
+!--       ie = nre   !(AB: is not used)
 !
           if ( kranges(1,i)>=0 ) then
             kranges(1:2,i) = kranges(1:2,i)+1
