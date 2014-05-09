@@ -80,7 +80,7 @@ elsif ($host =~ /alarik/){ # SLURM
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
     @jobs = `squeue | grep $ENV{'USER'} | sort`;
-    foreach $job (@jobs) { $job =~ s/ .*//g; chomp $job; }
+    foreach $job (@jobs) { $job =~ s/^\s+//g; $job =~ s/ .*//g; chomp $job;}
     }
 
   foreach $job (@jobs){
