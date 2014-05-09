@@ -47,9 +47,10 @@ Comments:
           continue running the simulation over multiple runs, you need to
           turn off the reinitialization of the chemistry in run.in.
           E.g. the species can now be visualized by running
-          > pc_visualize_species
-          in IDL. (Remember to run ./src/read_videofiles.x on the
-          linux prompt first.)
+          > zoom = 4
+          > .r pc_visualize_species
+          in IDL. (Remember to run ./src/read_videofiles.x to generate the
+          slices 'chemspec', as well as 'chemspec2' to 'chemspec8'.)
 
 
        If you are intersted in a flame in an isotropic box, instead of
