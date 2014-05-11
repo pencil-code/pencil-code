@@ -19,38 +19,35 @@ Comments:
 
     What should be done is therefore:
        1) Run the 1D initial condition setup (./init_cond_1D) in order
-          to set up a good initial profile for the flame front. (This very
-          run is run on only one processor and without MPI.) This takes
-          typically 5 minutes. The results can be visualized in IDL by
-          e.g. "temperature.pro" or "species.pro". The first script is run
-          by typing
-          > .r temperature
-          in the IDL prompt.
+          to set up a good initial profile for the flame front. This is
+          a one-processor run without MPI and it takes typically 5 minutes.
+          The results can be visualized in IDL with the scripts
+          "temperature.pro" or "species.pro" by executing:
+          IDL> .r temperature
+          IDL> .r species
        2) Run the isotropic box (./turbulent_box) to be used as
           inlet condition. This is done in typically half an hour.
-          Since this is a 8 processor job (as all the remaining jobs)
+          Since this is a 8 processor job (as all the following runs)
           it should normally be submitted to the queue of your cluster.
-          See that it has reached statistically steady state by typing
-          > pc_show_ts
+          See that it has reached a statistically steady state by running
+          IDL> pc_show_ts
           in IDL and check for 'urms' and 'umax'.
        3) Run the 3D initial condition setup (./init_cond_3D) in order
           to fill the domain with turbulence before the flame is introduced.
-          For visualizing e.g. the velocity in the y direction in a 2D
-          slice in the xy plane you must first run
-          > ./src/read_videofiles.x
-          on the linux prompt. Answer 'uu2' on the query.
-          Then open IDL and run the script "uy".
+          For visualizing e.g. the velocity in the y and x direction in a
+          2D slice in the xy plane open IDL and run the script "uu":
+          IDL> .r show_uu
        4) Start the main simulation in the main directory: "./start.csh".
        5) Copy the generated 3D initial condition to the main simulation:
-          > pc_copyvar var.dat var.dat ./init_cond_3D . -e
+          $ pc_copyvar var.dat var.dat ./init_cond_3D . -e
        6) Run the main simulation. Please remember that if you want to
           continue running the simulation over multiple runs, you need to
           turn off the reinitialization of the chemistry in run.in.
-          E.g. the species can now be visualized by running
-          > zoom = 4
-          > .r pc_visualize_species
-          in IDL. (Remember to run ./src/read_videofiles.x to generate the
-          slices 'chemspec', as well as 'chemspec2' to 'chemspec8'.)
+          Species like 'H' or 'H2O' can now be visualized in IDL with:
+          IDL> specie = 'H'
+          IDL> .r species
+          IDL> specie = 'H20'
+          IDL> .r species
 
 
        If you are intersted in a flame in an isotropic box, instead of
@@ -58,12 +55,12 @@ Comments:
        Unfortunately this has not been very well tested but I think it should
        work relatively fine.
        7) Run the 3D initial conditions found in init_cond_3D_isotropic.
-          See that it has reach statistically steady state by typing
-          > .r ts
-          in IDL.
+          See that it has reach statistically steady state by running
+          IDL> pc_show_ts
+          in IDL and check for 'urms' and 'umax'.
        8) Run the startscript of the main simulation (found in 3D_isotropic).
        9) When the startscript finalizes your should use pc_copyvar
-            > pc_copyvar var.dat var.dat ../init_cond_3D_isotropic . -e
+          $ pc_copyvar var.dat var.dat ../init_cond_3D_isotropic . -e
           in order to copy the 3D initial condition to the main simulation.
       10) Run the main simulation. Please remember that if you want to
           continue running the simulation even after it has finalized
