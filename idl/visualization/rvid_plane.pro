@@ -23,7 +23,7 @@
 ;    rvid_plane,'bb1',min=-.5,max=.5,/sph
 ;
 pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
-    tmax=tmax,max=amax,swap_endian=swap_endian, $
+    tmax=tmax,max=amax,swap_endian=swap_endian,quiet=quiet, $
     min=amin,extension=extension,nrepeat=nrepeat,wait=wait, $
     stride=stride,datadir=datadir,oldfile=oldfile,debug=debug, $
     proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir, $
@@ -41,6 +41,7 @@ COMMON pc_precision, zero, one
 default,ix,-1
 default,iy,-1
 default,ps,0
+default,quiet,0
 ;
 ;  default extension
 ;
@@ -119,7 +120,7 @@ if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
-  print,'file_slice=',file_slice
+  if (not quiet) then print,'file_slice=',file_slice
 endelse
 ;
 if (keyword_set(polar)) then begin
@@ -239,7 +240,7 @@ if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
 if (extension eq 'xz') then plane=fltarr(nx,nz)*one
 if (extension eq 'yz') then plane=fltarr(ny,nz)*one
 size_plane=size(plane)
-print, 'Array size: ', size_plane[0:size_plane[0]]
+if (not quiet) then print, 'Array size: ', size_plane[0:size_plane[0]]
 ;
 slice_xpos=0.0*one
 slice_ypos=0.0*one
@@ -254,7 +255,7 @@ if (keyword_set(png)) then begin
   Nwy=Nwx*15/20
   help,Nwx,Nwy
   resolution=[Nwx,Nwy] ; set window size
-  print, 'z-buffer resolution in pixels '+ $
+  if (not quiet) then print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
   set_plot, 'z'                   ; switch to Z buffer
   device, set_resolution=resolution ; set window size
@@ -263,13 +264,13 @@ if (keyword_set(png)) then begin
 endif else if (keyword_set(mpeg)) then begin
   Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
-  print,'z-buffer resolution (in pixels)=',resolution
+  if (not quiet) then print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
   device, set_resolution=resolution ; set window size
   dev='z'
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
-  print,'write mpeg movie: ',mpeg_name
+  if (not quiet) then print,'write mpeg movie: ',mpeg_name
   mpegID = mpeg_open([Nwx,Nwy],filename=mpeg_name)
   itmpeg=0 ;(image counter)
 endif else if (not keyword_set(doublebuffer)) then begin
@@ -339,7 +340,7 @@ if (keyword_set(global_scaling)) then begin
     endelse
   end
   close,1
-  print,'Scale using global min, max: ', amin, amax
+  if (not quiet) then print,'Scale using global min, max: ', amin, amax
 endif
 ;
 close,1 & openr,1,file_slice,/f77,swap_endian=swap_endian
@@ -504,14 +505,14 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
             endelse
             itmpeg=itmpeg+1 ;(counter)
           end
-          print,islice,itmpeg,t,min([plane2]),max([plane2])
+          if (not quiet) then print,islice,itmpeg,t,min([plane2]),max([plane2])
         end else begin
 ;
 ;  Default: output on the screen.
 ;
-          if (ifirst) then $
+          if (ifirst and not quiet) then $
               print, '----islice--------t----------min------------max--------'
-          print,islice,t,min([plane2]),max([plane2])
+          if (not quiet) then print,islice,t,min([plane2]),max([plane2])
         end
         istride=0
         wait,wait
@@ -533,7 +534,7 @@ close,1
 ;  Write and close mpeg file.
 ;
 if (keyword_set(mpeg)) then begin
-  print,'Writing MPEG file..'
+  if (not quiet) then print,'Writing MPEG file..'
   mpeg_save, mpegID, filename=mpeg_name
   mpeg_close, mpegID
   set_plot,'X'
