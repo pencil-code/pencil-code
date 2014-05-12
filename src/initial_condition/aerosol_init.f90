@@ -54,6 +54,8 @@ module InitialCondition
      real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
      real, dimension(2000) :: Ntot_data
+!     real, dimension(mx,ndustspec) :: init_distr_loc
+    
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved_xz=.false.
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
@@ -234,19 +236,10 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (1300,6) :: coeff_loc
-      real, dimension (mx,nchemspec) :: init_distr_loc
-      real, dimension (6) :: ctmp
-      integer :: i,k,ll1
+      integer :: i,k,ll1,i1
       real :: r0, delta, tmp
 !
-      open(143,file="coeff_part.dat")
-        do i=1,1300
-          read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),ctmp
-          coeff_loc(i,:)=ctmp
-        enddo
-      close(143)
-!          
+          
        r0=2e-5
        delta=1.2
 ! 
@@ -259,12 +252,12 @@ module InitialCondition
              /exp(f(i,:,:,ilnrho))
 ! 
          tmp=dsize(k)*1e4
-          init_distr_loc(i,k)=(coeff_loc(ll1+i-3,1) &
-                    *exp(-0.5*( (tmp-coeff_loc(ll1+i-3,2)) /coeff_loc(ll1+i-3,3) )**2)  &
-                    +coeff_loc(ll1+i-3,4)+coeff_loc(ll1+i-3,5)*tmp+coeff_loc(ll1+i-3,6)*tmp**2)/1e-4                !1e-4=dsize
-          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
+!          init_distr_loc(i,k)=(coeff_loc(ll1+i-3,1) &
+!                    *exp(-0.5*( (tmp-coeff_loc(ll1+i-3,2)) /coeff_loc(ll1+i-3,3) )**2)  &
+!                    +coeff_loc(ll1+i-3,4)+coeff_loc(ll1+i-3,5)*tmp+coeff_loc(ll1+i-3,6)*tmp**2)/1e-4                !1e-4=dsize
+!          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
 !
-          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(i,k)/exp(f(i,:,:,ilnrho))
+!          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))
         enddo
 !                     
         enddo
@@ -476,59 +469,73 @@ module InitialCondition
       real, dimension (20000) ::  PP_data, rhow_data, TT_data
       real, dimension (20000) ::  ux_data, uy_data, uz_data, ttime2
       real, dimension (1340) ::  ttime
-      real, dimension (6) ::  coeff
+      real, dimension (1300,6) ::  coeff_loc
+      real, dimension (20000,7) :: coeff_loc2
+      real, dimension (20000,ndustspec) :: init_distr_loc, init_distr_tmp
+      real, dimension (6) ::  tmp3
+      real, dimension (ndustspec) ::  tmp4
 !
       logical :: emptyfile=.true., lfind
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
-      real ::  TT=300., tmp2
+      real ::  TT=300., ddsize, tmp2, right, left
 !      real, intent(out) :: PP ! (in dynes = 1atm)
-      real, dimension(nchemspec)    :: stor2
-      integer, dimension(nchemspec) :: stor1
+      real, dimension(nchemspec)    :: stor2, stor1
+       real, dimension(ndustspec)    :: lnds, dsize
       real, dimension(29)    :: input_data, input_data2
 !
+      real, dimension (7) :: ctmp
+
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      integer :: iostat, i1,i2,i3
+      integer :: iostat, i1,i2,i3, i1_left,i1_right
 
 
+      ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+!
+      do i=0,(ndustspec-1)
+          lnds(i+1)=alog(dsize_min)+i*ddsize
+          dsize(i+1)=exp(lnds(i+1))
+      enddo
 
 
       if (lACTOS_write) then
 
-       if (lsinhron) then
+!       if (lsinhron) then
          open(143,file="coeff_part.dat")
          do i=1,1300
-            read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),coeff,ttime(i)
+            read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),tmp3,ttime(i)
+            coeff_loc(i,:)=tmp3
          enddo
          close(143)
 
+!       endif
 
-       endif
 
-!
+!print*,coeff_loc(1,1)
+
 !      air_mass=0.
       StartInd_1=1; StopInd_1 =0 
      open(file_id,file="ACTOS_data.out")
       open(143,file="ACTOS_new.out")
+      open(144,file="coeff_part_new.out")
 !      open(file_id,file="ACTOS_xyz_data.out")
 !      open(143,file="ACTOS_xyz_new.out")
 !
-!      dataloop: do
        j=1
-       i=1
        do  while (j<780000) 
 !
         read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
          StartInd=1; StopInd =0
          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
 !
-        if (i_point==1) then
-          i=1
-        endif
-        
-        if (i==1) then
+!        if (i_point==1) then
+!          i=1
+!        endif
+       
+!        if (i==1) then
+
         k=1
         do  while (k<30) 
 !
@@ -554,7 +561,6 @@ module InitialCondition
            lfind=.false.
 !
            do jj=1,1300 
-!print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
             if (abs(ttime(jj)-input_data(23))<.05) then 
               lfind=.true.
             else
@@ -569,23 +575,50 @@ module InitialCondition
            enddo
 !
          else
+! 
+          lfind=.false.
 !
-!          if ((input_data(1)>3545.53) .and. (input_data(1)<3660.53)) then
-          if ((input_data(1)>3130.) .and. (input_data(1)<6347.)) then
-           write(143,'(29f15.6)'),input_data
+         if ((input_data(23)>53675.) .and. (input_data(23)<53725.)) then
+!          if ((input_data(23)>52800.) .and. (input_data(23)<52850.)) then
+!
+            write(143,'(29f15.6)'),input_data
+!
+!!!!!!!!!!!!!!!!
+!            do jj=2,1300 
+!            if ((ttime(jj-1)<=input_data(23)) .and. (ttime(jj)>input_data(23))) then
+!              do i=1,6
+!                tmp3(i)=coeff_loc(jj-1,i)+(coeff_loc(jj,i)-coeff_loc(jj-1,i)) &
+!                      *(input_data(23)-ttime(jj-1))/(ttime(jj)-ttime(jj-1))
+!              enddo              
+!              write(144,'(29f15.6)'),tmp3,input_data(23)
+!            endif
+!            enddo
+!!!!!!!!!!!!!!!
+            lfind=.false.
+            do jj=1,1300 
+            if (abs(ttime(jj)-input_data(23))<0.05) then
+              write(144,'(29f15.6)'),coeff_loc(jj,:),input_data(23)
+              lfind=.true.
+            endif
+            enddo
+!
+            if (.not. lfind) then
+              write(144,'(29f15.6)'),0.,0.,0.,0.,0.,0.,input_data(23)
+            endif
+
           endif
          endif
-
-           i=i+1
-        elseif (i>1) then
-          i=i+1
-          if (i==i_point) i=1
-        endif
+!           i=i+1
+!        elseif (i>1) then
+!          i=i+1
+!          if (i==i_point) i=1
+!        endif
         j=j+1
         enddo
 !
       close(file_id)
       close(143)
+      close(144)
 !
      endif
 
@@ -593,6 +626,7 @@ module InitialCondition
 !        emptyFile=.false.
 !      enddo dataloop
 !
+
     if (lACTOS_read) then
         open(143,file="ACTOS_new.out")
         do i=1,Ndata 
@@ -604,9 +638,9 @@ module InitialCondition
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
 !          uvert(i)=input_data(26)*1e2
 
-          ux_data(i)=input_data(2)*1e2 
-          uy_data(i)=input_data(3)*1e2 
-          uz_data(i)=input_data(4)*1e2
+          ux_data(i)=input_data(25)*1e2 
+          uy_data(i)=input_data(26)*1e2 
+          uz_data(i)=input_data(27)*1e2
           Ntot_data(i)=input_data(11)
 
         enddo
@@ -656,7 +690,7 @@ module InitialCondition
         if (nzgrid>1) then
           nn1=anint((z(m1)-xyz0(3))/dz)
 !
-          if (init_uy /= impossible) then
+          if (init_uz /= impossible) then
            f(:,:,:,iuz)=init_uz
           else
            do i=n1,n2
@@ -699,13 +733,93 @@ module InitialCondition
 !
        enddo
 !
-      if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!    particles
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+      open(143,file="coeff_part_new.out")
+        do i=1,Ndata
+          read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),ctmp
+          coeff_loc2(i,:)=ctmp
+        enddo
+      close(143)
+!
+        do i=1,Ndata
+        do k=1,ndustspec
+          tmp2=dsize(k)*1e4*2.
+          if (coeff_loc2(i,3)/=0.) then
+           init_distr_loc(i,k) = (coeff_loc2(i,1) &
+                    *exp(-0.5*( (tmp2-coeff_loc2(i,2)) /coeff_loc2(i,3) )**2)  &
+                    +coeff_loc2(i,4)+coeff_loc2(i,5)*tmp2+coeff_loc2(i,6)*tmp2**2)
+          else
+             init_distr_loc(i,k)=0.
+          endif   
+          if (init_distr_loc(i,k)<0) init_distr_loc(i,k)=0.
+        enddo
+        enddo
+!
+        do k=1,ndustspec
+        do i=1,Ndata
+          if (init_distr_loc(i,k)==0.) then
+          i1=0;  right=0.; i1_right=0
+          do while ((right == 0.) .and. (i1_right<Ndata+1)) 
+            right=init_distr_loc(i+i1,k)
+            i1_right=i+i1
+            i1=i1+1
+          enddo   
+!
+          i1=0;  left=0.; i1_left=Ndata+1
+          do while ((left == 0.) .and. (i1_left>0))
+            left=init_distr_loc(i-i1,k)
+            i1_left=i-i1
+            i1=i1+1
+          enddo 
+!
+          if (i1_left==1) left=right
+          if (i1_right==Ndata) right=left
+!
+            if ((right==0.) .and. (left==0.)) then
+              init_distr_tmp(i,k)=0.
+            else
+              init_distr_tmp(i,k)=left+(right-left) &
+                *(coeff_loc2(i,7)-coeff_loc2(i1_left,7))/(coeff_loc2(i1_right,7)-coeff_loc2(i1_left,7))
+            endif
+ if (k==70) print*,left,init_distr_tmp(i,k),right 
+          endif
+        enddo
+        enddo
+!
+        do k=1,ndustspec
+        do i=1,Ndata
+          if (init_distr_loc(i,k)==0.) init_distr_loc(i,k)=init_distr_tmp(i,k)
+          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
+        enddo
+        enddo
+!
+        open(144,file="part_new.out")
+        do i=1,Ndata
+           tmp4=init_distr_loc(i,:)
+           write(144,'(29f15.6)'),coeff_loc2(i,7),tmp4
+!           write(144,'(29f15.6)'),coeff_loc2(i,7),init_distr_loc(i,40),init_distr_tmp(i,40)
+        enddo
+        close(144)
+!
+        do i=l1,l2
+        do k=1,ndustspec
+          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))
+        enddo
+!print*,init_distr_loc(ll1+i-3,50),ll1+i-3
+        enddo
+       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+       if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
                                                      minval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT)))
-      if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
-      if (lroot) print*, 'local:Air density, g/cm^3:'
-      if (lroot) print '(E10.3)',  maxval(exp(f(:,:,:,ilnrho))), minval(exp(f(:,:,:,ilnrho)))
-      if (lroot) print*, 'local:Air mean weight, g/mol', maxval(air_mass),minval(air_mass)
-      if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
+       if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
+       if (lroot) print*, 'local:Air density, g/cm^3:'
+       if (lroot) print '(E10.3)',  maxval(exp(f(:,:,:,ilnrho))), minval(exp(f(:,:,:,ilnrho)))
+       if (lroot) print*, 'local:Air mean weight, g/mol', maxval(air_mass),minval(air_mass)
+       if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
 !
        endif
 !
