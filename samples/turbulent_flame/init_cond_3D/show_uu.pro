@@ -3,12 +3,7 @@ device, decompose=0
 loadct, 5
 
 ; Process videofiles
-default, videofiles_processed, 0
-if (not videofiles_processed) then begin
-	print, "Reading all videofiles."
-	spawn, 'src/read_all_videofiles.x'
-	videofiles_processed = 1
-end
+spawn, 'pc_videofiles'
 
 ; Visualization
 print, "Showing 'u_y'..."
