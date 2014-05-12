@@ -1125,8 +1125,12 @@ pro cslice_prepare_cube, cube_index
 	if (cube_index ge 0) then selected_cube = cube_index
 	cube = reform (varsets[selected_snapshot].(selected_cube)[cut], num_x, num_y, num_z)
 
-	; substract horizontal averages
-	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
+	; subtract average profile
+	if (sub_aver) then begin
+		if (selected_axis eq 0) then for x=0, num_x-1 do cube[x,*,*] -= mean (cube [x,*,*])
+		if (selected_axis eq 1) then for y=0, num_y-1 do cube[*,y,*] -= mean (cube [*,y,*])
+		if (selected_axis eq 2) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
+	end
 
 	; find minimum and maximum values
 	cslice_get_minmax_value, cube, tmp_min, tmp_max
