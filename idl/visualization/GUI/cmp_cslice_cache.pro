@@ -1081,7 +1081,7 @@ pro cslice_draw_averages, number
 
 	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
 	time = strtrim (varfiles[selected_snapshot].time * unit.time/unit.default_time, 2) + " " + unit.default_time_str
-	pc_vert_profile, reform (varsets[number].(selected_cube)[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+	pc_axis_profile, reform (varsets[number].(selected_cube)[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 end
 
 
@@ -1524,10 +1524,8 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	clear	= WIDGET_BUTTON (bsubrow, value='CLEAR', uvalue='CLEAR', sensitive=0, EVENT_PRO=cslice_event)
 
 	bcol	= WIDGET_BASE (CTRL, /col)
-	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
 	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
 	b_log	= CW_BGROUP (bcol, 'logarithmic plot', /nonexcl, uvalue='LOG_PLOT', set_value=log_plot)
-	b_sub	= CW_BGROUP (bcol, 'substract profile', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='ABS_SCALE', set_value=abs_scale)
 	if (any (coord.lequidist eq 0)) then $
 		b_des = CW_BGROUP (bcol, 'destretch grid', /nonexcl, uvalue='DESTRETCH', set_value=0)
@@ -1560,6 +1558,11 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	co_z	= CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=(1-co_int), /return_events, xsize=12)
 	sl_z	= WIDGET_SLIDER (scot, uvalue='SLZ', value=pz+coord.z_off, min=coord.z_off, max=((num_z-1)>1)+coord.z_off, xsize=((num_z*bin_z>128)+10)<512, /drag, sensitive=coord_z_active)
+
+	scot	= WIDGET_BASE (scol, /row, /base_align_center)
+	tmp	= WIDGET_LABEL (scot, value='show:', frame=0)
+	aver	= WIDGET_BUTTON (scot, value='vertical profile', uvalue='SHOW_AVER')
+	b_sub	= CW_BGROUP (scot, 'subtract vertical profile', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 
 	DISP	= WIDGET_BASE (BASE, /row)
 	MID	= WIDGET_BASE (BASE, /col)
