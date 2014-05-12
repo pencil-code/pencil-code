@@ -12,7 +12,7 @@
 ; Event handling of vertical profile window
 pro pc_axis_profile_event, event
 
-	common axis_prof_common, z, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -151,7 +151,7 @@ pro pc_axis_profile_event, event
 	'IMAGE': begin
 		WIDGET_CONTROL, event.id, SENSITIVE = 0
 		pc_save_image, file_name+".png", window=win
-		save, z, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_label, v_range, v_label, file=file_name+".xdr"
+		save, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_label, v_range, v_label, file=file_name+".xdr"
 		WIDGET_CONTROL, event.id, SENSITIVE = 1
 		break
 	end
@@ -188,7 +188,7 @@ end
 ; Draw the timeseries plots
 pro pc_axis_profile_draw
 
-	common axis_prof_common, z, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	wset, win
@@ -205,23 +205,23 @@ pro pc_axis_profile_draw
 
 	; plot profile mean value
 	if (plot_style ge 3) then psym = 3 else psym = 0
-	plot, prof_mean, z, xlog=log_plot, xs=3, ys=1, xr=range, yr=get_val_range (v_range), psym=psym, title=prof_name, xtitle=a_label, ytitle=v_label
-	if (show_line) then oplot, [0.0, 0.0], minmax (z), linestyle=1, color=20020
-	if (plot_style le 2) then oplot, prof_mean, z
+	plot, prof_mean, coords, xlog=log_plot, xs=3, ys=1, xr=range, yr=get_val_range (v_range), psym=psym, title=prof_name, xtitle=a_label, ytitle=v_label
+	if (show_line) then oplot, [0.0, 0.0], minmax (coords), linestyle=1, color=20020
+	if (plot_style le 2) then oplot, prof_mean, coords
 	if (plot_style gt 0) then begin
 		psym = 3
 		color = 200
 		if ((plot_style eq 2) or (plot_style eq 4)) then psym = 2
 		if (plot_style ge 3) then color = -1
-		oplot, prof_mean, z, psym=psym, color=color
+		oplot, prof_mean, coords, psym=psym, color=color
 	end
 
 	; plot profile minimum and maximum values
 	if (line_style gt 0) then begin
 		linestyle = 0
 		if (line_style le 3) then linestyle = 3 - line_style
-		oplot, prof_min, z, linestyle=linestyle
-		oplot, prof_max, z, linestyle=linestyle
+		oplot, prof_min, coords, linestyle=linestyle
+		oplot, prof_max, coords, linestyle=linestyle
 	end
 
 	; reset charsize
@@ -232,7 +232,7 @@ end
 ; Reset to defaults
 pro pc_axis_profile_reset
 
-	common axis_prof_common, z, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label
+	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	; initial GUI settings
@@ -263,6 +263,7 @@ end
 
 ; Calculate and draw a vertical profile of the given 3D data
 ;
+; axis_dir:    direction of the axis for profiling (0-2 or 'X', 'Y', 'Z')
 ; data:        3D data cube (can be including ghost cells)
 ; coord:       coordinates for the vertical position of data in the cube,
 ;              asumed to be in the center of the data cube (eg. without ghost cells).
@@ -276,15 +277,27 @@ end
 ; file_label:  label string for filenames (special characters will be filtered)
 ; time:        timestamp of the displayed data
 ;
-pro pc_axis_profile, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log, file_label=file_label, time=time
+pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log, file_label=file_label, time=time
 
-	common axis_prof_common, z, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
-	num = (size (data))[3]
+	if (size (axis_dir, /type) eq 7) then begin
+		if (strupcase (axis_dir) eq 'X') then axis = 0
+		if (strupcase (axis_dir) eq 'Y') then axis = 1
+		if (strupcase (axis_dir) eq 'Z') then axis = 2
+		message, "pc_axis_profile: unknown axis direction '"+axis_dir+"'."
+	end else begin
+		axis = round (axis_dir)
+	end
+
+	num_dimensions = size (data, /n_dimensions)
+	if (axis ge num_dimensions) then message, "pc_axis_profile: axis direction unavailable."
+
+	num = (size (data, /dimensions))[axis]
 	if (n_elements (coord) eq 0) then coord = findgen (num)
 	num_coord = size (coord, /n_elements)
-	z = reform (coord, num_coord)
+	coords = reform (coord, num_coord)
 
 	t = "N/A"
 	if (keyword_set (time)) then t = time
@@ -309,8 +322,16 @@ pro pc_axis_profile, data, coord=coord, title=title, horiz_label=horiz_label, ve
 	prof_max = dblarr (num)
 
 	for pos = 0, num_coord - 1 do begin
-		prof_mean[pos] = mean (data[*,*,start_pos + pos], /double)
-		tmp = minmax (data[*,*,start_pos + pos])
+		if (axis eq 0) then begin
+			prof_mean[pos] = mean (data[start_pos + pos,*,*], /double)
+			tmp = minmax (data[start_pos + pos,*,*])
+		end else if (axis eq 1) then begin
+			prof_mean[pos] = mean (data[*,start_pos + pos,*], /double)
+			tmp = minmax (data[*,start_pos + pos,*])
+		end else if (axis eq 2) then begin
+			prof_mean[pos] = mean (data[*,*,start_pos + pos], /double)
+			tmp = minmax (data[*,*,start_pos + pos])
+		end
 		prof_min[pos] = tmp[0]
 		prof_max[pos] = tmp[1]
 	end
