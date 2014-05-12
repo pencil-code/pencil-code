@@ -3703,6 +3703,8 @@ module Chemistry
             ind_glob,ind_chem,found_specie)
 !
         if (.not. found_specie) then
+          print*,'ChemInpLine=',ChemInpLine
+          print*,'StartSpecie,StopInd=',StartSpecie,StopInd
           print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
           print*,'ind_glob,ind_chem=',ind_glob,ind_chem
 !          if (.not. lpencil_check_small) then
@@ -3994,7 +3996,7 @@ module Chemistry
       integer :: VarNumber, VarNumber_add, SeparatorInd
       integer :: PlusInd
       integer :: LastLeftCharacter,ParanthesisInd,Mplussind
-      integer :: photochemInd
+      integer :: photochemInd,plusind_
       character (len=120) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
 !
@@ -4280,7 +4282,12 @@ module Chemistry
                   call build_stoich_matrix(StartInd,StopInd,k,&
                       ChemInpLine,.false.)
                   StartInd=StopInd+2
-                  PlusInd=index(ChemInpLine(StartInd:),'+')+StartInd-1
+                  plusind_=index(ChemInpLine(StartInd:),'+')
+                  if (plusind_ > 0) then
+                    PlusInd=plusind_+StartInd-1
+                  else
+                    PlusInd=10000
+                  endif
                 enddo
                 StopInd=LastLeftCharacter
                 call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.false.)
