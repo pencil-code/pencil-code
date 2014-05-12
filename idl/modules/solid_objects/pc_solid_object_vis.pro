@@ -5,13 +5,15 @@ y = ycenter + radius * SIN(points )
 RETURN, TRANSPOSE([[x],[y]])
 END
 
-pro pc_solid_object_vis,start
-
+pro pc_solid_object_vis,start,color=color
+;
+default,color,255
 ;
 ; Check if cylinders and spheres are defined
 ;
 lcyl=0
 lsph=0
+print,start.ncylinders
 allnames=TAG_NAMES(start)
 for i=0,n_elements(allnames)-1 do begin
     if (allnames[i] eq 'NCYLINDERS') then lcyl=1
@@ -26,7 +28,7 @@ if (lcyl) then begin
             r=start.cylinder_radius[icyl]
             x0=start.cylinder_xpos[icyl]
             y0=start.cylinder_ypos[icyl]
-            POLYFILL, CIRCLE_(x0,y0,r),color=255,/DATA
+            POLYFILL, CIRCLE_(x0,y0,r),color=color,/DATA
         end
     endif
 endif
@@ -39,7 +41,7 @@ if (lsph) then begin
             r=start.sphere_radius[icyl]
             x0=start.sphere_xpos[icyl]
             y0=start.sphere_ypos[icyl]
-            POLYFILL, CIRCLE_(x0,y0,r),color=255,/DATA
+            POLYFILL, CIRCLE_(x0,y0,r),color=color,/DATA
         end
     endif
 endif
