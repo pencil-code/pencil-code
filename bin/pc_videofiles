@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# $Id$  
+# Script to automatically generate the slices, if not already done.
+#  
+
+SCRIPTNAME="pc_videofiles"
+
+DATADIR="data"
+TIMESERIES="$DATADIR/time_series.dat"
+CHECKPOINT="$DATADIR/SLICES_GENERATED"
+SCRIPT="./src/read_all_videofiles.x"
+
+if [ ! -d "$DATADIR" ]; then
+	echo "Either you are not in a run-directory or no data is there...?"
+	exit 1
+fi
+
+if [ ! -e "$SCRIPT" ]; then
+	echo "Please compile first by ececuting \"pc_build\"."
+	exit 1
+fi
+
+if [ ! -e "$TIMESERIES" ]; then
+	echo "Please first run the simulation to generate data..."
+	exit 1
+fi
+
+if [ -e "$CHECKPOINT" ]; then
+	if [ `stat -c %Y "$CHECKPOINT"` -gt  `stat -c %Y "$TIMESERIES"` ]; then
+		echo "The slices are already up-to-date."
+		exit 0
+	fi
+fi
+
+$SCRIPT
+touch "$CHECKPOINT"
+
