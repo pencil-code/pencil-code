@@ -24,7 +24,7 @@
   lfilter=T
 /
 &viscosity_run_pars
- ivisc='nu-mixture'
+  ivisc='nu-mixture'
 /
 &NSCBC_run_pars
   inlet_from_file=T

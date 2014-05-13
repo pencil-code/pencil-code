@@ -18,7 +18,7 @@
 &hydro_init_pars
 /
 &density_init_pars
-ldensity_nolog=F
+  ldensity_nolog=F
 /
 &entropy_init_pars
 /
