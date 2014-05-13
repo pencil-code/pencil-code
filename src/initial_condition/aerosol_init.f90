@@ -239,15 +239,17 @@ module InitialCondition
       integer :: i,k,ll1,i1
       real :: r0, delta, tmp
 !
-          
-       r0=2e-5
-       delta=1.2
+     
+       if (lACTOS) then
+      
+       r0=6e-6
+       delta=1.3
 ! 
        ll1=anint((x(l1)-xyz0(1))/dx)
 !
        do i=l1,l2
        do k=1,ndustspec
-         f(i,:,:,ind(k)) = Ntot_data(ll1+i-3)/(2.*pi)**0.5/dsize(k)/alog(delta) &
+         f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/dsize(k)/alog(delta) &
              * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))  &
              /exp(f(i,:,:,ilnrho))
 ! 
@@ -261,6 +263,7 @@ module InitialCondition
         enddo
 !                     
         enddo
+        endif
 !
       call keep_compiler_quiet(f)
 !
@@ -784,7 +787,7 @@ module InitialCondition
               init_distr_tmp(i,k)=left+(right-left) &
                 *(coeff_loc2(i,7)-coeff_loc2(i1_left,7))/(coeff_loc2(i1_right,7)-coeff_loc2(i1_left,7))
             endif
- if (k==70) print*,left,init_distr_tmp(i,k),right 
+! if (k==70) print*,left,init_distr_tmp(i,k),right 
           endif
         enddo
         enddo
@@ -792,7 +795,8 @@ module InitialCondition
         do k=1,ndustspec
         do i=1,Ndata
           if (init_distr_loc(i,k)==0.) init_distr_loc(i,k)=init_distr_tmp(i,k)
-          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
+!          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
+          if ((2.*dsize(k)*1e4<1.) .or. (2.*dsize(k)*1e4>20.)) init_distr_loc(i,k)=0.
         enddo
         enddo
 !
@@ -806,7 +810,7 @@ module InitialCondition
 !
         do i=l1,l2
         do k=1,ndustspec
-          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))
+          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))/dsize(k)
         enddo
 !print*,init_distr_loc(ll1+i-3,50),ll1+i-3
         enddo
