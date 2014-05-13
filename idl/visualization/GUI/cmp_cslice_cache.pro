@@ -1130,7 +1130,7 @@ pro cslice_prepare_cube, cube_index
 	; get selected cube from set
 	if (cube_index ge 0) then selected_cube = cube_index
 	cube = reform (varsets[selected_snapshot].(selected_cube)[cut], num_x, num_y, num_z)
-	if (power_spec) then cube = abs (sqrt (num_x * num_y * num_z) * fft (cube))
+	if (power_spec) then cube = abs (sqrt (num_x * num_y * num_z) * fft (cube))^2
 
 	; subtract average profile
 	if (sub_aver) then begin
