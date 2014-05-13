@@ -76,11 +76,7 @@ pro cslice_event, event
 	end
 	'POWER': begin
 		power_spec = event.select
-		if (power_spec) then begin
-			cube = abs (sqrt (num_x * num_y * num_z) * fft (cube))
-		end else begin
-			cslice_prepare_cube, -1
-		end
+		cslice_prepare_cube, -1
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -90,8 +86,8 @@ pro cslice_event, event
 		break
 	end
 	'SUB_AVER': begin
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,power_spec] = val_min
+		pos_t[selected_cube,sub_aver,power_spec] = val_max
 		sub_aver = event.select
 		cslice_prepare_cube, -1
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
@@ -263,7 +259,7 @@ pro cslice_event, event
 			val_min = val_max
 			WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		end
-		pos_b[selected_cube,sub_aver] = val_min
+		pos_b[selected_cube,sub_aver,power_spec] = val_min
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -273,7 +269,7 @@ pro cslice_event, event
 			val_max = val_min
 			WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		end
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_t[selected_cube,sub_aver,power_spec] = val_max
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -288,8 +284,8 @@ pro cslice_event, event
 		cslice_get_minmax_value, cube, val_min, val_max
 		WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		WIDGET_CONTROL, sl_max, SET_VALUE = val_max
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,power_spec] = val_min
+		pos_t[selected_cube,sub_aver,power_spec] = val_max
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -332,8 +328,8 @@ pro cslice_event, event
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
 		WIDGET_CONTROL, sl_over, SENSITIVE = 0
 		WIDGET_CONTROL, freeze, set_value='RELEASE RANGE', set_uvalue='RELEASE'
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,power_spec] = val_min
+		pos_t[selected_cube,sub_aver,power_spec] = val_max
 		frozen = 1
 		break
 	end
@@ -517,8 +513,8 @@ pro cslice_event, event
 		for pos = 0, num-1 do begin
 			insert = (where (tag_names (varsets) eq var_names[pos]))[0]
 			if (insert ge 0) then begin
-				pos_b[insert] = pos_bot[pos]
-				pos_t[insert] = pos_top[pos]
+				pos_b[insert,*,*] = pos_bot[pos,*,*]
+				pos_t[insert,*,*] = pos_top[pos,*,*]
 			end
 		end
 		selected_over = (where (tag_names (overplot) eq over_names[selected_over]))[0]
@@ -541,8 +537,8 @@ pro cslice_event, event
 		pos_bot = pos_b
 		pos_top = pos_t
 		pos_overplot = pos_over
-		pos_bot[selected_cube,sub_aver] = val_min
-		pos_top[selected_cube,sub_aver] = val_max
+		pos_bot[selected_cube,sub_aver,power_spec] = val_min
+		pos_top[selected_cube,sub_aver,power_spec] = val_max
 		selected_var = selected_cube
 		selected_over = selected_overplot
 		save, filename=settings_file, var_names, over_names, selected_var, selected_over, selected_color, log_plot, power_spec, abs_scale, sub_aver, show_cross, destretch, px, py, pz, pos_bot, pos_top, pos_overplot
@@ -1134,6 +1130,7 @@ pro cslice_prepare_cube, cube_index
 	; get selected cube from set
 	if (cube_index ge 0) then selected_cube = cube_index
 	cube = reform (varsets[selected_snapshot].(selected_cube)[cut], num_x, num_y, num_z)
+	if (power_spec) then cube = abs (sqrt (num_x * num_y * num_z) * fft (cube))
 
 	; subtract average profile
 	if (sub_aver) then begin
@@ -1156,20 +1153,20 @@ pro cslice_prepare_cube, cube_index
 		val_range = cslice_get_range ([tmp_min, tmp_max])
 
 		; set default slider positions (min/max)
-		if (finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = val_min
-		if (finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = val_max
+		if (finite (pos_b[selected_cube,sub_aver,power_spec], /NaN)) then pos_b[selected_cube,sub_aver,power_spec] = val_min
+		if (finite (pos_t[selected_cube,sub_aver,power_spec], /NaN)) then pos_t[selected_cube,sub_aver,power_spec] = val_max
 
 		; adjust slider positions to fit inside value range
-		if (pos_b[selected_cube,sub_aver] lt val_min) then pos_b[selected_cube,sub_aver] = val_min
-		if (pos_t[selected_cube,sub_aver] gt val_max) then pos_t[selected_cube,sub_aver] = val_max
+		if (pos_b[selected_cube,sub_aver,power_spec] lt val_min) then pos_b[selected_cube,sub_aver,power_spec] = val_min
+		if (pos_t[selected_cube,sub_aver,power_spec] gt val_max) then pos_t[selected_cube,sub_aver,power_spec] = val_max
 
 		; update slider
-		if (not finite (sl_min, /NaN)) then WIDGET_CONTROL, sl_min, SET_VALUE = [ pos_b[selected_cube,sub_aver], val_range ]
-		if (not finite (sl_max, /NaN)) then WIDGET_CONTROL, sl_max, SET_VALUE = [ pos_t[selected_cube,sub_aver], val_range ]
+		if (not finite (sl_min, /NaN)) then WIDGET_CONTROL, sl_min, SET_VALUE = [ pos_b[selected_cube,sub_aver,power_spec], val_range ]
+		if (not finite (sl_max, /NaN)) then WIDGET_CONTROL, sl_max, SET_VALUE = [ pos_t[selected_cube,sub_aver,power_spec], val_range ]
 
 		; get desired min/max values from sliders
-		val_min = pos_b[selected_cube,sub_aver]
-		val_max = pos_t[selected_cube,sub_aver]
+		val_min = pos_b[selected_cube,sub_aver,power_spec]
+		val_max = pos_t[selected_cube,sub_aver,power_spec]
 	end
 
 	return
@@ -1345,8 +1342,8 @@ pro cslice_update_GUI
 	WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 	WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 	WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
-	WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver]
-	WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver]
+	WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver,power_spec]
+	WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver,power_spec]
 	sl_val = pos_over[selected_overplot]
 	if (sl_val gt 1.0) then sl_val = 2.0 - 1.0 / (sl_val - 1.0)
 	WIDGET_CONTROL, sl_over, SET_VALUE = [ sl_val, 0.0, 2.0 ]
