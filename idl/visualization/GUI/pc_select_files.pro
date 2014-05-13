@@ -313,7 +313,7 @@ pro select_files_event, event
 		break
 	end
 	'Q_ALL': begin
-		quant_selected = where (quant_avail ne "[N/A]")
+		quant_selected = where (strmid (quant_avail, 0, 5) ne "[N/A]")
 		pc_select_files_update, /quant
 		break
 	end
@@ -323,7 +323,7 @@ pro select_files_event, event
 		break
 	end
 	'O_ALL': begin
-		over_selected = where (over_avail ne "[N/A]")
+		over_selected = where (strmid (over_avail, 0, 5) ne "[N/A]")
 		pc_select_files_update, /over
 		break
 	end
