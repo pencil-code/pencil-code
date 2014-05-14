@@ -51,9 +51,9 @@ module InitialCondition
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
      real :: X_wind=impossible, spot_size=10.
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
-     real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
+     real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2., delta 
      real, dimension(ndustspec) :: dsize, dsize0
-     real, dimension(2000) :: Ntot_data
+     real, dimension(20000) :: Ntot_data
 !     real, dimension(mx,ndustspec) :: init_distr_loc
     
      logical :: lreinit_water=.false.,lwet_spots=.false.
@@ -68,7 +68,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron
+     i_point,Ndata, lsinhron, delta
 !
   contains
 !***********************************************************************
@@ -236,34 +236,11 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer :: i,k,ll1,i1
-      real :: r0, delta, tmp
+!      integer :: i,k,ll1,i1
+!      real :: r0, delta, tmp
 !
      
-       if (lACTOS) then
       
-       r0=6e-6
-       delta=1.3
-! 
-       ll1=anint((x(l1)-xyz0(1))/dx)
-!
-       do i=l1,l2
-       do k=1,ndustspec
-         f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/dsize(k)/alog(delta) &
-             * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))  &
-             /exp(f(i,:,:,ilnrho))
-! 
-         tmp=dsize(k)*1e4
-!          init_distr_loc(i,k)=(coeff_loc(ll1+i-3,1) &
-!                    *exp(-0.5*( (tmp-coeff_loc(ll1+i-3,2)) /coeff_loc(ll1+i-3,3) )**2)  &
-!                    +coeff_loc(ll1+i-3,4)+coeff_loc(ll1+i-3,5)*tmp+coeff_loc(ll1+i-3,6)*tmp**2)/1e-4                !1e-4=dsize
-!          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
-!
-!          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))
-        enddo
-!                     
-        enddo
-        endif
 !
       call keep_compiler_quiet(f)
 !
@@ -808,15 +785,16 @@ module InitialCondition
         enddo
         close(144)
 !
-        do i=l1,l2
-        do k=1,ndustspec
-          f(i,:,:,ind(k)) = f(i,:,:,ind(k)) + init_distr_loc(ll1+i-3,k)/exp(f(i,:,:,ilnrho))/dsize(k)
-        enddo
-!print*,init_distr_loc(ll1+i-3,50),ll1+i-3
-        enddo
-       
+       do i=l1,l2
+       do k=1,ndustspec
+         f(i,:,:,ind(k)) = (init_distr_loc(ll1+i-3,k) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
+             * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2)))  &
+             /exp(f(i,:,:,ilnrho))/dsize(k)
+       enddo
+       enddo
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!
        if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
                                                      minval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT)))
        if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
