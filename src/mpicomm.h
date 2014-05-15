@@ -13,6 +13,7 @@
 
   public :: mpirecv_logical, mpirecv_real, mpirecv_int
   public :: mpisend_logical, mpisend_real, mpisend_int
+  public :: mpisendrecv_real
   public :: mpireduce_sum_int, mpireduce_sum, mpireduce_sum_double
   public :: mpireduce_max, mpireduce_max_int, mpireduce_min
   public :: mpiallreduce_max, mpiallreduce_min_sgl, mpiallreduce_min_dbl
