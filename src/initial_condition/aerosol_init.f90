@@ -773,7 +773,7 @@ module InitialCondition
         do i=1,Ndata
           if (init_distr_loc(i,k)==0.) init_distr_loc(i,k)=init_distr_tmp(i,k)
 !          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
-          if ((2.*dsize(k)*1e4<1.) .or. (2.*dsize(k)*1e4>20.)) init_distr_loc(i,k)=0.
+          if ((2.*dsize(k)*1e4<.5) .or. (2.*dsize(k)*1e4>40.)) init_distr_loc(i,k)=0.
         enddo
         enddo
 !
