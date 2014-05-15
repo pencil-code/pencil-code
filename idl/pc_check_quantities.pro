@@ -151,7 +151,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho:'density', $
 		ln_rho:'ln density', $
 		log_rho:'log density', $
-		n_rho:'particle density' $
+		n_rho:'particle density', $
+		species_1:'chemical species 1 mass-%', $
+		species_2:'chemical species 2 mass-%', $
+		species_3:'chemical species 3 mass-%', $
+		species_4:'chemical species 4 mass-%', $
+		species_5:'chemical species 5 mass-%', $
+		species_6:'chemical species 6 mass-%', $
+		species_7:'chemical species 7 mass-%', $
+		species_8:'chemical species 8 mass-%', $
+		species_9:'chemical species 9 mass-%' $
 	}
 
 	; List of code variable aliases.
@@ -271,6 +280,15 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'rho', $
 		log_rho:'rho', $
 		n_rho:'rho', $
+		species_1:'YY1', $
+		species_2:'YY2', $
+		species_3:'YY3', $
+		species_4:'YY4', $
+		species_5:'YY5', $
+		species_6:'YY6', $
+		species_7:'YY7', $
+		species_8:'YY8', $
+		species_9:'YY9', $
 		; Virtual combined dependencies:
 		TT_rho:['TT', 'rho'], $
 		S_rho:['S', 'rho'], $
