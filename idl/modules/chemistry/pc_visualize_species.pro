@@ -50,7 +50,7 @@ end
 !y.title='Y [-]'
 !p.title=specie
 if (dim.nygrid eq 1 and dim.nzgrid eq 1) then begin
-    rvid_line,variable,proc=0,/nocontour,/xgrid,/global_scaling,tmin=tmin,zoom=zoom
+    rvid_line,variable,/nocontour,/xgrid,/global_scaling,tmin=tmin,zoom=zoom
 endif else begin
     rvid_plane,variable,/xgrid,/global_scaling,tmin=tmin,zoom=zoom
 end
