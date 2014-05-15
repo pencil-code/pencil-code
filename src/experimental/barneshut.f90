@@ -7,8 +7,7 @@
 ! To use this module:
 ! 1. In Makefile.local, set POISSON=experimental/barneshut (FOURIER is
 !    subsequently not needed)
-! 2. Be sure that start.in includes &poisson_init_pars, and that this section
-!    only contains parameters octree_theta, lshowtime, and lsquareregions
+! 2. Update start.in with &poisson_init_pars/appropriate parameters.
 !
 ! The variable 'themap' contains a complete list of the region/point pairings
 ! for the BH map for each processor (where 'regions' are being integrated to
@@ -46,8 +45,8 @@ module Poisson
                                  ! root processor. Debugging/testing only.
   logical :: lsquareregions = .true. ! .true. = make regions as square-shaped as
                                      ! possible. Results in fewer regions.
-  logical :: lquickdist = .false.  ! Pre-calculate point-region distances. Not 
-                            ! technically correct, but may work as an
+  logical :: lprecalcdists = .false. ! Pre-calculate point-region distances.
+                            ! Not technically correct, but may work as an
                             ! approximation for sufficiently small octree_theta,
                             ! and provides a significant speedup.
   real :: octree_maxdist = huge(1.0)
@@ -69,10 +68,10 @@ module Poisson
   real, dimension(nlt) :: xlt, sinlt, coslt
 !
   namelist /poisson_init_pars/ &
-      octree_theta, lshowtime, lsquareregions, lquickdist, octree_maxdist
+      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist
 !
   namelist /poisson_run_pars/ &
-      octree_theta, lshowtime, lsquareregions, lquickdist, octree_maxdist
+      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist
 !
   contains
 !***********************************************************************
@@ -212,7 +211,7 @@ module Poisson
       if (lprecalc) then
         if (lroot) print*,"# regions on proc 0:",nreg
         allocate(themap(10,nreg))
-        if (lquickdist) allocate(regdist1(nreg))
+        if (lprecalcdists) allocate(regdist1(nreg))
       endif
       nreg = 0 ! Advanced inside 'mkmap'
       do pp=0,ncpus-1
@@ -264,9 +263,9 @@ module Poisson
     if (lshowtime .and. lroot) call cpu_time(tstart)
 !
     phirecv = 0.0
-    phi = phi*vols
+    phi = phi*vols ! 'phi' now in mass units
 !
-    ! Send necessary data (density & 3D coordinates) to other processors
+    ! Send masses to other processors
     do pp=0,ncpus-1
       if (pp/=iproc) then
         call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, &
@@ -283,7 +282,7 @@ module Poisson
       j   = themap(2, ireg) ; jrl = themap(6,ireg) ; jru = themap(7,ireg)
       k   = themap(3, ireg) ; krl = themap(8,ireg) ; kru = themap(9,ireg)
       pp  = themap(10,ireg)
-      if (lquickdist) then
+      if (lprecalcdists) then
         phi(i,j,k) = phi(i,j,k) - sum(phirecv(irl:iru,jrl:jru,krl:kru,pp)) &
           *regdist1(ireg)
       else
@@ -313,7 +312,7 @@ module Poisson
       real, dimension(dimi(1)) :: xi ! Region coordinates
       real, dimension(dimi(2)) :: yi !
       real, dimension(dimi(3)) :: zi !
-      integer, dimension(dimi(1)) :: xsind ! Indices (for building map)
+      integer, dimension(dimi(1)) :: xsind ! Region indices (for building map)
       integer, dimension(dimi(2)) :: ysind !
       integer, dimension(dimi(3)) :: zsind !
       integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi
@@ -360,7 +359,7 @@ module Poisson
         if (laddreg) then
           themap(:,nreg) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
             ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
-          if (lquickdist) regdist1(nreg) = 1.0/dist
+          if (lprecalcdists) regdist1(nreg) = 1.0/dist
         endif
       endif
     endsubroutine mkmap
@@ -395,6 +394,7 @@ module Poisson
     ilk = nint((ang-lkmin)/dxlt)+1
     sinx = sinlt(ilk)
     cosx = coslt(ilk)
+    ! Quadratic interpolation (probably not needed; slower but uses less memory)
     !a0 = (ang-xlt(ilk))*(ang-xlt(ilk+1))/ &
     !  ((xlt(ilk-1)-xlt(ilk))*(xlt(ilk-1)-xlt(ilk+1)))
     !a1 = (ang-xlt(ilk-1))*(ang-xlt(ilk+1))/ &
