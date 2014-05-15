@@ -629,15 +629,15 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (Poynting))
 	end
 
-	if (strcmp (quantity, 'species_1', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy1]
-	if (strcmp (quantity, 'species_2', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy2]
-	if (strcmp (quantity, 'species_3', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy3]
-	if (strcmp (quantity, 'species_4', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy4]
-	if (strcmp (quantity, 'species_5', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy5]
-	if (strcmp (quantity, 'species_6', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy6]
-	if (strcmp (quantity, 'species_7', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy7]
-	if (strcmp (quantity, 'species_8', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy8]
-	if (strcmp (quantity, 'species_9', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy9]
+	if (strcmp (quantity, 'species_1', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy1] * 100
+	if (strcmp (quantity, 'species_2', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy2] * 100
+	if (strcmp (quantity, 'species_3', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy3] * 100
+	if (strcmp (quantity, 'species_4', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy4] * 100
+	if (strcmp (quantity, 'species_5', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy5] * 100
+	if (strcmp (quantity, 'species_6', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy6] * 100
+	if (strcmp (quantity, 'species_7', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy7] * 100
+	if (strcmp (quantity, 'species_8', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy8] * 100
+	if (strcmp (quantity, 'species_9', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy9] * 100
 
 	; Check for Pencil Code alias names
 	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
