@@ -22,9 +22,9 @@ Comments:
           to set up a good initial profile for the flame front. This is
           a one-processor run without MPI and it takes typically 5 minutes.
           The results can be visualized in IDL with the scripts
-          "temperature.pro" or "species.pro" by executing:
-          IDL> .r temperature
-          IDL> .r species
+          "temperature.pro" or "species.pro" in the main folder by executing:
+          IDL> .r ../temperature
+          IDL> .r ../species
        2) Run the isotropic box (./turbulent_box) to be used as
           inlet condition. This is done in typically half an hour.
           Since this is a 8 processor job (as all the following runs)
@@ -36,7 +36,7 @@ Comments:
           to fill the domain with turbulence before the flame is introduced.
           For visualizing e.g. the velocity in the y and x direction in a
           2D slice in the xy plane open IDL and run the script "uu":
-          IDL> .r show_uu
+          IDL> .r ../show_uu
        4) Start the main simulation in the main directory: "./start.csh".
        5) Copy the generated 3D initial condition to the main simulation:
           $ pc_copyvar var.dat var.dat ./init_cond_3D . -e
