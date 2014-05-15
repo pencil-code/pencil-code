@@ -475,7 +475,7 @@ module EquationOfState
 !
       if (lconst_yH) then
 !
-        f(:,m,n,iyH) = yH_const
+        f(:,:,:,iyH) = yH_const
 !
       else
 !
