@@ -639,6 +639,7 @@ module Testfield
         call del2v(f,iaxtest,del2Atest)
         select case (itestfield)
           case ('linear'); call set_bbtest_linear(B0test,jtest)
+          case ('cxcycz'); call set_bbtest_cxcycz(B0test,jtest)
           case ('sxsysz'); call set_bbtest_sxsysz(B0test,jtest)
           case ('sinkz'); call set_bbtest_sinkz(B0test,jtest)
           case ('B=0') !(dont do anything)
@@ -762,6 +763,63 @@ module Testfield
           if (idiag_del    /=0) call sum_mn_name(+2*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_del    )
           if (idiag_kapPERP/=0) call sum_mn_name(-2*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
           if (idiag_kapPARA/=0) call sum_mn_name(-2* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
+!
+!  Test fields cosinusoidal in all three directions.
+!
+        case ('cxcycz')
+!
+!  Volume averages first.
+!
+          if (idiag_gam    /=0) call sum_mn_name(-4*cx &
+            *cy(m)*(cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)) &
+            *zmask(n),idiag_gam    )
+          if (idiag_alpPERP/=0) call sum_mn_name(-4*cx &
+            *cy(m)*(cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)) &
+            *zmask(n),idiag_alpPERP)
+          if (idiag_alpPARA/=0) call sum_mn_name(-4*cx &
+            *cy(m)*(cz(n)*Eipq(:,3,3)+sz(n)*Eipq(:,3,4)) &
+            *zmask(n),idiag_alpPARA)
+!
+          if (idiag_mu     /=0) call sum_mn_name(+4*cx*( &
+            -kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            +ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_mu)
+          if (idiag_mu2    /=0) call sum_mn_name(+4*( &
+            -kz1*cx*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_mu2)
+          if (idiag_betPERP/=0) call sum_mn_name(-2*cx*( &
+            +kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            +ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_betPERP)
+          if (idiag_betPERP2/=0) call sum_mn_name(-2*( &
+            +kz1*cx*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_betPERP2)
+!
+          if (idiag_del    /=0) call sum_mn_name(+2*cx*( &
+            +kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            -ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_del)
+          if (idiag_del2   /=0) call sum_mn_name(+2*( &
+            +kz1*cx*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_del2)
+          if (idiag_kapPERP/=0) call sum_mn_name(-4*cx*( &
+            +kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            +ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_kapPERP)
+          if (idiag_kapPERP2/=0) call sum_mn_name(-4*( &
+            +kz1*cx*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            +kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_kapPERP2)
+!
+          if (idiag_betPARA/=0) call sum_mn_name(+4*cx* &
+             ky1*sy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) &
+             *zmask(n),idiag_betPARA)
+          if (idiag_kapPARA/=0) call sum_mn_name(-4*cx* &
+             kz1*cy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) &
+             *zmask(n),idiag_kapPARA)
 !
 !  Test fields sinusoidal in all three directions.
 !
@@ -1265,6 +1323,32 @@ module Testfield
       endselect
 !
     endsubroutine set_bbtest_sinkz
+!***********************************************************************
+    subroutine set_bbtest_cxcycz (B0test,jtest)
+!
+!  set testfield
+!
+!  16-jun-11/axel: adapted from testfield_axisym2
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: B0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: B0test
+!
+!  set B0test for each of the 9 cases
+!
+      select case (jtest)
+      case (1); B0test(:,1)=bamp*cx*cy(m)*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*cx*cy(m)*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cx*cy(m)*cz(n)
+      case (4); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cx*cy(m)*sz(n)
+      case default; B0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest_cxcycz
 !***********************************************************************
     subroutine set_bbtest_sxsysz (B0test,jtest)
 !
