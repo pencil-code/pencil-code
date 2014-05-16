@@ -43,6 +43,14 @@ module Mpicomm
     module procedure mpisend_real_arr4
   endinterface
 !
+  interface mpisendrecv_real
+    module procedure mpisendrecv_real_scl
+    module procedure mpisendrecv_real_arr
+    module procedure mpisendrecv_real_arr2
+    module procedure mpisendrecv_real_arr3
+    module procedure mpisendrecv_real_arr4
+  endinterface
+!
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
@@ -602,6 +610,72 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr4
+!***********************************************************************
+    subroutine mpisendrecv_real_scl(send_array,sendcnt,proc_dest,sendtag, &
+      recv_array,recvcnt,proc_src,recvtag)
+
+    integer :: sendcnt, recvcnt
+    real :: send_array, recv_array
+    integer :: proc_src, proc_dest, sendtag, recvtag
+    intent(out) :: recv_array
+
+    if (ALWAYS_FALSE) print*, sendtag, recvtag
+
+    endsubroutine mpisendrecv_real_scl
+!***********************************************************************
+    subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
+      recv_array,recvcnt,proc_src,recvtag)
+
+    integer :: sendcnt, recvcnt
+    real, dimension(sendcnt) :: send_array
+    real, dimension(recvcnt) :: recv_array
+    integer :: proc_src, proc_dest, sendtag, recvtag
+    intent(out) :: recv_array
+
+    if (ALWAYS_FALSE) print*, sendtag, recvtag
+
+    endsubroutine mpisendrecv_real_arr
+!***********************************************************************
+    subroutine mpisendrecv_real_arr2(send_array,sendcnt_arr,proc_dest,sendtag, &
+     recv_array,recvcnt_arr,proc_src,recvtag)
+
+    integer, dimension(2) :: sendcnt_arr, recvcnt_arr
+    real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: send_array
+    real, dimension(recvcnt_arr(1),recvcnt_arr(2)) :: recv_array
+    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
+    intent(out) :: recv_array
+
+    if (ALWAYS_FALSE) print*, sendtag, recvtag
+
+    endsubroutine mpisendrecv_real_arr2
+!***********************************************************************
+    subroutine mpisendrecv_real_arr3(send_array,sendcnt_arr,proc_dest,sendtag, &
+     recv_array,recvcnt_arr,proc_src,recvtag)
+
+    integer, dimension(3) :: sendcnt_arr, recvcnt_arr
+    real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3)) :: send_array
+    real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3)) :: recv_array
+    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
+    intent(out) :: recv_array
+
+    if (ALWAYS_FALSE) print*, sendtag, recvtag
+
+    endsubroutine mpisendrecv_real_arr3
+!***********************************************************************
+    subroutine mpisendrecv_real_arr4(send_array,sendcnt_arr,proc_dest,sendtag, &
+     recv_array,recvcnt_arr,proc_src,recvtag)
+
+    integer, dimension(4) :: sendcnt_arr, recvcnt_arr
+    real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3), &
+      sendcnt_arr(4)) :: send_array
+    real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3), &
+      recvcnt_arr(4)) :: recv_array
+    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
+    intent(out) :: recv_array
+
+    if (ALWAYS_FALSE) print*, sendtag, recvtag
+
+    endsubroutine mpisendrecv_real_arr4
 !***********************************************************************
     subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
