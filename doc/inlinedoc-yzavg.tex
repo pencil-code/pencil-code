@@ -8,6 +8,7 @@
 %%   entropy.f90
 %%   magnetic.f90
 %%   bfield.f90
+%%   density_stratified.f90
 %%   gravity_simple.f90
 %%   shock_highorder.f90
 %%   temperature_idealgas.f90
@@ -54,6 +55,7 @@
   \var{fturbmx}   & $\left<\varrho T \chi_t \nabla_x
                     s\right>_{yz}$ \quad(turbulent
                     heat flux) \\
+  \var{dcoolx}    & surface cooling flux \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -81,6 +83,23 @@
   \var{bybzmx}    & $\langle B_y B_z\rangle_{yz}$ \\
   \var{betamx}    & $\langle\beta\rangle_{yz}$ \\
   \var{beta2mx}   & $\langle\beta^2\rangle_{yz}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{density_stratified.f90}} \\
+\midrule
+  \var{rux2mz}    & $\langle\rho u_x^2\rangle_{xy}$ \\
+  \var{ruy2mz}    & $\langle\rho u_y^2\rangle_{xy}$ \\
+  \var{ruz2mz}    & $\langle\rho u_z^2\rangle_{xy}$ \\
+  \var{ruxuymz}   & $\langle\rho u_x u_y\rangle_{xy}$ \\
+  \var{ruxuzmz}   & $\langle\rho u_x u_z\rangle_{xy}$ \\
+  \var{ruyuzmz}   & $\langle\rho u_y u_z\rangle_{xy}$ \\
+  \var{drhomx}    & $\langle\Delta\rho/\rho_0\rangle_{yz}$ \\
+  \var{drho2mx}   & $\langle\left(\Delta\rho/\rho_0\right)^2\rangle_{yz}$ \\
+  \var{rux2mx}    & $\langle\rho u_x^2\rangle_{yz}$ \\
+  \var{ruy2mx}    & $\langle\rho u_y^2\rangle_{yz}$ \\
+  \var{ruz2mx}    & $\langle\rho u_z^2\rangle_{yz}$ \\
+  \var{ruxuymx}   & $\langle\rho u_x u_y\rangle_{yz}$ \\
+  \var{ruxuzmx}   & $\langle\rho u_x u_z\rangle_{yz}$ \\
+  \var{ruyuzmx}   & $\langle\rho u_y u_z\rangle_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule

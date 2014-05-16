@@ -15,6 +15,7 @@
 %%   bfield.f90
 %%   chemistry.f90
 %%   coronae.f90
+%%   density_stratified.f90
 %%   detonate.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
@@ -89,6 +90,7 @@
                     the hydro_zaver_range \\
   \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
   \var{uxmin}     & $\min(|u_x|)$ \\
   \var{uymin}     & $\min(|u_y|)$ \\
@@ -715,6 +717,16 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
+\midrule
+  \multicolumn{2}{c}{Module \file{density_stratified.f90}} \\
+\midrule
+  \var{mass}      & $\int\rho\,d^3x$ \\
+  \var{rhomin}    & $\min\left|\rho\right|$ \\
+  \var{rhomax}    & $\max\left|\rho\right|$ \\
+  \var{drhom}     & $\langle\Delta\rho/\rho_0\rangle$ \\
+  \var{drho2m}    & $\langle\left(\Delta\rho/\rho_0\right)^2\rangle$ \\
+  \var{drhorms}   & $\langle\Delta\rho/\rho_0\rangle_{rms}$ \\
+  \var{drhomax}   & $\max\left|\Delta\rho/\rho_0\right|$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{detonate.f90}} \\
 \midrule
