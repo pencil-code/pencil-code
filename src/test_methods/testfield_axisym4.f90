@@ -999,6 +999,8 @@ module Testfield
 !  30-jan-14/MR: adapted use of uxbtestm, jxbtestm; modified for x parallelization
 !  23-apr-14/MR: calculation of Fourier amplitudes of mean EMF w.r.t. x,y added
 !  29-apr-14/MR: proper calculation of mean(uu) for uufluct coded
+!  16-may-14/MR: calculation of averages now based on pencils for compatibility with 
+!                hydro_kinematic
 !
       use Cdata
       use Sub
@@ -1009,9 +1011,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (mz) :: c,s
-!
       real, dimension(nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
-!
       real, dimension(nx,3,3):: aijtest,bijtest
       real, dimension(nx,3)  :: aatest,bbtest,jjtest,uxbtest,jxbtest,uufluct
       real, dimension(nx,3)  :: del2Atest2,graddivatest
@@ -1044,8 +1044,10 @@ module Testfield
           nl=n-n1+1
           do m=m1,m2
 !
+            call calc_pencils_hydro(f,p,lpenc_loc)
+
             do j=1,3 
-              uxbtestcx(j)=sum(f(l1:l2,m,n,iux+j-1)*cx); uxbtestsx(j)=sum(f(l1:l2,m,n,iux+j-1)*sx)
+              uxbtestcx(j)=sum(p%uu(:,j)*cx); uxbtestsx(j)=sum(p%uu(:,j)*sx)
             enddo
 !
             Umeanampxy(nl,:,1) = Umeanampxy(nl,:,1)+uxbtestcx*cy(m)
