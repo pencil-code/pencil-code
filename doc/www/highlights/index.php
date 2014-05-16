@@ -4,6 +4,12 @@
  ?>
 <div class="centcolumnpad">
 <h2>Highlights</h2>
+
+The document about the
+<X href=http://norlx51.nordita.org/~brandenb/tmp/citations/notes.pdf>Scientific Usage of the Pencil Code</X>
+lists currently 352 research papers quoting the Pencil Code.
+
+<p>
 Currently, we have the following highlights planned:
 <ul>
 	<li><a href="/samples/turbulence/helical-MHDturb32-4procs/">Helical MHD Dynamo</a> [AB]</li>
