@@ -584,6 +584,8 @@ module Testfield
 !
 !  calculate uufluct=U-Umean
 !
+      nl = n-n1+1
+!
       if (lcalc_uumean) then
         do j=1,3
           uufluct(:,j)=p%uu(:,j)-(Umeanampxy(nl,j,1)*cx+Umeanampxy(nl,j,2)*sx)*cy(m) &
@@ -630,8 +632,6 @@ module Testfield
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
-!
-      nl = n-n1+1
 !
       do jtest=1,njtest
         iaxtest=iaatest+3*(jtest-1)
