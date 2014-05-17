@@ -552,6 +552,7 @@ module Testfield
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !  23-apr-14/MR: calculation of z dependent coefficients outsourced into calc_coeffs_z
 !  29-apr-14/MR: proper calculation of mean(uu) for uufluct coded
+!  17-may-14/axel: included itestfield=cxcycz method
 !
       use Cdata
       use Diagnostics
@@ -782,39 +783,39 @@ module Testfield
 !
           if (idiag_mu     /=0) call sum_mn_name(+4*cx*( &
             -kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-            +ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            -ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_mu)
           if (idiag_mu2    /=0) call sum_mn_name(+4*( &
             -kz1*cx*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            +kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_mu2)
           if (idiag_betPERP/=0) call sum_mn_name(-2*cx*( &
             +kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-            +ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            -ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_betPERP)
           if (idiag_betPERP2/=0) call sum_mn_name(-2*( &
             +kz1*cx*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
-            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            +kx1*sx*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_betPERP2)
 !
           if (idiag_del    /=0) call sum_mn_name(+2*cx*( &
             +kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-            -ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            +ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_del)
           if (idiag_del2   /=0) call sum_mn_name(+2*( &
             +kz1*cx*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            +kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_del2)
           if (idiag_kapPERP/=0) call sum_mn_name(-4*cx*( &
             +kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-            +ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            -ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_kapPERP)
           if (idiag_kapPERP2/=0) call sum_mn_name(-4*( &
             +kz1*cx*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-            +kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            -kx1*sx*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_kapPERP2)
 !
-          if (idiag_betPARA/=0) call sum_mn_name(+4*cx* &
+          if (idiag_betPARA/=0) call sum_mn_name(-4*cx* &
              ky1*sy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) &
              *zmask(n),idiag_betPARA)
           if (idiag_kapPARA/=0) call sum_mn_name(-4*cx* &
@@ -884,7 +885,14 @@ module Testfield
 !
 ! calculate z dependent coefficients
 !
-        if (lcalc_zdep_coeffs) call calc_coeffs_z(m,n,Eipq)         
+        if (lcalc_zdep_coeffs) then
+          select case (itestfield)
+          case ('cxcycz'); call calc_coeffc_z(m,n,Eipq)         
+          case ('sxsysz'); call calc_coeffs_z(m,n,Eipq)         
+          case default
+            call fatal_error('daatest_dt','undefined itestfield value')
+          endselect
+        endif
 !
 !  diagnostics for single points
 !
@@ -925,6 +933,36 @@ module Testfield
       endif
 !
     endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_coeffc_z(m,n,Eipq)
+!
+!  calculates z dependent coefficients
+!
+!  17-may-14/axel: adapted from calc_coeffs_z
+!
+      use Diagnostics, only: xysum_mn_name_z
+!
+      integer, intent(IN) :: m,n
+      real, dimension(nx,3,njtest), intent(IN) :: Eipq
+!
+      if (idiag_gamz    /=0) call xysum_mn_name_z(-4*cx*cy(m)*(cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)),idiag_gamz    )
+      if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*cx*cy(m)*(cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alpPERPz)
+      if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4*cx*cy(m)*(cz(n)*Eipq(:,3,3)+sz(n)*Eipq(:,3,4)),idiag_alpPARAz)
+!
+      if (idiag_muz     /=0) call xysum_mn_name_z(+4*cx*(-kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+                                                         -ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_muz)
+      if (idiag_betPERPz/=0) call xysum_mn_name_z(-2*cx*(+kz1*cy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+                                                         -ky1*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_betPERPz)
+!
+      if (idiag_delz    /=0) call xysum_mn_name_z(+2*cx*(+kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+                                                         +ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_delz)
+      if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4*cx*(+kz1*cy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+                                                         -ky1*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_kapPERPz)
+!
+      if (idiag_betPARAz/=0) call xysum_mn_name_z(-4*cx*  ky1*sy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) ,idiag_betPARAz)
+      if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4*cx*  kz1*cy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) ,idiag_kapPARAz)
+!
+    end subroutine calc_coeffc_z
 !***********************************************************************
     subroutine calc_coeffs_z(m,n,Eipq)
 !
