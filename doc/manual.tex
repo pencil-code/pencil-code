@@ -6436,10 +6436,32 @@ Again, the answer is yes; just go to:
 % ====================================================================== %
 
 \part{Programming the {\sc Pencil Code}}
+\index{Check-in details}
+\index{h-index}
 
 All developers are supposed to have an up-to-date an entry in the file
 \file{pencil-code/license/developers.txt} so that they can be contacted in
 the case a code change breaks an auto-test or other code functionality.
+
+Several {\sc Pencil Code} committers have done several hundred check-ins,
+but many of the currently 98 registered people on the repository have
+hardly done anything.
+To put a number to this, one can define an $h$ index, which gives the
+number of users, who have done at least as many as that number of check ins.
+This $h$ index is currently 28, i.e., 28 users have done at least
+28 check ins; see Figure~\ref{pencil-hindex}.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pencil-hindex}
+  \caption{The $h$ index of {\sc Pencil Code} check-ins.
+  }
+  \label{pencil-hindex}
+\end{figure}
+% ---------------------------------------------------------------------- %
 
 The {\sc Pencil Code} has expanded approximately linearly in the number of
 lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
