@@ -987,13 +987,13 @@ module Magnetic
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
-!  09-jul-13/ccyang: coded
+!  19-may-14/ccyang: coded
 !
       real, intent(in) :: umax
 !
 !  Mesh hyper-resistivity coefficient
 !
-      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh / 3.0
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
