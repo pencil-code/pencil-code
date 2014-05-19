@@ -39,8 +39,6 @@ module Density
 !
   include 'density.h'
 !
-  public :: get_density_z
-!
   character(len=labellen), dimension(ninit) :: initrho = 'nothing'
   real, dimension(ninit) :: amplrho = 0.0
   real, dimension(mz), target :: rho0z
@@ -916,12 +914,12 @@ module Density
 !  Calculates equilibrium density rho0z and/or its derivative dlnrho0dz
 !  at height z.
 !
-!  28-feb-13/ccyang: coded.
+!  19-may-14/ccyang: coded.
 !
       use EquationOfState, only: rho0, cs0
 !
-      real, intent(in) :: z
-      real, intent(out), optional :: rho0z, dlnrho0dz
+      real, dimension(:), intent(in) :: z
+      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz
 !
       real :: h
 !
@@ -950,13 +948,9 @@ module Density
 !
 !  Initializes and saves the density stratification
 !
-!  28-feb-13/ccyang: coded.
+!  19-may-14/ccyang: coded.
 !
-      integer :: k
-!
-      scanz: do k = 1, mz
-        call get_density_z(z(k), rho0z(k), dlnrho0dz(k))
-      enddo scanz
+      call get_density_z(z, rho0z, dlnrho0dz)
 !
     endsubroutine set_stratification
 !***********************************************************************
