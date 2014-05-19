@@ -65,7 +65,7 @@ module Radiation
   real, target, dimension (ny,nz,mnu) :: Jrad_yz
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
-  real, dimension (mnu) :: scalefactor_Srad=1.0, kappa_cst=1.0
+  real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0, kappa_cst=1.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
@@ -135,7 +135,8 @@ module Radiation
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
-      lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
+      lrad_pres_diffus, scalefactor_Srad, scalefactor_kappa, &
+      angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function
@@ -148,7 +149,8 @@ module Radiation
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, &
-      cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
+      cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, scalefactor_kappa, &
+      angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
@@ -1585,7 +1587,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
-          f(:,m,n,ikapparho)=tmp
+          f(:,m,n,ikapparho)=tmp*scalefactor_kappa(inu)
         enddo
         enddo
 !

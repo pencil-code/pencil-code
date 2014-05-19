@@ -78,7 +78,7 @@ module Hydro
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   character (len=labellen), dimension(3) :: borderuu='nothing'
-  real, dimension (3) :: uu_const=(/0.,0.,0./)
+  real, dimension (3) :: uu_const=(/0.,0.,0./), mean_momentum=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real, dimension(nx) :: xmask_hyd
    real, dimension(nz) :: zmask_hyd
@@ -194,7 +194,7 @@ module Hydro
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, & 
       lpropagate_borderuu, hydro_zaver_range, &
-      uzjet, ydampint, ydampext
+      uzjet, ydampint, ydampext, mean_momentum
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4885,8 +4885,6 @@ module Hydro
 !
 !  check if ldensity=T. Otherwise switch to remove_mean_flow.
 !
-      !if (ldensity.or.lanelastic) then
-!AB: ldensity is now sufficient
       if (ldensity) then
 !
 !  initialize mean momentum, rum, to zero
@@ -4930,10 +4928,12 @@ module Hydro
         enddo
         enddo
 !
-!  Compute total sum for all processors
+!  Compute total sum for all processors.
+!  Allow here for the possibility to add mean_momentum.
+!  It needs to be subtracted here, because "rum" is removed.
 !
         call mpiallreduce_sum(rum,rum_tmp,3)
-        rum = rum_tmp
+        rum = rum_tmp - mean_momentum
 !
 !  Compute inverse density, rho1.
 !

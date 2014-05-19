@@ -52,7 +52,7 @@ module Density
   real, dimension(mz) :: reduce_cs2_profz = 1.0
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
-  real :: lnrho_const=0.0, rho_const=1.0, ggamma=impossible
+  real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
@@ -112,7 +112,7 @@ module Density
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
-      rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, &
+      Hrho, rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, &
       yblob, zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, &
       mpoly, ggamma, &
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
@@ -661,6 +661,8 @@ module Density
         case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
+        case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
+        case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
         case ('invsqr')
           do ix=1,mx
             if (x(ix)<=r0_rho) then

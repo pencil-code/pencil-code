@@ -3159,6 +3159,7 @@ module Magnetic
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
+!  Works only on one processor.
 !
       if (lmean_friction) then
         if (nprocx*nprocy==1) then
