@@ -121,16 +121,34 @@ endif
 ;
 default, ipp, 0
 if (ipp gt 0) then begin
-  varcontent[ipp].variable   = 'pressure (pp)'
+  varcontent[ipp].variable   = 'Pressure (pp)'
   varcontent[ipp].idlvar     = 'pp'
   varcontent[ipp].idlinit    = INIT_SCALAR
   varcontent[ipp].idlvarloc  = 'pp_loc'
   varcontent[ipp].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, ippp, 0
+if (ippp gt 0) then begin
+  varcontent[ippp].variable   = 'Pressure as auxiliary variable (ppp)'
+  varcontent[ippp].idlvar     = 'ppp'
+  varcontent[ippp].idlinit    = INIT_SCALAR
+  varcontent[ippp].idlvarloc  = 'ppp_loc'
+  varcontent[ippp].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, isss, 0
+if (isss gt 0) then begin
+  varcontent[isss].variable   = 'Entropy as auxiliary variable (sss)'
+  varcontent[isss].idlvar     = 'sss'
+  varcontent[isss].idlinit    = INIT_SCALAR
+  varcontent[isss].idlvarloc  = 'sss_loc'
+  varcontent[isss].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, icp, 0
 if (icp gt 0) then begin
-  varcontent[icp].variable   = 'cp'
+  varcontent[icp].variable   = 'Specific heat (cp) as auxiliary variable'
   varcontent[icp].idlvar     = 'cp'
   varcontent[icp].idlinit    = INIT_SCALAR
   varcontent[icp].idlvarloc  = 'cp_loc'
@@ -139,7 +157,7 @@ endif
 ;
 default, icv, 0
 if (icv gt 0) then begin
-  varcontent[icv].variable   = 'cv'
+  varcontent[icv].variable   = 'Specific heat (cv) as auxiliary variable'
   varcontent[icv].idlvar     = 'cv'
   varcontent[icv].idlinit    = INIT_SCALAR
   varcontent[icv].idlvarloc  = 'cv_loc'
@@ -148,7 +166,7 @@ endif
 ;
 default, igamma, 0
 if (igamma gt 0) then begin
-  varcontent[igamma].variable   = 'gamma'
+  varcontent[igamma].variable   = 'Ratio of specific heat (gamma) as auxiliary variable'
   varcontent[igamma].idlvar     = 'gamma'
   varcontent[igamma].idlinit    = INIT_SCALAR
   varcontent[igamma].idlvarloc  = 'gamma_loc'
