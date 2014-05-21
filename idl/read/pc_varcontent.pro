@@ -130,11 +130,29 @@ endif
 ;
 default, icp, 0
 if (icp gt 0) then begin
-  varcontent[icp].variable   = 'cp1tilde'
+  varcontent[icp].variable   = 'cp'
   varcontent[icp].idlvar     = 'cp'
   varcontent[icp].idlinit    = INIT_SCALAR
   varcontent[icp].idlvarloc  = 'cp_loc'
   varcontent[icp].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, icv, 0
+if (icv gt 0) then begin
+  varcontent[icv].variable   = 'cv'
+  varcontent[icv].idlvar     = 'cv'
+  varcontent[icv].idlinit    = INIT_SCALAR
+  varcontent[icv].idlvarloc  = 'cv_loc'
+  varcontent[icv].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, igamma, 0
+if (igamma gt 0) then begin
+  varcontent[igamma].variable   = 'gamma'
+  varcontent[igamma].idlvar     = 'gamma'
+  varcontent[igamma].idlinit    = INIT_SCALAR
+  varcontent[igamma].idlvarloc  = 'gamma_loc'
+  varcontent[igamma].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
 default, ilnrho, 0
