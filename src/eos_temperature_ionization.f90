@@ -45,6 +45,7 @@ module EquationOfState
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
+  integer :: icp, icv, igamma
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
@@ -63,14 +64,20 @@ module EquationOfState
   real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
 ! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                           tau_relax,va2max_eos,va2power_eos,B_ext_eos
+                           tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
+                           lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
+                           lgamma_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                          tau_relax,va2max_eos,va2power_eos,B_ext_eos
+                          tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
+                          lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
+                          lgamma_as_aux
 !
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
+  logical :: lss_as_aux=.false., lpp_as_aux=.false.
+  logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
@@ -124,6 +131,10 @@ module EquationOfState
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
+!  21-may-14/axel: adapted from eos_entropy
+!
+      use Sub, only: register_report_aux
+!
       if (lroot) print*,'initialize_eos: ENTER'
 !
 !  Useful constants for ionization
@@ -145,6 +156,14 @@ module EquationOfState
       lnrho_e_ = log(rho_e_)
       kappa0 = sigmaH_*mu1_0/(4*m_u)
       pp_ion = Rgas*mu1_0*rho_e*TT_ion
+!
+!  pressure, cp, and cv as optional auxiliary variable
+!
+      if (lss_as_aux) call register_report_aux('ss',iss)
+      if (lpp_as_aux) call register_report_aux('pp',ipp)
+      if (lcp_as_aux) call register_report_aux('cp',icp)
+      if (lcv_as_aux) call register_report_aux('cv',icv)
+      if (lgamma_as_aux) call register_report_aux('gamma',igamma)
 !
 !  write scale non-free constants to file; to be read by idl
 !
@@ -180,7 +199,20 @@ module EquationOfState
 !***********************************************************************
     subroutine pencil_criteria_eos()
 !
-!  dummy (but to be changed)
+!  All pencils that the EquationOfState module depends on are specified here.
+!
+!  21-may-14/axel: adapted from eos_ionization
+!
+!  EOS is a pencil provider but evolves nothing so it is unlokely that
+!  it will require any pencils for it's own use.
+!
+!  pp pencil if lpp_as_aux
+!
+      if (lss_as_aux) lpenc_requested(i_ss)=.true.
+      if (lpp_as_aux) lpenc_requested(i_pp)=.true.
+      if (lcp_as_aux) lpenc_requested(i_cp)=.true.
+      if (lcv_as_aux) lpenc_requested(i_cv)=.true.
+      if (lgamma_as_aux) lpenc_requested(i_gamma)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -408,6 +440,14 @@ module EquationOfState
       endif
 !
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+!
+!  pressure and cp as optional auxiliary pencils
+!
+      if (lss_as_aux) f(l1:l2,m,n,iss)=p%ss
+      if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
+      if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp
+      if (lcv_as_aux) f(l1:l2,m,n,icv)=p%cv
+      if (lgamma_as_aux) f(l1:l2,m,n,igamma)=p%gamma
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
