@@ -159,8 +159,8 @@ module EquationOfState
 !
 !  pressure, cp, and cv as optional auxiliary variable
 !
-      if (lss_as_aux) call register_report_aux('ss',iss)
-      if (lpp_as_aux) call register_report_aux('pp',ipp)
+      if (lss_as_aux) call register_report_aux('sss',iss)
+      if (lpp_as_aux) call register_report_aux('ppp',ipp)
       if (lcp_as_aux) call register_report_aux('cp',icp)
       if (lcv_as_aux) call register_report_aux('cv',icv)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
