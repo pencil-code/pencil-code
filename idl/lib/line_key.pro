@@ -1,5 +1,5 @@
 PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
-            , THICK = THICK , SYMBOL = SYMBOL , CHARSIZE = CHARSIZE
+            , THICK = THICK , SYMBOL = SYMBOL , CHARSIZE = CHARSIZE , VSHIFT = VSHIFT 
 ;+
 ; NAME:
 ;       LINE_KEY
@@ -32,6 +32,8 @@ PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
 ;
 ;       CHARSIZE        The charsize used for the label.
 ;
+;       VSHIFT          Vertical shift of the label text, vshift*charsize downwards.
+;
 ; OUTPUTS:
 ;       Result: real or double precision scalar or array
 ;
@@ -60,12 +62,13 @@ PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
   IF( NOT KEYWORD_SET( THICK      ) ) THEN thick      = 1.0
   IF( NOT KEYWORD_SET( CHARSIZE   ) ) THEN charsize   = 1.0
   IF(     KEYWORD_SET( SYMBOL     ) ) THEN linelength = 0.0
+  IF( NOT KEYWORD_SET( VSHIFT     ) ) THEN vshift     = 0.02
 
   lx1           =   x                        * x_win_size + !P.CLIP(0)
   lx2           = ( x + linelength         ) * x_win_size + !P.CLIP(0)
   xl            = ( x + linelength + 0.015 ) * x_win_size + !P.CLIP(0)
   ly            =   y                        * y_win_size + !P.CLIP(1)
-  yl            = ( y - 0.02 * charsize    ) * y_win_size + !P.CLIP(1)
+  yl            = ( y - vshift * charsize    ) * y_win_size + !P.CLIP(1)
 
   IF( NOT KEYWORD_SET( SYMBOL ) ) $
     THEN PLOTS, [ lx1 , lx2 ] , [ ly , ly ] $
