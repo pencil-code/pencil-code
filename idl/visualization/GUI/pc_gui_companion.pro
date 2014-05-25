@@ -117,7 +117,7 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 			varsets[i].(pos) -= alog (unit.default_density)
 		if (any (strcmp (tag, ['log_rho'], /fold_case)) and (unit.default_density ne 1)) then $
 			varsets[i].(pos) -= alog10 (unit.default_density)
-		if (any (strcmp (tag, ['b_x', 'b_y', 'b_z'], /fold_case)) and (unit.default_magnetic_field ne 1)) then $
+		if (any (strcmp (tag, ['B_abs', 'B_x', 'B_y', 'B_z'], /fold_case)) and (unit.default_magnetic_field ne 1)) then $
 			varsets[i].(pos) /= unit.default_magnetic_field
 		if (any (strcmp (tag, ['j_abs'], /fold_case)) and (unit.default_current_density ne 1)) then $
 			varsets[i].(pos) /= unit.default_current_density
