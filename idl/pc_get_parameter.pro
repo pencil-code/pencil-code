@@ -51,12 +51,17 @@ function pc_generate_parameter_abbreviation, param, label=label
 	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
-	if (any (strcmp (param, ['mu0_SI','mu0_4_pi'], /fold_case))) then begin
+	if (any (strcmp (param, ['mu_0', 'mu0_SI','mu0_4_pi'], /fold_case))) then begin
 		mu0 = pc_get_parameter ('mu0', label=label)
 		unit_magnetic = pc_get_parameter ('unit_magnetic', label=label)
 		unit_density = pc_get_parameter ('unit_density', label=label)
 		unit_velocity = pc_get_parameter ('unit_velocity', label=label)
 		return, mu0 * unit_magnetic^2/(unit_density*unit_velocity^2) ; Magnetic vacuum permeability [SI: 4*pi*10^-7 V*s/(A*m)]
+	end
+	if (any (strcmp (param, ['epsilon_0', 'epsilon0', 'epsilon0_SI'], /fold_case))) then begin
+		mu0_SI = pc_get_parameter ('mu0_SI', label=label)
+		c = pc_get_parameter ('c', label=label)
+		return, 1 / (mu0_SI * c^2) ; Dielectrical vacuum permittivity [SI: A*s/(V*m)]
 	end
 	if (strcmp (param, 'eta_total', /fold_case)) then begin
 		resistivities = pc_get_parameter ('iresistivity', label=label)
@@ -120,13 +125,13 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 		if (any (run_names eq "KSAT")) then return, run_par.Ksat
 		if (not keyword_set (missing)) then missing = "'Ksat'"
 	end
-	index = where (run_names eq strupcase (param))
-	if (index[0] ge 0) then return, pc_get_parameter_cleanup (run_par.(index[0]), cleanup=cleanup)
+	index = where (run_names eq strupcase (param), found)
+	if (found ge 1) then return, pc_get_parameter_cleanup (run_par.(index[0]), cleanup=cleanup)
 
 	; start.in parameters
 	start_names = tag_names (start_par)
-	index = where (start_names eq strupcase (param))
-	if (index[0] ge 0) then return, pc_get_parameter_cleanup (start_par.(index[0]), cleanup=cleanup)
+	index = where (start_names eq strupcase (param), found)
+	if (found ge 1) then return, pc_get_parameter_cleanup (start_par.(index[0]), cleanup=cleanup)
 
 	; Some additional useful parameter abbreviations
 	abbreviation = pc_generate_parameter_abbreviation (param, label=label)
@@ -137,13 +142,27 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	; Return parameter abbreviation, if existent
 	if (not finite (abbreviation[0], /NaN)) then return, abbreviation
 
-	; Some additional useful constants
-	if (strcmp (param, 'q_electron', /fold_case)) then return, 1.6021766d-19 ; Electron charge [A*s]
-	if (strcmp (param, 'm_electron', /fold_case)) then return, 9.109383d-31 ; Electron mass [kg]
-	if (strcmp (param, 'm_proton', /fold_case)) then return, 1.6726218d-27 ; Proton mass [kg]
-	if (strcmp (param, 'k_Boltzmann', /fold_case)) then return, 1.3806488d-23 ; Boltzmann constant [J/K]
+	; Some additional physical constants
+	if (strcmp (param, 'AU', /fold_case)) then return, 149597870700.d0 ; Astronomical unit [m]
 	if (strcmp (param, 'c', /fold_case)) then return, 299792458.d0 ; Speed of light [m/s]
+	if (strcmp (param, 'G', /fold_case)) then return, 6.674d-11 ; Gravitational constant [N*m^2/kg^2]
+	if (strcmp (param, 'h_Planck', /fold_case)) then return, 6.62606957d-34 ; Planck constant [J/s]
+	if (strcmp (param, 'k_Boltzmann', /fold_case)) then return, 1.3806488d-23 ; Boltzmann constant [J/K]
+	if (strcmp (param, 'm_Earth', /fold_case)) then return, 5.974d24 ; Earth mass [kg]
+	if (strcmp (param, 'm_electron', /fold_case)) then return, 9.109383d-31 ; Electron mass [kg]
+	if (strcmp (param, 'm_neutron', /fold_case)) then return, 1.6749274d-27 ; Neutron mass [kg]
+	if (strcmp (param, 'm_proton', /fold_case)) then return, 1.6726218d-27 ; Proton mass [kg]
+	if (strcmp (param, 'm_Sun', /fold_case)) then return, 1.989d30 ; Sun mass [kg]
+	if (strcmp (param, 'N_Avogadro', /fold_case)) then return, 6.02214129d23 ; Avogadro number [1/mol]
 	if (strcmp (param, 'pi', /fold_case)) then return, !DPi ; Precise value of pi
+	if (strcmp (param, 'q_electron', /fold_case)) then return, 1.6021766d-19 ; Electron charge [A*s]
+	if (strcmp (param, 'R', /fold_case)) then return, 8.314462145d0 ; universal gas constant [J/K/mol] = k_Boltzman * N_Avogadro
+	if (strcmp (param, 'R_Earth', /fold_case)) then return, 6367456d0 ; Earth average radius [m]
+	if (strcmp (param, 'R_Sun', /fold_case)) then return, 696342.d3 ; Sun radius [m]
+	if (strcmp (param, 'u', /fold_case)) then return, 1.660538921d-27 ; Atomic mass unit [kg]
+
+	; Some additional mathematical constants
+	if (strcmp (param, 'e', /fold_case)) then return, 2.718281828459045235d0 ; Euler constnat
 
 	; Non-existent parameter
 	message = "find"

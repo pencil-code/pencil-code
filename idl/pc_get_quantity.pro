@@ -36,7 +36,7 @@
 ;  Examples: (in ascending order of efficiency)
 ;  ============================================
 ;
-;  * Using 'pc_read_var':
+;  * Using 'pc_read_var': (NOT RECOMMENDED)
 ;
 ;   Load varfile and calculate separate quantities, simplest version:
 ;   IDL> pc_read_var, obj=vars
@@ -45,12 +45,15 @@
 ;   IDL> B_z = pc_get_quantity ('B_z', vars)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
-;   Load varfile and calculate an array of quantities: (RECOMMENDED)
+;   Load varfile and calculate an array of quantities:
 ;   IDL> pc_read_var, obj=vars
 ;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], vars)
 ;   IDL> tvscl, result.HR_viscous[*,*,20]
 ;
-;  * Using 'pc_read_var_raw':
+;  * Using 'pc_read_var_raw': (HIGHLY RECOMMENDED)
+;
+;   Load varfile and calculate one quantity only:
+;   IDL> HR_viscous = pc_get_quantity ('B_z', 'var.dat')
 ;
 ;   Load varfile and calculate separate quantities, using a data array:
 ;   IDL> pc_read_var_raw, obj=var, tags=tags
@@ -59,19 +62,26 @@
 ;   IDL> B_z = pc_get_quantity ('B_z', var, tags)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
-;   Load varfile and calculate an array of quantities: (RECOMMENDED)
+;   Load varfile and calculate an array of quantities: (RECOMMENDED FOR CLI)
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 ;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param)
 ;   IDL> tvscl, result.HR_viscous[*,*,20]
 ;
-;   Load varfile and separately calculate quantities, using the cache manually:
+;   Load varfile and separately calculate quantities, using the cache manually: (RECOMMENDED FOR SCRIPTS)
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 ;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
 ;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
 ;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
-;  * Using 'pc_read_slice_raw':
+;  * Using 'pc_read_slice_raw': (RECOMMENDED FOR 2D CUTS)
+;
+;   Load 2D-slice and calculate separate quantities, not using cache:
+;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', slice, tags, dim=dim)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', slice, tags, dim=dim)
+;   IDL> B_z = pc_get_quantity ('B_z', slice, tags, dim=dim)
+;   IDL> tvscl, HR_viscous
 ;
 ;   Load 2D-slice and calculate separate quantities, using the cache manually:
 ;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim, grid=grid, start_param=start_param, run_param=run_param
@@ -100,7 +110,7 @@ function pc_compute_quantity, vars, index, quantity
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
-		; Velocity
+		; Velocity [m / s]
 		if (n_elements (uu) eq 0) then uu = vars[l1:l2,m1:m2,n1:n2,index.uu] * unit.velocity
 		return, uu
 	end
@@ -126,7 +136,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'Temp', /fold_case)) then begin
-		; Temperature
+		; Temperature [K]
 		if (n_elements (Temp) eq 0) then begin
 			if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
 				Temp = exp (vars[l1:l2,m1:m2,n1:n2,index.lnTT]) * unit.temperature
@@ -198,7 +208,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
-		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
+		; Absolute value of the saturation heat flux density vector q [W / m^2] = [kg / s^3]
 		K_sat = pc_get_parameter ('K_sat', label=quantity)
 		if (K_sat le 0.0) then K_sat = 1.0
 		mu = pc_get_parameter ('mu', label=quantity)
@@ -211,39 +221,55 @@ function pc_compute_quantity, vars, index, quantity
 		; This should correspond to the calculation in the solar_corona module, but is untested:
 		; return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
 	end
+	if (strcmp (quantity, 'Spitzer_K_parallel', /fold_case)) then begin
+		; Field-aligned Spitzer heat flux coefficient, not including T^2.5 [W / (m * K^3.5)] = [kg * m / (s^3 * K^3.5)]
+		K_Spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		return, K_Spitzer * (unit.density * unit.velocity^3 * unit.length / unit.temperature)
+	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
-		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
-		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		; Absolute value of the Spitzer heat flux density vector q [W / m^2] = [kg / s^3]
+		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
+		return, Spitzer_K_parallel * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp')))
 	end
 	if (strcmp (quantity, 'Spitzer_q_parallel', /fold_case)) then begin
-		; Absolute value of the field-aligned Spitzer heat flux density vector q_parallel [W/m^2] = [kg/s^3]
-		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		; Absolute value of the field-aligned Spitzer heat flux density vector q_parallel [W / m^2] = [kg / s^3]
+		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, K_spitzer * Temp^2.5 * dot (pc_compute_quantity (vars, index, 'grad_Temp'), bb) / sqrt (B_2) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
+		return, Spitzer_K_parallel * Temp^2.5 * dot (pc_compute_quantity (vars, index, 'grad_Temp'), bb) / sqrt (B_2)
+	end
+	if (strcmp (quantity, 'Spitzer_q_perpendicular', /fold_case)) then begin
+		; Absolute value of the field-perpendicular Spitzer heat flux density vector q_perpendicular [W / m^2] = [kg / s^3]
+		return, pc_compute_quantity (vars, index, 'Spitzer_q_parallel') * pc_compute_quantity (vars, index, 'Spitzer_ratio')
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
-		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
-		cp = pc_get_parameter ('cp', label=quantity)
+		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel')
 		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
 			grad_ln_Temp = (grad (vars[*,*,*,index.lnTT]))[l1:l2,m1:m2,n1:n2,*]
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = cdtv / (gamma * cp * K_spitzer) * rho * B_2 * sqrt (dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
-		; The z-direction may have a non-uniform gird, but not the x- and y-direction
-		dxy_1 = dx_1[0]^2 + dy_1[0]^2
-		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_1 + dz_1[pz]^2
+		dt = cdtv / (gamma * cp * Spitzer_K_parallel) * rho * B_2 * sqrt (dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp)))
+		; Iterate through the z-direction
+		dx_inv = pc_compute_quantity (vars, index, 'inv_dx')
+		dy_inv = pc_compute_quantity (vars, index, 'inv_dy')
+		dz_inv = pc_compute_quantity (vars, index, 'inv_dz')
+		if (all (lequidist[0:1])) then begin
+			dxy_inv = dx_inv[0]^2 + dy_inv[0]^2
+		end else begin
+			dxy_inv = spread (dx_inv^2, 1, ny) + spread (dy_inv^2, 0, nx)
+		end
+		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_inv + dz_inv[pz]^2
 		return, dt
 	end
 	if (strcmp (quantity, 'Spitzer_ratio', /fold_case)) then begin
@@ -257,9 +283,53 @@ function pc_compute_quantity, vars, index, quantity
 		; Ratio of saturation heat flux to Spitzer heat flux
 		return, pc_compute_quantity (vars, index, 'q_sat') / pc_compute_quantity (vars, index, 'Spitzer_q')
 	end
+	if (strcmp (quantity, 'Spitzer_collision_frequency_e', /fold_case)) then begin
+		; Spitzer electron collision frequency [1 / s]
+		mu = pc_get_parameter ('mu', label=quantity)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
+		return, (mu / 266d3) * n_rho * Temp^(-1.5) * pc_compute_quantity (vars, index, 'Coulomb_logarithm')
+	end
+	if (strcmp (quantity, 'Spitzer_conductivity', /fold_case)) then begin
+		; Spitzer conductivity in a two-component WKB plasma [A / (V*m)]
+		m_electron = pc_get_parameter ('m_electron', label=quantity)
+		q_electron = pc_get_parameter ('q_electron', label=quantity)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		return, (266d3 * q_electron^2 / m_electron) * Temp^1.5 / pc_compute_quantity (vars, index, 'Coulomb_logarithm')
+	end
+	if (strcmp (quantity, 'Spitzer_mag_diffusivity', /fold_case)) then begin
+		; Spitzer magnetic diffusivity [m^2 / s]
+		mu0_SI_inv = 1 / pc_get_parameter ('mu0_SI', label=quantity)
+		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'Spitzer_conductivity')
+	end
+	if (strcmp (quantity, 'Coulomb_logarithm', /fold_case)) then begin
+		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		return, (1.8d-10 / Spitzer_K_parallel) * Temp^2.5 ; Coulomb logarithm [Solar MHD, E. Priest (1982/1984), p. 79, 86, eq. 2.34]
+	end
+
+	if (strcmp (quantity, 'collision_frequency_e', /fold_case)) then begin
+		; Electron collision frequency [1 / s]
+		c = pc_get_parameter ('c', label=quantity)
+		m_electron = pc_get_parameter ('m_electron', label=quantity)
+		q_electron = pc_get_parameter ('q_electron', label=quantity)
+		return, (q_electron / (m_electron * c)) * pc_compute_quantity (vars, index, 'B_abs')
+	end
+	if (strcmp (quantity, 'conductivity', /fold_case)) then begin
+		; Electrical conductivity in a two-component WKB plasma [A / (V*m)]
+		c = pc_get_parameter ('c', label=quantity)
+		q_electron = pc_get_parameter ('q_electron', label=quantity)
+		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
+		return, (q_electron * c) * n_rho / pc_compute_quantity (vars, index, 'B_abs')
+	end
+	if (strcmp (quantity, 'mag_diffusivity', /fold_case)) then begin
+		; Magnetic diffusivity [m^2 / s]
+		mu0_SI_inv = 1 / pc_get_parameter ('mu0_SI', label=quantity)
+		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'conductivity')
+	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin
-		; Density [kg/m^3]
+		; Density [kg / m^3]
 		if (n_elements (rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 				rho = exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density
@@ -297,7 +367,7 @@ function pc_compute_quantity, vars, index, quantity
 		end
 	end
 	if (strcmp (quantity, 'n_rho', /fold_case)) then begin
-		; Particle density [1/m^3]
+		; Particle density [1 / m^3]
 		mu = pc_get_parameter ('mu', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (n_rho) eq 0) then n_rho = rho / (pc_get_parameter ('m_proton', label=quantity) * mu)
@@ -305,7 +375,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'P_therm', /fold_case)) then begin
-		; Thermal pressure
+		; Thermal pressure [N / m^2]
 		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
@@ -355,7 +425,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'HR_viscous', /fold_case)) then begin
-		; Viscous heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
+		; Viscous heating rate [W / m^3] = [kg / m^3] * [m / s]^3 / [m]
 		nu = pc_get_parameter ('nu', label=quantity)
 		u_xx = (xder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
 		u_xy = (yder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
@@ -403,7 +473,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
-		; Magnetic field vector
+		; Magnetic field vector [Tesla]
 		if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
 		return, bb
 	end
@@ -718,10 +788,14 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
 	if (n_elements (quantity) eq 0) then quantity = ""
-	if (not any (quantity ne "") or (n_elements (vars) eq 0) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8))) then begin
+	if (not any (quantity ne "") or (n_elements (vars) eq 0) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8) and (size (vars, /type) ne 7))) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
+		print, "* using var-files:"
+		print, "-----------------------"
+		print, "HR = pc_get_quantity ('HR_viscous', 'var.dat')"
+		print, ""
 		print, "* using var-structures:"
 		print, "-----------------------"
 		print, "pc_read_var, obj=vars"
@@ -745,6 +819,10 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		if (n_elements (vars) eq 0) then print, "ERROR: no data source given"
 		if (n_elements (index) eq 0) then print, "ERROR: data source has no associated index structure"
 		return, -1
+	end
+
+	if (size (vars, /type) eq 7) then begin
+		pc_read_var_raw, obj=vars, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 	end
 
 	; Setup 'start.in' and 'run.in' parameters

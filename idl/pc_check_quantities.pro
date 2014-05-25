@@ -143,9 +143,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_q_parallel:'field-aligned Spitzer heatflux', $
+		Spitzer_q_perpendicular:'field-perpendicular Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer perp./par. heatflux', $
 		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
+		Coulomb_logarithm:'Coulomb logarithm', $
+		collision_frequency_e:'electron collision frequency', $
+		conductivity:'electric conductivity', $
+		mag_diffusivity:'magnetic diffusivity', $
 		rho_c:'minimum density (Alfven < c)', $
 		rho_c_ratio:'density/min. Alfven density', $
 		rho:'density', $
@@ -199,7 +204,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dz:'grid distance z', $
 		inv_dx:'inverse grid distance x', $
 		inv_dy:'inverse grid distance y', $
-		inv_dz:'inverse grid distance z' $
+		inv_dz:'inverse grid distance z', $
+		Spitzer_K_parallel:'field-aligned Spitzer coefficient' $
 	}
 
 	; List of dependencies.
@@ -269,11 +275,17 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $
 		q_sat:['Temp', 'rho'], $
+		Spitzer_K_parallel:'Temp', $
 		Spitzer_q:['Temp'], $
 		Spitzer_q_parallel:['Temp', 'B'], $
+		Spitzer_q_perpendicular:['Spitzer_q_parallel', 'Spitzer_ratio'], $
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
 		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
+		Coulomb_logarithm:'Temp', $
+		collision_frequency_e:['B'], $
+		conductivity:['n_rho', 'collision_frequency_e'], $
+		mag_diffusivity:'conductivity', $
 		rho_c:['rho', 'B'], $
 		rho_c_ratio:['rho', 'rho_c'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
@@ -367,7 +379,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 				end
 				num_list++
 			end else if (keyword_set (warn)) then begin
-				print, "WARNING: dependency '"+tag+"' not available."
+				print, "WARNING: dependency '"+tag+"' is not available."
 			end
 		end else if (keyword_set (warn)) then begin
 			print, "WARNING: '"+tag+"' is not in the availability list."
