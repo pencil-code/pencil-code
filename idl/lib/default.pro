@@ -20,7 +20,7 @@
 pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
   compile_opt idl2,hidden
 
-  if (n_elements(help) ne 0) then begin
+  if (keyword_set (help)) then begin
     print, "DEFAULT:  usage:"
     print, "  default, var, val"
     print, "  default, STRUCT=struc, 'slot', val"
@@ -29,18 +29,23 @@ pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
     return
   endif
 
-  if (n_elements(debug) eq 0) then debug=0
-
-  if (n_elements(struct) eq 0) then begin ;; simple variable
-    if n_elements(var) eq 0 then var=val
-  endif else begin ;; structure slot
-    ; expand val if necessary:
+  if (keyword_set (struct)) then begin
+    ; structure:
     nvar = n_elements(var)
-    if ((nvar gt 1) and (n_elements(val) eq 1)) then $
-        val = replicate(val,nvar)
     nval = n_elements(val)
+    if ((nvar gt 1) and (nval eq 1)) then begin
+      ; expand val
+      val = replicate(val,nvar)
+      nval = n_elements(val)
+    endif
 
-    if (debug) then print, 'var, val = <', var, '>, <', val, '>' 
+    if (keyword_set (debug)) then begin
+      ; debug output
+      print, 'nvar = ', nvar, ', nval = ', nval
+      print, 'var = <', var, '>'
+      print, 'val = <', val, '>'
+    endif
+
     ; sanity tests
     s = size(var)
     if (s[s[0]+1] ne 7) then $
@@ -48,31 +53,32 @@ pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
     if ((nvar gt 1) and (nvar ne nval)) then $
         message, $
         "slot and val arrays must have equal size or val or slot be scalar"
+
     cmd = "struct = create_struct( struct"
     nnewtags = 0
     for i=0,nvar-1 do begin
       idx = min(where(tag_names(struct) eq strupcase(var[i])))
-      if (idx lt 0) then begin  ; tag didn't exist
+      if (idx lt 0) then begin
+        ; tag didn't exist
         if (nvar gt 1) then begin
-          ;; several slots --> assign one by one
-          cmd = cmd + ", '" + var[i] + "'" + ", val[" + strtrim(i,2) + "]"
+          ; several slots --> assign one by one
+          cmd += ", '" + var[i] + "'" + ", val[" + strtrim(i,2) + "]"
         endif else begin
-          ;; just one slot --> assign whole variable (could be array)
-          cmd = cmd + ", '" + var[i] + "'" + ", val"
+          ; just one slot --> assign whole variable (could be array)
+          cmd += ", '" + var[i] + "'" + ", val"
         endelse
-        nnewtags = nnewtags + 1
+        nnewtags++
       endif
     endfor
-
-if (debug) then print, 'nval,nvar = ', nval, nvar
- 
-    cmd = cmd + " )"
-    if (nnewtags ne 0) then begin
-      if (debug) then print, 'Now running: ',cmd
-      res = execute(cmd)
+    cmd += " )"
+    if (nnewtags ge 1) then begin
+      if (not execute(cmd)) then message, 'Could not create structure: ', cmd
     endif
 
-;;    if (n_elements(struct.var) eq 0) then struct.var=val
-  endelse
+    return
+  end
+
+  ; simple variable
+  if (size (var, /type) eq 0) then var = val
 
 end
