@@ -176,6 +176,7 @@ module Radiation
       call farray_register_auxiliary('kapparho',ikapparho)
 !
 !  Allocated auxiliary arrays for radiative flux only if lradflux=T
+!  Remember putting "! MAUX CONTRIBUTION 3" (or adding 3) in cparam.local!
 !
       if (lradflux) then
         call farray_register_auxiliary('Frad',iFrad,vector=3)
