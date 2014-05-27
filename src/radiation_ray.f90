@@ -11,6 +11,8 @@
 !
 !  Note that Qrad is the heating rate (Q=I-S) and *not* the cooling rate used
 !  in Heinemann et al. 2006.
+!  Furthermore, Frad is the radiative flux multiplied by kappa*rho,
+!  not actually the radiative flux itself.
 !
 !  TODO: Calculate weights properly
 !
@@ -21,7 +23,7 @@
 ! CPARAM logical, parameter :: lradiation = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 5
+! MAUX CONTRIBUTION 2
 !
 !***************************************************************
 module Radiation
@@ -172,8 +174,13 @@ module Radiation
 !
       call farray_register_auxiliary('Qrad',iQrad)
       call farray_register_auxiliary('kapparho',ikapparho)
-      call farray_register_auxiliary('Frad',iFrad,vector=3)
-      iFradx = iFrad; iFrady = iFrad+1; iFradz = iFrad+2
+!
+!  Allocated auxiliary arrays for radiative flux only if lradflux=T
+!
+      if (lradflux) then
+        call farray_register_auxiliary('Frad',iFrad,vector=3)
+        iFradx = iFrad; iFrady = iFrad+1; iFradz = iFrad+2
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -192,7 +199,7 @@ module Radiation
       if (lroot) then
         write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
         write(15,*) 'kapparho = fltarr(mx,my,mz)*one'
-        write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+        if (lradflux) write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
       endif
 !
     endsubroutine register_radiation
@@ -1435,7 +1442,8 @@ module Radiation
 !
 !  Radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c.
 !  Moved multiplication with opacity to earlier Frad calculation to
-!  allow opacities to be non-gray.
+!  allow opacities to be non-gray. This implies that Frad is not actually
+!  the radiative flux, but the radiative flux multiplied by kappa*rho.
 !
       if (lradpressure) then
         do j=1,3
@@ -1449,13 +1457,13 @@ module Radiation
 !
       if (ldiagnos) then
         if (idiag_Fradzm/=0) then
-          call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
+          call sum_mn_name(f(l1:l2,m,n,iFradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
         endif
       endif
 !
       if (l1davgfirst) then
         if (idiag_Fradzmz/=0) then
-           call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_Fradzmz)
+           call xysum_mn_name_z(f(l1:l2,m,n,iFradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
         endif
       endif
 !
