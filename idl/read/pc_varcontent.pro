@@ -173,6 +173,15 @@ if (igamma gt 0) then begin
   varcontent[igamma].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
+default, ics2, 0
+if (ics2 gt 0) then begin
+  varcontent[ics2].variable   = 'Sound speed squared (cs2) as auxiliary variable'
+  varcontent[ics2].idlvar     = 'cs2'
+  varcontent[ics2].idlinit    = INIT_SCALAR
+  varcontent[ics2].idlvarloc  = 'cs2_loc'
+  varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, ilnrho, 0
 if (ilnrho gt 0) then begin
   varcontent[ilnrho].variable   = 'Log density (lnrho)'
