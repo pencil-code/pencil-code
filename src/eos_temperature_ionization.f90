@@ -45,7 +45,7 @@ module EquationOfState
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: icp, icv, igamma
+  integer :: icp, icv, ics2, igamma
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
@@ -66,17 +66,17 @@ module EquationOfState
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                            tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                            lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
-                           lgamma_as_aux
+                           lcs2_as_aux,lgamma_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                           tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                           lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
-                          lgamma_as_aux
+                          lcs2_as_aux,lgamma_as_aux
 !
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
-  logical :: lss_as_aux=.false., lpp_as_aux=.false.
+  logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs2_as_aux=.false.
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
@@ -163,6 +163,7 @@ module EquationOfState
       if (lpp_as_aux) call register_report_aux('ppp',ipp)
       if (lcp_as_aux) call register_report_aux('cp',icp)
       if (lcv_as_aux) call register_report_aux('cv',icv)
+      if (lcs2_as_aux) call register_report_aux('cs2',ics2)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
 !
 !  write scale non-free constants to file; to be read by idl
@@ -212,6 +213,7 @@ module EquationOfState
       if (lpp_as_aux) lpenc_requested(i_pp)=.true.
       if (lcp_as_aux) lpenc_requested(i_cp)=.true.
       if (lcv_as_aux) lpenc_requested(i_cv)=.true.
+      if (lcs2_as_aux) lpenc_requested(i_cs2)=.true.
       if (lgamma_as_aux) lpenc_requested(i_gamma)=.true.
 !
     endsubroutine pencil_criteria_eos
@@ -447,6 +449,7 @@ module EquationOfState
       if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
       if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp
       if (lcv_as_aux) f(l1:l2,m,n,icv)=p%cv
+      if (lcs2_as_aux) f(l1:l2,m,n,ics2)=p%cs2
       if (lgamma_as_aux) f(l1:l2,m,n,igamma)=p%gamma
 !
     endsubroutine calc_pencils_eos
