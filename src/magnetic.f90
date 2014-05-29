@@ -2095,6 +2095,11 @@ module Magnetic
         lpencil_in(i_aa)=.true.
       endif
 !
+      if (lpencil_in(i_diva)) then
+        if (.not. lcartesian_coords) lpencil_in(i_aa) = .true.
+        lpencil_in(i_aij) = .true.
+      endif
+!
       if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
       if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
 !
