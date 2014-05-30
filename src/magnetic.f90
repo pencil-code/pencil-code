@@ -175,6 +175,7 @@ module Magnetic
   logical :: lee_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
+  logical :: lbb_as_comaux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
@@ -188,7 +189,7 @@ module Magnetic
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, &
-      lcheck_positive_va2, lbb_as_aux, lee_as_aux,&
+      lcheck_positive_va2, lbb_as_aux, lbb_as_comaux, lee_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -273,7 +274,7 @@ module Magnetic
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
-      lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
+      lbext_curvilinear, lbb_as_aux, lbb_as_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -1254,7 +1255,7 @@ module Magnetic
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (lbb_as_aux ) call register_report_aux('bb',ibb,ibx,iby,ibz)
+      if (lbb_as_aux .or. lbb_as_comaux) call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
 !
       if (ljj_as_aux ) call register_report_aux('jj',ijj,ijx,ijy,ijz)
 !
@@ -2187,7 +2188,7 @@ module Magnetic
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
 !
-      if (lpencil_in(i_bb)) then
+      if (lpencil_in(i_bb) .and. .not. lbb_as_comaux) then
         if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
         lpencil_in(i_aij)=.true.
       endif
@@ -2267,6 +2268,37 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
+    subroutine magnetic_before_boundary(f)
+!
+!  Conduct pre-processing required before boundary conditions and pencil
+!  calculations.
+!
+!  30-may-14/ccyang: coded
+!
+      use Boundcond, only: update_ghosts, zero_ghosts
+      use Sub, only: gij, curl_mn
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: bb
+!
+!  Find bb if as communicated auxiliary.
+!
+      getbb: if (lbb_as_comaux) then
+        call zero_ghosts(f, iax, iaz)
+        call update_ghosts(f, iax, iaz)
+        mn_loop: do imn = 1, ny * nz
+          m = mm(imn)
+          n = nn(imn)
+          call gij(f, iaa, aij, 1)
+          call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+          f(l1:l2,m,n,ibx:ibz) = bb
+        enddo mn_loop
+      endif getbb
+!
+    endsubroutine magnetic_before_boundary
+!***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -2307,7 +2339,11 @@ module Magnetic
       if (lpenc_loc(i_diva)) call div_mn(p%aij,p%diva,p%aa)
 ! bb
       if (lpenc_loc(i_bb)) then
-        call curl_mn(p%aij,p%bb,p%aa)
+        if (lbb_as_comaux) then
+          p%bb = f(l1:l2,m,n,ibx:ibz)
+        else
+          call curl_mn(p%aij, p%bb, p%aa)
+        endif
 !
 !  Save field before adding imposed field (for diagnostics).
 !
@@ -2684,7 +2720,7 @@ module Magnetic
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
-     if (lbb_as_aux ) f(l1:l2,m,n,ibx  :ibz  )=p%bb
+     if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
      if (ljj_as_aux ) f(l1:l2,m,n,ijx  :ijz  )=p%jj
      if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
 !

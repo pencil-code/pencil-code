@@ -9,7 +9,8 @@
   public :: output_persistent_magnetic, input_persistent_magnetic
   public :: rprint_magnetic
   public :: get_slices_magnetic
-  public :: init_aa, daa_dt, calc_lmagnetic_pars
+  public :: init_aa, daa_dt
+  public :: magnetic_before_boundary, calc_lmagnetic_pars
   public :: time_integrals_magnetic
   public :: df_diagnos_magnetic
 

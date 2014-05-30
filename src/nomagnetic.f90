@@ -113,6 +113,19 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
+    subroutine magnetic_before_boundary(f)
+!
+!  Conduct pre-processing required before boundary conditions and pencil
+!  calculations.
+!
+!  29-may-14/ccyang: dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(in):: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine magnetic_before_boundary
+!***********************************************************************
     subroutine calc_pencils_magnetic(f,p)
 !
 !  Calculate Magnetic pencils.
