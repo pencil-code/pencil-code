@@ -5681,7 +5681,7 @@ nameloop: do
 !
     endsubroutine fourier_single_mode
 !***********************************************************************
-    subroutine register_report_aux(name,index,ind_aux1,ind_aux2,ind_aux3)
+    subroutine register_report_aux(name, index, ind_aux1, ind_aux2, ind_aux3, communicated)
 !
 !  Registers aux variable named 'name' if not already registered
 !  (i.e. if index==0). Variable is scalar if ind_aux1,ind_aux2,
@@ -5691,6 +5691,7 @@ nameloop: do
 !  If already registered: outputs indices in index.pro
 !
 !  13-jan-11/MR: coded
+!  29-may-14/ccyang: add optional argument communicated
 !
       use FArrayManager, only: farray_register_auxiliary
 !
@@ -5699,6 +5700,7 @@ nameloop: do
       integer,           intent(inout) :: index
       integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
       character (LEN=*), intent(in)    :: name
+      logical, intent(in), optional :: communicated
 !
       integer   :: vec
       character :: ch
@@ -5720,7 +5722,11 @@ nameloop: do
 !
       if (index==0) then
 !
-        call farray_register_auxiliary(trim(name),index,vector=abs(vec))
+        if (present(communicated)) then
+          call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
+        else
+          call farray_register_auxiliary(trim(name), index, vector=abs(vec))
+        endif
 !
         if (vec>=1) then
           ind_aux1=index
