@@ -384,7 +384,21 @@ module Forcing
         profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
         profz_hel=1.
 !
-!  turn off helicity of forcing above z=0
+!  turn off helicity of forcing above x=r_ff
+!
+      elseif (iforce_profile=='surface_helx') then
+        profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off helicity of forcing above x=r_ff
+!
+      elseif (iforce_profile=='surface_helx_cosy') then
+        profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profy_ampl=1.; profy_hel=cos(y)
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off helicity of forcing above z=r_ff
 !
       elseif (iforce_profile=='surface_helz') then
         profx_ampl=1.; profx_hel=1.
