@@ -121,6 +121,7 @@ module Cdata
   real, dimension (nx) :: diffus_diffrho,diffus_diffrho3
   real, dimension (nx) :: diffus_eta,diffus_eta2,diffus_eta3
   real, dimension (nx) :: diffus_chi,diffus_chi3
+  real, dimension (nx) :: diffus_shear3
   real, dimension (nx) :: diffus_diffrhon,diffus_diffrhon3
   real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
   real, dimension (nx) :: diffus_pscalar,diffus_pscalar3

@@ -89,7 +89,6 @@ module Equ
       integer :: iv
       integer :: ivar1,ivar2
       real :: umax = 0.0
-      real :: dxs
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -271,10 +270,6 @@ module Equ
 !
       if (ldynamical_diffusion) then
         umax = find_max_fvec(f,iux)
-        shrvel: if (lshear) then
-          dxs = 3e-3 * cs0 / Omega
-          umax = umax + abs(Sshear * dx) * (dx / dxs) * sqrt(real(dimensionality))
-        endif shrvel
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
         if (lmagnetic) call dynamical_resistivity(umax)
@@ -420,6 +415,7 @@ module Equ
           endif
           if (lshear) then
             advec_shear=0.0
+            diffus_shear3 = 0.0
           endif
           if (lchemistry) then
             diffus_chem=0.0
@@ -708,6 +704,7 @@ module Equ
           if (lmagnetic)        maxdiffus3=max(maxdiffus3,diffus_eta3)
           if (ltestfield)       maxdiffus3=max(maxdiffus3,diffus_eta3)
           if (lenergy)          maxdiffus3=max(maxdiffus3,diffus_chi3)
+          if (lshear)           maxdiffus3=max(maxdiffus3,diffus_shear3)
           if (ldustvelocity)    maxdiffus3=max(maxdiffus3,diffus_nud3)
           if (ldustdensity)     maxdiffus3=max(maxdiffus3,diffus_diffnd3)
           if (lpscalar)         maxdiffus3=max(maxdiffus3,diffus_pscalar3)

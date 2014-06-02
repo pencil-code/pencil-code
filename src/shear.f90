@@ -26,6 +26,7 @@ module Shear
   integer :: norder_poly = 3
   real :: x0_shear=0.0, qshear0=0.0, sini=0.0
   real :: Sshear1=0.0, Sshear_sini=0.0
+  real :: diff_hyper3x_mesh = 0.03
   real, dimension(3) :: u0_advec = 0.0
   character(len=6) :: shear_method = 'fft'
   logical, dimension(mcom) :: lposdef = .false.
@@ -33,6 +34,7 @@ module Shear
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
+  logical :: lhyper3x_mesh = .false.
 !
   include 'shear.h'
 !
@@ -46,7 +48,7 @@ module Shear
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
       norder_poly, ltvd_advection, lposdef_advection, lposdef, &
-      lmagnetic_stretching, sini
+      lmagnetic_stretching, sini, lhyper3x_mesh, diff_hyper3x_mesh
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
@@ -263,15 +265,16 @@ module Shear
 ! 25-feb-11/MR:   restored shearing of testflow solutions, when demanded
 ! 20-Mar-11/MR:   testflow variables now completely processed in testflow module
 !
-      use Deriv, only: der
+      use Deriv, only: der, der6
       use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: dfdy
+      real, dimension(nx) :: dfdy, penc
       integer :: j,k,jseg,nseg,na,ne
+      real :: d
 !
       intent(in)  :: f
 !
@@ -319,6 +322,19 @@ module Shear
 !  force.
 !
       if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear1*p%uu(:,1)
+!
+!  Hyper-diffusion in x-direction to damp aliasing.
+!
+      hyper3x: if (lhyper3x_mesh) then
+        d = diff_hyper3x_mesh * abs(Sshear)
+        comp1: do j = 1, nvar
+          if ((lbfield .and. ibx <= j .and. j <= ibz) .or. &
+              (lpscalar .and. icc <= j .and. j <= icc+npscalar-1)) continue
+          call der6(f, j, penc, 1, ignoredx=.true.)
+          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + d * penc
+        enddo comp1
+        if (lfirst .and. ldt) diffus_shear3 = diffus_shear3 + d
+      endif hyper3x
 !
 !  Add (Lagrangian) shear term for all dust species.
 !
