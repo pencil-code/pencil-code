@@ -30,3 +30,4 @@ Topics for Pencil code User Meeting in Göttingen 2014:
 
 - Ongoing work on pc_tecplot.f90  
 
+- www is currently checked out by default!
