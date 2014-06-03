@@ -1091,7 +1091,10 @@ pro cslice_draw_averages, number
 
 	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
 	time = strtrim (varfiles[selected_snapshot].time * unit.time/unit.default_time, 2) + " " + unit.default_time_str
-	pc_axis_profile, selected_axis, reform (varsets[number].(selected_cube)[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+	if (selected_axis eq 0) then coords = coord.x
+	if (selected_axis eq 1) then coords = coord.y
+	if (selected_axis eq 2) then coords = coord.z
+	pc_axis_profile, selected_axis, reform (varsets[number].(selected_cube)[cut], num_x, num_y, num_z), coord=coords, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 end
 
 
