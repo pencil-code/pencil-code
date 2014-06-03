@@ -12,7 +12,7 @@
 ; Event handling of vertical profile window
 pro pc_axis_profile_event, event
 
-	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -151,7 +151,7 @@ pro pc_axis_profile_event, event
 	'IMAGE': begin
 		WIDGET_CONTROL, event.id, SENSITIVE = 0
 		pc_save_image, file_name+".png", window=win
-		save, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_label, v_range, v_label, file=file_name+".xdr"
+		save, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name, file=file_name+".xdr"
 		WIDGET_CONTROL, event.id, SENSITIVE = 1
 		break
 	end
@@ -188,7 +188,7 @@ end
 ; Draw the timeseries plots
 pro pc_axis_profile_draw
 
-	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	wset, win
@@ -203,25 +203,33 @@ pro pc_axis_profile_draw
 	if (show_zero and (range[0] gt 0.0)) then range[0] = 0.0
 	if (show_zero and (range[1] lt 0.0)) then range[1] = 0.0
 
+	start_pos = 0
+	; if the coordinates contain ghost cells, but not the data, center the plot:
+	if (num_coord gt num) then start_pos = (num_coord - num) / 2
+	end_pos = start_pos + num - 1
+
 	; plot profile mean value
 	if (plot_style ge 3) then psym = 3 else psym = 0
-	plot, prof_mean, coords, xlog=log_plot, xs=3, ys=1, xr=range, yr=get_val_range (v_range), psym=psym, title=prof_name, xtitle=a_label, ytitle=v_label
+	plot, prof_mean, coords[start_pos:end_pos], xlog=log_plot, xs=3, ys=1, xr=range, yr=get_val_range (v_range), psym=psym, title=prof_name, xtitle=a_label, ytitle=v_label
 	if (show_line) then oplot, [0.0, 0.0], minmax (coords), linestyle=1, color=20020
-	if (plot_style le 2) then oplot, prof_mean, coords
+	if (plot_style le 2) then oplot, prof_mean, coords[start_pos:end_pos]
 	if (plot_style gt 0) then begin
 		psym = 3
 		color = 200
 		if ((plot_style eq 2) or (plot_style eq 4)) then psym = 2
 		if (plot_style ge 3) then color = -1
-		oplot, prof_mean, coords, psym=psym, color=color
+		oplot, prof_mean, coords[start_pos:end_pos], psym=psym, color=color
 	end
 
 	; plot profile minimum and maximum values
 	if (line_style gt 0) then begin
-		linestyle = 0
-		if (line_style le 3) then linestyle = 3 - line_style
-		oplot, prof_min, coords, linestyle=linestyle
-		oplot, prof_max, coords, linestyle=linestyle
+		sym_type = 0
+		if (line_style eq 4) then sym_type = 1
+		if (num eq 1) then color = 200 else color = -1
+		line_type = 0
+		if (line_style le 3) then line_type = 3 - line_style
+		oplot, prof_min, coords[start_pos:end_pos], linestyle=line_type, psym=sym_type, color=color
+		oplot, prof_max, coords[start_pos:end_pos], linestyle=line_type, psym=sym_type, color=color
 	end
 
 	; reset charsize
@@ -232,15 +240,15 @@ end
 ; Reset to defaults
 pro pc_axis_profile_reset
 
-	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label
+	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	; initial GUI settings
 	a_range = [a_min, a_max]
 	v_range = [v_min, v_max]
 	v_coupled = -1
-	plot_style = 1
-	line_style = 1
+	if (num gt 1) then plot_style = 1 else plot_style = 4
+	if (num gt 1) then line_style = 1 else line_style = 4
 	show_zero = 0
 	show_line = 1
 	log_plot = 0
@@ -279,7 +287,7 @@ end
 ;
 pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log, file_label=file_label, time=time
 
-	common axis_prof_common, coords, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
+	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
 	common axis_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sa_set, sv_set, sv_fr, v_coupled, sa_max, sa_min, sv_max, sv_min
 
 	if (size (axis_dir, /type) eq 7) then begin
@@ -314,14 +322,15 @@ pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz
 	end
 	file_label = file_name
 
+	start_pos = 0
 	; if the data contains ghost cells, but not the coordinates, center the plot:
-	start_pos = (num - num_coord) / 2
+	if (num gt num_coord) then start_pos = (num - num_coord) / 2
 
 	prof_mean = dblarr (num)
 	prof_min = dblarr (num)
 	prof_max = dblarr (num)
 
-	for pos = 0, num_coord - 1 do begin
+	for pos = 0, num - 1 do begin
 		if (axis eq 0) then begin
 			prof_mean[pos] = mean (data[start_pos + pos,*,*], /double)
 			tmp = minmax (data[start_pos + pos,*,*])
@@ -373,7 +382,7 @@ pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz
 
 	BUT	= WIDGET_BASE (CTRL, /col, frame=1, /align_left)
 	l_plot	= WIDGET_DROPLIST (BUT, value=['line', 'line+dots', 'line+stars', 'dots', 'stars'], uvalue='STYLE', title='plot mean as:')
-	l_line	= WIDGET_DROPLIST (BUT, value=['none', 'dashed', 'dotted', 'solid'], uvalue='LINESTYLE', title='plot min/max:')
+	l_line	= WIDGET_DROPLIST (BUT, value=['none', 'dashed', 'dotted', 'solid', '+'], uvalue='LINESTYLE', title='plot min/max:')
 
 	BUT	= WIDGET_BASE (CTRL, /col)
 	b_log	= CW_BGROUP (BUT, 'logarithmic plot', /nonexcl, uvalue='LOG_PLOT', set_value=log_plot)
