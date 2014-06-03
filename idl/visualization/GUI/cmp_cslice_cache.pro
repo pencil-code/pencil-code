@@ -793,8 +793,8 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 				plot, data, xrange=[0,num_y-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
 			end
-			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, xaxis=1, xstyle=1
+			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
 		end
 	end
 
@@ -840,8 +840,8 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 				plot, data, xrange=[0,num_x-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
 			end
-			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, xaxis=1, xstyle=1
+			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
 		end
 	end
 
@@ -887,8 +887,8 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 				plot, data, xrange=[0,num_z-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
 				oplot, data, psym=3, color=200
 			end
-			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, xaxis=1, xstyle=1
+			axis, 0, 0, yaxis=1, ystyle=1, ylog=log_plot
 		end
 	end
 
