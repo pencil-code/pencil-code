@@ -118,7 +118,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
 		beta:'plasma beta', $
-		rho_mag:'magnetic energy', $
+		E_mag:'magnetic energy', $
 		Poynting_j_x:'current Poynting flux x', $
 		Poynting_j_y:'current Poynting flux y', $
 		Poynting_j_z:'current Poynting flux z', $
@@ -247,7 +247,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_y:'B', $
 		B_z:'B', $
 		beta:['P_therm', 'B_2'], $
-		rho_mag:'B_2', $
+		E_mag:'B_2', $
 		Poynting:['u', 'B', 'j'], $
 		Poynting_j:['j', 'B'], $
 		Poynting_j_x:'Poynting_j', $
