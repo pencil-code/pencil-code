@@ -510,8 +510,8 @@ function pc_compute_quantity, vars, index, quantity
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		return, 2 * mu0_SI * P_therm / B_2
 	end
-	if (strcmp (quantity, 'E_mag', /fold_case)) then begin
-		; Magnetic energy
+	if (strcmp (quantity, 'rho_mag', /fold_case)) then begin
+		; Magnetic energy density [J / m^3]
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		return, B_2 / (2.0 * mu0_SI)
