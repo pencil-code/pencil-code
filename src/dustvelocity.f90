@@ -187,7 +187,8 @@ module Dustvelocity
 !
       if (shorttauslimit/=0.0) shorttaus1limit=1/shorttauslimit
 !
-      if (ldustcoagulation .or. ldustcondensation) then
+!--   if (ldustcoagulation .or. ldustcondensation) then
+!AB: comment out for now. I think it is ok also in general and can be deleted.
 !
 !  Grain chemistry
 !
@@ -254,6 +255,7 @@ module Dustvelocity
             do k=1,ndustspec
               betad(k) = betad0*md(k)**(-2./3.)
             enddo
+            if (lroot) print*,'initialize_dustvelocity: betad=',betad
           else
             call fatal_error('initialize_dustdensity','please choose a non-zero betad0')
           endif
@@ -279,7 +281,7 @@ module Dustvelocity
               'initialize_dustvelocity','No valid dust geometry specified.')
 
         endselect
-      endif
+!--   endif
 !
 !  Auxiliary variables necessary for different drag laws
 !
