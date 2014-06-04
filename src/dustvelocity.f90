@@ -251,7 +251,9 @@ module Dustvelocity
           if (lroot) print*, 'initialize_dustvelocity: '// &
             'draglaw=',draglaw
           if (betad0 .ne. 0) then
-            betad(k) = betad0*md(k)**(-2./3.)
+            do k=1,ndustspec
+              betad(k) = betad0*md(k)**(-2./3.)
+            enddo
           else
             call fatal_error('initialize_dustdensity','please choose a non-zero betad0')
           endif
@@ -1397,7 +1399,6 @@ module Dustvelocity
         read(unit,NML=dustvelocity_init_pars,ERR=99)
       endif
 
-
 99    return
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
@@ -1417,7 +1418,6 @@ module Dustvelocity
       else
         read(unit,NML=dustvelocity_run_pars,ERR=99)
       endif
-
 
 99    return
     endsubroutine read_dustvelocity_run_pars
