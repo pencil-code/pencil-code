@@ -483,7 +483,7 @@ module Density
 !
         if (lanti_shockdiffusion) then
           call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
-          call der2_pencil(3,lnrho_init_z,del2lnrho_init_z)
+          call der2_pencil(3,lnrho_init_z,del2lnrho_init_z(n1:n2))
           glnrho2_init_z=dlnrhodz_init_z**2
         endif
       endif

@@ -502,7 +502,7 @@ module Deriv
               print*, 'der2_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
+        df2=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
                +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
                - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
                +  2.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
