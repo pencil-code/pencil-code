@@ -10,4 +10,4 @@
   public :: calc_pencils_shear
   public :: shear_variables
   public :: sheared_advection_fft
-  public :: get_uy0_shear
+  public :: get_uy0_shear, get_hyper3x_mesh

@@ -152,6 +152,8 @@ module Magnetic
   real, dimension(mz) :: eta_zdep, detadz
   logical :: lresistivity = .false.
   logical :: lexplicit_resistivity = .false.
+  logical :: lhyper3x_mesh = .false.
+  real :: diff_hyper3x_mesh = 0.0
 !
 !  Dummy but public variables (unfortunately)
 !
@@ -220,6 +222,7 @@ module Magnetic
 !  29-aug-13/ccyang: coded.
 !
       use SharedVariables, only: put_shared_variable
+      use Shear, only: get_hyper3x_mesh
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
@@ -257,6 +260,10 @@ module Magnetic
       if (eta_shock /= 0.0) lresis_shock = .true.
       if (eta_hyper3_mesh /= 0.0) lresis_hyper3_mesh = .true.
       lresistivity = lresis_const .or. lresis_zdep .or. lresis_shock
+!
+!  Get hyper3x_mesh if shear is present.
+!
+      if (lshear) call get_hyper3x_mesh(lhyper3x_mesh, diff_hyper3x_mesh)
 !
 !  Sanity check
 !
@@ -432,7 +439,7 @@ module Magnetic
 !
 !  Zero E field or initialize it with mesh hyper-resistivity.
 !
-      if (lresis_hyper3_mesh) then
+      if (lresis_hyper3_mesh .or. (lshear .and. lhyper3x_mesh)) then
         call mesh_hyper_resistivity(f)
 !       Note: The jj field contains some garbage after this call.
       else
@@ -1232,6 +1239,7 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
+      real, dimension(nx) :: eta3
       integer :: j
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
@@ -1250,19 +1258,28 @@ module Magnetic
       call zero_ghosts(f, ijx, ijz)
       call update_ghosts(f, ijx, ijz)
 !
-!  Calculate its fourth-order mesh derivative.
+!  Get the hyper resistivity.
+!
+      if (lshear .and. lhyper3x_mesh) then
+        eta3 = eta_hyper3_mesh + diff_hyper3x_mesh * abs(Sshear) * xprim(l1:l2)
+      else
+        eta3 = eta_hyper3_mesh
+      endif
+!
+!  Calculate the fourth-order mesh derivative of J.
 !
       getd4jj: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
         comp: do j = 1, 3
           call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
+          pv(:,j) = eta3 * pv(:,j)
         enddo comp
-        f(l1:l2,m,n,ieex:ieez) = -eta_hyper3_mesh * pv
+        f(l1:l2,m,n,ieex:ieez) = -pv
 !       Time-step constraint
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
-          maxdiffus_eta3 = max(maxdiffus_eta3, eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
+          maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3))))
         endif timestep
       enddo getd4jj
 !

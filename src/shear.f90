@@ -899,4 +899,18 @@ module Shear
 !
     endsubroutine
 !***********************************************************************
+    subroutine get_hyper3x_mesh(lhyper3x_mesh_out, diff_hyper3x_mesh_out)
+!
+!  Gets module variables lhyper3x_mesh and diff_hyper3x_mesh.
+!
+!  03-jun-14/ccyang: coded
+!
+      logical, intent(out) :: lhyper3x_mesh_out
+      real, intent(out) :: diff_hyper3x_mesh_out
+!
+      lhyper3x_mesh_out = lhyper3x_mesh
+      diff_hyper3x_mesh_out = diff_hyper3x_mesh
+!
+    endsubroutine get_hyper3x_mesh
+!***********************************************************************
 endmodule Shear
