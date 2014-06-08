@@ -53,11 +53,12 @@ module Dustvelocity
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
-  real :: mucube_graind=1.
+  real :: mucube_graind=1., dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
+  logical :: ldust_pressure=.false.
   logical :: ldustvelocity_shorttausd=.false., lvshear_dust_global_eps=.false.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
   logical :: lviscd_simplified=.false., lviscd_nud_const=.false.
@@ -760,6 +761,10 @@ module Dustvelocity
           lpenc_requested(i_rho)=.true.
         endif
       endif
+      if (ldust_pressure) then
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_glnnd)=.true.
+      endif
       if (lviscd_nud_const .or. lviscd_hyper3_nud_const .and. &
           ldustdensity) then
         lpenc_requested(i_sdij)=.true.
@@ -1059,6 +1064,20 @@ module Dustvelocity
 !
           if (beta_dPdr_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
               df(l1:l2,m,n,iudx(k)) + p%cs2*beta_dPdr_dust_scaled
+!
+!  Artificial pressure force
+!
+          if (ldust_pressure) then
+            if (dust_pressure_factor==0.0) then
+              call fatal_error('duud_dt','dust_pressure_factor should not be 0')
+            else
+              do i=1,3
+                df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
+                    dust_pressure_factor*p%cs2*p%glnrho(:,i)
+                    !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
+              enddo
+            endif
+          endif
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !

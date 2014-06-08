@@ -53,7 +53,9 @@ module EquationOfState
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
 !
-  real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_relax=1.0
+  real :: xHe=0.1, yH_const=0.0, yMetals=0.0, tau_relax=1.0
+  real :: chiH_eV=13.6, chiHminus_eV=0.754
+  logical :: lrevise_chiH_eV=.false., lrevise_chiHminus_eV=.false.
   logical :: lconst_yH=.false.
 !
   real :: lnpp_bot=0.
@@ -64,11 +66,15 @@ module EquationOfState
   real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
 ! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
+                           lrevise_chiH_eV, chiH_eV, &
+                           lrevise_chiHminus_eV, chiHminus_eV, &
                            tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                            lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
                            lcs2_as_aux,lgamma_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
+                           lrevise_chiH_eV, chiH_eV, &
+                          lrevise_chiHminus_eV, chiHminus_eV, &
                           tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                           lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
                           lcs2_as_aux,lgamma_as_aux
@@ -139,6 +145,11 @@ module EquationOfState
 !
 !  Useful constants for ionization
 !  (Here we assume m_H = m_p = m_u, m_He = 4*m_u, and m_e << m_u)
+!
+      if (lrevise_chiH_eV) chiH=chiH_eV*eV
+      if (lrevise_chiHminus_eV) chiH_=chiHminus_eV*eV
+      if (lroot) print*,'initialize_eos: chiH=',chiH,chiH/eV
+      if (lroot) print*,'initialize_eos: chiH_=',chiH_,chiH_/eV
 !
       mu1_0 = 1/(1 + 4*xHe)
       Rgas = k_B/m_u

@@ -179,8 +179,10 @@ module Radiation
 !  Remember putting "! MAUX CONTRIBUTION 3" (or adding 3) in cparam.local!
 !
       if (lradflux) then
-        call farray_register_auxiliary('Frad',iFrad,vector=3)
-        iFradx = iFrad; iFrady = iFrad+1; iFradz = iFrad+2
+        call farray_register_auxiliary('KR_Frad',iKR_Frad,vector=3)
+        iKR_Fradx = iKR_Frad
+        iKR_Frady = iKR_Frad+1
+        iKR_Fradz = iKR_Frad+2
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -194,13 +196,21 @@ module Radiation
       aux_count=aux_count+1
       aux_var(aux_count)=',kapparho $'
       aux_count=aux_count+1
-      if (naux < maux) aux_var(aux_count)=',Frad $'
-      if (naux == maux) aux_var(aux_count)=',Frad'
-      aux_count=aux_count+3
+!
+!  Frad is used only if lradflux=.true.
+!
+      if (lradflux) then
+        if (naux < maux) aux_var(aux_count)=',KR_Frad $'
+        if (naux == maux) aux_var(aux_count)=',KR_Frad'
+        aux_count=aux_count+3
+      endif
+!
+!  Output.
+!
       if (lroot) then
         write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
         write(15,*) 'kapparho = fltarr(mx,my,mz)*one'
-        if (lradflux) write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+        if (lradflux) write(15,*) 'KR_Frad = fltarr(mx,my,mz,3)*one'
       endif
 !
     endsubroutine register_radiation
@@ -517,7 +527,7 @@ module Radiation
 !
           if (inu==1) then
             f(:,:,:,iQrad)=0.0
-            if (lradflux) f(:,:,:,iFradx:iFradz)=0.0
+            if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
           endif
 !
 !  Loop over rays.
@@ -555,7 +565,7 @@ module Radiation
 !
             if (lradflux) then
               do j=1,3
-                k=iFrad+(j-1)
+                k=iKR_Frad+(j-1)
                 f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
                   *(Qrad+Srad)*f(:,:,:,ikapparho)
               enddo
@@ -1445,26 +1455,27 @@ module Radiation
 !  Moved multiplication with opacity to earlier Frad calculation to
 !  allow opacities to be non-gray. This implies that Frad is not actually
 !  the radiative flux, but the radiative flux multiplied by kappa*rho.
+!  The auxiliary array is therefore now called KR_Frad.
 !
       if (lradpressure) then
         do j=1,3
-          k=iFrad+(j-1)
+          k=iKR_Frad+(j-1)
           radpressure(:,j)=p%rho1*f(l1:l2,m,n,k)/c_light
         enddo
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
 !
-!  Diagnostics.
+!  Diagnostics. Here we divide again by kapparho, so we get actual Frad.
 !
       if (ldiagnos) then
         if (idiag_Fradzm/=0) then
-          call sum_mn_name(f(l1:l2,m,n,iFradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
+          call sum_mn_name(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
         endif
       endif
 !
       if (l1davgfirst) then
         if (idiag_Fradzmz/=0) then
-           call xysum_mn_name_z(f(l1:l2,m,n,iFradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
+           call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
         endif
       endif
 !
@@ -2094,10 +2105,10 @@ module Radiation
         write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'ikapparho=',ikapparho
-        write(3,*) 'iFrad=',iFrad
-        write(3,*) 'iFradx=',iFradx
-        write(3,*) 'iFrady=',iFrady
-        write(3,*) 'iFradz=',iFradz
+        write(3,*) 'iKR_Frad=',iKR_Frad
+        write(3,*) 'iKR_Fradx=',iKR_Fradx
+        write(3,*) 'iKR_Frady=',iKR_Frady
+        write(3,*) 'iKR_Fradz=',iKR_Fradz
       endif
 !
     endsubroutine rprint_radiation
@@ -2200,10 +2211,10 @@ module Radiation
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iFradx-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iFradx-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iFradx-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iFradx-1+slices%index)
+            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iKR_Fradx-1+slices%index)
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iKR_Fradx-1+slices%index)
+            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iKR_Fradx-1+slices%index)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iKR_Fradx-1+slices%index)
             if (slices%index<=3) slices%ready=.true.
           endif
 !
@@ -2249,7 +2260,7 @@ module Radiation
 !
       if (lrad_pres_diffus.and.lradflux) then
         do j=1,3
-          k=iFrad+(j-1)
+          k=iKR_Frad+(j-1)
           f(l1:l2,m,n,k)=-Krad*p%TT*p%glnTT(:,j)
         enddo
       endif

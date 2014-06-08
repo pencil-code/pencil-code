@@ -18,7 +18,7 @@ module Magnetic
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Messages, only: svn_id, fatal_error
 !
   implicit none
 !
@@ -292,6 +292,17 @@ module Magnetic
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_magnetic
+!***********************************************************************
+    subroutine bdry_magnetic(f,quench,task)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (nx) :: quench
+      character (len=*), intent(in) :: task
+      call fatal_error('bdry_magnetic','not to be called w/o B-field')
+!
+    endsubroutine bdry_magnetic
 !***********************************************************************
     subroutine calc_mfield
 !

@@ -424,8 +424,8 @@ module Dustdensity
 !
 !  Initialise dust density; called from start.f90.
 !
-!  7-nov-01/wolf: coded
-! 28-jun-02/axel: added isothermal
+!   7-nov-01/wolf: coded
+!  28-jun-02/axel: added isothermal
 !
       use EquationOfState, only: cs0, cs20, gamma, beta_glnrho_scaled
       use Initcond, only: hat3d, sinwave_phase
@@ -462,9 +462,9 @@ module Dustdensity
           do k=1,ndustspec
             call sinwave_phase(f,ind(k),amplnd,kx_nd,ky_nd,kz_nd,phase_nd)
           enddo
-        case ('sinx')
+        case ('1+sinx')
           do l=l1,l2
-            f(l,:,:,ind(1)) = f(l,:,:,ind(1)) + amplnd*sin(kx_nd*x(l))
+            f(l,:,:,ind(1)) = f(l,:,:,ind(1)) + amplnd*(1.+sin(kx_nd*x(l)))
           enddo
         case ('sinxsinz')
           do l=l1,l2; do n=n1,n2
@@ -1112,7 +1112,7 @@ module Dustdensity
             call grad(f,ind(k),tmp_pencil_3)
             do i=1,3
               where (p%nd(:,k)/=0.0)
-                p%glnnd(:,i,k)=tmp_pencil_3(:,i)/p%nd(:,k)
+                p%glnnd(:,i,k)=tmp_pencil_3(:,i)/(p%nd(:,k)+1e-2)
               endwhere
             enddo
           endif

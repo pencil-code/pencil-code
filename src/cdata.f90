@@ -281,9 +281,7 @@ module Cdata
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,iTT=0,ikapparho=0
-  integer :: iQrad2=0,ikapparho2=0
-  integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
-  integer :: iFrad2=0,iFradx2=0,iFrady2=0,iFradz2=0
+  integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
   integer :: iaphi=0,ibphi=0,ieth=0
