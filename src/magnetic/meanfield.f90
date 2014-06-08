@@ -51,7 +51,8 @@ module Magnetic_meanfield
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
-  real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0., uturb=.1
+  real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
+  real :: meanfield_etat_exp=1.0, uturb=.1
   real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
@@ -72,7 +73,7 @@ module Magnetic_meanfield
 !
 ! Run parameters
 !
-  real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0
+  real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0, alpha_exp=0.
   real :: meanfield_etat_width=0.0
   real :: meanfield_kf=1.0, meanfield_kf_width=0.0, meanfield_kf_width2=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
@@ -93,7 +94,7 @@ module Magnetic_meanfield
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
 !
   namelist /magn_mf_run_pars/ &
-      alpha_effect, alpha_quenching, alpha_rmax, &
+      alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, qp_width, &
@@ -102,7 +103,7 @@ module Magnetic_meanfield
       qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
-      meanfield_etat_width, &
+      meanfield_etat_width, meanfield_etat_exp, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
@@ -353,6 +354,16 @@ module Magnetic_meanfield
           etat_z=1.
           detat_x=0.
           detat_y=4.*sin(y)**3*cos(y)
+          detat_z=0.
+!
+!  general expression, includes previous cases with meanfield_etat_exp=2 and 4
+!
+        case ('siny**n')
+          etat_x=meanfield_etat
+          etat_y=sin(y)**meanfield_etat_exp
+          etat_z=1.
+          detat_x=0.
+          detat_y=meanfield_etat_exp*sin(y)**(meanfield_etat_exp-1.)*cos(y)
           detat_z=0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
@@ -809,6 +820,7 @@ module Magnetic_meanfield
         case ('cosy*sin4y'); alpha_tmp=cos(y(m))*sin(y(m))**4
         case ('cosy*sin6y'); alpha_tmp=cos(y(m))*sin(y(m))**6
         case ('cosy*sin8y'); alpha_tmp=cos(y(m))*sin(y(m))**8
+        case ('cosy*siny**n'); alpha_tmp=cos(y(m))*sin(y(m))**alpha_exp
         case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('surface_x2*cosy'); alpha_tmp=0.25 &
           *(1.-erfunc((x(l1:l2)-x_surface)/alpha_width)) &

@@ -4643,7 +4643,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case ('(0,cosx*cosz,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff*cosx(l1:l2)*cosz(n)*profy_ampl
+          force(:,2)=ampl_ff*cosx(l1:l2)*cosz(n)*profy_ampl(m)
           force(:,3)=0.
 !
 !  f=(sinz,cosz,0)
