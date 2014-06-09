@@ -558,8 +558,9 @@ module InitialCondition
 ! 
           lfind=.false.
 !
-         if ((input_data(23)>53675.) .and. (input_data(23)<53725.)) then
+!         if ((input_data(23)>53675.) .and. (input_data(23)<53725.)) then
 !          if ((input_data(23)>52800.) .and. (input_data(23)<52850.)) then
+            if ((input_data(23)>50012.91) .and. (input_data(23)<50063.)) then
 !
             write(143,'(29f15.6)'),input_data
 !
@@ -640,45 +641,55 @@ module InitialCondition
 !        enddo
 !      close(143)
 !
-        ll1=anint((x(l1)-xyz0(1))/dx)
+!        ll1=anint((x(l1)-xyz0(1))/dx)
         
-        do i=l1,l2
-          f(i,:,:,ilnTT)=alog(TT_data(ll1+i-3))
-          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/1e-2  !g/cm3
+!        do i=l1,l2
+!          f(i,:,:,ilnTT)=alog(TT_data(ll1+i-3))
+!          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/1e-2  !g/cm3
 !
-          if (init_ux /= impossible) then
-            f(i,:,:,iux)=init_ux
-          else
-            f(i,:,:,iux)=ux_data(ll1+i-3)
-          endif
+!          if (init_ux /= impossible) then
+!            f(i,:,:,iux)=init_ux
+!          else
+!            f(i,:,:,iux)=ux_data(ll1+i-3)
+!          endif
 !          
+!        enddo
+
+
+        mm1=anint((y(l1)-xyz0(2))/dy)
+        
+        do i=m1,m2
+          f(:,i,:,ilnTT)=alog(TT_data(mm1+i-3))
+          f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/1e-2  !g/cm3
         enddo
+         
 
-        if (nygrid>1) then
-          mm1=anint((y(m1)-xyz0(2))/dy)
+
+!        if (nygrid>1) then
+!          mm1=anint((y(m1)-xyz0(2))/dy)
 !          
-          if (init_uy /= impossible) then
-            f(:,:,:,iuy)=init_uy
-          else
-           do i=m1,m2
-            f(:,i,:,iuy)=uy_data(mm1+i-3)
-           enddo
-          endif
+!          if (init_uy /= impossible) then
+!            f(:,:,:,iuy)=init_uy
+!          else
+!           do i=m1,m2
+!            f(:,i,:,iuy)=uy_data(mm1+i-3)
+!           enddo
+!          endif
 !            
-        endif
+!        endif
 
-        if (nzgrid>1) then
-          nn1=anint((z(m1)-xyz0(3))/dz)
+!        if (nzgrid>1) then
+!          nn1=anint((z(m1)-xyz0(3))/dz)
 !
-          if (init_uz /= impossible) then
-           f(:,:,:,iuz)=init_uz
-          else
-           do i=n1,n2
-            f(:,:,i,iuz)=uz_data(nn1+i-3)
-           enddo
-          endif
+!          if (init_uz /= impossible) then
+!           f(:,:,:,iuz)=init_uz
+!          else
+!           do i=n1,n2
+!            f(:,:,i,iuz)=uz_data(nn1+i-3)
+!           enddo
+!          endif
 !
-        endif
+!        endif
 
 !
        f(:,:,:,ichemspec(index_N2))=0.7
@@ -698,15 +709,21 @@ module InitialCondition
        enddo
        air_mass=1./sum_Y
 !
-         do i=l1,l2
-           f(i,:,:,ilnrho)=alog(PP_data(ll1+i-3)/(k_B_cgs/m_u_cgs)*&
-           air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
+!         do i=l1,l2
+!           f(i,:,:,ilnrho)=alog(PP_data(ll1+i-3)/(k_B_cgs/m_u_cgs)*&
+!           air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
+!         enddo
 
+         do i=m1,m2
+           f(:,i,:,ilnrho)=alog(PP_data(mm1+i-3)/(k_B_cgs/m_u_cgs)*&
+           air_mass(:,i,:)/exp(f(:,i,:,ilnTT)))/unit_mass*unit_length**3
          enddo
+
+
 !
        if (iter<4) then
-         do i=l1,l2
-           f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/exp(f(i,:,:,ilnrho))
+         do i=m1,m2
+           f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/exp(f(:,i,:,ilnrho))
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
        endif
@@ -717,81 +734,81 @@ module InitialCondition
 !    particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-      open(143,file="coeff_part_new.out")
-        do i=1,Ndata
-          read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),ctmp
-          coeff_loc2(i,:)=ctmp
-        enddo
-      close(143)
+!      open(143,file="coeff_part_new.out")
+!        do i=1,Ndata
+!          read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),ctmp
+!          coeff_loc2(i,:)=ctmp
+!        enddo
+!      close(143)
 !
-        do i=1,Ndata
-        do k=1,ndustspec
-          tmp2=dsize(k)*1e4*2.
-          if (coeff_loc2(i,3)/=0.) then
-           init_distr_loc(i,k) = (coeff_loc2(i,1) &
-                    *exp(-0.5*( (tmp2-coeff_loc2(i,2)) /coeff_loc2(i,3) )**2)  &
-                    +coeff_loc2(i,4)+coeff_loc2(i,5)*tmp2+coeff_loc2(i,6)*tmp2**2)
-          else
-             init_distr_loc(i,k)=0.
-          endif   
-          if (init_distr_loc(i,k)<0) init_distr_loc(i,k)=0.
-        enddo
-        enddo
+!        do i=1,Ndata
+!        do k=1,ndustspec
+!          tmp2=dsize(k)*1e4*2.
+!          if (coeff_loc2(i,3)/=0.) then
+!           init_distr_loc(i,k) = (coeff_loc2(i,1) &
+!                    *exp(-0.5*( (tmp2-coeff_loc2(i,2)) /coeff_loc2(i,3) )**2)  &
+!                    +coeff_loc2(i,4)+coeff_loc2(i,5)*tmp2+coeff_loc2(i,6)*tmp2**2)
+!          else
+!             init_distr_loc(i,k)=0.
+!          endif   
+!          if (init_distr_loc(i,k)<0) init_distr_loc(i,k)=0.
+!        enddo
+!        enddo
 !
-        do k=1,ndustspec
-        do i=1,Ndata
-          if (init_distr_loc(i,k)==0.) then
-          i1=0;  right=0.; i1_right=0
-          do while ((right == 0.) .and. (i1_right<Ndata+1)) 
-            right=init_distr_loc(i+i1,k)
-            i1_right=i+i1
-            i1=i1+1
-          enddo   
+!        do k=1,ndustspec
+!        do i=1,Ndata
+!          if (init_distr_loc(i,k)==0.) then
+!          i1=0;  right=0.; i1_right=0
+!          do while ((right == 0.) .and. (i1_right<Ndata+1)) 
+!            right=init_distr_loc(i+i1,k)
+!            i1_right=i+i1
+!            i1=i1+1
+!          enddo   
 !
-          i1=0;  left=0.; i1_left=Ndata+1
-          do while ((left == 0.) .and. (i1_left>0))
-            left=init_distr_loc(i-i1,k)
-            i1_left=i-i1
-            i1=i1+1
-          enddo 
+!          i1=0;  left=0.; i1_left=Ndata+1
+!          do while ((left == 0.) .and. (i1_left>0))
+!            left=init_distr_loc(i-i1,k)
+!            i1_left=i-i1
+!            i1=i1+1
+!          enddo 
 !
-          if (i1_left==1) left=right
-          if (i1_right==Ndata) right=left
+!          if (i1_left==1) left=right
+!          if (i1_right==Ndata) right=left
 !
-            if ((right==0.) .and. (left==0.)) then
-              init_distr_tmp(i,k)=0.
-            else
-              init_distr_tmp(i,k)=left+(right-left) &
-                *(coeff_loc2(i,7)-coeff_loc2(i1_left,7))/(coeff_loc2(i1_right,7)-coeff_loc2(i1_left,7))
-            endif
-! if (k==70) print*,left,init_distr_tmp(i,k),right 
-          endif
-        enddo
-        enddo
+!            if ((right==0.) .and. (left==0.)) then
+!              init_distr_tmp(i,k)=0.
+!            else
+!              init_distr_tmp(i,k)=left+(right-left) &
+!                *(coeff_loc2(i,7)-coeff_loc2(i1_left,7))/(coeff_loc2(i1_right,7)-coeff_loc2(i1_left,7))
+!            endif
+!          endif
+!        enddo
+!        enddo
 !
-        do k=1,ndustspec
-        do i=1,Ndata
-          if (init_distr_loc(i,k)==0.) init_distr_loc(i,k)=init_distr_tmp(i,k)
-!          if (init_distr_loc(i,k) .le. 1e-10) init_distr_loc(i,k)=1e-10
-          if ((2.*dsize(k)*1e4<.5) .or. (2.*dsize(k)*1e4>40.)) init_distr_loc(i,k)=0.
-        enddo
-        enddo
+!        do k=1,ndustspec
+!        do i=1,Ndata
+!         if (init_distr_loc(i,k)==0.) init_distr_loc(i,k)=init_distr_tmp(i,k)
+!          if ((2.*dsize(k)*1e4<.5) .or. (2.*dsize(k)*1e4>40.)) init_distr_loc(i,k)=0.
+!        enddo
+!        enddo
 !
-        open(144,file="part_new.out")
-        do i=1,Ndata
-           tmp4=init_distr_loc(i,:)
-           write(144,'(29f15.6)'),coeff_loc2(i,7),tmp4
-!           write(144,'(29f15.6)'),coeff_loc2(i,7),init_distr_loc(i,40),init_distr_tmp(i,40)
-        enddo
-        close(144)
+!        open(144,file="part_new.out")
+!        do i=1,Ndata
+!           tmp4=init_distr_loc(i,:)
+!           write(144,'(29f15.6)'),coeff_loc2(i,7),tmp4
+!        enddo
+!        close(144)
 !
        do i=l1,l2
        do k=1,ndustspec
-         f(i,:,:,ind(k)) = (init_distr_loc(ll1+i-3,k) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
+         f(i,:,:,ind(k)) = (Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
+!              (init_distr_loc(ll1+i-3,k) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
              * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2)))  &
              /exp(f(i,:,:,ilnrho))/dsize(k)
        enddo
        enddo
+
+
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
