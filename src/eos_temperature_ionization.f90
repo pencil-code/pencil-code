@@ -56,7 +56,7 @@ module EquationOfState
   real :: xHe=0.1, yH_const=0.0, yMetals=0.0, tau_relax=1.0
   real :: chiH_eV=13.6, chiHminus_eV=0.754
   logical :: lrevise_chiH_eV=.false., lrevise_chiHminus_eV=.false.
-  logical :: lconst_yH=.false.
+  logical :: lconst_yH=.false., lHminus_opacity_correction=.false.
 !
   real :: lnpp_bot=0.
   real :: ss_bot=0.
@@ -70,14 +70,14 @@ module EquationOfState
                            lrevise_chiHminus_eV, chiHminus_eV, &
                            tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                            lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
-                           lcs2_as_aux,lgamma_as_aux
+                           lcs2_as_aux,lgamma_as_aux, lHminus_opacity_correction
 ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                            lrevise_chiH_eV, chiH_eV, &
                           lrevise_chiHminus_eV, chiHminus_eV, &
                           tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                           lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
-                          lcs2_as_aux,lgamma_as_aux
+                          lcs2_as_aux,lgamma_as_aux, lHminus_opacity_correction
 !
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -767,8 +767,8 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 !
-      real, dimension(psize) :: lnrho_,lnTT_,yH_
-      real, dimension(psize) :: TT1,tmp,tmpy
+      real, dimension(psize) :: lnrho_,lnTT_,yH_,mu1_
+      real, dimension(psize) :: TT1,tmp,tmpy,tmpy1
 !
       select case (psize)
 !
@@ -827,6 +827,11 @@ module EquationOfState
         elsewhere
           kapparho = (1-yH_)*kappa0*exp(min(tmp,log(huge1))+alog(tmpy))
         endwhere
+        if (lHminus_opacity_correction) then
+          mu1_ = mu1_0*(1+yH_+xHe)
+          tmpy1 = 1./(1+yH_)
+          kapparho = kapparho*(1+4*xHe)*mu1_*tmpy1
+        endif
       endif
 !
     endsubroutine eoscalc_farray
