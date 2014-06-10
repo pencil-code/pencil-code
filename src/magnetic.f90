@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
-! PENCILS PROVIDED uxj(3); chibp; beta1; uga(3); djuidjbi; jo
+! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
@@ -414,6 +414,9 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
                                 ! DIAG_DOC:   \quad(maximum inverse plasma beta)
+  integer :: idiag_betam = 0    ! DIAG_DOC: $\langle\beta\rangle$
+  integer :: idiag_betamax = 0  ! DIAG_DOC: $\max\beta$
+  integer :: idiag_betamin = 0  ! DIAG_DOC: $\min\beta$
   integer :: idiag_bxm=0        ! DIAG_DOC: $\left<B_x\right>$
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
@@ -1961,6 +1964,7 @@ module Magnetic
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
           lpenc_diagnos(i_beta1)=.true.
+      if (idiag_betam /= 0 .or. idiag_betamax /= 0 .or. idiag_betamin /= 0) lpenc_diagnos(i_beta) = .true.
       if (idiag_bxmz/=0 .or. idiag_bymz/=0) lpenc_diagnos(i_bb)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
@@ -2175,7 +2179,7 @@ module Magnetic
         lpencil_in(i_StokesI)=.true.
       endif
 !
-      if (lpencil_in(i_beta1)) then
+      if (lpencil_in(i_beta1) .or. lpencil_in(i_beta)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_pp)=.true.
       endif
@@ -2650,6 +2654,8 @@ module Magnetic
 !
 ! beta1
       if (lpenc_loc(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
+! beta
+      if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
 ! djuidjbi
       if (lpenc_loc(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
@@ -3529,6 +3535,9 @@ module Magnetic
       if (ldiagnos) then
         if (idiag_beta1m/=0) call sum_mn_name(p%beta1,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta1,idiag_beta1max)
+        if (idiag_betam /= 0) call sum_mn_name(p%beta, idiag_betam)
+        if (idiag_betamax /= 0) call max_mn_name(p%beta, idiag_betamax)
+        if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
@@ -6960,6 +6969,7 @@ module Magnetic
         idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
         idiag_divarms = 0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
+        idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
@@ -7120,6 +7130,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
         call parse_name(iname,cname(iname),cform(iname),'beta1m',idiag_beta1m)
         call parse_name(iname,cname(iname),cform(iname),'beta1max',idiag_beta1max)
+        call parse_name(iname,cname(iname),cform(iname),'betam',idiag_betam)
+        call parse_name(iname,cname(iname),cform(iname),'betamax',idiag_betamax)
+        call parse_name(iname,cname(iname),cform(iname),'betamin',idiag_betamin)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
         call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
         call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
