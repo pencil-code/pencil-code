@@ -690,6 +690,8 @@ module Magnetic
   integer :: idiag_by2mx=0      ! YZAVG_DOC: $\left< B_y^2 \right>_{yz}$
   integer :: idiag_bz2mx=0      ! YZAVG_DOC: $\left< B_z^2 \right>_{yz}$
   integer :: idiag_bxbymx=0     ! YZAVG_DOC: $\left<B_x B_y\right>_{yz}$
+  integer :: idiag_betamx = 0   ! YZAVG_DOC: $\langle\beta\rangle_{yz}$
+  integer :: idiag_beta2mx = 0  ! YZAVG_DOC: $\langle\beta^2\rangle_{yz}$
   integer :: idiag_etatotalmx=0 ! YZAVG_DOC: $\left<\eta\right>_{yz}$
   integer :: idiag_jxbrxmx=0    ! YZAVG_DOC:
   integer :: idiag_jxbrymx=0    ! YZAVG_DOC:
@@ -1967,7 +1969,8 @@ module Magnetic
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
           lpenc_diagnos(i_beta1)=.true.
       if (idiag_betam /= 0 .or. idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. &
-          idiag_betamz /= 0 .or. idiag_beta2mz /= 0) lpenc_diagnos(i_beta) = .true.
+          idiag_betamz /= 0 .or. idiag_beta2mz /= 0 .or. &
+          idiag_betamx /= 0 .or. idiag_beta2mx /= 0) lpenc_diagnos(i_beta) = .true.
       if (idiag_bxmz/=0 .or. idiag_bymz/=0) lpenc_diagnos(i_bb)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
@@ -4063,6 +4066,8 @@ module Magnetic
         call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
         call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
         call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymx)
+        call yzsum_mn_name_x(p%beta, idiag_betamx)
+        call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
         call xzsum_mn_name_y(p%bb(:,1),idiag_bxmy)
         call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
         call xzsum_mn_name_y(p%bb(:,3),idiag_bzmy)
@@ -6976,6 +6981,7 @@ module Magnetic
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_betamz = 0; idiag_beta2mz = 0
+        idiag_betamx = 0; idiag_beta2mx = 0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
@@ -7316,6 +7322,8 @@ module Magnetic
             'bz2mx',idiag_bz2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'bxbymx',idiag_bxbymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'betamx',idiag_betamx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'beta2mx',idiag_beta2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'jxbrxmx',idiag_jxbrxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
