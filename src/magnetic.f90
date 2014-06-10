@@ -683,6 +683,7 @@ module Magnetic
 !
 ! yz averaged diagnostics given in yzaver.in
 !
+  integer :: idiag_b2mx = 0     ! YZAVG_DOC: $\langle B^2\rangle_{yz}$
   integer :: idiag_bxmx=0       ! YZAVG_DOC: $\left< B_x \right>_{yz}$
   integer :: idiag_bymx=0       ! YZAVG_DOC: $\left< B_y \right>_{yz}$
   integer :: idiag_bzmx=0       ! YZAVG_DOC: $\left< B_z \right>_{yz}$
@@ -690,6 +691,8 @@ module Magnetic
   integer :: idiag_by2mx=0      ! YZAVG_DOC: $\left< B_y^2 \right>_{yz}$
   integer :: idiag_bz2mx=0      ! YZAVG_DOC: $\left< B_z^2 \right>_{yz}$
   integer :: idiag_bxbymx=0     ! YZAVG_DOC: $\left<B_x B_y\right>_{yz}$
+  integer :: idiag_bxbzmx = 0   ! YZAVG_DOC: $\langle B_x B_z\rangle_{yz}$
+  integer :: idiag_bybzmx = 0   ! YZAVG_DOC: $\langle B_y B_z\rangle_{yz}$
   integer :: idiag_betamx = 0   ! YZAVG_DOC: $\langle\beta\rangle_{yz}$
   integer :: idiag_beta2mx = 0  ! YZAVG_DOC: $\langle\beta^2\rangle_{yz}$
   integer :: idiag_etatotalmx=0 ! YZAVG_DOC: $\left<\eta\right>_{yz}$
@@ -2008,7 +2011,7 @@ module Magnetic
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
-          idiag_emag/=0 .or. idiag_b2mz/=0) &
+          idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
       if (idiag_bfrms/=0 .or. idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
@@ -4059,6 +4062,7 @@ module Magnetic
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        call yzsum_mn_name_x(p%b2, idiag_b2mx)
         call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
         call yzsum_mn_name_x(p%bb(:,3),idiag_bzmx)
@@ -4066,6 +4070,8 @@ module Magnetic
         call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
         call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
         call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymx)
+        call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmx)
+        call yzsum_mn_name_x(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmx)
         call yzsum_mn_name_x(p%beta, idiag_betamx)
         call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
         call xzsum_mn_name_y(p%bb(:,1),idiag_bxmy)
@@ -6983,8 +6989,9 @@ module Magnetic
         idiag_betamz = 0; idiag_beta2mz = 0
         idiag_betamx = 0; idiag_beta2mx = 0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
-        idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
+        idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mx=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_uamz=0; idiag_d6abmz=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
@@ -7311,6 +7318,7 @@ module Magnetic
 !  Check for those quantities for which we want xy-averages.
 !
       do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mx',idiag_b2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bzmx',idiag_bzmx)
@@ -7320,8 +7328,9 @@ module Magnetic
             'by2mx',idiag_by2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'bz2mx',idiag_bz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'bxbymx',idiag_bxbymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxbymx',idiag_bxbymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxbzmx',idiag_bxbzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'bybzmx',idiag_bybzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'betamx',idiag_betamx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'beta2mx',idiag_beta2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
