@@ -444,6 +444,8 @@ module InitialCondition
 !***********************************************************************
     subroutine ACTOS_data(f)
 !
+       use General, only:  polynomial_interpolation
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (20000) ::  PP_data, rhow_data, TT_data
@@ -454,12 +456,15 @@ module InitialCondition
       real, dimension (20000,ndustspec) :: init_distr_loc, init_distr_tmp
       real, dimension (6) ::  tmp3
       real, dimension (ndustspec) ::  tmp4
+      real, dimension (4) :: ary, arx
+      real, dimension (3) :: x2, S, ddy
+      real, dimension (ndustspec) :: nd_tmp
 !
       logical :: emptyfile=.true., lfind
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
-      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1, i_spline
       real ::  TT=300., ddsize, tmp2, right, left
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2, stor1
@@ -529,7 +534,6 @@ module InitialCondition
            endif
             read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)') tmp2
              input_data(k)=tmp2
-
             StartInd=StopInd
             k=k+1
           endif
@@ -818,13 +822,33 @@ module InitialCondition
        do k=1,ndustspec
          tmp2=dsize(k)*1e7*2.
          if (tmp2<226.15)   then
-          f(:,:,:,ind(k)) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
+          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
          elseif (tmp2<2700.) then
-          f(:,:,:,ind(k)) = 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
+          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
          endif
-          f(:,:,:,ind(k)) = f(:,:,:,ind(k))/exp(f(:,:,:,ilnrho))/dsize(k)
+         
        enddo
+ 
+       i_spline=16
 
+         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
+         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
+
+!         arx(1)=dsize(i_spline-2); arx(2)=dsize(i_spline); arx(3)=dsize(i_spline+2)
+!         ary(1)=nd_tmp(i_spline-2); ary(2)=nd_tmp(i_spline); ary(3)=nd_tmp(i_spline+2)
+
+         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
+         
+!          x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline+1)
+
+          call polynomial_interpolation(arx,ary,x2,S,ddy,2)
+
+         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
+         
+
+       do k=1,ndustspec
+         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
+       enddo
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
