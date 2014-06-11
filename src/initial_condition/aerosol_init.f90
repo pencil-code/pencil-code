@@ -799,15 +799,31 @@ module InitialCondition
 !        enddo
 !        close(144)
 !
-       do i=l1,l2
-       do k=1,ndustspec
-         f(i,:,:,ind(k)) = (Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
+!       do i=l1,l2
+!       do k=1,ndustspec
+!         f(i,:,:,ind(k)) = (Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
 !              (init_distr_loc(ll1+i-3,k) + Ntot_data(ll1+i-3)/(2.*pi)**0.5/alog(delta) &
-             * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2)))  &
-             /exp(f(i,:,:,ilnrho))/dsize(k)
-       enddo
-       enddo
+!             * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2)))  &
+!             /exp(f(i,:,:,ilnrho))/dsize(k)
+!       enddo
+!       enddo
 
+
+! calculated in ACTOS_part_one.pro  
+!       2769.96
+!      341.699      155.111      60.8664
+!      40.1308      270.085      371.868     0.864957
+!
+
+       do k=1,ndustspec
+         tmp2=dsize(k)*1e7*2.
+         if (tmp2<226.15)   then
+          f(:,:,:,ind(k)) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
+         elseif (tmp2<2700.) then
+          f(:,:,:,ind(k)) = 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
+         endif
+          f(:,:,:,ind(k)) = f(:,:,:,ind(k))/exp(f(:,:,:,ilnrho))/dsize(k)
+       enddo
 
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
