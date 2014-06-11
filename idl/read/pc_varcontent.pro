@@ -674,7 +674,7 @@ if (ind[0] gt 0) then begin
 endif
 ;
 default, imd, 0
-if (imd gt 0) then begin
+if (imd[0] gt 0) then begin
   dustcount=n_elements(imd)
   if (dustcount gt 0L) then begin
     varcontent[imd[0]].variable   = 'Dust density (md)'
@@ -753,14 +753,14 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
     varcontent[ikapparho].idlinitloc = INIT_SCALAR_LOC
   endif
 ;
-  default, iFrad, 0
-  if (iFrad gt 0) then begin
-    varcontent[iFrad].variable   = 'Radiative flux (Frad)'
-    varcontent[iFrad].idlvar     = 'Frad'
-    varcontent[iFrad].idlinit    = INIT_3VECTOR
-    varcontent[iFrad].idlvarloc  = 'Frad_loc'
-    varcontent[iFrad].idlinitloc = INIT_3VECTOR_LOC
-    varcontent[iFrad].skip       = 2
+  default, iKR_Frad, 0
+  if (iKR_Frad gt 0) then begin
+    varcontent[iKR_Frad].variable   = 'Radiative flux scaled with kappa*rho (KR_Frad)'
+    varcontent[iKR_Frad].idlvar     = 'KR_Frad'
+    varcontent[iKR_Frad].idlinit    = INIT_3VECTOR
+    varcontent[iKR_Frad].idlvarloc  = 'KR_Frad_loc'
+    varcontent[iKR_Frad].idlinitloc = INIT_3VECTOR_LOC
+    varcontent[iKR_Frad].skip       = 2
   endif
 ;
   default, iyH, 0
