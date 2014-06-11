@@ -53,7 +53,7 @@ module Dustdensity
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
-  real :: diffmd=0.0, diffmi=0.0
+  real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=1.0, eps_dtog=0.0, Sigmad=1.0
   real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0, supsatfac1=1.0
   real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
@@ -95,7 +95,7 @@ module Dustdensity
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       latm_chemistry, spot_number, lnoaerosol, &
-      lmdvar, lmice, ldcore,&
+      lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2
 !
@@ -284,6 +284,12 @@ module Dustdensity
         case ('kernel_lin')
           do i=1,ndustspec; do k=1,ndustspec
             dkern(:,i,k) = dkern_cst*(md(i)+md(k))
+          enddo; enddo
+          lcalcdkern = .false.
+!
+        case ('kernel_size_diff')
+          do i=1,ndustspec; do k=1,ndustspec
+            dkern(:,i,k) = dkern_cst*abs(md(i)**.333333-md(k)*.333333)
           enddo; enddo
           lcalcdkern = .false.
 !
@@ -626,6 +632,11 @@ module Dustdensity
           if (lroot) print*, 'init_nd: Minimum dust density nd_const=', nd_const
         case ('constant-Ri'); call constant_richardson(f)
         case ('kernel_cst')
+          f(:,:,:,ind) = 0.
+          f(:,:,:,ind(1)) = nd0
+          if (lroot) print*, &
+              'init_nd: Test of dust coagulation with constant kernel'
+        case ('kernel_size_diff')
           f(:,:,:,ind) = 0.
           f(:,:,:,ind(1)) = nd0
           if (lroot) print*, &
@@ -2089,7 +2100,7 @@ module Dustdensity
                   .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
                 if (lmdvar) then
                   df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
-                  if (p%nd(l,k) == 0.) then
+                  if (p%nd(l,k) < ndmin_for_mdvar) then
                     f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
                   else
                     df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
