@@ -235,11 +235,67 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+
+     use General, only:  polynomial_interpolation
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: i_spline, k, i
+      real, dimension (4) :: ary, arx
+      real, dimension (3) :: x2, S, ddy
+      real, dimension (ndustspec) :: nd_tmp 
+      real :: tmp2, ddsize
+      real, dimension(ndustspec)    :: lnds, dsize
+      
 !      integer :: i,k,ll1,i1
 !      real :: r0, delta, tmp
 !
-     
+
+
+
+       ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+!
+      do i=0,(ndustspec-1)
+          lnds(i+1)=alog(dsize_min)+i*ddsize
+          dsize(i+1)=exp(lnds(i+1))
+      enddo
+
+     ! calculated in ACTOS_part_one.pro  
+!       2769.96
+!      341.699      155.111      60.8664
+!      40.1308      270.085      371.868     0.864957
+!
+
+       do k=1,ndustspec
+         tmp2=dsize(k)*1e7*2.
+         if (tmp2<226.15)   then
+          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
+         elseif (tmp2<2700.) then
+          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
+         endif
+         
+       enddo
+ 
+       i_spline=16
+
+         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
+         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
+
+!         arx(1)=dsize(i_spline-2); arx(2)=dsize(i_spline); arx(3)=dsize(i_spline+2)
+!         ary(1)=nd_tmp(i_spline-2); ary(2)=nd_tmp(i_spline); ary(3)=nd_tmp(i_spline+2)
+
+         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
+         
+!          x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline+1)
+
+          call polynomial_interpolation(arx,ary,x2,S,ddy,2)
+
+         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
+         
+
+       do k=1,ndustspec
+         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
+       enddo
+!
       
 !
       call keep_compiler_quiet(f)
@@ -444,7 +500,7 @@ module InitialCondition
 !***********************************************************************
     subroutine ACTOS_data(f)
 !
-       use General, only:  polynomial_interpolation
+   
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
@@ -456,19 +512,16 @@ module InitialCondition
       real, dimension (20000,ndustspec) :: init_distr_loc, init_distr_tmp
       real, dimension (6) ::  tmp3
       real, dimension (ndustspec) ::  tmp4
-      real, dimension (4) :: ary, arx
-      real, dimension (3) :: x2, S, ddy
-      real, dimension (ndustspec) :: nd_tmp
+      
 !
       logical :: emptyfile=.true., lfind
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
-      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1, i_spline
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
       real ::  TT=300., ddsize, tmp2, right, left
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2, stor1
-       real, dimension(ndustspec)    :: lnds, dsize
       real, dimension(29)    :: input_data, input_data2
 !
       real, dimension (7) :: ctmp
@@ -477,12 +530,12 @@ module InitialCondition
       integer :: iostat, i1,i2,i3, i1_left,i1_right
 
 
-      ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+!      ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
 !
-      do i=0,(ndustspec-1)
-          lnds(i+1)=alog(dsize_min)+i*ddsize
-          dsize(i+1)=exp(lnds(i+1))
-      enddo
+!      do i=0,(ndustspec-1)
+!          lnds(i+1)=alog(dsize_min)+i*ddsize
+!          dsize(i+1)=exp(lnds(i+1))
+!      enddo
 
 
       if (lACTOS_write) then
@@ -813,43 +866,7 @@ module InitialCondition
 !       enddo
 
 
-! calculated in ACTOS_part_one.pro  
-!       2769.96
-!      341.699      155.111      60.8664
-!      40.1308      270.085      371.868     0.864957
-!
 
-       do k=1,ndustspec
-         tmp2=dsize(k)*1e7*2.
-         if (tmp2<226.15)   then
-          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
-         elseif (tmp2<2700.) then
-          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
-         endif
-         
-       enddo
- 
-       i_spline=16
-
-         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
-         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
-
-!         arx(1)=dsize(i_spline-2); arx(2)=dsize(i_spline); arx(3)=dsize(i_spline+2)
-!         ary(1)=nd_tmp(i_spline-2); ary(2)=nd_tmp(i_spline); ary(3)=nd_tmp(i_spline+2)
-
-         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
-         
-!          x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline+1)
-
-          call polynomial_interpolation(arx,ary,x2,S,ddy,2)
-
-         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
-         
-
-       do k=1,ndustspec
-         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
-       enddo
-!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
        if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
