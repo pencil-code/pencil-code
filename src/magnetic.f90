@@ -2664,7 +2664,7 @@ module Magnetic
 ! beta1
       if (lpenc_loc(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! beta
-      if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
+      if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, epsilon(1.0))
 ! djuidjbi
       if (lpenc_loc(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
