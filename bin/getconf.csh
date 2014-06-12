@@ -687,7 +687,7 @@ else if ($hn =~ clogin*) then
     touch $SLURM_WORKDIR/data/jobid.dat
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
-  set mpirunops = ''
+  set mpirunops = "-j 1"
   set mpirun = 'aprun'
   set npops = "-n $ncpus"
   set local_disc = 0
@@ -702,7 +702,7 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
     touch $SLURM_WORKDIR/data/jobid.dat
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
-  set mpirunops = ''
+  set mpirunops = "-j 1"
   set mpirun = 'aprun'
   set npops = "-n $ncpus"
   set local_disc = 0
@@ -1758,6 +1758,7 @@ if ($mpi) then
   else if ("$mpirun" =~ *aprun*) then
     set mpirun = 'aprun'
     set npops = "-n $ncpus"
+    set mpirunops = "$mpirunops"
   else if ("$mpirun" =~ *srun*) then
     set mpirun = 'srun'
     set npops = ''
