@@ -2558,11 +2558,11 @@ module Dustdensity
 !
 !  10-may-10/Natalia: coded
 !
-      use General, only: spline
+      use General, only: spline, spline_derivative_double
  
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp !, ff_tmp0
+      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i
       integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
       real, dimension (35) ::  x2, S
@@ -2584,6 +2584,7 @@ module Dustdensity
                  'p%pp or dsize  has zero value(s)')
           endif
         enddo
+
 !
          do k=1,ndustspec
            if (ldcore) then
@@ -2592,23 +2593,30 @@ module Dustdensity
            endif
          enddo
 !
-              do jj=1,nx
-
-                do k=1,ndustspec
+         do jj=1,nx
+           do k=1,ndustspec
                 if ((k>2.) .and. (k<ndustspec-1))  then
                  ff_tmp(jj,k)=1./16.*(p%nd(jj,k-2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-2))/dsize(k-2))  &
                              +2./16.*(p%nd(jj,k-1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-1))/dsize(k-1))  &
-                            +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
+                           +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
                              +2./16.*(p%nd(jj,k+1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+1))/dsize(k+1)) &
                              +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
                 else
                  ff_tmp(jj,k)=p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k)
                 endif
-                enddo
-              enddo
+           enddo
+         enddo
 !
-           call deriv_size(ff_tmp,dndr_dr,p)
-
+           call deriv_size(ff_tmp,dndr_dr,dsize,p)
+!
+                if ((k>2.) .and. (k<ndustspec-1))  then
+                 dndr_dr(jj,k)=1./16.*dndr_dr(jj,k-2)  &
+                             +2./16.*dndr_dr(jj,k-1)   &
+                           +10./16.*dndr_dr(jj,k)   &
+                             +2./16.*dndr_dr(jj,k+1)  &
+                             +1./16.*dndr_dr(jj,k+2) 
+                endif
+!
 ! boundary onditions:
 
            if (ndustspec >3) then 
@@ -2621,16 +2629,17 @@ module Dustdensity
 !
     endsubroutine droplet_redistr
 !***********************************************************************
-    subroutine deriv_size(ff,dff_dr, p)
+    subroutine deriv_size(ff,dff_dr, dsize_loc, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) ::  ff,dff_dr
+      real, dimension (ndustspec) :: dsize_loc
       integer :: k,i1=1,i2=2,i3=3
       integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ff
+      intent(in) :: ff, dsize_loc
       intent(out) :: dff_dr
 !
       call keep_compiler_quiet(p)
@@ -2638,9 +2647,9 @@ module Dustdensity
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
 !
-      rr1=dsize(i1)
-      rr2=dsize(i2)
-      rr3=dsize(i3)
+      rr1=dsize_loc(i1)
+      rr2=dsize_loc(i2)
+      rr3=dsize_loc(i3)
 !
       dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
                     - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
@@ -2649,9 +2658,9 @@ module Dustdensity
 
       do k=2,ndustspec-1
 !
-        rr1=dsize(k-1)
-        rr2=dsize(k)
-        rr3=dsize(k+1)
+        rr1=dsize_loc(k-1)
+        rr2=dsize_loc(k)
+        rr3=dsize_loc(k+1)
  
         dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                       +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
