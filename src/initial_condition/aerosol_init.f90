@@ -269,27 +269,27 @@ module InitialCondition
          tmp2=dsize(k)*1e7*2.
          if (tmp2<226.15)   then
           nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
-         elseif (tmp2<2700.) then
+         else
           nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
          endif
          
        enddo
  
-       i_spline=16
+!       i_spline=16
 
-         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
-         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
+!         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
+!         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
 
 !         arx(1)=dsize(i_spline-2); arx(2)=dsize(i_spline); arx(3)=dsize(i_spline+2)
 !         ary(1)=nd_tmp(i_spline-2); ary(2)=nd_tmp(i_spline); ary(3)=nd_tmp(i_spline+2)
-
-         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
-         
 !          x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline+1)
 
-          call polynomial_interpolation(arx,ary,x2,S,ddy,2)
+!         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
+         
 
-         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
+
+!          call polynomial_interpolation(arx,ary,x2,S,ddy,3)
+!         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
          
 
        do k=1,ndustspec
