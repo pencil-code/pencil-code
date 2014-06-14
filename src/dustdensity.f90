@@ -287,6 +287,12 @@ module Dustdensity
           enddo; enddo
           lcalcdkern = .false.
 !
+        case ('kernel_mult')
+          do i=1,ndustspec; do k=1,ndustspec
+            dkern(:,i,k) = dkern_cst*(md(i)*md(k))
+          enddo; enddo
+          lcalcdkern = .false.
+!
         case ('kernel_size_diff')
           do i=1,ndustspec; do k=1,ndustspec
             dkern(:,i,k) = dkern_cst*abs(md(i)**.333333-md(k)*.333333)
@@ -632,6 +638,11 @@ module Dustdensity
           if (lroot) print*, 'init_nd: Minimum dust density nd_const=', nd_const
         case ('constant-Ri'); call constant_richardson(f)
         case ('kernel_cst')
+          f(:,:,:,ind) = 0.
+          f(:,:,:,ind(1)) = nd0
+          if (lroot) print*, &
+              'init_nd: Test of dust coagulation with constant kernel'
+        case ('kernel_mult')
           f(:,:,:,ind) = 0.
           f(:,:,:,ind(1)) = nd0
           if (lroot) print*, &
