@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED der6u(3)
-! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
+! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
 !***********************************************************************
 module Hydro
 !
@@ -311,6 +311,8 @@ module Hydro
 !
 !  pencils for kinflow
 !
+      lpenc_requested(i_ugu)=.true.
+!
 !DM: The following line with kinflow can be later removed and the variable
 !DM: kinematic_flow replaced by kinflow.
 !
@@ -359,6 +361,11 @@ module Hydro
       if (lpencil_in(i_ou)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
+      endif
+!  ugu
+      if (lpencil_in(i_ugu)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_uij)=.true.
       endif
 !
     endsubroutine pencil_interdep_hydro
@@ -430,7 +437,9 @@ module Hydro
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
+        if (lpenc_loc(i_ugu)) p%ugu=0.
         if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_del2u)) p%del2u=0.
 !
 !constant flow in the
 !  (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction. 
