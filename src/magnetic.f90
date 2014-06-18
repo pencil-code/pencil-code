@@ -93,7 +93,7 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
+  real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0
   real, dimension(3) :: B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
@@ -103,6 +103,7 @@ module Magnetic
   real, dimension(nx) :: eta_BB
   real, dimension(nx) :: xmask_mag
   real, dimension(nz) :: zmask_mag
+  real :: t_bext = 0.0, t0_bext = 0.0
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
@@ -183,7 +184,7 @@ module Magnetic
   logical :: lambipolar_diffusion=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
@@ -255,7 +256,7 @@ module Magnetic
   character (len=labellen) :: ambipolar_diffusion='constant'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
       eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
@@ -2340,6 +2341,7 @@ module Magnetic
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
+      real, dimension(3) :: B_ext
       real :: B2_ext,c,s
       integer :: i,j,ix
 ! aa
@@ -2361,6 +2363,7 @@ module Magnetic
 !  Save field before adding imposed field (for diagnostics).
 !
         p%bbb=p%bb
+        call get_bext(B_ext)
         B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
 !  Allow external field to precess about z-axis with frequency omega_Bz_ext.
@@ -2863,6 +2866,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
+      real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
@@ -2885,6 +2889,10 @@ module Magnetic
 ! set dAdt to zero at the beginning of each execution of this routine
 !
       dAdt=0.
+!
+!  Replace B_ext locally to accommodate its time dependence.
+!
+      call get_bext(B_ext)
 !
 !  Add jxb/rho to momentum equation.
 !
@@ -7660,5 +7668,25 @@ module Magnetic
       endif
 !
     endsubroutine expand_shands_magnetic
+!***********************************************************************
+    subroutine get_bext(B_ext_out)
+!
+!  Get the external magnetic field at current time step.
+!
+!  11-jun-14/ccyang: coded
+!
+      real, dimension(3), intent(out) :: B_ext_out
+!
+      bext: if (t_bext > 0.0 .and. t < t_bext) then
+        if (t <= t0_bext) then
+          B_ext_out = B0_ext
+        else
+          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext - B0_ext)
+        endif
+      else bext
+        B_ext_out = B_ext
+      endif bext
+!
+    endsubroutine get_bext
 !***********************************************************************
 endmodule Magnetic

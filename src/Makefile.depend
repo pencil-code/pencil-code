@@ -33,7 +33,7 @@ $(GENERAL_OBJ): $(GENERAL_SRC) $(CPARAM_OBJ) $(CDATA_OBJ)
 #
 shock.o: shock.h shock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ) $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
 #
-shock_highorder.o: shock.h shock_highorder.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ) $(FARRAY_OBJ)
+shock_highorder.o: shock.h shock_highorder.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ) $(FARRAY_OBJ) $(MAGNETIC_OBJ)
 #
 noshock.o: shock.h noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #

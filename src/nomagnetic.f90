@@ -368,4 +368,14 @@ module Magnetic
 !
     endsubroutine expand_shands_magnetic
 !***********************************************************************
+    subroutine get_bext(B_ext_out)
+!
+!  Dummy
+!
+      real, dimension(3), intent(out) :: B_ext_out
+!
+      B_ext_out = 0.0
+!
+    endsubroutine get_bext
+!***********************************************************************
 endmodule Magnetic

@@ -457,8 +457,8 @@ module Timestep
 !
 ! 22 Jun F. Chen
 !
+    use Magnetic, only: get_bext
     use Messages, only: fatal_error
-    use SharedVariables, only: get_shared_variable
     use Sub, only: grad, gij, curl_mn, dot2_mn, gij_etc
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -467,17 +467,13 @@ module Timestep
     real :: B2_ext
     real, dimension (nx) :: quench
     logical :: luse_Bext_in_b2=.true.
-    real, dimension(:), pointer :: B_ext
-    integer :: ierr
+    real, dimension(3) :: B_ext
 !
     intent(inout) :: f,p
 !
 !  Get the external magnetic field if exists.
-    if (lmagnetic) then
-      call get_shared_variable('B_ext', B_ext, ierr)
-      if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
-          'unable to get shared variable B_ext')
-    endif
+!
+    if (lmagnetic) call get_bext(B_ext)
 !
     p%lnrho=f(l1:l2,m,n,ilnrho)
     call grad(f,ilnrho,p%glnrho)

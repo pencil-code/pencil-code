@@ -16,6 +16,7 @@
 
   public :: pencil_criteria_magnetic, pencil_interdep_magnetic
   public :: calc_pencils_magnetic
+  public :: get_bext
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
   public :: lcalc_aameanz, aamz, bbmz, jjmz

@@ -39,9 +39,10 @@ module Magnetic
 !
 !  Initialization parameters
 !
-  real, dimension(3) :: b_ext = 0.0
+  real, dimension(3) :: b_ext = 0.0, b0_ext = 0.0
+  real :: t_bext = 0.0, t0_bext = 0.0
 !
-  namelist /magnetic_init_pars/ b_ext
+  namelist /magnetic_init_pars/ b_ext, b0_ext, t_bext, t0_bext
 !
 !  Runtime parameters
 !
@@ -59,7 +60,9 @@ module Magnetic
   real :: eta_hyper3_mesh = 0.0
 !
   namelist /magnetic_run_pars/ &
-    b_ext, eta, eta_zdep_prof, eta_zdep_coeff, eta_shock, eta_hyper3_mesh, limplicit_resistivity, lohmic_heat
+    b_ext, b0_ext, t_bext, t0_bext, &
+    eta, eta_zdep_prof, eta_zdep_coeff, eta_shock, eta_hyper3_mesh, &
+    limplicit_resistivity, lohmic_heat
 !
 !  Diagnostic variables
 !
@@ -234,7 +237,7 @@ module Magnetic
 !
 !  Check the existence of external field.
 !
-      lbext = any(b_ext /= 0.0)
+      lbext = any(b_ext /= 0.0) .or. any(b0_ext /= 0.0)
 !
 !  Share it.
 !
@@ -432,6 +435,11 @@ module Magnetic
       real, dimension(mx,3) :: uum, bbm
       real, dimension(nx,3) :: jj, bb
       real, dimension(mx) :: eta_penc
+      real, dimension(3) :: b_ext
+!
+!  Replace B_ext locally to accommodate its time dependence.
+!
+      if (lbext) call get_bext(b_ext)
 !
 !  Reset maxdiffus_eta for time step constraint.
 !
@@ -531,9 +539,11 @@ module Magnetic
       type(pencil_case), intent(inout) :: p
 !
       real, dimension(nx,3,3) :: eij
+      real, dimension(3) :: b_ext
 !
       bb: if (lpencil(i_bb)) then
         if (lbext) then
+          call get_bext(b_ext)
           p%bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
         else
           p%bb = f(l1:l2,m,n,ibx:ibz)
@@ -944,6 +954,11 @@ module Magnetic
       type(slice_data), intent(inout) :: slices
 !
       integer :: ivar
+      real, dimension(3) :: b_ext
+!
+!  Replace B_ext locally to accommodate its time dependence.
+!
+      if (lbext) call get_bext(b_ext)
 !
       slice: select case (trim(slices%name))
 !
@@ -1429,5 +1444,25 @@ module Magnetic
 !  Dummy
 !
     endsubroutine expand_shands_magnetic
+!***********************************************************************
+    subroutine get_bext(B_ext_out)
+!
+!  Get the external magnetic field at current time step.
+!
+!  11-jun-14/ccyang: coded
+!
+      real, dimension(3), intent(out) :: B_ext_out
+!
+      bext: if (t_bext > 0.0 .and. t < t_bext) then
+        if (t <= t0_bext) then
+          B_ext_out = B0_ext
+        else
+          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext - B0_ext)
+        endif
+      else bext
+        B_ext_out = B_ext
+      endif bext
+!
+    endsubroutine get_bext
 !***********************************************************************
 endmodule Magnetic
