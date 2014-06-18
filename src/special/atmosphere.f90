@@ -800,7 +800,7 @@ module Special
       do i3=n1,n2
 !
          do k=1,ndustspec
-          if (f(i1,i2,i3,ind(k))<1e-6) f(i1,i2,i3,ind(k))=1e-6
+          if (f(i1,i2,i3,ind(k))<1e-10) f(i1,i2,i3,ind(k))=1e-10
             if (ldcore) then
               do i=1, ndustspec0
                 if (f(i1,i2,i3,idcj(k,i))<1) f(i1,i2,i3,idcj(k,i))=1.
@@ -813,7 +813,10 @@ module Special
       enddo
       endif
 !
-      call dustspec_normalization_(f)
+
+     if (lACTOS) then
+!       call dustspec_normalization_(f)
+     endif
 !      call write_0d_result(f)
 !
     endsubroutine  special_after_timestep
@@ -1461,6 +1464,16 @@ subroutine bc_satur_x(f,bc)
        enddo
 !
             if (lACTOS) then
+               do k=1,ndustspec
+                 tmp=dsize(k)*1e7*2.
+                 if (tmp<226.15)   then
+                    init_distr2(k) = (341.699*exp(-0.5*( (tmp-155.111) /60.8664 )**2))/dsize(k)
+                 else
+                    init_distr2(k)= (40.1308*exp(-0.5*( (tmp-270.085 ) /371.868 )**2) +0.864957)/dsize(k)
+                 endif
+                    init_distr(:,k)=init_distr2(k)
+               enddo
+              
               if (llarge_part) then
                 do k=1,ndustspec
                   init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
@@ -1496,9 +1509,11 @@ subroutine bc_satur_x(f,bc)
             endif
 !
         if (lACTOS) then
-!          ttt=spline_integral(dsize,init_distr)
-!          Ntot_=ttt(ndustspec)
-!          Ntot =Ntot_
+          ttt=spline_integral(dsize,init_distr2)
+          Ntot_=ttt(ndustspec)
+          Ntot =Ntot_
+print*,'Ntot=',Ntot
+!
 !           Ntot=1e3
         else
           Ntot_=Ntot
