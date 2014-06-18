@@ -2433,7 +2433,7 @@ module Hydro
 !
       if (lforcing_cont_uu) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
-            ampl_fcont_uu*p%fcont
+            ampl_fcont_uu*p%fcont(:,:,1)
 !
 !  Damp motions in some regions for some time spans if desired.
 !  For geodynamo: addition of dampuint evaluation.
@@ -2676,14 +2676,14 @@ module Hydro
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
         if (idiag_fum/=0) then
-          call dot(p%fcont,p%uu,fu)
+          call dot(p%fcont(:,:,1),p%uu,fu)
           call sum_mn_name(ampl_fcont_uu*fu,idiag_fum)
         endif
 !
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
   !     if (idiag_rufm/=0) then
-  !       call dot(p%fcont,p%uu,fu)
+  !       call dot(p%fcont(:,:,1),p%uu,fu)
   !       call sum_mn_name(ampl_fcont_uu*fu,idiag_rufm)
   !     endif
 !
