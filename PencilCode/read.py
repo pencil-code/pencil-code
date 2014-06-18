@@ -106,14 +106,16 @@ def dimensions(datadir='./data'):
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
 #=======================================================================
-def parameters(datadir='./data'):
+def parameters(datadir='./data', par2=False):
     """Returns runtime parameters.
 
     Keyword Arguments:
         datadir
-            Name of the data directory
+            Name of the data directory.
+        par2
+            Read param2.nml if True; read param.nml otherwise.
     """
-    # Chao-Chin Yang, 2013-10-31
+    # Chao-Chin Yang, 2014-06-18
 
     # Function to convert a string to the correct type.
     def convert(v):
@@ -147,7 +149,10 @@ def parameters(datadir='./data'):
             return u
 
     # Read the parameter file.
-    f = open(datadir.strip() + "/param2.nml")
+    if par2:
+        f = open(datadir.strip() + "/param2.nml")
+    else:
+        f = open(datadir.strip() + "/param.nml")
     keys, values = [], []
     for line in f:
         if '=' in line:
