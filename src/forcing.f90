@@ -42,7 +42,7 @@ module Forcing
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=1., d1profz_ampl=0., d2profz_ampl=0.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   integer :: iforcing_zsym=0
@@ -95,7 +95,7 @@ module Forcing
   real, dimension(n_forcing_cont) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
   real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible  
   real, dimension(n_forcing_cont) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
-  real, dimension(n_forcing_cont) :: eps_fcont=0., tgentle=0.
+  real, dimension(n_forcing_cont) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
   real, dimension(n_forcing_cont) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real, dimension(n_forcing_cont) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
@@ -128,7 +128,7 @@ module Forcing
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        ABC_A, ABC_B, ABC_C, &
-       lforcing_cont,iforcing_cont, &
+       lforcing_cont,iforcing_cont, z_center_fcont, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
        kf_fcont, omega_fcont, omegay_fcont, omegaz_fcont, eps_fcont, &
        lsamesign, lshearing_adjust_old, equator, &
@@ -651,10 +651,19 @@ module Forcing
         elseif (iforcing_cont(i)=='(sinz,cosz,0)') then
           sinz(:,i)=sin(kf_fcont(i)*z)
           cosz(:,i)=cos(kf_fcont(i)*z)
-        elseif (iforcing_cont(i)=='(0,cosx*cosz,0)') then
+        elseif (iforcing_cont(i)=='(0,cosx*cosz,0)' &
+           .or. iforcing_cont(i)=='(0,cosx*cosz,0)_Lor') then
           cosx(:,i)=cos(kf_fcont_x(i)*x)
           cosz(:,i)=cos(kf_fcont_z(i)*z)
+          sinx(:,i)=sin(kf_fcont_x(i)*x)
+          sinz(:,i)=sin(kf_fcont_z(i)*z)
           profy_ampl=exp(-(kf_fcont_y(i)*y)**2)
+        elseif (iforcing_cont(i)=='(0,cosx*expmz2,0)' &
+           .or. iforcing_cont(i)=='(0,cosx*expmz2,0)_Lor') then
+          cosx(:,i)=cos(kf_fcont_x(i)*x)
+          profz_ampl=exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
+          d1profz_ampl=-2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
+          d2profz_ampl=(-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2)*exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
         elseif (iforcing_cont(i)=='J0_k1x') then
           do l=l1,l2
             profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
@@ -4463,6 +4472,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  24-mar-08/axel: adapted from density.f90
 !
       if (lforcing_cont) lpenc_requested(i_fcont)=.true.
+      if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
+      if (iforcing_cont(1)=='(0,cosx*expmz2,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
 !
     endsubroutine pencil_criteria_forcing
@@ -4502,8 +4513,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
 
         do i=1,n_forcing_cont
-          if (iforcing_cont(i)=='') exit 
-          call forcing_cont(i,p%fcont(:,:,i))
+          call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
 !
 !  divide by rho if lmomentum_ff=T
 !
@@ -4513,7 +4523,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
-    subroutine forcing_cont(i,force)
+    subroutine forcing_cont(i,force,rho1)
 !
 !   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
 !                and u.grad u for Roberts geometry
@@ -4531,6 +4541,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       integer,                intent(in) :: i
       real, dimension (nx,3), intent(out):: force
+      real, dimension (nx), optional, intent(in) :: rho1
 !
       real, pointer :: gravx
       real, dimension (nx) :: tmp
@@ -4672,6 +4683,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*cosz(n,i)*profy_ampl(m)
           force(:,3)=0.
+!
+!  f=(0,cosx*expmz2,0), modulated by profy_ampl and profz_ampl
+!
+        case ('(0,cosx*expmz2,0)')
+          force(:,1)=0.
+          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*profz_ampl(n)
+          force(:,3)=0.
+!
+!  f=(0,cosx*expmz2,0)_Lor, Lorentz force belonging to f=(0,cosx*expmz2,0)
+!
+        case ('(0,cosx*expmz2,0)_Lor')
+          tmp=ampl_ff(i)**2*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))*rho1
+          force(:,1)=-tmp*sinx(l1:l2,i)*profz_ampl(n)*kx_ff
+          force(:,2)=0.
+          force(:,3)=+tmp*cosx(l1:l2,i)*d1profz_ampl(n)
 !
 !  f=(sinz,cosz,0)
 !
