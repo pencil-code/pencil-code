@@ -249,15 +249,12 @@ module InitialCondition
 !      integer :: i,k,ll1,i1
 !      real :: r0, delta, tmp
 !
-
-
-
-       ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+!       ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
 !
-      do i=0,(ndustspec-1)
-          lnds(i+1)=alog(dsize_min)+i*ddsize
-          dsize(i+1)=exp(lnds(i+1))
-      enddo
+!      do i=0,(ndustspec-1)
+!          lnds(i+1)=alog(dsize_min)+i*ddsize
+!          dsize(i+1)=exp(lnds(i+1))
+!      enddo
 
      ! calculated in ACTOS_part_one.pro  
 !       2769.96
@@ -265,15 +262,15 @@ module InitialCondition
 !      40.1308      270.085      371.868     0.864957
 !
 
-       do k=1,ndustspec
-         tmp2=dsize(k)*1e7*2.
-         if (tmp2<226.15)   then
-          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
-         else
-          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
-         endif
-         
-       enddo
+!       do k=1,ndustspec
+!         tmp2=dsize(k)*1e7*2.
+!         if (tmp2<226.15)   then
+!          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
+!         else
+!          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
+!         endif
+!         
+!       enddo
  
 !       i_spline=16
 
@@ -292,9 +289,9 @@ module InitialCondition
 !         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
          
 
-       do k=1,ndustspec
-         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
-       enddo
+!       do k=1,ndustspec
+!         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
+!       enddo
 !
       
 !
@@ -541,12 +538,12 @@ module InitialCondition
       if (lACTOS_write) then
 
 !       if (lsinhron) then
-         open(143,file="coeff_part.dat")
-         do i=1,1300
-            read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),tmp3,ttime(i)
-            coeff_loc(i,:)=tmp3
-         enddo
-         close(143)
+!         open(143,file="coeff_part.dat")
+!         do i=1,1300
+!            read(143,'(f15.6,f15.6,f15.6,f15.6,f15.6,f15.6,f15.6)'),tmp3,ttime(i)
+!            coeff_loc(i,:)=tmp3
+!         enddo
+!         close(143)
 
 !       endif
 
@@ -562,17 +559,19 @@ module InitialCondition
 !      open(143,file="ACTOS_xyz_new.out")
 !
        j=1
+       i=1
        do  while (j<780000) 
+!        do  while (j<210000) 
 !
         read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
          StartInd=1; StopInd =0
          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
 !
-!        if (i_point==1) then
+!        if (i_point==100) then
 !          i=1
 !        endif
        
-!        if (i==1) then
+        if (i<3) then
 
         k=1
         do  while (k<30) 
@@ -617,8 +616,11 @@ module InitialCondition
 !
 !         if ((input_data(23)>53675.) .and. (input_data(23)<53725.)) then
 !          if ((input_data(23)>52800.) .and. (input_data(23)<52850.)) then
-            if ((input_data(23)>50012.91) .and. (input_data(23)<50063.)) then
+!            if ((input_data(23)>50012.91) .and. (input_data(23)<50063.)) then
+!          if ((input_data(23)>49912.91) .and. (input_data(23)<49963.)) then
 !
+          if ((input_data(23)>50012.) .and. (input_data(23)<52850.)) then
+
             write(143,'(29f15.6)'),input_data
 !
 !!!!!!!!!!!!!!!!
@@ -646,11 +648,14 @@ module InitialCondition
 
           endif
          endif
-!           i=i+1
-!        elseif (i>1) then
-!          i=i+1
-!          if (i==i_point) i=1
-!        endif
+           i=i+1
+        elseif ((i>1) .and. (i_point>1)) then
+          i=i+1
+          if (i==i_point) i=1
+        elseif ((i>1) .and.(i_point==1)) then
+          i=1
+        endif
+ 
         j=j+1
         enddo
 !
