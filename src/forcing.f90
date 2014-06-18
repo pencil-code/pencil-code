@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3)
+! PENCILS PROVIDED fcont(3,n_forcing_cont)
 !
 !***************************************************************
 !
@@ -90,23 +90,24 @@ module Forcing
 !  continuous forcing variables
 !
   logical :: lembed=.false.,lshearing_adjust_old=.false.
-  logical :: lgentle=.false.
-  character (len=labellen) :: iforcing_cont='ABC'
-  real :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
-  real :: kf_fcont=0., omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
-  real :: eps_fcont=0., tgentle=0.
-  real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
-  real :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
+  logical, dimension(n_forcing_cont) :: lgentle=.false.
+  character (len=labellen), dimension(n_forcing_cont) :: iforcing_cont=''
+  real, dimension(n_forcing_cont) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
+  real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible  
+  real, dimension(n_forcing_cont) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
+  real, dimension(n_forcing_cont) :: eps_fcont=0., tgentle=0.
+  real, dimension(n_forcing_cont) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
+  real, dimension(n_forcing_cont) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
   real :: omega_tidal, R0_tidal, phi_tidal
 !
 !  auxiliary functions for continuous forcing function
 !
-  real, dimension (my) :: phi1_ff
-  real, dimension (mx) :: phi2_ff
-  real, dimension (mx) :: sinx,cosx,sinxt,cosxt,embedx
-  real, dimension (my) :: siny,cosy,sinyt,cosyt,embedy
-  real, dimension (mz) :: sinz,cosz,sinzt,coszt,embedz
+  real, dimension (my,n_forcing_cont) :: phi1_ff
+  real, dimension (mx,n_forcing_cont) :: phi2_ff
+  real, dimension (mx,n_forcing_cont) :: sinx,cosx,sinxt,cosxt,embedx
+  real, dimension (my,n_forcing_cont) :: siny,cosy,sinyt,cosyt,embedy
+  real, dimension (mz,n_forcing_cont) :: sinz,cosz,sinzt,coszt,embedz
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -170,7 +171,7 @@ module Forcing
       use Sub, only: step,step_scalar,erfunc,stepdown
 !
       real :: zstar
-      integer :: l
+      integer :: l,i
 !
       logical :: lstarting
 !
@@ -439,7 +440,7 @@ module Forcing
         profz_hel=1.
 !
 ! turn on forcing in the bulk of the convection zone
-     elseif (iforce_profile=='forced_convection') then
+      elseif (iforce_profile=='forced_convection') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
@@ -449,7 +450,7 @@ module Forcing
         profz_hel=1.
 !
 ! turn on forcing in the bulk of the convection zone
-     elseif (iforce_profile=='forced_convection') then
+      elseif (iforce_profile=='forced_convection') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
@@ -585,80 +586,91 @@ module Forcing
 !  and pencils
 !
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
-      if (iforcing_cont=='ABC') then
-        if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='RobertsFlow' .or. iforcing_cont=='RobertsFlow_exact' ) then
-        if (lroot) print*,'forcing_cont: Roberts Flow'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-      elseif (iforcing_cont=='RobertsFlow-zdep') then
-        if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-      elseif (iforcing_cont=='nocos') then
-        if (lroot) print*,'forcing_cont: nocos flow'
-        sinx=sin(k1_ff*x)
-        siny=sin(k1_ff*y)
-        sinz=sin(k1_ff*z)
-     elseif (iforcing_cont=='KolmogorovFlow-x') then
-        if (lroot) print*,'forcing_cont: Kolmogorov flow'
-        cosx=cos(k1_ff*x)
-     elseif (iforcing_cont=='KolmogorovFlow-z') then
-        if (lroot) print*,'forcing_cont: Kolmogorov flow z'
-        cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='TG') then
-        if (lroot) print*,'forcing_cont: TG'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        cosz=cos(k1_ff*z)
-        if (lembed) then
-          embedx=.5+.5*tanh(x/width_fcont)*tanh((pi-x)/width_fcont)
-          embedy=.5+.5*tanh(y/width_fcont)*tanh((pi-y)/width_fcont)
-          embedz=.5+.5*tanh(z/width_fcont)*tanh((pi-z)/width_fcont)
-          sinx=embedx*sinx; cosx=embedx*cosx
-          siny=embedy*siny; cosy=embedy*cosy
-          cosz=embedz*cosz
+
+      do i=1,n_forcing_cont
+
+        if ( iforcing_cont(i)/='' ) then
+          if (kf_fcont(i)  ==impossible) kf_fcont(i)  =k1_ff
+          if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
+          if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
+          if (kf_fcont_z(i)==impossible) kf_fcont_z(i)=kz_ff
         endif
-      elseif (iforcing_cont=='cosx*cosy*cosz') then
-        if (lroot) print*,'forcing_cont: cosx*cosy*cosz'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='sinx') then
-        sinx=sin(k1_ff*x)
-        if (tgentle > 0.) then
-          lgentle=.true.
-          if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
+
+        if (iforcing_cont(i)=='ABC') then
+          if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='RobertsFlow' .or. iforcing_cont(i)=='RobertsFlow_exact' ) then
+          if (lroot) print*,'forcing_cont: Roberts Flow'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+        elseif (iforcing_cont(i)=='RobertsFlow-zdep') then
+          if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+        elseif (iforcing_cont(i)=='nocos') then
+          if (lroot) print*,'forcing_cont: nocos flow'
+          sinx(:,i)=sin(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='KolmogorovFlow-x') then
+          if (lroot) print*,'forcing_cont: Kolmogorov flow'
+          cosx(:,i)=cos(kf_fcont(i)*x)
+        elseif (iforcing_cont(i)=='KolmogorovFlow-z') then
+          if (lroot) print*,'forcing_cont: Kolmogorov flow z'
+          cosz(:,i)=cos(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='TG') then
+          if (lroot) print*,'forcing_cont: TG'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          cosz(:,i)=cos(kf_fcont(i)*z)
+          if (lembed) then
+            embedx(:,i)=.5+.5*tanh(x/width_fcont(i))*tanh((pi-x)/width_fcont(i))
+            embedy(:,i)=.5+.5*tanh(y/width_fcont(i))*tanh((pi-y)/width_fcont(i))
+            embedz(:,i)=.5+.5*tanh(z/width_fcont(i))*tanh((pi-z)/width_fcont(i))
+            sinx(:,i)=embedx(:,i)*sinx(:,i); cosx(:,i)=embedx(:,i)*cosx(:,i)
+            siny(:,i)=embedy(:,i)*siny(:,i); cosy(:,i)=embedy(:,i)*cosy(:,i)
+            cosz(:,i)=embedz(:,i)*cosz(:,i)
+          endif
+        elseif (iforcing_cont(i)=='cosx(:,i)*cosy(:,i)*cosz(:,i)') then
+          if (lroot) print*,'forcing_cont: cosx(:,i)*cosy(:,i)*cosz(:,i)'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='sinx(:,i)') then
+          sinx(:,i)=sin(kf_fcont(i)*x)
+          if (tgentle(i) > 0.) then
+            lgentle(i)=.true.
+            if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
+          endif
+        elseif (iforcing_cont(i)=='(0,sinx,0)') then
+          sinx(:,i)=sin(kf_fcont(i)*x)
+        elseif (iforcing_cont(i)=='(0,0,cosx)') then
+          cosx(:,i)=cos(kf_fcont(i)*x)
+        elseif (iforcing_cont(i)=='(sinz,cosz,0)') then
+          sinz(:,i)=sin(kf_fcont(i)*z)
+          cosz(:,i)=cos(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='(0,cosx*cosz,0)') then
+          cosx(:,i)=cos(kf_fcont_x(i)*x)
+          cosz(:,i)=cos(kf_fcont_z(i)*z)
+          profy_ampl=exp(-(kf_fcont_y(i)*y)**2)
+        elseif (iforcing_cont(i)=='J0_k1x') then
+          do l=l1,l2
+            profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
+            profx_ampl1(l-l1+1)=ampl1_ff(i)*bessj(1,k1bessel0*x(l))
+          enddo
+        elseif (iforcing_cont(i)=='gaussian-z') then
+          profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)*ampl_ff(i)
+          profy_ampl=exp(-.5*y**2/radius_ff**2)
+          profz_ampl=exp(-.5*z**2/radius_ff**2)
+        elseif (iforcing_cont(i)=='fluxring_cylindrical') then
+          if (lroot) print*,'forcing_cont: fluxring cylindrical'
+        elseif (iforcing_cont(i)=='counter_centrifugal') then
+          if (lroot) print*,'forcing_cont: counter_centrifugal'
+          !nothing...
         endif
-      elseif (iforcing_cont=='(0,sinx,0)') then
-        sinx=sin(k1_ff*x)
-      elseif (iforcing_cont=='(0,0,cosx)') then
-        cosx=cos(k1_ff*x)
-      elseif (iforcing_cont=='(sinz,cosz,0)') then
-        sinz=sin(k1_ff*z)
-        cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='(0,cosx*cosz,0)') then
-        cosx=cos(kx_ff*x)
-        cosz=cos(kz_ff*z)
-        profy_ampl=exp(-(ky_ff*y)**2)
-      elseif (iforcing_cont=='J0_k1x') then
-        do l=l1,l2
-          profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
-          profx_ampl1(l-l1+1)=ampl1_ff*bessj(1,k1bessel0*x(l))
-        enddo
-      elseif (iforcing_cont=='gaussian-z') then
-        profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)*ampl_ff
-        profy_ampl=exp(-.5*y**2/radius_ff**2)
-        profz_ampl=exp(-.5*z**2/radius_ff**2)
-      elseif (iforcing_cont=='fluxring_cylindrical') then
-        if (lroot) print*,'forcing_cont: fluxring cylindrical'
-      elseif (iforcing_cont=='counter_centrifugal') then
-        if (lroot) print*,'forcing_cont: counter_centrifugal'
-        !nothing...
-      endif
+      enddo
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -4365,11 +4377,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine hel_vec
 !***********************************************************************
-    subroutine calc_fluxring_cylindrical(force)
+    subroutine calc_fluxring_cylindrical(force,i)
 !
 !   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
 !
-      real, dimension (nx,3), intent(out) :: force
+      real, dimension (nx,3), intent(out):: force
+      integer,                intent(in) :: i
+!
       real, dimension (nx) :: argum,s
       real ::  b0=1., s0=2., width=.2
 !
@@ -4380,17 +4394,19 @@ call fatal_error('hel_vec','radial profile should be quenched')
       force(:,1)=2.*s*(b0/(width*s0))**2*exp(-2*argum**2)*(width**2-s**2+s*s0)
       force(:,2)=0.
       force(:,3)=0.
-      force = fcont_ampl*force
+      force = fcont_ampl(i)*force
 !
     endsubroutine calc_fluxring_cylindrical
 !***********************************************************************
-    subroutine calc_counter_centrifugal(force)
+    subroutine calc_counter_centrifugal(force,i)
 !
 !   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
 ! Calculates the force required to counter the centrifugal force coming
 ! from an existing differential rotation.
 !
-      real, dimension (nx,3), intent(out) :: force
+      real, dimension (nx,3), intent(out):: force
+      integer,                intent(in) :: i
+!
       real, dimension (nx) :: vphi,omega_diffrot
 !
       omega_diffrot = ampl_diffrot*x(l1:l2)**(omega_exponent)
@@ -4398,7 +4414,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       force(:,1)=-vphi**2/x(l1:l2)
       force(:,2)=0.
       force(:,3)=0.
-      force = fcont_ampl*force
+      force = fcont_ampl(i)*force
 !
     endsubroutine calc_counter_centrifugal
 !***********************************************************************
@@ -4411,26 +4427,30 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real :: ecost,esint,ecoxt,ecoyt,ecozt
       intent(in) :: f
 !
+      integer :: i
+!
 !  for the AKA effect, calculate auxiliary functions phi1_ff and phi2_ff
 !
-      if (iforcing_cont=='AKA') then
-        phi1_ff=cos(kf_fcont*y+omega_fcont*t)
-        phi2_ff=cos(kf_fcont*x-omega_fcont*t)
-      elseif (iforcing_cont=='GP') then
-        ecost=eps_fcont*cos(omega_fcont*t)
-        esint=eps_fcont*sin(omega_fcont*t)
-        sinxt=sin(kf_fcont*x+ecost)
-        cosxt=cos(kf_fcont*x+ecost)
-        sinyt=sin(kf_fcont*y+esint)
-        cosyt=cos(kf_fcont*y+esint)
-      elseif (iforcing_cont=='ABCtdep') then
-        ecoxt=eps_fcont*cos(omega_fcont*t)
-        ecoyt=eps_fcont*cos(omegay_fcont*t)
-        ecozt=eps_fcont*cos(omegaz_fcont*t)
-        sinxt=sin(k1_ff*x+ecoxt); cosxt=cos(k1_ff*x+ecoxt)
-        sinyt=sin(k1_ff*y+ecoyt); cosyt=cos(k1_ff*y+ecoyt)
-        sinzt=sin(k1_ff*z+ecozt); coszt=cos(k1_ff*z+ecozt)
-      endif
+      do i=1,n_forcing_cont
+        if (iforcing_cont(i)=='AKA') then
+          phi1_ff(:,i)=cos(kf_fcont(i)*y+omega_fcont(i)*t)
+          phi2_ff(:,i)=cos(kf_fcont(i)*x-omega_fcont(i)*t)
+        elseif (iforcing_cont(i)=='GP') then
+          ecost=eps_fcont(i)*cos(omega_fcont(i)*t)
+          esint=eps_fcont(i)*sin(omega_fcont(i)*t)
+          sinxt(:,i)=sin(kf_fcont(i)*x+ecost)
+          cosxt(:,i)=cos(kf_fcont(i)*x+ecost)
+          sinyt(:,i)=sin(kf_fcont(i)*y+esint)
+          cosyt(:,i)=cos(kf_fcont(i)*y+esint)
+        elseif (iforcing_cont(i)=='ABCtdep') then
+          ecoxt=eps_fcont(i)*cos( omega_fcont(i)*t)
+          ecoyt=eps_fcont(i)*cos(omegay_fcont(i)*t)
+          ecozt=eps_fcont(i)*cos(omegaz_fcont(i)*t)
+          sinxt(:,i)=sin(kf_fcont(i)*x+ecoxt); cosxt(:,i)=cos(kf_fcont(i)*x+ecoxt)
+          sinyt(:,i)=sin(kf_fcont(i)*y+ecoyt); cosyt(:,i)=cos(kf_fcont(i)*y+ecoyt)
+          sinzt(:,i)=sin(kf_fcont(i)*z+ecozt); coszt(:,i)=cos(kf_fcont(i)*z+ecozt)
+        endif
+      enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -4474,20 +4494,26 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       intent(inout) :: f,p
 !
+      integer :: i
+!
 !  calculate forcing
 !
       if (lpencil(i_fcont)) then
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
-        call forcing_cont(p%fcont)
+
+        do i=1,n_forcing_cont
+          if (iforcing_cont(i)=='') exit 
+          call forcing_cont(i,p%fcont(:,:,i))
 !
 !  divide by rho if lmomentum_ff=T
 !
-        if (lmomentum_ff) call multsv_mn(p%rho1,p%fcont,p%fcont)
+          if (i==1 .and. lmomentum_ff) call multsv_mn(p%rho1,p%fcont(:,:,1),p%fcont(:,:,1))
+        enddo
       endif
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
-    subroutine forcing_cont(force)
+    subroutine forcing_cont(i,force)
 !
 !   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
 !                and u.grad u for Roberts geometry
@@ -4503,69 +4529,70 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use Sub, only: quintic_step, quintic_der_step
       use Viscosity, only: getnu
 !
-      real, dimension (nx,3), intent(out) :: force
-      real, pointer :: gravx
+      integer,                intent(in) :: i
+      real, dimension (nx,3), intent(out):: force
 !
+      real, pointer :: gravx
       real, dimension (nx) :: tmp
       real :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
       integer :: ierr
 !
-        select case (iforcing_cont)
+        select case (iforcing_cont(i))
         case('Fz=const')
           force(:,1)=0.
           force(:,2)=0.
-          force(:,3)=ampl_ff
+          force(:,3)=ampl_ff(i)
         case('ABC')
           fact2=relhel
-          fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
-          force(:,1)=fact*(ABC_C*sinz(n    )+fact2*ABC_B*cosy(m)    )
-          force(:,2)=fact*(ABC_A*sinx(l1:l2)+fact2*ABC_C*cosz(n)    )
-          force(:,3)=fact*(ABC_B*siny(m    )+fact2*ABC_A*cosx(l1:l2))
+          fact=ampl_ff(i)/sqrt(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2)
+          force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
+          force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
+          force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
         case('ABCtdep')
           fact2=relhel
-          fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
-          force(:,1)=fact*(ABC_C*sinzt(n    )+fact2*ABC_B*cosyt(m)    )
-          force(:,2)=fact*(ABC_A*sinxt(l1:l2)+fact2*ABC_C*coszt(n)    )
-          force(:,3)=fact*(ABC_B*sinyt(m    )+fact2*ABC_A*cosxt(l1:l2))
+          fact=ampl_ff(i)/sqrt(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2)
+          force(:,1)=fact*(ABC_C(i)*sinzt(n    ,i)+fact2*ABC_B(i)*cosyt(m    ,i))
+          force(:,2)=fact*(ABC_A(i)*sinxt(l1:l2,i)+fact2*ABC_C(i)*coszt(n    ,i))
+          force(:,3)=fact*(ABC_B(i)*sinyt(m    ,i)+fact2*ABC_A(i)*cosxt(l1:l2,i))
         case ('AKA')
-          fact=sqrt(2.)*ampl_ff
-          force(:,1)=fact*phi1_ff(m    )
-          force(:,2)=fact*phi2_ff(l1:l2)
-          force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
+          fact=sqrt(2.)*ampl_ff(i)
+          force(:,1)=fact*phi1_ff(m    ,i)
+          force(:,2)=fact*phi2_ff(l1:l2,i)
+          force(:,3)=fact*(phi1_ff(m,i)+phi2_ff(l1:l2,i))
         case ('grav_z')
           force(:,1)=0
           force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+          force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
         case ('grav_xz')
           call get_shared_variable('gravx', gravx, ierr)
           if (ierr/=0) call stop_it("forcing: "//&
             "there was a problem when getting gravx")
-          force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
+          force(:,1)=gravx*ampl_ff(i)*cos(omega_ff*t)
           force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+          force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
         case('KolmogorovFlow-x')
-          fact=ampl_ff
+          fact=ampl_ff(i)
           force(:,1)=0
-          force(:,2)=fact*cosx(l1:l2)
+          force(:,2)=fact*cosx(l1:l2,i)
           force(:,3)=0
         case('KolmogorovFlow-z')
-          fact=ampl_ff
-          force(:,1)=fact*cosz(n)
+          fact=ampl_ff(i)
+          force(:,1)=fact*cosz(n,i)
           force(:,2)=0.
           force(:,3)=0.
         case ('nocos')
-          fact=ampl_ff
-          force(:,1)=fact*sinz(n)
-          force(:,2)=fact*sinx(l1:l2)
-          force(:,3)=fact*siny(m)
+          fact=ampl_ff(i)
+          force(:,1)=fact*sinz(n    ,i)
+          force(:,2)=fact*sinx(l1:l2,i)
+          force(:,3)=fact*siny(m    ,i)
         case('RobertsFlow')
-          fact=ampl_ff
-          force(:,1)=-fact*cosx(l1:l2)*siny(m)
-          force(:,2)=+fact*sinx(l1:l2)*cosy(m)
-          force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
+          fact=ampl_ff(i)
+          force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)
+          force(:,2)=+fact*sinx(l1:l2,i)*cosy(m,i)
+          force(:,3)=+relhel*fact*cosx(l1:l2,i)*cosy(m,i)*sqrt2
         case('RobertsFlow2d')
-          fact=ampl_ff
+          fact=ampl_ff(i)
           i2d1=1;i2d2=2;i2d3=3
           if (l2dxz) then
             i2d1=2;i2d2=1;i2d3=2
@@ -4580,26 +4607,26 @@ call fatal_error('hel_vec','radial profile should be quenched')
           kx=k1_ff; ky=k1_ff
           kf=sqrt(kx*kx+ky*ky)
           call getnu(nu_input=nu)
-          fact=ampl_ff*kf*kf*nu
-          fact2=ampl_ff*ampl_ff*kx*ky
+          fact=ampl_ff(i)*kf*kf*nu
+          fact2=ampl_ff(i)*ampl_ff(i)*kx*ky
 !
 !!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
-          force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
-          force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
-          force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
+          force(:,1)=-fact*ky*cosx(l1:l2,i)*siny(m,i) - fact2*ky*sinx(l1:l2,i)*cosx(l1:l2,i)
+          force(:,2)=+fact*kx*sinx(l1:l2,i)*cosy(m,i) - fact2*kx*siny(m,i)*cosy(m,i)
+          force(:,3)=+fact*kf*cosx(l1:l2,i)*cosy(m,i)
 !
           if ( Omega/=0. .and. theta==0. ) then              ! Obs, only implemented for rotation axis in z direction.
-            fact = 2.*ampl_ff*Omega
-            force(:,1)= force(:,1)-fact*kx*sinx(l1:l2)*cosy(m)
-            force(:,2)= force(:,2)-fact*ky*cosx(l1:l2)*siny(m)
+            fact = 2.*ampl_ff(i)*Omega
+            force(:,1)= force(:,1)-fact*kx*sinx(l1:l2,i)*cosy(m,i)
+            force(:,2)= force(:,2)-fact*ky*cosx(l1:l2,i)*siny(m,i)
           endif
 !
         case ('RobertsFlow-zdep')
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
-          fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
-               -quintic_step(z(n),+1.-eps_fcont,eps_fcont)
-          dfpara=quintic_der_step(z(n),-1.+eps_fcont,eps_fcont)&
-                -quintic_der_step(z(n),+1.-eps_fcont,eps_fcont)
+          fpara=quintic_step(z(n),-1.+eps_fcont(i),eps_fcont(i)) &
+               -quintic_step(z(n),+1.-eps_fcont(i),eps_fcont(i))
+          dfpara=quintic_der_step(z(n),-1.+eps_fcont(i),eps_fcont(i))&
+                -quintic_der_step(z(n),+1.-eps_fcont(i),eps_fcont(i))
 !
 !  abbreviations
 !
@@ -4607,21 +4634,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  amplitude factor missing in upper lines
 !
-          force(:,1)=-ampl_ff*cosx(l1:l2)*siny(m) &
-                -dfpara*ampl_ff*sinx(l1:l2)*cosy(m)*sqrt21k1
-          force(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
-                -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
-          force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
+          force(:,1)=-ampl_ff(i)*cosx(l1:l2,i)*siny(m,i) &
+              -dfpara*ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i)*sqrt21k1
+          force(:,2)=+ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i) &
+              -dfpara*ampl_ff(i)*cosx(l1:l2,i)*siny(m,i)*sqrt21k1
+          force(:,3)=+fpara*ampl_ff(i)*cosx(l1:l2,i)*cosy(m,i)*sqrt2
 !
 !  f=(sinx,0,0)
 !
         case ('sinx')
-          if (lgentle.and.t<tgentle) then
-            fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
+          if (lgentle(i).and.t<tgentle(i)) then
+            fact=.5*ampl_ff(i)*(1.-cos(pi*t/tgentle(i)))
           else
-            fact=ampl_ff
+            fact=ampl_ff(i)
           endif
-          force(:,1)=fact*sinx(l1:l2)
+          force(:,1)=fact*sinx(l1:l2,i)
           force(:,2)=0.
           force(:,3)=0.
 !
@@ -4630,58 +4657,58 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case ('(0,0,cosx)')
           force(:,1)=0.
           force(:,2)=0.
-          force(:,3)=ampl_ff*cosx(l1:l2)
+          force(:,3)=ampl_ff(i)*cosx(l1:l2,i)
 !
 !  f=(0,sinx,0)
 !
         case ('(0,sinx,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff*sinx(l1:l2)
+          force(:,2)=ampl_ff(i)*sinx(l1:l2,i)
           force(:,3)=0.
 !
 !  f=(0,cosx*cosz,0), modulated by profy_ampl
 !
         case ('(0,cosx*cosz,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff*cosx(l1:l2)*cosz(n)*profy_ampl(m)
+          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*cosz(n,i)*profy_ampl(m)
           force(:,3)=0.
 !
 !  f=(sinz,cosz,0)
 !
         case ('(sinz,cosz,0)')
-          force(:,1)=ampl_ff*sinz(n)
-          force(:,2)=ampl_ff*cosz(n)
+          force(:,1)=ampl_ff(i)*sinz(n,i)
+          force(:,2)=ampl_ff(i)*cosz(n,i)
           force(:,3)=0.
 !
 !  Taylor-Green forcing
 !
         case ('TG')
-          fact=2.*ampl_ff
-          force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
-          force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
+          fact=2.*ampl_ff(i)
+          force(:,1)=+fact*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=-fact*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
           force(:,3)=0.
 !
 !  Compressive u=-grad(phi) with phi=cos(x+y+z) forcing
 !
         case ('cosx*cosy*cosz')
-          fact=-ampl_ff
-          force(:,1)=fact*sinx(l1:l2)*cosy(m)*cosz(n)
-          force(:,2)=fact*cosx(l1:l2)*siny(m)*cosz(n)
-          force(:,3)=fact*cosx(l1:l2)*cosy(m)*sinz(n)
+          fact=-ampl_ff(i)
+          force(:,1)=fact*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=fact*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
 !
 !  Galloway-Proctor (GP) forcing
 !
         case ('GP')
-          fact=ampl_ff/sqrt(2.)
-          force(:,1)=-fact*              sinyt(m)
-          force(:,2)=+fact* sinxt(l1:l2)
-          force(:,3)=-fact*(cosxt(l1:l2)+cosyt(m))
+          fact=ampl_ff(i)/sqrt(2.)
+          force(:,1)=-fact*                sinyt(m,i)
+          force(:,2)=+fact* sinxt(l1:l2,i)
+          force(:,3)=-fact*(cosxt(l1:l2,i)+cosyt(m,i))
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
         case('mbi_emf')
-          fact=2.*ampl_bb*eta_bb/width_bb**2
-          arg=(z(n)-z_bb)/width_bb
+          fact=2.*ampl_bb(i)*eta_bb(i)/width_bb(i)**2
+          arg=(z(n)-z_bb(i))/width_bb(i)
           force(:,1)=fact*tanh(arg)/(cosh(arg))**2
           force(:,2)=0.0
           force(:,3)=0.0
@@ -4703,14 +4730,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  fluxring_cylindrical
 !
         case('fluxring_cylindrical')
-          call calc_fluxring_cylindrical(force)
+          call calc_fluxring_cylindrical(force,i)
         case('counter_centrifugal')
-          call calc_counter_centrifugal(force)
+          call calc_counter_centrifugal(force,i)
 !
 !  blob-like disturbance (gradient of gaussian)
 !
         case('blob')
-          fact=ampl_ff/radius_ff**2
+          fact=ampl_ff(i)/radius_ff**2
           tmp=fact*exp(-.5*((x(l1:l2)-location_fixed(1))**2 &
                            +(y(m)    -location_fixed(2))**2 &
                            +(z(n)    -location_fixed(3))**2)/radius_ff**2)
@@ -4721,13 +4748,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  blob-like disturbance (gradient of gaussian)
 !
         case('zblob')
-          tmp=ampl_ff*exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff**2)
+          tmp=ampl_ff(i)*exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radius_ff**2)
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=tmp
 !
         case default
-          call stop_it('forcing: no continuous iforcing_cont specified')
+          call stop_it('forcing: no valid continuous iforcing_cont specified')
         endselect
 !
     endsubroutine forcing_cont
@@ -4750,28 +4777,28 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (ldiagnos) then
         if (idiag_rufm/=0) then
-          call dot_mn(p%uu,p%fcont,uf)
+          call dot_mn(p%uu,p%fcont(:,:,1),uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
         endif
 !
         if (idiag_ufm/=0) then
-          call dot_mn(p%uu,p%fcont,uf)
+          call dot_mn(p%uu,p%fcont(:,:,1),uf)
           call sum_mn_name(uf,idiag_ufm)
         endif
 !
         if (idiag_ofm/=0) then
-          call dot_mn(p%oo,p%fcont,of)
+          call dot_mn(p%oo,p%fcont(:,:,1),of)
           call sum_mn_name(of,idiag_ofm)
         endif
 !
         if (idiag_qfm/=0) then
-          call dot_mn(p%curlo,p%fcont,qf)
+          call dot_mn(p%curlo,p%fcont(:,:,1),qf)
           call sum_mn_name(qf,idiag_qfm)
         endif
 !
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call cross(p%fcont,p%bb,fxb)
+            call cross(p%fcont(:,:,2),p%bb,fxb)
             call sum_mn_name(fxb(:,1),idiag_fxbxm)
             call sum_mn_name(fxb(:,2),idiag_fxbym)
             call sum_mn_name(fxb(:,3),idiag_fxbzm)
