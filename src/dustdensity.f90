@@ -1346,7 +1346,7 @@ module Dustdensity
 !              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
 !                                -BB0/(8.*dsize(k)**3))
                 p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -2.75e-8*0.1/(2.*(dsize(k)-5e-6)))
+                                -2.75e-8*0.1/(2.*(dsize(k)-1.5e-6)))
 
 !            else
 !              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
@@ -2573,7 +2573,8 @@ module Dustdensity
  
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp
+      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
+      real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
       real, dimension (nx,ndustspec) :: ppsf_full_i
       integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
       real, dimension (35) ::  x2, S
@@ -2595,7 +2596,6 @@ module Dustdensity
                  'p%pp or dsize  has zero value(s)')
           endif
         enddo
-
 !
          do k=1,ndustspec
            if (ldcore) then
@@ -2606,27 +2606,27 @@ module Dustdensity
 !
          do jj=1,nx
            do k=1,ndustspec
-                if ((k>2.) .and. (k<ndustspec-1))  then
-                 ff_tmp(jj,k)=1./16.*(p%nd(jj,k-2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-2))/dsize(k-2))  &
-                             +2./16.*(p%nd(jj,k-1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-1))/dsize(k-1))  &
-                           +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
-                             +2./16.*(p%nd(jj,k+1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+1))/dsize(k+1)) &
-                             +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
-                else
-                 ff_tmp(jj,k)=p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k)
-                endif
+!           do k=2,ndustspec-1
+!                if ((k>2.) .and. (k<ndustspec-1))  then
+!                 ff_tmp(jj,k)=1./16.*(p%nd(jj,k-2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-2))/dsize(k-2))  &
+!                             +2./16.*(p%nd(jj,k-1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-1))/dsize(k-1))  &
+!                           +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
+!                             +2./16.*(p%nd(jj,k+1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+1))/dsize(k+1)) &
+!                             +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
+
+!                else
+                      ff_tmp(jj,k)=p%nd(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
+!                endif
            enddo
          enddo
 !
            call deriv_size(ff_tmp,dndr_dr,dsize,p)
 !
-                if ((k>2.) .and. (k<ndustspec-1))  then
-                 dndr_dr(jj,k)=1./16.*dndr_dr(jj,k-2)  &
-                             +2./16.*dndr_dr(jj,k-1)   &
-                           +10./16.*dndr_dr(jj,k)   &
-                             +2./16.*dndr_dr(jj,k+1)  &
-                             +1./16.*dndr_dr(jj,k+2) 
-                endif
+         do jj=1,nx
+          do k=1,ndustspec
+             dndr_dr(jj,k)=-1./dsize(k)**2*ff_tmp(jj,k)+dndr_dr(jj,k)/dsize(k)
+           enddo
+        enddo
 !
 ! boundary onditions:
 
