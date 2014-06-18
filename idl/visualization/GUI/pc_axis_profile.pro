@@ -150,8 +150,8 @@ pro pc_axis_profile_event, event
 	end
 	'IMAGE': begin
 		WIDGET_CONTROL, event.id, SENSITIVE = 0
-		pc_save_image, file_name+".png", window=win
-		save, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name, file=file_name+".xdr"
+		pc_save_image, file_name+"_profile.png", window=win
+		save, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name, file=file_name+"_profile.xdr"
 		WIDGET_CONTROL, event.id, SENSITIVE = 1
 		break
 	end
