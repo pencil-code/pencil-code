@@ -3462,9 +3462,9 @@ module Magnetic
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont
+      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,2)
 !      if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
-!          ampl_fcont_aa*p%fcont
+!          ampl_fcont_aa*p%fcont(:,:,2)
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
@@ -3655,12 +3655,12 @@ module Magnetic
 !  Mean dot product of forcing and magnetic field, <f.b>.
 !
         if (idiag_fbm/=0) then
-          call dot(p%fcont,p%bb,fb)
+          call dot(p%fcont(:,:,2),p%bb,fb)
           call sum_mn_name(fb,idiag_fbm)
         endif
 !
         if (idiag_fxbxm/=0) then
-          fxbx=p%fcont(:,1)*p%bb(:,1)
+          fxbx=p%fcont(:,1,2)*p%bb(:,1)
           call sum_mn_name(fxbx,idiag_fxbxm)
         endif
 !
