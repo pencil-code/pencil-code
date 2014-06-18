@@ -174,11 +174,23 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-DFUNDERSC=1 -O3 #(emil*)
 ## SunOS:
 #FC=pghpf #(Lomond)
-#FFLAGS= -Msmp -O4  #(Lomond)
-#FC=f95
-#FFLAGS=-O3 -I/opt/local/mpich/include
-#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
-#F77=$(FC)
+#FFLAGS= -Msmp -O4 #(Lomond)
+#FC=f95 #(Lomond)
+#FFLAGS=-O3 -I/opt/local/mpich/include #(Lomond)
+#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio #(Lomond)
+#F77=$(FC) #(Lomond)
+##
+## Sisu - CrayXC30 - (Kajaani)
+##
+#FC=ftn #(sisu*)
+#FC_SLOPPY = $(FC) #(sisu*)
+#F90=$(FC) #(sisu*)
+#CC=cc #(sisu*)
+##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
+#FFLAGS=-O3 -ffree -e m  #(sisu*)
+#FFLAGS_DOUBLE=-s default64 #(sisu*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
+##
 ## GWDG Cluster in Goettingen
 ##
 #FC = mpif90 -std95 # (gwdu101)
