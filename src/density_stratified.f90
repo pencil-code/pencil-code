@@ -44,6 +44,7 @@ module Density
   real, dimension(mz), target :: rho0z
   real, dimension(mz) :: dlnrho0dz
   character(len=8) :: zstrat = 'none'
+  logical :: lconserve_mass = .false.
   logical :: ldiff_shock = .false.
   logical :: ldiff_hyper3_mesh = .false.
   real :: nu_epicycle = 1.0
@@ -51,9 +52,9 @@ module Density
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
 !
-  namelist /density_init_pars/ zstrat, nu_epicycle, initrho, amplrho, beta_glnrho_global
+  namelist /density_init_pars/ zstrat, nu_epicycle, initrho, amplrho, beta_glnrho_global, lconserve_mass
 !
-  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock
+  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass
 !
 !  Diagnostic Variables
 !
@@ -102,6 +103,10 @@ module Density
   integer :: idiag_drhomxy = 0   ! ZAVG_DOC: $\langle\Delta\rho/\rho_0\rangle_z$
   integer :: idiag_drho2mxy = 0  ! ZAVG_DOC: $\langle\left(\Delta\rho/\rho_0\right)^2\rangle_z$
   integer :: idiag_sigma = 0     ! ZAVG_DOC; $\Sigma\equiv\int\rho\,\mathrm{d}z$
+!
+!  Module Variables
+!
+  real :: mass0 = 0.0
 !
 !  Dummy Variables
 !
@@ -179,7 +184,10 @@ module Density
         if (lroot) print *, 'initialize_density: mesh hyper-diffusion; diffrho_hyper3_mesh = ', diffrho_hyper3_mesh
       endif hyper3_mesh
 !
-      call keep_compiler_quiet(f)
+!  Get the total mass.
+!
+      if (lconserve_mass) mass0 = total_mass(f)
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_density
@@ -545,6 +553,32 @@ module Density
       call timing('dlnrho_dt', 'finished', mnloop=.true.)
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine split_update_density(f)
+!
+!  Integrate operator split terms and/or perform post-time-step
+!  processing.
+!
+!  18-jun-14/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      real :: a, a1
+!
+!  Conserve mass and momentum.
+!
+      consrv: if (lconserve_mass) then
+        a = mass0 / total_mass(f)
+        a1 = 1.0 / a
+        zscan: do n = n1, n2
+          yscan: do m = m1, m2
+            f(l1:l2,m,n,irho) = a * f(l1:l2,m,n,irho) + (a - 1.0)
+            if (lhydro) f(l1:l2,m,n,iux:iuz) = a1 * f(l1:l2,m,n,iux:iuz)
+          enddo yscan
+        enddo zscan
+      endif consrv
+!
+    endsubroutine split_update_density
 !***********************************************************************
     subroutine impose_density_floor(f)
 !
@@ -953,5 +987,28 @@ module Density
       call get_density_z(z, rho0z, dlnrho0dz)
 !
     endsubroutine set_stratification
+!***********************************************************************
+    real function total_mass(f)
+!
+!  Gets the total mass.
+!
+!  18-jun-14/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      real :: mass_loc, a
+!
+      mass_loc = 0.0
+      zscan: do n = n1, n2
+        a = rho0z(n) * zprim(n)
+        do m = m1, m2
+          mass_loc = mass_loc + sum(a * yprim(m) * xprim(l1:l2) * (1.0 + f(l1:l2,m,n,irho)))
+        enddo
+      enddo zscan
+      call mpiallreduce_sum(mass_loc, total_mass)
+!
+    endfunction total_mass
 !***********************************************************************
 endmodule Density

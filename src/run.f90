@@ -54,7 +54,7 @@ program run
   use Boundcond,       only: update_ghosts
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
-  use Density,         only: boussinesq
+  use Density,         only: split_update_density, boussinesq
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
@@ -595,6 +595,7 @@ program run
 !
 !  Integrate operator split terms.
 !
+    if (ldensity) call split_update_density(f)
     if (lenergy) call split_update_energy(f)
     if (lmagnetic) call split_update_magnetic(f)
     if (lviscosity) call split_update_viscosity(f)

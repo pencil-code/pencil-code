@@ -2210,6 +2210,14 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
+    subroutine split_update_density(f)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_density
+!***********************************************************************
     subroutine set_border_density(f,df,p)
 !
 !  Calculates the driving term for the border profile

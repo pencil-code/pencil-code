@@ -615,6 +615,14 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
+    subroutine split_update_density(f)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_density
+!***********************************************************************
 !  Here comes a collection of different density stratification routines
 !***********************************************************************
     subroutine isothermal_density(f)

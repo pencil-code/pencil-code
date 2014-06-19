@@ -163,6 +163,14 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
+    subroutine split_update_density(f)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_density
+!***********************************************************************
     subroutine impose_density_floor(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
