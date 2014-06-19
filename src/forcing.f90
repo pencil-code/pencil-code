@@ -663,7 +663,8 @@ module Forcing
           cosx(:,i)=cos(kf_fcont_x(i)*x)
           profz_ampl=exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
           d1profz_ampl=-2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
-          d2profz_ampl=(-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2)*exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
+          d2profz_ampl=  (-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2) &
+                        *exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
         elseif (iforcing_cont(i)=='J0_k1x') then
           do l=l1,l2
             profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
