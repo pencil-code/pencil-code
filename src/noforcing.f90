@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3)
+! PENCILS PROVIDED fcont(3,n_forcing_cont)
 !
 !***************************************************************
 module Forcing
