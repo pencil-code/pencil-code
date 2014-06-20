@@ -4689,7 +4689,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case ('(0,cosx*expmz2,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*profz_ampl(n)
+          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))
           force(:,3)=0.
 !
 !  f=(0,cosx*expmz2,0)_Lor, Lorentz force belonging to f=(0,cosx*expmz2,0)
