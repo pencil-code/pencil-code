@@ -658,7 +658,7 @@ module Testfield
 !  add possibility of forcing that is not delta-correlated in time
 !
         if (lforcing_cont_aatest) &
-          daatest=daatest+ampl_fcont_aatest*p%fcont    ! if lcomplex=T: forcing assumed real!
+          daatest=daatest+ampl_fcont_aatest*p%fcont(:,:,2)    ! if lcomplex=T: forcing assumed real!
 !
 !  add possibility of artificial friction
 !
