@@ -748,10 +748,10 @@ module Testfield
 !
           if (lforcing_cont_aatest) &
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +ampl_fcont_aatest*p%fcont
+              +ampl_fcont_aatest*p%fcont(:,:,2)
           if (lforcing_cont_uutest) &
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-              +ampl_fcont_uutest*p%fcont
+              +ampl_fcont_uutest*p%fcont(:,:,1)
         else
 !
 !  Calculate uufluct=U-Umean.
