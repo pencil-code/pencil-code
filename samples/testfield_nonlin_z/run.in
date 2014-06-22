@@ -14,7 +14,7 @@
   lcalc_uumean=T
 /
 &forcing_run_pars
-  lforcing_cont=T, iforcing_cont='RobertsFlow', ampl_ff=1.
+  lforcing_cont=T, iforcing_cont='RobertsFlow','RobertsFlow', ampl_ff=1.
 /
 &magnetic_run_pars
   lignore_Bext_in_b2=T
