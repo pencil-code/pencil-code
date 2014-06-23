@@ -6656,12 +6656,12 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1,j); enddo
+        forall(i=1:nghost) f(:,:,n1-i,j) = f(:,:,n1,j)
 !
 !  Top boundary.
 !
       case ('top')
-        do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j); enddo
+        forall(i=1:nghost) f(:,:,n2+i,j) = f(:,:,n2,j)
 !
 !  Default.
 !
