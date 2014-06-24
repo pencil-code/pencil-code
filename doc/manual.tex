@@ -3871,6 +3871,33 @@ To start rapidly under Python:
 
 \end{enumerate}
 
+Example of using Python: 
+
+\begin{alltt}
+  \prompt{unix> } ipython -pylab
+\end{alltt}
+
+\begin{alltt}
+  \prompt{In [1]: } import pencil as pc
+  \prompt{In [2]: } ts=pc.read_ts()
+\end{alltt}
+
+\noindent While in IDL you would would type ``print,tag_names(ts)'' in
+the prompt to examine the structure, in python you type
+``ts.'' and  hit tab to see what is inside the class. 
+
+\begin{alltt}
+  \prompt{In [3]: } ts.
+  ts.dt      ts.plot    ts.rhomax  ts.t       ts.xpar2   ts.ypar2   
+  ts.it      ts.rhom    ts.rhomin  ts.xpar1   ts.ypar1   
+\end{alltt}
+
+Next, for plotting, type, for instance: 
+
+\begin{alltt}
+\prompt{In [4]: } plot(ts.t,ts.rhomax) 
+\end{alltt}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Running on multi-processor computers}
