@@ -17,8 +17,9 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  if (coord_system ne 'cartesian') then $
-      message, "yder2_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
+;AB: the following should not be correct
+; if (coord_system ne 'cartesian') then $
+;     message, "yder2_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
 ;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
@@ -62,6 +63,9 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif
 ;
 ;  Set ghost zones.
+;
+  if (any (coord_system eq ['cylindric','spherical'])) then $
+      for l = l1, l2 do d[l,*,*,*] /= x[l]^2
 ;
   if (ghost) then d=pc_setghost(d,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
 ;

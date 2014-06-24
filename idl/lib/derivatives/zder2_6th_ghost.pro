@@ -17,8 +17,9 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  if (coord_system ne 'cartesian') then $
-      message, "zder2_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
+;AB: the following should not be correct
+; if (coord_system ne 'cartesian') then $
+;     message, "zder2_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
 ;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
@@ -59,6 +60,17 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       df_dz[l1:l2,m1:m2,n,*] *= dz_tilde[n]
     endfor
     d += df_dz
+  endif
+;
+  if (coord_system eq 'spherical') then begin
+    if ((fmx ne mx) or (fmy ne my)) then $
+        message, "zder_6th_ghost: not implemented for x- or y-subvolumes in spherical coordinates."
+    sin_y = sin(y)
+    sin1th = 1./sin_y
+    i_sin = where(abs(sin_y) lt 1e-5) ; sinth_min=1e-5
+    if (i_sin[0] ne -1) then sin1th[i_sin] = 0.
+    for l = l1, l2 do d[l,*,*,*] /= x[l]^2
+    for m = m1, m2 do d[*,m,*,*] *= sin1th[m]^2
   endif
 ;
 ;  Set ghost zones.
