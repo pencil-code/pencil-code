@@ -56,7 +56,7 @@ openr, file, filename
 ;;
 spawn, 'wc -l '+filename, nlines
 nlines=long(nlines[0])
-nit=nlines/(1L+nvar*nz/8L)
+nit=nlines/(1L+(nvar*nvar mod 8)+nvar*nz/8L)
 ;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 ;
