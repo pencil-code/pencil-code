@@ -53,6 +53,7 @@ module Particles_nbody
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
   logical :: lgas_gravity=.false.,ldust_gravity=.false.
+  logical :: linertial_frame=.true.
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
   namelist /particles_nbody_init_pars/ &
@@ -61,7 +62,8 @@ module Particles_nbody
       bcspx, bcspy, bcspz, ramp_orbits, lramp, final_ramped_mass, density_scale, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, maxsink, lcreate_sinks, icreate, lcreate_gas, &
-      lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody, lretrograde
+      lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody, lretrograde, &
+      linertial_frame
 !
   namelist /particles_nbody_run_pars/ &
       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -70,7 +72,7 @@ module Particles_nbody
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
       laccrete_when_create, ldt_nbody, cdtpnbody, hills_tempering_fraction, &
-      ltempering, lgas_gravity, ldust_gravity
+      ltempering, lgas_gravity, ldust_gravity, linertial_frame
 !
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -285,6 +287,9 @@ module Particles_nbody
         call fatal_error('initialize_particles_nbody','')
       endif
 !
+      if ((.not.linertial_frame).and.((.not.lcartesian_coords).or.mspar>2))  &
+           call fatal_error('initialize_particles_nbody','Fixed star only for Cartesian and mspar=2')
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -943,6 +948,21 @@ module Particles_nbody
 !************************************************************
     subroutine loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
 !
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension (mspar) :: sq_hills
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
+!
+      if (linertial_frame) then 
+        call loop_through_nbodies_inertial(fp,dfp,k,sq_hills,ineargrid)
+      else
+        call loop_through_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
+      endif
+!
+    endsubroutine loop_through_nbodies
+!************************************************************
+    subroutine loop_through_nbodies_inertial(fp,dfp,k,sq_hills,ineargrid)
+!
 !  Subroutine that adds the gravity from all massive particles.
 !  Particle gravity has always to be added in Cartesian, for better
 !  conservation of the Jacobi constant. 
@@ -985,7 +1005,7 @@ module Particles_nbody
               if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
               return
             endif
-          endif  
+          endif
 !
 !  Shortcut: invr3_ij = r_ij**(-3)
 !
@@ -1026,7 +1046,48 @@ module Particles_nbody
 !
       enddo !nbody loop
 !
-    endsubroutine loop_through_nbodies
+    endsubroutine loop_through_nbodies_inertial
+!**********************************************************
+    subroutine loop_through_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
+!
+!  Gravity acceleration for all bodies, in the reference frame of the star. 
+!  So far, works only for two massive bodies, in Cartesian coordinates. 
+!
+!  23-jun-14/wlad: coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer :: k
+      real, dimension (mspar) :: sq_hills
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real :: r2_ij, rs2, invr3_ij, v_ij,tmp1,tmp2
+      integer :: ks
+!
+      real, dimension (3) :: evr_cart,acc_cart
+!
+      intent(inout) :: fp, dfp
+      intent(in)  :: k
+!
+      if (ipar(k) == istar) then 
+        dfp(k,ivpx:ivpz) = 0.
+      else
+        acc_cart=0.
+        do ks=1,mspar
+          if (ipar(k)/=ks) then
+!
+            evr_cart(1)=fp(k,ixp); evr_cart(2)=fp(k,iyp); evr_cart(3)=fp(k,izp)
+!
+            r2_ij=sum(evr_cart**2)
+            invr3_ij = r2_ij**(-1.5)
+!            
+            acc_cart = - GNewton*invr3_ij*evr_cart(1:3)
+!  
+            dfp(k,ivpx:ivpz) =  dfp(k,ivpx:ivpz) + acc_cart
+          endif
+        enddo
+      endif
+!
+    endsubroutine loop_through_nbodies_fixstar
 !**********************************************************
     subroutine get_evr(xxp,xxsp,evr_cart)
 !
@@ -1712,9 +1773,33 @@ module Particles_nbody
 !
         ggt=ggt+ggp
 !
+!  Add indirect term if the star is fixed at the center
+!
+        if (.not.linertial_frame) call add_indirect_term(ks,ggt)
+!
       enddo
 !
     endsubroutine get_total_gravity
+!***********************************************************************
+    subroutine add_indirect_term(ks,ggt)
+!
+!  Add the terms due to the reference frame being away from the baricenter. 
+!  So far, only for one perturber (two massive bodies), and in Cartesian coordinates.
+!
+!  23-jun-14/wlad: coded
+!
+      real, dimension(mx,3) :: ggt
+      real :: rr1_3
+      integer, intent(in) :: ks
+!
+      if (ks/=istar) then
+        rr1_3=(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)**(-1.5)
+        ggt(:,1) = ggt(:,1) - GNewton*pmass(ks)*fsp(ks,ixp)*rr1_3
+        ggt(:,2) = ggt(:,2) - GNewton*pmass(ks)*fsp(ks,iyp)*rr1_3
+        ggt(:,3) = ggt(:,3) - GNewton*pmass(ks)*fsp(ks,izp)*rr1_3
+      endif
+!
+    endsubroutine add_indirect_term
 !***********************************************************************
     subroutine advance_particles_in_cartesian(fp,dfp)
 !
