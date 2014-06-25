@@ -72,7 +72,7 @@ pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
     endfor
     cmd += " )"
     if (nnewtags ge 1) then begin
-      if (not execute(cmd)) then message, 'Could not create structure: ', cmd
+      if (not execute(cmd)) then print, 'Could not create structure: ', cmd
     endif
 
     return
