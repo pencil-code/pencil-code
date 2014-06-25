@@ -275,6 +275,16 @@ if (ibb gt 0) then begin
   varcontent[ibb].skip       = 2
 endif
 ;
+default, iEE, 0
+if (iEE gt 0) then begin
+  varcontent[iEE].variable   = 'Electric field (EE)'
+  varcontent[iEE].idlvar     = 'EE'
+  varcontent[iEE].idlinit    = INIT_3VECTOR
+  varcontent[iEE].idlvarloc  = 'EE_loc'
+  varcontent[iEE].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iEE].skip       = 2
+endif
+;
 default, ijj, 0
 if (ijj gt 0) then begin
   varcontent[ijj].variable   = 'Current density (jj)'
