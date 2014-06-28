@@ -1135,7 +1135,7 @@ If you have reasons to believe that this is due to changes introduced on
 this by specifying a revision number with \cmd{svn update -r \#\#\#\#\#}.
 One reason why one cannot always reproduce exactly the same situation too far
 back in time is connected with the fact that processor architecture and the
-compiler were different, resulting e.g. in different rounding errors.
+compiler were different, resulting e.g.\ in different rounding errors.
 
 % ---------------------------------------------------------------------- %
 
@@ -6648,8 +6648,8 @@ For example \code{p\%uglnrho} is calculated in \file{density.f90}; see
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
 \end{verbatim}
 So this is a call to a subroutine that calculates the $\uv\cdot\nabla$ operator,
-where there is the possibility of upwinding, but this is \emph{not}
-the default.
+where there is the possibility of \name[Upwinding]{upwinding}, but this is
+\emph{not} the default.
 The piece \code{divu} is calculated in \file{hydro.f90} in the line
 \begin{verbatim}
 !
@@ -10149,7 +10149,7 @@ according to the iterative procedure
   u_i &=& u_{i-1}+\beta_i w_i \;.
 \label{iterform0}
 \end{eqnarray}
-For a three-step scheme we have $i=1,...,3$.
+For a three-step (RK3-2N) scheme we have $i=1,...,3$.
 In order to advance the variable $u$ from $u^{(n)}$ at time $t^{(n)}$
 to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta t$ we set in \Eq{iterform0}
 \begin{equation}
@@ -10206,6 +10206,64 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
   \end{tabular}
 \end{table}
 
+\subsection{Diffusive error from the time-stepping}
+\index{Error, diffusive}
+
+In many cases we use centered first derivatives for the advection
+operator, so the resulting discretization errors are only of
+dispersive nature (proportional to odd derivatives).
+A diffusive error can be obtained from the discretization error
+of the time-stepping scheme.
+For the RK3-2N scheme we have
+\begin{equation}
+\left({\dd f\over\dd t}\right)_{n\rm th\,order}
+=\left({\dd f\over\dd t}\right)_{\rm exact}
++a_n\delta t^n\left({\dd^{n+1} f\over\dd t^{n+1}}\right)+...,
+\end{equation}
+where $a_n=1/(n+1)!=0.5$.
+In particular, for $n=1$ we have $a_1=1/2=0.2$ and
+for $n=3$ we have $a_3=1/24\approx0.04$.
+The advection operator leads to a diffusive error equal to
+$a1\delta t(\uv\cdot\nab)^2$ for $n=1$ and a
+hyperdiffusive error equal to
+$a3\delta t^3(\uv\cdot\nab)^4$ for $n=3$.
+Substituting $\delta t=c_{\rm CFL}\delta x/|\uv|$,
+where $c_{\rm CFL}$ is Courant-Friedrich-Lewy constant,
+we have a diffusive error $\nu\nabla^2$ with negative
+$\nu=-a1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
+and a hyperdiffusive error $-\nu_{\rm hyp}\nabla^4$ with positive
+$\nu_{\rm hyp}=a_3 c_{\rm CFL}^3 |\uv|\delta x^3$ for $n=3$.
+The fact that the hyperdiffusive error has a positive effective
+hyperdiffuvity is an important factor in the choice of this scheme.
+
+To decide whether the effective hyperdiffuvity from the diffusive
+error is significant, we can compare with the error that {\em would}
+occur had we used a third-order upwinding scheme (Sect.~\ref{S-upwind}).
+In that case we would have an effective hyperdiffusive coefficient
+$|\uv|\delta x/12$ that is $1/(12a_3 c_{\rm CFL}^3)\approx5.8$ times
+larger than that from the time stepping scheme.
+In this sense, the hyperdiffusive error can be regarded as small.
+
+Since the hyperdiffusive error is proportional to $-\nabla^4$,
+we cannot directly compare with the physical diffusion which is
+proportional to $\nabla^2$.
+Therefore we define an effective viscosity as
+$\nu_{\rm eff}=\nu_{\rm hyp}k_{\rm Ny}^2$ with $k_{\rm Ny}=\pi/\delta x$
+being the Nyquist wavenumber of the mesh
+of the domain covered by $N$ mesh points.
+We define Reynolds number based on the Nyquist wavenumber as
+$\mbox{Re}_{\rm Ny}=|\uv|/\nu_{\rm eff} k_{\rm Ny}$,
+and find $\mbox{Re}=-24/(\pi c_{\rm CFL})^3\approx 2.3$
+for our favorite choice $c_{\rm CFL}=0.7$.
+Thus, at the scale of the mesh, the effective Reynolds number
+is comparable to the value often obtained in simulations.
+However, in turbulence simulations the viscous cutoff wavenumber
+is usually 5--10 times smaller than $k_{\rm Ny}$, so the relevant
+Reynolds number at the viscous scale is then another 2--3 orders
+of magnitude larger and does therefore not impose a constraint
+in view of the physical viscosity that is applied in such calculations.
+
+%XX
 \subsection{Ionization}
 \index{Ionization}
 \label{S-Ioni}
