@@ -89,7 +89,7 @@ module Sub
   public :: fourier_single_mode
   public :: remove_mean,global_mean
   public :: insert
-  public :: find_max_fvec
+  public :: find_max_fvec, find_xyrms_fvec
   public :: finalize_aver
 !
   interface poly                ! Overload the `poly' function
@@ -6097,6 +6097,27 @@ nameloop: do
       call mpiallreduce_max(umax1, find_max_fvec)
 !
     endfunction find_max_fvec
+!***********************************************************************
+    function find_xyrms_fvec(f, iv) result(rms)
+!
+!  Find the rms magnitude of a vector field in each z.
+!
+!  29-jun-14/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: iv
+      real, dimension(nz) :: rms
+!
+      real, dimension(nz) :: rms_loc
+      integer :: k
+!
+      forall(k = n1:n2) rms_loc(k-nghost) = sum(f(l1:l2,m1:m2,k,iv:iv+2)**2)
+      call mpiallreduce_sum(rms_loc, rms, nz)
+      rms = sqrt(rms / nxygrid)
+!
+    endfunction find_xyrms_fvec
 !***********************************************************************
     subroutine finalize_aver_3D(nproc,idir,arrm)
 !
