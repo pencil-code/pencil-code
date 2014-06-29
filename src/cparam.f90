@@ -9,6 +9,7 @@ module Cparam
   include 'cparam.local'
 !
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
+  integer, parameter :: ngridtot = nxgrid * nygrid * nzgrid
   integer, parameter :: nxygrid=nxgrid*nygrid,nxzgrid=nxgrid*nzgrid,nyzgrid=nygrid*nzgrid
   integer, parameter :: nprocxy=nprocx*nprocy
   integer, parameter :: nprocyz=nprocy*nprocz
