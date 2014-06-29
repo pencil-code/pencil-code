@@ -5,7 +5,7 @@ pro boxbotex_scl,inxy,imxy,imxz,imyz,$
          length=length,xpos=xpos,ip=ip,box=box,$
          centred=centred,shell=shell,r_int=r_int,r_ext=r_ext,$
          zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,magnify=magnify,zmagnify=zmagnify,$
-         nobottom=nobottom,norm=norm
+         nobottom=nobottom, norm=norm, sample=sample
 ;
 ; n=15
 ; inxy=reform(uuu(*,*,n,0))
@@ -170,18 +170,18 @@ if xrot gt 0 then begin
                               ,max=amax,min=amin,top=ncols-2-mincol)+mincol
     endfor
   endfor
-  zimg = rebinbox(reform(zim,nxi*npx,nyi*npy),zoom)
-  zimgbot = rebinbox(reform(zimbot,nxi*npx,nyi*npy),zoom)
-  yimg = rebinbox(reform(yim,nxi*npx,nzi),zoom,/zdir)
-  ximg = rebinbox(reform(xim,nyi*npy,nzi),zoom,/zdir)
+  zimg = rebinbox(reform(zim,nxi*npx,nyi*npy), zoom, sample=sample)
+  zimgbot = rebinbox(reform(zimbot,nxi*npx,nyi*npy), zoom, sample=sample)
+  yimg = rebinbox(reform(yim,nxi*npx,nzi), zoom, /zdir, sample=sample)
+  ximg = rebinbox(reform(xim,nyi*npy,nzi),zoom, /zdir, sample=sample)
   ;
   ; set up masking for transparency, if using shell
   ;
   if keyword_set(shell) then begin
-    zrrg = rebinbox(reform(zrr1,nxi*npx,nyi*npy),zoom)
-    zrr2g = rebinbox(reform(zrr2,nxi*npx,nyi*npy),zoom)
-    yrrg = rebinbox(reform(yrr,nxi*npx,nzi),zoom,/zdir)
-    xrrg = rebinbox(reform(xrr,nyi*npy,nzi),zoom,/zdir)
+    zrrg = rebinbox(reform(zrr1,nxi*npx,nyi*npy), zoom, sample=sample)
+    zrr2g = rebinbox(reform(zrr2,nxi*npx,nyi*npy), zoom, sample=sample)
+    yrrg = rebinbox(reform(yrr,nxi*npx,nzi), zoom, /zdir, sample=sample)
+    xrrg = rebinbox(reform(xrr,nyi*npy,nzi), zoom, /zdir, sample=sample)
     indz=where(zrrg lt r_int or zrrg gt r_ext,nindz)
     indz2=where(zrr2g lt r_int or zrr2g gt r_ext,nindz2)
     indx=where(xrrg lt r_int or xrrg gt r_ext,nindx)

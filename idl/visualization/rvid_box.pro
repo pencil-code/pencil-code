@@ -45,7 +45,7 @@ pro rvid_box, field, $
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
   magnify=magnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, $
-  xmax=xmax, ymax=ymax, $
+  xmax=xmax, ymax=ymax, sample=sample, $
   xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
   size_label=size_label, $
   monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
@@ -392,7 +392,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
                      amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
                      xpos=xpos,magnify=magnify,zmagnify=zmagnify,scale=scale, $
-                     nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
+                     nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,sample=sample
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin
             xyouts,xlabel,ylabel,label,col=1,siz=size_label,charthick=thlabel
@@ -424,7 +424,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
           endif
           boxbotex_scl,xy2s,xys,xzs,yzs,1.,1.,zof=.36,zpos=.25,ip=3,$
               amin=amin,amax=amax,dev=dev,$
-              shell=shell,centred=centred,scale=scale,$
+              shell=shell,centred=centred,scale=scale,sample=sample,$
               r_int=r_int,r_ext=r_ext,zrr1=zrr1,zrr2=zrr2,yrr=rrxz,xrr=rryz,$
               nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
           xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
@@ -434,7 +434,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Comment me.
 ;
           boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=.65,zpos=.34,ip=3,$
-              amin=amin,amax=amax,dev=dev,$
+              amin=amin,amax=amax,dev=dev,sample=sample,$
               shell=shell,$
               r_int=r_int,r_ext=r_ext,zrr1=rrxy,zrr2=rrxy2,yrr=rrxz,xrr=rryz,$
               nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
