@@ -75,7 +75,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, dynamical_viscosity
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
@@ -86,9 +86,10 @@ module Equ
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
+      real, dimension(nz) :: ucz
       integer :: iv
       integer :: ivar1,ivar2
-      real :: umax = 0.0
+      real :: uc = 0.0
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -268,13 +269,12 @@ module Equ
 !
 !  Dynamical (hyper-)diffusion coefficients
 !
-      if (ldynamical_diffusion) then
-        umax = find_max_fvec(f,iux)
-        if (lviscosity) call dynamical_viscosity(umax)
-        if (ldensity) call dynamical_diffusion(umax)
-        if (lmagnetic) call dynamical_resistivity(umax)
-        if (lenergy) call dynamical_thermal_diffusion(umax)
-      endif
+      dyndiff: if (ldyndiff_urmsmxy) then
+        ucz = find_xyrms_fvec(f, iuu)
+      else if (ldynamical_diffusion) then dyndiff
+        uc = find_max_fvec(f, iuu)
+        call set_dyndiff_coeff(uc)
+      endif dyndiff
 !
 !  For calculating the pressure gradient directly from the pressure (which is
 !  derived from the basic thermodynamical variables), we need to fill in the
@@ -347,6 +347,10 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+!
+!  Dynamical (hyper-)diffusion coefficients in each horizontal plane.
+!
+        if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) call set_dyndiff_coeff(ucz(n-nghost))
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -1182,5 +1186,25 @@ module Equ
       endif
 !
     endsubroutine output_crash_files
+!***********************************************************************
+    subroutine set_dyndiff_coeff(us)
+!
+!  Set dynamical diffusion coefficients.
+!
+!  29-jun-14/ccyang: coded.
+!
+      use Density, only: dynamical_diffusion
+      use Magnetic, only: dynamical_resistivity
+      use Energy, only: dynamical_thermal_diffusion
+      use Viscosity, only: dynamical_viscosity
+!
+      real, intent(in) :: us
+!
+      if (ldensity) call dynamical_diffusion(us)
+      if (lmagnetic) call dynamical_resistivity(us)
+      if (lenergy) call dynamical_thermal_diffusion(us)
+      if (lviscosity) call dynamical_viscosity(us)
+!
+    endsubroutine set_dyndiff_coeff
 !***********************************************************************
 endmodule Equ

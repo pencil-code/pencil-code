@@ -649,6 +649,7 @@ module Cdata
 !
   real :: re_mesh=0.5
   logical :: ldynamical_diffusion=.false.
+  logical :: ldyndiff_urmsmxy = .false.
 !
 !***********************************************************************
 endmodule Cdata
