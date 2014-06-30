@@ -45,7 +45,7 @@ module InitialCondition
      integer :: imass=1, spot_number=10
      integer :: index_H2O=3
      integer :: index_N2=4, i_point=1
-     integer :: Ndata=10
+     integer :: Ndata=10, Nadd_points=0
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
@@ -61,6 +61,7 @@ module InitialCondition
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true., lcurved_xy=.false.
      logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
+     logical :: ladd_points=.false.
 
 !
     namelist /initial_condition_pars/ &
@@ -68,7 +69,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points
 !
   contains
 !***********************************************************************
@@ -497,11 +498,10 @@ module InitialCondition
 !***********************************************************************
     subroutine ACTOS_data(f)
 !
-   
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (20000) ::  PP_data, rhow_data, TT_data
+      real, dimension (20000) ::  PP_data_add, rhow_data_add, TT_data_add
       real, dimension (20000) ::  ux_data, uy_data, uz_data, ttime2
       real, dimension (1340) ::  ttime
       real, dimension (1300,6) ::  coeff_loc
@@ -509,7 +509,6 @@ module InitialCondition
       real, dimension (20000,ndustspec) :: init_distr_loc, init_distr_tmp
       real, dimension (6) ::  tmp3
       real, dimension (ndustspec) ::  tmp4
-      
 !
       logical :: emptyfile=.true., lfind
       logical :: found_specie
@@ -525,16 +524,9 @@ module InitialCondition
 
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3, i1_left,i1_right
-
-
-!      ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+      logical :: lwrite_string=.false.
+      
 !
-!      do i=0,(ndustspec-1)
-!          lnds(i+1)=alog(dsize_min)+i*ddsize
-!          dsize(i+1)=exp(lnds(i+1))
-!      enddo
-
-
       if (lACTOS_write) then
 
 !       if (lsinhron) then
@@ -544,11 +536,8 @@ module InitialCondition
 !            coeff_loc(i,:)=tmp3
 !         enddo
 !         close(143)
-
 !       endif
 
-
-!print*,coeff_loc(1,1)
 
 !      air_mass=0.
       StartInd_1=1; StopInd_1 =0 
@@ -560,22 +549,27 @@ module InitialCondition
 !
        j=1
        i=1
-       do  while (j<780000) 
-!        do  while (j<210000) 
-!
+       lwrite_string=.true.
+       do  while (j<=780000) 
         read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
          StartInd=1; StopInd =0
          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
 !
-!        if (i_point==100) then
-!          i=1
-!        endif
-       
-        if (i<3) then
+         if ((i>1) .and. (i_point>1)) then
+          if (i<i_point) then
+           i=i+1
+           lwrite_string=.false.
+          elseif (i==i_point) then
+           lwrite_string=.true.
+           i=1
+          endif
+         elseif ((i>1) .and.(i_point==1)) then
+           lwrite_string=.true.
+         endif  
 
-        k=1
+        if (lwrite_string) then
+         k=1
         do  while (k<30) 
-!
          if (StopInd==StartInd) then
             StartInd=StartInd+1
           else
@@ -592,7 +586,6 @@ module InitialCondition
         enddo
 !
          if (lsinhron) then
-!
            ttime2(j)=input_data(23)
            lfind=.false.
 !
@@ -609,7 +602,6 @@ module InitialCondition
              print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
             endif
            enddo
-!
          else
 ! 
           lfind=.false.
@@ -620,40 +612,11 @@ module InitialCondition
 !          if ((input_data(23)>49912.91) .and. (input_data(23)<49963.)) then
 !
           if ((input_data(23)>50012.) .and. (input_data(23)<52850.)) then
-
             write(143,'(29f15.6)'),input_data
-!
-!!!!!!!!!!!!!!!!
-!            do jj=2,1300 
-!            if ((ttime(jj-1)<=input_data(23)) .and. (ttime(jj)>input_data(23))) then
-!              do i=1,6
-!                tmp3(i)=coeff_loc(jj-1,i)+(coeff_loc(jj,i)-coeff_loc(jj-1,i)) &
-!                      *(input_data(23)-ttime(jj-1))/(ttime(jj)-ttime(jj-1))
-!              enddo              
-!              write(144,'(29f15.6)'),tmp3,input_data(23)
-!            endif
-!            enddo
-!!!!!!!!!!!!!!!
-            lfind=.false.
-            do jj=1,1300 
-            if (abs(ttime(jj)-input_data(23))<0.05) then
-              write(144,'(29f15.6)'),coeff_loc(jj,:),input_data(23)
-              lfind=.true.
-            endif
-            enddo
-!
-            if (.not. lfind) then
-              write(144,'(29f15.6)'),0.,0.,0.,0.,0.,0.,input_data(23)
-            endif
-
           endif
          endif
            i=i+1
-        elseif ((i>1) .and. (i_point>1)) then
-          i=i+1
-          if (i==i_point) i=1
-        elseif ((i>1) .and.(i_point==1)) then
-          i=1
+           lwrite_string=.false.
         endif
  
         j=j+1
@@ -675,16 +638,14 @@ module InitialCondition
         do i=1,Ndata 
           read(143,'(29f15.6)'),input_data
           TT_data(i)=input_data(10)+272.15
-!
           PP_data(i)=input_data(7)*1e3   !dyn
-!
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
 !          uvert(i)=input_data(26)*1e2
 
-          ux_data(i)=input_data(25)*1e2 
-          uy_data(i)=input_data(26)*1e2 
-          uz_data(i)=input_data(27)*1e2
-          Ntot_data(i)=input_data(11)
+!          ux_data(i)=input_data(25)*1e2 
+!          uy_data(i)=input_data(26)*1e2 
+!          uz_data(i)=input_data(27)*1e2
+!          Ntot_data(i)=input_data(11)
 
         enddo
       close(143)
@@ -695,37 +656,40 @@ module InitialCondition
 !          ux_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
 !          uy_data(i)=uvert(i)/cos(input_data2(19))/sin(input_data2(20))
 !          uz_data(i)=uvert(i)/sin(input_data2(19))
-          
-         
-!
-!print*,ux_data(i),uy_data(i),i, sin(input_data2(20)),input_data2(20),input_data2(20)*180./3.1415
-!!     
 !        enddo
 !      close(143)
 !
-!        ll1=anint((x(l1)-xyz0(1))/dx)
-        
-!        do i=l1,l2
-!          f(i,:,:,ilnTT)=alog(TT_data(ll1+i-3))
-!          f(i,:,:,ichemspec(index_H2O))=rhow_data(ll1+i-3)/1e-2  !g/cm3
-!
-!          if (init_ux /= impossible) then
-!            f(i,:,:,iux)=init_ux
-!          else
-!            f(i,:,:,iux)=ux_data(ll1+i-3)
-!          endif
-!          
-!        enddo
 
+
+       if (ladd_points) then
+         k=1
+         do i=1,Ndata-1
+         do j=1,Nadd_points
+           if (j==1) then
+             TT_data_add(k)=TT_data(i)
+             PP_data_add(k)=PP_data(i)
+             rhow_data_add(k)=rhow_data(i)
+           else
+             TT_data_add(k)=TT_data(i)+(TT_data(i+1)-TT_data(i))*j/(Nadd_points+1)
+             PP_data_add(k)=PP_data(i)+(PP_data(i+1)-PP_data(i))*j/(Nadd_points+1)
+             rhow_data_add(k)=rhow_data(i)+(rhow_data(i+1)-rhow_data(i))*j/(Nadd_points+1)
+           endif
+           k=k+1
+         enddo  
+         enddo
+       endif   
 
         mm1=anint((y(l1)-xyz0(2))/dy)
         
         do i=m1,m2
-          f(:,i,:,ilnTT)=alog(TT_data(mm1+i-3))
-          f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/1e-2  !g/cm3
+          if (ladd_points) then
+            f(:,i,:,ilnTT)=alog(TT_data_add(mm1+i-3))
+            f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/1e-2  !g/cm3
+          else
+            f(:,i,:,ilnTT)=alog(TT_data(mm1+i-3))
+            f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/1e-2  !g/cm3
+          endif
         enddo
-         
-
 
 !        if (nygrid>1) then
 !          mm1=anint((y(m1)-xyz0(2))/dy)
@@ -771,21 +735,22 @@ module InitialCondition
        enddo
        air_mass=1./sum_Y
 !
-!         do i=l1,l2
-!           f(i,:,:,ilnrho)=alog(PP_data(ll1+i-3)/(k_B_cgs/m_u_cgs)*&
-!           air_mass(i,:,:)/exp(f(i,:,:,ilnTT)))/unit_mass*unit_length**3
-!         enddo
-
          do i=m1,m2
-           f(:,i,:,ilnrho)=alog(PP_data(mm1+i-3)/(k_B_cgs/m_u_cgs)*&
-           air_mass(:,i,:)/exp(f(:,i,:,ilnTT)))/unit_mass*unit_length**3
+           if (ladd_points) then
+             tmp2=PP_data_add(mm1+i-3)/(k_B_cgs/m_u_cgs)
+           else
+             tmp2=PP_data(mm1+i-3)/(k_B_cgs/m_u_cgs)
+           endif
+           f(:,i,:,ilnrho)=alog(tmp2*air_mass(:,i,:)/exp(f(:,i,:,ilnTT)))/unit_mass*unit_length**3
          enddo
-
-
 !
        if (iter<4) then
          do i=m1,m2
-           f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/exp(f(:,i,:,ilnrho))
+           if (ladd_points) then
+             f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/exp(f(:,i,:,ilnrho))
+           else
+             f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/exp(f(:,i,:,ilnrho))
+           endif
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
        endif

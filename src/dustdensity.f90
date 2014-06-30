@@ -78,7 +78,7 @@ module Dustdensity
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
   logical :: ldiffusion_dust=.true., ldust_cdtc=.false.
-  logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
+ logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
   logical :: ldiffd_simpl_anisotropic=.false.
@@ -1346,7 +1346,7 @@ module Dustdensity
 !              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
 !                                -BB0/(8.*dsize(k)**3))
                 p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -2.75e-8*0.1/(2.*(dsize(k)-1.5e-6)))
+                                -2.75e-8*0.1/(2.*(dsize(k)-0.95e-6)))
 
 !            else
 !              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
@@ -2569,7 +2569,7 @@ module Dustdensity
 !
 !  10-may-10/Natalia: coded
 !
-      use General, only: spline, spline_derivative_double
+!      use General, only: spline, spline_derivative_double
  
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
