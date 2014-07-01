@@ -711,7 +711,7 @@ module Testfield
           call curl_mn(aijtest,bbtest,aatest)
           call cross_mn(p%uu,bbtest,uxbtest)
         endif
-%MR: yet wrong: needs uufluct x bbtest instead of p%uu x bbtest here
+!MR: yet wrong: needs uufluct x bbtest instead of p%uu x bbtest here
         bpq(:,:,jtest)=bbtest
         Eipq(:,:,jtest)=uxbtest*bamp1
         if (ldiagnos) jpq(:,:,jtest)=jjtest
