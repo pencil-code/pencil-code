@@ -82,7 +82,7 @@ module Dustdensity
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
   logical :: ldiffd_simpl_anisotropic=.false.
-  logical :: latm_chemistry=.false.
+  logical :: latm_chemistry=.false., lsubstep=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
   integer :: iadvec_ddensity=0
@@ -97,7 +97,7 @@ module Dustdensity
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
-      advec_ddensity, dustdensity_floor, init_x1, init_x2
+      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -1097,7 +1097,7 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp, Imr, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (nx,ndustspec) :: dndr_tmp
+      real, dimension (nx,ndustspec) :: dndr_tmp, nd_substep
       real, dimension (ndustspec) :: ff_tmp,ttt
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
@@ -1418,10 +1418,26 @@ module Dustdensity
             else
               if (.not. ldcore) then
                 Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
-                call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,0)
-                do k=1,ndustspec
-                  p%dndr(:,k)=-Imr*dndr_tmp(:,k)
-                enddo
+                if (lsubstep) then
+                  p%dndr=0.
+                  nd_substep=p%nd
+                  do i=1,100
+                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+                    do k=1,ndustspec
+                      nd_substep(:,k)=nd_substep(:,k)-Imr*dndr_tmp(:,k)*2e-7
+                    enddo
+                  enddo
+                  do k=1,ndustspec
+                    p%dndr(:,k)=nd_substep(:,k)-p%nd(:,k)
+                  enddo
+                else
+                  call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+                  do k=1,ndustspec
+                    p%dndr(:,k)=-Imr*dndr_tmp(:,k)
+                  enddo
+                endif
+                  
+                  
 
 !
               endif
@@ -1531,7 +1547,7 @@ module Dustdensity
                ppsf_full(:,k,i)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
                                 -BB(i)/(8.*dsize(k)**3))
              enddo
-             call droplet_redistr(p,f,ppsf_full(:,:,i),dndr_tmp,i)
+             !call droplet_redistr(p,f,ppsf_full(:,:,i),dndr_tmp,nd_substep,i)
              do k=1, ndustspec;
                dndr_full(:,k,i)=-Imr*dndr_tmp(:,k)
                df(l1:l2,m,n,idcj(k,i))=df(l1:l2,m,n,idcj(k,i))+dndr_full(:,k,i)
@@ -2563,7 +2579,7 @@ module Dustdensity
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************
-    subroutine droplet_redistr(p,f,ppsf_full_i,dndr_dr, i)
+    subroutine droplet_redistr(p,f,ppsf_full_i,dndr_dr, nd_substep, i)
 !
 !  Redistribution over the size in the atmospheric physics case
 !
@@ -2575,7 +2591,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
       real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
-      real, dimension (nx,ndustspec) :: ppsf_full_i
+      real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep
       integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
       real, dimension (35) ::  x2, S
       real, dimension (6) ::  X1, Y1
