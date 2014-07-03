@@ -2754,9 +2754,9 @@ module Special
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system == 'SI') then
-        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
+        granr=max(real(0.8*1.e6/unit_length),3*dx,3*dy)
       elseif  (unit_system == 'cgs') then
-        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+        granr=max(real(0.8*1.e8/unit_length),3*dx,3*dy)
       endif
 !
 ! Fractional difference in granule power
