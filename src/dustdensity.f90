@@ -1420,15 +1420,20 @@ module Dustdensity
                 Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 if (lsubstep) then
                   p%dndr=0.
-                  nd_substep=p%nd
-                  do i=1,100
+                  do k=1,ndustspec
+                   nd_substep(:,k)=f(l1:l2,m,n,ind(k))
+                  enddo
+                  do i=1,10
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                     do k=1,ndustspec
                       nd_substep(:,k)=nd_substep(:,k)-Imr*dndr_tmp(:,k)*2e-7
                     enddo
                   enddo
                   do k=1,ndustspec
-                    p%dndr(:,k)=nd_substep(:,k)-p%nd(:,k)
+                    p%dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
+                    
+!                 print*,maxval(p%dndr(:,k))   
+                    
                   enddo
                 else
                   call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
@@ -1505,7 +1510,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
-      real, dimension (nx,ndustspec) :: dndr_tmp
+      real, dimension (nx,ndustspec) :: dndr_tmp=0.
       integer :: k,i,j
       real :: tmpl
 !
@@ -2631,7 +2636,11 @@ module Dustdensity
 !                             +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
 
 !                else
-                      ff_tmp(jj,k)=p%nd(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
+                if (lsubstep) then
+                  ff_tmp(jj,k)=nd_substep(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
+                else
+                  ff_tmp(jj,k)=p%nd(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
+                endif      
 !                endif
            enddo
          enddo
