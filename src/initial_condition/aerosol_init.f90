@@ -598,7 +598,7 @@ module InitialCondition
 !
             if ((ttime2(j) == ttime2(j-1)) .or. (j==1)) lfind=.false.
             if (lfind) then 
-              write(143,'(29f15.6)'),input_data
+              write(143,'(29f15.6)') input_data
              print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
             endif
            enddo
@@ -612,7 +612,7 @@ module InitialCondition
 !          if ((input_data(23)>49912.91) .and. (input_data(23)<49963.)) then
 !
           if ((input_data(23)>50012.) .and. (input_data(23)<52850.)) then
-            write(143,'(29f15.6)'),input_data
+            write(143,'(29f15.6)') input_data
           endif
          endif
            i=i+1
@@ -636,7 +636,7 @@ module InitialCondition
     if (lACTOS_read) then
         open(143,file="ACTOS_new.out")
         do i=1,Ndata 
-          read(143,'(29f15.6)'),input_data
+          read(143,'(29f15.6)') input_data
           TT_data(i)=input_data(10)+272.15
           PP_data(i)=input_data(7)*1e3   !dyn
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
@@ -652,7 +652,7 @@ module InitialCondition
 !
 !      open(143,file="ACTOS_xyz_new.out")
 !        do i=1,Ndata
-!          read(143,'(29f15.6)'),input_data2
+!          read(143,'(29f15.6)') input_data2
 !          ux_data(i)=uvert(i)/cos(input_data2(19))/cos(input_data2(20))
 !          uy_data(i)=uvert(i)/cos(input_data2(19))/sin(input_data2(20))
 !          uz_data(i)=uvert(i)/sin(input_data2(19))

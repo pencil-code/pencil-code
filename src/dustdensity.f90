@@ -1346,7 +1346,7 @@ module Dustdensity
 !              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
 !                                -BB0/(8.*dsize(k)**3))
                 p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -2.75e-8*0.1/(2.*(dsize(k)-0.95e-6)))
+                                -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
 
 !            else
 !              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
