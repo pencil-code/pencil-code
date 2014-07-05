@@ -515,7 +515,7 @@ module InitialCondition
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
-      real ::  TT=300., ddsize, tmp2, right, left
+      real ::  TT=300., ddsize, tmp2, right, left, PP_aver
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2, stor1
       real, dimension(29)    :: input_data, input_data2
@@ -660,6 +660,8 @@ module InitialCondition
 !      close(143)
 !
 
+        PP_aver=sum(PP_data)/Ndata
+        PP_data=PP_aver
 
        if (ladd_points) then
          k=1
@@ -684,10 +686,10 @@ module InitialCondition
         do i=m1,m2
           if (ladd_points) then
             f(:,i,:,ilnTT)=alog(TT_data_add(mm1+i-3))
-            f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/1e-2  !g/cm3
+            f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/1e-2/10.  !g/cm3
           else
             f(:,i,:,ilnTT)=alog(TT_data(mm1+i-3))
-            f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/1e-2  !g/cm3
+            f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/1e-2/10.  !g/cm3
           endif
         enddo
 
