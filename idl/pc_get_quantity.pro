@@ -779,12 +779,13 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
+function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, quiet=quiet
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
+	default, quiet, 1
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
 	if (n_elements (quantity) eq 0) then quantity = ""
@@ -822,7 +823,7 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	end
 
 	if (size (vars, /type) eq 7) then begin
-		pc_read_var_raw, obj=vars, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param
+		pc_read_var_raw, obj=vars, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param, quiet=quiet
 	end
 
 	; Setup 'start.in' and 'run.in' parameters
@@ -831,7 +832,7 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	run_par = run_param
 
 	; Set default units
-	if (n_elements (units) eq 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=start_param, /quiet
+	if (n_elements (units) eq 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=start_param, quiet=quiet
 	unit = units
 
 	if (size (vars, /type) eq 8) then begin
@@ -851,7 +852,7 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 			print, "ERROR: Data doesn't fit to the loaded dim structure, please pass the corresponding dim structure as parameter."
 			return, -1
 		end
-		pc_read_dim, obj=glob_dim, datadir=datadir, /quiet
+		pc_read_dim, obj=glob_dim, datadir=datadir, quiet=quiet
 		l1 = glob_dim.nghostx
 		l2 = mx - 1 - glob_dim.nghostx
 		m1 = glob_dim.nghosty
