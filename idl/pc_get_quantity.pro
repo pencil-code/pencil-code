@@ -779,13 +779,13 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, quiet=quiet
+function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, verbose=verbose
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
-	default, quiet, 1
+	if (keyword_set (verbose)) then quiet = 0 else quiet = 1
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
 	if (n_elements (quantity) eq 0) then quantity = ""
@@ -823,7 +823,8 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	end
 
 	if (size (vars, /type) eq 7) then begin
-		pc_read_var_raw, obj=vars, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param, quiet=quiet
+		varfile = vars
+		pc_read_var_raw, obj=vars, varfile=varfile, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param, quiet=quiet
 	end
 
 	; Setup 'start.in' and 'run.in' parameters
