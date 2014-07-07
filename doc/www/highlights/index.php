@@ -19,12 +19,17 @@ Currently, we have the following highlights planned:
 // Please replace "<X ...>...</X> with <a ...>...</a> when the proper documents are ready"
 //
 -->
-	<li><X href="/highlights/isotropic_turbulence/">Isotropic turbulence</X> [AB]</li>
-	<li><X href="/highlights/stellar_convection/">Stellar convection</X> [BD/DB]</li>
-	<li><X href="/highlights/magnetorotational_instability/">Magnetorotational instability</X> [AJ]</li>
-	<li><X href="/highlights/streaming_instability/">Streaming instability</X> [DC/ML/AJ]</li>
-	<li><X href="/highlights/global_cartesian_discs/">Global cartesian discs</X> [WL]</li>
+	<li><X href="/highlights/isotropic_turbulence/">Isotropic turbulence</X> [NH]</li>
+	<li><X href="/highlights/stellar_convection/">Stellar convection</X> [PJK/JW]</li>
+	<li><X href="/highlights/magnetorotational_instability/">Magnetorotational instability</X> [AJ/WL]</li>
+	<li><X href="/highlights/Kelvin_Helmholtz/">Kelvin Helmholtz instability</X> [MM/WL]</li>
+	<li><X href="/highlights/streaming_instability/">Streaming instability</X> [DC/ML/AJ/WL]</li>
+	<li><X href="/highlights/global_cartesian_discs/">Global discs</X> [WL]</li>
 	<li><X href="/highlights/particle_flow_around_objects/">Particle flow around objects</X> [NH/DM]</li>
+	<li><X href="/highlights/coronal_heating/">Coronal heating</X> [SB/PB/JW]</li>
+	<li><X href="/highlights/spot_self_assembly/">spot self assembly</X> [AB]</li>
+	<li><X href="/highlights/test_methods/">test methods</X> [MR]</li>
+	<li><X href="/highlights/supernova_driven_turbulence/">Supernova-driven turbulence</X> [MR]</li>
 </ul>
 
 <u>This is a test page / template for the highlights subdirectory.</u>
