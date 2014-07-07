@@ -125,7 +125,7 @@ module Particles_coagulation
 !
 !  If using the Zsom-Dullemond Monte Carlo method
 !
-      if(lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
+      if (lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
         allocate(r_ik_mat(mpar_loc,mpar_loc))
         allocate(r_i_tot(mpar_loc))
         allocate(cum_func_first_i(mpar_loc))
@@ -154,7 +154,7 @@ module Particles_coagulation
 !
 !  If using the Zsom and Dullemond Monte Carlo method
 !
-      if(lzsomdullemond) then
+      if (lzsomdullemond) then
         call particles_coag_timestep_zd(fp)
         return
       end if
@@ -273,7 +273,7 @@ module Particles_coagulation
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
-      if(lzsomdullemond) then
+      if (lzsomdullemond) then
         call particles_coag_outcome_zd(fp)
         return
       end if
@@ -712,14 +712,14 @@ module Particles_coagulation
             cum_func_sec_ik(j,l) = r_i_tot(j)        ! cum. func. for phys. part.
 !
             l = l + 1                      ! go to next particle
-            if(l == npar + 1) exit             ! exit if last particle
+            if (l == npar + 1) exit        ! exit if last particle
           enddo
           r_total = r_total + r_i_tot(j)   ! total rate for all particles
           cum_func_first_i(j) = r_total    ! cum. func. for rep. part.
 !
           l = 1
           j = j + 1                        ! go to next particle
-          if(j == npar + 1) exit
+          if (j == npar + 1) exit
         enddo
       endif
 !
@@ -798,7 +798,7 @@ module Particles_coagulation
         end if
 ! 
         i = i + 1            ! go to next superparticle
-        if(i == npar + 1) exit
+        if (i == npar + 1) exit
       enddo
 !
 !  Update i = j column.

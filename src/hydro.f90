@@ -2081,7 +2081,7 @@ module Hydro
 !
 ! deluidxjk
 !
-      if(lpenc_loc(i_uijk)) then
+      if (lpenc_loc(i_uijk)) then
         call del2fi_dxjk(f,iuu,p%uijk)
       endif
 !
@@ -2229,7 +2229,7 @@ module Hydro
 !
 ! deluidxjk
 !
-      if(lpenc_loc(i_uijk)) then
+      if (lpenc_loc(i_uijk)) then
         call del2fi_dxjk(f,iuu,p%uijk)
       endif
 !

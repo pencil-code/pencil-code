@@ -364,10 +364,11 @@ module Particles
 !
 !  cleanup after the particles_potential module
 !
-      if(lallocated_neighbour_list) then
+      if (lallocated_neighbour_list) then
         deallocate(neighbour_list)
-        print*,'particles_potential: Neighbour list deallocated'
+        print*, 'particles_potential: Neighbour list deallocated'
       endif
+!
     endsubroutine particles_potential_clean_up
 !***********************************************************************
     subroutine init_particles(f,fp,ineargrid)
