@@ -17,6 +17,12 @@ Illa Rivero Losada has written a
 Wlad Lyra has written
 a <a href="/doc/hello_disk.pdf" target="_blank">tutorial</a> for setting up
 global accretion disk simulations. This tutorial is useful for general information.
+
+<p>
+Boris Dintrans wrote a comprehesive introduction to Python and
+<a href="http://www.ast.obs-mip.fr/users/dintrans/Talks/talk_pcmeeting08_19aug08.pdf">postprocessing
+with Python</a>.
+</p>
 </div>
 
 <div class="centerdivider"></div>
