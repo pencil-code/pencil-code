@@ -1,0 +1,54 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2012-10-04 16:04:16 wlyra Exp $'
+  ip=14
+!
+  xyz0  =  0.4,-3.1415927,-0.1
+  xyz1  =  2.0, 3.1415927, 0.1
+!
+  lperi = F  , T  , T,           ! periodic direction?
+!      ur  up   uz   rho  ar ap  az       
+
+  bcx='a','a2','s' , 's',  'a2','a2','a','s'
+!
+  llocal_iso=T
+  lwrite_ic=T
+  lwrite_aux=T
+  r_ref=1.
+  coord_system='cylindrical'
+  lcylindrical_gravity=T
+/
+&eos_init_pars
+  cs0  = 0.1
+  rho0 = 1.0
+  gamma= 1.0
+/
+&hydro_init_pars
+  inituu='gaussian-noise-rprof'
+  rnoise_int=0.6,rnoise_ext=1.8
+  ampluu=1d-4
+/
+&density_init_pars
+  lnrho_const=0.  
+  ldensity_nolog=T
+  density_floor=-100
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&magnetic_init_pars
+/
+&special_init_pars
+/
+&initial_condition_pars
+  density_power_law=1.5
+  temperature_power_law=1.0
+  initcond_aa='lambda_over_Lz_cte'
+  zmode_mag=4
+  rm_int=0.6
+  rm_ext=1.8
+/

@@ -1,0 +1,68 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2012-10-04 16:04:16 wlyra Exp $',
+  ip=14,
+!  nt=1000000, it1=250, isave=5000, itorder=3, ialive=0
+  nt=50, it1=5, isave=5000, itorder=3, ialive=0
+  cdt=0.4, 
+  cdtv=0.4, 
+  cdtv3=0.1
+  dtmin=1e-6
+  tmax=6283.0
+  wborder_int=0.1
+  wborder_ext=0.1
+!
+  slice_position='m'
+  crash_file_dtmin_factor=2
+  lwrite_dvar=T
+!
+  lpencil_check=F
+  lpencil_check_small=F
+!
+  max_walltime=85500
+  tborder=0.1
+!
+  dsnap=6.28319
+  dvid=0.1
+  loutput_varn_at_exact_tsnap=T
+  lread_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&density_run_pars
+  idiff='hyper3-cyl','shock'
+  diffrho_hyper3=1e-2,diffrho_shock=1.
+  borderlnrho='initial-condition'
+/
+&grav_run_pars
+/
+&magnetic_run_pars
+  iresistivity='hyper3-cyl','shock','xdep'
+  eta_hyper3=1e-2,eta_shock=1
+  borderaa='initial-condition'
+!
+! Dead zone parameters
+!
+  xdep_profile='step'
+  eta=1.6e-3
+  eta_jump=0.
+  eta_x0=1.2
+  eta_width=1e-2
+/
+&entropy_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-cyl','nu-shock'
+  nu_hyper3=1e-2,nu_shock=1.
+/
+&shock_run_pars
+/
+&special_run_pars
+  lremove_volume_average=T
+/
