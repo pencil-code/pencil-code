@@ -44,6 +44,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.
   real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
+  real :: uudx0=0.0
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
   real :: kx_uud=1.0, ky_uud=1.0, kz_uud=1.0
@@ -52,6 +53,7 @@ module Dustvelocity
   real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
+  real :: gravx_dust=0.0
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
   real :: mucube_graind=1., dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
@@ -74,19 +76,20 @@ module Dustvelocity
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 !
   namelist /dustvelocity_init_pars/ &
-      ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
+      uudx0, ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
-      dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, coeff, &
-      ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd, &
+      dust_chemistry, dust_geometry, tausd, gravx_dust, &
+      beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
+      lvshear_dust_global_eps, cdtd, &
       ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
-      ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
-      nud_shock, nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit, &
-      borderuud
+      ladvection_dust, lcoriolisforce_dust, gravx_dust, & 
+      beta_dPdr_dust, tausgmin, cdtd, nud_shock, & 
+      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
 !
   integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -472,6 +475,10 @@ module Dustvelocity
         case ('zero', '0')
           do k=1,ndustspec; f(:,:,:,iudx(k):iudz(k))=0.0; enddo
           if (lroot) print*,'init_uud: zero dust velocity'
+!          
+        case ('constx')
+          do l=1,mx; f(l,:,:,iudx(1)) = uudx0; enddo
+!
         case ('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
         case ('sinwave-phase')
@@ -1056,6 +1063,11 @@ module Dustvelocity
               if (lfirst.and.ldt) dt1_max=max(dt1_max,tausd1(:,k)/cdtd)
             endif
           endif
+!
+! Gravity force on dust in x direction
+!
+          if (gravx_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
+             df(l1:l2,m,n,iudx(k)) + gravx_dust
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
