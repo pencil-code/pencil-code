@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-globaldisk-mhd
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/caltech[dot]edu>
+Added:
+     24-apr-2014
+Status:
+    works since 24-apr-2014
+Recommended resolution:
+    336x128x128 (hyper3-sph 3e-4)
+Comments:
+    The MRI in a global disk, in spherical coordinates, pi/5 wedge in azimuth. 
+Reference:
+    Unpublished. 
+
