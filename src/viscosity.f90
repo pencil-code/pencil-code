@@ -95,6 +95,7 @@ module Viscosity
   logical :: llambda_effect=.false.
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
+  real :: damp_sound=0.
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
@@ -105,7 +106,7 @@ module Viscosity
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width,lKit_Olem
+      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound 
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -909,6 +910,7 @@ module Viscosity
         lpenc_diagnos2d(i_sij)=.true.
       endif
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
+      if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -942,7 +944,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
-      real, dimension (nx) :: gradnu_effective
+      real, dimension (nx) :: gradnu_effective,fac
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
@@ -1125,7 +1127,11 @@ module Viscosity
 !
       if (lvisc_nu_const) then
         if (ldensity) then
-          p%fvisc = p%fvisc + 2*nu*p%sglnrho+nu*(p%del2u + 1./3.*p%graddivu)
+          fac=nu
+          if (damp_sound/=0.) fac = fac+damp_sound*abs(p%divu)
+          do j=1,3
+            p%fvisc(:,j) = p%fvisc(:,j) + fac*(2*p%sglnrho(:,j)+p%del2u(:,j) + 1./3.*p%graddivu(:,j))
+          enddo
           ! Tobi: This is not quite the full story in the presence of linear
           ! shear. In this case the rate-of-strain tensor S has xy and yx
           ! components
