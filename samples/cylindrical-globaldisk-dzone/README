@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/cylindrical-globaldisk-dzone
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/caltech[dot]edu>
+Added:
+     08-jul-2014
+Status:
+    works since 08-jul-2014
+Recommended resolution:
+    192x768x64 (same hyperdiffusion as in sample)
+Comments:
+    MHD disk in cylindrical approximation and cylindrical coordinates, 
+    with an inner magnetized zone, and an outer resistive zone. 	
+Reference:
+    Lyra, W. & Mac Low, M.-M. 2012, ApJ, 756, 62. Rossby Wave Instability at Dead Zone Boundaries in Three-dimensional Resistive Magnetohydrodynamical Global Models of Protoplanetary Disks
