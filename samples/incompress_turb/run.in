@@ -22,5 +22,6 @@
 &poisson_run_pars
 /
 &viscosity_run_pars
-  nu=1e-3, ivisc='rho-nu-const'
+  nu=1e-3, ivisc='simplified'
+  !ivisc='rho-nu-const'
 /
