@@ -13,6 +13,14 @@ lists currently 352 research papers quoting the Pencil Code.
 Currently, we have the following highlights planned:
 <ul>
 	<li><a href="/samples/turbulence/helical-MHDturb32-4procs/">Helical MHD Dynamo</a> [AB]</li>
+	<li>
+          <table border=0 cellspacing=0>
+            <tr>
+               <td><a href="/samples/ism/"><img src="http://fagent.wdfiles.com/local--files/astro/rho.jpg" width="150" height="125" border="0" alt="plasma density"></a></td> 
+               <td><a href="/samples/ism/">Supernova-driven turbulence</a></td>
+            </tr>
+          </table>
+        </li>
 
 <!--
 //
@@ -29,7 +37,6 @@ Currently, we have the following highlights planned:
 	<li><X href="/highlights/coronal_heating/">Coronal heating</X> [SB/PB/JW]</li>
 	<li><X href="/highlights/spot_self_assembly/">spot self assembly</X> [AB]</li>
 	<li><X href="/highlights/test_methods/">test methods</X> [MR]</li>
-	<li><X href="/highlights/supernova_driven_turbulence/">Supernova-driven turbulence</X> [MR]</li>
 </ul>
 
 <u>This is a test page / template for the highlights subdirectory.</u>
