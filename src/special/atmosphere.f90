@@ -59,7 +59,7 @@ module Special
   include '../special.h'
 !
   ! input parameters
-  logical :: lbuoyancy_x=.false.
+  logical :: lbuoyancy_x=.false.,lbuoyancy_y=.false.
   logical :: lbuoyancy_z=.false.,lbuoyancy_z_model=.false.
 !
   character (len=labellen) :: initstream='default'
@@ -84,7 +84,7 @@ module Special
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
+      lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part
@@ -453,6 +453,12 @@ module Special
              + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
+      elseif (lbuoyancy_y) then
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+             + gg*((p%TT(:)-TT0)/TT0 &
+             + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
+             - p%fcloud(:) &
+            )      
       endif
 !
        dt1=1./(8.*dt)
@@ -1513,7 +1519,7 @@ subroutine bc_satur_x(f,bc)
                  if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then 
                   init_distr2(k)=((nd_data(i)-nd_data(i-1))&
                           /(dsize_data(i)-dsize_data(i-1))*(dsize(k)-dsize_data(i-1))+nd_data(i-1))/dsize(k)
-                  print*, init_distr2(k),dsize_data(i-1),dsize(k),dsize_data(i),k
+!                  print*, init_distr2(k),dsize_data(i-1),dsize(k),dsize_data(i),k
                  endif  
 ! 
                enddo
