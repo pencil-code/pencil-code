@@ -12,15 +12,19 @@ lists currently 352 research papers quoting the Pencil Code.
 <p>
 Currently, we have the following highlights planned:
 <ul>
-	<li><a href="/samples/turbulence/helical-MHDturb32-4procs/">Helical MHD Dynamo</a> [AB]</li>
-	<li>
-          <table border=0 cellspacing=0>
+          <table border=0 cellspacing=30>
             <tr>
+               <td align="center"><img src="/samples/turbulence/helical-MHDturb32-4procs/bz_thumb.jpg" width="150" height="125" border="0" alt="t=200-1700"></td>
                <td><a href="/samples/ism/"><img src="http://fagent.wdfiles.com/local--files/astro/rho.jpg" width="150" height="125" border="0" alt="plasma density"></a></td> 
+               <td>
+               </td>
+            </tr>
+            <tr>
+               <td><a href="/samples/turbulence/helical-MHDturb32-4procs/">Helical MHD Dynamo</a> [AB]</td>
                <td><a href="/samples/ism/">Supernova-driven turbulence</a></td>
+	       <td><X href="/highlights/isotropic_turbulence/"></X> </td>
             </tr>
           </table>
-        </li>
 
 <!--
 //
