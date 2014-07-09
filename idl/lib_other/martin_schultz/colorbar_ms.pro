@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;        COLORBAR
+;        COLORBAR_MS
 ;
 ; PURPOSE:
 ;        Draw a colorbar (legend) with labels
@@ -9,7 +9,7 @@
 ;        Colors
 ;
 ; CALLING SEQUENCE:
-;        COLORBAR [,options]
+;        COLORBAR_MS [,options]
 ;
 ; INPUTS:
 ;
@@ -120,11 +120,11 @@
 ;        ; draw a colorbar with all available colors on top of index 20
 ;        ; will be placed at the bottom of the page
 ;
-;        colorbar,bottom=20,min=min(data),max=max(data)
+;        colorbar_MS,bottom=20,min=min(data),max=max(data)
 ;
 ;        ; draw another colorbar above the first one, use logarithmic scale
 ;
-;        colorbar,bottom=20,min=0.1,max=10.,label=[0.1,0.5,1.,5.,10.],/log, $
+;        colorbar_MS,bottom=20,min=0.1,max=10.,label=[0.1,0.5,1.,5.,10.],/log, $
 ;              position=0.3,unit='ppt'
 ;
 ;        ; (simply add keyword /vertical and you'll get it flipped)
@@ -133,7 +133,7 @@
 ;        ; Here we used 20 colors for the plot, the 21st is for 
 ;        ; out-of-range data
 ;
-;        colorbar,bottom=20,ncolors=20,min=0,max=100,divisions=5, $
+;        colorbar_MS,bottom=20,ncolors=20,min=0,max=100,divisions=5, $
 ;              TopOutOfRange=40
 ;
 ; MODIFICATION HISTORY:
@@ -195,7 +195,7 @@ end
 
 
 
-pro colorbar,color=color,bottom=bottom,ncolors=ncolors, $
+pro colorbar_MS,color=color,bottom=bottom,ncolors=ncolors, $
       min=minv,max=maxv,label=label,divisions=divisions, $
       c_colors=c_colors,c_levels=c_levels,skip=skip,startlabel=startlabel,  $
       format=format,log=log,    $

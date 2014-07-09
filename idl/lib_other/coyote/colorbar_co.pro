@@ -1,6 +1,6 @@
 ;+
 ; NAME:
-;   COLORBAR
+;   COLORBAR_CO
 ;
 ; PURPOSE:
 ;       The purpose of this routine is to add a color bar to the current
@@ -20,7 +20,7 @@
 ;       Graphics, Widgets.
 ;
 ; CALLING SEQUENCE:
-;       COLORBAR
+;       COLORBAR_CO
 ;
 ; INPUTS:
 ;       None.
@@ -89,7 +89,7 @@
 ;       LOADCT, 5, NCOLORS=100
 ;       CONTOUR, DIST(31,41), POSITION=[0.15, 0.15, 0.95, 0.75], $
 ;          C_COLORS=INDGEN(25)*4, NLEVELS=25
-;       COLORBAR, NCOLORS=100, POSITION=[0.15, 0.85, 0.95, 0.90]
+;       COLORBAR_CO, NCOLORS=100, POSITION=[0.15, 0.85, 0.95, 0.90]
 ;
 ; MODIFICATION HISTORY:
 ;       Written by: David Fanning, 10 JUNE 96.
@@ -157,7 +157,7 @@
 ;###########################################################################
 
 
-PRO COLORBAR, BOTTOM=bottom, CHARSIZE=charsize, COLOR=color, DIVISIONS=divisions, $
+PRO COLORBAR_CO, BOTTOM=bottom, CHARSIZE=charsize, COLOR=color, DIVISIONS=divisions, $
    FORMAT=format, POSITION=position, MAXRANGE=maxrange, MINRANGE=minrange, NCOLORS=ncolors, $
    TITLE=title, VERTICAL=vertical, TOP=top, RIGHT=right, MINOR=minor, $
    RANGE=range, FONT=font, TICKLEN=ticklen, _EXTRA=extra, INVERTCOLORS=invertcolors
