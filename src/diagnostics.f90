@@ -699,7 +699,7 @@ module Diagnostics
       if (nnamez>0) then
         call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
         if (lroot) &
-            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocx*nprocy)
+            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/nxygrid
       endif
 !
     endsubroutine xyaverages_z
@@ -718,7 +718,7 @@ module Diagnostics
       if (nnamey>0) then
         call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
         if (lroot) &
-            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocx*nprocz)
+            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/nxzgrid
       endif
 !
     endsubroutine xzaverages_y
@@ -737,7 +737,7 @@ module Diagnostics
       if (nnamex>0) then
         call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
         if (lroot) &
-            fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/(ny*nz*nprocy*nprocz)
+            fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/nyzgrid
       endif
 !
     endsubroutine yzaverages_x
