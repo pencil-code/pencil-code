@@ -430,7 +430,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           ;contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
           contourfill, plane2, x2, y2, lev=lev, $
             tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
-          colorbar,range=[min(lev),max(lev)],pos=[0.95,0.12,0.98,0.92],/vert, $
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.95,0.12,0.98,0.92],/vert, $
             ytickformat='(f6.3)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
             yaxis=0,char=1.5,col=255,ytit='!6',xtit='!8B!dz!n!6'
         end else if (keyword_set(polar)) then begin
@@ -452,7 +452,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           lev=grange(amin,amax,25)
           contour,transpose(plane2),phi,90.-theta2,lev=lev,/fill,/overplot, $
             col=0, _extra=_extra
-          colorbar,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
             ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
             yaxis=0,char=1.5,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
           xyouts,20,380,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=2
