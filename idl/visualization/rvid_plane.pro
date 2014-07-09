@@ -344,7 +344,6 @@ if (keyword_set(global_scaling)) then begin
 endif
 ;
 close,1 & openr,1,file_slice,/f77,swap_endian=swap_endian
-ifirst=1
 while (not eof(1)) do begin
   if (keyword_set(oldfile)) then begin ; For files without position
     readu,1,plane,t
@@ -510,7 +509,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
 ;
 ;  Default: output on the screen.
 ;
-          if (ifirst and not quiet) then $
+          if ((islice eq 0) and not quiet) then $
               print, '----islice--------t----------min------------max--------'
           if (not quiet) then print,islice,t,min([plane2]),max([plane2])
         end
@@ -527,7 +526,6 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
     end
     islice=islice+1
   end
-  ifirst=0
 end
 close,1
 ;
