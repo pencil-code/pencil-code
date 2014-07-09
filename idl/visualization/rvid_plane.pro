@@ -34,7 +34,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    sample=sample
+    sample=sample,savefile=savefile
 ;
 COMMON pc_precision, zero, one
 ;
@@ -465,6 +465,13 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           device,copy=[0,0,!D.X_Size,!D.Y_Size,0,0,pixID]
           wdelete,pixID
         endif
+        if(keyword_set(savefile)) then begin
+          if (size (slices, /type) eq 0) then begin
+            slices = plane
+          endif else begin
+            slices = [ [[slices]], [[plane]] ]
+          endelse
+        endif
         ;xyouts, 0.05, 0.9, /normal, $
         ;    '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=textsize
         if (keyword_set(png)) then begin
@@ -538,5 +545,9 @@ if (keyword_set(mpeg)) then begin
   set_plot,'X'
 end
 if (keyword_set(png))  then set_plot,'X'
+if (keyword_set(savefile))  then begin
+  num_slices = islice
+  save, file=savefile, slices, num_slices
+end
 ;
 END
