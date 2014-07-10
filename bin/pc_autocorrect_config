@@ -1,0 +1,75 @@
+#!/usr/bin/perl -W
+use strict;
+use Getopt::Long;
+
+# Settings
+my @files = ( "start.in", "run.in" );
+
+my %translation = (
+	# special/solar_corona
+	"Kgpara" => "K_spitzer",
+	"Kgpara2" => "K_iso",
+	"bmdi" => "b_tau",
+	"zref" => "gaga",
+	# please extend here...
+);
+
+# Command-line options
+my (%opts);
+
+eval { Getopt::Long::config("bundling"); };
+
+GetOptions(\%opts,
+           qw( -t   --test
+               -b   --backup
+               -d   --debug
+               -v   --version
+               )) or die "Aborting.\n";
+if ($opts{'v'} || $opts{'version'}) {
+	die '$Id$'."\n";
+}
+my $debug = 0;
+if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
+my $test = 0;
+if ($opts{'t'} || $opts{'test'}) { $test = 1; }
+my $backup = 0;
+if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
+
+my $autocorrect = 0;
+foreach my $file (@files) {
+	if (! -e $file) { next; }
+	open (IN, "< ".$file);
+	my @lines = <IN>;
+	close (IN);
+	my $change = 0;
+	foreach my $key (keys (%translation)) {
+		my $value = $translation{$key};
+		my $num = @lines;
+		for (my $pos = 0; $pos < $num; $pos++) {
+			while ($lines[$pos] =~ s/(^|[\s,])${key}([\s=])/${1}${value}${2}/im) {
+				$change = 1;
+				if ($debug) { print "$file : $key => $value\n"; }
+			}
+		}
+	}
+	if ($change && $test) {
+		print "Needs autocorrection: '$file'\n";
+		$autocorrect = 1;
+	} elsif ($change) {
+		print "Updating: '$file'\n";
+		if ($backup) {
+			my $result = `mv "$file" "$file.old"`;
+			if ($result) { die ("AUTOCORRECTOR: cannot backup the old file '$file'.\n>$result<\n"); }
+		}
+		open (OUT, "> ".$file);
+		print OUT @lines;
+		close (OUT);
+	}
+}
+
+if ($autocorrect && $test) {
+	print "Please execute: 'pc_autocorrect_config -b'.\n";
+}
+
+exit (0);
+
