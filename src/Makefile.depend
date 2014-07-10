@@ -264,3 +264,5 @@ pre_and_post_processing/pc_distribute_z.o: $(physics) $(technical_nompi) $(EQU_O
 #
 pre_and_post_processing/pc_extract.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
+pre_and_post_processing/pc_tecplot.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+#
