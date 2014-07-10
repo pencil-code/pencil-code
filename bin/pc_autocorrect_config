@@ -10,7 +10,6 @@ my %translation = (
 	"Kgpara" => "K_spitzer",
 	"Kgpara2" => "K_iso",
 	"bmdi" => "b_tau",
-	"zref" => "gaga",
 	# please extend here...
 );
 
