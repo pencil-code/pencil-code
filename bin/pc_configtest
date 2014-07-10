@@ -7,6 +7,7 @@
 SCRIPTNAME="pc_configtest"
 SCRIPT="src/pre_and_post_processing/$SCRIPTNAME.x"
 SUCCESS="CONFIGTEST: > SUCCESSFUL <"
+FAILURE="CONFIGTEST: > FAILED <"
 
 if [ ! -e "$SCRIPT" ]; then
 	echo "Please compile first by ececuting \"pc_build $SCRIPTNAME\"."
@@ -22,7 +23,8 @@ if [ "$RESULT" != "" ]; then
 fi
 
 echo "ERROR REPORT:"
+echo "============="
 echo "$MESSAGE"
-echo "CONFIGTEST: > NOT SUCCESSFUL <"
+echo "$FAILURE"
 exit 1
 
