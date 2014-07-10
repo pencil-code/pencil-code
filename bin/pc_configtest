@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# $Id$  
+# Script to automatically check correctness of the *.in files.
+#  
+
+SCRIPTNAME="pc_configtest"
+SCRIPT="src/pre_and_post_processing/$SCRIPTNAME.x"
+SUCCESS="CONFIGTEST: > SUCCESSFUL <"
+
+if [ ! -e "$SCRIPT" ]; then
+	echo "Please compile first by ececuting \"pc_build $SCRIPTNAME\"."
+	exit 1
+fi
+
+MESSAGE=`$SCRIPT`
+RESULT=`echo -n "$MESSAGE" | grep "$SUCCESS"`
+
+if [ "$RESULT" != "" ]; then
+	echo $SUCCESS
+	exit 0
+fi
+
+echo "ERROR REPORT:"
+echo "$MESSAGE"
+echo "CONFIGTEST: > NOT SUCCESSFUL <"
+exit 1
+

@@ -2039,6 +2039,10 @@ pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x
 #
+pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x
+#
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x

@@ -66,7 +66,7 @@ semiauto-conf:
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
 # Compile (only on request) tools for collecting, downscaling, and distributing data cubes
-tools: pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_tecplot
+tools: pc_collect pc_reduce pc_distribute pc_distribute_z pc_extract pc_configtest
 
 pc_collect:
 	( cd src && \
@@ -83,6 +83,9 @@ pc_distribute_z:
 pc_extract:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_extract.x )
+pc_configtest:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_configtest.x )
 pc_tecplot:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot.x )
