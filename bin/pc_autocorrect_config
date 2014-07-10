@@ -45,7 +45,7 @@ foreach my $file (@files) {
 		my $value = $translation{$key};
 		my $num = @lines;
 		for (my $pos = 0; $pos < $num; $pos++) {
-			while ($lines[$pos] =~ s/(^|[\s,])${key}([\s=])/${1}${value}${2}/im) {
+			while ($lines[$pos] =~ s/(^|[\s,])${key}(\s*=)/${1}${value}${2}/im) {
 				$change = 1;
 				if ($debug) { print "$file : $key => $value\n"; }
 			}
