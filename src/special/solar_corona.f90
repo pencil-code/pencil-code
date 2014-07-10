@@ -221,7 +221,7 @@ module Special
           call fatal_error ('solar_corona/mag_driver', &
               "Could not find file '"//trim (mag_times_dat)//"'.")
 !
-      if (lgranulation) then
+      if (lgranulation .and. (.not. lstarting)) then
         ! Define and initialize the processors that are computing the granulation
         lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
@@ -300,7 +300,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (lgranulation .and. (lroot .or. lgran_proc)) then
+      if (lgranulation .and. (lroot .or. lgran_proc) .and. .not. lstarting) then
         call free_points ()
         deallocate (Ux, Uy, w, vx, vy, avoid_gran)
       endif
