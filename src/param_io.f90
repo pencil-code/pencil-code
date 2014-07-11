@@ -402,6 +402,7 @@ module Param_IO
 !  16-dec-13/MR: handling of optional ierr corrected
 !  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
 !  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
+!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
 !
     use General, only: loptest
 !
@@ -412,11 +413,17 @@ module Param_IO
 !
     integer :: ierr
 !
-    !!if (loptest(lierr)) then    ! strangely enough needed to calm some compilers
     if (lierr) then
       ierr=0
       call reader(unit,ierr)
-      if (ierr/=0) call sample_pars(ierr,name)
+      if (ierr/=0.and.ierr/=-1) call sample_pars(ierr,name)
+      if (lroot.and.ierr==-1) then
+        if (lstart) then
+          print*, 'read_pars: Warning - namelist "', trim(name), '_start_pars" missing!'
+        else
+          print*, 'read_pars: Warning - namelist "', trim(name), '_run_pars" missing!'
+        endif
+      endif
     else
       ierr=0
       call reader(unit,ierr)
