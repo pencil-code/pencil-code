@@ -5,7 +5,7 @@
 # Script to update the Pencil Code tree from svn.
 #
 # Default settings
-set all=( "src" "bin" "lib" "config" "idl" "python" "dx" "samples" "doc" "license" "bugs" "remesh" "misc" "utils" )
+set all=( "src" "bin" "lib" "config" "idl" "python" "dx" "samples" "license" "bugs" "remesh" "misc" "utils" )
 set include_all=1
 set rev="-rHEAD"
 set stat=0
