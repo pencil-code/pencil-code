@@ -31,3 +31,14 @@ Topics for Pencil code User Meeting in Göttingen 2014:
 - Ongoing work on pc_tecplot.f90  
 
 - www is currently checked out by default!
+
+Entered since meeting:
+
+- Home page
+  - to enter highlights
+  - Wikipedia
+
+- talks: Bfield
+
+- to develop conductivity module, analogously to viscosity module
+
