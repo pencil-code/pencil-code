@@ -11,3 +11,8 @@ Topics for Pencil code User Meeting in Göttingen 2014:
 
 - Code the conductivity module
 
+- non-uniform grid: upwinding, boundary conditions
+
+- PC paper
+
+- volume rendering using radiative transfer module
