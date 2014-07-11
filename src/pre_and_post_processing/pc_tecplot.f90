@@ -74,7 +74,7 @@ program pc_tecplot
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call read_startpars()
+  call read_startpars(lstarting=(.not. lrun))
 !
 !  Read parameters and output parameter list.
 !
