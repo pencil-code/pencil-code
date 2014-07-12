@@ -611,7 +611,8 @@ module InitialCondition
 !            if ((input_data(23)>50012.91) .and. (input_data(23)<50063.)) then
 !          if ((input_data(23)>49912.91) .and. (input_data(23)<49963.)) then
 !
-          if ((input_data(23)>50012.) .and. (input_data(23)<52850.)) then
+!          if ((input_data(23)>50012.) .and. (input_data(23)<50100.)) then
+                  if ((input_data(23)>54200.) .and. (input_data(23)<54240.)) then
             write(143,'(29f15.6)') input_data
           endif
          endif
@@ -665,18 +666,17 @@ module InitialCondition
 
        if (ladd_points) then
          k=1
-         do i=1,Ndata-1
+         do i=1,Ndata
+           TT_data_add(k)=TT_data(i)
+           PP_data_add(k)=PP_data(i)
+           rhow_data_add(k)=rhow_data(i)
+           k=k+1
          do j=1,Nadd_points
-           if (j==1) then
-             TT_data_add(k)=TT_data(i)
-             PP_data_add(k)=PP_data(i)
-             rhow_data_add(k)=rhow_data(i)
-           else
              TT_data_add(k)=TT_data(i)+(TT_data(i+1)-TT_data(i))*j/(Nadd_points+1)
              PP_data_add(k)=PP_data(i)+(PP_data(i+1)-PP_data(i))*j/(Nadd_points+1)
              rhow_data_add(k)=rhow_data(i)+(rhow_data(i+1)-rhow_data(i))*j/(Nadd_points+1)
-           endif
            k=k+1
+! print*,'k=',k          
          enddo  
          enddo
        endif   
@@ -749,9 +749,9 @@ module InitialCondition
        if (iter<4) then
          do i=m1,m2
            if (ladd_points) then
-             f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/exp(f(:,i,:,ilnrho))
+             f(:,i,:,ichemspec(index_H2O))=rhow_data_add(mm1+i-3)/exp(f(:,i,:,ilnrho))*1.
            else
-             f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/exp(f(:,i,:,ilnrho))
+             f(:,i,:,ichemspec(index_H2O))=rhow_data(mm1+i-3)/exp(f(:,i,:,ilnrho))*1.
            endif
          enddo
            f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
