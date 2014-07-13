@@ -485,7 +485,7 @@ module Magnetic
         zscan1: do n = 1, mz
           yscan1: do m = 1, my
             call get_resistivity(f, eta_penc)
-            f(:,m,n,ieex:ieez) = f(:,m,n,ieex:ieez) - spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
+            f(:,m,n,ieex:ieez) = f(:,m,n,ieex:ieez) + spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
 !           Time-step constraint
             timestep: if (lfirst .and. ldt) then
               if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
@@ -518,9 +518,9 @@ module Magnetic
             uum = 0.0
           endif
           if (lshear) uum(:,2) = uum(:,2) + uy0
-          f(:,m,n,ieex) = f(:,m,n,ieex) + (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
-          f(:,m,n,ieey) = f(:,m,n,ieey) + (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
-          f(:,m,n,ieez) = f(:,m,n,ieez) + (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
+          f(:,m,n,ieex) = f(:,m,n,ieex) - (uum(:,2) * bbm(:,3) - uum(:,3) * bbm(:,2))
+          f(:,m,n,ieey) = f(:,m,n,ieey) - (uum(:,3) * bbm(:,1) - uum(:,1) * bbm(:,3))
+          f(:,m,n,ieez) = f(:,m,n,ieez) - (uum(:,1) * bbm(:,2) - uum(:,2) * bbm(:,1))
         enddo yscan2
       enddo zscan2
 !
@@ -598,7 +598,7 @@ module Magnetic
 !
 !  dB/dt = curl(E).
 !
-      df(l1:l2,m,n,ibx:ibz) =  df(l1:l2,m,n,ibx:ibz) + p%curle
+      df(l1:l2,m,n,ibx:ibz) =  df(l1:l2,m,n,ibx:ibz) - p%curle
 !
 !  Lorentz force
 !
@@ -1290,7 +1290,7 @@ module Magnetic
           call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
           pv(:,j) = eta3 * pv(:,j)
         enddo comp
-        f(l1:l2,m,n,ieex:ieez) = -pv
+        f(l1:l2,m,n,ieex:ieez) = pv
 !       Time-step constraint
         timestep: if (lfirst .and. ldt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
