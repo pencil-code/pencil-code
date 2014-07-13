@@ -1692,10 +1692,12 @@ k_loop:   do while (.not. (k>npar_loc))
             velocity(2)*velocity(2) + velocity(3)*velocity(3)
           vsqr_max=max(vsqr_max,vsqr)
           if (lonly_eforce) then
-            accn = -qbym*EEp
+!            accn = -qbym*EEp
+             accn = qbym*EEp
           else
             call cross(velocity,bbp,fmagnetic)
-            accn = -qbym*(EEp+fmagnetic)
+!            accn = -qbym*(EEp+fmagnetic)
+             accn = qbym*(EEp+fmagnetic)
           endif
 !
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accn
