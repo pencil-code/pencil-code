@@ -4,7 +4,7 @@ SVN Id:
     $Id$
 Maintainer:
     Axel Brandenburg <brandenb/nordita[dot]org>
-    Fred A. Gent <f.a.gent/newcastle[dot]ac.uk>
+    Fred A. Gent <fred.gent.ncl/gmail[dot]com>
 Added:
     29-Aug-2003
 Status:
@@ -21,3 +21,11 @@ References:
        & Nordlund, Å.: 1999, ``A supernova regulated interstellar
        medium: simulations of the turbulent multiphase medium,''
        Astrophys. J. Lett. 514, L99-L102
+    3. Gent, F.A., Shukurov, A., Fletcher, A., Sarson, G.R.S., &
+       Mantere, M.J.: ``Supernova Driven Turbulence. I. The Multiphase
+       Structure'',
+       MNRAS, 432, 1396-1423 
+    4. Gent, F.A., Shukurov, A., Sarson, G.R.S., Fletcher, A., &
+       Mantere, M.J.: ``Supernova Driven Turbulence. II. The Mean
+       Magnetic Field'',
+       MNRAS, 430, L40-L44 
