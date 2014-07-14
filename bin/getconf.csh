@@ -1718,6 +1718,12 @@ else if ($hn =~ mnode) then
   echo "settings edited by Sven"
   set mpirun = mpirun_rsh
   set mpirunops = "-hostfile mpd.hosts"
+#-------------------------------------------------
+else if ($hn =~ fred-asus) then
+  echo "Fred's asus laptop"
+  set mpi = 1
+  set nprocpernode = $ncpus
+#-------------------------------------------------
 else
   echo "Generic setup; hostname is <$hn>"
   if ($mpi) echo "Use mpirun"

@@ -1730,6 +1730,19 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-O3#(cleio)
 #CFLAGS=-DFUNDERSC=2 #(cleio)
 #FFLAGS_DOUBLE = -r8 #(cleio)
+##
+## fred-asus (fred's current laptop)
+##
+#FC=mpif90 #(fred-asus)
+#CC=mpicc #(fred-asus)
+#F77=f90 #(fred-asus)
+#FFLAGS=-O3 -I/usr/include/mpich #(fred-asus)
+#LD_MPI= -L/usr/lib/mpich/include #(fred-asus)
+#CFLAGS=-DFUNDERSC=1 -I/usr/include/mpich #(fred-asus)
+#FFLAGS_DOUBLE= -fdefault-real-8 #(fred-asus)
+#CFLAGS_DOUBLE= -DDOUBLE_PRECISION #(fred-asus)
+#LIBMPISUFFIX= #(fred-asus)
+##
 
 ##AB: keep the empty line above!!
 ##
