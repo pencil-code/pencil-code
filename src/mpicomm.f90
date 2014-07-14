@@ -202,14 +202,6 @@ module Mpicomm
     module procedure mpireduce_sum_arr4
   endinterface
 !
-  interface mpireduce_sum_double
-    module procedure mpireduce_sum_double_scl
-    module procedure mpireduce_sum_double_arr
-    module procedure mpireduce_sum_double_arr2
-    module procedure mpireduce_sum_double_arr3
-    module procedure mpireduce_sum_double_arr4
-  endinterface
-!
   interface distribute_xy
     module procedure distribute_xy_0D
     module procedure distribute_xy_2D
@@ -2527,85 +2519,6 @@ module Mpicomm
       endif
 !
     endsubroutine mpireduce_sum_arr4
-!***********************************************************************
-    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
-!
-!  Calculate total sum and return to root.
-!
-      double precision :: dsum_tmp,dsum
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
-            root, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_scl
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
-!
-!  Calculate total sum for each array element and return to root.
-!
-      integer :: nreduce
-      double precision, dimension(nreduce) :: dsum_tmp,dsum
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_arr
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr2(dsum_tmp,dsum,nreduce)
-!
-!  Calculate total sum for each array element and return to root.
-!
-      integer, dimension(2) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2)) :: dsum_tmp,dsum
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_arr2
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr3(dsum_tmp,dsum,nreduce)
-!
-!  Calculate total sum for each array element and return to root.
-!
-      integer, dimension(3) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_arr3
-!***********************************************************************
-    subroutine mpireduce_sum_double_arr4(dsum_tmp,dsum,nreduce)
-!
-!  Calculate total sum for each array element and return to root.
-!
-      integer, dimension(4) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: dsum_tmp,dsum
-!
-      if (nprocs==1) then
-        dsum=dsum_tmp
-      else
-        call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine mpireduce_sum_double_arr4
 !***********************************************************************
     subroutine mpireduce_or_scl(flor_tmp,flor)
 !

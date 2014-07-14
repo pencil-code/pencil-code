@@ -31,8 +31,8 @@ module Interstellar
 !
   type SNRemnant
     real :: x, y, z, t         ! Time and location
-    double precision :: EE, MM ! Mass and energy injected
-    double precision :: rhom   ! Local mean density at explosion time
+    real :: EE, MM ! Mass and energy injected
+    real :: rhom   ! Local mean density at explosion time
     real :: radius             ! Injection radius
     real :: t_sedov
     real :: t_damping
@@ -88,8 +88,8 @@ module Interstellar
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil
 !
-  double precision, dimension(nx) :: dr2_SN
-  double precision, dimension(nx,3) :: outward_normal_SN
+  real, dimension(nx) :: dr2_SN
+  real, dimension(nx,3) :: outward_normal_SN
 !
 !  Allocate time of next SNI/II and intervals until next
 !
@@ -105,15 +105,15 @@ module Interstellar
 !      exact integrals at some point...
 !  3-D  was 3.71213666 but replaced with Maple result....
 !
-  double precision, parameter, dimension(3) :: &
+  real, parameter, dimension(3) :: &
              cnorm_gaussian_SN = (/ 0.8862269255, 3.141592654, 5.568327998 /)
-  double precision, parameter, dimension(3) :: &
+  real, parameter, dimension(3) :: &
              cnorm_gaussian2_SN = (/ 0.9064024771, 2.784163999, 3.849760109 /)
-  double precision, parameter, dimension(3) :: &
+  real, parameter, dimension(3) :: &
              cnorm_SN = (/ 1.855438667 , 2.805377875 , 3.712218666 /)
-  double precision, parameter, dimension(3) :: &
+  real, parameter, dimension(3) :: &
              cnorm_para_SN = (/  1.33333333,  1.5707963, 1.6755161 /)
-  double precision, parameter, dimension(3) :: &
+  real, parameter, dimension(3) :: &
              cnorm_quar_SN = (/  0.,  2.0943951, 0. /)
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
@@ -124,18 +124,18 @@ module Interstellar
 !    [rho]     =       = 1.00 10^-24 g/cm^3
 !  Lambdaunits converts coolH into interstellar code units.
 !
-  double precision :: unit_Lambda
+  real :: unit_Lambda
 !
 !  Minimum resulting central temperature of a SN explosion.
 !  If this is not reached then consider moving mass to achieve this.
 !
-  real, parameter :: TT_SN_min_cgs=1.e6
+  real, parameter :: TT_SN_min_cgs=1.E6
 !
 !  22-jan-10/fred:
 !  With lSN_velocity kinetic energy lower limit no longer required for shock
 !  speed.
 !  10-aug-10/fred:
-!  As per joung et al apj653 2005 min temp 1e6 to avoid excess radiative
+!  As per joung et al apj653 2005 min temp 1E6 to avoid excess radiative
 !  energy losses in early stages.
 !
   real :: uu_sedov_max=0.
@@ -146,51 +146,51 @@ module Interstellar
 !
 !  SNe placement limitations (for code stability)
 !
-  double precision, parameter :: rho_SN_min_cgs=1e-28,rho_SN_max_cgs=5e-24
+  real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=5E-24
   real, parameter :: TT_SN_max_cgs=5E9
   real :: rho_SN_min=impossible, TT_SN_max=impossible, rho_SN_max=impossible
 !
 !  SNI per (x,y)-area explosion rate
 !
-  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
+  real, parameter :: SNI_area_rate_cgs=1.330982784E-56
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
 !
-!  SNII rate=5.e-12 mass(H1+HII)/solar_mass
+!  SNII rate=5.E-12 mass(H1+HII)/solar_mass
 !  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
-!  SNI rate=4.7e-14/solar_mass + 0.35 x SNII rate
+!  SNI rate=4.7E-14/solar_mass + 0.35 x SNII rate
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
-  double precision, parameter :: SNII_mass_rate_cgs=1.584434515D-19
-  double precision, parameter :: SNI_mass_rate_cgs=1.489368444D-21
+  real, parameter :: SNII_mass_rate_cgs=1.584434515E-19
+  real, parameter :: SNI_mass_rate_cgs=1.489368444E-21
   real :: SNII_mass_rate, SNI_mass_rate
   logical :: lSN_mass_rate=.false.
 !
 !  Some useful constants
 !
-  double precision, parameter :: kpc_cgs=3.086d+21      ! [cm]
+  real, parameter :: kpc_cgs=3.086E+21      ! [cm]
   real, parameter :: yr_cgs=3.155692E7                  ! [s]
-  double precision, parameter :: solar_mass_cgs=1.989e33! [g]
+  real, parameter :: solar_mass_cgs=1.989E33! [g]
   real :: solar_mass=impossible
 !
 !  Scale heights for SNI/II with Gaussian z distributions
 !
-  real, parameter :: h_SNI_cgs=1.00295e21, h_SNII_cgs=2.7774e20
+  real, parameter :: h_SNI_cgs=1.00295E21, h_SNII_cgs=2.7774E20
   real :: h_SNI=impossible, h_SNII=impossible
 !
 !  Self regulating SNII explosion coefficients
 !
-  real, parameter :: cloud_rho_cgs=1.67262158e-24, cloud_TT_cgs=4000.
-  real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75e2
-  double precision, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
+  real, parameter :: cloud_rho_cgs=1.67262158E-24, cloud_TT_cgs=4000.
+  real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75E2
+  real, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
   real, parameter :: frac_converted=0.02, frac_heavy=0.10
-!  real, parameter :: tosolarMkpc3=1.483e7
+!  real, parameter :: tosolarMkpc3=1.483E7
   real :: cloud_rho=impossible, cloud_TT=impossible
   real :: cloud_tau=impossible
   real :: mass_SN_progenitor=impossible
 !
 !  Total SNe energy
 !
-  double precision, parameter :: ampl_SN_cgs=1D51
+  real, parameter :: ampl_SN_cgs=1E51
   real :: frac_ecr=0.1, frac_eth=0.9
   real :: ampl_SN=impossible, kampl_SN=impossible
 !
@@ -201,7 +201,7 @@ module Interstellar
 !
 !  Total mass added by a SNe
 !
-  double precision, parameter :: mass_SN_cgs=10.*solar_mass_cgs
+  real, parameter :: mass_SN_cgs=10.*solar_mass_cgs
   real :: mass_SN=impossible
   real :: velocity_SN=impossible
 !
@@ -218,14 +218,14 @@ module Interstellar
 !
 !  Parameters for 'averaged'-SN heating
 !
-  real :: r_SNI_yrkpc2=4.e-6, r_SNII_yrkpc2=3.e-5
-  real :: r_SNI=3.e+4, r_SNII=4.e+3
+  real :: r_SNI_yrkpc2=4.E-6, r_SNII_yrkpc2=3.E-5
+  real :: r_SNI=3.E+4, r_SNII=4.E+3
   real :: average_SNI_heating=0., average_SNII_heating=0.
 !
 !  Limit placed of minimum density resulting from cavity creation and
 !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBr
 !
-  real, parameter :: rho_min=1.e-6, rho0ts_cgs=3.5e-24, T0hs_cgs=7.088e2
+  real, parameter :: rho_min=1.E-6, rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
   real :: rho0ts=impossible, T0hs=impossible
 !
 !  Cooling timestep limiter coefficient
@@ -253,14 +253,14 @@ module Interstellar
 !
   real, parameter :: rhoUV_cgs=0.1
   real, parameter :: GammaUV_cgs=0.0147
-  real, parameter :: TUV_cgs=7000., T0UV_cgs=20000., cUV_cgs=5.e-4
+  real, parameter :: TUV_cgs=7000., T0UV_cgs=20000., cUV_cgs=5.E-4
   real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
 !
 !  04-jan-10/fred:
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
 !  Appended null last term to all arrays for RB and SS cooling
 !
-  double precision, dimension(11) :: coolT_cgs, coolH_cgs
+  real, dimension(11) :: coolT_cgs, coolH_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
 !
@@ -277,7 +277,7 @@ module Interstellar
 !
   real :: heatcool_shock_cutoff = 0.
   real :: heatcool_shock_cutoff_rate = 0.
-  double precision :: heatcool_shock_cutoff_rate1 = 0.d0
+  real :: heatcool_shock_cutoff_rate1 = 0.0
 !
   real :: cooltime_despike_factor = 2.
 !
@@ -354,7 +354,7 @@ module Interstellar
 !  boundary condition used in addmassflux
 !
   real :: addflux_dim1, addrate=1.0
-  double precision :: boldmass=0.d0
+  real :: boldmass=0.0
   logical :: ladd_massflux = .false.
 !
 !  start parameters
@@ -474,28 +474,28 @@ module Interstellar
 !
       if (cooling_select == 'RB') then
         if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-        coolT_cgs = (/  100.D0,      &
-                        2000.D0,     &
-                        8000.D0,     &
-                        1.0D5,       &
-                        4.0D7,       &
-                        1.0D9,       &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
-        coolH_cgs = (/  2.2380D-32,  &
-                        1.0012D-30,  &
-                        4.6240D-36,  &
-                        1.7800D-18,  &
-                        3.2217D-27,  &
-                        tiny(0.D0),  &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0.D0),  &
-                        tiny(0D0) /) / ( m_p_cgs )**2
+        coolT_cgs = (/  100.0,      &
+                        2000.0,     &
+                        8000.0,     &
+                        1.0E5,       &
+                        4.0E7,       &
+                        1.0E9,       &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
+        coolH_cgs = (/  2.2380E-32,  &
+                        1.0012E-30,  &
+                        4.6240E-36,  &
+                        1.7800E-18,  &
+                        3.2217E-27,  &
+                        tiny(0.0),  &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0.0),  &
+                        tiny(0E0) /) / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
@@ -514,32 +514,32 @@ module Interstellar
 !  RBr to ensure continuity and increase cooling at high temperatures later in
 !  diffuse remnant cores.
 !  RBr: new lower terms for smooth cooling below 300K
-!  and extended range to 1e13 in SSrr to deal with temperature spiking
+!  and extended range to 1E13 in SSrr to deal with temperature spiking
 !
       else if (cooling_select == 'RBr') then
         if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-        coolT_cgs = (/  10.D0,       &
-                        2000.D0,     &
-                        8000.D0,     &
-                        1.D5,        &
-                        1.D6,        &
-                        1.D17,       &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
-        coolH_cgs = (/  2.2380D-32,  &
-                        1.0012D-30,  &
-                        4.6240D-36,  &
-                        1.7783524D-18,  &
-                        2.238814D-25,&
-                        tiny(0.D0),  &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)  / ( m_p_cgs )**2
+        coolT_cgs = (/  10.0,       &
+                        2000.0,     &
+                        8000.0,     &
+                        1.5,        &
+                        1.6,        &
+                        1.17,       &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
+        coolH_cgs = (/  2.2380E-32,  &
+                        1.0012E-30,  &
+                        4.6240E-36,  &
+                        1.7783524E-18,  &
+                        2.238814E-25,&
+                        tiny(0.0),  &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)  / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
@@ -556,28 +556,28 @@ module Interstellar
 !
 !  These are the SS et al (2002) coefficients multiplied by m_proton**2
 !
-        coolT_cgs = (/  10.D0,       &
-                        141.D0,      &
-                        313.D0,      &
-                        6102.D0,     &
-                        1.0D5,       &
-                        1.0D17,      &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
-        coolH_cgs = (/  3.42D16,     &
-                        9.10D18,     &
-                        1.11D20,     &
-                        2.00D8,      &
-                        7.962D29,    &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
+        coolT_cgs = (/  10.0,       &
+                        141.0,      &
+                        313.0,      &
+                        6102.0,     &
+                        1.0E5,       &
+                        1.0E17,      &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
+        coolH_cgs = (/  3.42E16,     &
+                        9.10E18,     &
+                        1.11E20,     &
+                        2.00E8,      &
+                        7.962E29,    &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -593,28 +593,28 @@ module Interstellar
 !
       else if (cooling_select == 'SSr') then
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/  10.D0,       &
-                        141.D0,      &
-                        313.D0,      &
-                        6102.D0,     &
-                        1.D5,        &
-                        1.D9,        &
-                        1.D17,       &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
-        coolH_cgs = (/  3.70D16,     &
-                        9.46D18,     &
-                        1.185D20,    &
-                        2.00D8,      &
-                        7.96D29,     &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0) /)
+        coolT_cgs = (/  10.0,       &
+                        141.0,      &
+                        313.0,      &
+                        6102.0,     &
+                        1.5,        &
+                        1.9,        &
+                        1.17,       &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
+        coolH_cgs = (/  3.70E16,     &
+                        9.46E18,     &
+                        1.185E20,    &
+                        2.00E8,      &
+                        7.96E29,     &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0),   &
+                        tiny(0E0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -632,28 +632,28 @@ module Interstellar
 !
       else if (cooling_select == 'SSrr') then
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/  10.D0,        &
-                        141.D0,       &
-                        313.D0,       &
-                        6102.D0,      &
-                        1.D5,         &
-                        4.D7,         &
-                        1.D17,        &
-                        tiny(0D0),    &
-                        tiny(0D0),    &
-                        tiny(0D0),    &
-                        tiny(0d0)  /)
-        coolH_cgs = (/  3.703109927416290D16, &
-                        9.455658188464892D18, &
-                        1.185035244783337D20, &
-                        1.9994576479D8,       &
-                        7.96D29,              &
-                        1.440602814622207D21, &
-                        tiny(0D0),            &
-                        tiny(0D0),            &
-                        tiny(0D0),            &
-                        tiny(0D0),            &
-                        tiny(0D0)  /)
+        coolT_cgs = (/  10.0,        &
+                        141.0,       &
+                        313.0,       &
+                        6102.0,      &
+                        1.5,         &
+                        4.7,         &
+                        1.17,        &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0.0)  /)
+        coolH_cgs = (/  3.703109927416290E16, &
+                        9.455658188464892E18, &
+                        1.185035244783337E20, &
+                        1.9994576479E8,       &
+                        7.96E29,              &
+                        1.440602814622207E21, &
+                        tiny(0E0),            &
+                        tiny(0E0),            &
+                        tiny(0E0),            &
+                        tiny(0E0),            &
+                        tiny(0E0)  /)
         coolB =     (/  2.12,         &
                         1.0,          &
                         0.56,         &
@@ -668,33 +668,33 @@ module Interstellar
         ncool=6
 !
 !  26-Jan-10/fred
-!  Combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
+!  Combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1E5K
 !  as Gressel simulation (2008) with constants revised for continuity
 !
       else if (cooling_select == 'WSW') then
         if (lroot) print*,'initialize_interstellar: WSW cooling fct'
-        coolT_cgs = (/  10.D0,       &
-                        141.D0,      &
-                        313.D0,      &
-                        6102.D0,     &
-                        1.D5,        &
-                        2.88D5,      &
-                        4.73D5,      &
-                        2.11D6,      &
-                        3.98D6,      &
-                        2.0D7,       &
-                        1.0D17      /)
-        coolH_cgs = (/  3.703109927416290D16, &
-                        9.455658188464892D18, &
-                        1.185035244783337D20, &
-                        1.102120336D10,       &
-                        1.236602671D27,       &
-                        2.390722374D42,       &
-                        4.003272698D26,       &
-                        1.527286104D44,       &
-                        1.608087849D22,       &
-                        9.228575532D20,       &
-                        tiny(0D0) /)
+        coolT_cgs = (/  10.0,       &
+                        141.0,      &
+                        313.0,      &
+                        6102.0,     &
+                        1.5,        &
+                        2.88E5,      &
+                        4.73E5,      &
+                        2.11E6,      &
+                        3.98E6,      &
+                        2.0E7,       &
+                        1.0E17      /)
+        coolH_cgs = (/  3.703109927416290E16, &
+                        9.455658188464892E18, &
+                        1.185035244783337E20, &
+                        1.102120336E10,       &
+                        1.236602671E27,       &
+                        2.390722374E42,       &
+                        4.003272698E26,       &
+                        1.527286104E44,       &
+                        1.608087849E22,       &
+                        9.228575532E20,       &
+                        tiny(0E0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -712,28 +712,28 @@ module Interstellar
 !
       else if (cooling_select == 'WSWr') then
         if (lroot) print*,'initialize_interstellar: WSWr cooling fct'
-        coolT_cgs = (/  90.D0,       &
-                        141.D0,      &
-                        313.D0,      &
-                        6102.D0,     &
-                        1.D5,        &
-                        2.88D5,      &
-                        4.73D5,      &
-                        2.11D6,      &
-                        3.98D6,      &
-                        2.0D7,       &
-                        1.0D17      /)
-        coolH_cgs = (/  3.703109927416290D16, &
-                        9.455658188464892D18, &
-                        1.185035244783337D20, &
-                        1.102120336D10,       &
-                        1.236602671D27,       &
-                        2.390722374D42,       &
-                        4.003272698D26,       &
-                        1.527286104D44,       &
-                        1.608087849D22,       &
-                        9.228575532D20,       &
-                        tiny(0D0) /)
+        coolT_cgs = (/  90.0,       &
+                        141.0,      &
+                        313.0,      &
+                        6102.0,     &
+                        1.5,        &
+                        2.88E5,      &
+                        4.73E5,      &
+                        2.11E6,      &
+                        3.98E6,      &
+                        2.0E7,       &
+                        1.0E17      /)
+        coolH_cgs = (/  3.703109927416290E16, &
+                        9.455658188464892E18, &
+                        1.185035244783337E20, &
+                        1.102120336E10,       &
+                        1.236602671E27,       &
+                        2.390722374E42,       &
+                        4.003272698E26,       &
+                        1.527286104E44,       &
+                        1.608087849E22,       &
+                        9.228575532E20,       &
+                        tiny(0E0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -748,8 +748,8 @@ module Interstellar
         ncool=10
       else if (cooling_select == 'off') then
         if (lroot) print*,'initialize_interstellar: no cooling applied'
-        coolT_cgs=tiny(0.D0)
-        coolH_cgs=tiny(0.D0)
+        coolT_cgs=tiny(0.0)
+        coolH_cgs=tiny(0.0)
         coolB=tiny(0.)
       endif
 !
@@ -835,7 +835,7 @@ module Interstellar
 !
       if (heatcool_shock_cutoff_rate/=0.) then
         lheatcool_shock_cutoff=.true.
-        heatcool_shock_cutoff_rate1=1.d0/heatcool_shock_cutoff_rate
+        heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
       else
         lheatcool_shock_cutoff=.false.
       endif
@@ -1358,12 +1358,12 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
 !
-      double precision :: logrho
+      real :: logrho
       real :: muhs
       real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
+      real :: g_B ,g_D
+      real, parameter :: g_B_cgs=6.172E20 , g_D_cgs=3.086E21
       integer :: ierr
 !
 !  Identifier
@@ -1394,13 +1394,13 @@ module Interstellar
         if (lthermal_hse) then
           logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
               log(T0hs/(g_A*g_B)* &
-              (g_A*sqrt(g_B**2+(z(n))**2)+0.5d0*g_C*(z(n))**2/g_D)))
+              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)))
         else
-          logrho = log(rho0ts)-0.015d0*(- &
+          logrho = log(rho0ts)-0.015*(- &
               g_A*g_B+ &
-              g_A*sqrt(g_B**2+(z(n))**2)+0.5d0*g_C*(z(n))**2/g_D)
+              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
         endif
-        if (logrho < -40.d0) logrho=-40.d0
+        if (logrho < -40.0) logrho=-40.0
         zrho(n)=exp(logrho)
       enddo
 !
@@ -1441,10 +1441,10 @@ module Interstellar
       logical, intent(in) :: lstarting
 !
       real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D, H_z
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21, &
-                                     H_z_cgs=9.258D20
+      real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
+      real :: g_B ,g_D, H_z
+      real, parameter :: g_B_cgs=6.172E20 , g_D_cgs=3.086E21, &
+                                     H_z_cgs=9.258E20
       real, dimension(mz) :: lambda=0.0, lnTT, TT
       integer :: j
 !
@@ -1485,7 +1485,7 @@ module Interstellar
         zheat=lambda*zrho
       endif
       if (lheatz_min) then
-        where (zheat<1e-5*GammaUV) zheat=1e-5*GammaUV
+        where (zheat<1E-5*GammaUV) zheat=1E-5*GammaUV
       endif
       if (lstarting) then
         do n=n1,n2
@@ -1708,7 +1708,7 @@ module Interstellar
     subroutine calc_heat(heat,lnTT)
 !
 !  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
-!  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
+!  with the values above, this gives about 0.012 erg/g/s (T < ~1.E4 K)
 !  Nb: need rho0 from density_[init/run]_pars, to implement the arm/interarm
 !  scaling.
 !
@@ -1785,7 +1785,7 @@ module Interstellar
       l_SNI=.false.
       if (t >= t_next_SNI) then
         iSNR=get_free_SNR()
-        SNRs(iSNR)%site%TT=1e20
+        SNRs(iSNR)%site%TT=1E20
         SNRs(iSNR)%site%rho=0.0
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=1
@@ -1866,7 +1866,7 @@ module Interstellar
 !
       if (t >= t_next_SNII) then
         iSNR=get_free_SNR()
-        SNRs(iSNR)%site%TT=1e20
+        SNRs(iSNR)%site%TT=1E20
         SNRs(iSNR)%site%rho=0.0
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=2
@@ -1998,9 +1998,9 @@ module Interstellar
 !  Adapt expected time interval until next SN depending on the ISM mass
 !  within 2x h_SN of midplane
 !
-!  SNII rate=5.e-12 mass(H1+HII)/solar_mass
+!  SNII rate=5.E-12 mass(H1+HII)/solar_mass
 !  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
-!  SNI rate=4.7e-14 mass(H1+HII)/solar_mass + 0.35 x SNII rate
+!  SNI rate=4.7E-14 mass(H1+HII)/solar_mass + 0.35 x SNII rate
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
       if (ldensity_nolog) then
@@ -2752,8 +2752,8 @@ module Interstellar
 !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
                                  ilnrho_ss, irho_ss
-      use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double,&
-                         mpireduce_sum_double, mpibcast_int, mpireduce_sum
+      use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_real,&
+                         mpireduce_sum, mpibcast_int, mpireduce_sum
       use General, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
@@ -2761,18 +2761,18 @@ module Interstellar
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, optional :: ierr
 !
-      double precision :: c_SN,cmass_SN,cvelocity_SN
-      double precision :: mass_shell
+      real :: c_SN,cmass_SN,cvelocity_SN
+      real :: mass_shell
       real :: rho_SN_lowest
-      double precision :: width_energy, width_mass, width_velocity
-      double precision :: cavity_depth, r_cavity, rhom, ekintot
-      double precision ::  rhom_new, ekintot_new
+      real :: width_energy, width_mass, width_velocity
+      real :: cavity_depth, r_cavity, rhom, ekintot
+      real ::  rhom_new, ekintot_new
       real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
       real :: TT_SN_new, uu_sedov
 !
-      double precision, dimension(nx) :: deltarho, deltaEE
-      double precision, dimension(nx,3) :: deltauu
-      double precision, dimension(2) :: dmpi2, dmpi2_tmp
+      real, dimension(nx) :: deltarho, deltaEE
+      real, dimension(nx,3) :: deltauu
+      real, dimension(2) :: dmpi2, dmpi2_tmp
       real, dimension(1) :: mmpi, mpi_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu
@@ -3272,8 +3272,8 @@ module Interstellar
 !  Sum and share diagnostics etc. amongst processors.
 !
       dmpi2_tmp=(/ SNR%MM, SNR%EE /)
-      call mpireduce_sum_double(dmpi2_tmp,dmpi2,2)
-      call mpibcast_double(dmpi2,2)
+      call mpireduce_sum(dmpi2_tmp,dmpi2,2)
+      call mpibcast_real(dmpi2,2)
       SNR%MM=dmpi2(1)*dv
       SNR%EE=dmpi2(2)*dv+ekintot_new-ekintot !include added kinetic energy
 !
@@ -3301,7 +3301,7 @@ module Interstellar
         print*, 'explode_SN:  Ambient mass = ', site_mass
         print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
         print*, 'explode_SN:    Shell velocity  = ', uu_sedov
-        write(1,'(i10,e13.5,5i6,11e13.5)')  &
+        write(1,'(i10,E13.5,5i6,11E13.5)')  &
             it, t, SNR%SN_type, SNR%iproc, SNR%l, SNR%m, SNR%n, &
             SNR%x, SNR%y, SNR%z, SNR%site%rho, SNR%site%TT, SNR%EE, &
             SNR%t_sedov, SNR%radius, site_mass, maxTT, t_interval_SN
@@ -3520,25 +3520,22 @@ module Interstellar
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
-      double precision :: radius2
-      double precision :: rhom, ekintot
+      real :: radius2
+      real :: rhom, ekintot
       real, dimension(nx) :: rho, u2
       real, dimension(nx,3) :: uu
-      double precision, dimension(nx) :: drho, dbu2
       integer, dimension(nx) :: mask
-      double precision, dimension(3) :: tmp,tmp2
+      real, dimension(3) :: tmp,tmp2
       logical :: precise_sqrt=.true.
 !
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
       radius2 = (remnant%radius)**2
-      tmp=0.d0
-      tmp2=0.d0
+      tmp=0.0
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(remnant)
-        mask=1
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
         else
@@ -3549,11 +3546,10 @@ module Interstellar
 !  can multiply very low u2 to make NaN. fred. 
 !
         uu=f(l1:l2,m,n,iuu:iuu+2)
-        where (abs(f(l1:l2,m,n,iuu:iuu+2))<2e-19) uu=0.0
+        where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
-        dbu2=u2
-        drho=rho
-        tmp(3)=tmp(3)+sum(drho*dbu2)
+        tmp(3)=tmp(3)+sum(rho*u2)
+        mask(1:nx)=1
         where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
@@ -3563,16 +3559,15 @@ module Interstellar
       enddo
       enddo
 !
-!  Calculate mean density inside the remnant and return zero if the volume is
+!  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
-!
-      call mpireduce_sum_double(tmp,tmp2,3)
-      call mpibcast_double(tmp2,3)
+! 
+      call mpireduce_sum(tmp,tmp2,3)
+      call mpibcast_real(tmp2,3)
       ekintot=0.5*tmp2(3)*dv
-      if (abs(tmp2(2)) < 1.0D-30) then
-        write(0,*) 'tmp = ', tmp
+      if (abs(tmp2(2)) < tini) then
+        write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
-        rhom=0.D0
       else
         rhom=tmp2(1)/tmp2(2)
       endif
@@ -3591,16 +3586,15 @@ module Interstellar
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
-      double precision, intent(in) :: cvelocity_SN, cmass_SN
-      double precision :: radius2
-      double precision :: rhom, ekintot
-      double precision :: width_mass, width_velocity
-      real, dimension(nx) :: rho, u2
+      real, intent(in) :: cvelocity_SN, cmass_SN
+      real :: radius2
+      real :: rhom, ekintot
+      real :: width_mass, width_velocity
+      real, dimension(nx) :: rho, u2, deltarho
       real, dimension(nx,3) :: uu
-      double precision, dimension(nx) :: drho, dbu2, deltarho
-      double precision, dimension(nx,3) :: deltauu
+      real, dimension(nx,3) :: deltauu
       integer, dimension(nx) :: mask
-      double precision, dimension(3) :: tmp,tmp2
+      real, dimension(3) :: tmp,tmp2
       logical :: precise_sqrt=.true.
 !
 !  Obtain distance to SN and sum all points inside SNR radius and
@@ -3609,12 +3603,10 @@ module Interstellar
       width_mass     = remnant%radius*mass_width_ratio
       width_velocity = remnant%radius*velocity_width_ratio
       radius2 = (remnant%radius)**2
-      tmp=0.d0
-      tmp2=0.d0
+      tmp=0.0
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(remnant)
-        mask=1
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
         else
@@ -3633,11 +3625,10 @@ module Interstellar
           call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN)
           uu=uu+deltauu
         endif
-        where (abs(f(l1:l2,m,n,iuu:iuu+2))<2e-19) uu=0.0
+        where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
-        dbu2=u2
-        drho=rho
-        tmp(3)=tmp(3)+sum(drho*dbu2)
+        tmp(3)=tmp(3)+sum(rho*u2)
+        mask=1
         where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
@@ -3650,13 +3641,13 @@ module Interstellar
 !  Calculate mean density inside the remnant and return zero if the volume is
 !  zero.
 !
-      call mpireduce_sum_double(tmp,tmp2,3)
-      call mpibcast_double(tmp2,3)
+      tmp2=tmp
+      call mpireduce_sum(tmp,tmp2,3)
+      call mpibcast_real(tmp2,3)
       ekintot=0.5*tmp2(3)*dv
-      if (abs(tmp2(2)) < 1.0D-30) then
-        write(0,*) 'tmp = ', tmp
-        call fatal_error("interstellar.get_properties","Dividing by zero?")
-        rhom=0.D0
+      if (abs(tmp2(2)) < tini) then
+        write(0,*) 'tmp2 = ', tmp2
+        call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
         rhom=tmp2(1)/tmp2(2)
       endif
@@ -3673,15 +3664,15 @@ module Interstellar
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
-      double precision, intent(in) :: radius
+      real, intent(in) :: radius
       real, intent(out) :: rho_lowest
       real :: tmp
-      double precision :: radius2
+      real :: radius2
       real, dimension(nx) :: rho
 !
 !  Find lowest rho value in the surronding cavity.
 !
-      rho_lowest=1e10
+      rho_lowest=1E10
       radius2 = radius**2
       do n=n1,n2
       do m=m1,m2
@@ -3691,7 +3682,7 @@ module Interstellar
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        where (dr2_SN(1:nx) > radius2) rho=1e10
+        where (dr2_SN(1:nx) > radius2) rho=1E10
         rho_lowest=min(rho_lowest,minval(rho(1:nx)))
       enddo
       enddo
@@ -3711,9 +3702,9 @@ module Interstellar
 !
       type (SNRemnant), intent(in) :: SNR
 !
-      double precision,dimension(nx) :: dx_SN, dr_SN
-      double precision :: dy_SN
-      double precision :: dz_SN
+      real,dimension(nx) :: dx_SN, dr_SN
+      real :: dy_SN
+      real :: dz_SN
 !
 !  Obtain distance to SN
 !
@@ -3739,7 +3730,7 @@ module Interstellar
 !
       if (lSN_velocity) then
         dr_SN=sqrt(dr2_SN)
-        dr_SN=max(dr_SN(1:nx),tiny(0.d0))
+        dr_SN=max(dr_SN(1:nx),tiny(0.0))
 !
 !  Avoid dr_SN = 0 above to avoid div by zero below.
 !
@@ -3796,16 +3787,16 @@ module Interstellar
 !
 !  22-may-03/tony: coded
 !
-      use Mpicomm, only: mpibcast_double, mpireduce_sum_double
+      use Mpicomm, only: mpibcast_real, mpireduce_sum
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
-      double precision, intent(in) :: width, depth
-      double precision, intent(out) :: mass_removed
+      real, intent(in) :: width, depth
+      real, intent(out) :: mass_removed
       real, dimension(nx) :: lnrho, lnrho_old
       real, dimension(nx) :: rho
-      double precision, dimension(1) :: dmpi1, dmpi1_tmp
-      double precision, dimension(nx) :: profile_cavity
+      real, dimension(1) :: dmpi1, dmpi1_tmp
+      real, dimension(nx) :: profile_cavity
 !
 !  Obtain distance to SN
 !
@@ -3844,8 +3835,8 @@ module Interstellar
       enddo
       enddo
       dmpi1_tmp=(/ mass_removed /)
-      call mpireduce_sum_double(dmpi1_tmp,dmpi1,1)
-      call mpibcast_double(dmpi1,1)
+      call mpireduce_sum(dmpi1_tmp,dmpi1,1)
+      call mpibcast_real(dmpi1,1)
       mass_removed=dmpi1(1)*dv
 !
     endsubroutine calc_cavity_mass_lnrho
@@ -3853,12 +3844,12 @@ module Interstellar
     subroutine make_cavity_rho(deltarho,width,depth, &
                              cnorm_dim,MMtot_SN)
 !
-      double precision, intent(in) :: width, depth, cnorm_dim
-      double precision, intent(inout) :: MMtot_SN
-      double precision, intent(out), dimension(nx) :: deltarho
+      real, intent(in) :: width, depth, cnorm_dim
+      real, intent(inout) :: MMtot_SN
+      real, intent(out), dimension(nx) :: deltarho
 !
-      double precision, dimension(nx) :: profile_shell_outer,profile_shell_inner
-      double precision :: width_shell_outer, width_shell_inner, c_shell
+      real, dimension(nx) :: profile_shell_outer,profile_shell_inner
+      real :: width_shell_outer, width_shell_inner, c_shell
 !
       width_shell_outer=outer_shell_proportion*width
       width_shell_inner=inner_shell_proportion*width
@@ -3885,14 +3876,14 @@ module Interstellar
     subroutine make_cavity_lnrho(lnrho,width,depth,mass_shell, &
                              cnorm_dim,MMtot_SN)
 !
-      double precision, intent(in) :: width, depth, mass_shell, cnorm_dim
-      double precision, intent(inout) :: MMtot_SN
+      real, intent(in) :: width, depth, mass_shell, cnorm_dim
+      real, intent(inout) :: MMtot_SN
       real, intent(inout), dimension(nx) :: lnrho
 !
-      double precision, dimension(nx) :: profile_shell_outer,profile_cavity
-      double precision, dimension(nx) :: profile_shell_inner
-      double precision :: width_shell_outer, width_shell_inner, c_shell
-      double precision :: mass_before, mass_after
+      real, dimension(nx) :: profile_shell_outer,profile_cavity
+      real, dimension(nx) :: profile_shell_inner
+      real :: width_shell_outer, width_shell_inner, c_shell
+      real :: mass_before, mass_after
 !
       width_shell_outer=outer_shell_proportion*width
       width_shell_inner=inner_shell_proportion*width
@@ -3937,11 +3928,11 @@ module Interstellar
 !*****************************************************************************
     subroutine injectenergy_SN(deltaEE,width,c_SN,EEtot_SN)
 !
-      double precision, intent(in) :: width,c_SN
-      double precision, intent(inout) :: EEtot_SN
-      double precision, intent(out), dimension(nx) :: deltaEE
+      real, intent(in) :: width,c_SN
+      real, intent(inout) :: EEtot_SN
+      real, intent(out), dimension(nx) :: deltaEE
 !
-      double precision, dimension(nx) :: profile_SN
+      real, dimension(nx) :: profile_SN
 !
 !  Whether mass is moved or not, inject energy.
 !
@@ -3952,12 +3943,12 @@ module Interstellar
       elseif (thermal_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2))
       elseif (thermal_profile=="quadratic") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0D0)
+        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)
       elseif (thermal_profile=="quadratictanh") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0d0)* &
+        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)* &
             0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="quartictanh") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2)**2,0d0)* &
+        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2)**2,0.0)* &
             0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="tanh") then
         profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
@@ -3970,11 +3961,11 @@ module Interstellar
 !*****************************************************************************
     subroutine injectmass_SN(deltarho,width,cmass_SN,MMtot_SN)
 !
-      double precision, intent(in) :: width,cmass_SN
-      double precision, intent(inout) :: MMtot_SN
-      double precision, intent(out), dimension(nx) :: deltarho
+      real, intent(in) :: width,cmass_SN
+      real, intent(inout) :: MMtot_SN
+      real, intent(out), dimension(nx) :: deltarho
 !
-      double precision, dimension(nx) :: profile_SN
+      real, dimension(nx) :: profile_SN
 !
 !  Inject mass.
 !
@@ -3985,7 +3976,7 @@ module Interstellar
       elseif (mass_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2))
       elseif (mass_profile=="quadratic") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0D0)
+        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)
       elseif (mass_profile=="tanh") then
 !
 !  This is normally handled in the mass movement section
@@ -4000,10 +3991,10 @@ module Interstellar
 !***********************************************************************
     subroutine injectvelocity_SN(deltauu,width,cvelocity_SN)
 !
-      double precision, intent(in) :: width,cvelocity_SN
-      double precision, intent(out), dimension(nx,3) :: deltauu
+      real, intent(in) :: width,cvelocity_SN
+      real, intent(out), dimension(nx,3) :: deltauu
 !
-      double precision, dimension(nx) :: profile_SN
+      real, dimension(nx) :: profile_SN
 !
       integer :: j
 !
@@ -4014,7 +4005,7 @@ module Interstellar
             (1.-tanh((sqrt(dr2_SN)-(1.1*width))/(0.08*width)))
 !
       elseif (velocity_profile=="lineartanh") then
-        profile_SN=max(sqrt(dr2_SN)/width,1.D0)*0.5* &
+        profile_SN=max(sqrt(dr2_SN)/width,1.0)*0.5* &
             (1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
 !
       elseif (velocity_profile=="quadratictanh") then
@@ -4131,8 +4122,8 @@ module Interstellar
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !
-      real :: prec_factor=1.0e-7
-      double precision :: add_ratio
+      real :: prec_factor=1.0E-7
+      real :: add_ratio
       integer :: l,m,n
 !
 !  Skip this subroutine if not selected eg before turbulent pressure settles
@@ -4149,7 +4140,7 @@ module Interstellar
 !  losses. addrate (default=1.0) can be increased to raise mass levels if
 !  required.
 !
-        add_ratio=1.d0+prec_factor*addrate
+        add_ratio=1.0+prec_factor*addrate
 !
 !  Add mass proportionally to the existing density throughout the
 !  volume to replace that lost through boundary.
@@ -4180,16 +4171,16 @@ module Interstellar
 !!  simple factor to keep the mean density steady following hydrodynamic 
 !!  steady turbulence 
 !
-!      use Mpicomm, only: mpireduce_sum_double, mpibcast_double, &
+!      use Mpicomm, only: mpireduce_sum, mpibcast_real, &
 !                         mpibcast_real, mpireduce_max
 !!
 !      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !!
-!      real :: prec_factor=1.0e-6
-!      double precision, dimension(1) :: sum_tmp, rmpi
-!      double precision :: bflux, bmass, add_ratio, rhosum
-!      double precision, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
-!      double precision :: newmass, oldmass
+!      real :: prec_factor=1.0E-6
+!      real, dimension(1) :: sum_tmp, rmpi
+!      real :: bflux, bmass, add_ratio, rhosum
+!      real, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
+!      real :: newmass, oldmass
 !      integer :: l,m,n
 !!
 !!  Skip this subroutine if not selected eg before turbulent pressure settles
@@ -4205,14 +4196,14 @@ module Interstellar
 !        rhosum = sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
 !      endif
 !      sum_tmp=(/ rhosum /)
-!      call mpireduce_sum_double(sum_tmp,rmpi,1)
-!      call mpibcast_double(rmpi,1)
+!      call mpireduce_sum(sum_tmp,rmpi,1)
+!      call mpibcast_real(rmpi,1)
 !      rhosum=rmpi(1)
 !      oldmass=rhosum*dv
 !!
 !!  Calculate mass loss through the vertical boundaries rho*u_z
 !!
-!      bflux=0.d0
+!      bflux=0.0
 !      do n=n1,n2
 !        if (z(n) == xyz0(3)) then
 !          do l=l1,l2
@@ -4244,11 +4235,11 @@ module Interstellar
 !!
 !!  Sum over all processors and communicate total to all.
 !!
-!      call mpireduce_sum_double(sum_1tmp,bfmpi,1)
-!      call mpibcast_double(bfmpi,1)
+!      call mpireduce_sum(sum_1tmp,bfmpi,1)
+!      call mpibcast_real(bfmpi,1)
 !      bflux=bfmpi(1)
 !      if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
-!      if (bflux>0.d0) then
+!      if (bflux>0.0) then
 !!
 !!  Multiply mass flux by area element and timestep to determine lost mass.
 !!  Add unused flux mass from previous timesteps.
@@ -4270,7 +4261,7 @@ module Interstellar
 !!  add_ratio needs to be large enough for single precision to record small
 !!  changes, so accumulate small mass losses in boldmass until large enough.
 !!
-!        if (add_ratio>=prec_factor+1.d0) then
+!        if (add_ratio>=prec_factor+1.0) then
 !          if (ldensity_nolog) then
 !            f(l1:l2,m1:m2,n1:n2,irho)= &
 !                dble(f(l1:l2,m1:m2,n1:n2,irho))*add_ratio
@@ -4288,8 +4279,8 @@ module Interstellar
 !            rhosum=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
 !          endif
 !          sum_3tmp=(/ rhosum /)
-!          call mpireduce_sum_double(sum_3tmp,nmpi,1)
-!          call mpibcast_double(nmpi,1)
+!          call mpireduce_sum(sum_3tmp,nmpi,1)
+!          call mpibcast_real(nmpi,1)
 !          rhosum=nmpi(1)
 !          newmass=nmpi(1)*dv
 !          if (lroot.and.ip<45) print*,'addmassflux: oldmass, newmass =', &
@@ -4297,7 +4288,7 @@ module Interstellar
 !          if (lroot.and.ip<70) print*, &
 !              'addmassflux: added mass vs mass flux=', &
 !              newmass-oldmass, bmass
-!          boldmass=0.d0
+!          boldmass=0.0
 !        else
 !          boldmass=bmass
 !        endif
