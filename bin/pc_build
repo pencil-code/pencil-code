@@ -28,7 +28,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   pc_build [<options>] [<MAKE_VAR1=val1> [<MAKE_VAR2>=val2 ...]]
 # Options:
 #   -h, --help      This help.
-#       --debug     Show debug output.
+#   -d, --debug     Show debug output.
 #       --clean     Run 'make clean'.
 #       --cleanall  Run 'pc_setupsrc; make cleanall'.
 #   -f <files>,
@@ -39,7 +39,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#       --debug-config
+#   -D, --debug-config
 #                   Show the config files (existing or not) that would be
 #                   read, then exit
 #       --notify    Tell us (audibly and visually) when compilation is done.
@@ -53,12 +53,11 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       use host ID mechanism to identify the appropriate config file.
 #   pc_build REAL_PRECISION=double
 #       run 'make REAL_PRECISION=double', i.e. compile for double precision
-#   pc_build -f os/GNU_Linux,mpi/open-mpi
+#   pc_build -f compilers/GNU-GCC_MPI
 #       will use the configuration files
-#       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
-#       ${PENCIL_HOME}/config/mpi/open-mpi.conf (unless you have analogous
-#       files under ~/.pencil/config to override the ones in
-#       ${PENCIL_HOME}).
+#       ${PENCIL_HOME}/config/compilers/GNU-GCC.conf and
+#       ${PENCIL_HOME}/config/mpi/default.conf (unless you have analogous
+#       files under ~/.pencil/config to override the ones in ${PENCIL_HOME}).
 #   pc_build -f /home/USER/myconfig
 #       will use the configuration file /home/USER/myconfig.conf if it
 #       exists.
@@ -111,12 +110,12 @@ my (%opts);                     # Options hash for GetOptions
 ## Process command line
 GetOptions(\%opts,
            qw( -h   --help
-                    --debug
+               -d   --debug
                     --clean
                     --cleanall
                -f=s --config-files=s
                -H=s --host-id=s
-                    --debug-config
+               -D   --debug-config
                     --notify
                     --fast
                -p   --previous-flags
@@ -124,7 +123,7 @@ GetOptions(\%opts,
                -v   --version )
           ) or die "Aborting.\n";
 
-my $debug = ($opts{'debug'} ? 1 : 0 );
+my $debug = ($opts{'d'} || $opts{'debug'} || '');
 if ($debug) {
     printopts(\%opts);
     print "\@ARGV = '@ARGV'\n";
@@ -137,7 +136,7 @@ my $clean        = (              $opts{'clean'}          || '');
 my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
-my $debug_config = (              $opts{'debug-config'}   || '');
+my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
@@ -148,7 +147,7 @@ mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
 if (defined $config_files) {
     my @files = split(",", $config_files);
-    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
+    @config_files = Pencil::ConfigFinder::locate_config_files(@files);
 } else {
     my $config_file;
     if (defined $host_id) {
@@ -163,7 +162,12 @@ if (defined $config_files) {
 die "No configuration file found\n" unless @config_files;
 
 if ($debug_config) {
-    # The desired output was already printed
+    if (($opts{'f'} || $opts{'config-files'}) && @config_files) {
+        print "Using <";
+        print @config_files;
+        print ">\n";
+    }
+    # The desired output is now printed
     exit 0;
 }
 
