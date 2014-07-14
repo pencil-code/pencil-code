@@ -21,3 +21,4 @@ FORCING      = noforcing
 SHEAR        =   shear
 
 POWER        = nopower_spectrum
+REAL_PRECISION = double
