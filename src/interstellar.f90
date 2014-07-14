@@ -152,7 +152,7 @@ module Interstellar
 !
 !  SNI per (x,y)-area explosion rate
 !
-  real, parameter :: SNI_area_rate_cgs=1.330982784E-56
+  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
 !
 !  SNII rate=5.E-12 mass(H1+HII)/solar_mass
@@ -190,7 +190,7 @@ module Interstellar
 !
 !  Total SNe energy
 !
-  real, parameter :: ampl_SN_cgs=1E51
+  double precision, parameter :: ampl_SN_cgs=1D51
   real :: frac_ecr=0.1, frac_eth=0.9
   real :: ampl_SN=impossible, kampl_SN=impossible
 !
@@ -260,7 +260,8 @@ module Interstellar
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
 !  Appended null last term to all arrays for RB and SS cooling
 !
-  real, dimension(11) :: coolT_cgs, coolH_cgs
+  double precision, dimension(11) :: coolH_cgs
+  real, dimension(11) :: coolT_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
 !
@@ -485,17 +486,17 @@ module Interstellar
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0) /)
-        coolH_cgs = (/  2.2380E-32,  &
-                        1.0012E-30,  &
-                        4.6240E-36,  &
-                        1.7800E-18,  &
-                        3.2217E-27,  &
-                        tiny(0.0),  &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0.0),  &
-                        tiny(0E0) /) / ( m_p_cgs )**2
+        coolH_cgs = (/  2.2380D-32,  &
+                        1.0012D-30,  &
+                        4.6240D-36,  &
+                        1.7800D-18,  &
+                        3.2217D-27,  &
+                        tiny(0D0),  &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),  &
+                        tiny(0D0) /) / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
@@ -529,17 +530,17 @@ module Interstellar
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0) /)
-        coolH_cgs = (/  2.2380E-32,  &
-                        1.0012E-30,  &
-                        4.6240E-36,  &
-                        1.7783524E-18,  &
-                        2.238814E-25,&
-                        tiny(0.0),  &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0) /)  / ( m_p_cgs )**2
+        coolH_cgs = (/  2.2380D-32,  &
+                        1.0012D-30,  &
+                        4.6240D-36,  &
+                        1.7783524D-18,  &
+                        2.238814D-25,&
+                        tiny(0D0),  &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0) /)  / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
@@ -567,17 +568,17 @@ module Interstellar
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0) /)
-        coolH_cgs = (/  3.42E16,     &
-                        9.10E18,     &
-                        1.11E20,     &
-                        2.00E8,      &
-                        7.962E29,    &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0) /)
+        coolH_cgs = (/  3.42D16,     &
+                        9.10D18,     &
+                        1.11D20,     &
+                        2.00D8,      &
+                        7.962D29,    &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -604,17 +605,17 @@ module Interstellar
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0) /)
-        coolH_cgs = (/  3.70E16,     &
-                        9.46E18,     &
-                        1.185E20,    &
-                        2.00E8,      &
-                        7.96E29,     &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0) /)
+        coolH_cgs = (/  3.70D16,     &
+                        9.46D18,     &
+                        1.185D20,    &
+                        2.00D8,      &
+                        7.96D29,     &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -643,17 +644,17 @@ module Interstellar
                         tiny(0E0),    &
                         tiny(0E0),    &
                         tiny(0.0)  /)
-        coolH_cgs = (/  3.703109927416290E16, &
-                        9.455658188464892E18, &
-                        1.185035244783337E20, &
-                        1.9994576479E8,       &
-                        7.96E29,              &
-                        1.440602814622207E21, &
-                        tiny(0E0),            &
-                        tiny(0E0),            &
-                        tiny(0E0),            &
-                        tiny(0E0),            &
-                        tiny(0E0)  /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.9994576479D8,       &
+                        7.96D29,              &
+                        1.440602814622207D21, &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0)  /)
         coolB =     (/  2.12,         &
                         1.0,          &
                         0.56,         &
@@ -684,17 +685,17 @@ module Interstellar
                         3.98E6,      &
                         2.0E7,       &
                         1.0E17      /)
-        coolH_cgs = (/  3.703109927416290E16, &
-                        9.455658188464892E18, &
-                        1.185035244783337E20, &
-                        1.102120336E10,       &
-                        1.236602671E27,       &
-                        2.390722374E42,       &
-                        4.003272698E26,       &
-                        1.527286104E44,       &
-                        1.608087849E22,       &
-                        9.228575532E20,       &
-                        tiny(0E0) /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.102120336D10,       &
+                        1.236602671D27,       &
+                        2.390722374D42,       &
+                        4.003272698D26,       &
+                        1.527286104D44,       &
+                        1.608087849D22,       &
+                        9.228575532D20,       &
+                        tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
@@ -723,17 +724,17 @@ module Interstellar
                         3.98E6,      &
                         2.0E7,       &
                         1.0E17      /)
-        coolH_cgs = (/  3.703109927416290E16, &
-                        9.455658188464892E18, &
-                        1.185035244783337E20, &
-                        1.102120336E10,       &
-                        1.236602671E27,       &
-                        2.390722374E42,       &
-                        4.003272698E26,       &
-                        1.527286104E44,       &
-                        1.608087849E22,       &
-                        9.228575532E20,       &
-                        tiny(0E0) /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.102120336D10,       &
+                        1.236602671D27,       &
+                        2.390722374D42,       &
+                        4.003272698D26,       &
+                        1.527286104D44,       &
+                        1.608087849D22,       &
+                        9.228575532D20,       &
+                        tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
