@@ -91,7 +91,7 @@ module Forcing
 !
   logical :: lembed=.false.,lshearing_adjust_old=.false.
   logical, dimension(n_forcing_cont) :: lgentle=.false.
-  character (len=labellen), dimension(n_forcing_cont) :: iforcing_cont=''
+  character (len=labellen), dimension(n_forcing_cont) :: iforcing_cont='nothing'
   real, dimension(n_forcing_cont) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
   real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible  
   real, dimension(n_forcing_cont) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
@@ -4779,6 +4779,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=tmp
+!
+        case ('nothing')
+          if (i==1) call stop_it('forcing: no valid continuous iforcing_cont specified')
+          return
 !
         case default
           call stop_it('forcing: no valid continuous iforcing_cont specified')
