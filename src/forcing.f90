@@ -661,10 +661,10 @@ module Forcing
         elseif (iforcing_cont(i)=='(0,cosx*expmz2,0)' &
            .or. iforcing_cont(i)=='(0,cosx*expmz2,0)_Lor') then
           cosx(:,i)=cos(kf_fcont_x(i)*x)
-          profz_ampl=exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
-          d1profz_ampl=-2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
-          d2profz_ampl=  (-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2) &
-                        *exp(-(kf_fcont_z(i)*(z-z_center_fcont(i)))**2)
+          sinx(:,i)=sin(kf_fcont_x(i)*x)
+          profz_ampl  = exp(-(kf_fcont_z(i) *(z-z_center_fcont(i)))**2)
+          d1profz_ampl= -2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*profz_ampl
+          d2profz_ampl=(-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2)*profz_ampl
         elseif (iforcing_cont(i)=='J0_k1x') then
           do l=l1,l2
             profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
@@ -4695,9 +4695,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  f=(0,cosx*expmz2,0)_Lor, Lorentz force belonging to f=(0,cosx*expmz2,0)
 !
         case ('(0,cosx*expmz2,0)_Lor')
-          tmp=ampl_ff(i)**2*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))*rho1
-          force(:,1)=-tmp*sinx(l1:l2,i)*profz_ampl(n)*kx_ff
-          force(:,2)=0.
+          tmp=ampl_ff(i)**2*cosx(l1:l2,i)*(kf_fcont_x(i)**2*profz_ampl(n)-d2profz_ampl(n))*rho1
+          force(:,1)=-tmp*sinx(l1:l2,i)*profz_ampl(n)*kf_fcont_x(i)
+          force(:,2)= 0.
           force(:,3)=+tmp*cosx(l1:l2,i)*d1profz_ampl(n)
 !
 !  f=(sinz,cosz,0)
