@@ -38,7 +38,7 @@
   lSNI=T
   rho0ts=3.5
   T0hs=15.8421
-  cooling_select='RBr'
+  cooling_select='RBNr'
   heating_select='thermal-hs'
   lthermal_hse=T
 /

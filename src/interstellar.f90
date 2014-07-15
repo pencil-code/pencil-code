@@ -223,10 +223,10 @@ module Interstellar
   real :: average_SNI_heating=0., average_SNII_heating=0.
 !
 !  Limit placed of minimum density resulting from cavity creation and
-!  parameters for thermal_hse(hydrostatic equilibrium) assuming RBr
+!  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
 !
-  real, parameter :: rho_min=1.E-6, rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible
+  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
+  real :: rho0ts=impossible, T0hs=impossible, rho_min=impossible
 !
 !  Cooling timestep limiter coefficient
 !  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
@@ -258,7 +258,7 @@ module Interstellar
 !
 !  04-jan-10/fred:
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
-!  Appended null last term to all arrays for RB and SS cooling
+!  Appended null last term to all arrays for RBN and SS cooling
 !
   double precision, dimension(11) :: coolH_cgs
   real, dimension(11) :: coolT_cgs
@@ -343,7 +343,7 @@ module Interstellar
 !  Heating function, cooling function and mass movement
 !  method selection.
 !
-  character (len=labellen) :: cooling_select  = 'RB'
+  character (len=labellen) :: cooling_select  = 'RBN'
   character (len=labellen) :: heating_select  = 'wolfire'
   character (len=labellen) :: thermal_profile = 'gaussian3'
   character (len=labellen) :: velocity_profile= 'lineartanh'
@@ -468,16 +468,16 @@ module Interstellar
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
 !
 !  Mara: Initialize cooling parameters according to selection
-!  Default selection 'RB' Rosen & Bregman (1993)
+!  Default selection 'RBN' Rosen & Bregman (1993)
 !  Alternative selection 'SS' Sanchez-Salcedo et al. (2002)
 !  Turn off cooling: cooling_select='off'
 !  cooling_select in interstellar_init_pars added
 !
-      if (cooling_select == 'RB') then
-        if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-        coolT_cgs = (/  100.0,      &
-                        2000.0,     &
-                        8000.0,     &
+      if (cooling_select == 'RBN') then
+        if (lroot) print*,'initialize_interstellar: default RBN cooling fct'
+        coolT_cgs = (/  100.0,       &
+                        2000.0,      &
+                        8000.0,      &
                         1.0E5,       &
                         4.0E7,       &
                         1.0E9,       &
@@ -491,11 +491,11 @@ module Interstellar
                         4.6240D-36,  &
                         1.7800D-18,  &
                         3.2217D-27,  &
-                        tiny(0D0),  &
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
-                        tiny(0D0),  &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /) / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
@@ -511,56 +511,56 @@ module Interstellar
         ncool = 5
 !
 !  04-jan-10/fred:
-!  Reset above to original RB parameters. Altered coolB(5) and coolT(5,6) in
-!  RBr to ensure continuity and increase cooling at high temperatures later in
+!  Reset above to original RBN parameters. Altered coolB(5) and coolT(5,6) in
+!  RBNr to ensure continuity and increase cooling at high temperatures later in
 !  diffuse remnant cores.
-!  RBr: new lower terms for smooth cooling below 300K
+!  RBNr: new lower terms for smooth cooling below 300K
 !  and extended range to 1E13 in SSrr to deal with temperature spiking
 !
-      else if (cooling_select == 'RBr') then
-        if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-        coolT_cgs = (/  10.0,       &
-                        2000.0,     &
-                        8000.0,     &
-                        1E5,        &
-                        1E6,        &
-                        1E7,         &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
-                        tiny(0E0),   &
+      else if (cooling_select == 'RBNr') then
+        if (lroot) print*,'initialize_interstellar: RBN cooling fct (revised)'
+        coolT_cgs = (/  10.0,         &
+                        2000.0,       &
+                        8000.0,       &
+                        1E5,          &
+                        1E6,          &
+                        1E17,         &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
                         tiny(0E0) /)
-        coolH_cgs = (/  2.2380D-32,  &
-                        1.0012D-30,  &
-                        4.6240D-36,  &
-                        1.7783524D-18,  &
-                        2.238814D-25,&
-                        tiny(0D0),  &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
-                        tiny(0D0),   &
+        coolH_cgs = (/  2.2380D-32,   &
+                        1.0012D-30,   &
+                        4.6240D-36,   &
+                        1.7783524D-18,&
+                        2.238814D-25, &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
                         tiny(0D0) /)  / ( m_p_cgs )**2
-        coolB =     (/  2.0,         &
-                        1.5,         &
-                        2.867,       &
-                       -0.65,        &
-                        0.5,         &
-                        tiny(0.),    &
-                        tiny(0.),    &
-                        tiny(0.),    &
-                        tiny(0.),    &
-                        tiny(0.),    &
+        coolB =     (/  2.0,          &
+                        1.5,          &
+                        2.867,        &
+                       -0.65,         &
+                        0.5,          &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
                         tiny(0.)  /)
         ncool=5
       else if (cooling_select == 'SS') then
 !
 !  These are the SS et al (2002) coefficients multiplied by m_proton**2
 !
-        coolT_cgs = (/  10.0,       &
-                        141.0,      &
-                        313.0,      &
-                        6102.0,     &
+        coolT_cgs = (/  10.0,        &
+                        141.0,       &
+                        313.0,       &
+                        6102.0,      &
                         1.0E5,       &
                         1.0E17,      &
                         tiny(0E0),   &
@@ -594,13 +594,13 @@ module Interstellar
 !
       else if (cooling_select == 'SSr') then
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/  10.0,       &
-                        141.0,      &
-                        313.0,      &
-                        6102.0,     &
-                        1E5,        &
-                        1E9,        &
-                        1E17,       &
+        coolT_cgs = (/  10.0,        &
+                        141.0,       &
+                        313.0,       &
+                        6102.0,      &
+                        1E5,         &
+                        1E9,         &
+                        1E17,        &
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0),   &
@@ -633,16 +633,16 @@ module Interstellar
 !
       else if (cooling_select == 'SSrr') then
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/  10.0,        &
-                        141.0,       &
-                        313.0,       &
-                        6102.0,      &
-                        1E5,         &
-                        4E7,         &
-                        1E17,        &
-                        tiny(0E0),    &
-                        tiny(0E0),    &
-                        tiny(0E0),    &
+        coolT_cgs = (/  10.0,                 &
+                        141.0,                &
+                        313.0,                &
+                        6102.0,               &
+                        1E5,                  &
+                        4E7,                  &
+                        1E17,                 &
+                        tiny(0E0),            &
+                        tiny(0E0),            &
+                        tiny(0E0),            &
                         tiny(0.0)  /)
         coolH_cgs = (/  3.703109927416290D16, &
                         9.455658188464892D18, &
@@ -655,16 +655,16 @@ module Interstellar
                         tiny(0D0),            &
                         tiny(0D0),            &
                         tiny(0D0)  /)
-        coolB =     (/  2.12,         &
-                        1.0,          &
-                        0.56,         &
-                        3.67,         &
-                        -0.65,        &
-                        0.5,          &
-                        tiny(0.),     &
-                        tiny(0.),     &
-                        tiny(0.),     &
-                        tiny(0.),     &
+        coolB =     (/  2.12,                 &
+                        1.0,                  &
+                        0.56,                 &
+                        3.67,                 &
+                        -0.65,                &
+                        0.5,                  &
+                        tiny(0.),             &
+                        tiny(0.),             &
+                        tiny(0.),             &
+                        tiny(0.),             &
                         tiny(0.)   /)
         ncool=6
 !
@@ -674,16 +674,16 @@ module Interstellar
 !
       else if (cooling_select == 'WSW') then
         if (lroot) print*,'initialize_interstellar: WSW cooling fct'
-        coolT_cgs = (/  10.0,       &
-                        141.0,      &
-                        313.0,      &
-                        6102.0,     &
-                        1E5,        &
-                        2.88E5,      &
-                        4.73E5,      &
-                        2.11E6,      &
-                        3.98E6,      &
-                        2.0E7,       &
+        coolT_cgs = (/  10.0,                 &
+                        141.0,                &
+                        313.0,                &
+                        6102.0,               &
+                        1E5,                  &
+                        2.88E5,               &
+                        4.73E5,               &
+                        2.11E6,               &
+                        3.98E6,               &
+                        2.0E7,                &
                         1.0E17      /)
         coolH_cgs = (/  3.703109927416290D16, &
                         9.455658188464892D18, &
@@ -696,16 +696,16 @@ module Interstellar
                         1.608087849D22,       &
                         9.228575532D20,       &
                         tiny(0D0) /)
-        coolB =     (/  2.12,        &
-                        1.0,         &
-                        0.56,        &
-                        3.21,        &
-                       -0.20,        &
-                       -3.0,         &
-                       -0.22,        &
-                       -3.00,        &
-                        0.33,        &
-                        0.50,        &
+        coolB =     (/  2.12,                 &
+                        1.0,                  &
+                        0.56,                 &
+                        3.21,                 &
+                       -0.20,                 &
+                       -3.0,                  &
+                       -0.22,                 &
+                       -3.00,                 &
+                        0.33,                 &
+                        0.50,                 &
                         tiny(0.) /)
         ncool=10
 !
@@ -713,16 +713,16 @@ module Interstellar
 !
       else if (cooling_select == 'WSWr') then
         if (lroot) print*,'initialize_interstellar: WSWr cooling fct'
-        coolT_cgs = (/  90.0,       &
-                        141.0,      &
-                        313.0,      &
-                        6102.0,     &
-                        1E5,        &
-                        2.88E5,      &
-                        4.73E5,      &
-                        2.11E6,      &
-                        3.98E6,      &
-                        2.0E7,       &
+        coolT_cgs = (/  90.0,                 &
+                        141.0,                &
+                        313.0,                &
+                        6102.0,               &
+                        1E5,                  &
+                        2.88E5,               &
+                        4.73E5,               &
+                        2.11E6,               &
+                        3.98E6,               &
+                        2.0E7,                &
                         1.0E17      /)
         coolH_cgs = (/  3.703109927416290D16, &
                         9.455658188464892D18, &
@@ -735,16 +735,16 @@ module Interstellar
                         1.608087849D22,       &
                         9.228575532D20,       &
                         tiny(0D0) /)
-        coolB =     (/  2.12,        &
-                        1.0,         &
-                        0.56,        &
-                        3.21,        &
-                       -0.20,        &
-                       -3.0,         &
-                       -0.22,        &
-                       -3.00,        &
-                        0.33,        &
-                        0.5,         &
+        coolB =     (/  2.12,                 &
+                        1.0,                  &
+                        0.56,                 &
+                        3.21,                 &
+                       -0.20,                 &
+                       -3.0,                  &
+                       -0.22,                 &
+                       -3.00,                 &
+                        0.33,                 &
+                        0.5,                  &
                         tiny(0.) /)
         ncool=10
       else if (cooling_select == 'off') then
@@ -803,6 +803,7 @@ module Interstellar
             kampl_SN=ampl_SN
           endif
         endif
+        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
         if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
@@ -1678,7 +1679,7 @@ module Interstellar
     subroutine calc_cool_func(cool,lnTT,lnrho)
 !
 !  This routine calculates the temperature dependent radiative cooling.
-!  Applies Rosen et al., ApJ, 413, 137, 1993 ('RB') OR
+!  Applies Rosen et al., ApJ, 413, 137, 1993 ('RBN') OR
 !  Sanchez-Salcedo et al. ApJ, 577, 768, 2002 ('SS') OR
 !  Slyz et al MNRAS, 356 2005 ('WSW') fit of Wolfire with Sarazin & White
 !  ApJ, 443:152-168, 1985 and ApJ, 320:32-48, 1987

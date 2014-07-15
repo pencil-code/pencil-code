@@ -60,7 +60,7 @@
   kampl_SN=1.591046508 !with 50% kinetic energy
   mass_SN=2.531673204e-7 !4 solar masses
   heatcool_shock_cutoff_rate=0.01
-  cooling_select='RBr'
+  cooling_select='RBNr'
   lthermal_hse=T
   heating_select='thermal-hs'
   lcooltime_smooth=F
