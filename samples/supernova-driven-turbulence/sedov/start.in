@@ -35,7 +35,7 @@
   center_SN_y=0.0
   center_SN_z=0.0
   width_SN=0.0375 
-  velocity_profile='r15gaussian3'
+  velocity_profile='gaussian3'
 !  uu_sedov_max=1e5
 !  frac_eth=1.0
 !  frac_ecr=0.0
@@ -50,7 +50,7 @@
   cooling_select='off'
   heating_select='off'
   SNR_damping=.5
-!  cooling_select='RBr'
+!  cooling_select='RBNr'
 !  heating_select='wolfire'
 !/
 !&shear_init_pars
