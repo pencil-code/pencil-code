@@ -236,13 +236,11 @@ module InitialCondition
       do n=1,nxgrid
         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
-        if (xglobal(nghost+n)>=Rstar) then
-          npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)+nad-npoly_jump
-!          npoly2(n)=npoly_jump*(Rstar/x0)**(-15.)*exp(1./xglobal(nghost+n)-1./Rstar)+nad-npoly_jump
-          gnpoly2(n)=0
-!          gnpoly2(n)=(-1./xglobal(nghost+n))**2.*(nad-npoly_jump-npoly2(n))
+       if ((xglobal(nghost+n)>=Rstar) .and. & 
+            ((npoly2(n)+1)/exp(lnrho_global(n))>(npoly2(1)+1)/exp(lnrho_global(1)))) then
+          npoly2(n)=(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1
+          gnpoly2(n)=(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
         endif
-
       enddo
 !
       kappa=coef1*(npoly2+1.)
