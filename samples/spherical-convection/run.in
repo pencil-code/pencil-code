@@ -4,12 +4,13 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
-  nt=11, it1=2, isave=100, itorder=3
-  dsnap=50., dvid=1, ,
+  nt=21, it1=2, isave=100, itorder=3
+  dsnap=50., dvid=1,
   cdtv=0.30, cdt=0.40
   lpencil_check=T
 /
 &eos_run_pars
+  sigmaSBt=0.18
 /
 &hydro_run_pars
   lupw_uu=T
@@ -17,18 +18,20 @@
 /
 &density_run_pars
   lupw_lnrho=T
-  cs2top=0.316192
+  cs2top=5.999999760000002E-002
 /
 &grav_run_pars
   gravx_profile='kepler',gravx=3.,
 /
 &entropy_run_pars
-  Fbot=0.00893644
+  Fbot=2.531612274895984E-005
   iheatcond='K-profile',hcond0=1e-8 ! not used but needed to get 
 				    ! into calc_heatcond
   lupw_ss=T
   lhcond_global=T
-  cooltype='shell', rcool=0.98, wcool=0.02, cool=0.3, cs2cool=0.316192
+  chi_t=2.5e-5
+  chit_prof1=0., chit_prof2=12. ! chit=3e-4 at the surface
+  xbot=0.75, xtop=0.98, widthss=0.01
 /
 &viscosity_run_pars
   ivisc='nu-const'
