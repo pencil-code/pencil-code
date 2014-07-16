@@ -429,7 +429,8 @@ module Special
       real, dimension (my) :: u_profile
       real    :: del,width
       integer :: l_sz
-      integer :: i, j, sz_l_x,sz_r_x,ll1,ll2, sz_x
+      integer :: i, j  !, sz_l_y,sz_r_y,
+      integer ::  mm1,mm2, sz_y
       real    :: dt1, bs,Ts,dels
       logical :: lzone_left, lzone_right
 !
@@ -464,46 +465,29 @@ module Special
        dt1=1./(8.*dt)
        del=0.05
 !
-!
          lzone_left=.false.
          lzone_right=.false.
+         sz_y=int(del*nygrid)
 !
-         sz_r_x=l2-int(del*nxgrid)
-         sz_l_x=int(del*nxgrid)+l1
-         sz_x=int(del*nxgrid)
-!
-        if (lbuffer_zone_uy .and. (nxgrid/=1)) then
+        if (lbuffer_zone_uy .and. (nygrid/=1)) then
         do j=1,2
 !
          if (j==1) then
-!           ll1=sz_r_x
-!           ll2=l2
-            ll1=nxgrid-sz_x
-            ll2=nxgrid
+            mm1=nygrid-sz_y
+            mm2=nygrid
 !
-           do i = l1,l2
-           if ((x(i) >= xgrid(ll1)) .and. (x(i) <= xgrid(ll2))) lzone_right=.true.
-!           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
-!            uy_ref=0.
+           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
            if (lzone_right) then
-             df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-ux_bz)*dt1
-             df(i,m,n,iuy)=df(i,m,n,iuy)-(f(i,m,n,iuy)-uy_bz)*dt1
+             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
            endif
-           enddo
-!
          elseif (j==2) then
-           ll1=l1
-           ll2=sz_l_x
-           if (x(l1)==xyz0(1)) lzone_left=.true.
-!            uy_ref=0.
+           mm1=1
+           mm2=sz_y
+           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
            if (lzone_left) then
-               u_profile(ll1:ll2)=cos(Period*PI*y(m)/Lxyz(2))
-               df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&
-                 -(f(ll1:ll2,m,n,iux)-u_profile(ll1:ll2))*dt1
-               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)-(f(ll1:ll2,m,n,iuy)-0.)*dt1
+             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
            endif
          endif
-!
 !
         enddo
         endif
