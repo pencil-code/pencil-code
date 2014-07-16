@@ -91,7 +91,7 @@ module Special
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma,dYw
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy
 !
 !
   integer :: idiag_dtcrad=0
@@ -479,6 +479,8 @@ module Special
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
            if (lzone_right) then
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+!
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
            endif
          elseif (j==2) then
            mm1=1
@@ -486,6 +488,7 @@ module Special
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
            if (lzone_left) then
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
            endif
          endif
 !
