@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
-  nt=51, it1=10, isave=85, itorder=3, tmax=.5
+  nt=10, it1=1, isave=85, itorder=3, tmax=.5
   cdt=0.4, cdtv=0.3, dtmin=1e-10
   dsnap=0.002, dvid=0.0001, slice_position='m'
   ip=20
@@ -35,27 +35,30 @@
 !  cosmicray_diff=.04
 !/
 &interstellar_run_pars
-  width_SN=0.03
+  lSN_scale_rad=T
+  N_mass = 80.
+!  width_SN=0.03
   frac_eth=1.0
   frac_ecr=0.0
   lSN_ecr=F
   h_SNI=0.15
-!  lSNII=T
+  lSNII=T
 !  h_SNII=0.106
   TT_SN_max=1e2
 !  TT_SN_min=0.0
-  rho_SN_min=7.5e-1
+  rho_SN_max=3.25
   lSN_mass=T
   mass_movement='off'
-  velocity_profile='r15gaussian3'
+  velocity_profile='gaussian3'
   lSN_velocity=T
 !  ampl_SN=3.182093016 !without kinetic energy
   ampl_SN=1.591046508 !with 50% kinetic energy
+  kampl_SN=1.591046508 !with 50% kinetic energy
   mass_SN=6.303127e-8
   mass_width_ratio=1.
   heatcool_shock_cutoff=0.4
   heatcool_shock_cutoff_rate=0.25
-  cooling_select='SSrr'
+  cooling_select='WSW'
   heating_select='wolfire'
   lcooltime_smooth=T
   SNR_damping=0.5 !any non-zero value ldamping=T value not used

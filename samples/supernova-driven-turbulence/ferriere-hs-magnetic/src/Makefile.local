@@ -5,7 +5,6 @@
 
 MPICOMM      =   mpicomm
 IO           =   io_dist
-GLOBAL       = noglobal
 
 HYDRO        =   hydro
 SHOCK        =   shock
@@ -14,16 +13,12 @@ ENTROPY      =   entropy
 MAGNETIC     =   magnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
-COSMICRAY    = nocosmicray
 INTERSTELLAR =   interstellar
 EOS          =   eos_idealgas
 
 GRAVITY      =   gravity_simple
 FORCING      = noforcing
 SHEAR        =   shear
-VISCOSITY    =   viscosity
 
-FFT          = nofft
-FFTPACK      = nofftpack
 POWER        = nopower_spectrum
-
+REAL_PRECISION = double
