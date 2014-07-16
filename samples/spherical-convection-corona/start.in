@@ -1,0 +1,41 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convective dynamo in a spherical wedge with coronal envelope
+!
+&init_pars
+  coord_system='spherical'
+  lperi=F, F, T
+  xyz0=0.7,0.261799,0.
+  xyz1=1.4, 2.87979 ,1.57080
+  bcx='a','sfr','sfr','a2','c1:cT','s:a','a:nfr','a:nfr'
+  bcy='s','a'  ,'sfr','s','s','a'  ,'s'  ,'a'
+/
+&initial_condition_pars
+  star_luminosity=1e-5
+  Rstar=1., nad=1.5
+  npoly1=1.5, npoly_jump=2.5, xi0=0.03
+  lcorona=T
+  Rtran=1.08, wtran=0.03, Tcor_jump=2.0
+/
+&eos_init_pars
+  gamma=1.6666666
+  rho0=1.
+  cs0=1.0
+  sigmaSBt=0.1
+/
+&hydro_init_pars
+  urand=1e-4
+/
+&density_init_pars
+/
+&grav_init_pars
+  gravx_profile='kepler',gravx=3.,
+  gravz_profile='zero'
+/
+&entropy_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise-rprof', amplaa=1e-5
+  rnoise_int=0.7
+  rnoise_ext=1.0
+/

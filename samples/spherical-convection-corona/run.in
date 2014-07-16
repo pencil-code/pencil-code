@@ -1,0 +1,50 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convective dynamo in a spherical wedge with coronal envelope 
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
+  nt=21, it1=2, isave=100, itorder=3
+  dsnap=50., dvid=1,
+  cdtv=0.30, cdt=0.40
+  lpencil_check=T
+/
+&eos_run_pars
+  sigmaSBt=0.18
+/
+&hydro_run_pars
+  hydro_xaver_range=0.7,1.0
+  lupw_uu=T
+  Omega=0.447356805628648
+/
+&density_run_pars
+  lupw_lnrho=T
+  cs2top=2.01428563270139
+/
+&grav_run_pars
+  gravx_profile='kepler',gravx=3.,
+/
+&entropy_run_pars
+  Fbot=8.438707582986615E-006
+  iheatcond='K-profile',hcond0=1e-8 ! not used but needed to get 
+				    ! into calc_heatcond
+  lupw_ss=T
+  lhcond_global=T
+  chi_t=2.5e-4
+  chit_prof1=0., chit_prof2=0. ! chit=3e-4 at the surface
+  xbot=0.75, xtop=0.98, widthss=0.01
+!
+  cooltype='shell3', rcool=1.013333333, wcool=1e-2,
+  cool=0.1, cs2cool=0.127499994900000
+  rcool2=1.08000000000000, wcool2=3.000000000000000E-002,
+  cool2=0.5, cs2cool2=2.01428563371429
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=5e-4
+/
+&magnetic_run_pars
+  magnetic_xaver_range=0.7,1.0
+  lupw_aa=T
+  eta=5e-4
+/
