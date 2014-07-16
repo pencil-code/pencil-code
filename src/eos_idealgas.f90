@@ -2581,6 +2581,123 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux_condturb_x
 !***********************************************************************
+    subroutine bc_ss_flux_condturb_z(f,topbot)
+!
+!   Constant conductive + turbulent flux through the surface
+!
+!   15-jul-2014/pete: adapted from bc_ss_flux_condturb_x
+!
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: chi, hcondzbot, hcondztop 
+      real, pointer :: chi_t, chit_prof1, chit_prof2
+      real, pointer :: Fbot, Ftop
+      logical, pointer :: lheatc_chiconst
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy, dlnrhodz_xy
+      real :: fac
+      integer :: i=0,ierr
+!
+      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Get the shared variables
+!
+      call get_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting chi_t")
+      call get_shared_variable('chit_prof1',chit_prof1,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting chit_prof1")
+      call get_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting chit_prof2")
+      call get_shared_variable('hcondzbot',hcondzbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting hcondzbot")
+      call get_shared_variable('hcondztop',hcondztop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting hcondztop")
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting lheatc_chiconst")
+      call get_shared_variable('chi',chi,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting chi")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting Fbot")
+      call get_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
+           "there was a problem when getting Ftop")
+!
+      select case (topbot)
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+!  bottom boundary
+!  ===============
+!
+      case ('bot')
+!
+! Do the pretend_lnTT=T case first
+!
+        if (pretend_lnTT) then
+           call stop_it("bc_ss_flux_condturb_z: not implemented for pretend_lnTT=T")
+        else
+!
+!  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
+!
+          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+          rho_xy=exp(f(:,:,n1,ilnrho))
+!
+          fac=(1./60)*dz_1(l1)
+          dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
+                           -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
+                           +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
+!
+          if (lheatc_chiconst) then
+             dsdz_xy=(gamma_m1*Fbot/cs2_xy)/ &
+                  (rho_xy*(chit_prof1*chi_t/cp + gamma*chi))
+!
+!  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
+!
+             do i=1,nghost
+                f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ &
+                     (chi*gamma_m1*rho_xy/(rho_xy*(chit_prof1*chi_t/cp+gamma*chi)))* &
+                     (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))+2*i*dz*dsdz_xy
+             enddo
+          else
+             dsdz_xy=(cp*gamma_m1*Fbot/cs2_xy)/ &
+                  (chit_prof1*chi_t*rho_xy + hcondzbot*gamma)
+!
+!  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
+!
+             do i=1,nghost
+                f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ &
+                     (hcondzbot*gamma_m1/(chit_prof1*chi_t*rho_xy+gamma*hcondzbot))* &
+                     (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))+2*i*dz*dsdz_xy
+             enddo
+          endif
+        endif
+!
+!  top boundary
+!  ============
+!
+      case ('top')
+!
+         call stop_it("bc_ss_flux_condturb_z: not implemented for the top boundary")
+!
+!  capture undefined entries
+!
+      case default
+        call fatal_error('bc_ss_flux_condturb_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_condturb_z
+!***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
 !  boundary condition for entropy: constant temperature

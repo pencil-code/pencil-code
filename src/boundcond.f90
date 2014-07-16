@@ -780,6 +780,9 @@ module Boundcond
               case ('Fgs')
                 ! BCZ_DOC: Fconv = - chi_t*rho*T*grad(s)
                 if (j==iss) call bc_ss_flux_turb(f,topbot)
+              case ('Fct')
+                ! BCZ_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
+                if (j==iss) call bc_ss_flux_condturb_z(f,topbot)
               case ('c3')
                 ! BCZ_DOC: constant flux at the bottom with a variable hcond
                 if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
