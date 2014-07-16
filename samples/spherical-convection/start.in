@@ -7,7 +7,7 @@
   lperi=F, F, T
   xyz0=0.7,0.261799,0.
   xyz1=1.0, 2.87979 ,1.57080
-  bcx='a','sfr','sfr','a2','c1:cT'
+  bcx='a','sfr','sfr','a2','c1:Fgs'
   bcy='s','a'  ,'sfr','s','s'
 /
 &initial_condition_pars
