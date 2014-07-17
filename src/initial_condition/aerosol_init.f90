@@ -61,7 +61,7 @@ module InitialCondition
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true., lcurved_xy=.false.
      logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
-     logical :: ladd_points=.false.
+     logical :: ladd_points=.false., lrho_const=.false.
 
 !
     namelist /initial_condition_pars/ &
@@ -69,7 +69,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const
 !
   contains
 !***********************************************************************
@@ -500,7 +500,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
-      real, dimension (20000) ::  PP_data, rhow_data, TT_data
+      real, dimension (20000) ::  PP_data, rhow_data, TT_data, tmp_data
       real, dimension (20000) ::  PP_data_add, rhow_data_add, TT_data_add
       real, dimension (20000) ::  ux_data, uy_data, uz_data, ttime2
       real, dimension (1340) ::  ttime
@@ -515,7 +515,8 @@ module InitialCondition
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
-      real ::  TT=300., ddsize, tmp2, right, left, PP_aver
+      real ::  TT=300., ddsize, tmp2, right, left, PP_aver, rho_aver
+      double precision, dimension (mx,my,mz) :: tmp5
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2, stor1
       real, dimension(29)    :: input_data, input_data2
@@ -664,6 +665,9 @@ module InitialCondition
         PP_aver=sum(PP_data)/Ndata
         PP_data=PP_aver
 
+        
+        
+        
        if (ladd_points) then
          k=1
          do i=1,Ndata
@@ -723,12 +727,31 @@ module InitialCondition
        f(:,:,:,ichemspec(index_N2))=0.7
        f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
 
+       
+       
+       
 !  Stop if air.dat is empty
 !
 !      if (emptyFile)  call fatal_error("ACTOS data", "I can only set existing fields")
 !      air_mass=1./air_mass
 !
+!
+
+       if (lrho_const) then
+         sum_Y=0.
+         do k=1,nchemspec
+           sum_Y=sum_Y + f(:,:,:,ichemspec(k))/species_constants(k,imass)
+         enddo
+         air_mass=1./sum_Y
 !         
+         do i=1,Ndata
+           tmp_data(i)=PP_data(i)/TT_data(i)
+         enddo
+!         
+         rho_aver=sum(tmp_data)/Ndata*sum(air_mass)/mx/my/mz
+         rho_aver=rho_aver/(k_B_cgs/m_u_cgs)/unit_mass*unit_length**3
+       endif
+
        do iter=1,4
 !   
        sum_Y=0.
@@ -739,12 +762,19 @@ module InitialCondition
 !
          do i=m1,m2
            if (ladd_points) then
-             tmp2=PP_data_add(mm1+i-3)/(k_B_cgs/m_u_cgs)
+             tmp5(:,i,:)=dlog(PP_data_add(mm1+i-3)/(k_B_cgs/m_u_cgs)*air_mass(:,i,:) &
+                         /exp(f(:,i,:,ilnTT))/unit_mass*unit_length**3)
            else
-             tmp2=PP_data(mm1+i-3)/(k_B_cgs/m_u_cgs)
+             tmp5(:,i,:)=dlog(PP_data(mm1+i-3)/(k_B_cgs/m_u_cgs)*air_mass(:,i,:) &
+                         /exp(f(:,i,:,ilnTT))/unit_mass*unit_length**3)
            endif
-           f(:,i,:,ilnrho)=alog(tmp2*air_mass(:,i,:)/exp(f(:,i,:,ilnTT)))/unit_mass*unit_length**3
+           if (lrho_const) then
+             f(:,i,:,ilnrho)=alog(rho_aver)
+           else
+             f(:,i,:,ilnrho)=tmp5(:,i,:)
+           endif  
          enddo
+         
 !
        if (iter<4) then
          do i=m1,m2
