@@ -1191,7 +1191,7 @@ module Equ
 !
 !  Set dynamical diffusion coefficients.
 !
-!  29-jun-14/ccyang: coded.
+!  18-jul-14/ccyang: coded.
 !
       use Density, only: dynamical_diffusion
       use Magnetic, only: dynamical_resistivity
@@ -1201,7 +1201,7 @@ module Equ
       real, intent(in) :: us
 !
       if (ldensity) call dynamical_diffusion(us)
-      if (lmagnetic) call dynamical_resistivity(us)
+      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(us)
       if (lenergy) call dynamical_thermal_diffusion(us)
       if (lviscosity) call dynamical_viscosity(us)
 !

@@ -1245,16 +1245,17 @@ module Magnetic
 !
 !  Adds the mesh hyper-resistivity in divergence conserving form.
 !
-!  25-oct-13/ccyang: coded
+!  18-jul-14/ccyang: coded
 !
       use Boundcond, only: update_ghosts, zero_ghosts
       use Grid, only: get_grid_mn
-      use Sub, only: curl, del4
+      use Sub, only: curl, del4, find_xyrms_fvec
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
-      real, dimension(nx) :: eta3
+      real, dimension(nx) :: eta3, hyper3x
+      real, dimension(nz) :: ucz
       integer :: j
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
@@ -1275,8 +1276,11 @@ module Magnetic
 !
 !  Get the hyper resistivity.
 !
-      if (lshear .and. lhyper3x_mesh) then
-        eta3 = eta_hyper3_mesh + diff_hyper3x_mesh * abs(Sshear) * xprim(l1:l2)
+      if (lshear .and. lhyper3x_mesh) hyper3x = diff_hyper3x_mesh * abs(Sshear) * xprim(l1:l2)
+      if (ldyndiff_urmsmxy) then
+        ucz = find_xyrms_fvec(f, iuu)
+      else if (lshear .and. lhyper3x_mesh) then
+        eta3 = eta_hyper3_mesh + hyper3x
       else
         eta3 = eta_hyper3_mesh
       endif
@@ -1286,6 +1290,14 @@ module Magnetic
       getd4jj: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
+        zdep: if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) then
+          call dynamical_resistivity(ucz(n-nghost))
+          if (lshear .and. lhyper3x_mesh) then
+            eta3 = eta_hyper3_mesh + hyper3x
+          else
+            eta3 = eta_hyper3_mesh
+          endif
+        endif zdep
         comp: do j = 1, 3
           call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
           pv(:,j) = eta3 * pv(:,j)
