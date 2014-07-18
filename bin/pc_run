@@ -484,6 +484,8 @@ sub get_mpiexec_opts {
     } elsif ($mpiexec =~ /aprun/) {
         # $mpiexec = 'aprun';     # special command used by Kraken system of XSEDE
         push @np_opts, '-n', $ncpus;
+    } elsif ($mpiexec =~ /srun/) {
+        push @np_opts, '-n', $ncpus;
     } elsif ($mpiexec =~ /ibrun/) {
         # No option is needed.
     } else {
