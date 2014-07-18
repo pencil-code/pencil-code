@@ -34,7 +34,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    sample=sample,savefile=savefile
+    sample=sample,savefile=savefile, rotate=rotate
 ;
 COMMON pc_precision, zero, one
 ;
@@ -354,12 +354,19 @@ while (not eof(1)) do begin
 ;  Rescale data with optional parameter zoom.
 ;  WARNING: the scaling can produce artifacts at shearing boundaries. Contour
 ;  plots give better results in that case (/contour).
+;  In future, we might want to choose better names than x2 and y2,
+;    especially if they are later theta (theta2) and phi.
 ;
   planesize=size(plane)
   nx_plane=planesize[1]
   ny_plane=planesize[2]
-  x2=rebin(x,zoom*nx_plane,sample=sample)
-  y2=rebin(y,zoom*ny_plane,sample=sample)
+  if extension eq 'xy' then begin
+    x2=rebin(x,zoom*nx_plane,sample=sample)
+    y2=rebin(y,zoom*ny_plane,sample=sample)
+  endif else if extension eq 'yz' then begin
+    x2=rebin(y,zoom*nx_plane,sample=sample)
+    y2=rebin(z,zoom*ny_plane,sample=sample)
+  endif
 ;
 ;  if extension eq 'xz', then our y2 wasn't right.
 ;
@@ -416,7 +423,6 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
 ;
 ;  Show image scaled between amin and amax and filling whole screen.
 ;
-
         if(keyword_set(doublebuffer)) then begin
 ;
 ;  Paint into buffer.
@@ -442,14 +448,16 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           endif
 ;
 ;  spherical surface plot in a good projection
+;  still need to check whether /rotate is correct (see below)
 ;
         end else if (keyword_set(spherical_surface)) then begin
-          phi=120.*findgen(nz)/float(nz-1)
-          theta2=30+120.*findgen(ny)/float(ny-1)
+          theta2=x2/!dtor
+          phi=y2/!dtor
           !p.background=255
           map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,xmargin=0.5,ymargin=0.5,15,60,color=0
           lev=grange(amin,amax,25)
-          contour,transpose(plane2),phi,90.-theta2,lev=lev,/fill,/overplot, $
+          if(keyword_set(rotate)) then tmp=rotate(plane2,3) else tmp=transpose(plane2)
+          contour,tmp,phi,90.-theta2,lev=lev,/fill,/overplot, $
             col=0, _extra=_extra
           colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
             ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
