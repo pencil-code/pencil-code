@@ -1097,11 +1097,11 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp, Imr, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (nx,ndustspec) :: dndr_tmp, nd_substep
+      real, dimension (nx,ndustspec) :: dndr_tmp, nd_substep, nd_substep_0, K1,K2,K3,K4
       real, dimension (ndustspec) :: ff_tmp,ttt
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
+      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, ddt=1e-7
       integer :: i,k,mm,nn,ll1,l1p4
 !
       intent(inout) :: f,p
@@ -1420,21 +1420,58 @@ module Dustdensity
                 Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 if (lsubstep) then
                   p%dndr=0.
+!
                   do k=1,ndustspec
-                   nd_substep(:,k)=f(l1:l2,m,n,ind(k))
+                    nd_substep(:,k)=f(l1:l2,m,n,ind(k))
                   enddo
-                  do i=1,10
+!
+                  ddt=1e-7
+                  do i=1,int(dt/ddt)
+                  
+                    do k=1,ndustspec
+                      nd_substep_0(:,k)=nd_substep(:,k)
+                    enddo
+!                  
+                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                     
+                    do k=1,ndustspec
+                      K1(:,k)=-Imr*dndr_tmp(:,k)
+                    enddo  
+!                    
+                    do k=1,ndustspec
+                      nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
+                    enddo  
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                     do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep(:,k)-Imr*dndr_tmp(:,k)*2e-7
+                      K2(:,k)=-Imr*dndr_tmp(:,k)
+                    enddo  
+!
+                    do k=1,ndustspec
+                      nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
+                    enddo  
+                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+                    do k=1,ndustspec
+                      K3(:,k)=-Imr*dndr_tmp(:,k)
+                    enddo  
+!
+                    do k=1,ndustspec
+                      nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
+                    enddo 
+                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+                    do k=1,ndustspec
+                      K4(:,k)=-Imr*dndr_tmp(:,k)
+                    enddo  
+!                    
+                    do k=1,ndustspec
+                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k)) 
                     enddo
+!
                   enddo
+!                  
                   do k=1,ndustspec
                     p%dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
-                    
-!                 print*,maxval(p%dndr(:,k))   
-                    
                   enddo
+!
                 else
                   call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                   do k=1,ndustspec
