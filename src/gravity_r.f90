@@ -44,6 +44,7 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
+  real :: g1=0., rp1=1.0, rp1_pot=0.
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
@@ -54,23 +55,25 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   real :: nu_epicycle=1.0
+  real :: Omega_secondary=0.
   character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
+  logical :: lsecondary_body=.false.
 !
-  integer :: iglobal_gg=0
+    integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot
 !
   contains
 !***********************************************************************
@@ -312,6 +315,13 @@ module Gravity
 !
       endselect
 !
+!  Pre-calculate the angular frequency of the rotating frame in the case a 
+!  secondary stationary body is added to the simulation.
+!
+      if (lsecondary_body) then 
+        Omega_secondary = sqrt((g0+g1)/rp1**3)
+      endif
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_gravity
@@ -376,6 +386,7 @@ module Gravity
 !
 !  20-11-04/anders: coded
 !
+      if (lsecondary_body) lpenc_requested(i_uu)=.true.
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -447,9 +458,46 @@ module Gravity
         enddo
       endif
 !
+!  Indirect term for binary systems with origin at the primary.
+!
+      if (lsecondary_body) call indirect_plus_inertial_terms(df,p)
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine duu_dt_grav
+!***********************************************************************
+    subroutine indirect_plus_inertial_terms(df,p)
+!
+!  Add the indirect terms from the motion of the primary in a non-inertial frame,
+!  plus the Coriolis and centrifugal terms from the motion of the secondary.
+!
+!  20-jul-14/wlad: coded
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      if (lcylindrical_coords) then 
+!
+!  Indirect terms
+!
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g1*x(l1:l2)*cos(y(m))
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g1*x(l1:l2)*sin(y(m))
+!
+!  Coriolis force
+!
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) + 2*Omega_secondary*p%uu(:,2)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) - 2*Omega_secondary*p%uu(:,1)
+!
+!  Centrifugal force
+!
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
+!
+      else
+        call fatal_error("duu_dt_grav",&
+             "Indirect term coded only for cylindrical coordinates")
+      endif
+!
+    endsubroutine indirect_plus_inertial_terms
 !***********************************************************************
     subroutine potential_global(pot,pot0)
 !
@@ -820,14 +868,46 @@ module Gravity
         gg_mn(:,2)=0.
         gg_mn(:,3)=0.
         if (lcylindrical_gravity) then
-          gg_mn(:,1) = gr*sin(y(m))
-          gg_mn(:,3) = gr*cos(y(m))
+          gg_mn(:,1) = gr*sinth(m)
+          gg_mn(:,3) = gr*costh(m)
         else
           gg_mn(:,1) = gr
         endif
       endif
 !
+!  Add the gravity of a stationary secondary body (i.e., following reference frame)
+!
+      if (lsecondary_body) call secondary_body_gravity(gg_mn)
+!
     endsubroutine get_gravity_field
+!***********************************************************************
+    subroutine secondary_body_gravity(gg_mn)
+!
+!  Add the gravity of a body fixed at position (rp1,0,0).
+!
+!  20-jul-14/wlad: coded
+!
+      real, dimension(nx,3),intent(out) :: gg_mn
+      real, dimension(nx,3) :: ggp
+      real, dimension(nx) :: rr2_pm,gp
+      real :: rp
+!
+      if (.not.lcylindrical_coords) call fatal_error("secondary_body_gravity",&
+           "Coded only for cylindrical coordinates so far.")
+!
+      if (lcylindrical_gravity) then 
+        rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + rp1_pot**2
+      else  
+        rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
+      endif
+      gp = -g1*rr2_pm**(-1.5)
+      ggp(:,1) = gp * cos(y(m))*(x(l1:l2)-rp1)
+      ggp(:,2) = gp * sin(y(m))* x(l1:l2)
+      ggp(:,3) = gp * z(n)
+      if (lcylindrical_gravity) ggp(:,3)=0.
+      gg_mn = gg_mn + ggp
+!
+    endsubroutine secondary_body_gravity
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
