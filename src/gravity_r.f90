@@ -474,27 +474,43 @@ module Gravity
 !  20-jul-14/wlad: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
+      real :: c2,s2,g2
       type (pencil_case) :: p
+!
+      g2 = g1/rp1**2
 !
       if (lcylindrical_coords) then 
 !
 !  Indirect terms
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g1*x(l1:l2)*cos(y(m))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g1*x(l1:l2)*sin(y(m))
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
 !
 !  Coriolis force
 !
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) + 2*Omega_secondary*p%uu(:,2)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) - 2*Omega_secondary*p%uu(:,1)
+        c2 = 2*Omega_secondary
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
 !
 !  Centrifugal force
 !
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
 !
-      else
-        call fatal_error("duu_dt_grav",&
-             "Indirect term coded only for cylindrical coordinates")
+      else if (lspherical_coords) then 
+        ! Indirect
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cos(z(n))
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
+!
+        c2 = 2*Omega_secondary*costh(m)
+        s2 =-2*Omega_secondary*sinth(m)
+        ! Coriolis
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - s2*p%uu(:,3)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) + s2*p%uu(:,1)
+        ! Centrifugal
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*sinth(m)*Omega_secondary**2
+!
       endif
 !
     endsubroutine indirect_plus_inertial_terms
@@ -890,21 +906,27 @@ module Gravity
       real, dimension(nx,3),intent(out) :: gg_mn
       real, dimension(nx,3) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rp
 !
-      if (.not.lcylindrical_coords) call fatal_error("secondary_body_gravity",&
-           "Coded only for cylindrical coordinates so far.")
-!
-      if (lcylindrical_gravity) then 
-        rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + rp1_pot**2
-      else  
-        rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
-      endif
-      gp = -g1*rr2_pm**(-1.5)
-      ggp(:,1) = gp * cos(y(m))*(x(l1:l2)-rp1)
-      ggp(:,2) = gp * sin(y(m))* x(l1:l2)
-      ggp(:,3) = gp * z(n)
-      if (lcylindrical_gravity) ggp(:,3)=0.
+      if (lcylindrical_coords) then 
+        if (lcylindrical_gravity) then 
+          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + rp1_pot**2
+        else  
+          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
+        endif
+        gp = -g1*rr2_pm**(-1.5)
+        ggp(:,1) =  gp * (x(l1:l2)-rp1*cos(y(m)))
+        ggp(:,2) =  gp *           rp1*sin(y(m))
+        ggp(:,3) =  gp *  z(  n  )
+        if (lcylindrical_gravity) ggp(:,3)=0.
+      else if (lspherical_coords) then 
+        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*(costh(m)+sinth(m)*cos(z(n))) + rp1_pot**2
+        gp = -g1*rr2_pm**(-1.5)
+        ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n))) 
+        ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n)) 
+        ggp(:,3) =  gp *             rp1*         sin(z(n))
+      else
+        call fatal_error("secondary_body_gravity","not coded for Cartesian")
+      endif  
       gg_mn = gg_mn + ggp
 !
     endsubroutine secondary_body_gravity
