@@ -769,8 +769,7 @@ sub expand_cmd_sequence {
 sub requires_start {
 # Does the cwd require start.x before running?
 
-    my $lastproc = $Ncpus - 1;
-    return ! -s "data/proc${lastproc}/var.dat";
+    return ! -s "data/param.nml";
 }
 # ---------------------------------------------------------------------- #
 sub cd_to_wordir {
