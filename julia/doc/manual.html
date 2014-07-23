@@ -6,7 +6,7 @@
 <body>
 <h1 id="julia-module-for-the-pencil-code">Julia module for the Pencil Code</h1>
 <p><strong>Author</strong>:   Daniel Carrera (danielc@astro.lu.se)</p>
-<p><strong>Date</strong>:   Last modified on December 2013.</p>
+<p><strong>Date</strong>:   Last modified on July 2014.</p>
 <h2 id="introduction">Introduction</h2>
 <p>Julia is a high-level, high-performance dynamic programming language
 for technical computing, with syntax that is familiar to users of other
@@ -14,31 +14,34 @@ technical computing environments. You can obtain Julia from [http://julialang.or
 or if you are using Ubuntu/Debian, you can install it with <code>apt-get install julia</code>.</p>
 <p>This is the documentation for the Julia module for the Pencil Code. This module
 contains convenience functions for post-processing data files from the Pencil
-Code. To use this module, it is recommended that you add this to your 
-<code>~/juliarc.jl</code> file:</p>
-<div class="codehilite"><pre><span class="nb">push</span><span class="o">!</span><span class="p">(</span><span class="n">LOAD_PATH</span><span class="p">,</span>  <span class="n">ENV</span><span class="p">[</span><span class="s">&quot;PENCIL_HOME&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="s">&quot;/julia&quot;</span><span class="p">)</span>
+Code. To use this module, add this to your <code>~/juliarc.jl</code> so that Julia can find
+the module.</p>
+<div class="codehilite"><pre><span class="n">push</span><span class="o">!</span><span class="p">(</span><span class="n">LOAD_PATH</span><span class="p">,</span>  <span class="n">ENV</span><span class="p">[</span><span class="s">&quot;PENCIL_HOME&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="s">&quot;/julia&quot;</span><span class="p">)</span>
 </pre></div>
 
 
-<p>This will add this module to your julia path, so you can load the module
-within Julia with:</p>
-<div class="codehilite"><pre><span class="n">using</span> <span class="n">Pencil</span>
+<p>At this point you can load the <code>Pencil</code> module:</p>
+<div class="codehilite"><pre><span class="n">ubuntu</span><span class="err">$</span> <span class="n">julia</span>        <span class="err">#</span> <span class="n">Start</span> <span class="n">the</span> <span class="n">Julia</span> <span class="n">interpreter</span><span class="p">.</span>
+<span class="p">...</span>
+<span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>  <span class="err">#</span> <span class="n">Load</span> <span class="n">the</span> <span class="n">module</span><span class="p">.</span>
 </pre></div>
 
 
+<p><strong>NOTE:</strong> At the present time, you also need to add the <code>push!</code> line at the top of stand-alone programs.</p>
 <h2 id="plotting-and-graphics">Plotting and graphics</h2>
 <p>Julia has several plotting packages. The one I like is
-<a href="https://github.com/stevengj/PyPlot.jl">Pyplot</a> which uses Python's
-<a href="http://matplotlib.org/index.html">Matplotlib</a> library.</p>
-<div class="codehilite"><pre>    <span class="n">ubuntu</span><span class="nv">$</span> <span class="nv">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
+<a href="https://github.com/stevengj/PyPlot.jl">PyPlot</a> which uses Python's
+<a href="http://matplotlib.org/index.html">Matplotlib</a> library. To install
+<code>PyPlot</code> run the following:</p>
+<div class="codehilite"><pre>    <span class="n">ubuntu</span><span class="err">$</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
 
-    <span class="n">ubuntu</span><span class="nv">$</span> <span class="nv">julia</span>
-    <span class="o">...</span>
-    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">Pkg</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;PyPlot&quot;</span><span class="p">)</span>
+    <span class="n">ubuntu</span><span class="err">$</span> <span class="n">julia</span>
+    <span class="p">...</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">Pkg</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;PyPlot&quot;</span><span class="p">)</span>
 </pre></div>
 
 
-<p>Brief tutorial:</p>
+<p>Brief <code>PyPlot</code> tutorial:</p>
 <div class="codehilite"><pre>    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">PyPlot</span>
 
     <span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="p">,</span><span class="mi">1000</span><span class="p">);</span>
@@ -77,6 +80,29 @@ within Julia with:</p>
     <span class="n">julia</span><span class="o">&gt;</span> <span class="n">surf</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
 
     <span class="n">julia</span><span class="o">&gt;</span> <span class="n">mesh</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The <code>PencilPlot</code> module provides a color map called "density" that may
+be useful when plotting a density variable like <code>rhopmxz</code>. <code>PencilPlot</code>
+loads <code>PyPlot</code>. Example usage:</p>
+<div class="codehilite"><pre>    <span class="n">ubuntu</span><span class="err">$</span> <span class="n">cd</span> <span class="o">/</span><span class="n">my</span><span class="o">/</span><span class="n">simulation</span><span class="o">/</span><span class="n">dir</span>
+    <span class="n">ubuntu</span><span class="err">$</span> <span class="n">julia</span>
+    <span class="p">...</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">PencilPlot</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">rhopmxz</span> <span class="o">=</span> <span class="n">read_yaver</span><span class="p">(</span><span class="n">it</span><span class="o">=</span><span class="mi">10</span><span class="p">)[</span><span class="s">&quot;rhopmxz&quot;</span><span class="p">];</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">axis</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">128</span><span class="p">])</span>
+
+    <span class="err">#</span>
+    <span class="err">#</span> <span class="n">PencilPlot</span> <span class="n">defines</span> <span class="n">the</span> <span class="s">&quot;density&quot;</span> <span class="n">color</span> <span class="n">map</span><span class="p">.</span>
+    <span class="err">#</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pcolormesh</span><span class="p">(</span><span class="n">rhopmxz</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">ColorMap</span><span class="p">(</span><span class="s">&quot;density&quot;</span><span class="p">)</span> <span class="p">)</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">savefig</span><span class="p">(</span><span class="s">&quot;rhopmxz.png&quot;</span><span class="p">)</span>
 </pre></div>
 
 

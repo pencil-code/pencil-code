@@ -2,7 +2,7 @@
 
 **Author**:   Daniel Carrera (danielc@astro.lu.se)
 
-**Date**:   Last modified on December 2013.
+**Date**:   Last modified on July 2014.
 
 ## Introduction
 
@@ -24,6 +24,8 @@ At this point you can load the `Pencil` module:
 	ubuntu$ julia        # Start the Julia interpreter.
 	...
 	julia> using Pencil  # Load the module.
+
+**NOTE:** At the present time, you also need to add the `push!` line at the top of stand-alone programs.
 
 
 ## Plotting and graphics
