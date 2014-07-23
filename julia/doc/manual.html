@@ -1,0 +1,523 @@
+
+<html>
+<head>
+  <link href='manual.css' rel='stylesheet'  type='text/css'>
+</head>
+<body>
+<h1 id="julia-module-for-the-pencil-code">Julia module for the Pencil Code</h1>
+<p><strong>Author</strong>:   Daniel Carrera (danielc@astro.lu.se)</p>
+<p><strong>Date</strong>:   Last modified on December 2013.</p>
+<h2 id="introduction">Introduction</h2>
+<p>Julia is a high-level, high-performance dynamic programming language
+for technical computing, with syntax that is familiar to users of other
+technical computing environments. You can obtain Julia from [http://julialang.org],
+or if you are using Ubuntu/Debian, you can install it with <code>apt-get install julia</code>.</p>
+<p>This is the documentation for the Julia module for the Pencil Code. This module
+contains convenience functions for post-processing data files from the Pencil
+Code. To use this module, it is recommended that you add this to your 
+<code>~/juliarc.jl</code> file:</p>
+<div class="codehilite"><pre><span class="nb">push</span><span class="o">!</span><span class="p">(</span><span class="n">LOAD_PATH</span><span class="p">,</span>  <span class="n">ENV</span><span class="p">[</span><span class="s">&quot;PENCIL_HOME&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="s">&quot;/julia&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>This will add this module to your julia path, so you can load the module
+within Julia with:</p>
+<div class="codehilite"><pre><span class="n">using</span> <span class="n">Pencil</span>
+</pre></div>
+
+
+<h2 id="plotting-and-graphics">Plotting and graphics</h2>
+<p>Julia has several plotting packages. The one I like is
+<a href="https://github.com/stevengj/PyPlot.jl">Pyplot</a> which uses Python's
+<a href="http://matplotlib.org/index.html">Matplotlib</a> library.</p>
+<div class="codehilite"><pre>    <span class="n">ubuntu</span><span class="nv">$</span> <span class="nv">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
+
+    <span class="n">ubuntu</span><span class="nv">$</span> <span class="nv">julia</span>
+    <span class="o">...</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">Pkg</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;PyPlot&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Brief tutorial:</p>
+<div class="codehilite"><pre>    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">PyPlot</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="p">,</span><span class="mi">1000</span><span class="p">);</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">y</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">));</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;red&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&quot;--&quot;</span><span class="p">)</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">title</span><span class="p">(</span><span class="s">&quot;A sinusoidally modulated sinusoid&quot;</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># Save figure as a PNG:</span>
+    <span class="c">#</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">savefig</span><span class="p">(</span><span class="s">&quot;myfigure.png&quot;</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># LaTeX in labels and titles.</span>
+    <span class="c">#</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">title</span><span class="p">(</span><span class="n">L</span><span class="s">&quot;Plot of $\Gamma_3(x)$&quot;</span><span class="p">)</span>  <span class="c"># L for LaTeX.</span>
+
+    <span class="c">#</span>
+    <span class="c"># Colour mesh: plot a 2D grid.</span>
+    <span class="c">#</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">128</span><span class="p">]</span> <span class="o">*</span> <span class="n">ones</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="s">&#39;;  # Col vector x Row vector</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">r2</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="mi">64</span><span class="p">)</span><span class="o">.^</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="s">&#39; - 64).^2;</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pcolormesh</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">axis</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">128</span><span class="p">])</span> <span class="c"># [xmin, xmax, ymin, ymax]</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">savefig</span><span class="p">(</span><span class="s">&quot;colmesh.png&quot;</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># 3D plotting</span>
+    <span class="c">#</span>
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">surf</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+
+    <span class="n">julia</span><span class="o">&gt;</span> <span class="n">mesh</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+</pre></div>
+
+
+<h2 id="read-time-series">Read time series</h2>
+<p>Source: <code>julia/src/timeseries.jl</code></p>
+<h3 id="provides">Provides:</h3>
+<p>A function to read the time series from <code>time_series.dat</code> as a <code>Dict()</code>,
+with one key for each variable in <code>time_series.dat</code>.</p>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Function</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>read_ts()</code></td>
+<td>Returns a <code>Dict()</code> with keys like <code>rhopmax</code>, etc.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tutorial">Tutorial:</h3>
+<div class="codehilite"><pre>  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">ts</span> <span class="o">=</span> <span class="n">read_ts</span><span class="p">();</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+  <span class="n">Dict</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="n">Any</span><span class="p">}</span> <span class="p">(</span><span class="n">constructor</span> <span class="k">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+  <span class="c">#</span>
+  <span class="c"># List of available keys / variables found in timeseries.dat</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">ts</span><span class="p">[</span><span class="s">&quot;keys&quot;</span><span class="p">]</span>
+  <span class="mi">35</span><span class="o">-</span><span class="n">element</span> <span class="n">Array</span><span class="p">{</span><span class="n">String</span><span class="p">,</span><span class="mi">1</span><span class="p">}:</span>
+   <span class="s">&quot;it&quot;</span>       
+   <span class="s">&quot;t&quot;</span>        
+   <span class="s">&quot;dt&quot;</span>       
+   <span class="s">&quot;walltime&quot;</span> 
+   <span class="s">&quot;nblockmin&quot;</span>
+   <span class="s">&quot;nblockmax&quot;</span>
+   <span class="s">&quot;nmigmax&quot;</span>  
+   <span class="s">&quot;nparmin&quot;</span>  
+   <span class="s">&quot;nparmax&quot;</span>  
+   <span class="s">&quot;nparbmax&quot;</span> 
+   <span class="s">&quot;rhom&quot;</span>     
+   <span class="s">&quot;rhomax&quot;</span>   
+   <span class="s">&quot;rhomin&quot;</span>   
+   <span class="s">&quot;dtdragp&quot;</span>  
+   <span class="s">&quot;urms&quot;</span>     
+   <span class="o">...</span>          
+   <span class="s">&quot;uxuym&quot;</span>    
+   <span class="s">&quot;TTm&quot;</span>      
+   <span class="s">&quot;TTmax&quot;</span>    
+   <span class="s">&quot;vpxm&quot;</span>     
+   <span class="s">&quot;vpx2m&quot;</span>    
+   <span class="s">&quot;vpz2m&quot;</span>    
+   <span class="s">&quot;xpm&quot;</span>      
+   <span class="s">&quot;xp2m&quot;</span>     
+   <span class="s">&quot;zpm&quot;</span>      
+   <span class="s">&quot;zp2m&quot;</span>     
+   <span class="s">&quot;npmax&quot;</span>    
+   <span class="s">&quot;rhopm&quot;</span>    
+   <span class="s">&quot;rhopmax&quot;</span>  
+   <span class="s">&quot;dedragp&quot;</span>  
+   <span class="s">&quot;decollp&quot;</span>  
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s">&quot;rhopmax&quot;</span><span class="p">])</span>
+  <span class="n">Array</span><span class="p">{</span><span class="n">Float64</span><span class="p">,</span><span class="mi">1</span><span class="p">}</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">length</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s">&quot;rhopmax&quot;</span><span class="p">])</span>
+  <span class="mi">9528</span>
+
+  <span class="c">#</span>
+  <span class="c"># Plotting with Python&#39;s Matplotlib.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">PyPlot</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">plot</span><span class="p">(</span> <span class="n">ts</span><span class="p">[</span><span class="s">&quot;t&quot;</span><span class="p">]</span> <span class="p">,</span> <span class="n">ts</span><span class="p">[</span><span class="s">&quot;rhopmax&quot;</span><span class="p">]</span> <span class="p">)</span>
+</pre></div>
+
+
+<h3 id="optional-parameters">Optional parameters:</h3>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>datadir="xxx"</code></td>
+<td>Path to the data directory (default: "data").</td>
+</tr>
+</tbody>
+</table>
+<h2 id="read-particles">Read particles</h2>
+<p>Source: <code>julia/src/particles.jl</code></p>
+<h3 id="provides_1">Provides:</h3>
+<p>Two functions to read particle data from <code>pvar.dat</code> or the <code>PVAR*</code> files.
+The difference is only in the output: <code>read_pvar</code> is more consistent with
+most functions in this module in that in returns a <code>Dict</code> with keys like
+<code>x</code> and <code>vx</code>, while <code>read_particles</code> returns an array of <code>Particle</code> objects
+which is more cache-friendly for numerical computation.</p>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Function</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>read_pvar()</code></td>
+<td>Returns a <code>Dict()</code> with keys like <code>x</code> and <code>vx</code>.</td>
+</tr>
+<tr class='odd'>
+<td><code>read_particles()</code></td>
+<td>Returns an array of <code>Particle</code> objects.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tutorial_1">Tutorial:</h3>
+<div class="codehilite"><pre>  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pars</span> <span class="o">=</span> <span class="n">read_particles</span><span class="p">();</span>
+  <span class="n">INFO</span><span class="p">:</span> <span class="n">mpvar</span> <span class="o">=</span> <span class="mi">6</span>
+  <span class="n">INFO</span><span class="p">:</span> <span class="n">Read</span> <span class="mi">16384</span> <span class="n">particles</span>
+
+  <span class="c">#</span>
+  <span class="c"># &quot;pars&quot; is an array of 16384 particles.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+  <span class="n">Array</span><span class="p">{</span><span class="n">Particle</span><span class="p">,</span><span class="mi">1</span><span class="p">}</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">size</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+  <span class="p">(</span><span class="mi">16384</span><span class="p">,)</span>
+
+  <span class="c">#</span>
+  <span class="c"># Each particle has a position (x,y,z) and velocity (u,v,w)</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+  <span class="o">-</span><span class="mf">0.058057133821926316</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">u</span>
+  <span class="mf">0.0003632957506802519</span>
+
+  <span class="c">#############</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pvar</span> <span class="o">=</span> <span class="n">read_pvar</span><span class="p">();</span>
+  <span class="n">INFO</span><span class="p">:</span> <span class="n">mpvar</span> <span class="o">=</span> <span class="mi">6</span>
+  <span class="n">INFO</span><span class="p">:</span> <span class="n">Read</span> <span class="mi">16384</span> <span class="n">particles</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">pvar</span><span class="p">)</span>
+  <span class="n">Dict</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="n">Any</span><span class="p">}</span> <span class="p">(</span><span class="n">constructor</span> <span class="k">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+  <span class="c">#</span>
+  <span class="c"># The &quot;keys&quot; key has a list of dictionary keys / variables read (from index.pro)</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pvar</span><span class="p">[</span><span class="s">&quot;keys&quot;</span><span class="p">]</span>
+  <span class="mi">6</span><span class="o">-</span><span class="n">element</span> <span class="n">Array</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="mi">1</span><span class="p">}:</span>
+  <span class="s">&quot;y&quot;</span> 
+  <span class="s">&quot;vx&quot;</span>
+  <span class="s">&quot;vy&quot;</span>
+  <span class="s">&quot;x&quot;</span> 
+  <span class="s">&quot;z&quot;</span> 
+  <span class="s">&quot;vz&quot;</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">pvar</span><span class="p">[</span><span class="s">&quot;x&quot;</span><span class="p">])</span>
+  <span class="n">Array</span><span class="p">{</span><span class="n">Float64</span><span class="p">,</span><span class="mi">1</span><span class="p">}</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">size</span><span class="p">(</span><span class="n">pvar</span><span class="p">[</span><span class="s">&quot;x&quot;</span><span class="p">])</span>
+  <span class="p">(</span><span class="mi">16384</span><span class="p">,)</span>
+</pre></div>
+
+
+<h3 id="optional-parameters_1">Optional parameters:</h3>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>datadir="xxx"</code></td>
+<td>Path to the data directory (default: "data").</td>
+</tr>
+<tr class='odd'>
+<td><code>snapshot=n</code></td>
+<td>If n &gt; 0, return data from file <code>PVAR$n</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="todo">TODO:</h3>
+<p>Need to implement the <code>proc</code> parameter.</p>
+<h2 id="read-averages">Read averages</h2>
+<p>Source: <code>julia/src/averages.jl</code></p>
+<h3 id="provides_2">Provides:</h3>
+<p>Functions to read 2D and 1D averages. These functions return all variable averages
+as a <code>Dict()</code> unless the <code>var</code> option is specified. They also return all time steps,
+unless the option <code>it</code> (for "<em>iteration</em>") is specified.</p>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Function</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>read_xyaver()</code></td>
+<td>Read <code>xyaverages.dat</code> and return the variables as a <code>Dict()</code></td>
+</tr>
+<tr class='odd'>
+<td><code>read_xzaver()</code></td>
+<td>Read <code>xzaverages.dat</code> and return the variables as a <code>Dict()</code></td>
+</tr>
+<tr class='even'>
+<td><code>read_yzaver()</code></td>
+<td>Read <code>yzaverages.dat</code> and return the variables as a <code>Dict()</code></td>
+</tr>
+<tr class='odd'>
+<td><code>read_xaver()</code></td>
+<td>Read <code>xaverages.dat</code>  and return the variables as a <code>Dict()</code></td>
+</tr>
+<tr class='even'>
+<td><code>read_yaver()</code></td>
+<td>Read <code>yaverages.dat</code>  and return the variables as a <code>Dict()</code></td>
+</tr>
+<tr class='odd'>
+<td><code>read_zaver()</code></td>
+<td>Read <code>zaverages.dat</code>  and return the variables as a <code>Dict()</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tutorial_2">Tutorial:</h3>
+<div class="codehilite"><pre>  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">xyaver</span> <span class="o">=</span> <span class="n">read_xyaver</span><span class="p">();</span>
+
+  <span class="c">#</span>
+  <span class="c"># Self-inspection. List of keys in xyaver.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">collect</span><span class="p">(</span> <span class="n">keys</span><span class="p">(</span><span class="n">xyaver</span><span class="p">)</span> <span class="p">)</span>
+   <span class="s">&quot;uxmz&quot;</span>  
+   <span class="s">&quot;ux2mz&quot;</span> 
+   <span class="s">&quot;oumz&quot;</span>  
+   <span class="s">&quot;uz2mz&quot;</span> 
+   <span class="s">&quot;uymz&quot;</span>  
+   <span class="s">&quot;keys&quot;</span>  
+   <span class="s">&quot;uy2mz&quot;</span> 
+   <span class="s">&quot;uxuymz&quot;</span>
+   <span class="s">&quot;rhomz&quot;</span> 
+   <span class="s">&quot;uzmz&quot;</span>  
+   <span class="s">&quot;t&quot;</span>     
+   <span class="s">&quot;rhopmz&quot;</span>
+
+  <span class="c">#</span>
+  <span class="c"># The key &quot;keys&quot; gives you a list of the available keys / variables read.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">xyaver</span><span class="p">[</span><span class="s">&quot;keys&quot;</span><span class="p">]</span>
+   <span class="s">&quot;t&quot;</span>     
+   <span class="s">&quot;uxmz&quot;</span>  
+   <span class="s">&quot;uymz&quot;</span>  
+   <span class="s">&quot;uzmz&quot;</span>  
+   <span class="s">&quot;ux2mz&quot;</span> 
+   <span class="s">&quot;uy2mz&quot;</span> 
+   <span class="s">&quot;uz2mz&quot;</span> 
+   <span class="s">&quot;uxuymz&quot;</span>
+   <span class="s">&quot;oumz&quot;</span>  
+   <span class="s">&quot;rhomz&quot;</span> 
+   <span class="s">&quot;rhopmz&quot;</span>
+
+  <span class="c">#</span>
+  <span class="c"># size() returns (rows,columns). (3416,) is a column vector.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">size</span><span class="p">(</span> <span class="n">xyaver</span><span class="p">[</span><span class="s">&quot;t&quot;</span><span class="p">]</span> <span class="p">)</span> <span class="c"># (rows,columns)</span>
+  <span class="p">(</span><span class="mi">3416</span><span class="p">,)</span>
+
+  <span class="c">#</span>
+  <span class="c"># nit    == number of iterations</span>
+  <span class="c"># ngridz == number of cells in z</span>
+  <span class="c"># </span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">nit</span><span class="p">,</span> <span class="n">ngridz</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span> <span class="n">xyaver</span><span class="p">[</span><span class="s">&quot;rhomz&quot;</span><span class="p">]</span> <span class="p">)</span>
+  <span class="p">(</span><span class="mi">3416</span><span class="p">,</span><span class="mi">128</span><span class="p">)</span>
+</pre></div>
+
+
+<h3 id="optional-parameters_2">Optional parameters:</h3>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>var="rhopmax"</code></td>
+<td>Read only one variable instead of the entire Dict().</td>
+</tr>
+<tr class='odd'>
+<td><code>datadir="xxx"</code></td>
+<td>Path to the data directory (default: "data").</td>
+</tr>
+<tr class='even'>
+<td><code>varfile="xxx"</code></td>
+<td>Name of the data file (default: "xyaverages.dat").</td>
+</tr>
+<tr class='odd'>
+<td><code>infile="xxx"</code></td>
+<td>Variables names file (default: "xyaver.in").</td>
+</tr>
+<tr class='even'>
+<td><code>it=12</code></td>
+<td>If n &gt; 0, return only that iteration (starts at 1).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="todo_1">TODO:</h3>
+<p>Need to implement <code>read_yaver(var="rhopmz")</code> and <code>read_xyaver(it=10)</code></p>
+<h2 id="read-dimensions">Read dimensions</h2>
+<p>Source: <code>julia/src/dimensions.jl</code></p>
+<h3 id="provides_3">Provides:</h3>
+<p>Functions to parse <code>dim.dat</code> and <code>pdim.dat</code> and return the result as a
+<code>Dict()</code>. The first file contains general dimensions like <code>nx</code>, <code>mx</code>,
+<code>nghostx</code> (where <code>mx == nx + 2*nghostx</code>), <code>mvar</code>, <code>nprocx</code>, etc. The
+second file contains particle dimensions like <code>npar</code>.</p>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Function</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>read_dim()</code></td>
+<td>Reads <code>dim.dat</code> and returns a <code>Dict()</code>.</td>
+</tr>
+<tr class='odd'>
+<td><code>read_pdim()</code></td>
+<td>Reads <code>pdim.dat</code> and returns a <code>Dict()</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tutorial_3">Tutorial:</h3>
+<div class="codehilite"><pre>  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">using</span> <span class="n">Pencil</span>
+
+  <span class="c">#</span>
+  <span class="c"># Read data/dim.dat</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span> <span class="o">=</span> <span class="n">read_dim</span><span class="p">();</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+  <span class="n">Dict</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="n">Any</span><span class="p">}</span> <span class="p">(</span><span class="n">constructor</span> <span class="k">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span><span class="p">[</span><span class="s">&quot;keys&quot;</span><span class="p">]</span>
+  <span class="mi">33</span><span class="o">-</span><span class="n">element</span> <span class="n">Array</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="mi">1</span><span class="p">}:</span>
+   <span class="s">&quot;mvar&quot;</span>     
+   <span class="s">&quot;ny&quot;</span>       
+   <span class="s">&quot;m2&quot;</span>       
+   <span class="s">&quot;mx&quot;</span>       
+   <span class="s">&quot;my&quot;</span>       
+   <span class="s">&quot;nghosty&quot;</span>  
+   <span class="s">&quot;nygrid&quot;</span>   
+   <span class="s">&quot;nghostx&quot;</span>  
+   <span class="s">&quot;precision&quot;</span>
+   <span class="s">&quot;nprocx&quot;</span>   
+   <span class="s">&quot;ipz&quot;</span>      
+   <span class="s">&quot;nxgrid&quot;</span>   
+   <span class="s">&quot;ipy&quot;</span>      
+   <span class="o">...</span>
+   <span class="s">&quot;nprocz&quot;</span>   
+   <span class="s">&quot;mxgrid&quot;</span>   
+   <span class="s">&quot;mz&quot;</span>       
+   <span class="s">&quot;nz&quot;</span>       
+   <span class="s">&quot;maux&quot;</span>     
+   <span class="s">&quot;ipx&quot;</span>      
+   <span class="s">&quot;mzgrid&quot;</span>   
+
+  <span class="c">#</span>
+  <span class="c"># Compare data/dim.dat  vs data/proc10/dim.dat</span>
+  <span class="c">#</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">read_dim</span><span class="p">()</span>        <span class="c"># Read data/dim.dat</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span><span class="p">[</span><span class="s">&quot;nprocz&quot;</span><span class="p">]</span>
+  <span class="mi">16</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span><span class="p">[</span><span class="s">&quot;ipz&quot;</span><span class="p">]</span>
+  <span class="o">-</span><span class="mi">1</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">read_dim</span><span class="p">(</span><span class="n">proc</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Read data/proc10/dim.dat</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span><span class="p">[</span><span class="s">&quot;nprocz&quot;</span><span class="p">]</span>
+  <span class="o">-</span><span class="mi">1</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">dim</span><span class="p">[</span><span class="s">&quot;ipz&quot;</span><span class="p">]</span>
+  <span class="mi">10</span>
+
+  <span class="c">#</span>
+  <span class="c"># read_pdim() has a similar API.</span>
+  <span class="c">#</span>
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pdim</span> <span class="o">=</span> <span class="n">read_pdim</span><span class="p">();</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">typeof</span><span class="p">(</span><span class="n">pdim</span><span class="p">)</span>
+  <span class="n">Dict</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="n">Any</span><span class="p">}</span> <span class="p">(</span><span class="n">constructor</span> <span class="k">with</span> <span class="mi">2</span> <span class="n">methods</span><span class="p">)</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pdim</span><span class="p">[</span><span class="s">&quot;keys&quot;</span><span class="p">]</span>
+  <span class="mi">3</span><span class="o">-</span><span class="n">element</span> <span class="n">Array</span><span class="p">{</span><span class="n">Any</span><span class="p">,</span><span class="mi">1</span><span class="p">}:</span>
+   <span class="s">&quot;mpvar&quot;</span>     
+   <span class="s">&quot;npar&quot;</span>      
+   <span class="s">&quot;npar_stalk&quot;</span>
+
+  <span class="n">julia</span><span class="o">&gt;</span> <span class="n">pdim</span><span class="p">[</span><span class="s">&quot;npar&quot;</span><span class="p">]</span>
+  <span class="mi">16384</span>
+</pre></div>
+
+
+<h3 id="optional-parameters_3">Optional parameters:</h3>
+<table cellspacing='0' cellpadding='0'>
+<thead>
+<tr class='odd'>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class='even'>
+<td><code>datadir="xxx"</code></td>
+<td>Path to the data directory (default: "data").</td>
+</tr>
+<tr class='odd'>
+<td><code>proc=n</code></td>
+<td>Read the <code>dim</code> or <code>pdim</code> file from the <code>data/proc$n</code> directory.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

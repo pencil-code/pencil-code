@@ -1,0 +1,50 @@
+body {
+	font-family: sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	color: #003399;
+}
+
+code {
+	padding-top:    0.1em;
+	padding-bottom: 0.1em;
+	padding-left:   0.3em;
+	padding-right:  0.3em;
+	border: 1px solid #bbb;
+	background: #eee;
+}
+
+pre {
+	margin-left: 3em;
+	width: 50%;
+	padding: 1em;
+	border: 2px solid #bbb;
+	background: #eee;
+}
+
+tr.odd th {
+	padding: 0.5em;
+	background: white;
+	border-bottom: 2px solid #ccc;
+}
+tr.odd  { background: #fcfcff; }
+tr.even { background: #f0f0f0; }
+
+table {
+	border: 1px solid #999;
+	margin-left: 3em;
+}
+
+td {
+	padding: 1em
+}
+
+/*
+ * Code highlighting.
+ */
+span.C { color: #999; }
+span.s { color: #090; }
+span.n { color: #03a; }
+span.o { color: #27a; }
+span.p { color: #27a; font-weight: bold; }
