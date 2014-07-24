@@ -474,6 +474,7 @@ module Gravity
 !  20-jul-14/wlad: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: rrcyl_mn
       real :: c2,s2,g2
       type (pencil_case) :: p
 !
@@ -502,14 +503,16 @@ module Gravity
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
 !
-        c2 = 2*Omega_secondary*costh(m)
-        s2 =-2*Omega_secondary*sinth(m)
+        c2 = 2*Omega_secondary !*costh(m)
+        s2 = 2*Omega_secondary !*sinth(m)
         ! Coriolis
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - s2*p%uu(:,3)
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) + s2*p%uu(:,1)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
         ! Centrifugal
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*sinth(m)*Omega_secondary**2
+        rrcyl_mn=x(l1:l2)*sinth(m)
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_secondary**2
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_secondary**2
 !
       endif
 !
@@ -919,7 +922,7 @@ module Gravity
         ggp(:,3) =  gp *  z(  n  )
         if (lcylindrical_gravity) ggp(:,3)=0.
       else if (lspherical_coords) then 
-        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*(costh(m)+sinth(m)*cos(z(n))) + rp1_pot**2
+        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cos(z(n)) + rp1_pot**2
         gp = -g1*rr2_pm**(-1.5)
         ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n))) 
         ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n)) 
