@@ -135,13 +135,13 @@ module InitialCondition
          if (iproc .eq. root) then
            print*,'initial_condition: you are using a coronal envelope'
          endif
-         do i=1,mx
-           if (x(i)>=Rsurf) then
-             nsurf=i
+         do i=1,nx
+           if (x(l1+i)>=Rsurf) then
+             nsurf=i-1
              exit
            endif
          enddo
-         do j=1, nxgrid 
+         do j=1, nxgrid
            if (xglobal(nghost+j)>=Rsurf) then
              nsurf_global=j
              exit
@@ -149,13 +149,13 @@ module InitialCondition
          enddo
       else
          Rsurf=x0+Lxyz(1)
-         nsurf=l2
+         nsurf=l2-l1
          nsurf_global=nxgrid
       endif
 !
 !  Temperature using a constant polytropic index npoly1
 !
-      TT(l1:l2)=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x(l1:l2) - 1./Rsurf))
+      TT=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x - 1./Rsurf))
       TT_global=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./xglobal(nghost+1:nxgrid+nghost) - 1./Rsurf))
       T00=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x0 - 1./Rsurf))
       Tsurf=gravx/(cv*(gamma-1.))*xi0/Rstar
@@ -167,51 +167,44 @@ module InitialCondition
 !
         Tcor=Tcor_jump*T00
         TTc=0
-        TTc(nsurf:l2)=Tsurf+(Tcor-Tsurf)*step(x(nsurf:l2),Rtran,wtran)
-        TT(nsurf:l2)=TT(nsurf:l2)+(TTc(nsurf:l2)-TT(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin)
-!  global
+        TTc(l1+nsurf:mx)=Tsurf+(Tcor-Tsurf)*step(x(l1+nsurf:mx),Rtran,wtran)
+        TT(l1+nsurf:mx)=TT(l1+nsurf:mx)+(TTc(l1+nsurf:mx)-TT(l1+nsurf:mx))*step(x(l1+nsurf:mx), Rmin, wmin)
+!
+!  global temperature
+!
         TTc_global(nsurf_global:nxgrid)=Tsurf+(Tcor-Tsurf)*step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
         TT_global(nsurf_global:nxgrid)=TT_global(nsurf_global:nxgrid) + & 
                                       (TTc_global(nsurf_global:nxgrid)-TT_global(nsurf_global:nxgrid))* & 
                                       step(xglobal(nghost+nsurf_global:nxgrid+nghost), Rmin, wmin)
-!  derivative
-        dTdr(l1:l2)=-gravx/x(l1:l2)**2./(cv*(gamma-1)*(npoly1+1))
-        dTdr_cor=0
-        dTdr_cor(nsurf:l2)=(Tcor-Tsurf)*der_step(x(nsurf:l2),Rtran,wtran)
-        dTdr(nsurf:l2)=dTdr(nsurf:l2)+(dTdr_cor(nsurf:l2) - & 
-                       dTdr(nsurf:l2))*step(x(nsurf:l2), Rmin, wmin) + &
-                       (TTc(nsurf:l2)-TT(nsurf:l2))*der_step(x(nsurf:l2),Rmin, wmin)
-       
-        dlnTdr(l1:l2)=dTdr(l1:l2)/TT(l1:l2)
-!  global derivative
+!
+!  global temperature derivative
+!
         dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1))
         dTdrc_global=0
         dTdrc_global(nsurf_global:nxgrid)=(Tcor-Tsurf)*der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
         dTdr_global(nsurf_global:nxgrid)=dTdr_global(nsurf_global:nxgrid)+(dTdrc_global(nsurf_global:nxgrid) - & 
-                       dTdr_global(nsurf_global:nxgrid))*step(xglobal(nghost+nsurf_global:nxgrid+nghost), Rmin, wmin) + &
-                       (TTc_global(nsurf_global:nxgrid)-TT_global(nsurf_global:nxgrid)) * &
-                       der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rmin, wmin)
+             dTdr_global(nsurf_global:nxgrid))*step(xglobal(nghost+nsurf_global:nxgrid+nghost), Rmin, wmin) + &
+             (TTc_global(nsurf_global:nxgrid)-TT_global(nsurf_global:nxgrid)) * &
+             der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rmin, wmin)
         dlnTdr_global=dTdr_global/TT_global
       endif
 !
 !  Density stratification assuming an isentropic atmosphere with ss=0. 
 !
-      rho_prof(l1:nsurf)=rho0*(TT(l1:nsurf)/T00)**(1./(gamma-1.))
+      rho_prof=rho0*(TT/T00)**(1./(gamma-1.))
       rho00=rho0*(T00/T00)**(1./(gamma-1.))
       rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
-      rho_global(1:nsurf_global)=rho0*(TT_global(1:nsurf_global)/T00)**(1./(gamma-1.))
+      rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
 !
-      lnrho(l1:nsurf)=log(rho_prof(l1:nsurf)/rho0)
-      lnrho_global(1:nsurf_global)=log(rho_global(1:nsurf_global)/rho0)
+      lnrho=log(rho_prof/rho0)
+      lnrho_global=log(rho_global/rho0)
+!
       if (lcorona) then
-         dlnrhodr=-dlnTdr-gravx/x**2/(cv*(gamma-1)*TT)
-         dlnrhodr_global=-dlnTdr_global-gravx/xglobal(nghost+1:nxgrid+nghost)**2/(cv*(gamma-1)*TT_global)
-         do i=nsurf-10, l2
-           lnrho(i)=lnrho(i-1)+dlnrhodr(i-1)/dx_1(i-1)
-         enddo
-         do j=nsurf_global-10, nxgrid
-           lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
-         enddo
+        dlnrhodr_global=-dlnTdr_global-gravx/xglobal(nghost+1:nxgrid+nghost)**2/(cv*(gamma-1)*TT_global)
+        do j=nsurf_global-nsurf_global/10, nxgrid
+          lnrho_global(j)=lnrho_global(j-1)+dlnrhodr_global(j-1)*(xglobal(nghost+j)-xglobal(nghost+j-1))
+        enddo
+        lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
       endif
 !
 !  Renormalize entropy with rho0 and cs20
@@ -237,9 +230,9 @@ module InitialCondition
         npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
         gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
        if ((xglobal(nghost+n)>=Rstar) .and. & 
-            ((npoly2(n)+1)/exp(lnrho_global(n))>(npoly2(1)+1)/exp(lnrho_global(1)))) then
-          npoly2(n)=(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1
-          gnpoly2(n)=(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
+            ((npoly2(n)+1)/exp(lnrho_global(n))>2*(npoly2(1)+1)/exp(lnrho_global(1)))) then
+          npoly2(n)=2*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))-1
+          gnpoly2(n)=2*(npoly2(1)+1)*exp(lnrho_global(n)-lnrho_global(1))*dlnrhodr_global(n)
         endif
       enddo
 !
@@ -284,7 +277,7 @@ module InitialCondition
       cs2_bot=T00*cv*gamma*(gamma-1.)
       cs2_top=Tsurf*cv*gamma*(gamma-1.)
       if (lcorona) then
-        cs2_top=TT(l2)*cv*gamma*(gamma-1.)
+        cs2_top=TT_global(nxgrid)*cv*gamma*(gamma-1.)
         cs2_surf=Tsurf*cv*gamma*(gamma-1.)
         cs2_cor=Tcor*cv*gamma*(gamma-1.)
       endif
@@ -345,8 +338,9 @@ module InitialCondition
          endif
          print*,'initial_condition: Density stratification in convection zone  =',rho00/rho_surf
          if (lcorona) then
-           print*,'initial_condition: Density stratification in the corona       =',exp(log(rho_surf)-lnrho(l2))
-           print*,'initial_condition: Density stratification with corona         =',exp(log(rho00)-lnrho(l2))
+           print*,'initial_condition: Density stratification in the corona       =',&
+                exp(lnrho_global(nsurf_global)-lnrho_global(nxgrid))
+           print*,'initial_condition: Density stratification with corona         =',exp(log(rho00)-lnrho_global(nxgrid))
          endif
          print*,'initial_condition: Turbulent heat conductivity at the surface =',chit0, 'm^2/s'
          print*,''
