@@ -7,5 +7,5 @@
 !
 ! MAUX CONTRIBUTION 4
 !
-integer, parameter :: ncpus=4,nprocy=2,nprocz=2,nprocx=1
+integer, parameter :: ncpus=2,nprocy=1,nprocz=1,nprocx=2
 integer, parameter :: nxgrid=64,nygrid=64,nzgrid=32

@@ -3,7 +3,7 @@
 ! Convective dynamo in a spherical wedge with coronal envelope 
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
+  cvsid='$Id$',
   nt=21, it1=2, isave=100, itorder=3
   dsnap=50., dvid=1,
   cdtv=0.30, cdt=0.40
