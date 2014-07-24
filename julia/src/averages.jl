@@ -175,6 +175,18 @@ function read_2d_aver(axis,datadir,varfile,infile,var)
 	    end
 	end
 	
+    #
+    # Note: I choose to not transpose the data. I realize that this means an
+    #       extra character when plotting:
+    #
+    #           plot( x, rhopmx[t,:]' )
+    #
+    #       But transposing would mean putting the time on the second index:
+    #
+    #           plot( x, rhopmx[:,t] )
+    #
+    #       I think the two options are equally good and equally bad.
+    # 
 	return allvars ? aver : aver[var]
 end
 
