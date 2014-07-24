@@ -40,7 +40,7 @@ module Interstellar
     real :: damping_factor
     real :: energy_loss
     integer :: l,m,n           ! Grid position
-    integer :: iproc,ipy,ipz
+    integer :: iproc,ipx,ipy,ipz
     integer :: SN_type
     integer :: state
     type (ExplosionSite) :: site
@@ -94,6 +94,7 @@ module Interstellar
 !  Allocate time of next SNI/II and intervals until next
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0, t_next_mass=0.0
+  real :: x_next_SNII=0.0, y_next_SNII=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
 !
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
@@ -315,6 +316,10 @@ module Interstellar
 !
   logical :: lforce_locate_SNI=.false.
   logical :: uniform_zdist_SNI = .false.
+  logical :: lOB_cluster = .false. ! SN clustering
+  real    :: p_OB=0.7 ! Probability that an SN is in a cluster
+  real    :: SN_clustering_radius=impossible
+  real    :: SN_clustering_radius_cgs=9.258e20 ! cm (300 pc)
 !
 !  Adjust SNR%radius inversely with density
 !
@@ -390,7 +395,8 @@ module Interstellar
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
       lTT_cutoff, TT_cutoff, N_mass, addrate, T0hs, rho0ts, &
-      lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min
+      lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
+      p_OB, SN_clustering_radius, lOB_cluster
 !
   contains
 !
@@ -819,6 +825,8 @@ module Interstellar
             SNR_damping_time=SNR_damping_time_cgs / unit_time
         if (SNR_damping_rate==impossible) &
             SNR_damping_rate=SNR_damping_rate_cgs / unit_time
+        if (SN_clustering_radius==impossible) &
+            SN_clustering_radius=SN_clustering_radius_cgs / unit_length
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -910,6 +918,10 @@ module Interstellar
           read (lun_input, iostat=ierr) t_next_SNI, t_next_SNII
           if (outlog (ierr, 'read persistent T_NEXT_SNI')) return
           done = .true.
+        case (id_record_POS_NEXT_SNII)
+          read (lun_input, iostat=ierr) x_next_SNII, y_next_SNII
+          if (outlog (ierr, 'read persistent POS_NEXT_SNII')) return
+          done = .true.
         case (id_record_ISM_SN_TOGGLE)
           read (lun_input, iostat=ierr) lSNI, lSNII
           if (outlog (ierr, 'read persistent ISM_SN_TOGGLE')) return
@@ -954,6 +966,10 @@ module Interstellar
       if (write_persist_id ('T_NEXT_SNI', id_record_T_NEXT_SNI)) return
       write (lun_output, iostat=ierr) t_next_SNI, t_next_SNII
       if (outlog (ierr, 'write persistent T_NEXT_SNI')) return
+!
+      if (write_persist_id ('POS_NEXT_SNII', id_record_POS_NEXT_SNII)) return
+      write (lun_output, iostat=ierr) x_next_SNII, y_next_SNII
+      if (outlog (ierr, 'write persistent POS_NEXT_SNII')) return
 !
       if (write_persist_id ('ISM_SN_TOGGLE', id_record_ISM_SN_TOGGLE)) return
       write (lun_output, iostat=ierr) lSNI, lSNII
@@ -1479,7 +1495,7 @@ module Interstellar
       enddo
       lam_loop: do j=1,ncool
         if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
-        where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
+        where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1))
           lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
         endwhere
       enddo lam_loop
@@ -2245,6 +2261,8 @@ module Interstellar
     subroutine position_SN_gaussianz(f,h_SN,SNR)
 !
 !  Determine position for next SN (w/ fixed scale-height).
+!  15-jul-14/luiz+fred: added SN horizontal clustering algorithm for SNII
+!                       70% probability SNII located within 300pc of previous
 !
     use General, only: random_number_wrapper
     use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
@@ -2261,8 +2279,8 @@ module Interstellar
     real :: zdisk, rhomax, maxrho, rhosum
     real, dimension(1) :: mpirho, mpiz
     real, dimension(ncpus):: tmp2
-    integer :: yzproc, itmp, icpu
-!  
+    integer :: yzproc, itmp, icpu, lm_range, previous_SNl, previous_SNm
+!
 !  parameters for random location of SN - about zdisk
 !
     real, dimension(nzgrid) :: cum_prob_SN
@@ -2283,14 +2301,14 @@ module Interstellar
 !
     rhomax=0.0
     zdisk=0.0
-!    
+!
     if (h_SN==h_SNII) then
       if (ldensity_nolog) then
         rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))
       else
         rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
       endif
-!      
+!
       do icpu=1,ncpus
         mpirho=(/rhosum/)
         call mpibcast_real(mpirho,1,icpu-1)
@@ -2332,15 +2350,41 @@ module Interstellar
 !
     call random_number_wrapper(fran3)
 !
-! Get 3 random numbers on all processors to keep rnd. generators in sync.
+!  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
     if (lroot) then
-      i=int(fran3(1)*nxgrid)+1
-      SNR%l=i+nghost
+      if (lOB_cluster .and. h_SN==h_SNII) then
+        previous_SNl = int(( x_next_SNII - xyz0(1) )/Lxyz(1))*nxgrid +1
+        previous_SNm = int(( y_next_SNII - xyz0(2) )/Lxyz(2))*nygrid +1
+        lm_range = 2*SN_clustering_radius*nxgrid/Lxyz(1)
+        if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
+          i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
+          SNR%ipx=(i-1)/nx  ! uses integer division
+          SNR%l=i-(SNR%ipx*nx)+nghost
 !
-      i=int(fran3(2)*nygrid)+1
-      SNR%ipy=(i-1)/ny  ! uses integer division
-      SNR%m=i-(SNR%ipy*ny)+nghost
+          i=int(fran3(1)*lm_range/p_OB)+previous_SNm+1
+          SNR%ipy=(i-1)/ny  ! uses integer division
+          SNR%m=i-(SNR%ipy*ny)+nghost
+        else ! outside cluster
+          i=int(fran3(1)*(nxgrid-lm_range)/(1.0-p_OB))+previous_SNl+1
+          if (i>nxgrid) i=i-nxgrid
+          SNR%ipx=(i-1)/nx  ! uses integer division
+          SNR%l=i-(SNR%ipx*nx)+nghost
+!
+          i=int(fran3(1)*(nygrid-lm_range)/(1.0-p_OB))+previous_SNl+1
+          if (i>nygrid) i=i-nygrid
+          SNR%ipy=(i-1)/ny  ! uses integer division
+          SNR%m=i-(SNR%ipy*ny)+nghost
+        endif
+      else ! clustering not used
+        i=int(fran3(1)*nxgrid)+1
+        SNR%ipx=(i-1)/nx  ! uses integer division
+        SNR%l=i-(SNR%ipx*nx)+nghost
+!
+        i=int(fran3(2)*nygrid)+1
+        SNR%ipy=(i-1)/ny  ! uses integer division
+        SNR%m=i-(SNR%ipy*ny)+nghost
+      endif
 !
 !  Cumulative probability function in z calculated each time for moving zdisk.
 !
@@ -2799,7 +2843,7 @@ module Interstellar
 !  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
-        do i=1,20       
+        do i=1,20
           SNR%radius=(0.75*solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
           SNR%radius=max(SNR%radius,1.75*dxmax)
           call get_properties(f,SNR,rhom,ekintot)
@@ -3544,8 +3588,8 @@ module Interstellar
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
 !
-!  Necessary to compute ekintot in double precision here as very low rho  
-!  can multiply very low u2 to make NaN. fred. 
+!  Necessary to compute ekintot in double precision here as very low rho
+!  can multiply very low u2 to make NaN. fred.
 !
         uu=f(l1:l2,m,n,iuu:iuu+2)
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
@@ -3563,7 +3607,7 @@ module Interstellar
 !
 !  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
-! 
+!
       call mpireduce_sum(tmp,tmp2,3)
       call mpibcast_real(tmp2,3)
       ekintot=0.5*tmp2(3)*dv
@@ -3619,8 +3663,8 @@ module Interstellar
           rho=rho+deltarho
         endif
 !
-!  Necessary to compute ekintot in double precision here as very low rho  
-!  can multiply very low u2 to make NaN. fred. 
+!  Necessary to compute ekintot in double precision here as very low rho
+!  can multiply very low u2 to make NaN. fred.
 !
         uu=f(l1:l2,m,n,iuu:iuu+2)
         if (lSN_velocity) then
@@ -4170,8 +4214,8 @@ module Interstellar
 !!
 !!  12-Jul-10/fred: coded
 !!  This older routine is numerically expensive and above was adopted using a
-!!  simple factor to keep the mean density steady following hydrodynamic 
-!!  steady turbulence 
+!!  simple factor to keep the mean density steady following hydrodynamic
+!!  steady turbulence
 !
 !      use Mpicomm, only: mpireduce_sum, mpibcast_real, &
 !                         mpibcast_real, mpireduce_max

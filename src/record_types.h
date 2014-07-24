@@ -13,7 +13,8 @@ integer, parameter :: id_record_RANDOM_SEEDS     = 1
 ! Reals
 !
 integer, parameter :: id_record_T_NEXT_SNI       = 250
-integer, parameter :: id_record_BOLD_MASS        = 251
+integer, parameter :: id_record_POS_NEXT_SNII    = 251
+integer, parameter :: id_record_BOLD_MASS        = 252
 integer, parameter :: id_record_FORCING_LOCATION = 270
 integer, parameter :: id_record_FORCING_TSFORCE  = 271
 integer, parameter :: id_record_NOHYDRO_TPHASE   = 280
