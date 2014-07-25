@@ -503,8 +503,8 @@ module Gravity
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
 !
-        c2 = 2*Omega_secondary !*costh(m)
-        s2 = 2*Omega_secondary !*sinth(m)
+        c2 = 2*Omega_secondary*costh(m)
+        s2 = 2*Omega_secondary*sinth(m)
         ! Coriolis
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
