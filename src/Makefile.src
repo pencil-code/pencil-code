@@ -1583,6 +1583,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-s default64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
+## Piz Daint - CrayXC30 - (ETH Zurich)
+##
+#FC=ftn #(daint*)
+#FC_SLOPPY = $(FC) #(daint*)
+#F90=$(FC) #(daint*)
+#CC=cc #(daint*)
+#FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(daint*)
+#FFLAGS_DOUBLE=-s default64 #(daint*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(daint*)
+##
 ## alphacrucis cluster IAG-USP (alphacrucis)
 ##
 #FC=mpif90 #(alphacrucis*)
