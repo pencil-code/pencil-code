@@ -191,6 +191,17 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS_DOUBLE=-s default64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
+## Hermit - CrayXE6 - (Stuttgart)
+##
+#FC=ftn #(eslogin0*)                                                                                                          
+#FC_SLOPPY = $(FC) #(eslogin0*)                                                                                             
+#F90=$(FC) #(eslogin0*)
+#CC=cc #(eslogin0*)
+##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(eslogin0*)
+#FFLAGS=-O3 -ffree -e m  #(eslogin0*)
+#FFLAGS_DOUBLE=-s default64 #(eslogin0*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(eslogin0*)
+##                                      
 ## GWDG Cluster in Goettingen
 ##
 #FC = mpif90 -std95 # (gwdu101)
