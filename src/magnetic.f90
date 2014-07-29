@@ -758,6 +758,10 @@ module Magnetic
      module procedure calc_pencils_magnetic_std
   endinterface calc_pencils_magnetic
 !
+! Module Variables
+!
+  real, dimension(nzgrid) :: eta_zgrid = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_magnetic()
@@ -1057,6 +1061,7 @@ module Magnetic
           ! eta_zwidth as eta_width
           if (eta_zwidth==0.and.eta_width/=0.0) eta_zwidth=eta_width
           call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
+          if (limplicit_resistivity) call eta_zdep(zdep_profile, nzgrid, zgrid, eta_zgrid)
         case ('dust')
           if (lroot) print*, 'resistivity: depending on dust density'
           lresi_dust=.true.
@@ -1722,10 +1727,10 @@ module Magnetic
 !
       if (lresi_eta_const .and. .not. lweyl_gauge .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
 !
-      if (lresi_zdep) then
-        lpenc_requested(i_del2a) = .true.
+      zdep: if (lresi_zdep) then
+        if (.not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
-      endif
+      endif zdep
 !
 !  jj pencil always needed when in Weyl gauge
 !
@@ -2924,6 +2929,8 @@ module Magnetic
 !
       explicit: if (.not. limplicit_resistivity) then
 !
+!  Uniform resistivity
+!
         eta_const: if (lresi_eta_const) then
           if (lweyl_gauge) then
             fres=fres-eta*mu0*p%jj
@@ -2934,20 +2941,25 @@ module Magnetic
           etatotal=etatotal+eta
         endif eta_const
 !
+!  z-dependent resistivity
+!
+        eta_zdep: if (lresi_zdep) then
+          if (lweyl_gauge) then
+            fres=fres-eta_z(n)*mu0*p%jj
+          else
+            do j=1,3
+              fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+            enddo
+          endif
+          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
+          etatotal=etatotal+eta_z(n)
+        endif eta_zdep
+!
+      else explicit
+!
+        if (lresi_zdep) forall(j = 1:3) fres(:,j) = fres(:,j) + geta_z(n,j) * p%diva
+!
       endif explicit
-!
-      eta_zdep: if (lresi_zdep) then
-        if (lweyl_gauge) then
-          fres=fres-eta_z(n)*mu0*p%jj
-        else
-          do j=1,3
-            fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-          enddo
-        endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
-        etatotal=etatotal+eta_z(n)
-      endif eta_zdep
-!
 !
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
@@ -7623,7 +7635,7 @@ module Magnetic
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
-    subroutine get_resistivity_implicit(ndc, diffus_coeff)
+    subroutine get_resistivity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
 !
@@ -7631,12 +7643,25 @@ module Magnetic
 !
       integer, intent(in) :: ndc
       real, dimension(ndc), intent(out) :: diffus_coeff
+      integer, intent(in), optional :: iz
+!
+!  Uniform resistivity
 !
       if (lresi_eta_const) then
         diffus_coeff = eta
       else
         diffus_coeff = 0.0
       endif
+!
+!  z-dependent resistivity
+!
+      zdep: if (lresi_zdep) then
+        if (present(iz)) then
+          diffus_coeff = diffus_coeff + eta_zgrid(iz)
+        else
+          diffus_coeff = diffus_coeff + eta_zgrid
+        endif
+      endif zdep
 !
     endsubroutine get_resistivity_implicit
 !***********************************************************************

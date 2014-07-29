@@ -2039,7 +2039,7 @@ module Viscosity
 !
     endsubroutine split_update_viscosity
 !***********************************************************************
-    subroutine get_viscosity_implicit(ndc, diffus_coeff)
+    subroutine get_viscosity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
 !
@@ -2047,6 +2047,7 @@ module Viscosity
 !
       integer, intent(in) :: ndc
       real, dimension(ndc), intent(out) :: diffus_coeff
+      integer, intent(in), optional :: iz
 !
       if (lvisc_simplified) then
         diffus_coeff = nu

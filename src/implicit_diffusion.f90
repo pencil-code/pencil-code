@@ -94,7 +94,7 @@ module ImplicitDiffusion
 !  LOCAL ROUTINES GO BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine set_diffusion_equations(get_diffus_coeff, direction, a, b, c)
+    subroutine set_diffusion_equations(get_diffus_coeff, direction, a, b, c, iz)
 !
 ! Determines the coefficients a_i, b_i, and c_i of the discretized
 ! diffusion equations:
@@ -109,18 +109,30 @@ module ImplicitDiffusion
 ! diffusive operation.  Input procedure argument get_diffus_coeff is
 ! a subroutine returning the diffusion coefficient with the interface
 !
-!   subroutine get_diffus_coeff(ndc, diffus_coeff)
+!   subroutine get_diffus_coeff(ndc, diffus_coeff, iz)
 !
 !     integer, intent(in) :: ndc
 !     real, dimension(ndc), intent(out) :: diffus_coeff
+!     integer, intent(in), optional :: iz
 !
-! where diffus_coeff(i) is the diffusion coefficient at position i.
+! where diffus_coeff(i) is the diffusion coefficient at i.  If present,
+! the optional argument iz is the global z-index for diffus_coeff.  If
+! not present, diffus_coeff is assumed to be vertical.
 !
 ! 16-aug-13/ccyang: coded
+! 23-jul-14/ccyang: introduced positional dependence
 !
-      external :: get_diffus_coeff
+      interface
+        subroutine get_diffus_coeff(ndc, dc, iz)
+          integer, intent(in) :: ndc
+          real, dimension(ndc), intent(out) :: dc
+          integer, intent(in), optional :: iz
+        endsubroutine
+      endinterface
+!
       integer, intent(in) :: direction
       real, dimension(:), intent(out) :: a, b, c
+      integer, intent(in), optional :: iz
 !
       real, dimension(max(nxgrid,nygrid,nzgrid)) :: dc
 !
@@ -129,13 +141,13 @@ module ImplicitDiffusion
       dir: select case (direction)
 !
       case (1) dir
-        call get_diffus_coeff(nxgrid, dc(1:nxgrid))
+        call get_diffus_coeff(nxgrid, dc(1:nxgrid), iz)
         a(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid - 0.5 * dxtgrid)
         b(1:nxgrid) = -dc(1:nxgrid) * dx1grid**2
         c(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid + 0.5 * dxtgrid)
 !
       case (2) dir
-        call get_diffus_coeff(nygrid, dc(1:nygrid))
+        call get_diffus_coeff(nygrid, dc(1:nygrid), iz)
         a(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid - 0.5 * dytgrid)
         b(1:nygrid) = -dc(1:nygrid) * dy1grid**2
         c(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid + 0.5 * dytgrid)
@@ -158,6 +170,7 @@ module ImplicitDiffusion
 ! Implicitly integrate the diffusion term in the x-direction.
 !
 ! 16-aug-13/ccyang: coded
+! 23-jul-14/ccyang: introduced positional dependence
 !
 ! Input Arguments
 !   bcx1: array of the lower boundary conditions for each component
@@ -179,9 +192,9 @@ module ImplicitDiffusion
       integer :: j, k, l
 !
       int_x: if (nxgrid > 1) then
-        call set_diffusion_equations(get_diffus_coeff, 1, a, b, c)
-        call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
         zscan: do k = n1, n2
+          call set_diffusion_equations(get_diffus_coeff, 1, a, b, c, iz=ipz*nz+k-nghost)
+          call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
           yscan: do j = m1, m2
             do l = ivar1, ivar2
               call implicit_pencil(f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, bcx1(l), bcx2(l))
@@ -197,6 +210,7 @@ module ImplicitDiffusion
 ! Implicitly integrate the diffusion term in the y-direction.
 !
 ! 16-aug-13/ccyang: coded
+! 23-jul-14/ccyang: introduced positional dependence
 !
 ! Input Arguments
 !   bcy1: array of the lower boundary conditions for each component
@@ -222,10 +236,10 @@ module ImplicitDiffusion
       integer :: j, k, l
 !
       int_y: if (nygrid > 1) then
-        call set_diffusion_equations(get_diffus_coeff, 2, a, b, c)
-        call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
         comp: do l = ivar1, ivar2
           zscan: do k = n1, n2
+            call set_diffusion_equations(get_diffus_coeff, 2, a, b, c, iz=ipz*nz+k-nghost)
+            call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
             axy = f(l1:l2,m1:m2,k,l)
             call transp_xy(axy)  ! assuming nxgrid = nygrid
             xscan: do j = 1, ny
