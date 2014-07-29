@@ -43,9 +43,9 @@ $(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(SUB_OBJ)
 #
 nolorenz_gauge.o: lorenz_gauge.h nolorenz_gauge.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #
-implicit_diffusion.o: implicit_diffusion.h $(BOUNDCOND_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SHEAR_OBJ)
+implicit_diffusion.o: implicit_diffusion.h implicit_diffusion.f90 $(BOUNDCOND_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SHEAR_OBJ)
 #
-noimplicit_diffusion.o: implicit_diffusion.h $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ)
+noimplicit_diffusion.o: implicit_diffusion.h noimplicit_diffusion.f90 $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ)
 #
 $(IMPLICIT_PHYSICS_OBJ): implicit_physics.h $(IMPLICIT_PHYSICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ)
 #
@@ -188,8 +188,10 @@ $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OB
 #
 ifeq ($(SPECIAL_OBJ),nospecial.o)
   $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
-else
+else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ)
+else
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ)
 endif
 #
 $(PARTICLES_CDATA_OBJ): $(PARTICLES_CDATA_SRC) $(CDATA_OBJ)
