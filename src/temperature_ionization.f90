@@ -34,6 +34,8 @@ module Energy
   real :: chi=0.0,heat_uniform=0.0,chi_hyper3=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
+  real, pointer :: reduce_cs2
+  logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
   logical :: lviscosity_heat=.false.
@@ -129,7 +131,7 @@ module Energy
 !  21-jul-2002/wolf: coded
 !
       use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use EquationOfState, only : select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -207,6 +209,23 @@ module Energy
       if (lheatc_hyper3 .and. chi_hyper3==0.0) then
         call warning('initialize_energy', &
             'Conductivity coefficient chi_hyper3 is zero!')
+      endif
+!
+!  Check if reduced sound speed is used
+!
+      if (ldensity) then
+        call get_shared_variable('lreduced_sound_speed',&
+             lreduced_sound_speed,ierr)
+        if (ierr/=0) call fatal_error('initialize_energy:',&
+             'failed to get lreduced_sound_speed from density')
+        if (lreduced_sound_speed) then
+          call get_shared_variable('reduce_cs2',reduce_cs2,ierr)
+          if (ierr/=0) call fatal_error('initialize_energy:',&
+               'failed to get reduce_cs2 from density')
+          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
+          if (ierr/=0) call fatal_error('initialize_energy:',&
+               'failed to get lscale_to_cs2top from density')
+        endif
       endif
 !
       if (llocal_iso) &
@@ -514,6 +533,7 @@ module Energy
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
+!  29-jul-14/axel: imported reduced sound speed from entropy module
 !
       use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
       use Special, only: special_calc_energy
@@ -544,8 +564,19 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
+        advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
+        if (lscale_to_cs2top) then
+          call fatal_error('denergy_dt','lscale_to_cs2top not possible')
+!AB: because cs2top is undefined in this module
+!--       advec_cs2=reduce_cs2*cs2top*dxyz_2
+        else
+          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+        endif
+      endif
+      if (headtt.or.ldebug) &
+          print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
