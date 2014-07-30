@@ -193,14 +193,12 @@ CFLAGS=-O3 -DFUNDERSC=1
 ##
 ## Hermit - CrayXE6 - (Stuttgart)
 ##
-#FC=ftn #(eslogin0*)                                                                                                          
-#FC_SLOPPY = $(FC) #(eslogin0*)                                                                                             
-#F90=$(FC) #(eslogin0*)
-#CC=cc #(eslogin0*)
-##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(eslogin0*)
-#FFLAGS=-O3 -ffree -e m  #(eslogin0*)
-#FFLAGS_DOUBLE=-s default64 #(eslogin0*)
-#CFLAGS=-DFUNDERSC=1 -O3 #(eslogin0*)
+## load module intel first
+#FC=ifort #(eslogin0*)                                                                                                             
+#FFLAGS=-O3 #(eslogin0*)                                                                                                           
+#CC=icc #(eslogin0*)                                                                                                               
+#CFLAGS=  #(eslogin0*)                                                                                                             
+#LD_MPI=  #(eslogin0*)
 ##                                      
 ## GWDG Cluster in Goettingen
 ##
