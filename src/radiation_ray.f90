@@ -67,7 +67,8 @@ module Radiation
   real, target, dimension (ny,nz,mnu) :: Jrad_yz
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
-  real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0, kappa_cst=1.0
+  real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0
+  real, dimension (mnu) :: kappa_cst=1.0, kappa2_cst=0.0, kappa20_cst=0.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
@@ -83,6 +84,7 @@ module Radiation
   real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_cooling=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
+  real :: expo2_rho_opa=0.0, expo2_temp_opa=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
@@ -132,7 +134,8 @@ module Radiation
   integer :: idiag_dtchi=0, idiag_dtrad=0
 !
   namelist /radiation_init_pars/ &
-      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
+      radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
+      kappa_cst, kappa2_cst, kappa20_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
@@ -140,11 +143,13 @@ module Radiation
       lrad_pres_diffus, scalefactor_Srad, scalefactor_kappa, &
       angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
+      expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function
 !
   namelist /radiation_run_pars/ &
-      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
+      radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
+      kappa_cst, kappa2_cst, kappa20_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
@@ -154,6 +159,7 @@ module Radiation
       cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, scalefactor_kappa, &
       angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
+      expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function
@@ -242,10 +248,10 @@ module Radiation
 !
 !  Empirically we have found that cdtrad>0.1 is unsafe.
 !
-      if (ldt.and.cdtrad>0.1) then
-        call fatal_error('initialize_radiation', &
-            'cdtrad is larger than 0.1 - do you really want this?')
-      endif
+      !if (ldt.and.cdtrad>0.1) then
+      !  call fatal_error('initialize_radiation', &
+      !      'cdtrad is larger than 0.1 - do you really want this?')
+      !endif
 !
 !  Check boundary conditions.
 !
@@ -1407,6 +1413,7 @@ module Radiation
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
 !  This is currently not correct in the non-gray case!
+!  Instead of a factor 4, one should have a factor of 16; see BB14, Eq.(A.2).
 !
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           do l=1,nx
@@ -1597,6 +1604,7 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
+      real, dimension(mx) :: kappa1,kappa2
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
       integer :: i,inu
@@ -1647,6 +1655,8 @@ module Radiation
         enddo
         enddo
 !
+!  Rescaled (generalized) Kramers opacity
+!
       case ('kappa_power_law')
         do n=n1-radz,n2+radz; do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
@@ -1669,6 +1679,25 @@ module Radiation
                 (knee_temp_opa/ref_temp_opa)**expo_temp_opa* &
                 (TT/knee_temp_opa)**expo_temp_opa_buff
           endif
+        enddo; enddo
+!
+!  Rescaled (generalized) Kramers opacity
+!  kappa^{-1} = kappa1^{-1} + (kappa2+kappa20)^{-1}
+!  Here, kappa1 corresponds to exponents for Hminus
+!  and kappa2 corresponds to exponents for Kramers
+!
+      case ('kappa_double_power_law')
+        do n=n1-radz,n2+radz; do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          rho=exp(lnrho)
+          TT=exp(lnTT)
+            kappa1=kappa_cst(inu)* &
+                (rho/ref_rho_opa)**expo_rho_opa* &
+                (TT/ref_temp_opa)**expo_temp_opa
+            kappa2=kappa20_cst(inu)+kappa2_cst(inu)* &
+                (rho/ref_rho_opa)**expo2_rho_opa* &
+                (TT/ref_temp_opa)**expo2_temp_opa
+            f(:,m,n,ikapparho)=rho/(1./kappa1+1./kappa2)
         enddo; enddo
 !
 !AB: the following looks suspicious with *_cgs
