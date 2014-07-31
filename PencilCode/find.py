@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2013-10-21
 #=======================================================================
-def time_average(datadir='./data', diagnostics=None, tmin=0):
+def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     """Finds the time average of each given diagnostic variable.
 
     Returned Values:
@@ -22,8 +22,10 @@ def time_average(datadir='./data', diagnostics=None, tmin=0):
             diagnostics but it and t are processed.
         tmin
             Starting time of the time average.
+        verbose
+            Directly print out the averages when True.
     """
-    # Chao-Chin Yang, 2013-10-24
+    # Chao-Chin Yang, 2014-07-31
 
     # Read the time series.
     from . import read
@@ -45,7 +47,8 @@ def time_average(datadir='./data', diagnostics=None, tmin=0):
         from numpy import sqrt
         mean = dtinv * integrate.simps(ts[diag][indices], ts.t[indices])
         stddev = sqrt(dtinv * integrate.simps((ts[diag][indices] - mean)**2, ts.t[indices]))
-        print("<", diag, "> = ", mean, "+/-", stddev)
+        if verbose:
+            print("<", diag, "> = ", mean, "+/-", stddev)
         return mean, stddev
 
     # Default diagnostics is all except it and t.
@@ -66,4 +69,3 @@ def time_average(datadir='./data', diagnostics=None, tmin=0):
         StdDev = namedtuple('StandardDeviation', diagnostics)
         mean, stddev = zip(*(stats(diag) for diag in diagnostics))
         return Mean(*mean), StdDev(*stddev)
-
