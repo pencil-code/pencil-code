@@ -173,13 +173,22 @@ if (igamma gt 0) then begin
   varcontent[igamma].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
-default, ics2, 0
-if (ics2 gt 0) then begin
-  varcontent[ics2].variable   = 'Sound speed squared (cs2) as auxiliary variable'
-  varcontent[ics2].idlvar     = 'cs2'
-  varcontent[ics2].idlinit    = INIT_SCALAR
-  varcontent[ics2].idlvarloc  = 'cs2_loc'
-  varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
+default, inabad, 0
+if (inabad gt 0) then begin
+  varcontent[inabad].variable   = 'adiabatic logarithmic temperature gradient (nabad) as auxiliary variable'
+  varcontent[inabad].idlvar     = 'nabad'
+  varcontent[inabad].idlinit    = INIT_SCALAR
+  varcontent[inabad].idlvarloc  = 'nabad_loc'
+  varcontent[inabad].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ics, 0
+if (ics gt 0) then begin
+  varcontent[ics].variable   = 'Sound speed (cs) as auxiliary variable'
+  varcontent[ics].idlvar     = 'cs'
+  varcontent[ics].idlinit    = INIT_SCALAR
+  varcontent[ics].idlvarloc  = 'cs_loc'
+  varcontent[ics].idlinitloc = INIT_SCALAR_LOC
 endif
 ;
 default, ilnrho, 0
