@@ -121,6 +121,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: deltaT
+      integer :: i
 !
 !  Amplitude of fluctuation
 !
@@ -134,6 +135,19 @@ module InitialCondition
           f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + (n-n1)*deltaT
         enddo
       enddo
+!
+!  Apply boundaries - lateral (periodic)
+!
+      f(1   :l1-1,:,:,iTT) = f(l2i:l2,:,:,iTT)
+      f(l2+1:mx  ,:,:,iTT) = f(l1:l1i,:,:,iTT)
+!
+!  Bottom: zero gradient
+!
+      do i=1,nghost; f(:,:,n1-i,iTT)=f(:,:,n1+i,iTT); enddo
+!
+!  Top: constant gradient 
+!
+      do i=1,nghost; f(:,:,n2+i,iTT)=2*f(:,:,n2,iTT) - f(:,:,n2-i,iTT); enddo
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
