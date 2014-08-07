@@ -437,7 +437,7 @@ module Equ
             advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
           endif
           if (lspecial) then
-            diffus_special=0.0
+            advec_special=0.0; diffus_special=0.0
           endif
         endif
 !
@@ -662,6 +662,7 @@ module Equ
           if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
+          if (lspecial) maxadvec=maxadvec+advec_special
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
             advec2=0.0
             if (ldensity) advec2=advec2+advec_cs2
