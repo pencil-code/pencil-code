@@ -1878,13 +1878,14 @@ module Density
 !
 !  Continuity equation.
 !
+      density_rhs=0.
       if (lcontinuity_gas .and. .not. lweno_transport .and. &
           .not. lffree .and. .not. lreduced_sound_speed .and. &
           ieos_profile=='nothing') then
         if (ldensity_nolog) then
-          density_rhs= - p%ugrho   - p%rho*p%divu
+          density_rhs= density_rhs - p%ugrho   - p%rho*p%divu
         else
-          density_rhs= - p%uglnrho - p%divu
+          density_rhs= density_rhs - p%uglnrho - p%divu
         endif
       else
         density_rhs=0.
@@ -1894,7 +1895,7 @@ module Density
 !
       if (lcontinuity_gas .and. lweno_transport) then
         if (ldensity_nolog) then
-          density_rhs= - p%transprho
+          density_rhs= density_rhs - p%transprho
         else
           call fatal_error('dlnrho_dt','can not do WENO transport for '// &
               'logarithmic density!')
@@ -1908,13 +1909,13 @@ module Density
 !
      if (lcontinuity_gas .and. ieos_profile=='surface_z') then
        if (ldensity_nolog) then
-         density_rhs= - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+         density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
          if (ldensity_profile_masscons) &
-             density_rhs= -dprofz_eos(n)*p%rho*p%uu(:,3)
+             density_rhs= density_rhs -dprofz_eos(n)*p%rho*p%uu(:,3)
        else
-         density_rhs= - profz_eos(n)*(p%uglnrho + p%divu)
+         density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
          if (ldensity_profile_masscons) &
-             density_rhs= -dprofz_eos(n)*p%uu(:,3)
+             density_rhs= density_rhs -dprofz_eos(n)*p%uu(:,3)
        endif
      endif
 !
@@ -1922,17 +1923,17 @@ module Density
 !
       if (lcontinuity_gas .and. lffree) then
         if (ldensity_nolog) then
-          density_rhs= - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
                        *(p%ugrho + p%rho*p%divu)
           if (ldensity_profile_masscons) &
-               density_rhs=-dprofx_ffree   *p%rho*p%uu(:,1) &
+               density_rhs=density_rhs -dprofx_ffree   *p%rho*p%uu(:,1) &
                            -dprofy_ffree(m)*p%rho*p%uu(:,2) &
                            -dprofz_ffree(n)*p%rho*p%uu(:,3)
         else
-          density_rhs= - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
                        *(p%uglnrho + p%divu)
           if (ldensity_profile_masscons) &
-               density_rhs=-dprofx_ffree   *p%uu(:,1) &
+               density_rhs=density_rhs -dprofx_ffree   *p%uu(:,1) &
                            -dprofy_ffree(m)*p%uu(:,2) &
                            -dprofz_ffree(n)*p%uu(:,3)
         endif
@@ -1943,9 +1944,9 @@ module Density
 !
       if (lcontinuity_gas .and. lreduced_sound_speed) then
         if (ldensity_nolog) then
-          density_rhs = - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
+          density_rhs = density_rhs - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
         else
-          density_rhs = - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
+          density_rhs = density_rhs - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
         endif
       endif
 !
