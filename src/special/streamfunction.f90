@@ -44,19 +44,20 @@ module Special
   real ::  T_m = 270.      ! Melting tempertature in K
   real ::  eta_0 = 1d13    ! Viscosity at melting temperature in Pa s
   real ::  Avisc = 4.00    ! constant
-  !real ::  dslab_km = 20.  ! Ice shell thikness in km
+  real ::  dslab_km = 20.  ! Ice shell thikness in km
 !
 !  Stuff for tidal heating
 !
   real :: mu_ice = 4d9     ! Rigidity of ice in Pa s
   real :: epsi_0 = 2.1d-5  ! Amplitude of original tidal flexing
   real :: EuropaPeriod = 3.0682204d5 ! Period of Europa, in seconds  
+  real :: mu1_ice, OmegaEuropa
 !
 !  These are the needed internal "pencils".
 !
   type InternalPencils
      real, dimension(nx,3)   :: uu
-     real, dimension(nx) :: ugTT,u2
+     real, dimension(nx) :: ugTT,u2,qtidal,eta
   endtype InternalPencils
 !
   type (InternalPencils) :: q
@@ -86,6 +87,7 @@ module Special
    integer :: idiag_uqxmin=0, idiag_uqxmax=0, idiag_uqxrms=0, idiag_uqxm=0, idiag_uqx2m=0
    integer :: idiag_uqzmin=0, idiag_uqzmax=0, idiag_uqzrms=0, idiag_uqzm=0, idiag_uqz2m=0
    integer :: idiag_uq2m=0, idiag_uqrms=0, idiag_uqmax=0
+   integer :: idiag_qtidalmin=0, idiag_qtidalmax=0, idiag_qtidalm=0
 !
    !interface sigma_to_mdot
    !  module procedure sigma_to_mdot_mn
@@ -139,6 +141,9 @@ module Special
       if (alpha_sor == impossible) &
            alpha_sor= 2./(1+pi/nxgrid)
 !
+      mu1_ice=1./mu_ice
+      OmegaEuropa=1./EuropaPeriod
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -161,7 +166,7 @@ module Special
 !  Pre-calculate Rayleigh number
 !
       delta_T=f(lpoint,mpoint,n1,iTT)-f(lpoint,mpoint,n2,iTT) !Tbot-Tsurf
-      dslab = Lxyz(3)*1d3 !dslab_km*1d3, use units in km.
+      dslab = dslab_km*1d3
 !
       Ra = (gravity_z*rho0*alpha*delta_T*dslab**3)/(kappa*eta_0)
 !
@@ -181,6 +186,7 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_gTT)=.true.
+      lpenc_requested(i_TT1)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -217,6 +223,12 @@ module Special
       call der(-f,ipsi,q%uu(:,3),1)
       q%uu(:,2)=0.
       call u_dot_grad(f,iTT,p%gTT,q%uu,q%ugTT)
+!
+      q%eta=eta_0*exp(Avisc*(T_m*p%TT1 - 1.))
+
+      !qnum = (epsi_0*omega)**2. * q%eta
+      !qden = 2*(1 + (omega*q%eta*mu1)**2.)
+      q%qtidal = .5*q%eta*(epsi_0*OmegaEuropa)**2 / (1+(OmegaEuropa*q%eta*mu1_ice)**2)
 !
       if (idiag_uq2m/=0.or.idiag_uqrms/=0.or.idiag_uqmax/=0) &
            q%u2=q%uu(:,1)**2 + q%uu(:,3)**2
@@ -444,7 +456,13 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) - q%ugTT
+!  Advection
+!
+      df(l1:l2,m,n,iTT)  = df(l1:l2,m,n,iTT) - q%ugTT
+!
+!  Tidal heating 
+!
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + q%qtidal
 !
       if (lfirst.and.ldt) then 
         advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
@@ -471,6 +489,10 @@ module Special
         if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
         if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uq2m,lsqrt=.true.)
         if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
+!
+        if (idiag_qtidalmin/=0) call max_mn_name(-q%qtidal,idiag_qtidalmin,lneg=.true.)
+        if (idiag_qtidalmax/=0) call max_mn_name( q%qtidal,idiag_qtidalmax)
+        if (idiag_qtidalm/=0)   call sum_mn_name( q%qtidal,idiag_qtidalm)
       endif
 !
       call keep_compiler_quiet(f)
@@ -547,7 +569,8 @@ module Special
       if (lreset) then
         idiag_uqxmin=0; idiag_uqxmax=0; idiag_uqxrms=0; idiag_uqxm=0; idiag_uqx2m=0
         idiag_uqzmin=0; idiag_uqzmax=0; idiag_uqzrms=0; idiag_uqzm=0; idiag_uqz2m=0
-        idiag_uq2m=0; idiag_uqrms=0; idiag_uqmax=0
+        idiag_uq2m=0; idiag_uqrms=0; idiag_uqmax=0; idiag_qtidalmin=0
+        idiag_qtidalmax=0; idiag_qtidalm=0
       endif
 !
       do iname=1,nname
@@ -566,6 +589,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'uq2m',idiag_uq2m)
         call parse_name(iname,cname(iname),cform(iname),'uqrms',idiag_uqrms)
         call parse_name(iname,cname(iname),cform(iname),'uqmax',idiag_uqmax)
+!
+        call parse_name(iname,cname(iname),cform(iname),'qtidalmin',idiag_qtidalmin)
+        call parse_name(iname,cname(iname),cform(iname),'qtidalmax',idiag_qtidalmax)
+        call parse_name(iname,cname(iname),cform(iname),'qtidalm',idiag_qtidalm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -591,6 +618,10 @@ module Special
         write(3,*) 'uq2m=',idiag_uq2m
         write(3,*) 'uqrms=',idiag_uqrms
         write(3,*) 'uqmax=',idiag_uqmax
+!
+        write(3,*) 'qtidalmin=',idiag_qtidalmin
+        write(3,*) 'qtidalmax=',idiag_qtidalmax
+        write(3,*) 'qtidalm=',idiag_qtidalm
       endif
 
 !
