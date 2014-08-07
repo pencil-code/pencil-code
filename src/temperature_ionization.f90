@@ -83,8 +83,13 @@ module Energy
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
+  integer :: idiag_puzmz=0    ! XYAVG_DOC: $\left<p u_z \right>_{xy}$
+  integer :: idiag_pr1mz=0    ! XYAVG_DOC: $\left<p/\varrho \right>_{xy}$
+  integer :: idiag_eruzmz=0   ! XYAVG_DOC: $\left<e \varrho u_z \right>_{xy}$
+  integer :: idiag_ffakez=0   ! XYAVG_DOC: $\left<\varrho u_z c_p T \right>_{xy}$
   integer :: idiag_mumz=0     ! XYAVG_DOC: $\left<\mu\right>_{xy}$
   integer :: idiag_TTmz=0     ! XYAVG_DOC: $\left< T \right>_{xy}$
+  integer :: idiag_eemz=0     ! XYAVG_DOC: $\left< e \right>_{xy}$
 !
   contains
 !***********************************************************************
@@ -430,9 +435,33 @@ module Energy
 !
 !  Diagnostics
 !
+      if (idiag_puzmz) then
+          lpenc_diagnos(i_uu)=.true.
+          lpenc_diagnos(i_pp)=.true.
+      endif
+!
+      if (idiag_pr1mz) then
+          lpenc_diagnos(i_pp)=.true.
+          lpenc_diagnos(i_rho1)=.true.
+      endif
+!
+      if (idiag_eruzmz/=0) then
+          lpenc_diagnos(i_ee)=.true.
+          lpenc_diagnos(i_rho)=.true.
+          lpenc_diagnos(i_uu)=.true.
+      endif
+!
+      if (idiag_ffakez/=0) then
+          lpenc_diagnos(i_rho)=.true.
+          lpenc_diagnos(i_uu)=.true.
+          lpenc_diagnos(i_cp)=.true.
+          lpenc_diagnos(i_TT)=.true.
+      endif
+!
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmz/=0) lpenc_diagnos(i_TT)=.true.
+      if (idiag_eemz/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
@@ -669,8 +698,13 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
+        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%cp*p%TT,idiag_ffakez)
+        call xysum_mn_name_z(p%ee*p%rho*p%uu(:,3),idiag_eruzmz)
+        call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_puzmz)
+        call xysum_mn_name_z(p%pp*p%rho1,idiag_pr1mz)
         call xysum_mn_name_z(1/p%mu1,idiag_mumz)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%ee,idiag_eemz)
       endif
 !
     endsubroutine denergy_dt
@@ -807,7 +841,8 @@ module Energy
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
-        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0
+        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_eemz=0
+        idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -836,8 +871,13 @@ module Energy
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ffakez',idiag_ffakez)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eruzmz',idiag_eruzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'puzmz',idiag_puzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'pr1mz',idiag_pr1mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'mumz',idiag_mumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eemz',idiag_eemz)
       enddo
 !
 !  write column where which variable is stored
