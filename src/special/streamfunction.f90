@@ -44,13 +44,19 @@ module Special
   real ::  T_m = 270.      ! Melting tempertature in K
   real ::  eta_0 = 1d13    ! Viscosity at melting temperature in Pa s
   real ::  Avisc = 4.00    ! constant
-  real ::  dslab_km = 20.  ! Ice shell thikness in km
+  !real ::  dslab_km = 20.  ! Ice shell thikness in km
+!
+!  Stuff for tidal heating
+!
+  real :: mu_ice = 4d9     ! Rigidity of ice in Pa s
+  real :: epsi_0 = 2.1d-5  ! Amplitude of original tidal flexing
+  real :: EuropaPeriod = 3.0682204d5 ! Period of Europa, in seconds  
 !
 !  These are the needed internal "pencils".
 !
   type InternalPencils
      real, dimension(nx,3)   :: uu
-     real, dimension(nx) :: ugTT
+     real, dimension(nx) :: ugTT,u2
   endtype InternalPencils
 !
   type (InternalPencils) :: q
@@ -58,10 +64,13 @@ module Special
   character (len=labellen), dimension(ninit) :: initpsi='nothing'
 !
   logical :: lprint_residual=.false.
+  
+  integer :: maxit=1000
+
 !
-  namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance
+  namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit
 !
-  namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance
+  namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit
 !
   real :: Ra ! Rayleigh number
 !
@@ -74,10 +83,9 @@ module Special
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
-   integer :: idiag_dtyear=0, idiag_sigmam=0
-   integer :: idiag_sigmamin=0, idiag_sigmamax=0, idiag_tmyr=0
-   integer :: idiag_sigmamx=0
-   integer :: maxit=1000
+   integer :: idiag_uqxmin=0, idiag_uqxmax=0, idiag_uqxrms=0, idiag_uqxm=0, idiag_uqx2m=0
+   integer :: idiag_uqzmin=0, idiag_uqzmax=0, idiag_uqzrms=0, idiag_uqzm=0, idiag_uqz2m=0
+   integer :: idiag_uq2m=0, idiag_uqrms=0, idiag_uqmax=0
 !
    !interface sigma_to_mdot
    !  module procedure sigma_to_mdot_mn
@@ -131,6 +139,9 @@ module Special
       if (alpha_sor == impossible) &
            alpha_sor= 2./(1+pi/nxgrid)
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f,lstarting_in)
@@ -146,20 +157,20 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lstarting_in
       real :: dslab,delta_T
-      real, dimension (nx) :: r
 !
 !  Pre-calculate Rayleigh number
 !
       delta_T=f(lpoint,mpoint,n1,iTT)-f(lpoint,mpoint,n2,iTT) !Tbot-Tsurf
-      dslab = dslab_km*1d3
+      dslab = Lxyz(3)*1d3 !dslab_km*1d3, use units in km.
 !
       Ra = (gravity_z*rho0*alpha*delta_T*dslab**3)/(kappa*eta_0)
 !
       if (lroot) print*,'Rayleigh number=',Ra
 !
       call gaunoise(amplpsi,f,ipsi)
-!
       call solve_for_psi(f)
+!
+      call keep_compiler_quiet(lstarting_in)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -197,21 +208,18 @@ module Special
       use Sub, only: u_dot_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: tmp_vec
-      real, dimension (nx) :: tmp_scl
       type (pencil_case) :: p
 !
       intent(inout) :: f
       intent(inout) :: p
 !
-      do n=n1,n2
-        do m=m1,m2
-          call der( f,ipsi,q%uu(:,1),3)
-          call der(-f,ipsi,q%uu(:,3),1)
-          q%uu(:,2)=0.
-          call u_dot_grad(f,iTT,p%gTT,q%uu,q%ugTT)
-        enddo
-      enddo
+      call der( f,ipsi,q%uu(:,1),3)
+      call der(-f,ipsi,q%uu(:,3),1)
+      q%uu(:,2)=0.
+      call u_dot_grad(f,iTT,p%gTT,q%uu,q%ugTT)
+!
+      if (idiag_uq2m/=0.or.idiag_uqrms/=0.or.idiag_uqmax/=0) &
+           q%u2=q%uu(:,1)**2 + q%uu(:,3)**2
 !
       call keep_compiler_quiet(p)
 !
@@ -249,6 +257,7 @@ module Special
       call calc_viscosity(f,eta)
 !
       do while (residual > tolerance*rms_psi)
+      !do while (icount < maxit)
 !
 !  Calculate psi via SOR
 !
@@ -263,12 +272,11 @@ module Special
 !
         icount=icount+1
         if (lprint_residual) &
-             print*, icount,residual,rms_psi
+             print*, icount,residual,tolerance*rms_psi
 !
         if (icount >= maxit) &
              call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
 !
-        !residual=0.
       enddo
 !
       do m=m1,m2
@@ -285,50 +293,52 @@ module Special
       real, dimension (mx,mz), intent(in) :: eta
       real, dimension (mx,mz) :: psi,psi_old
       real, dimension (nx,nz) :: tmp
-      real, dimension (nx) :: aa, bb, cc, u, aout
+      real :: aa, bb, cc, u, aout, dTTdx
       real :: v_1, v_2, v_3, v_4, v_5, v
-      real, dimension (nx) :: dx1, dTTdx
-      real :: v51,v52,v53,ddx,psi_ast,dpsi
+      real :: v51,v52,v53,dx1,dz1,psi_ast,dpsi
       real, intent(out) :: residual
-      integer :: i,inghost
+      integer :: i
 !
       psi_old=psi
 !
-      do n=n1,n2
+      do i=l1,l2
         do m=m1,m2
-          dx1=dx_1(l1:l2)
+          do n=n1,n2
 !
-          call f_function(eta,aout) ; aa =      aout/eta(l1:l2,n)
-          call g_function(eta,aout) ; bb =      aout/eta(l1:l2,n)
-          call der(f,iTT,dTTdx,1)   ; cc = -Ra*dTTdx/eta(l1:l2,n)
-          u = 20.*dx1**4 + 4.*bb*dx1**2
+            dx1=dx_1(i)
+            dz1=dz_1(n)
 !
-          do i=l1,l2
-            inghost=i-l1+1
-            ddx=dx1(inghost)
-            v_1 = ( psi(i,n+1) +    psi(i,n-1) -    psi(i+1,n) - psi(i-1,n)) * ddx**2
-            v_2 = ( psi(i,n+2) - 4.*psi(i,n+1) - 4.*psi(i,n-1) + psi(i,n-2)) * ddx**4
-            v_3 = ( psi(i+2,n) - 4.*psi(i+1,n) - 4.*psi(i-1,n) + psi(i-2,n)) * ddx**4
-            v_4 = (-psi(i-1,n) -    psi(i,n-1) +    psi(i-1,n-1)) * ddx**2
+!  These quantities do not depend on psi
+!
+            call f_function(eta,aout,i,n) ; aa =      aout/eta(i,n)
+            call g_function(eta,aout,i,n) ; bb =      aout/eta(i,n)
+            !call der(f,iTT,dTTdx,1) 
+            dTTdx=dx1/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
+                          -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
+                          +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
+            cc = -Ra*dTTdx/eta(i,n)
+            u = 2*aa*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + 4.*bb*dx1*dz1 + 8.*dx1**2*dz1**2
+!
+!  These do, and psi is updated on the fly. So, do it swiping, so that psi(i-1), that is updated, gets used for psi(i)
+!
+            v_1 = (psi(i,n+1) + psi(i,n-1))*dz1**2 - (psi(i+1,n) + psi(i-1,n)) * dx1**2
+            v_2 = ( psi(i,n+2) - 4.*psi(i,n+1) - 4.*psi(i,n-1) + psi(i,n-2))   * dz1**4
+            v_3 = ( psi(i+2,n) - 4.*psi(i+1,n) - 4.*psi(i-1,n) + psi(i-2,n))   * dx1**4
+            v_4 = (-psi(i-1,n) -    psi(i,n-1) +    psi(i-1,n-1)) * dx1*dz1
 !
             v51 = psi(i+1,n+1) - 2.*psi(i,n+1) + psi(i-1,n+1)
             v52 = psi(i+1,n  )                 + psi(i-1,n  )
             v53 = psi(i+1,n-1) - 2.*psi(i,n-1) + psi(i-1,n-1)
-            v_5 = (v51 - 2.*v52 + v53) * ddx**4
+            v_5 = (v51 - 2.*v52 + v53) * dx1**2*dz1**2
 !
-            v = aa(inghost)*v_1 + v_2 + v_3 + 4.*bb(inghost)*v_4 + 2.*v_5
+            v = aa*v_1 + v_2 + v_3 + 4.*bb*v_4 + 2.*v_5
 !
-            psi_ast=(cc(inghost)-v)/u(inghost)
+            psi_ast=(cc-v)/u
 !
             dpsi = psi_ast - psi_old(i,n)
             psi(i,n) = alpha_sor*dpsi + psi_old(i,n)
+!
           enddo
-!
-          !if (n==n2-1) then 
-          !  print*,v_1!(psi_old(l1:l2,n-1) - psi_old(l1+1:l2+1,n) - psi_old(l1-1:l2-1,n))*ddx**2
-          !  stop
-          !endif
-!
         enddo
       enddo
 !
@@ -348,29 +358,44 @@ module Special
 !
     endsubroutine calc_viscosity
 !***********************************************************************
-    subroutine f_function(a,aout)
+    subroutine f_function(a,aout,i,n)
 !
 !  Calculate F = dz2 - dx2
 !
-      real, dimension(mx,mz) :: a
-      real, dimension(nx) :: ax,az,aout
+      real, dimension(mx,mz), intent(in) :: a
+      integer, intent(in) :: i,n
+      real :: df2x,df2z,aout,fac
 !
-      ax = (a(l1+1:l2+1,n  ) - 2.*a(l1:l2,n) + a(l1-1:l2-1,n  )) * dx_1(l1:l2)**2
-      az = (a(l1  :l2  ,n+1) - 2.*a(l1:l2,n) + a(l1  :l2  ,n-1)) * dz_1(  n  )**2
-!
-      aout = az-ax
+      fac=(1./180)*dx_1(i)**2
+      df2x=fac*(-490.0*a(i,n) &
+                +270.0*(a(i+1,n)+a(i-1,n)) &
+                - 27.0*(a(i+2,n)+a(i-2,n)) &
+                +  2.0*(a(i+3,n)+a(i-3,n)))
+
+      fac=(1./180)*dz_1(n)**2
+      df2z=fac*(-490.0*a(i,n) &
+                +270.0*(a(i,n+1)+a(i,n-1)) &
+                - 27.0*(a(i,n+2)+a(i,n-2)) &
+                +  2.0*(a(i,n+3)+a(i,n-3)))
+
+      aout = df2z-df2x
+
+      !ax = (a(i+1,n) - 2.*a(i,n) + a(i-1,n)) * dx_1(i)**2
+      !az = (a(i,n+1) - 2.*a(i,n) + a(i,n-1)) * dz_1(n)**2
+      !aout=az-ax
 !
     endsubroutine f_function
 !***********************************************************************
-    subroutine g_function(a,aout)
+    subroutine g_function(a,aout,i,n)
 !
 !   Calculate G = dzdx
 !
-      real, dimension (mx,mz) :: a
-      real, dimension (nx) :: aout
+      real, dimension (mx,mz), intent(in) :: a
+      integer, intent(in) :: i,n
+      real :: aout
 !
-      aout = ( (a(l1  :l2  ,n) - a(l1  :l2  ,n-1)) - &
-               (a(l1-1:l2-1,n) - a(l1-1:l2-1,n-1)) ) * dx_1(l1:l2)**2
+      aout = ( (a(i,n) - a(i,n-1)) - &
+               (a(i-1,n) - a(i-1,n-1)) ) * dx_1(i)*dz_1(n)
 !
     endsubroutine g_function
 !***********************************************************************
@@ -408,16 +433,48 @@ module Special
 !
       psi(1   :l1-1,:) = psi(l2i:l2,:)
       psi(l2+1:mx  ,:) = psi(l1:l1i,:)
-!      
+!
     endsubroutine update_bounds_psi
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
+!
+      use Diagnostics, only: max_mn_name,sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
       df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) - q%ugTT
+!
+      if (lfirst.and.ldt) then 
+        advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
+                      abs(q%uu(:,2))*dy_1(  m  )+ &
+                      abs(q%uu(:,3))*dz_1(  n  )       
+      endif
+      if (headtt.or.ldebug) &
+           print*,'special_calc_energy: max(advec_special) =',&
+           maxval(advec_special)
+!
+      if (ldiagnos) then 
+        if (idiag_uqxmin/=0) call max_mn_name(-q%uu(:,1)   ,idiag_uqxmin,lneg=.true.)
+        if (idiag_uqxmax/=0) call max_mn_name( q%uu(:,1)   ,idiag_uqxmax)
+        if (idiag_uqxm/=0)   call sum_mn_name( q%uu(:,1)   ,idiag_uqxm)
+        if (idiag_uqx2m/=0)  call sum_mn_name( q%uu(:,1)**2,idiag_uqx2m)              
+        if (idiag_uqxrms/=0) call sum_mn_name( q%uu(:,1)**2,idiag_uqxrms,lsqrt=.true.)
+!
+        if (idiag_uqzmin/=0) call max_mn_name(-q%uu(:,3)   ,idiag_uqzmin,lneg=.true.)
+        if (idiag_uqzmax/=0) call max_mn_name( q%uu(:,3)   ,idiag_uqzmax)
+        if (idiag_uqzm/=0)   call sum_mn_name( q%uu(:,3)   ,idiag_uqzm)
+        if (idiag_uqz2m/=0)  call sum_mn_name( q%uu(:,3)**2,idiag_uqz2m)
+        if (idiag_uqzrms/=0) call sum_mn_name( q%uu(:,3)**2,idiag_uqzrms,lsqrt=.true.)
+!
+        if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
+        if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uq2m,lsqrt=.true.)
+        if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
+      endif
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -488,11 +545,27 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        !idiag_dtyear=0
+        idiag_uqxmin=0; idiag_uqxmax=0; idiag_uqxrms=0; idiag_uqxm=0; idiag_uqx2m=0
+        idiag_uqzmin=0; idiag_uqzmax=0; idiag_uqzrms=0; idiag_uqzm=0; idiag_uqz2m=0
+        idiag_uq2m=0; idiag_uqrms=0; idiag_uqmax=0
       endif
 !
       do iname=1,nname
-        !call parse_name(iname,cname(iname),cform(iname),'dtyear',idiag_dtyear)
+        call parse_name(iname,cname(iname),cform(iname),'uqxmin',idiag_uqxmin)
+        call parse_name(iname,cname(iname),cform(iname),'uqxmax',idiag_uqxmax)
+        call parse_name(iname,cname(iname),cform(iname),'uqxrms',idiag_uqxrms)
+        call parse_name(iname,cname(iname),cform(iname),'uqxm',idiag_uqxm)
+        call parse_name(iname,cname(iname),cform(iname),'uqx2m',idiag_uqx2m)
+!
+        call parse_name(iname,cname(iname),cform(iname),'uqzmin',idiag_uqzmin)
+        call parse_name(iname,cname(iname),cform(iname),'uqzmax',idiag_uqzmax)
+        call parse_name(iname,cname(iname),cform(iname),'uqzrms',idiag_uqzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uqzm',idiag_uqzm)
+        call parse_name(iname,cname(iname),cform(iname),'uqz2m',idiag_uqz2m)
+!
+        call parse_name(iname,cname(iname),cform(iname),'uq2m',idiag_uq2m)
+        call parse_name(iname,cname(iname),cform(iname),'uqrms',idiag_uqrms)
+        call parse_name(iname,cname(iname),cform(iname),'uqmax',idiag_uqmax)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -501,6 +574,25 @@ module Special
         !call parse_name(inamex,cnamex(inamex),cformx(inamex),'sigmamx', &
         !    idiag_sigmamx)
       enddo
+!
+      if (lwr) then
+        write(3,*) 'uqxmin=',idiag_uqxmin
+        write(3,*) 'uqxmax=',idiag_uqxmax
+        write(3,*) 'uqxrms=',idiag_uqxrms
+        write(3,*) 'uqxm=',idiag_uqxm
+        write(3,*) 'uqx2m=',idiag_uqx2m
+!
+        write(3,*) 'uqzmin=',idiag_uqzmin
+        write(3,*) 'uqzmax=',idiag_uqzmax
+        write(3,*) 'uqzrms=',idiag_uqzrms
+        write(3,*) 'uqzm=',idiag_uqzm
+        write(3,*) 'uqz2m=',idiag_uqz2m
+!
+        write(3,*) 'uq2m=',idiag_uq2m
+        write(3,*) 'uqrms=',idiag_uqrms
+        write(3,*) 'uqmax=',idiag_uqmax
+      endif
+
 !
     endsubroutine rprint_special
 !***********************************************************************
