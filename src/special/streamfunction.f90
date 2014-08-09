@@ -45,13 +45,14 @@ module Special
   real ::  eta_0 = 1d13    ! Viscosity at melting temperature in Pa s
   real ::  Avisc = 4.00    ! constant
   real ::  dslab_km = 20.  ! Ice shell thikness in km
+  real :: Tbot=270, Tsurf=100
 !
 !  Stuff for tidal heating
 !
   real :: mu_ice = 4d9     ! Rigidity of ice in Pa s
   real :: epsi_0 = 2.1d-5  ! Amplitude of original tidal flexing
   real :: EuropaPeriod = 3.0682204d5 ! Period of Europa, in seconds  
-  real :: mu1_ice, OmegaEuropa
+  real :: mu1_ice, OmegaEuropa, kappa1
 !
 !  These are the needed internal "pencils".
 !
@@ -64,14 +65,14 @@ module Special
 !
   character (len=labellen), dimension(ninit) :: initpsi='nothing'
 !
-  logical :: lprint_residual=.false.
+  logical :: lprint_residual=.false.,ltidal_heating=.true.
   
   integer :: maxit=1000
 
 !
-  namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit
+  namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit,ltidal_heating
 !
-  namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit
+  namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,tolerance,maxit,ltidal_heating
 !
   real :: Ra ! Rayleigh number
 !
@@ -133,6 +134,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      real :: dslab,delta_T
 !
       if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then 
         call fatal_error("initialize_special","dx ne dz")
@@ -143,6 +145,17 @@ module Special
 !
       mu1_ice=1./mu_ice
       OmegaEuropa=1./EuropaPeriod
+!
+      kappa1=1./kappa
+!
+!  Pre-calculate Rayleigh number
+!
+      delta_T=Tbot-Tsurf
+      dslab = dslab_km*1d3
+!
+      Ra = (gravity_z*rho0*alpha*delta_T*dslab**3)/(kappa*eta_0)
+!
+      if (lroot) print*,'Rayleigh number=',Ra
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -161,16 +174,6 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lstarting_in
-      real :: dslab,delta_T
-!
-!  Pre-calculate Rayleigh number
-!
-      delta_T=f(lpoint,mpoint,n1,iTT)-f(lpoint,mpoint,n2,iTT) !Tbot-Tsurf
-      dslab = dslab_km*1d3
-!
-      Ra = (gravity_z*rho0*alpha*delta_T*dslab**3)/(kappa*eta_0)
-!
-      if (lroot) print*,'Rayleigh number=',Ra
 !
       call gaunoise(amplpsi,f,ipsi)
       call solve_for_psi(f)
@@ -224,11 +227,10 @@ module Special
       q%uu(:,2)=0.
       call u_dot_grad(f,iTT,p%gTT,q%uu,q%ugTT)
 !
-      q%eta=eta_0*exp(Avisc*(T_m*p%TT1 - 1.))
-
-      !qnum = (epsi_0*omega)**2. * q%eta
-      !qden = 2*(1 + (omega*q%eta*mu1)**2.)
-      q%qtidal = .5*q%eta*(epsi_0*OmegaEuropa)**2 / (1+(OmegaEuropa*q%eta*mu1_ice)**2)
+      if (ltidal_heating) then 
+        q%eta=eta_0*exp(Avisc*(T_m*p%TT1 - 1.))
+        q%qtidal = .5*q%eta*(epsi_0*OmegaEuropa)**2 / (1+(OmegaEuropa*q%eta*mu1_ice)**2)
+      endif
 !
       if (idiag_uq2m/=0.or.idiag_uqrms/=0.or.idiag_uqmax/=0) &
            q%u2=q%uu(:,1)**2 + q%uu(:,3)**2
@@ -462,7 +464,7 @@ module Special
 !
 !  Tidal heating 
 !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + q%qtidal
+      if (ltidal_heating) df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + q%qtidal
 !
       if (lfirst.and.ldt) then 
         advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
@@ -487,7 +489,7 @@ module Special
         if (idiag_uqzrms/=0) call sum_mn_name( q%uu(:,3)**2,idiag_uqzrms,lsqrt=.true.)
 !
         if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
-        if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uq2m,lsqrt=.true.)
+        if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uqrms,lsqrt=.true.)
         if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
 !
         if (idiag_qtidalmin/=0) call max_mn_name(-q%qtidal,idiag_qtidalmin,lneg=.true.)
