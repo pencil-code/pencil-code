@@ -28,6 +28,7 @@ module Initcond
   public :: beltrami_complex, beltrami_old, bhyperz
   public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
+  public :: stratification_xz
   public :: modes, modev, modeb, crazy, exponential
   public :: trilinear, baroclinic
   public :: triquad, isotdisk
@@ -2523,6 +2524,56 @@ module Initcond
       close(19)
 !
     endsubroutine stratification_x
+!***********************************************************************
+    subroutine stratification_xz(f,strati_type)
+!
+!  read mean stratification from "stratification_xz.dat"
+!
+!  09-aug-14/axel: adapted from stratification
+!
+      use EquationOfState, only: eoscalc,ilnrho_lnTT
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, parameter :: ntotal=nx*nprocx,mtotal=nx*nprocx+2*nghost
+      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real, dimension (nxgrid,nzgrid,mvar) :: slice
+      logical :: exist
+      integer :: stat
+      character (len=labellen) :: strati_type
+!
+!  read mean stratification and write into array
+!  if file is not found in run directory, search under trim(directory)
+!
+      inquire(file='stratification_xz.dat',exist=exist)
+      if (exist) then
+        open(19,file='stratification_xz.dat')
+      else
+        call fatal_error('stratification_xz','no input file')
+      endif
+!
+!  read data
+!  first the entire stratification file
+!
+      select case (strati_type)
+      case ('5variables')
+        read(19,"(8e10.3)",iostat=stat) slice
+        if (stat>=0) then
+          if (lroot) print*,"stratification_xz: ",slice(1,1,:)
+        else
+          call fatal_error('stratification_xz','error reading input file')
+        endif
+!
+      endselect
+      close(19)
+!
+!  select the right region for the processor
+!
+      do m=m1,m2
+        f(l1:l2,m,n1:n2,1:mvar)=slice(ipx*nx+1:(ipx+1)*nx,ipz*nz+1:(ipz+1)*nz,:)
+      enddo
+      if (lroot) print*,"var file initialized with slice data"
+!
+    endsubroutine stratification_xz
 !***********************************************************************
     subroutine planet_hc(ampl,f,eps,radius,gamma,cs20,rho0,width)
 !

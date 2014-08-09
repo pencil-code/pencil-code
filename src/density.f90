@@ -701,6 +701,7 @@ module Density
         case ('isothermal'); call isothermal_density(f)
         case ('stratification'); call stratification(f,strati_type)
         case ('stratification-x'); call stratification_x(f,strati_type)
+        case ('stratification-xz'); call stratification_xz(f,strati_type)
         case ('polytropic_simple'); call polytropic_simple(f)
         case ('stratification_tsallis'); call stratification_tsallis(f)
         case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const)
