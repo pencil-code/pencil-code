@@ -72,10 +72,9 @@ module Energy
   integer :: idiag_cp=0
   integer :: idiag_dtchi=0
   integer :: idiag_dtc=0      ! DIAG_DOC:
-  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
-                              ! DIAG_DOC:  \left< c_v T \right>$
+  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> $
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_ppm=0      ! DIAG_DOC:
+  integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right> $
   integer :: idiag_csm=0
   integer :: idiag_mum=0      ! DIAG_DOC:
   integer :: idiag_ppmax=0    ! DIAG_DOC:
@@ -90,6 +89,7 @@ module Energy
   integer :: idiag_mumz=0     ! XYAVG_DOC: $\left<\mu\right>_{xy}$
   integer :: idiag_TTmz=0     ! XYAVG_DOC: $\left< T \right>_{xy}$
   integer :: idiag_eemz=0     ! XYAVG_DOC: $\left< e \right>_{xy}$
+  integer :: idiag_ppmz=0     ! XYAVG_DOC: $\left< p \right>_{xy}$
 !
   contains
 !***********************************************************************
@@ -462,6 +462,7 @@ module Energy
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmz/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_eemz/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_ppmz/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
@@ -705,6 +706,7 @@ module Energy
         call xysum_mn_name_z(1/p%mu1,idiag_mumz)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         call xysum_mn_name_z(p%ee,idiag_eemz)
+        call xysum_mn_name_z(p%pp,idiag_ppmz)
       endif
 !
     endsubroutine denergy_dt
@@ -841,7 +843,7 @@ module Energy
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
-        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_eemz=0
+        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_eemz=0; idiag_ppmz=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
       endif
 !
@@ -878,6 +880,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'mumz',idiag_mumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eemz',idiag_eemz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
       enddo
 !
 !  write column where which variable is stored
