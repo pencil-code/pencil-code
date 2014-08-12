@@ -341,6 +341,8 @@ module Hydro
   integer :: idiag_oxm=0        ! DIAG_DOC:
   integer :: idiag_oym=0        ! DIAG_DOC:
   integer :: idiag_ozm=0        ! DIAG_DOC:
+  integer :: idiag_oxuzxm=0     ! DIAG_DOC: $\left<\omega_x u_{z,x} \right>$
+  integer :: idiag_oyuzym=0     ! DIAG_DOC: $\left<\omega_y u_{z,y} \right>$
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
@@ -1143,6 +1145,7 @@ module Hydro
           do m=m1,m2; do n=n1,n2
             f(:,m,n,iuz)=f(:,m,n,iuz)+ampluu(j)*sin(kx_uu*x)*exp(-10*z(n)**2)
           enddo; enddo
+        case ('hatwave-x'); call hatwave(ampluu(j),f,iux,widthuu,kx=kx_uu,power=initpower)
         case ('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu,ky=ky_uu,kz=kz_uu)
         case ('coswave-y'); call coswave(ampluu(j),f,iuy,kx=kx_uu,ky=ky_uu,kz=kz_uu)
         case ('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
@@ -1747,6 +1750,7 @@ module Hydro
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
+          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
           idiag_pvzm /=0 .or. idiag_quxom/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
@@ -2727,6 +2731,8 @@ module Hydro
         if (idiag_oxm /=0) call sum_mn_name(p%oo(:,1)   ,idiag_oxm)
         if (idiag_oym /=0) call sum_mn_name(p%oo(:,2)   ,idiag_oym)
         if (idiag_ozm /=0) call sum_mn_name(p%oo(:,3)   ,idiag_ozm)
+        if (idiag_oxuzxm/=0) call sum_mn_name(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxm)
+        if (idiag_oyuzym/=0) call sum_mn_name(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzym)
         if (idiag_oxoym/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,2),idiag_oxoym)
         if (idiag_oxozm/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,3),idiag_oxozm)
         if (idiag_oyozm/=0) call sum_mn_name(p%oo(:,2)*p%oo(:,3),idiag_oyozm)
@@ -4045,6 +4051,8 @@ module Hydro
         idiag_oxm=0
         idiag_oym=0
         idiag_ozm=0
+        idiag_oxuzxm=0
+        idiag_oyuzym=0
         idiag_oxoym=0
         idiag_oxozm=0
         idiag_oyozm=0
@@ -4182,6 +4190,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oxm',idiag_oxm)
         call parse_name(iname,cname(iname),cform(iname),'oym',idiag_oym)
         call parse_name(iname,cname(iname),cform(iname),'ozm',idiag_ozm)
+        call parse_name(iname,cname(iname),cform(iname),'oxuzxm',idiag_oxuzxm)
+        call parse_name(iname,cname(iname),cform(iname),'oyuzym',idiag_oyuzym)
         call parse_name(iname,cname(iname),cform(iname),'oxoym',idiag_oxoym)
         call parse_name(iname,cname(iname),cform(iname),'oxozm',idiag_oxozm)
         call parse_name(iname,cname(iname),cform(iname),'oyozm',idiag_oyozm)
