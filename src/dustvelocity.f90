@@ -44,7 +44,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.
   real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
-  real :: uudx0=0.0
+  real :: uudx0=0.0, uudy0=0.0, uudz0=0.0
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
   real :: kx_uud=1.0, ky_uud=1.0, kz_uud=1.0
@@ -76,8 +76,8 @@ module Dustvelocity
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 !
   namelist /dustvelocity_init_pars/ &
-      uudx0, ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
-      rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
+      uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, &
+      phase_udz, rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, gravx_dust, &
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
@@ -476,8 +476,12 @@ module Dustvelocity
           do k=1,ndustspec; f(:,:,:,iudx(k):iudz(k))=0.0; enddo
           if (lroot) print*,'init_uud: zero dust velocity'
 !          
-        case ('constx')
-          do l=1,mx; f(l,:,:,iudx(1)) = uudx0; enddo
+        case ('constant')
+          do l=1,mx
+            f(l,:,:,iudx(1)) = uudx0
+            f(l,:,:,iudy(1)) = uudy0
+            f(l,:,:,iudz(1)) = uudz0
+          enddo
 !
         case ('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
