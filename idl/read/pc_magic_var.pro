@@ -164,7 +164,10 @@ pro pc_magic_var, variables, tags, $
 ;  Check for param.ldensity_nolog, but only if param.ldensity=T
 ;
    density_var='lnrho' 
-   if (param.ldensity) then if (param.ldensity_nolog) then density_var='rho'
+   if (param.ldensity) then begin
+     if (where(strmatch(tag_names(param), 'LDENSITY_NOLOG')) lt 0) then density_var='rho' $
+     else if (param.ldensity_nolog) then density_var='rho'
+   endif
 ;
   for iv=0,n_elements(variables)-1 do begin
 ; x Coordinate
