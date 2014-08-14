@@ -229,6 +229,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer :: idiag_omegapm=0
 !
   contains
 !***********************************************************************
@@ -2299,7 +2300,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle position.
+!  Evolution of trajectory position is moved to trajectory momentum
+!  (dvvp_dt_pencil)
 !
 !  02-jan-05/anders: coded
 !
@@ -2309,8 +2311,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension (npar_loc) :: kk_mod, kk_mod1, wave_speed
-      real, dimension (npar_loc) :: phase_speed_x, phase_speed_y, phase_speed_z
 !
       logical :: lheader, lfirstcall=.true.
 !
@@ -2332,65 +2332,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
           'position equal to particle velocity.'
-!
-!  The rate of change of a particle's position is the particle's velocity.
-!
-      if (lcartesian_coords) then
-!
-!  cs*unitk
-!
-        kk_mod=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpy)**2+fp(1:npar_loc,ivpz)**2)
-        kk_mod1=1./kk_mod
-!
-!  wave speed
-!
-        wave_speed=sqrt(0.-fp(1:npar_loc,izp))
-!
-!  phase speed
-!
-        phase_speed_x=wave_speed*kk_mod1*fp(1:npar_loc,ivpx)
-        phase_speed_y=wave_speed*kk_mod1*fp(1:npar_loc,ivpy)
-        phase_speed_z=wave_speed*kk_mod1*fp(1:npar_loc,ivpz)
-!
-        if (nxgrid/=1) &
-            dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + phase_speed_x
-        if (nygrid/=1) &
-            dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + phase_speed_y
-        if (nzgrid/=1) &
-            dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + phase_speed_z
-!
-      elseif (.not.lparticles_nbody) then 
-!
-!  In the case that the N-body code is used, the update in polar grids 
-!  in done by transforming the variables first to Cartesian, to achieve a 
-!  better conservation of the Jacobi constant. We (Wlad and Joe) tested that 
-!  the Tisserand tails in the 3-body problem are not well-reproduced in cylindrical
-!  unless the update is done in Cartesian. The conservation of the Jacobi constant 
-!  then passes from 1e-4 to 1e-7, a significant improvement. 
-!
-        if (lcylindrical_coords) then
-          if (nxgrid/=1) &
-               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-               fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
-!
-        elseif (lspherical_coords.and.(.not.lparticles_nbody)) then
-!
-          if (nxgrid/=1) &
-               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-               fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
-               fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*&
-               sin(fp(1:npar_loc,iyp)))
-        endif
-!
-      endif
 !
 !  With shear there is an extra term due to the background shear flow.
 !
@@ -2951,12 +2892,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: grad_omega, liftforce, bforce,thermforce, uup
+      real, dimension (3) :: grad_omega, group_vel, liftforce, bforce,thermforce, uup
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par
-      real :: kk_mod, wave_speed
+      real :: kk_mod, kk_mod1, wave_speed, local_omega
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
@@ -3031,9 +2972,6 @@ k_loop:   do while (.not. (k>npar_loc))
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
             if ((.not.lnbody).and.(.not.lsink)) then
-              ix0=ineargrid(k,1)
-              iy0=ineargrid(k,2)
-              iz0=ineargrid(k,3)
 !
 !  The interpolated gas velocity is either precalculated, and stored in
 !  interp_uu, or it must be calculated here.
@@ -3084,13 +3022,34 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
 !
 !  kk_mod and wave speed
+!XXXXX
+              !kk_mod=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+              !wave_speed=sqrt(0.-fp(k,izp))
 !
-              kk_mod=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-              wave_speed=sqrt(0.-fp(k,izp))
+              call omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
 !
-              grad_omega(1) = 0.
-              grad_omega(2) = 0.
-              grad_omega(3) = -.5*kk_mod/wave_speed
+              !grad_omega(1) = 0.
+              !grad_omega(2) = 0.
+              !grad_omega(3) = -.5*kk_mod/wave_speed
+!
+!  cs*unitk
+!
+        kk_mod=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+        kk_mod1=1./kk_mod
+!
+!  wave speed
+!
+        wave_speed=sqrt(0.-fp(k,izp))
+!
+!  group velocity (for sound with hydro)
+!
+        group_vel(1)=wave_speed*kk_mod1*fp(k,ivpx)+uup(1)
+        group_vel(2)=wave_speed*kk_mod1*fp(k,ivpy)+uup(2)
+        group_vel(3)=wave_speed*kk_mod1*fp(k,ivpz)+uup(3)
+!
+        if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
+        if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
+        if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - grad_omega
 !
@@ -3208,6 +3167,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
         if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
         if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
+        if (idiag_omegapm/=0)  call max_name(local_omega,idiag_omegapm)
         if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
         if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
         if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
@@ -4746,6 +4706,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
+        idiag_omegapm=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_epspmin=0; idiag_epspmax=0
         idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
@@ -4771,6 +4732,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
+        call parse_name(iname,cname(iname),cform(iname),'omegapm',idiag_omegapm)
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
@@ -4930,5 +4892,86 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(f)
 !
     endsubroutine periodic_boundcond_on_aux
+!***********************************************************************
+    subroutine omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
+!
+      use Sub, only: dot
+! XXX
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: ix0,iy0,iz0,ix1,iy1,iz1,k
+      real, dimension (2,2,2) :: box_omega
+      real, dimension (3) :: grad_omega,kvec
+      real :: local_omega,udotk,grav=1.,cs,kmod
+      real :: xdist,ydist,zdist,xdistmod,ydistmod,zdistmod
+!
+      intent (in) :: f, fp, ineargrid, k
+      intent (out) :: grad_omega,local_omega
+!
+      ix0=ineargrid(k,1)
+      iy0=ineargrid(k,2)
+      iz0=ineargrid(k,3)
+      xdist=fp(k,ixp)-x(ix0)
+      ydist=fp(k,iyp)-y(iy0)
+      zdist=fp(k,izp)-z(iz0)
+!
+      ix1=ix0+int(sign(1.,xdist))
+      iy1=iy0+int(sign(1.,ydist))
+      iz1=iz0+int(sign(1.,zdist))
+!
+      kvec=fp(k,ivpx:ivpz)
+      kmod=sqrt(kvec(1)**2+kvec(2)**2+kvec(3)**2)
+      do iz=1,2
+      do iy=1,2
+      do ix=1,2
+        udotk=0.
+        if(lhydro) call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,iux:iuz),kvec,udotk)
+        cs=sqrt((0.-z(iz+iz0-1))*grav)
+        box_omega(ix,iy,iz)=cs*kmod+udotk
+      enddo
+      enddo
+      enddo
+!
+      xdistmod=abs(xdist)*dx1grid(ix)
+      ydistmod=abs(ydist)*dy1grid(iy)
+      zdistmod=abs(zdist)*dz1grid(iz)
+      local_omega=(1.-xdistmod)*(1.-ydistmod)*(1.-zdistmod)*box_omega(1,1,1) &
+                 +(   xdistmod)*(1.-ydistmod)*(1.-zdistmod)*box_omega(2,1,1) &
+                 +(1.-xdistmod)*(   ydistmod)*(1.-zdistmod)*box_omega(1,2,1) &
+                 +(1.-xdistmod)*(1.-ydistmod)*(   zdistmod)*box_omega(1,1,2) &
+                 +(   xdistmod)*(   ydistmod)*(1.-zdistmod)*box_omega(2,2,1) &
+                 +(1.-xdistmod)*(   ydistmod)*(   zdistmod)*box_omega(1,2,2) &
+                 +(   xdistmod)*(1.-ydistmod)*(   zdistmod)*box_omega(2,1,2) &
+                 +(   xdistmod)*(   ydistmod)*(   zdistmod)*box_omega(2,2,2)
+!
+      grad_omega(1)=(-(1.-ydistmod)*(1.-zdistmod)*box_omega(1,1,1) &
+                     +(1.-ydistmod)*(1.-zdistmod)*box_omega(2,1,1) &
+                     -(   ydistmod)*(1.-zdistmod)*box_omega(1,2,1) &
+                     -(1.-ydistmod)*(   zdistmod)*box_omega(1,1,2) &
+                     +(   ydistmod)*(1.-zdistmod)*box_omega(2,2,1) &
+                     -(   ydistmod)*(   zdistmod)*box_omega(1,2,2) &
+                     +(1.-ydistmod)*(   zdistmod)*box_omega(2,1,2) &
+                     +(   ydistmod)*(   zdistmod)*box_omega(2,2,2))*dx1grid(ix)
+!
+      grad_omega(2)=(-(1.-xdistmod)*(1.-zdistmod)*box_omega(1,1,1) &
+                     -(   xdistmod)*(1.-zdistmod)*box_omega(2,1,1) &
+                     +(1.-xdistmod)*(1.-zdistmod)*box_omega(1,2,1) &
+                     -(1.-xdistmod)*(   zdistmod)*box_omega(1,1,2) &
+                     +(   xdistmod)*(1.-zdistmod)*box_omega(2,2,1) &
+                     +(1.-xdistmod)*(   zdistmod)*box_omega(1,2,2) &
+                     -(   xdistmod)*(   zdistmod)*box_omega(2,1,2) &
+                     +(   xdistmod)*(   zdistmod)*box_omega(2,2,2))*dy1grid(iy)
+!
+      grad_omega(3)=(-(1.-xdistmod)*(1.-ydistmod)*box_omega(1,1,1) &
+                     -(   xdistmod)*(1.-ydistmod)*box_omega(2,1,1) &
+                     -(1.-xdistmod)*(   ydistmod)*box_omega(1,2,1) &
+                     +(1.-xdistmod)*(1.-ydistmod)*box_omega(1,1,2) &
+                     -(   xdistmod)*(   ydistmod)*box_omega(2,2,1) &
+                     +(1.-xdistmod)*(   ydistmod)*box_omega(1,2,2) &
+                     +(   xdistmod)*(1.-ydistmod)*box_omega(2,1,2) &
+                     +(   xdistmod)*(   ydistmod)*box_omega(2,2,2))*dz1grid(iz)
+!
+    endsubroutine omega_disper
 !***********************************************************************
 endmodule Particles
