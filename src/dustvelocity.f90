@@ -48,7 +48,7 @@ module Dustvelocity
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
   real :: kx_uud=1.0, ky_uud=1.0, kz_uud=1.0
-  real :: rhods=1.0, nd0=1.0, md0=1.0, rhod0=1.0
+  real :: rhods=1.0, nd0=1.0, md0=1.0, rhod0=1.0, mu_ext=0.
   real :: ad0=0.0, ad1=0.0, dimd1=0.333333, deltamd=1.0
   real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
@@ -76,8 +76,9 @@ module Dustvelocity
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 !
   namelist /dustvelocity_init_pars/ &
-      uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, &
-      phase_udz, rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
+      uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, &
+      phase_udx, phase_udy, phase_udz, rhods, mu_ext, &
+      md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, gravx_dust, &
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
@@ -86,7 +87,7 @@ module Dustvelocity
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
-      ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
+      ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, & 
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, & 
       nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
@@ -236,33 +237,45 @@ module Dustvelocity
 !
         ustcst = sqrt(2* 2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
 !
-!  Dust physics parameters
+!  Dust physics parameters.
+!  Note that md(1) = md0*(1+deltamd)/2, so md0 = [2/(1+deltamd)] md(1).
+!  With md(1)=4/3.*pi*ad0**3*rhods, we have md0=8*pi*ad0**3*rhods/[3(1+deltamd)]
+!  So in practice we want to set ad1.
 !
         if (ad0/=0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
         if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
+        if (lroot) print*,'recalculated: md0=',md0
 !
-!  Mass bins
+!  Mass bins.
+!  Do we really need unit_md? When would it not be 1?
 !
         do k=1,ndustspec
           mdminus(k) = md0*deltamd**(k-1)
           mdplus(k)  = md0*deltamd**k
           md(k) = 0.5*(mdminus(k)+mdplus(k))
         enddo
+        ad=(0.75*md*unit_md/(pi*rhods))**onethird
+        if (lroot) print*,'initialize_dustvelocity: ad=',ad
 !
-!  calculate the betad here too DMDM 
+!  Calculate betad.
+!  By default (betad0=0), use Stokes formula, where Fd=6pi*mu_ext*ad*u.
+!  Here, mu_ext is the dynamic viscosity of the gas, which is normally nearly
+!  constant (better so than the kinematic one, which is given in the code
+!  and which is often chosen larger based on numerical considerations).
 !
         select case (draglaw)
         case ('stokes_varmass')
-          if (lroot) print*, 'initialize_dustvelocity: '// &
-            'draglaw=',draglaw
-          if (betad0 .ne. 0) then
-            do k=1,ndustspec
-              betad(k) = betad0*md(k)**(-2./3.)
-            enddo
-            if (lroot) print*,'initialize_dustvelocity: betad=',betad
+          if (lroot) print*,'initialize_dustvelocity: draglaw=',draglaw
+          if (betad0/=0) then
+            betad=betad0*md**(-2./3.)
+          elseif (mu_ext/=0) then
+            betad=4.5*mu_ext/(rhods*ad**2)
           else
-            call fatal_error('initialize_dustdensity','please choose a non-zero betad0')
+            call fatal_error('initialize_dustvelocity','betad not calculated')
           endif
+          if (lroot) print*,'initialize_dustvelocity: betad=',betad
+!
+!  Do nothing by default.
 !
         case default
           if (lroot) print*, 'initialize_dustvelocity: '// &
@@ -274,7 +287,7 @@ module Dustvelocity
         select case (dust_geometry)
 
         case ('sphere')
-          dimd1 = 0.333333
+          dimd1 = onethird
           if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
           call get_dustsurface
           call get_dustcrosssection
@@ -974,7 +987,6 @@ module Dustvelocity
         call identify_bcs('udy',iudy(1))
         call identify_bcs('udz',iudz(1))
       endif
-
 !
 !  Loop over dust species.
 !
