@@ -35,6 +35,7 @@ module Viscosity
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
   real :: C_smag=0.0, gamma_smag=0.0, nu_jump2=1.0
+  real :: znu_shock=1.0, widthnu_shock=0.1, nu_jump_shock=1.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
@@ -70,6 +71,7 @@ module Viscosity
   logical :: lvisc_nu_profr_twosteps=.false.
   logical :: lvisc_nut_from_magnetic=.false.
   logical :: lvisc_nu_shock=.false.
+  logical :: lvisc_nu_shock_profz=.false.
   logical :: lvisc_shock_simple=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
@@ -207,6 +209,7 @@ module Viscosity
       lvisc_nu_profr_twosteps=.false.
       lvisc_nut_from_magnetic=.false.
       lvisc_nu_shock=.false.
+      lvisc_nu_shock_profz=.false.
       lvisc_shock_simple=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
@@ -287,6 +290,12 @@ module Viscosity
         case ('nu-shock','shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
+          if (.not. lshock) &
+           call stop_it('initialize_viscosity: shock viscosity'// &
+                           ' but module setting SHOCK=noshock')
+        case ('nu-shock-profz')
+          if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)  with a vertical profile'
+          lvisc_nu_shock_profz=.true.
           if (.not. lshock) &
            call stop_it('initialize_viscosity: shock viscosity'// &
                            ' but module setting SHOCK=noshock')
@@ -412,7 +421,10 @@ module Viscosity
              C_smag==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient C_smag is zero!')
-        if (lvisc_nu_shock.and.nu_shock==0.0) &
+        if (lvisc_nu_shock .and.nu_shock==0.0) &
+            call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_shock is zero!')
+        if (lvisc_nu_shock_profz .and.nu_shock==0.0) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_shock is zero!')
         if (lvisc_shock_simple .and. nu_shock == 0.0) call fatal_error('initialize_viscosity', 'nu_shock is zero. ')
@@ -753,7 +765,7 @@ module Viscosity
            lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
-           lvisc_nu_profr_twosteps .or. &
+           lvisc_nu_profr_twosteps .or. lvisc_nu_shock_profz .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
@@ -842,6 +854,13 @@ module Viscosity
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      if (ldensity.and.lvisc_nu_shock_profz) then
+        lpenc_requested(i_graddivu)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
       shksmp: if (lvisc_shock_simple) then
         lpenc_requested(i_shock) = .true.
         lpenc_requested(i_gshock) = .true.
@@ -885,12 +904,19 @@ module Viscosity
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
+      if (lvisc_nu_shock_profz.and.idiag_epsK/=0) then
+        lpenc_diagnos(i_fvisc)=.true.
+        lpenc_diagnos(i_diffus_total)=.true.
+        lpenc_diagnos(i_shock)=.true.
+        lpenc_diagnos(i_divu)=.true.
+        lpenc_diagnos(i_rho)=.true.
+      endif
       if (lvisc_heat_as_aux) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
-      if ((idiag_meshRemax/=0.or.idiag_dtnu/=0).and.lvisc_nu_shock) then
+      if ((idiag_meshRemax/=0.or.idiag_dtnu/=0).and.(lvisc_nu_shock.or.lvisc_nu_shock_profz)) then
         lpenc_diagnos(i_shock)=.true.
       endif
       if (idiag_qfviscm/=0) then
@@ -941,8 +967,8 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
-      real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu
+      real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu, gradnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu, pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
@@ -1348,6 +1374,30 @@ module Viscosity
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
           if (lpencil(i_visc_heat)) &
               p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
+        endif
+      endif
+!
+!  viscous force: nu_shock with vertical profile
+!
+      if (lvisc_nu_shock) then
+        if (ldensity) then
+          pnu_shock = nu_shock + nu_shock*(nu_jump_shock-1.)* &
+                      step(p%z_mn,znu_shock,-widthnu_shock)
+!
+          gradnu_shock(:,1) = 0.
+          gradnu_shock(:,2) = 0.
+          gradnu_shock(:,3) = nu_shock*(nu_jump_shock-1.)* & 
+                            der_step(p%z_mn,znu_shock,-widthnu_shock)
+!
+          call multsv(p%divu,p%glnrho,tmp2)
+          tmp=tmp2 + p%graddivu
+          call multsv(pnu_shock*p%shock,tmp,tmp2)   
+          call multsv_add(tmp2,pnu_shock*p%divu,p%gshock,tmp)
+          call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
+          p%fvisc=p%fvisc+tmp
+          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+(pnu_shock*p%shock)
+          if (lpencil(i_visc_heat)) &
+              p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
         endif
       endif
 !
