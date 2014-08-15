@@ -2940,39 +2940,35 @@ module Magnetic
       fres=0.0
       etatotal=0.0
 !
-      explicit: if (.not. limplicit_resistivity) then
-!
 !  Uniform resistivity
 !
-        eta_const: if (lresi_eta_const) then
+      eta_const: if (lresi_eta_const) then
+        exp_const: if (.not. limplicit_resistivity) then
           if (lweyl_gauge) then
-            fres=fres-eta*mu0*p%jj
+            fres = fres - eta * mu0 * p%jj
           else
-            fres=fres+eta*p%del2a
+            fres = fres + eta * p%del2a
           endif
-          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
-          etatotal=etatotal+eta
-        endif eta_const
+          if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
+        end if exp_const
+        etatotal = etatotal + eta
+      endif eta_const
 !
 !  z-dependent resistivity
 !
-        eta_zdep: if (lresi_zdep) then
+      eta_zdep: if (lresi_zdep) then
+        exp_zdep: if (.not. limplicit_resistivity) then
           if (lweyl_gauge) then
-            fres=fres-eta_z(n)*mu0*p%jj
+            fres = fres - eta_z(n) * mu0 * p%jj
           else
-            do j=1,3
-              fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-            enddo
+            forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j) + geta_z(n,j) * p%diva
           endif
-          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
-          etatotal=etatotal+eta_z(n)
-        endif eta_zdep
-!
-      else explicit
-!
-        if (lresi_zdep) forall(j = 1:3) fres(:,j) = fres(:,j) + geta_z(n,j) * p%diva
-!
-      endif explicit
+          if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_z(n)
+        else exp_zdep
+          forall(j = 1:3) fres(:,j) = fres(:,j) + geta_z(n,j) * p%diva
+        endif exp_zdep
+        etatotal = etatotal + eta_z(n)
+      endif eta_zdep
 !
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
@@ -7664,10 +7660,9 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (limplicit_resistivity) then
-        if (lenergy) call fatal_error('split_update_magnetic', 'ohmic heating with implicit update is not implemented. ')
-        call integrate_diffusion(get_resistivity_implicit, f, iax, iaz)
-      endif
+!  Implicitly solve the resistive term.
+!
+      if (limplicit_resistivity) call integrate_diffusion(get_resistivity_implicit, f, iax, iaz)
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
