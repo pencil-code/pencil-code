@@ -316,7 +316,7 @@ program run
   endif
 !
 !  Read data.
-!  Snapshot data are saved in the tmp subdirectory.
+!  Snapshot data are saved in the data subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !  If we decided to use a new grid, we need to overwrite the data
 !  that we just read in from var.dat. (Note that grid information

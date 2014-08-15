@@ -120,6 +120,7 @@ module Particles
 !
 !  Interactions with special/shell
 !
+  integer :: nray=1
   integer :: k_shell=-1            !k associated with minshell (special/shell.f90)
   logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
 !
@@ -130,6 +131,7 @@ module Particles
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
+      nray, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
       beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
       nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
@@ -677,7 +679,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0
+      integer :: l, j, k, ix0, iy0, iz0, nsource, ipar1, ipar2, isource, k1
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
@@ -766,6 +768,37 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+!
+        case ('random-sources')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          nsource=npar_loc/nray
+          do isource=1,nsource
+            if (nxgrid/=1) call random_number_wrapper(fp(isource,ivpx))
+            if (nygrid/=1) call random_number_wrapper(fp(isource,ivpy))
+            if (nzgrid/=1) call random_number_wrapper(fp(isource,ivpz))
+          enddo
+          do isource=1,nsource
+            ipar1=(isource-1)*nray+1
+            ipar2=ipar1+nray-1
+            if (nxgrid/=1) &
+                fp(ipar1:ipar2,ixp)=xyz0_par(1)+fp(isource,ivpx)*Lxyz_par(1)
+            if (nygrid/=1) &
+                fp(ipar1:ipar2,iyp)=xyz0_par(2)+fp(isource,ivpy)*Lxyz_par(2)
+            if (nzgrid/=1) &
+                fp(ipar1:ipar2,izp)=xyz0_par(3)+fp(isource,ivpz)*Lxyz_par(3)
+          enddo
+!
+          do isource=1,nsource
+            ipar1=(isource-1)*nray+1
+            do k=1,nray
+              phi=2*pi*real(k)/real(nray)
+              k1=ipar1+k-1
+              fp(k1,ivpx)=amplvvp*cos(phi)
+              fp(k1,ivpy)=0.
+              fp(k1,ivpz)=amplvvp*sin(phi)
+            enddo
+          enddo
+print*,'fp=',fp(:,ivpz)
 !
         case ('random-circle')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -1317,6 +1350,18 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpy)=vpy3
               fp(k,ivpz)=vpz3
             endif
+          enddo
+!
+!  fill uniform circle (currently 2-D)
+!
+        case ('uniform-circle')
+          if (lroot) print*, 'init_particles for vvp: uniform-circle'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          do k=1,npar_loc
+            phi=2*pi*real(k)/real(npar_loc)
+            fp(k,ivpx)=fp(k,ivpx)+amplvvp*cos(phi)
+            fp(k,ivpz)=fp(k,ivpz)+amplvvp*sin(phi)
           enddo
 !
         case ('sinwave-phase')
