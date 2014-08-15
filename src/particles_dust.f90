@@ -2888,13 +2888,25 @@ k_loop:   do while (.not. (k>npar_loc))
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             if (.not.lnbody) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-              if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+              if (nxgrid/=1) then
+                dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
               else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+                dt1_advpx=0.0
               endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+              if (nygrid/=1) then
+                if (lshear) then
+                  dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+                else
+                  dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+                endif
+              else
+                dt1_advpy=0.0
+              endif
+              if (nzgrid/=1) then
+                dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+              else
+                dt1_advpz=0.0
+              endif
               if (l_shell) then
                 dt1_advpx=abs(fp(k,ivpx))/k_shell
                 dt1_advpy=abs(fp(k,ivpy))/k_shell
