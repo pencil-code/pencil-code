@@ -42,11 +42,15 @@ module Particles_coagulation
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
   logical :: lgravitational_cross_section=.false.
   logical :: lzsomdullemond=.false.     ! use Zsom and Dullemond method
+  logical :: lconstant_deltav=.false.   ! use constant relative velocity
+  logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
   real, dimension(:), allocatable :: r_i_tot, cum_func_first_i
   real :: r_total = 0.0
   real :: delta_r = 0.0
+  real :: deltav = 1.0          ! relative velocity
+  real :: maxwell_param = 1.0   ! alpha parameter for maxwell distribution
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
@@ -55,7 +59,8 @@ module Particles_coagulation
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
-      minimum_particle_mass, minimum_particle_radius, lzsomdullemond
+      minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
+      lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param
 !
   contains
 !***********************************************************************
@@ -125,7 +130,7 @@ module Particles_coagulation
 !
 !  If using the Zsom-Dullemond Monte Carlo method
 !
-      if (lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
+      if(lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
         allocate(r_ik_mat(mpar_loc,mpar_loc))
         allocate(r_i_tot(mpar_loc))
         allocate(cum_func_first_i(mpar_loc))
@@ -154,7 +159,7 @@ module Particles_coagulation
 !
 !  If using the Zsom and Dullemond Monte Carlo method
 !
-      if (lzsomdullemond) then
+      if(lzsomdullemond) then
         call particles_coag_timestep_zd(fp)
         return
       end if
@@ -273,7 +278,7 @@ module Particles_coagulation
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
-      if (lzsomdullemond) then
+      if(lzsomdullemond) then
         call particles_coag_outcome_zd(fp)
         return
       end if
@@ -669,6 +674,7 @@ module Particles_coagulation
 !  (2008). Only use for kernel tests. Self-collision included.
 !
 !  15-nov-12/KWJ: coded
+!  08-jan-13/KWJ: modified
 !
       use General, only: random_number_wrapper
       ! Get all variables
@@ -697,6 +703,7 @@ module Particles_coagulation
         do while (.true.)
           do while (.true.)
 !  Get kernel for jl-pair. Rep. particle j and phys. particle l
+!  Theoretical kernels with analytic solutions
             if (lconstant_kernel_test) then
               kernel=kernel_cst
             elseif (llinear_kernel_test) then
@@ -705,6 +712,12 @@ module Particles_coagulation
             elseif (lproduct_kernel_test) then
               kernel=kernel_pro* &
                 four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(l,iap)**3
+!  Physical kernels 
+            elseif (lconstant_deltav) then    ! constant relative velocity
+              kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
+            elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
+              call particles_coag_maxwell(deltav, maxwell_param)
+              kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
             endif
 !  Calculate rates and cum. functions
             r_ik_mat(j,l) = fp(l,inpswarm)*kernel    ! rate matrix element
@@ -712,14 +725,14 @@ module Particles_coagulation
             cum_func_sec_ik(j,l) = r_i_tot(j)        ! cum. func. for phys. part.
 !
             l = l + 1                      ! go to next particle
-            if (l == npar + 1) exit        ! exit if last particle
+            if(l == npar + 1) exit             ! exit if last particle
           enddo
           r_total = r_total + r_i_tot(j)   ! total rate for all particles
           cum_func_first_i(j) = r_total    ! cum. func. for rep. part.
 !
           l = 1
           j = j + 1                        ! go to next particle
-          if (j == npar + 1) exit
+          if(j == npar + 1) exit
         enddo
       endif
 !
@@ -778,6 +791,7 @@ module Particles_coagulation
       i = 1
       do while (.true.)
         if (i /= j) then
+!  Theoretical kernels with analytic solutions
           if (lconstant_kernel_test) then
             kernel=kernel_cst
           elseif (llinear_kernel_test) then
@@ -786,7 +800,14 @@ module Particles_coagulation
           elseif (lproduct_kernel_test) then
             kernel=kernel_pro* &
                    four_pi_rhopmat_over_three2*fp(i,iap)**3*fp(j,iap)**3
+!  Physical kernels 
+          elseif (lconstant_deltav) then    ! constant relative velocity
+            kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
+          elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
+              call particles_coag_maxwell(deltav, maxwell_param)
+            kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
           endif
+!
           delta_r = fp(j,inpswarm)*kernel - &
                     r_ik_mat(i,j)               ! change in matrix element
           r_ik_mat(i,j) = fp(j,inpswarm)*kernel ! rate matrix element
@@ -795,10 +816,10 @@ module Particles_coagulation
 !  Only need to update cumulative function from element j and onwards
           cum_func_sec_ik(i, j:) = cum_func_sec_ik(i, j:) + &
                                    delta_r
-        end if
+        endif
 ! 
         i = i + 1            ! go to next superparticle
-        if (i == npar + 1) exit
+        if(i == npar + 1) exit
       enddo
 !
 !  Update i = j column.
@@ -813,7 +834,14 @@ module Particles_coagulation
         elseif (lproduct_kernel_test) then
           kernel=kernel_pro* &
                  four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
+!  Physical kernels 
+        elseif (lconstant_deltav) then    ! constant relative velocity
+          kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
+        elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
+          call particles_coag_maxwell(deltav, maxwell_param)
+          kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
         endif
+!
         r_ik_mat(j,k) = fp(k,inpswarm)*kernel   ! rate matrix element
 ! Update rate for representative particle j
         if (k == 1) then
@@ -875,6 +903,82 @@ module Particles_coagulation
       endif
 !
     endsubroutine particles_coagulation_bisection
+!***********************************************************************
+    subroutine particles_coag_maxwell_johnk(dv, alpha)
+!
+!  Generate a Maxwell-Boltzmann distributed relative velocity dv with 
+!  parameter alpha through the Johnk's algorithm. 
+!
+!  For particles following the gas: alpha = sqrt(k_B*T/m) 
+!  Mean velocity = 2*sqrt(2/pi)*alpha
+!
+!  14-jan-13/KWJ: coded
+!
+      use General, only: random_number_wrapper
+!
+      real :: dv, alpha
+      real :: r, w, w1, w2
+!
+      intent (in) :: alpha
+      intent (out) :: dv
+!
+      call random_number_wrapper(r)
+      dv = -log(r)
+!
+      do while (.true.)
+        call random_number_wrapper(r)
+        w1 = r*r
+        call random_number_wrapper(r)
+        w2 = r*r
+        w = w1 + w2
+        if(w <= 1.) exit
+      enddo
+!
+      call random_number_wrapper(r)
+      dv = dv - w1/w*log(r)
+!
+      dv = alpha*sqrt(2.*dv)
+!
+    endsubroutine particles_coag_maxwell_johnk
+!***********************************************************************
+    subroutine particles_coag_maxwell(dv, alpha)
+!
+!  Generate a Maxwell-Boltzmann distributed relative velocity dv with 
+!  parameter alpha through the algorithm described in Mohamed (2011). 
+!
+!  For particles following the gas: alpha = sqrt(k_B*T/m) 
+!  Mean velocity = 2*sqrt(2/pi)*alpha
+!
+!  14-jan-13/KWJ: coded
+!
+      use General, only: random_number_wrapper
+!
+      real :: dv, alpha
+      real :: y, r, tmp1, tmp2
+!     For findig random nr.
+!     C = 0.5, y0 = 1, k = 2/(C*sqrt(pi))*y0^(1/2)*e^(-C*y0)
+!     k = 4/sqrt(e*pi) ~ 1.37
+!     g = 2/(k*C*sqrt(pi)) = sqrt(e) ~ 1.649
+!     real :: g = 1.648721271
+      real :: e = 2.718281828
+!     Only really interested in g^2 = e
+!
+      intent (in) :: alpha
+      intent (out) :: dv
+!
+!
+      do while (.true.)
+        call random_number_wrapper(r)
+        y = -2.*log(r)
+        tmp1 = e*y*r*r
+        call random_number_wrapper(r)
+        tmp2 = r*r
+        if(tmp1.ge.tmp2) exit
+      enddo
+!
+      dv = alpha*sqrt(2.*y)
+!
+    endsubroutine particles_coag_maxwell
 !***********************************************************************
     subroutine read_particles_coag_run_pars(unit,iostat)
 !
