@@ -1380,7 +1380,7 @@ module Viscosity
 !
 !  viscous force: nu_shock with vertical profile
 !
-      if (lvisc_nu_shock) then
+      if (lvisc_nu_shock_profz) then
         if (ldensity) then
           pnu_shock = nu_shock + nu_shock*(nu_jump_shock-1.)* &
                       step(p%z_mn,znu_shock,-widthnu_shock)
