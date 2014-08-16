@@ -617,7 +617,6 @@ module Mpicomm
     integer :: sendcnt, recvcnt
     real :: send_array, recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag
-    intent(out) :: recv_array
 
     if (ALWAYS_FALSE) print*, sendtag, recvtag
 

@@ -435,12 +435,12 @@ module Energy
 !
 !  Diagnostics
 !
-      if (idiag_puzmz) then
+      if (idiag_puzmz/=0) then
           lpenc_diagnos(i_uu)=.true.
           lpenc_diagnos(i_pp)=.true.
       endif
 !
-      if (idiag_pr1mz) then
+      if (idiag_pr1mz/=0) then
           lpenc_diagnos(i_pp)=.true.
           lpenc_diagnos(i_rho1)=.true.
       endif

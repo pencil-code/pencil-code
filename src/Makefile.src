@@ -1103,9 +1103,9 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Axel on norlx51 (gfortran)
 ##
 #FC=mpif90 #(norlx51)
-#FFLAGS=-O3 -fno-underscoring #(norlx51)
+#FFLAGS=-O1 -fno-underscoring #(norlx51)
 #CC=mpicc #(norlx51)
-#CFLAGS=-O3 #(norlx51)
+#CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
 #LIBMPISUFFIX= #(norlx51)
 ##
