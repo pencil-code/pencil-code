@@ -229,7 +229,6 @@ module Density
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
-      use Mpicomm
       use Sub, only: stepdown,der_stepdown, erfunc
       use SharedVariables, only: put_shared_variable
 !
@@ -1239,16 +1238,15 @@ module Density
 !   31-aug-09/MR: adapted from calc_lhydro_pars
 !    3-oct-12/MR: global averaging corrected
 !    3-mar-14/MR: correction of total mass added
+!   17-aug-14/MR: finalize_aver used
 !
-      use Sub, only: grad
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: grad, finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
       real :: fact
       real, dimension (nx,3) :: gradlnrho
-      real, dimension (nz) :: temp
 !
       integer :: nl
 !
@@ -1263,18 +1261,11 @@ module Density
 !
           do m=m1,m2
             call grad(f,ilnrho,gradlnrho)
-            glnrhomz(nl)=glnrhomz(nl)+sum(gradlnrho(:,3))
+            glnrhomz(nl)=glnrhomz(nl)+fact*sum(gradlnrho(:,3))
           enddo
 !
         enddo
-!
-        if (nprocx>1.or.nprocy>1) then
-          call mpiallreduce_sum(glnrhomz,temp,nz,idir=12)
-          glnrhomz = temp
-        endif
-!
-        glnrhomz = fact*glnrhomz
-!
+        call finalize_aver(nprocxy,12,glnrhomz)
       endif
 
       if (lconserve_total_mass .and. total_mass > 0.) then
@@ -1874,7 +1865,7 @@ module Density
 !  Identify module and boundary conditions.
 !
       call timing('dlnrho_dt','entered',mnloop=.true.)
-      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE dlnrho_dt'
+      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
 !  Continuity equation.
