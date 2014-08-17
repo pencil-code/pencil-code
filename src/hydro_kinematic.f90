@@ -390,7 +390,7 @@ module Hydro
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   08-nov-04/tony: coded
-!   12-sep-13/MR  : optional parameter lpenc added for possibility
+!   12-sep-13/MR  : optional parameter lpenc_loc added for possibility
 !                   to calculate less pencils than in the global setting
 !   20-sep-13/MR  : lpenc changed into list of indices in lpencil, penc_inds,
 !                   for which pencils are calculated, default: all
