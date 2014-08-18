@@ -27,7 +27,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     min=amin,extension=extension,nrepeat=nrepeat,wait=wait, $
     stride=stride,datadir=datadir,oldfile=oldfile,debug=debug, $
     proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir, $
-    global_scaling=global_scaling,shell=shell,r_int=r_int, $
+    global_scaling=global_scaling,automatic_scaling=automatic_scaling, $
+    shell=shell,r_int=r_int, $
     r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
     contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
     nsmooth=nsmooth, cubic=cubic, textsize=textsize, _extra=_extra, $
@@ -421,6 +422,11 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
   endif else begin
     if ( (t ge tmin) and (t le tmax) ) then begin
       if (istride eq stride) then begin
+;
+        if (keyword_set(automatic_scaling)) then begin
+          amax = max(plane2)
+          amin = min(plane2)
+        endif
 ;
 ;  Show image scaled between amin and amax and filling whole screen.
 ;
