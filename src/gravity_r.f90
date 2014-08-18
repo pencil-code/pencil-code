@@ -62,18 +62,19 @@ module Gravity
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
   logical :: lsecondary_body=.false.
+  logical :: lindirect_terms=.false.
 !
     integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot, lindirect_terms
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot, lindirect_terms
 !
   contains
 !***********************************************************************
@@ -484,8 +485,10 @@ module Gravity
 !
 !  Indirect terms
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+        if (lindirect_terms) then 
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+        endif
 !
 !  Coriolis force
 !
@@ -498,18 +501,26 @@ module Gravity
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
 !
       else if (lspherical_coords) then 
-        ! Indirect
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cos(z(n))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
+!
+!  Indirect terms
+!
+        if (lindirect_terms) then 
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cos(z(n))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
+        endif
 !
         c2 = 2*Omega_secondary*costh(m)
         s2 = 2*Omega_secondary*sinth(m)
-        ! Coriolis
+!
+!  Coriolis force
+!
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
-        ! Centrifugal
+!
+!  Centrifugal force
+!
         rrcyl_mn=x(l1:l2)*sinth(m)
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_secondary**2
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_secondary**2
