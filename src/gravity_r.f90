@@ -64,17 +64,17 @@ module Gravity
   logical :: lsecondary_body=.false.
   logical :: lindirect_terms=.false.
 !
-    integer :: iglobal_gg=0
+  integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot, lindirect_terms
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot,lindirect_terms
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot, lindirect_terms
+      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot,lindirect_terms
 !
   contains
 !***********************************************************************
