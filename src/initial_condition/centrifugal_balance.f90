@@ -115,8 +115,10 @@ module InitialCondition
   logical :: lcorrect_lorentzforce=.false.
   logical :: lpolynomial_fit_cs2=.false.
   logical :: ladd_noise_propto_cs=.false.
+  logical :: lcorotational_frame=.false.
   real :: ampluu_cs_factor=1d-3
   real :: widthbb1=0.0,widthbb2=0.0
+  real :: rp1=1.,OOcorot
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -127,7 +129,8 @@ module InitialCondition
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2
+       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
+       lcorotational_frame,rp1
 !
   contains
 !***********************************************************************
@@ -151,6 +154,12 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
 !
       Lxn=Lx-2*(rborder_int+rborder_ext)
+!
+      if (lcorotational_frame) then 
+        OOcorot=rp1**(-1.5)
+      else
+        OOcorot=0.
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -236,17 +245,17 @@ module InitialCondition
         endif
 !
         if (coord_system=='cartesian') then
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + (OO-OOcorot)*rr_cyl
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='spherical') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 0.
-          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + OO*rr_sph
+          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + (OO-OOcorot)*rr_sph
         endif
 !
       enddo
@@ -1284,7 +1293,7 @@ module InitialCondition
         tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
         tmp2=tmp1 + corr/rr_cyl
       elseif (lcylindrical_coords) then
-        tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+        tmp1=(f(l1:l2,m,n,iuy)/rr_cyl+OOcorot)**2
         tmp2=tmp1 + corr/rr_cyl
       elseif (lspherical_coords) then
         tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
@@ -1306,7 +1315,7 @@ module InitialCondition
         f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
         f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
       elseif (lcylindrical_coords) then
-        f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+        f(l1:l2,m,n,iuy)= (sqrt(tmp2)-OOcorot)*rr_cyl
       elseif (lspherical_coords) then
         f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
       endif

@@ -33,12 +33,16 @@ module InitialCondition
   real :: tm_bot=0.0,tm_top=impossible
   logical :: ladd_noise_propto_cs=.false. 
   real :: ampluu_cs_factor=0.01
+  logical :: lcorotational_frame=.false.
+  real :: rp1=1.
 !
   namelist /initial_condition_pars/ &
       g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
-      ladd_noise_propto_cs, ampluu_cs_factor
+      ladd_noise_propto_cs, ampluu_cs_factor, lcorotational_frame, &
+      rp1
+  
 !
   real :: ksi=1.
 !
@@ -92,7 +96,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
       real, dimension (mx) :: OOK2,OO2,tmp,H2
-      real :: p,q
+      real :: p,q,OOcorot
       integer, pointer :: iglobal_cs2
       integer :: ics2
 !
@@ -117,6 +121,9 @@ module InitialCondition
 !
       if (.not.lnumerical_mhsequilibrium) then 
 !
+        OOcorot=0.
+        if (lcorotational_frame) OOcorot=rp1**(-1.5)
+
         p=-density_power_law
         q=-temperature_power_law
 !
@@ -136,7 +143,7 @@ module InitialCondition
           tmp=1 + q*(1-sinth(m)) + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
           OO2=OOK2*tmp
 !
-          f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*sqrt(OO2)
+          f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*(sqrt(OO2)-OOcorot)
         enddo;enddo
 !
       endif
