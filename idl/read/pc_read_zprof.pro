@@ -9,9 +9,9 @@ IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
 ;
 ;  read expected dimension and processor number
 ;
-pc_read_dim,nzgrid=nzgrid,nprocz=nprocz,datadir=datadir
+pc_read_dim,nzgrid=nzgrid,nprocz=nprocz,nprocy=nprocy,nprocx=nprocx,datadir=datadir
 nz=nzgrid/nprocz
-if keyword_set(debug) then print,'nzgrid,nprocz=',nzgrid,nprocz
+if keyword_set(debug) then print,'nzgrid,nprocz,nprocy,nprocx=',nzgrid,nprocz,nprocy,nprocx
 ;
 ;  define full arrays
 ;
@@ -22,7 +22,7 @@ afull=fltarr(nzgrid)
 ;
 izcount=0
 for iprocz=0,nprocz-1 do begin
-  procname='/proc'+str(iprocz)
+  procname='/proc'+str(iprocz*nprocy*nprocx)
   filename=datadir+procname+'/zprof_'+varname+'.dat'
   openr,1,filename
     for iz=0,nz-1 do begin
