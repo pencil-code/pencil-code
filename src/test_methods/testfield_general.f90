@@ -926,7 +926,7 @@ module Testfield_general
       real, dimension(nx,3,njtest),      intent(IN)   :: uxbtestm
       external                                        :: set_bbtest
 !
-      real, dimension (nx,3)  :: uxB,bbtest,btest,uxbtest,daatest
+      real, dimension(nx,3)  :: uxB,bbtest,btest,uxbtest,daatest,uufluct 
 !
       integer :: jtest
 !
@@ -939,6 +939,10 @@ module Testfield_general
         if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
         if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
       endif
+!
+!  take fluctuating velocity from the main run
+!
+      uufluct=p%uu-uum
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -963,17 +967,27 @@ module Testfield_general
         if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
         if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
 !
-!  take fluctuating velocity from the main run, plug into u' x B^T
+!  plug fluctuating velocity into u x B^T
 !
-        call cross_mn(p%uu-uum,bbtest,uxB)
+        call cross_mn(uufluct,bbtest,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest+uxB 
 !
-        if (.not.lsoca) then
-
-          call curl(f,iaxtest,btest)
+        call curl(f,iaxtest,btest)
+!
+        if (lsoca) then             ! perhaps check whether uum is close to zero
+!
+!  add Umean x b^T 
+!
+          call cross_mn(uum,btest,uxbtest)
+          df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
+!
+        else
+!
+!  calculate U x b^T = (Umean + u) x b^T
+!
           call cross_mn(p%uu,btest,uxbtest)
 !
-!  subtract average emf, that is, add finally (U x btest)' = \mean{U} x btest + (u x btest)'
+!  subtract mean emf, that is, add finally (U x b^T)' = Umean x b^T + (u x b^T)'
 !
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                         +uxbtest-uxbtestm(:,:,jtest)
