@@ -67,16 +67,16 @@ module Testfield
      'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     '  /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_z=0, idiags_xz=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta123h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta123h)      ! alias names for selected diagnostics
 !
 !  work variables
 !
-  real, dimension(nx)              :: cx,sx
+  real, dimension(nx)              :: cx,sx                     !GPU => DEVICE
   real, dimension(nz)              :: cz,sz
-  real, dimension(nx,nz,3,3)       :: Minv
+  real, dimension(nx,nz,3,3)       :: Minv                      !GPU => DEVICE
   real, dimension(nx,nz,3,njtest)  :: uxbtestm
   logical, dimension(idiag_base_end):: twod_need_1d, twod_need_2d
   logical, dimension(2)            :: needed2d
@@ -277,9 +277,9 @@ module Testfield
       headtt=headtt_save
 !
       if (need_output) call calc_coefficients(idiags(1:idiag_base_end),idiags_z(1:idiag_base_end),idiags_xz(1:idiag_base_end), &
-                                              idiags_xz(idiag_Eij_start:idiag_Eij_stop), &
-                                              idiags(idiag_base_end+1:idiag_base_end+4), &
-                                              idiags(idiag_base_end+5:idiag_base_end+8), &
+                                              idiags(idiag_Eij_start:idiag_Eij_end),idiags_z(idiag_Eij_start:idiag_Eij_end),   &
+                                              idiags_xz(idiag_Eij_start:idiag_Eij_end), &
+                                              idiags(idiag_base_end+1:idiag_base_end+4),idiags(idiag_base_end+5:idiag_base_end+8),&
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
                                               twod_need_1d,twod_need_2d,needed2d,ny)
 !
