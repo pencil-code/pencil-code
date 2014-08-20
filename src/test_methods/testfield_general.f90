@@ -672,7 +672,8 @@ module Testfield_general
 
       endsubroutine calc_inverse_matrix
 !***********************************************************************
-    subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiag_Eij,idiag_alp11h,idiag_eta123h, &
+    subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiags_Eij,idiags_Eij_z,idiags_Eij_xz, &
+                                 idiag_alp11h,idiag_eta123h, &
                                  uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,ny)
 !  
 !  calculation of the turbulent coefficients for an average over one coordinate.
@@ -697,7 +698,7 @@ module Testfield_general
     Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x, fnamexz
     Use Sub, only: fourier_single_mode
 !
-    integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiag_Eij, &
+    integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiags_Eij, idiags_Eij_z, idiags_Eij_xz, &
                                              idiag_alp11h, idiag_eta123h
     logical, dimension(2),      intent(in):: needed2d
     logical, dimension(:),      intent(in):: twod_need_1d, twod_need_2d
@@ -727,9 +728,28 @@ module Testfield_general
         nl = n-n1+1
         jtest = 1
 !
-        do i=1,size(idiag_Eij),3                                            ! over all testfields
+        do i=1,size(idiags_Eij_xz),3                                         ! over all testfields
           do j=1,3                                                          ! over vector components
-            call ysum_xz(uxbtestm(:,nl,j,jtest)*ny,n,idiag_Eij(i+j-1))      ! but not over y, hence multiplied by ny
+            call ysum_xz(uxbtestm(:,nl,j,jtest)*ny,n,idiags_Eij_xz(i+j-1))  ! but not over y, hence multiplied by ny
+          enddo
+          jtest = jtest+1
+        enddo
+
+        lfirstpoint=.false.
+      enddo
+    endif
+!
+    if (ldiagnos) then
+
+      lfirstpoint=.true.
+      do n=n1,n2        
+
+        nl = n-n1+1
+        jtest = 1
+
+        do i=1,size(idiags_Eij),3
+          do j=1,3                                                          ! over vector components
+            call sum_mn_name(uxbtestm(:,nl,j,jtest)*ny,idiags_Eij(i+j-1))
           enddo
           jtest = jtest+1
         enddo
