@@ -63,7 +63,7 @@ module Testfield
      'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ' /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_x=0, idiags_xy=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_stop=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta122h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta122h)      ! alias names for selected diagnostics
@@ -316,7 +316,8 @@ module Testfield
                      19, 21, -20, 25, 27,-26,-22,-24, 23 /)
 !
       call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
-                              idiags(idiag_Eij_start:idiag_Eij_stop),    &
+                              idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
+                              idiags_xy(idiag_Eij_start:idiag_Eij_end), &
                               idiag_alp11h, idiag_eta122h, &
                               uxbtestm,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
                               twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
