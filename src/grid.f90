@@ -61,6 +61,7 @@ module Grid
 !  should suffice in most cases.
 !
 !  25-jun-04/tobi+wolf: coded
+!  20-aug-14/MR: minimal wavevectors k1xyz added
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -91,8 +92,12 @@ module Grid
 !
 !  Abbreviations
 !
-  x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
-  Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
+      x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
+      Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
+!
+!  minimal wavenumbers
+!
+      where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
 !  Set the lower boundary and the grid size.
 !

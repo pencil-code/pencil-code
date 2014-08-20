@@ -94,6 +94,7 @@ module Cdata
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
+  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !

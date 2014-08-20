@@ -75,7 +75,7 @@ module Forcing
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
 ! For random forcing
-  logical :: lavoid_xymean=.false.
+  logical :: lavoid_xymean=.false., lavoid_ymean=.false., lavoid_zmean=.false.
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
@@ -137,7 +137,7 @@ module Forcing
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
-       lavoid_xymean, omega_tidal, R0_tidal, phi_tidal
+       lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -946,8 +946,9 @@ module Forcing
 !  This forcing drives pressure waves
 !
 !  10-sep-01/axel: coded
-!   6-feb-13/MR: can discard of wavevectors [0,0,kz] by lavoid_yxmean
+!   6-feb-13/MR: discard wavevectors [0,0,kz] if lavoid_yxmean
 !  06-dec-13/nishant: made kkx etc allocatable
+!  20-aug-14/MR: discard wavevectors [kx,0,kz] if lavoid_ymean, [kx,ky,0] if lavoid_zmean
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
@@ -1004,7 +1005,15 @@ module Forcing
 !  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
 !  and look for a new one
 !
-        if ( .not.lavoid_xymean .or. abs(kkx(ik))>1.e-5 .or. abs(kky(ik))>1.e-5 ) exit
+        if ( lavoid_xymean ) then
+          if ( abs(kkx(ik))>.9*k1xyz(1) .or. abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_ymean ) then
+          if ( abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_zmean ) then
+          if ( abs(kkz(ik))>.9*k1xyz(3) ) exit
+        else
+          exit
+        endif
       enddo
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,lfirst_call
 !
