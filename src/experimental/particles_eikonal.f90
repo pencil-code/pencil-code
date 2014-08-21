@@ -1,6 +1,6 @@
 ! $Id: particles_dust.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
 !
-!  This module takes care of everything related to inertial particles.
+!  Eikonal solver, "particles" refer here to points on the trajectory.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -58,16 +58,13 @@ module Particles
   real :: tstart_dragforce_par=0.0
   real :: tstart_grav_par=0.0, tstart_grav_x_par=0.0
   real :: tstart_grav_z_par=0.0, tstart_grav_r_par=0.0
-  real :: tstart_liftforce_par=0.0
   real :: tstart_brownian_par=0.0
   real :: tstart_collisional_cooling=0.0
-  real :: tstart_sink_par=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0, rad_sphere=0.0
   real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
-  real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
-  real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
+  real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: particles_insert_rate=0.
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
@@ -79,7 +76,7 @@ module Particles
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
-  logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
+  logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_taucool=.false.
   logical :: lcollisional_cooling_rms=.false.
   logical :: lcollisional_cooling_twobody=.false.
@@ -95,10 +92,9 @@ module Particles
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: luse_tau_ap=.true.
   logical :: lbrownian_forces=.false.
-  logical :: lthermophoretic_forces=.false.
   logical :: lenforce_policy=.false., lnostore_uu=.true.
   logical :: ldt_grav_par=.true., ldt_adv_par=.true.
-  logical :: lsinkpoint=.false., lglobalrandom=.false.
+  logical :: lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcalc_uup=.false.
   logical :: lparticle_gravity=.true.
@@ -114,7 +110,6 @@ module Particles
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
-  character (len=labellen) :: thermophoretic_eq= 'nothing'
 !
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
@@ -148,24 +143,23 @@ module Particles
       ltau_coll_min_courant, coeff_restitution, tstart_collisional_cooling, &
       tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
-      lcollisional_heat, lcompensate_friction_increase, &
+      lcollisional_heat, &
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
-      ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, tstart_sink_par, &
-      lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
+      ldraglaw_steadystate, &
+      tstart_brownian_par, &
+      lbrownian_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
-      thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
-      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
+      lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, np_const, &
       rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
-      xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
-      lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
+      xp3, yp3, zp3, vpx3, vpy3, vpz3, &
+      lcalc_uup, temp_grad0, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom
 !
   namelist /particles_run_pars/ &
@@ -181,24 +175,24 @@ module Particles
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
+      ldragforce_heat, lcollisional_heat, &
       lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, ldraglaw_simple,&
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
-      ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, tstart_sink_par, &
+      ldraglaw_variable_density, ldraglaw_steadystate, &
+      tstart_brownian_par, &
       lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
-      brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
-      ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
-      rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
-      linsert_particles_continuously, particles_insert_rate, &
+      brownian_T0, lnostore_uu, ldt_grav_par, &
+      ldragforce_radialonly, &
+      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
+      particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
-      lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
-      thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
+      temp_grad0, &
+      cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell
 !
@@ -273,7 +267,7 @@ module Particles
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
           communicated=lcommunicate_np)
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
-          communicated=lparticles_sink.or.lcommunicate_rhop)
+          communicated=lcommunicate_rhop)
       if (lcalc_uup .or. ldragforce_stiff) then
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx=iuup; iupy=iuup+1; iupz=iuup+2
@@ -522,14 +516,6 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
-!  Fatal error if sink particle radius is zero or negative.
-!
-      if (lsinkparticle_1 .and. rsinkparticle_1<=0.0) then
-        if (lroot) print*, 'initialize_particles: sink particle radius is '// &
-            'zero or negative: ', rsinkparticle_1
-        call fatal_error('initialize_particles','')
-      endif
-!
 !  Particle self gravity for x,z,r direction
 !
       if ( tstart_grav_par > 0.0) then
@@ -551,12 +537,8 @@ module Particles
           lparticles_spin
       endif
       interp%loo=.false.
-      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
-          .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))
-      interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
-          .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
-      interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
-          .or. lthermophoretic_forces
+      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))
+      interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
 !
 !  Determine interpolation policies:
 !   Make sure that interpolation of uu is chosen in a backwards compatible
@@ -798,7 +780,6 @@ module Particles
               fp(k1,ivpz)=amplvvp*sin(phi)
             enddo
           enddo
-print*,'fp=',fp(:,ivpz)
 !
         case ('random-circle')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -2252,9 +2233,6 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_jxbr)=.true.
         lpenc_requested(i_fvisc)=.true.
       endif
-      if (lthermophoretic_forces) then
-        lpenc_requested(i_gTT)=.true.
-      endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2345,8 +2323,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of trajectory position is moved to trajectory momentum
-!  (dvvp_dt_pencil)
+!  Eikonal solver, "particles" now refer to points on the trajectory.
 !
 !  02-jan-05/anders: coded
 !
@@ -2473,11 +2450,6 @@ k_loop:   do while (.not. (k>npar_loc))
       if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
       endif
-!
-!  Gravity on the particles.
-!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
-!
-      if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
 !
 !  Diagnostic output
 !
@@ -2683,189 +2655,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine particle_gravity(f,df,fp,dfp,ineargrid)
-!
-!  Contribution of gravity to dvvp_dt
-!
-!  11-oct-12/dhruba: copied from dvvp_dt
-!
-      use Diagnostics
-      use EquationOfState, only: cs20
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      real, dimension(3) :: ggp
-      real :: rr=0, vv=0, OO2
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!
-      call keep_compiler_quiet(f,df)
-!
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-      if (lheader) then
-        print*,'dvvp_dt: Calculating gravity'
-      endif
-!
-!  Gravity in the x-direction.
-!
-      if (t>=tstart_grav_x_par) then
-!
-        select case (gravx_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
-                nu_epicycle2*fp(1:npar_loc,ixp)
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + &
-                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
-!
-        endselect
-!
-      endif
-!
-!  Gravity in the z-direction.
-!
-      if (t>=tstart_grav_z_par) then
-!
-        select case (gravz_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Constant gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                nu_epicycle2*fp(1:npar_loc,izp)
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + &
-                gravz*sin(kz_gg*fp(1:npar_loc,izp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
-!
-        endselect
-!
-      endif
-!
-!  Radial gravity.
-!
-      if (t>=tstart_grav_r_par) then
-!
-        select case (gravr_profile)
-!
-        case ('')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case ('zero')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case ('newtonian-central','newtonian')
-          if (lparticles_nbody) &
-              call fatal_error('dvvp_dt','You are using massive particles. '//&
-              'The N-body code should take care of the stellar-like '// &
-              'gravity on the dust. Switch off the '// &
-              'gravr_profile=''newtonian'' on particles_init')
-          if (lheader) &
-               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-          do k=1,npar_loc
-            if (lcartesian_coords) then
-              if (lcylindrical_gravity_par) then
-                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
-              else
-                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-              endif
-              OO2=rr**(-3.)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = -fp(k,iyp)*OO2
-              if (lcylindrical_gravity_par) then
-                ggp(3) = 0.
-              else
-                ggp(3) = -fp(k,izp)*OO2
-              endif
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lcylindrical_coords) then
-              if (lcylindrical_gravity_par) then 
-                rr=sqrt(fp(k,ixp)**2+gravsmooth2)
-              else
-                rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
-              endif
-              OO2=rr**(-3.)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0
-              if (lcylindrical_gravity_par) then
-                ggp(3) = 0.
-              else
-                ggp(3) = -fp(k,izp)*OO2
-              endif
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lspherical_coords) then
-              rr=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rr**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0; ggp(3) = 0.0
-              if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
-                   "No cylindrical gravity in spherical coordinates.")
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            endif
-!  Limit time-step if particles close to gravity source.
-            if (ldt_grav_par.and.(lfirst.and.ldt)) then
-              if (lcartesian_coords) then
-                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-              elseif (lcylindrical_coords) then
-                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
-              elseif (lspherical_coords) then
-                vv=abs(fp(k,ivpx))
-              endif
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
-            endif
-          enddo
-!
-        case default
-          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
-!
-        endselect
-!
-      endif
-      if (lfirstcall) lfirstcall=.false.
-!
-    endsubroutine particle_gravity
-!***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of particle position (called from main pencil loop).
@@ -2923,8 +2712,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  25-apr-06/anders: coded
 !
       use Diagnostics
-      use EquationOfState, only: cs20
-      use Particles_spin, only: calc_liftforce
+      use EquationOfState, only: cs20, ics
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
       use Particles_dragforce
@@ -2937,15 +2725,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: grad_omega, group_vel, liftforce, bforce,thermforce, uup
+      real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
       real, dimension(:), allocatable :: rep,stocunn
-      real :: rho1_point, tausp1_par, up2
+      real :: rho1_point, tausp1_par, up2, cs2p
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par
       real :: kk_mod, kk_mod1, wave_speed, local_omega
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
-      logical :: lnbody, lsink
+      logical :: lnbody
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -3009,41 +2797,72 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude massive nbody particles and sink particles from the drag.
+!  Exclude massive nbody particles from the drag.
 !
             lnbody=any(ipar(k)==ipar_nbody)
-            lsink =.false.
-            if (lparticles_sink) then
-              if (fp(k,iaps)>0.0) lsink=.true.
-            endif
-            if ((.not.lnbody).and.(.not.lsink)) then
+            if ((.not.lnbody)) then
 !
-!  The interpolated gas velocity is either precalculated, and stored in
-!  interp_uu, or it must be calculated here.
+!  The interpolated gas velocity is calculated here.
 !
-              if (.not.interp%luu) then
-                if (lhydro) then
-                  if (lparticlemesh_cic) then
-                    call interpolate_linear(f,iux,iuz, &
+              if (lhydro) then
+                if (lparticlemesh_cic) then
+                  call interpolate_linear(f,iux,iuz, &
+                    fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline(f,iux,iuz, &
                       fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-                  elseif (lparticlemesh_tsc) then
-                    if (linterpolate_spline) then
-                      call interpolate_quadratic_spline(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-                    else
-                      call interpolate_quadratic(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-                    endif
                   else
-                    uup=f(ix0,iy0,iz0,iux:iuz)
+                    call interpolate_quadratic(f,iux,iuz, &
+                      fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                   endif
-                elseif (l_shell) then
-                  call calc_gas_velocity_shell_call(k,uup,fp)
                 else
-                  uup=0.0
+                  uup=f(ix0,iy0,iz0,iux:iuz)
                 endif
               else
-                uup=interp_uu(k,:)
+                uup=0.0
+              endif
+!
+!  The interpolated magnetic field is calculated here.
+!
+              if (lmagnetic) then
+                if (lparticlemesh_cic) then
+                    call interpolate_linear(f,ibx,ibz, &
+                      fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline(f,ibx,ibz, &
+                        fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
+                  else
+                    call interpolate_quadratic(f,ibx,ibz, &
+                        fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
+                  endif
+                else
+                  bbp=f(ix0,iy0,iz0,ibx:ibz)
+                endif
+              else
+                bbp=0.0
+              endif
+!
+!  The interpolated sound speed s calculated here.
+!
+              if (leos) then
+  !             if (lparticlemesh_cic) then
+  !                 call interpolate_linear(f,ics,ics, &
+  !                   fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
+  !             elseif (lparticlemesh_tsc) then
+  !                 if (linterpolate_spline) then
+  !                   call interpolate_quadratic_spline(f,ics,ics, &
+  !                     fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
+  !                 else
+  !                   call interpolate_quadratic(f,ics,ics, &
+  !                     fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
+  !                 endif
+  !             else
+                    cs2p=f(ix0,iy0,iz0,ics)
+  !             endif
+              else
+                cs2p=0.0
               endif
 !
 !  Track particle state in terms of local gas velocity
@@ -3066,16 +2885,8 @@ k_loop:   do while (.not. (k>npar_loc))
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
 !
-!  kk_mod and wave speed
-!XXXXX
-              !kk_mod=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-              !wave_speed=sqrt(0.-fp(k,izp))
+!  wave speed
 !
-              call omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
-!
-              !grad_omega(1) = 0.
-              !grad_omega(2) = 0.
-              !grad_omega(3) = -.5*kk_mod/wave_speed
 !
 !  cs*unitk
 !
@@ -3084,30 +2895,39 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  wave speed
 !
-        wave_speed=sqrt(0.-fp(k,izp))
+        if (leos) then
+          wave_speed=sqrt(cs2p)
+        else
+          wave_speed=sqrt(0.-fp(k,izp))
+        endif
+!       if(lhydro) then
+!       if(lmagnetic) then
 !
 !  group velocity (for sound with hydro)
 !
-        group_vel(1)=wave_speed*kk_mod1*fp(k,ivpx)+uup(1)
-        group_vel(2)=wave_speed*kk_mod1*fp(k,ivpy)+uup(2)
-        group_vel(3)=wave_speed*kk_mod1*fp(k,ivpz)+uup(3)
+            group_vel(1)=uup(1)+wave_speed*kk_mod1*fp(k,ivpx)
+            group_vel(2)=uup(2)+wave_speed*kk_mod1*fp(k,ivpy)
+            group_vel(3)=uup(3)+wave_speed*kk_mod1*fp(k,ivpz)
 !
-        if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
-        if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
-        if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
+            if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
+            if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
+            if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
 !
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - grad_omega
+!  Compute dk/dt = grad(omega). The local_omega is used only for diagnostics.
+!
+            call omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-grad_omega
 !
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
               if (lfirst.and.ldt) then
                 dt1_drag_dust(ix0-nghost)= &
-                     max(dt1_drag_dust(ix0-nghost),tausp1_par)
+                  max(dt1_drag_dust(ix0-nghost),tausp1_par)
                 if (ldragforce_gas_par) then
                   if (p%np(ix0-nghost)/=0.0) &
-                       dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                       rhop_swarm_par*tausp1_par
+                    dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
+                    rhop_swarm_par*tausp1_par
                 endif
               endif
             endif
@@ -3158,23 +2978,6 @@ k_loop:   do while (.not. (k>npar_loc))
           .and. t>=tstart_collisional_cooling) &
           call collisional_cooling(f,df,fp,dfp,p,ineargrid)
 !
-!  Compensate for increased friction time by appying extra friction force to
-!  particles.
-!
-      if (lcompensate_friction_increase) &
-          call compensate_friction_increase(f,fp,dfp,p,ineargrid)
-!
-!  Add lift forces.
-!
-      if (lparticles_spin .and. t>=tstart_liftforce_par) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            call calc_liftforce(fp(k,:), k, rep(k), liftforce)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+liftforce
-          enddo
-        endif
-      endif
-!
 !  Add Brownian forces.
 !
       if (lbrownian_forces .and. t>=tstart_brownian_par) then
@@ -3182,17 +2985,6 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             call calc_brownian_force(fp,k,ineargrid(k,:),stocunn(k),bforce)
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
-          enddo
-        endif
-      endif
-!
-!  Add Thernophoretic forces.
-!
-      if (lthermophoretic_forces) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            call calc_thermophoretic_force(fp,k,ineargrid(k,:),thermforce)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+thermforce
           enddo
         endif
       endif
@@ -3299,220 +3091,6 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_blocks
-!***********************************************************************
-    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for taking particles out of the simulation due to their proximity
-!  to a sink particle or sink point.
-!
-!  25-sep-08/anders: coded
-!
-      use Mpicomm
-      use Solid_Cells
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
-      real :: rp, rp_box, rhop_swarm_removed, rhop_swarm_removed_send
-      real :: xsinkpar, ysinkpar, zsinkpar
-      integer :: k, ksink, iproc_sink, iproc_sink_send
-      integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
-      integer, parameter :: itag1=100, itag2=101
-      real :: particle_radius
-!
-!  Sinkparticle activated at time tstart_sink_par
-      if (t <= tstart_sink_par) return
-!
-      if (lsinkpoint) then
-        k=1
-        do while (k<=npar_loc)
-          rp=sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+ &
-             (fp(k,izp)-zsinkpoint)**2)
-          if (rp<rsinkpoint) then
-            call remove_particle(fp,ipar,k,dfp,ineargrid)
-          else
-            k=k+1
-          endif
-        enddo
-      endif
-!
-      if (lsinkparticle_1) then
-!
-!  Search for position of particle with index 1.
-!
-        xsinkpoint=0.0
-        ysinkpoint=0.0
-        zsinkpoint=0.0
-        iproc_sink=-1
-        do k=1,npar_loc
-          if (ipar(k)==1) then
-            ksink=k
-            iproc_sink=iproc
-            xsinkpar=fp(k,ixp)
-            ysinkpar=fp(k,iyp)
-            zsinkpar=fp(k,izp)
-          endif
-        enddo
-!
-!  Communicate position of sink particle to all processors.
-!
-        iproc_sink_send=iproc_sink
-        call mpireduce_max_int(iproc_sink_send,iproc_sink)
-        call mpibcast_int(iproc_sink)
-        call mpibcast_real(xsinkpar,proc=iproc_sink)
-        call mpibcast_real(ysinkpar,proc=iproc_sink)
-        call mpibcast_real(zsinkpar,proc=iproc_sink)
-!
-!  Remove particles that are too close to sink particle.
-!
-        if (lparticles_mass) then
-          rhop_swarm_removed=0.0
-          momp_swarm_removed=0.0
-        endif
-!
-        k=1
-        do while (k<=npar_loc)
-          rp=-1.0
-!
-!  Take into account periodic boundary conditions.
-!
-          if (bcpx=='p' .and. nxgrid/=1) then
-            ix1=-1; ix2=+1
-          else
-            ix1=0; ix2=0
-          endif
-          if (bcpy=='p' .and. nygrid/=1) then
-            iy1=-1; iy2=+1
-          else
-            iy1=0; iy2=0
-          endif
-          if (bcpz=='p' .and. nzgrid/=1) then
-            iz1=-1; iz2=+1
-          else
-            iz1=0; iz2=0
-          endif
-          do iz=iz1,iz2; do iy=iy1,iy2; do ix=ix1,ix2
-            if (lshear) then
-              rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                          (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2+ &
-                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
-            else
-              rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                          (fp(k,iyp)+Ly*iy-ysinkpar)**2+ &
-                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
-            endif
-            if (rp<0.0) then
-              rp=rp_box
-            else
-              rp=min(rp,rp_box)
-            endif
-          enddo; enddo; enddo
-          if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
-            if (lparticles_mass) then
-              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
-              momp_swarm_removed = momp_swarm_removed + &
-                  fp(k,ivpx:ivpz)*fp(k,irhopswarm)
-!              if (lshear) then
-!                momp_swarm_removed(2) = momp_swarm_removed(2) + &
-!                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
-!              endif
-            endif
-            call remove_particle(fp,ipar,k,dfp,ineargrid)
-          else
-            k=k+1
-          endif
-        enddo
-!
-!  Add mass and momentum to sink particle.
-!
-        if (lparticles_mass) then
-          rhop_swarm_removed_send=rhop_swarm_removed
-          momp_swarm_removed_send=momp_swarm_removed
-          call mpireduce_sum(rhop_swarm_removed_send,rhop_swarm_removed)
-          call mpireduce_sum(momp_swarm_removed_send,momp_swarm_removed,3)
-          if (lroot) then
-            call mpisend_real(rhop_swarm_removed,1,iproc_sink,itag1)
-            call mpisend_real(momp_swarm_removed,3,iproc_sink,itag2)
-          endif
-          if (iproc==iproc_sink) then
-            call mpirecv_real(rhop_swarm_removed,1,0,itag1)
-            call mpirecv_real(momp_swarm_removed,3,0,itag2)
-!
-!  Need to find sink particle again since particle removal may have shifted
-!  its index.
-!
-            do k=1,npar_loc
-              if (ipar(k)==1) then
-                ksink=k
-                iproc_sink=iproc
-                xsinkpar=fp(k,ixp)
-                ysinkpar=fp(k,iyp)
-                zsinkpar=fp(k,izp)
-              endif
-            enddo
-!            if (lshear) then
-!              fp(ksink,ivpx) = (fp(ksink,ivpx)* &
-!                  fp(ksink,irhopswarm) + momp_swarm_removed(1))/ &
-!                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
-!              fp(ksink,ivpy) = ((fp(ksink,ivpy)+Sshear*fp(ksink,ixp))* &
-!                  fp(ksink,irhopswarm) + momp_swarm_removed(2))/ &
-!                  (fp(ksink,irhopswarm) + rhop_swarm_removed) - &
-!                  Sshear*fp(ksink,ixp)
-!              fp(ksink,ivpz) = (fp(ksink,ivpz)* &
-!                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
-!                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
-!            else
-              fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)* &
-                  fp(ksink,irhopswarm) + momp_swarm_removed)/ &
-                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
-!            endif
-            fp(ksink,irhopswarm) = fp(ksink,irhopswarm) + rhop_swarm_removed
-          endif
-        endif
-      endif
-!
-!  Remove particles if they are within a solid geometry
-!
-      if (lsolid_cells) then
-        k=1
-        do while (k<=npar_loc)
-          if (lparticles_radius) then
-            particle_radius=fp(k,iap)
-          else
-            particle_radius=fake_particle_radius
-          endif
-          if (in_solid_cell(fp(k,ixp:izp),particle_radius)) then
-            call remove_particle(fp,ipar,k,dfp,ineargrid)
-          else
-            k=k+1
-          endif
-        enddo
-      endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine remove_particles_sink_simple
-!***********************************************************************
-    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for creating new sink particles or sink points.
-!
-!  Just a dummy routine for now.
-!
-!  25-sep-08/anders: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine create_particles_sink_simple
 !***********************************************************************
     subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,&
       nochange_opt,rep,stocunn)
@@ -4233,56 +3811,13 @@ k_loop:   do while (.not. (k>npar_loc))
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*coll_heat
 !
 !  Diagnostics.
+!
       if (ldiagnos) then
         if (idiag_decollp/=0) &
           call sum_mn_name(coll_heat,idiag_decollp)
       endif
 !
     endsubroutine collisional_cooling
-!***********************************************************************
-    subroutine compensate_friction_increase(f,fp,dfp,p,ineargrid)
-!
-!  Compensate for increased friction time in regions of high solids-to-gas
-!  ratio by applying missing friction force to particles only.
-!
-!  26-feb-07/anders: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      real, dimension (nx,3) :: vvpm
-      real :: tausp1_par, tausp1_par_mod, tausp1_par_org
-      integer :: k, l, ix0
-!
-      if (npar_imn(imn)/=0) then
-!  Calculate mean particle velocity.
-        vvpm=0.0
-        do k=k1_imn(imn),k2_imn(imn)
-          ix0=ineargrid(k,1)
-          vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
-        enddo
-        do l=1,nx
-          if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
-        enddo
-!
-!  Compare actual and modified friction time and apply the difference as
-!  friction force relative to mean particle velocity.
-!
-        do k=k1_imn(imn),k2_imn(imn)
-          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_mod, &
-              nochange_opt=.false.)
-          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_org, &
-              nochange_opt=.true.)
-          tausp1_par=tausp1_par_org-tausp1_par_mod
-          ix0=ineargrid(k,1)
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-              tausp1_par*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
-        enddo
-      endif
-!
-    endsubroutine compensate_friction_increase
 !***********************************************************************
     subroutine calc_gas_velocity_shell_call(k1, uup, fp)
 !
@@ -4570,73 +4105,31 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine calc_brownian_force
 !***********************************************************************
- subroutine calc_thermophoretic_force(fp,k,ineark,force)
+    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-!  Calculate the Thermophoretic force due to a temperature gradient in the gas.
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
 !
-!   Henrik Lutro, testing
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
-      use Viscosity, only: getnu
+    endsubroutine remove_particles_sink_simple
+!***********************************************************************
+    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(3), intent(out) :: force
-      real, dimension(3) :: temp_grad
-      real TT,mu,nu_,Kn,phi_therm,mass_p
-      real Ktc,Ce,Cm,Cint
-      character (len=labellen) :: ivis=''
-      integer, dimension(3) :: ineark
-      integer :: k
-      intent(in) :: fp,k
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
 !
-      call keep_compiler_quiet(ineark)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
 !
-      Ktc=1.10
-      Cm=1.13
-      Ce=2.17
-      if (interp%lTT) then
-        TT=interp_TT(k)
-      else
-        TT=thermophoretic_T0
-      endif
-      !Find dynamic viscosity
-      call getnu(nu_input=nu_,ivis=ivis)
-      if (ivis=='nu-const') then
-        mu=nu_*interp_rho(k)
-      elseif (ivis=='rho-nu-const') then
-        mu=nu_
-      elseif (ivis=='sqrtrho-nu-const') then
-        mu=nu_*sqrt(interp_rho(k))
-      elseif (ivis=='nu-therm') then
-        mu=nu_*interp_rho(k)*sqrt(TT)
-      elseif (ivis=='mu-therm') then
-        mu=nu_*sqrt(TT)
-      else
-        call fatal_error('calc_pencil_rep','No such ivis!')
-      endif
-      Cint=0.5
-      if (interp%lgradTT) then
-        temp_grad=interp_gradTT(k,:)
-      else
-        temp_grad=temp_grad0
-     endif
-!
-      Kn=mean_free_path_gas/fp(k,iap)
-!
-      mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
-      if (thermophoretic_eq=='near_continuum') then
-        phi_therm=-9*pi/cond_ratio
-      elseif (thermophoretic_eq=='transition') then
-        phi_therm=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
-            /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
-      elseif (thermophoretic_eq=='free_molecule') then
-        phi_therm=0.0
-      else
-        call fatal_error('calc_pencil_rep','No thermoporetic range chosen')
-      endif
-!
-      force=(fp(k,iap)*temp_grad*mu**2*phi_therm)/(TT*interp_rho(k)*mass_p)
-!
-    endsubroutine calc_thermophoretic_force
+    endsubroutine create_particles_sink_simple
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
@@ -4940,15 +4433,17 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
 !
-      use Sub, only: dot
-! XXX
+      use Sub, only: dot,dot2
+      use EquationOfState, only: ics
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: ix0,iy0,iz0,ix1,iy1,iz1,k
       real, dimension (2,2,2) :: box_omega
       real, dimension (3) :: grad_omega,kvec
-      real :: local_omega,udotk,grav=1.,cs,kmod
+      real :: local_omega,grav=1.
+      real :: udotk,Bdotk,B2,cs2,k2,kpara2,kperp2,vA2,cms2,om_ms2
       real :: xdist,ydist,zdist,xdistmod,ydistmod,zdistmod
 !
       intent (in) :: f, fp, ineargrid, k
@@ -4966,14 +4461,34 @@ k_loop:   do while (.not. (k>npar_loc))
       iz1=iz0+int(sign(1.,zdist))
 !
       kvec=fp(k,ivpx:ivpz)
-      kmod=sqrt(kvec(1)**2+kvec(2)**2+kvec(3)**2)
+      k2=kvec(1)**2+kvec(2)**2+kvec(3)**2
       do iz=1,2
       do iy=1,2
       do ix=1,2
         udotk=0.
+        Bdotk=0.
+!
+!  Compute omega. In the absence of an equation of state, we use
+!  the sound speed from a polytrope with cs2=(0.-z(iz+iz0-1))*grav.
+!
+        if (leos) then
+          cs2=f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ics)**2
+        else
+          cs2=(0.-z(iz+iz0-1))*grav
+        endif
         if(lhydro) call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,iux:iuz),kvec,udotk)
-        cs=sqrt((0.-z(iz+iz0-1))*grav)
-        box_omega(ix,iy,iz)=cs*kmod+udotk
+        if(lmagnetic) then
+          call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),kvec,Bdotk)
+          call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),B2)
+          vA2=B2/(mu0*exp(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ilnrho)))
+          kpara2=Bdotk**2/B2
+          kperp2=k2-kpara2
+          cms2=cs2+vA2
+          om_ms2=.5*k2*(cms2+sqrt((cs2-vA2)**2+4.*vA2*cs2*kperp2/k2))
+        else
+          om_ms2=cs2*k2
+        endif
+        box_omega(ix,iy,iz)=sqrt(om_ms2)+udotk
       enddo
       enddo
       enddo
