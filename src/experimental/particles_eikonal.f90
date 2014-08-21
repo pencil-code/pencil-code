@@ -2917,68 +2917,71 @@ k_loop:   do while (.not. (k>npar_loc))
               kkp(1)=fp(k,ivpx)
               kkp(2)=fp(k,ivpy)
               kkp(3)=fp(k,ivpz)
-!
               k2=kkp(1)**2+kkp(2)**2+kkp(3)**2
               kmod=sqrt(k2)
 !
 !  Wave speed: compute kperp etc.
 !
-        if(lmagnetic) then
-          B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
-          B21=1./max(B2,tini)
-          kdotB=kkp(1)*bbp(1)+kkp(2)*bbp(2)+kkp(3)*bbp(3)
-          kpara2=B21*kdotB**2
-          kperp2=k2-kpara2
-          kperp=sqrt(kperp2)
+              if(lmagnetic) then
+                B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
+                B21=1./max(B2,tini)
+                kdotB=kkp(1)*bbp(1)+kkp(2)*bbp(2)+kkp(3)*bbp(3)
+                kpara2=B21*kdotB**2
+                kperp2=k2-kpara2
+                kperp=sqrt(kperp2)
 !
-          rhop=exp(lnrhop)
-          vA2=B2/(mu0*rhop)
-          cs2p=sqrt(csp)
-          cms2=cs2p+vA2
-          cm4=(cs2p-vA2)**2+4.*vA2*cs2p*kperp2/k2
-          cm2=sqrt(cm4)
-          cn2=vA2*cs2p/cm2
-          omega_ms2=.5*k2*(cms2+cm2)
-          omega_ms=sqrt(omega_ms2)
+!  compute omega_ms
 !
-          kkperp(1)=fp(k,ivpx)-B21*kdotB*bbp(1)
-          kkperp(2)=fp(k,ivpy)-B21*kdotB*bbp(2)
-          kkperp(3)=fp(k,ivpz)-B21*kdotB*bbp(3)
+                rhop=exp(lnrhop)
+                vA2=B2/(mu0*rhop)
+                cs2p=csp**2
+                cms2=cs2p+vA2
+                cm4=(cs2p-vA2)**2+4.*vA2*cs2p*kperp2/k2
+                cm2=sqrt(cm4)
+                cn2=vA2*cs2p/cm2
+                omega_ms2=.5*k2*(cms2+cm2)
+                omega_ms=sqrt(omega_ms2)
+!
+!  compute kkperp
+!
+                do j=1,3
+                  kkperp(j)=kkp(j)-B21*kdotB*bbp(j)
+                enddo
 !
 !  wave speed
 !
-          wave_speed=omega_ms/kmod*(1.-cn2*kperp2/omega_ms2)
-          wave_perp=cn2*kperp/omega_ms
-        else
-          if (leos) then
-            wave_speed=sqrt(cs2p)
-          else
-            wave_speed=sqrt(0.-fp(k,izp))
-          endif
-        endif
+                wave_speed=omega_ms/kmod*(1.-cn2*kperp2/omega_ms2)
+                wave_perp=cn2*kperp/omega_ms
+              else
+                if (leos) then
+                  wave_speed=sqrt(cs2p)
+                else
+                  wave_speed=sqrt(0.-fp(k,izp))
+                endif
+              endif
 !
 !  group velocity (for sound with hydro)
 !
-        do j=1,3
-          group_vel(j)=uup(j)+wave_speed*kkp(j)/(kmod+tini)
-        enddo
+              do j=1,3
+                group_vel(j)=uup(j)+wave_speed*kkp(j)/(kmod+tini)
+              enddo
 !
 !  correction term if there are magnetic fields
 !
-        if(lmagnetic) then
-          do j=1,3
-            group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/(kperp+tini)
-          enddo
-        endif
+              if(lmagnetic) then
+                do j=1,3
+                  group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/(kperp+tini)
+                enddo
+              endif
 !
-    if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
-            if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
-            if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
+              if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
+              if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
+              if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
 !
 !  Compute dk/dt = grad(omega). The local_omega is used only for diagnostics.
 !
-            call omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-grad_omega
+              call omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
+              dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-grad_omega
 !
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]

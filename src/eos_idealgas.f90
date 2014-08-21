@@ -71,7 +71,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: lanelastic_lin=.false., lcs_as_aux=.false.
+  logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
   character (len=labellen) :: ieos_profile='nothing'
 !
   character (len=labellen) :: meanfield_Beq_profile
@@ -86,14 +86,14 @@ module EquationOfState
 !
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux
+      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini,           &
       dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt, &
-      lanelastic_lin, lcs_as_aux
+      lanelastic_lin, lcs_as_aux, lcs_as_comaux
 !
   contains
 !***********************************************************************
@@ -274,7 +274,8 @@ module EquationOfState
 !
 !  cs as optional auxiliary variable
 !
-      if (lcs_as_aux) call register_report_aux('cs',ics)
+      if (lcs_as_aux .or. lcs_as_comaux) &
+          call register_report_aux('cs',ics,communicated=lcs_as_comaux)
 !
       call put_shared_variable('cp',cp,ierr)
         if (ierr/=0) call stop_it("cp: "//&
@@ -491,7 +492,7 @@ module EquationOfState
 !
 !  02-04-06/tony: coded
 !
-      if (lcs_as_aux) lpenc_requested(i_cs2)=.true.
+      if (lcs_as_aux.or.lcs_as_comaux) lpenc_requested(i_cs2)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -1022,7 +1023,7 @@ module EquationOfState
 !
 !  cs as optional auxiliary variables
 !
-      if (lcs_as_aux) f(l1:l2,m,n,ics)=sqrt(p%cs2)
+      if (lcs_as_aux.or.lcs_as_comaux) f(l1:l2,m,n,ics)=sqrt(p%cs2)
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
