@@ -1015,6 +1015,7 @@ module Forcing
           exit
         endif
       enddo
+!
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,lfirst_call
 !
 !  normally we want to use the wavevectors as they are,
@@ -1142,6 +1143,7 @@ module Forcing
 !  23-feb-10/axel: added helicity profile with finite second derivative.
 !  13-jun-13/axel: option of symmetry of forcing function about z direction
 !  06-dec-13/nishant: made kkx etc allocatable
+!  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1213,9 +1215,25 @@ module Forcing
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number_wrapper(fran)
-      phase=pi*(2*fran(1)-1.)
-      ik=nk*(.9999*fran(2))+1
+      do
+        call random_number_wrapper(fran)
+        phase=pi*(2*fran(1)-1.)
+        ik=nk*(.9999*fran(2))+1
+!
+!  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
+!  and look for a new one
+!
+        if ( lavoid_xymean ) then
+          if ( abs(kkx(ik))>.9*k1xyz(1) .or. abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_ymean ) then
+          if ( abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_zmean ) then
+          if ( abs(kkz(ik))>.9*k1xyz(3) ) exit
+        else
+          exit
+        endif
+      enddo
+!
       if (ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
       if (ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
       if (ip<=6) print*,'forcing_hel: dt, lfirst_call=',dt,lfirst_call
