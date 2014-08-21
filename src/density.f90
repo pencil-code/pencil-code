@@ -632,10 +632,12 @@ module Density
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
 !
-!  Set default values for sound speed at top and bottom.
+!  Set default values for sound speed at top and bottom if nothing was
+!  specified in density_init_pars.
 !  These may be updated in one of the following initialization routines.
 !
-      cs2top=cs20; cs2bot=cs20
+  if (cs2top==impossible) cs2top=cs20
+  if (cs2bot==impossible) cs2bot=cs20
 !
 !  Different initializations of lnrho (called from start).
 !

@@ -61,7 +61,7 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
-  real :: cs2bot=1.0, cs2top=1.0
+  real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=0.0
   real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
