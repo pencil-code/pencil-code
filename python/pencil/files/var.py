@@ -299,7 +299,7 @@ class read_var:
 
     def magicAttributes(self, param):
         for field in self.magic:
-            if field == 'rho':
+            if (field == 'rho' and not hasattr(self, 'rho')):
                 if hasattr(self, 'lnrho'):
                     setattr(self, 'rho', N.exp(self.lnrho))
                 else:
@@ -310,14 +310,20 @@ class read_var:
                     tt = N.exp(self.lnTT)
                     setattr(self, 'tt', tt)
                 else:
-                    if (hasattr(self, 'lnrho') and hasattr(self, 'ss')):
+                    if hasattr(self, 'ss'):
+                        if hasattr(self,'lnrho'):
+                            lnrho = self.lnrho
+                        elif hasattr(self,'rho'):
+                            lnrho = N.log(self.rho)
+                        else:
+                            sys.exit("pb in magic: missing rho or lnrho variable")
                         cp = param.cp
                         gamma = param.gamma
                         cs20 = param.cs0**2
                         lnrho0 = N.log(param.rho0)
                         lnTT0 = N.log(cs20/(cp*(gamma-1.)))
                         lnTT = lnTT0+gamma/cp*self.ss+(gamma-1.)* \
-                               (self.lnrho-lnrho0)
+                               (lnrho-lnrho0)
                         setattr(self, 'tt', N.exp(lnTT))
                     else:
                         sys.exit("pb in magic!")
@@ -341,10 +347,16 @@ class read_var:
                 cp = param.cp
                 gamma = param.gamma
                 cv = cp/gamma
+                if hasattr(self,'lnrho'):
+                    lnrho = self.lnrho
+                elif hasattr(self,'rho'):
+                    lnrho = N.log(self.rho)
+                else:
+                    sys.exit("pb in magic: missing rho or lnrho variable")
                 if hasattr(self, 'ss'):
-                    self.pp = N.exp(gamma*(self.ss+self.lnrho))
+                    self.pp = N.exp(gamma*(self.ss+lnrho))
                 elif hasattr(self, 'lntt'):
-                    self.pp = (cp-cv)*N.exp(self.lntt+self.lnrho)
+                    self.pp = (cp-cv)*N.exp(self.lntt+lnrho)
                 else:
                     sys.exit("pb in magic!")
 
