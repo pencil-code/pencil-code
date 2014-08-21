@@ -156,6 +156,7 @@ module Magnetic
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_profz=.false.
+  logical :: lresi_eta_shock_profr=.false.
   logical :: lresi_eta_shock_perp=.false.
   logical :: lresi_etava=.false.
   logical :: lresi_etaj=.false.
@@ -212,7 +213,7 @@ module Magnetic
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
-  real :: eta_xwidth0=0.0,eta_xwidth1=0.0
+  real :: eta_xwidth0=0.0,eta_xwidth1=0.0, eta_xshock=1.0
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
@@ -287,7 +288,8 @@ module Magnetic
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, eta_width_shock
+      lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, & 
+      eta_width_shock, eta_xshock
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1009,6 +1011,7 @@ module Magnetic
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
       lresi_eta_shock_profz=.false.
+      lresi_eta_shock_profr=.false.
       lresi_eta_shock_perp=.false.
       lresi_etava=.false.
       lresi_etaj=.false.
@@ -1083,6 +1086,12 @@ module Magnetic
         case ('eta-shock-profz')
           if (lroot) print*, 'resistivity: shock with a vertical profile'
           lresi_eta_shock_profz=.true.
+          if (.not. lshock) &
+              call fatal_error('initialize_magnetic', &
+              'shock resistivity, but module setting SHOCK=noshock')
+        case ('eta-shock-profr')
+          if (lroot) print*, 'resistivity: shock with a radial profile'
+          lresi_eta_shock_profr=.true.
           if (.not. lshock) &
               call fatal_error('initialize_magnetic', &
               'shock resistivity, but module setting SHOCK=noshock')
@@ -1170,6 +1179,9 @@ module Magnetic
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
         if (lresi_eta_shock_profz.and.eta_shock==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_shock is zero!')
+         if (lresi_eta_shock_profr.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
@@ -1758,7 +1770,7 @@ module Magnetic
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or. &
           lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
-          lresi_eta_shock_profz.or. &
+          lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
           lresi_smagorinsky_cross.or.lresi_spitzer)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
@@ -1766,7 +1778,8 @@ module Magnetic
         lpenc_requested(i_rho1)=.true.
         if (.not.lweyl_gauge) lpenc_requested(i_del2a)=.true.
       endif
-      if (lresi_eta_shock.or.lresi_eta_shock_profz) then
+      if (lresi_eta_shock.or.lresi_eta_shock_profz.or. &
+          lresi_eta_shock_profr) then
         lpenc_requested(i_shock)=.true.
         if (.not.lweyl_gauge) then
           lpenc_requested(i_gshock)=.true.
@@ -3107,14 +3120,47 @@ module Magnetic
         etatotal=etatotal+eta_shock*p%shock
       endif
 !
- if (lresi_eta_shock_profz) then
-     peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
+! diffusivity: eta-shock with vertical profile
+!
+      if (lresi_eta_shock_profz) then
+        peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
                       step(p%z_mn,eta_zshock,-eta_width_shock)
 !
-          gradeta_shock(:,1) = 0.
-          gradeta_shock(:,2) = 0.
-          gradeta_shock(:,3) = eta_shock*(eta_jump_shock-1.)* & 
+        call write_zprof('resi_shock',peta_shock)
+        gradeta_shock(:,1) = 0.
+        gradeta_shock(:,2) = 0.
+        gradeta_shock(:,3) = eta_shock*(eta_jump_shock-1.)* & 
                               der_step(p%z_mn,eta_zshock,-eta_width_shock)
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-peta_shock*p%shock*mu0*p%jj(:,i)
+          enddo
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+ &
+                peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+ &
+                p%diva*p%shock*gradeta_shock(:,i)
+          enddo
+        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+peta_shock*p%shock
+        etatotal=etatotal+peta_shock*p%shock
+      endif
+!
+! diffusivity: eta-shock with radial profile
+!
+      if (lresi_eta_shock_profr) then
+        if (lspherical_coords.or.lsphere_in_a_box) then
+          tmp1=p%r_mn
+        else
+          tmp1=p%rcyl_mn
+        endif
+        peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
+                      step(tmp1,eta_xshock,eta_width_shock)
+!
+        gradeta_shock(:,1) = eta_shock*(eta_jump_shock-1.)* & 
+                              der_step(tmp1,eta_xshock,eta_width_shock)
+        gradeta_shock(:,2) = 0.
+        gradeta_shock(:,3) = 0.
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-peta_shock*p%shock*mu0*p%jj(:,i)
