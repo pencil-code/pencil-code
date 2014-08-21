@@ -97,7 +97,6 @@ module Particles
   logical :: lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcalc_uup=.false.
-  logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
@@ -136,7 +135,7 @@ module Particles
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, lparticle_gravity,&
+      tstart_dragforce_par, tstart_grav_par, &
       tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, tausp_species, tau_coll_min, &
@@ -169,14 +168,14 @@ module Particles
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
       tstart_grav_par, tstart_grav_x_par, &
-      tstart_grav_z_par, tstart_grav_r_par, lparticle_gravity, &
+      tstart_grav_z_par, tstart_grav_r_par, &
       lparticlemesh_cic, lparticlemesh_tsc, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, &
-      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, ldraglaw_simple,&
+      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, ldraglaw_simple, &
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
@@ -2726,14 +2725,14 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
-      real, dimension (3) :: kkp, kkunit, kkperp
+      real, dimension (3) :: kkp, kkperp
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2, csp, cs2p
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, rhop, lnrhop
       real :: wave_speed, local_omega, wave_perp
       real :: omega_ms2, omega_ms, kpara2, kperp2, kperp
-      real :: B2, vA2, k2, cm4, cm2, cn2, cms2, kdotB, kmod
+      real :: B2, B21, vA2, k2, cm4, cm2, cn2, cms2, kdotB, kmod
       integer :: j, k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody
@@ -2926,8 +2925,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if(lmagnetic) then
           B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
+          B21=1./max(B2,tini)
           kdotB=kkp(1)*bbp(1)+kkp(2)*bbp(2)+kkp(3)*bbp(3)
-          kpara2=kdotB**2/B2
+          kpara2=B21*kdotB**2
           kperp2=k2-kpara2
           kperp=sqrt(kperp2)
 !
@@ -2941,9 +2941,9 @@ k_loop:   do while (.not. (k>npar_loc))
           omega_ms2=.5*k2*(cms2+cm2)
           omega_ms=sqrt(omega_ms2)
 !
-          kkperp(1)=fp(k,ivpx)-kdotB*bbp(1)/B2
-          kkperp(2)=fp(k,ivpy)-kdotB*bbp(2)/B2
-          kkperp(3)=fp(k,ivpz)-kdotB*bbp(3)/B2
+          kkperp(1)=fp(k,ivpx)-B21*kdotB*bbp(1)
+          kkperp(2)=fp(k,ivpy)-B21*kdotB*bbp(2)
+          kkperp(3)=fp(k,ivpz)-B21*kdotB*bbp(3)
 !
 !  wave speed
 !
@@ -2960,19 +2960,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !  group velocity (for sound with hydro)
 !
         do j=1,3
-          kkunit(j)=kkp(j)/kmod
-          group_vel(j)=uup(j)+wave_speed*kkunit(j)
+          group_vel(j)=uup(j)+wave_speed*kkp(j)/(kmod+tini)
         enddo
 !
 !  correction term if there are magnetic fields
 !
         if(lmagnetic) then
           do j=1,3
-            group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/kperp
+            group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/(kperp+tini)
           enddo
         endif
 !
-            if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
+    if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
             if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
             if (nzgrid/=1) dfp(k,izp)=dfp(k,izp)+group_vel(3)
 !
@@ -4544,10 +4543,10 @@ k_loop:   do while (.not. (k>npar_loc))
           call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),kvec,Bdotk)
           call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),B2)
           vA2=B2/(mu0*exp(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ilnrho)))
-          kpara2=Bdotk**2/B2
+          kpara2=Bdotk**2/(B2+tini)
           kperp2=k2-kpara2
           cms2=cs2+vA2
-          om_ms2=.5*k2*(cms2+sqrt((cs2-vA2)**2+4.*vA2*cs2*kperp2/k2))
+          om_ms2=.5*k2*(cms2+sqrt((cs2-vA2)**2+4.*vA2*cs2*kperp2/(k2+tini)))
         else
           om_ms2=cs2*k2
         endif
