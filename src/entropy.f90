@@ -37,6 +37,7 @@ module Energy
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
+  real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: chi_hyper3_mesh=5.0, chi_th=0.0, chi_rho=0.0
@@ -92,7 +93,7 @@ module Energy
   logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
-  logical :: lheatc_hyper3ss_mesh=.false.
+  logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
   logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
@@ -161,6 +162,7 @@ module Energy
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_gaussianz, heat_gaussianz_sigma, &
+      chi_jump_shock, xchi_shock, widthchi_shock, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
@@ -709,6 +711,7 @@ module Energy
       lheatc_kramers=.false.
       lheatc_corona=.false.
       lheatc_shock=.false.
+      lheatc_shock_profr=.false.
       lheatc_hyper3ss=.false.
       lheatc_hyper3ss_polar=.false.
       lheatc_hyper3ss_mesh=.false.
@@ -754,6 +757,9 @@ module Energy
         case ('shock')
           lheatc_shock=.true.
           if (lroot) print*, 'heat conduction: shock'
+         case ('chi-shock-profr')
+          lheatc_shock_profr=.true.
+          if (lroot) print*, 'heat conduction: shock with a radial profile'
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
@@ -819,6 +825,9 @@ module Energy
            call fatal_error('initialize_energy', &
            'A diffusivity coefficient of chi_hyper3 is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
+        call warning('initialize_energy','chi_shock is zero!')
+      endif
+      if (lheatc_shock_profr .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
       endif
 !
@@ -2527,6 +2536,14 @@ module Energy
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_glnTT)=.true.
       endif
+      if (lheatc_shock_profr) then
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_glnTT)=.true.
+      endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
       if (cooltype=='shell' .and. deltaT_poleq/=0.) then
         lpenc_requested(i_z_mn)=.true.
@@ -2888,6 +2905,7 @@ module Energy
       if (lheatc_chitherm) call calc_heatcond_thermchi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
+      if (lheatc_shock_profr)    call calc_heatcond_shock_profr(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
       if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
@@ -3798,12 +3816,16 @@ module Energy
       if (pretend_lnTT) then
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
         if (chi_t/=0.) then
+           call warning('calc_heatcond_shock', &
+                'chi_t diffusion might be added twice, please check!')
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
       else
         thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
         if (chi_t/=0.) then
+           call warning('calc_heatcond_shock', &
+                'chi_t diffusion might be added twice, please check!')
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
@@ -3830,6 +3852,80 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond_shock
+!***********************************************************************
+    subroutine calc_heatcond_shock_profr(df,p)
+!.
+!  21-aug-14/joern: adapted from calc_heatcond_shock
+!                   but no chit adding anymore
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot, step, der_step
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff,g2,gshockglnTT,gchiglnTT,pchi_shock
+      real, dimension (nx,3) :: gradchi_shock
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  Check that chi is ok.
+!
+      if (headtt) print*,'calc_heatcond_shock: chi_shock,chi_jump_shock=', &
+                         chi_shock,chi_jump_shock
+!
+      pchi_shock = chi_shock + chi_shock*(chi_jump_shock-1.)* &
+                      step(p%r_mn,xchi_shock,widthchi_shock)
+!
+          gradchi_shock(:,1) = chi_shock*(chi_jump_shock-1.)* & 
+                            der_step(p%r_mn,xchi_shock,widthchi_shock)
+          gradchi_shock(:,2) = 0.
+          gradchi_shock(:,3) = 0.
+
+      call dot(p%gshock,p%glnTT,gshockglnTT)
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+!
+!  Shock entropy diffusivity with a radial profile
+!  Write: chi_shock = pchi_shock*shock, gshock=grad(shock) 
+!  and gradchi_shock=grad(pchi_shock) so
+!  Ds/Dt = ... + pchi_shock*[shock*(del2ss+glnTT.gss+glnrho.gss) + gshock.gss] 
+!              + shock*gradchi_shock.gss
+!
+      if (headtt) print*,'calc_heatcond_shock_profr: use shock diffusion with radial profile'
+
+      call dot(p%gshock,p%glnTT,gshockglnTT)
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+      call dot(gradchi_shock,p%glnTT,gchiglnTT)
+
+! 
+      if (pretend_lnTT) then
+        thdiff=gamma*(pchi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)+gchiglnTT)
+      else
+        thdiff=pchi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)+gchiglnTT
+      endif
+!
+!  Add heat conduction to entropy equation.
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+      if (headtt) print*,'calc_heatcond_shock_profr: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!  With heat conduction, the second-order term for entropy is
+!  gamma*pchi*del2ss.
+!
+      if (lfirst.and.ldt) then
+        if (leos_idealgas) then
+          diffus_chi=diffus_chi+(gamma*pchi_shock*p%shock)*dxyz_2
+        else
+          diffus_chi=diffus_chi+(pchi_shock*p%shock)*dxyz_2
+        endif
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_shock_profr
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
