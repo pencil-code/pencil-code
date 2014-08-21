@@ -458,7 +458,7 @@ module EquationOfState
 !
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
 !
-!  pressure and cp as optional auxiliary pencils
+!  pressure and cp as optional auxiliary variables
 !
       if (lss_as_aux) f(l1:l2,m,n,iss)=p%ss
       if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp

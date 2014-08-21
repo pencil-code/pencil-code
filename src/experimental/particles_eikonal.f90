@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
+! $Id$
 !
 !  Eikonal solver, "particles" refer here to points on the trajectory.
 !
@@ -238,7 +238,7 @@ module Particles
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: particles_dust.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $")
+           "$Id$")
 !
 !  Indices for particle position.
 !
@@ -2726,12 +2726,15 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
+      real, dimension (3) :: kkp, kkunit, kkperp
       real, dimension(:), allocatable :: rep,stocunn
-      real :: rho1_point, tausp1_par, up2, cs2p
+      real :: rho1_point, tausp1_par, up2, csp, cs2p
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_par
-      real :: kk_mod, kk_mod1, wave_speed, local_omega
-      integer :: k, l, ix0, iy0, iz0
+      real :: rhop_swarm_par, rhop, lnrhop
+      real :: wave_speed, local_omega, wave_perp
+      real :: omega_ms2, omega_ms, kpara2, kperp2, kperp
+      real :: B2, vA2, k2, cm4, cm2, cn2, cms2, kdotB, kmod
+      integer :: j, k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody
 !
@@ -2802,7 +2805,7 @@ k_loop:   do while (.not. (k>npar_loc))
             lnbody=any(ipar(k)==ipar_nbody)
             if ((.not.lnbody)) then
 !
-!  The interpolated gas velocity is calculated here.
+!  Interpolate gas velocity.
 !
               if (lhydro) then
                 if (lparticlemesh_cic) then
@@ -2823,7 +2826,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 uup=0.0
               endif
 !
-!  The interpolated magnetic field is calculated here.
+!  Interpolated magnetic field.
 !
               if (lmagnetic) then
                 if (lparticlemesh_cic) then
@@ -2844,25 +2847,50 @@ k_loop:   do while (.not. (k>npar_loc))
                 bbp=0.0
               endif
 !
-!  The interpolated sound speed s calculated here.
+!  Interpolate sound speed csp.
 !
               if (leos) then
-  !             if (lparticlemesh_cic) then
-  !                 call interpolate_linear(f,ics,ics, &
-  !                   fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
-  !             elseif (lparticlemesh_tsc) then
-  !                 if (linterpolate_spline) then
-  !                   call interpolate_quadratic_spline(f,ics,ics, &
-  !                     fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
-  !                 else
-  !                   call interpolate_quadratic(f,ics,ics, &
-  !                     fp(k,ixp:izp),cs2p,ineargrid(k,:),0,ipar(k))
-  !                 endif
-  !             else
-                    cs2p=f(ix0,iy0,iz0,ics)
-  !             endif
+                if (lparticlemesh_cic) then
+                    call interpolate_linear(f,ics, &
+                      fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  ! if (linterpolate_spline) then
+                  !   call interpolate_quadratic_spline(f,ics,ics, &
+                  !     fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
+                  ! else
+                  !   call interpolate_quadratic(f,ics,ics, &
+                  !     fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
+                  ! endif
+                  call fatal_error('dvvp_dt_pencil', &
+                      'lparticlemesh_tsc not yet for scalar')
+                else
+                  csp=f(ix0,iy0,iz0,ics)
+                endif
               else
-                cs2p=0.0
+                csp=0.0
+              endif
+!
+!  Interpolate logarithmic density lnrhop
+!
+              if (leos) then
+                if (lparticlemesh_cic) then
+                    call interpolate_linear(f,ilnrho, &
+                      fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  ! if (linterpolate_spline) then
+                  !   call interpolate_quadratic_spline(f,ilnrho,ilnrho, &
+                  !     fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
+                  ! else
+                  !   call interpolate_quadratic(f,ilnrho,ilnrho, &
+                  !     fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
+                  ! endif
+                  call fatal_error('dvvp_dt_pencil', &
+                      'lparticlemesh_tsc not yet for scalar')
+                else
+                  lnrhop=f(ix0,iy0,iz0,ilnrho)
+                endif
+              else
+                lnrhop=0.0
               endif
 !
 !  Track particle state in terms of local gas velocity
@@ -2885,29 +2913,64 @@ k_loop:   do while (.not. (k>npar_loc))
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
 !
+!  wavevector
+!
+              kkp(1)=fp(k,ivpx)
+              kkp(2)=fp(k,ivpy)
+              kkp(3)=fp(k,ivpz)
+!
+              k2=kkp(1)**2+kkp(2)**2+kkp(3)**2
+              kmod=sqrt(k2)
+!
+!  Wave speed: compute kperp etc.
+!
+        if(lmagnetic) then
+          B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
+          kdotB=kkp(1)*bbp(1)+kkp(2)*bbp(2)+kkp(3)*bbp(3)
+          kpara2=kdotB**2/B2
+          kperp2=k2-kpara2
+          kperp=sqrt(kperp2)
+!
+          rhop=exp(lnrhop)
+          vA2=B2/(mu0*rhop)
+          cs2p=sqrt(csp)
+          cms2=cs2p+vA2
+          cm4=(cs2p-vA2)**2+4.*vA2*cs2p*kperp2/k2
+          cm2=sqrt(cm4)
+          cn2=vA2*cs2p/cm2
+          omega_ms2=.5*k2*(cms2+cm2)
+          omega_ms=sqrt(omega_ms2)
+!
+          kkperp(1)=fp(k,ivpx)-kdotB*bbp(1)/B2
+          kkperp(2)=fp(k,ivpy)-kdotB*bbp(2)/B2
+          kkperp(3)=fp(k,ivpz)-kdotB*bbp(3)/B2
+!
 !  wave speed
 !
-!
-!  cs*unitk
-!
-        kk_mod=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-        kk_mod1=1./kk_mod
-!
-!  wave speed
-!
-        if (leos) then
-          wave_speed=sqrt(cs2p)
+          wave_speed=omega_ms/kmod*(1.-cn2*kperp2/omega_ms2)
+          wave_perp=cn2*kperp/omega_ms
         else
-          wave_speed=sqrt(0.-fp(k,izp))
+          if (leos) then
+            wave_speed=sqrt(cs2p)
+          else
+            wave_speed=sqrt(0.-fp(k,izp))
+          endif
         endif
-!       if(lhydro) then
-!       if(lmagnetic) then
 !
 !  group velocity (for sound with hydro)
 !
-            group_vel(1)=uup(1)+wave_speed*kk_mod1*fp(k,ivpx)
-            group_vel(2)=uup(2)+wave_speed*kk_mod1*fp(k,ivpy)
-            group_vel(3)=uup(3)+wave_speed*kk_mod1*fp(k,ivpz)
+        do j=1,3
+          kkunit(j)=kkp(j)/kmod
+          group_vel(j)=uup(j)+wave_speed*kkunit(j)
+        enddo
+!
+!  correction term if there are magnetic fields
+!
+        if(lmagnetic) then
+          do j=1,3
+            group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/kperp
+          enddo
+        endif
 !
             if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
             if (nygrid/=1) dfp(k,iyp)=dfp(k,iyp)+group_vel(2)
