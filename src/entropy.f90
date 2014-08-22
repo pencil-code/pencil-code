@@ -3786,6 +3786,7 @@ module Energy
 !
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !  19-nov-03/axel: added chi_t also here.
+!  22-aug-14/joern: removed chi_t from here.
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
@@ -3800,7 +3801,8 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
+!      if (headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
+      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
 !
 !  Calculate terms for shock diffusion:
 !  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]
@@ -3815,20 +3817,20 @@ module Energy
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
       if (pretend_lnTT) then
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
-        if (chi_t/=0.) then
-           call warning('calc_heatcond_shock', &
-                'chi_t diffusion might be added twice, please check!')
-          call dot(p%glnrho+p%glnTT,p%gss,g2)
-          thdiff=thdiff+chi_t*(p%del2ss+g2)
-        endif
+ !       if (chi_t/=0.) then
+ !          call warning('calc_heatcond_shock', &
+ !               'chi_t diffusion might be added twice, please check!')
+ !         call dot(p%glnrho+p%glnTT,p%gss,g2)
+ !         thdiff=thdiff+chi_t*(p%del2ss+g2)
+ !       endif
       else
         thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
-        if (chi_t/=0.) then
-           call warning('calc_heatcond_shock', &
-                'chi_t diffusion might be added twice, please check!')
-          call dot(p%glnrho+p%glnTT,p%gss,g2)
-          thdiff=thdiff+chi_t*(p%del2ss+g2)
-        endif
+ !       if (chi_t/=0.) then
+ !          call warning('calc_heatcond_shock', &
+ !               'chi_t diffusion might be added twice, please check!')
+ !         call dot(p%glnrho+p%glnTT,p%gss,g2)
+ !         thdiff=thdiff+chi_t*(p%del2ss+g2)
+ !       endif
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -3842,9 +3844,11 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
-          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
+!          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
+          diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
         else
-          diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
+!          diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
+          diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
