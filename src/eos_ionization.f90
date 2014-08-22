@@ -48,7 +48,7 @@ module EquationOfState
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
-  integer :: l,icp
+  integer :: l,icp,ics
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1

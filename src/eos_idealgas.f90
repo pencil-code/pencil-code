@@ -45,8 +45,7 @@ module EquationOfState
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: ics
-  integer :: iglobal_cs2, iglobal_glnTT
+  integer :: iglobal_cs2, iglobal_glnTT, ics
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible, TT0=impossible

@@ -50,7 +50,7 @@ module EquationOfState
   integer, parameter :: ipp_ss=11, irho_TT=10, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
 !
-  integer :: iglobal_cs2, iglobal_glnTT
+  integer :: iglobal_cs2, iglobal_glnTT, ics
 !
   real :: lnTT0=impossible
 !
