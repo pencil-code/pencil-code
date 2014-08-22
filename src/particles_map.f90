@@ -219,7 +219,7 @@ module Particles_map
       real :: gp, g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: ivar, i, ix0, iy0, iz0, icyl=1
+      integer :: ivar, ix0, iy0, iz0, icyl=1
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar
@@ -326,7 +326,7 @@ module Particles_map
           print*, 'interpolate_linear_scalar: ipar, xxp=', ipar, xxp
           print*, 'interpolate_linear_scalar: x0, y0, z0=', &
               x(ix0), y(iy0), z(iz0)
-          print*, 'interpolate_linear_scalar: i, gp=', i, gp
+          print*, 'interpolate_linear_scalar: gp=', gp
           print*, 'interpolate_linear_scalar: g1...g8=', &
               g1, g2, g3, g4, g5, g6, g7, g8
           print*, '------------------'
@@ -337,7 +337,7 @@ module Particles_map
           print*, 'interpolate_linear_scalar: xxp=', xxp
           print*, 'interpolate_linear_scalar: x0, y0, z0=', &
               x(ix0), y(iy0), z(iz0)
-          print*, 'interpolate_linear_scalar: i, gp=', i, gp
+          print*, 'interpolate_linear_scalar: gp=', gp
           print*, 'interpolate_linear_scalar: g1...g8=', &
               g1, g2, g3, g4, g5, g6, g7, g8
           print*, '------------------'
