@@ -638,7 +638,7 @@ module Forcing
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
           sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
-        elseif (iforcing_cont(i)=='sinx(:,i)') then
+        elseif (iforcing_cont(i)=='sinx') then
           sinx(:,i)=sin(kf_fcont(i)*x)
           if (tgentle(i) > 0.) then
             lgentle(i)=.true.
