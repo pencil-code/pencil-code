@@ -2746,14 +2746,14 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
-      real, dimension (3) :: kkp, kkperp, vAvec
+      real, dimension (3) :: kkp, vAvec
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2, csp, cs2p, kdotvA
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, rhop, lnrhop
-      real :: wave_speed, local_omega, wave_perp
-      real :: omega_ms2, omega_ms, kpara2, kperp2, kperp
-      real :: B2, B21, vA2, k2, cm4, cm2, cn2, cms2, kdotB, kmod
+      real :: wave_speed, local_omega
+      real :: omega_ms2, omega_ms
+      real :: B2, B21, vA2, k2, cm4, cm2, cms2, kmod
       integer :: j, k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody
@@ -2945,11 +2945,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if(lmagnetic) then
                 B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
-                B21=1./max(B2,tini)
-                kdotB=kkp(1)*bbp(1)+kkp(2)*bbp(2)+kkp(3)*bbp(3)
-                kpara2=B21*kdotB**2
-                kperp2=k2-kpara2
-                kperp=sqrt(kperp2)
 !
 !  compute omega_ms
 !
@@ -2959,39 +2954,18 @@ k_loop:   do while (.not. (k>npar_loc))
                 kdotvA=sum(kkp*vAvec)
                 cs2p=csp**2
                 cms2=cs2p+vA2
-                cm4=(cs2p-vA2)**2+4.*vA2*cs2p*kperp2/k2
+                cm4=cms2**2-4.*kdotvA**2*cs2p/k2
                 cm2=sqrt(cm4)
-                cn2=vA2*cs2p/cm2
                 omega_ms2=.5*k2*(cms2+cm2)
                 omega_ms=sqrt(omega_ms2)
 !
-!  compute kkperp
-!
-                do j=1,3
-                  kkperp(j)=kkp(j)-B21*kdotB*bbp(j)
-                enddo
-!
 !  wave speed
 !
-                wave_speed=omega_ms/kmod*(1.-cn2*kperp2/omega_ms2)
-                wave_perp=cn2*kperp/omega_ms
-              else
-              endif
-!
-!  group velocity (for sound with hydro)
-!
-              do j=1,3
-                group_vel(j)=uup(j)+wave_speed*kkp(j)/(kmod+tini)
-              enddo
-!
-!  correction term if there are magnetic fields
-!
-              if(lmagnetic) then
-                group_vel(1:3)=uup(1:3)+omega_ms*kkp(1:3)/k2-cs2p/(omega_ms*cm2)*(vAvec(1:3)*kdotvA-kkp(1:3)*kdotvA**2/k2)
-                !group_vel(1:3)=uup(1:3)+wave_speed*kkp(1:3)/(kmod+tini)+wave_perp*kkperp(1:3)/(kperp+tini)
+                group_vel(1:3)=uup(1:3)+omega_ms*kkp(1:3)/k2 &
+                  -cs2p/(omega_ms*cm2)*(vAvec(1:3)*kdotvA-kkp(1:3)*kdotvA**2/k2)
               else
                 if (leos) then
-                  wave_speed=sqrt(cs2p)
+                  wave_speed=csp
                 else
                   wave_speed=sqrt(0.-fp(k,izp))
                 endif
@@ -4532,7 +4506,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (2,2,2) :: box_omega
       real, dimension (3) :: grad_omega,kvec
       real :: local_omega,grav=1.
-      real :: udotk,Bdotk,B2,cs2,k2,kpara2,kperp2,vA2,cms2,om_ms2
+      real :: udotk,Bdotk,B2,cs2,k2,kperp2,vA2,cms2,om_ms2
       real :: xdist,ydist,zdist,xdistmod,ydistmod,zdistmod
 !
       intent (in) :: f, fp, ineargrid, k
@@ -4570,8 +4544,6 @@ k_loop:   do while (.not. (k>npar_loc))
           call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),kvec,Bdotk)
           call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),B2)
           vA2=B2/(mu0*exp(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ilnrho)))
-          kpara2=Bdotk**2/(B2+tini)
-          kperp2=k2-kpara2
           cms2=cs2+vA2
           om_ms2=.5*k2*(cms2+sqrt((cs2-vA2)**2+4.*vA2*cs2*kperp2/(k2+tini)))
         else
