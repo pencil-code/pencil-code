@@ -212,11 +212,10 @@ if ($help) {
 #
 my ($var1, $var2);
 
-@ARGV >  0 or die "Please specify variables too plot.\nType pc_plot_ts --help for more info.";
+@ARGV == 0 and ($var1, $var2) = ('',''); # Handle this case later.
 @ARGV == 1 and ($var1, $var2) = ('t', $ARGV[0]);
 @ARGV == 2 and ($var1, $var2) = @ARGV;
 @ARGV >  2 and die "This program only takes two parameters.\nType pc_plot_ts --help for more info.";
-
 
 ########################
 #
@@ -317,6 +316,17 @@ $header =~ s/-+$//;
 
 my @header = split(/-+/, $header);
 
+
+#
+#  Now I can handle the case where there are no arguments.
+#
+if (@ARGV == 0) {
+    print "USAGE: pc_plot_ts VAR1 [VAR2] [OPTIONS]\n\n";
+    print "Type `pc_plot_ts --help` for documentation.\n\n";
+    print "Known variables in file '$file':\n$header\n";
+    exit(0);
+}
+
 #
 #  Locate the plot variables.
 #
@@ -327,9 +337,6 @@ for my $i (0..$#header) {
     $i1 = $i + 1 if ($var1 eq $header[$i]);
     $i2 = $i + 1 if ($var2 eq $header[$i]);
 }
-
-$i1 > 0 or die "Could not find column '$var1' in '$file'\n";
-$i2 > 0 or die "Could not find column '$var2' in '$file'\n";
 
 
 #
