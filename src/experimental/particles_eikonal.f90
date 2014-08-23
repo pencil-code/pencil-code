@@ -42,6 +42,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
+  real :: sphere_theta1=0.0, sphere_theta2=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
@@ -125,7 +126,7 @@ module Particles
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      nray, &
+      sphere_theta1, sphere_theta2, nray, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
       beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
       nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
@@ -660,7 +661,9 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
+      real :: theta1, theta2
       integer :: l, j, k, ix0, iy0, iz0, nsource, ipar1, ipar2, isource, k1
+      integer :: ntheta
       logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
@@ -1330,6 +1333,23 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpy)=vpy3
               fp(k,ivpz)=vpz3
             endif
+          enddo
+!
+!  starting vectors on the surface of a unit sphere
+!
+        case ('sphere')
+          if (lroot) print*, 'init_particles for vvp: uniform-circle'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          ntheta=npar_loc !(for now)
+          theta1=sphere_theta1*pi/180.
+          theta2=sphere_theta2*pi/180.
+          do k=1,ntheta-1,2
+            theta=theta1+(theta2-theta1)*real(k-1)/real(ntheta-2)
+            fp(k,ivpx)=fp(k,ivpx)+amplvvp*sin(theta)
+            fp(k,ivpz)=fp(k,ivpz)+amplvvp*cos(theta)
+            fp(k+1,ivpx)=fp(k+1,ivpx)-amplvvp*sin(theta)
+            fp(k+1,ivpz)=fp(k+1,ivpz)-amplvvp*cos(theta)
           enddo
 !
 !  fill uniform circle (currently 2-D)
