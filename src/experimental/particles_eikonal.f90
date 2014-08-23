@@ -1338,6 +1338,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  starting vectors on the surface of a unit sphere
 !
         case ('sphere')
+!         if (lroot) open(1,file='
           if (lroot) print*, 'init_particles for vvp: uniform-circle'
           if (lroot) &
               print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
@@ -2745,9 +2746,9 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
-      real, dimension (3) :: kkp, kkperp
+      real, dimension (3) :: kkp, kkperp, vAvec
       real, dimension(:), allocatable :: rep,stocunn
-      real :: rho1_point, tausp1_par, up2, csp, cs2p
+      real :: rho1_point, tausp1_par, up2, csp, cs2p, kdotvA
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, rhop, lnrhop
       real :: wave_speed, local_omega, wave_perp
@@ -2954,6 +2955,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
                 rhop=exp(lnrhop)
                 vA2=B2/(mu0*rhop)
+                vAvec(1:3)=bbp(1:3)/sqrt(mu0*rhop)
+                kdotvA=sum(kkp*vAvec)
                 cs2p=csp**2
                 cms2=cs2p+vA2
                 cm4=(cs2p-vA2)**2+4.*vA2*cs2p*kperp2/k2
@@ -2973,11 +2976,6 @@ k_loop:   do while (.not. (k>npar_loc))
                 wave_speed=omega_ms/kmod*(1.-cn2*kperp2/omega_ms2)
                 wave_perp=cn2*kperp/omega_ms
               else
-                if (leos) then
-                  wave_speed=sqrt(cs2p)
-                else
-                  wave_speed=sqrt(0.-fp(k,izp))
-                endif
               endif
 !
 !  group velocity (for sound with hydro)
@@ -2989,9 +2987,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !  correction term if there are magnetic fields
 !
               if(lmagnetic) then
-                do j=1,3
-                  group_vel(j)=group_vel(j)+wave_perp*kkperp(j)/(kperp+tini)
-                enddo
+                group_vel(1:3)=uup(1:3)+omega_ms*kkp(1:3)/k2-cs2p/(omega_ms*cm2)*(vAvec(1:3)*kdotvA-kkp(1:3)*kdotvA**2/k2)
+                !group_vel(1:3)=uup(1:3)+wave_speed*kkp(1:3)/(kmod+tini)+wave_perp*kkperp(1:3)/(kperp+tini)
+              else
+                if (leos) then
+                  wave_speed=sqrt(cs2p)
+                else
+                  wave_speed=sqrt(0.-fp(k,izp))
+                endif
+                group_vel(1:3)=uup(1:3)+wave_speed*kkp(1:3)/(kmod+tini)
               endif
 !
               if (nxgrid/=1) dfp(k,ixp)=dfp(k,ixp)+group_vel(1)
