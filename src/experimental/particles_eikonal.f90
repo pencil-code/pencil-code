@@ -2733,6 +2733,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Diagnostics
       use EquationOfState, only: cs20, ics
+      use Magnetic, only: get_bext
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
       use Particles_dragforce
@@ -2746,7 +2747,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
-      real, dimension (3) :: kkp, vAvec
+      real, dimension (3) :: kkp, vAvec, bb_ext
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2, csp, cs2p, kdotvA
       real :: weight, weight_x, weight_y, weight_z
@@ -2809,6 +2810,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
 !
+        if (lfirstpoint .and. lmagnetic) call get_bext(bb_ext)
+!
         if (npar_imn(imn)/=0) then
 !
           if (lfirst.and.ldt) then
@@ -2863,6 +2866,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 else
                   bbp=f(ix0,iy0,iz0,ibx:ibz)
                 endif
+                if (any(bb_ext) /= 0.0) bbp = bbp + bb_ext
               else
                 bbp=0.0
               endif
@@ -4498,13 +4502,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Sub, only: dot,dot2
       use EquationOfState, only: ics
+      use Magnetic, only: get_bext
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: ix0,iy0,iz0,ix1,iy1,iz1,k
       real, dimension (2,2,2) :: box_omega
-      real, dimension (3) :: grad_omega,kvec
+      real, dimension (3) :: grad_omega,kvec,bb_ext
       real :: local_omega,grav=1.
       real :: udotk,Bdotk,B2,cs2,k2,kperp2,vA2,cms2,om_ms2
       real :: xdist,ydist,zdist,xdistmod,ydistmod,zdistmod
@@ -4525,6 +4530,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       kvec=fp(k,ivpx:ivpz)
       k2=kvec(1)**2+kvec(2)**2+kvec(3)**2
+!
+      if (lmagnetic) call get_bext(bb_ext)
+!
       do iz=1,2
       do iy=1,2
       do ix=1,2
@@ -4541,8 +4549,8 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
         if(lhydro) call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,iux:iuz),kvec,udotk)
         if(lmagnetic) then
-          call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),kvec,Bdotk)
-          call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),B2)
+          call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz)+bb_ext,kvec,Bdotk)
+          call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz)+bb_ext,B2)
           vA2=B2/(mu0*exp(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ilnrho)))
           cms2=cs2+vA2
           om_ms2=.5*k2*(cms2+sqrt((cs2-vA2)**2+4.*vA2*cs2*kperp2/(k2+tini)))
