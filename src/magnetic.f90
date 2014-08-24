@@ -2319,7 +2319,6 @@ module Magnetic
 !  calculations.
 !
 !  30-may-14/ccyang: coded
-!  23-aug-14/axel: added external field calculation
 !
       use Boundcond, only: update_ghosts, zero_ghosts
       use Sub, only: gij, curl_mn
@@ -2339,13 +2338,6 @@ module Magnetic
           n = nn(imn)
           call gij(f, iaa, aij, 1)
           call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
-!
-!  Add the external field.
-!
-          if (B_ext(1)/=0.0) bb(:,1)=bb(:,1)+B_ext(1)
-          if (B_ext(2)/=0.0) bb(:,2)=bb(:,2)+B_ext(2)
-          if (B_ext(3)/=0.0) bb(:,3)=bb(:,3)+B_ext(3)
-!
           f(l1:l2,m,n,ibx:ibz) = bb
         enddo mn_loop
       endif getbb
