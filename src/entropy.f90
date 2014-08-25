@@ -3904,9 +3904,9 @@ module Energy
 
 ! 
       if (pretend_lnTT) then
-        thdiff=gamma*(pchi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)+gchiglnTT)
+        thdiff=gamma*(pchi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)+gchiglnTT*p%shock)
       else
-        thdiff=pchi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)+gchiglnTT
+        thdiff=pchi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)+gchiglnTT*p%shock
       endif
 !
 !  Add heat conduction to entropy equation.
