@@ -762,6 +762,25 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ 
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
+  echo "Triton - Aalto University, Finland"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+module load openmpi/1.6.5-gcc
+module list
+  set mpirunops = "--mpi=openmpi"
+  set mpirunops2 = ''
+  set mpirun = 'srun'
+  set npops = '-n $ncpus'
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
 else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
   echo "Alcyone - University of Helsinki, Finland"
   if ($?SLURM_JOBID) then

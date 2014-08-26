@@ -1645,6 +1645,14 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(taito*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(taito*)
 ##
+## Triton.aalto.fi: FGI cluster at Aalto
+##
+#FC=mpif90 #(login*|manterm1|kapylap1)
+#F90=$(FC) #(login*|manterm1|kapylap1)
+#CC=mpicc #(login*|manterm1|kapylap1)
+#FFLAGS_DOUBLE=-r8 #(login*|manterm1|kapylap1)
+#CFLAGS=-DFUNDERSC=1 -O3 #(login*|manterm1|kapylap1)
+#LD_MPI= #(login*|manterm1|kapylap1)
 ##
 ## Steve's test cluster
 ##
