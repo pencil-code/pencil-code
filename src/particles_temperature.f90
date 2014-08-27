@@ -125,6 +125,49 @@ module Particles_temperature
 !
     endsubroutine init_particles_temperature
 !***********************************************************************
+    subroutine dpTT_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of particle temperature.
+!
+!  28-aug-14/jonas+nils: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dpTT_dt
+!***********************************************************************
+    subroutine dpTT_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of particle temperature.
+!
+!  28-aug-14/jonas+nils: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      intent (in) :: f, df, fp, ineargrid
+      intent (inout) :: dfp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dpTT_dt_pencil
+!***********************************************************************
     subroutine read_particles_temperature_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
@@ -170,5 +213,26 @@ module Particles_temperature
       write(unit,NML=particles_temperature_run_pars)
 !
     endsubroutine write_particles_temperature_run_pars
+!***********************************************************************
+    subroutine rprint_particles_temperature(lreset,lwrite)
+!
+!  Read and register print parameters relevant for particles temperature.
+!
+!  28-aug-14/jonas+nils: coded
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      logical :: lwr
+!
+!  Write information to index.pro
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+      if (lwr) write(3,*) 'iox=', iox
+!
+      call keep_compiler_quiet(lreset)
+!
+    endsubroutine rprint_particles_temperature
 !***********************************************************************
   end module Particles_temperature
