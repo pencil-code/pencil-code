@@ -286,7 +286,7 @@ nprocz=dim.nprocz
 ;  Read variables from zaver.in
 ;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/zaver.in', allvariables
+spawn, 'cat '+datatopdir+'/zaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
 if (variables[0] eq '') then variables=allvariables
 nvarall=n_elements(allvariables)
 nvar=n_elements(variables)

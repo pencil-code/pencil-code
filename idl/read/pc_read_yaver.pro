@@ -263,7 +263,7 @@ nprocz=dim.nprocz
 ;  Read variables from yaver.in
 ;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/yaver.in', allvariables
+spawn, 'cat '+datatopdir+'/yaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
 ;
 ; Remove commented and empty elements from allvariables
 ;
