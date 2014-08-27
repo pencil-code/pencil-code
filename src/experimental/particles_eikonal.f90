@@ -74,6 +74,7 @@ module Particles
   real :: fake_particle_radius=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
+  logical :: lleft_down=.false.
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -126,7 +127,7 @@ module Particles
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      sphere_theta1, sphere_theta2, nray, &
+      sphere_theta1, sphere_theta2, nray, lleft_down, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
       beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
       nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
@@ -661,7 +662,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
-      real :: theta1, theta2
+      real :: theta1, theta2, fact=1.
       integer :: l, j, k, ix0, iy0, iz0, nsource, ipar1, ipar2, isource, k1
       integer :: ntheta
       logical :: lequidistant=.false.
@@ -738,6 +739,17 @@ module Particles
               fp(k,izp)=zp3
             endif
           enddo
+!
+!  read from file (currently only for one processor)
+!
+        case ('read_file')
+          if (lroot) print*, 'init_particles: read file'
+          open (1,file='particles_initial.dat')
+          print*,'iproc,npar_loc=',iproc,npar_loc
+          do k=1,npar_loc
+            read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+          enddo
+          close(1)
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -1345,12 +1357,13 @@ k_loop:   do while (.not. (k>npar_loc))
           ntheta=npar_loc !(for now)
           theta1=sphere_theta1*pi/180.
           theta2=sphere_theta2*pi/180.
+          if (lleft_down) fact=-1.
           do k=1,ntheta-1,2
             theta=theta1+(theta2-theta1)*real(k-1)/real(ntheta-2)
             fp(k,ivpx)=fp(k,ivpx)+amplvvp*sin(theta)
             fp(k,ivpz)=fp(k,ivpz)+amplvvp*cos(theta)
             fp(k+1,ivpx)=fp(k+1,ivpx)-amplvvp*sin(theta)
-            fp(k+1,ivpz)=fp(k+1,ivpz)-amplvvp*cos(theta)
+            fp(k+1,ivpz)=fp(k+1,ivpz)-amplvvp*cos(theta)*fact
           enddo
 !
 !  fill uniform circle (currently 2-D)
@@ -2866,7 +2879,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 else
                   bbp=f(ix0,iy0,iz0,ibx:ibz)
                 endif
-                if (any(bb_ext) /= 0.0) bbp = bbp + bb_ext
+                if (any(bb_ext /= 0.0)) bbp = bbp + bb_ext
               else
                 bbp=0.0
               endif
