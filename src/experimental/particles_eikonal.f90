@@ -740,17 +740,6 @@ module Particles
             endif
           enddo
 !
-!  read from file (currently only for one processor)
-!
-        case ('read_file')
-          if (lroot) print*, 'init_particles: read file'
-          open (1,file='particles_initial.dat')
-          print*,'iproc,npar_loc=',iproc,npar_loc
-          do k=1,npar_loc
-            read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
-          enddo
-          close(1)
-!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -1347,10 +1336,22 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
           enddo
 !
-!  starting vectors on the surface of a unit sphere
+!  Read input data from a file. This should happen on only one processor.
+!
+        case ('read_file')
+          if (npar_loc /= 0) then
+            print*, 'init_particles: read file, iproc=',iproc
+            open (1,file='particles_initial.dat')
+            do k=1,npar_loc
+              read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+            enddo
+            close(1)
+            print*,'iproc,fp(:,1)=',iproc,fp(:,1)
+         endif
+!
+!  Starting vectors on the surface of a unit sphere.
 !
         case ('sphere')
-!         if (lroot) open(1,file='
           if (lroot) print*, 'init_particles for vvp: uniform-circle'
           if (lroot) &
               print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
