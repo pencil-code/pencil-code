@@ -2070,23 +2070,20 @@ module Density
       if (ldiff_shock) then
         if (ldensity_nolog) then
           call dot_mn(p%gshock,p%grho,gshockgrho)
-          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + &
-              diffrho_shock*(p%shock*p%del2rho + gshockgrho)
+          fdiff = fdiff + diffrho_shock * (p%shock * p%del2rho + gshockgrho)
         else
           if (ldiffusion_nolog) then
             call dot_mn(p%gshock,p%grho,gshockgrho)
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + p%rho1* &
-              diffrho_shock*(p%shock*p%del2rho + gshockgrho)
+            fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + gshockgrho)
           else
             call dot_mn(p%gshock,p%glnrho,gshockglnrho)
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-                diffrho_shock*(p%shock*(p%del2lnrho+p%glnrho2) + gshockglnrho)
+            fdiff = fdiff + diffrho_shock * (p%shock * (p%del2lnrho + p%glnrho2) + gshockglnrho)
 !
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
 !
             if (lanti_shockdiffusion) then
-              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
+              fdiff = fdiff - diffrho_shock * ( &
                   p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
                   2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
                   p%gshock(:,3)*dlnrhodz_init_z(n) )
