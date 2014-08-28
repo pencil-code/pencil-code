@@ -81,6 +81,7 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_etot=0     ! DIAG_DOC: $\langle e_\textrm{th} + \rho u^2 / 2\rangle$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -337,6 +338,10 @@ module Energy
 !
       if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0) lpenc_diagnos(i_eth)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
+      etot: if (idiag_etot /= 0) then
+        lpenc_diagnos(i_eth) = .true.
+        lpenc_diagnos(i_ekin) = .true.
+      endif etot
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
         lpenc_diagnos(i_pp)=.true.
@@ -496,6 +501,7 @@ module Energy
         if (idiag_ethmin/=0) call max_mn_name(-p%eth,idiag_ethmin,lneg=.true.)
         if (idiag_ethmax/=0) call max_mn_name(p%eth,idiag_ethmax)
         if (idiag_eem/=0)    call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_etot /= 0) call sum_mn_name(p%eth + p%ekin, idiag_etot)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
       endif
 !
@@ -616,6 +622,7 @@ module Energy
       if (lreset) then
         idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
         idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0; idiag_eem=0
+        idiag_etot = 0
         idiag_pdivum=0; idiag_ppm=0
       endif
 !
@@ -629,6 +636,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ethmin',idiag_ethmin)
         call parse_name(iname,cname(iname),cform(iname),'ethmax',idiag_ethmax)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
+        call parse_name(iname,cname(iname),cform(iname),'etot',idiag_etot)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
       enddo
