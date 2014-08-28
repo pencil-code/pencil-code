@@ -91,7 +91,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
-  logical :: lmassdiff_fix=.false.
+  logical :: lmassdiff_fixmom = .false., lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
@@ -119,6 +119,7 @@ module Density
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
+      lmassdiff_fixmom, lmassdiff_fixkin, &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
@@ -136,7 +137,7 @@ module Density
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
-      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
+      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fixmom, lmassdiff_fixkin, &
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
@@ -430,6 +431,11 @@ module Density
         endif
 !        
       endif
+!
+!  lmassdiff_fixmom and lmassdiff_fixkin cannot be both set.
+!
+      if (lmassdiff_fixmom .and. lmassdiff_fixkin) &
+          call fatal_error('initialize_density', 'lmassdiff_fixmom and lmassdiff_fixkin cannot be both set')
 !
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
       if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
@@ -1596,7 +1602,7 @@ module Density
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if (lmassdiff_fix) then
+      if (lmassdiff_fixmom .or. lmassdiff_fixkin) then
         if ((lhydro.or.lentropy.or.ltemperature).and.ldensity_nolog) &
             lpenc_requested(i_rho1)=.true.
         if (lhydro) lpenc_requested(i_uu)=.true.
@@ -2110,17 +2116,19 @@ module Density
 !  Improve energy and momentum conservation by compensating
 !  for mass diffusion
 !
-      if (lmassdiff_fix) then
+      massdiff: if (lmassdiff_fixmom .or. lmassdiff_fixkin) then
         if (ldensity_nolog) then
           tmp = fdiff*p%rho1
         else
           tmp = fdiff
         endif
-        if (lhydro) then
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1)*tmp/2.
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2)*tmp/2.
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3)*tmp/2.
-        endif
+        hydro: if (lhydro) then
+          if (lmassdiff_fixmom) then
+            forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+          else
+            forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - 0.5 * p%uu(:,j-iuu+1) * tmp
+          endif
+        endif hydro
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tmp*p%cp
         elseif (lentropy.and.pretend_lnTT) then
@@ -2132,7 +2140,7 @@ module Density
         elseif (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
         endif
-      endif
+      endif massdiff
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
