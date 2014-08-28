@@ -47,14 +47,15 @@ module Density
   logical :: lconserve_mass = .false.
   logical :: ldiff_shock = .false.
   logical :: ldiff_hyper3_mesh = .false.
+  logical :: lmassdiff_fix = .false.
   real :: nu_epicycle = 1.0
   real :: density_floor = 0.0
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
 !
-  namelist /density_init_pars/ zstrat, nu_epicycle, initrho, amplrho, beta_glnrho_global, lconserve_mass
+  namelist /density_init_pars/ zstrat, nu_epicycle, initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
-  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass
+  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass, lmassdiff_fix
 !
 !  Diagnostic Variables
 !
@@ -252,6 +253,11 @@ module Density
         lpenc_requested(i_grhos) = .true.
       endif shock
 !
+      massdiff: if (lmassdiff_fix .and. lhydro) then
+        lpenc_requested(i_rhos1) = .true.
+        lpenc_requested(i_uu) = .true.
+      endif massdiff
+!
 !  Diagnostic Pencils
 !
       if (idiag_mass /= 0 .or. idiag_rhomin /= 0 .or. idiag_rhomax /= 0) lpenc_diagnos(i_rho) = .true.
@@ -439,6 +445,7 @@ module Density
 !  Continuity equation.
 !
 !  02-nov-13/ccyang: coded.
+!  24-aug-14/ccyang: add mass diffusion correction.
 !
       use Sub, only: identify_bcs, dot_mn, del2
       use Deriv, only: der6
@@ -449,7 +456,7 @@ module Density
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: del2rhos, penc
+      real, dimension(nx) :: fdiff, del2rhos, penc
       integer :: j
 !
 !  Start the clock for this procedure.
@@ -465,12 +472,14 @@ module Density
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ugrhos - p%rhos * (p%divu + p%uu(:,3) * dlnrho0dz(n))
 !
+      fdiff = 0.0
+!
 !  Shock mass diffusion
 !
       shock: if (ldiff_shock) then
         call del2(f, irho, del2rhos)
         call dot_mn(p%gshock, p%grhos, penc)
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + diffrho_shock * (p%shock * del2rhos + penc)
+        fdiff = fdiff + diffrho_shock * (p%shock * del2rhos + penc)
         if (lfirst .and. ldt) diffus_diffrho = diffus_diffrho + diffrho_shock * dxyz_2 * p%shock
       endif shock
 !
@@ -479,11 +488,23 @@ module Density
       hyper3: if (ldiff_hyper3_mesh) then
         dir: do j = 1, 3
           call der6(f, irho, penc, j, ignoredx=.true.)
-          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + diffrho_hyper3_mesh * penc * dline_1(:,j)
+          fdiff = fdiff + diffrho_hyper3_mesh * penc * dline_1(:,j)
         enddo dir
         if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 &
                                               + diffrho_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
       endif hyper3
+!
+      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+!
+!  Mass diffusion corrections.
+!
+      massdiff: if (lmassdiff_fix) then
+        hydro: if (lhydro) then
+          penc = fdiff * p%rhos1
+          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - penc * p%uu(:,j-iuu+1)
+        endif hydro
+        if (lenergy) call fatal_error('dlnrho_dt', 'mass diffusion correction for the energy equation is not implemented. ')
+      endif massdiff
 !
 !  Call optional user-defined calculations.
 !
