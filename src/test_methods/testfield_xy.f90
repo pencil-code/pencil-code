@@ -286,6 +286,7 @@ module Testfield
 !
       integer, dimension(idiag_base_end) :: idiags_map
       integer :: i,j
+      real, dimension (nx,ny,3,njtest)  :: tmp
 
 !  consider rotation of coordinate system about x axis by pi/2, that is: x --> x, y --> z, z --> -y;
 !
@@ -300,29 +301,34 @@ module Testfield
 
 !      correspondingly in testfield_xz:
 !
+!       1            2          3          4          5          6          7          8          9
 !      'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   '
+!       10           11         12         13         14         15         16         17         18     
 !      'eta111  ','eta211  ','eta311  ','eta121  ','eta221  ','eta321  ','eta131  ','eta231  ','eta331  '
+!       19           20         21         22         23         24         25         26         27
 !      'eta113  ','eta213  ','eta313  ','eta123  ','eta223  ','eta323  ','eta133  ','eta233  ','eta333  '
 
 !     hence the following mapping by idiags_map, where a negative sign indicates that the sign of the coefficient must
 !     be inverted:
 !
-!     running index   1   2    3   4   5   6   7   8   9  10  11   12  13  14   15   16   17  18
+!     running index   1   2   3     4    5    6   7     8   9   10   11   12   13  14   15   16   17  18
 !
-      idiags_map = (/ 1,  3,  -2,  7,  9, -8, -4, -6,  5, 10, 12, -11, 16, 18, -17, -13, -15, 14, &
+      idiags_map = (/ 1,  3, -2,    7,   9,  -8, -4,   -6,  5,  10,  12, -11,  16, 18, -17, -13, -15, 14, &
 !
-!                    19  20   21  22  23  24  25  26  27
+!     running index  19   20   21   22  23   24   25   26  27
 !
-                     19, 21, -20, 25, 27,-26,-22,-24, 23 /)
+                     19,  21, -20,  25, 27, -26, -22, -24, 23 /)
 !
+      tmp=uxbtestm(:,:,(/1,3,2/),:); tmp(:,:,2,:)=-tmp(:,:,2,:)
+
       call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
                               idiags_xy(idiag_Eij_start:idiag_Eij_end), &
                               idiag_alp11h, idiag_eta122h, &
-                              uxbtestm,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
+                              tmp,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
                               twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
 !
-!  mapping back and sign inversion if necessary
+!  sign inversion if necessary
 !
       if (ldiagnos .and. needed2d(1)) then
         where(idiags(1:idiag_base_end)/=0) fname(idiags(1:idiag_base_end)) =  sign(1.,float(idiags_map)) &
@@ -335,12 +341,12 @@ module Testfield
         endif
       endif
       
-!      if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
-         do i=1,ny; do j=1,nx
-           where(idiags_xy(1:idiag_base_end)/=0) &
-             fnamexy(j,i,idiags_xy(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamexy(j,i,idiags_xy(1:idiag_base_end))
-         enddo; enddo
-!      endif
+      if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
+        do i=1,ny; do j=1,nx
+          where(idiags_xy(1:idiag_base_end)/=0) &
+            fnamexy(j,i,idiags_xy(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamexy(j,i,idiags_xy(1:idiag_base_end))
+        enddo; enddo
+      endif
 
     endsubroutine calc_coeffs
 !***********************************************************************
@@ -368,13 +374,13 @@ module Testfield
       case (2); bbtest(:,1)=sx*cy(ml); bbtest(:,2)=0.; bbtest(:,3)=0.
       case (3); bbtest(:,1)=cx*sy(ml); bbtest(:,2)=0.; bbtest(:,3)=0.
 !
-      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cy(ml); bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cy(ml); bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sy(ml); bbtest(:,3)=0.
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-cx*cy(ml)
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-sx*cy(ml)
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-cx*sy(ml)
 !
-      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cy(ml)
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cy(ml)
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sy(ml)
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=cx*cy(ml); bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=sx*cy(ml); bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=cx*sy(ml); bbtest(:,3)=0.
 !
       case default; bbtest=0.
 !
@@ -446,13 +452,13 @@ module Testfield
       case (2); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
       case (3); bbtest(:,1)=yy; bbtest(:,2)=0.; bbtest(:,3)=0.
 !
-      case (4); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=yy; bbtest(:,3)=0.
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-1.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-xx
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=-yy
 !
-      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=yy
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=yy; bbtest(:,3)=0.
 !
       case default; bbtest=0.
       endselect
