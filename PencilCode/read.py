@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2013-05-06
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', verbose=True):
+def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
     """Returns the time series of 1D averages.
 
     Keyword Arguments:
@@ -15,11 +15,15 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
             Name of the data directory.
         plane
             Plane of average: 'xy', 'xz', or 'yz'.
+        tsize
+            If not None, the time series is interpolated onto regular
+            time intervals with tsize elements and endpoints included.
         verbose
             Whether or not to print information.
     """
-    # Chao-Chin Yang, 2013-10-31
-
+    # Chao-Chin Yang, 2014-08-29
+    import numpy as np
+    from scipy.interpolate import interp1d
     # Read the dimensions and check the plane of average.
     dim = dimensions(datadir=datadir)
     if plane == 'xy':
@@ -30,17 +34,13 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
         nc = dim.nxgrid
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
-
     # Read the names of the variables.
     var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
     nvar = len(var)
-
     # Open file and define data stream.
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat')
-    import numpy as np
     def fetch(nval):
         return np.fromfile(f, count=nval, sep=' ')
-
     # Check the data size.
     if verbose:
         print("Checking the data size...")
@@ -51,7 +51,6 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
             raise EOFError("incompatible data file")
         nt += 1
     f.seek(0)
-
     # Read the data.
     if verbose:
         print("Reading 1D averages", var, "...")
@@ -61,12 +60,20 @@ def avg1d(datadir='./data', plane='xy', verbose=True):
         t[i] = fetch(1)
         for v in var:
             avg[v][i,:] = fetch(nc)
-
     # Close file.
     f.close()
-
+    # Interpolate the time series if requested.
+    if tsize is not None:
+        if verbose:
+            print("Interpolating...")
+        tmin, tmax = t.min(), t.max()
+        ti = tmin + (tmax - tmin) / (tsize - 1) * np.arange(tsize)
+        avgi = np.core.records.array(len(var) * [np.zeros((tsize,nc))], names=var)
+        for v in var:
+            for k in range(nc):
+                avgi[v][:,k] = interp1d(t, avg[v][:,k])(ti)
+        t, avg = ti, avgi
     return t, avg.view(np.recarray)
-
 #=======================================================================
 def dimensions(datadir='./data'):
     """Returns the dimensions of the Pencil Code data from datadir.
