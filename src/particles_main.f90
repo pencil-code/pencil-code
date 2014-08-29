@@ -56,7 +56,7 @@ module Particles_main
       call register_particles_selfgrav     ()
       call register_particles_nbody        ()
       call register_particles_sink         ()
-      call register_particles_temperature  ()
+      call register_particles_temp  ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
 !
@@ -91,7 +91,7 @@ module Particles_main
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
       call rprint_particles_viscosity    (lreset,LWRITE=lroot)
-      call rprint_particles_temperature  (lreset,LWRITE=lroot)
+      call rprint_particles_temp  (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
       call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
@@ -189,7 +189,7 @@ module Particles_main
       call initialize_particles_spin         (f,lstarting)
       call initialize_particles_stalker      (f,lstarting)
       call initialize_particles_viscosity    (f,lstarting)
-      call initialize_particles_temperature  (f,lstarting)
+      call initialize_particles_temp         (f,lstarting)
       call initialize_particles_coag         (f,lstarting)
       call initialize_particles_collisions   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
@@ -244,7 +244,7 @@ module Particles_main
       if (lparticles_nbody)         call init_particles_nbody(f,fp)
       if (lparticles_sink)          call init_particles_sink(f,fp)
       if (lparticles_spin)          call init_particles_spin(f,fp)
-      if (lparticles_temperature)   call init_particles_temperature(f,fp)
+      if (lparticles_temperature)   call init_particles_temp(f,fp)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
 !
     endsubroutine particles_init
@@ -973,10 +973,10 @@ module Particles_main
       endif
 !
       if (lparticles_temperature) then
-        call read_particles_temperature_init_pars(unit,iostat)
+        call read_particles_temp_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_startpars('read_particles_temperature_init_pars',&
+            call samplepar_startpars('read_particles_temp_init_pars',&
                 iostat)
             return
           endif
@@ -1003,7 +1003,7 @@ module Particles_main
       if (lparticles_selfgravity) call read_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call read_particles_nbody_init_pars(unit)
       if (lparticles_viscosity)   call read_particles_visc_init_pars(unit)
-      if (lparticles_temperature) call read_particles_temperature_init_pars(unit)
+      if (lparticles_temperature) call read_particles_temp_init_pars(unit)
       if (lparticles_stalker)     call read_pstalker_init_pars(unit)
 !
     endsubroutine particles_rparam
@@ -1043,7 +1043,7 @@ module Particles_main
         if (lparticles_stalker) &
             print*,'&particles_stalker_init_pars/'
         if (lparticles_temperature) &
-            print*,'&particles_temperature_init_pars/'
+            print*,'&particles_temp_init_pars/'
         print*,'------END sample particles namelist -------'
         print*
         if (present(label)) &
@@ -1072,7 +1072,7 @@ module Particles_main
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
       if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
-      if (lparticles_temperature) call write_particles_temperature_init_pars(unit)
+      if (lparticles_temperature) call write_particles_temp_init_pars(unit)
 !
     endsubroutine particles_wparam
 !***********************************************************************
@@ -1235,10 +1235,10 @@ module Particles_main
       endif
 !
       if (lparticles_temperature) then
-        call read_particles_temperature_run_pars(unit,iostat)
+        call read_particles_temp_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_runpars('read_particles_temperature_run_pars',&
+            call samplepar_runpars('read_particles_temp_run_pars',&
                 iostat); return
           endif
         endif
@@ -1273,7 +1273,7 @@ module Particles_main
         if (lparticles_stalker)        print*,'&particles_stalker_run_pars /'
         if (lparticles_diagnos_dv)     print*,'&particles_diagnos_dv_run_pars/'
         if (lparticles_diagnos_state)  print*,'&particles_diagnos_state_run_pars/'
-        if (lparticles_temperature)    print*,'&particles_temperature_run_pars /'
+        if (lparticles_temperature)    print*,'&particles_temp_run_pars /'
         print*,'------END sample particle namelist -------'
         print*
         if (present(label)) &
@@ -1307,7 +1307,7 @@ module Particles_main
       if (lparticles_stalker)        call write_pstalker_run_pars(unit)
       if (lparticles_diagnos_dv)     call write_pars_diagnos_dv_run_pars(unit)
       if (lparticles_diagnos_state)  call write_pars_diag_state_run_pars(unit)
-      if (lparticles_temperature)    call write_particles_temperature_run_pars(unit)
+      if (lparticles_temperature)    call write_particles_temp_run_pars(unit)
 !
     endsubroutine particles_wparam2
 !***********************************************************************

@@ -28,20 +28,20 @@ module Particles_temperature
  !
   implicit none
 !
-  include 'particles_temperature.h'
+  include 'particles_temp.h'
 !
   real :: init_part_temp, emissivity
   character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
 !
-  namelist /particles_temperature_init_pars/ &
+  namelist /particles_temp_init_pars/ &
       init_particle_temperature, init_part_temp, emissivity
 !
-  namelist /particles_run_pars/ &
+  namelist /particles_temp_run_pars/ &
       emissivity
 !
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles_temp()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -65,12 +65,12 @@ module Particles_temperature
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_temperature','npvar > mpvar')
+        call fatal_error('register_particles_temp','npvar > mpvar')
       endif
 !
-    endsubroutine register_particles
+    endsubroutine register_particles_temp
 !***********************************************************************
-    subroutine initialize_particles_temperature(f,lstarting)
+    subroutine initialize_particles_temp(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -82,9 +82,9 @@ module Particles_temperature
 !
       
 !
-    end subroutine initialize_particles_temperature
+    end subroutine initialize_particles_temp
 !***********************************************************************
-    subroutine init_particles_temperature(f,fp,ineargrid)
+    subroutine init_particles_temp(f,fp,ineargrid)
 !
 !  Initial particle temperature
 !
@@ -111,19 +111,19 @@ module Particles_temperature
         case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles: nothing'
         case ('constant')
-          if (lroot) print*, 'init_particles_temperature: Constant temperature'
+          if (lroot) print*, 'init_particles_temp: Constant temperature'
           fp(1:npar_loc,iTp)=fp(1:npar_loc,iTp)+init_temp_part
         case default
           if (lroot) &
-              print*, 'init_particles_temperature: No such such value for init_particle_temperature: ', &
+              print*, 'init_particles_temp: No such such value for init_particle_temperature: ', &
               trim(init_particle_temperature(j))
-          call fatal_error('init_particles_temperature','')
+          call fatal_error('init_particles_temp','')
 !
         endselect
 !
       enddo
 !
-    endsubroutine init_particles_temperature
+    endsubroutine init_particles_temp
 !***********************************************************************
     subroutine dpTT_dt(f,df,fp,dfp,ineargrid)
 !
@@ -168,53 +168,53 @@ module Particles_temperature
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
-    subroutine read_particles_temperature_init_pars(unit,iostat)
+    subroutine read_particles_temp_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_temperature_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_temp_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_temperature_init_pars,ERR=99)
+        read(unit,NML=particles_temp_init_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_temperature_init_pars
+    endsubroutine read_particles_temp_init_pars
 !***********************************************************************
-    subroutine write_particles_temperature_init_pars(unit)
+    subroutine write_particles_temp_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_temperature_init_pars)
+      write(unit,NML=particles_temp_init_pars)
 !
-    endsubroutine write_particles_temperature_init_pars
+    endsubroutine write_particles_temp_init_pars
 !***********************************************************************
-    subroutine read_particles_temperature_run_pars(unit,iostat)
+    subroutine read_particles_temp_run_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_temperature_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_temp_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_temperature_run_pars,ERR=99)
+        read(unit,NML=particles_temp_run_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_temperature_run_pars
+    endsubroutine read_particles_temp_run_pars
 !***********************************************************************
-    subroutine write_particles_temperature_run_pars(unit)
+    subroutine write_particles_temp_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_temperature_run_pars)
+      write(unit,NML=particles_temp_run_pars)
 !
-    endsubroutine write_particles_temperature_run_pars
+    endsubroutine write_particles_temp_run_pars
 !***********************************************************************
-    subroutine rprint_particles_temperature(lreset,lwrite)
+    subroutine rprint_particles_temp(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles temperature.
 !
@@ -233,6 +233,6 @@ module Particles_temperature
 !
       call keep_compiler_quiet(lreset)
 !
-    endsubroutine rprint_particles_temperature
+    endsubroutine rprint_particles_temp
 !***********************************************************************
   end module Particles_temperature

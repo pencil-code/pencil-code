@@ -22,15 +22,15 @@ module Particles_temperature
 !
   contains
 !***********************************************************************
-    subroutine register_particles_temperature()
+    subroutine register_particles_temp()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
 !  28-aug-14/jonas+nils: coded
 !
-    endsubroutine register_particles_temperature
+    endsubroutine register_particles_temp
 !***********************************************************************
-    subroutine initialize_particles_temperature(f,lstarting)
+    subroutine initialize_particles_temp(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -43,9 +43,9 @@ module Particles_temperature
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_particles_temperature
+    endsubroutine initialize_particles_temp
 !***********************************************************************
-    subroutine init_particles_temperature(f,fp)
+    subroutine init_particles_temp(f,fp)
 !
 !  Initial temperature of particles.
 !
@@ -59,7 +59,7 @@ module Particles_temperature
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
-    endsubroutine init_particles_temperature
+    endsubroutine init_particles_temp
 !***********************************************************************
     subroutine pencil_criteria_par_temperature()
 !
@@ -112,7 +112,7 @@ module Particles_temperature
 !
     endsubroutine dpTT_dt
 !***********************************************************************
-    subroutine read_particles_temperature_init_pars(unit,iostat)
+    subroutine read_particles_temp_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -120,17 +120,17 @@ module Particles_temperature
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_temperature_init_pars
+    endsubroutine read_particles_temp_init_pars
 !***********************************************************************
-    subroutine write_particles_temperature_init_pars(unit)
+    subroutine write_particles_temp_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_temperature_init_pars
+    endsubroutine write_particles_temp_init_pars
 !***********************************************************************
-    subroutine read_particles_temperature_run_pars(unit,iostat)
+    subroutine read_particles_temp_run_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -138,17 +138,17 @@ module Particles_temperature
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_temperature_run_pars
+    endsubroutine read_particles_temp_run_pars
 !***********************************************************************
-    subroutine write_particles_temperature_run_pars(unit)
+    subroutine write_particles_temp_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_temperature_run_pars
+    endsubroutine write_particles_temp_run_pars
 !***********************************************************************
-    subroutine rprint_particles_temperature(lreset,lwrite)
+    subroutine rprint_particles_temp(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles temperature.
 !
@@ -167,9 +167,9 @@ module Particles_temperature
 !
       call keep_compiler_quiet(lreset)
 !
-    endsubroutine rprint_particles_temperature
+    endsubroutine rprint_particles_temp
 !***********************************************************************
-    subroutine particles_temperature_prepencil_calc(f)
+    subroutine particles_temp_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded
 !
@@ -177,7 +177,7 @@ module Particles_temperature
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine particles_temperature_prepencil_calc
+    endsubroutine particles_temp_prepencil_calc
 !***********************************************************************
 
 endmodule Particles_temperature
