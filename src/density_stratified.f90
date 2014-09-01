@@ -253,9 +253,12 @@ module Density
         lpenc_requested(i_grhos) = .true.
       endif shock
 !
-      massdiff: if (lmassdiff_fix .and. lhydro) then
-        lpenc_requested(i_rhos1) = .true.
-        lpenc_requested(i_uu) = .true.
+      massdiff: if (lmassdiff_fix) then
+        hydro: if (lhydro) then
+          lpenc_requested(i_rhos1) = .true.
+          lpenc_requested(i_uu) = .true.
+        endif hydro
+        if (lthermal_energy) lpenc_requested(i_u2) = .true.
       endif massdiff
 !
 !  Diagnostic Pencils
@@ -503,7 +506,11 @@ module Density
           penc = fdiff * p%rhos1
           forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - penc * p%uu(:,j-iuu+1)
         endif hydro
-        if (lenergy) call fatal_error('dlnrho_dt', 'mass diffusion correction for the energy equation is not implemented. ')
+        energy: if (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - 0.5 * rho0z(n) * fdiff * p%u2
+        elseif (lenergy) then energy
+          call fatal_error('dlnrho_dt', 'mass diffusion correction for this energy equation is not implemented. ')
+        endif energy
       endif massdiff
 !
 !  Call optional user-defined calculations.
