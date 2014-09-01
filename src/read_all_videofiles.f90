@@ -19,11 +19,11 @@ program rvid_box
       real, allocatable, dimension (:,:,:) :: xy_t,xz_t,yz_t
       real, allocatable, dimension (:) :: t_array
 !
-      real, dimension (nx,ny) :: xy_loc
-      real, dimension (nx,nz) :: xz_loc
-      real, dimension (ny,nz) :: yz_loc
+      real, dimension (nx,ny) :: xy_loc,xy_loc_dummy
+      real, dimension (nx,nz) :: xz_loc,xz_loc_dummy
+      real, dimension (ny,nz) :: yz_loc,yz_loc_dummy
 !
-      integer :: ipx,ipy,ipz,iproc,it
+      integer :: ipx,ipy,ipz,iproc,it,istride
       integer :: ipx1 = -1
       integer :: ipy1 = -1, ipy2 = -1
       integer :: ipz1 = -1, ipz2 = -1, ipz3 = -1, ipz4 = -1
@@ -34,8 +34,8 @@ program rvid_box
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
       logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
       logical :: lread_slice_xz2
-      real :: t
-      real :: slice_pos=0.
+      real :: t,t_dummy
+      real :: slice_pos=0.,slice_pos_dummy
       integer :: stride=1
 !
       character (len=fnlen) :: file='',fullname='',wfile='',directory=''
@@ -193,6 +193,9 @@ program rvid_box
             iostat=0
             open(lun_read,file=trim(fullname),status='old',form='unformatted')
             do while (iostat==0)
+              do istride=1,stride
+                read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+              enddo
               read(lun_read,iostat=iostat) xy_loc,t,slice_pos
               if (iostat==0) it=it+1
             enddo
@@ -221,6 +224,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
@@ -261,6 +267,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
@@ -301,6 +310,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
@@ -341,6 +353,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
@@ -381,6 +396,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xz_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xz_loc,t,slice_pos
                   xz_t(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz,i)=xz_loc
                   t_array(i) = t
@@ -421,6 +439,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) xz_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) xz_loc,t,slice_pos
                   xz_t(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz,i)=xz_loc
                   t_array(i) = t
@@ -461,6 +482,9 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
+                  do istride=1,stride 
+                    read(lun_read,iostat=iostat) yz_loc_dummy,t_dummy,slice_pos_dummy
+                  enddo
                   read(lun_read,iostat=iostat) yz_loc,t,slice_pos
                   yz_t(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz,i)=yz_loc
                   t_array(i) = t
