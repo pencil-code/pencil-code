@@ -35,7 +35,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    sample=sample,savefile=savefile, rotate=rotate,phi_shift=phi_shift
+    sample=sample,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
+    Beq=Beq,taud=taud
 ;
 COMMON pc_precision, zero, one
 ;
@@ -82,6 +83,7 @@ default,wsy,480
 default,title,'rvid_plane'
 default,nlevels,30
 default,phi_shift,0.
+default,Beq,1.
 ;
 tini=1e-30 ; a small number
 ;
@@ -462,16 +464,21 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           phi=y2/!dtor
           if(keyword_set(phi_shift)) then phi=phi-phi_shift
            !p.background=255
-          map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,xmargin=0.5,ymargin=0.5,15,60,color=0
+          map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,limit=[0,-30,89,160],xmargin=0.5,ymargin=0.5,15,60,color=0
           lev=grange(amin,amax,25)
           if(keyword_set(rotate)) then tmp=rotate(plane2,3) else tmp=transpose(plane2)
-          contour,tmp,phi,90.-theta2,lev=lev,/fill,/overplot, $
-            col=0, _extra=_extra
-          colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
+          if(keyword_set(Beq)) then  tmp=tmp/Beq
+          if(keyword_set(taud)) then t=t/taud
+            contour,clip(tmp,minmax(lev)),phi,90.-theta2,lev=lev,/fill,/overplot, $
+           col=0, _extra=_extra
+          ;colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.1,0.75,0.14,0.95],/vert, $
             ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
-            yaxis=0,char=1.5,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
-          xyouts,20,380,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=2
-          wait,wait
+            yaxis=0,charsize=3,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
+           xyouts,480,800,'!8t!6/!7s!6 = '+str(t,fo='(f5.2)')+'', $
+           col=0,/device,charsize=4
+           ;xyouts,480,800,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=4
+        wait,wait
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
