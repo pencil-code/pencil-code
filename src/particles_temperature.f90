@@ -28,7 +28,7 @@ module Particles_temperature
  !
   implicit none
 !
-  include 'particles_temp.h'
+  include 'particles_temperature.h'
 !
   real :: init_part_temp, emissivity
   character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
@@ -84,7 +84,7 @@ module Particles_temperature
 !
     end subroutine initialize_particles_temp
 !***********************************************************************
-    subroutine init_particles_temp(f,fp,ineargrid)
+    subroutine init_particles_temp(f,fp)
 !
 !  Initial particle temperature
 !
@@ -95,11 +95,11 @@ module Particles_temperature
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: j
 !
 
 !
-      intent (out) :: f, fp, ineargrid
+      intent (out) :: f, fp
 !
 !  Initial particle position.
 !
@@ -112,7 +112,7 @@ module Particles_temperature
           if (lroot .and. j==1) print*, 'init_particles: nothing'
         case ('constant')
           if (lroot) print*, 'init_particles_temp: Constant temperature'
-          fp(1:npar_loc,iTp)=fp(1:npar_loc,iTp)+init_temp_part
+          fp(1:npar_loc,iTp)=fp(1:npar_loc,iTp)+init_part_temp
         case default
           if (lroot) &
               print*, 'init_particles_temp: No such such value for init_particle_temperature: ', &
@@ -234,5 +234,23 @@ module Particles_temperature
       call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_temp
+!***********************************************************************
+    subroutine particles_temp_prepencil_calc(f)
+!
+!  28-aug-14/jonas+nils: coded
+!
+      real,dimension(mx,my,mz,mfarray),intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine particles_temp_prepencil_calc
+!***********************************************************************
+    subroutine pencil_criteria_par_temperature()
+!
+!  All pencils that the Particles_temperature module depends on are specified here.
+!
+!  28-aug-14/jonas+nils: coded
+!
+    endsubroutine pencil_criteria_par_temperature
 !***********************************************************************
   end module Particles_temperature
