@@ -626,7 +626,8 @@ module Density
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
-      real, pointer :: gravx, rhs_poisson_const
+      real, pointer :: gravx, rhs_poisson_const,fac_cs
+      integer, pointer :: isothmid
       complex :: omega_jeans
       integer :: j, ierr,ix,iy
       logical :: lnothing
@@ -930,11 +931,20 @@ module Density
 !  Top region.
           cs2int = cs0**2
           lnrhoint = lnrho0
+!
+          call get_shared_variable('isothmid', isothmid, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+            "there was a problem when getting isothmid")
+!
+          call get_shared_variable('fac_cs', fac_cs, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+             "there was a problem when getting fac_cs")
+!
           f(:,:,:,ilnrho) = lnrho0 ! just in case
           call polytropic_lnrho_z(f,mpoly2,zref,z2,ztop+Lz, &
-                                  isothtop,cs2int,lnrhoint)
+                                  isothtop,cs2int,lnrhoint,fac_cs)
 !  Unstable layer.
-          call polytropic_lnrho_z(f,mpoly0,z2,z1,z2,0,cs2int,lnrhoint)
+          call polytropic_lnrho_z(f,mpoly0,z2,z1,z2,isothmid,cs2int,lnrhoint)
 !  Stable layer.
           call polytropic_lnrho_z(f,mpoly1,z1,z0,z1,0,cs2int,lnrhoint)
 !
@@ -1329,7 +1339,7 @@ module Density
     endfunction mean_density
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
+         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint,fac_cs)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1354,6 +1364,7 @@ module Density
       integer :: isoth
 !
       intent(in)    :: mpoly,zint,zbot,zblend,isoth
+      real, intent(in), optional    :: fac_cs
       intent(inout) :: cs2int,lnrhoint,f
 !
       stp = step(z,zblend,widthlnrho(1))
@@ -1361,7 +1372,7 @@ module Density
 ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
         if (isoth/=0.0) then ! isothermal layer
           beta1 = 0.0
-          tmp = gamma*gravz/cs2int*(z(n)-zint)
+          tmp = lnrhoint+gamma*gravz/cs2int*(z(n)-zint)
         else
           beta1 = gamma*gravz/(mpoly+1)
           tmp = 1.0 + beta1*(z(n)-zint)/cs2int
@@ -1386,7 +1397,11 @@ module Density
       else
         lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot-zint)/cs2int)
       endif
-      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
+      if (isoth.ne.0 .and. present(fac_cs)) then
+        cs2int = fac_cs*cs2int ! cs2 at layer interface (bottom)
+      else
+        cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
+      endif
 !
     endsubroutine polytropic_lnrho_z
 !***********************************************************************

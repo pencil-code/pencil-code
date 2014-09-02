@@ -62,10 +62,12 @@ module EquationOfState
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=0.0
+  real :: fac_cs=1.0 
   real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
   real :: sigmaSBt=1.0
   integer :: isothtop=0
+  integer :: isothmid=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
@@ -85,7 +87,8 @@ module EquationOfState
 !
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux
+      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
+      fac_cs,isothmid
 !
 !  Run parameters.
 !
@@ -282,6 +285,12 @@ module EquationOfState
       call put_shared_variable('cv',cv,ierr)
         if (ierr/=0) call stop_it("cv: "//&
              "there was a problem when sharing cv")
+      call put_shared_variable('isothmid',isothmid,ierr)
+        if (ierr/=0) call stop_it("isothmid: "//&
+             "there was a problem when sharing isothmid")
+      call put_shared_variable('fac_cs',fac_cs,ierr)
+        if (ierr/=0) call stop_it("fac_cs: "//&
+             "there was a problem when sharing fac_cs")
 !
       if (lanelastic) then
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)

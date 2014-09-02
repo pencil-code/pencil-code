@@ -1808,6 +1808,14 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry|dhcp-eduroam-hy*)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(lm3-huckleberry|dhcp-eduroam-hy*)
 ##
+##
+## Piyali's work laptop at UiO(MacBook Pro)
+##
+#FC=mpif90 #(grove.uio.no)
+#FFLAGS= -O3 #(grove.uio.no)
+#CFLAGS=-DFUNDERSC=1 #(grove.uio.no)
+#FFLAGS_DOUBLE=-r8  #(grove.uio.no)
+##
 ## Gustavo's laptop
 #FC=mpif90 #(Plato)
 #FFLAGS= -O0 #(Plato)

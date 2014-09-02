@@ -143,6 +143,7 @@ module Energy
       mixinglength_flux, entropy_flux, &
       chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
+!      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, T0, &
       ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
@@ -1083,6 +1084,7 @@ module Energy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
+      use SharedVariables, only: get_shared_variable
       use EquationOfState,  only: isothtop, get_cp1, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
@@ -1100,6 +1102,9 @@ module Energy
       real, dimension (nx) :: pp,lnrho,ss,r_mn
       real, dimension (mx) :: ss_mx
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext,cp1
+      real, pointer :: fac_cs
+      integer, pointer :: isothmid
+      integer :: ierr
       integer :: j
       logical :: lnothing=.true., save_pretend_lnTT
 !
@@ -1282,11 +1287,20 @@ module Energy
             ss0 = 0.              ! reference value ss0 is zero
             ssint = ss0
             f(:,:,:,iss) = 0.    ! just in case
+!
+            call get_shared_variable('isothmid', isothmid, ierr)
+            if (ierr/=0) call fatal_error("init_energy:",&
+               "there was a problem when getting isothmid")
+!
+            call get_shared_variable('fac_cs', fac_cs, ierr)
+            if (ierr/=0) call fatal_error("init_energy:",&
+               "there was a problem when getting fac_cs")
+!
 !  Top layer.
             call polytropic_ss_z(f,mpoly2,zref,z2,z0+2*Lz, &
-                                 isothtop,cs2int,ssint)
+                                 isothtop,cs2int,ssint,fac_cs)
 !  Unstable layer.
-            call polytropic_ss_z(f,mpoly0,z2,z1,z2,0,cs2int,ssint)
+            call polytropic_ss_z(f,mpoly0,z2,z1,z2,isothmid,cs2int,ssint)
 !  Stable layer.
             call polytropic_ss_z(f,mpoly1,z1,z0,z1,0,cs2int,ssint)
           case ('piecew-disc', '41')
@@ -1467,7 +1481,7 @@ module Energy
     endsubroutine blob_radeq
 !***********************************************************************
     subroutine polytropic_ss_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
+         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint,fac_cs)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1484,31 +1498,37 @@ module Energy
 !
       use Gravity, only: gravz
       use Sub, only: step
+      use EquationOfState, only: get_cp1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint
+      real :: cp1
       integer :: isoth
+!
+      real,intent(in),optional    :: fac_cs
+      intent(inout) :: cs2int,ssint,f
 !
 !  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
 !
+      call get_cp1(cp1)
       if (headt .and. isoth/=0.0) print*,'ssint=',ssint
       stp = step(z,zblend,widthss)
 !
       do n=n1,n2; do m=m1,m2
         if (isoth/=0.0) then ! isothermal layer
           beta1 = 0.0
-          tmp = ssint - gamma_m1*gravz*(z(n)-zint)/cs2int
+          tmp = ssint - gamma_m1*gravz*(z(n)-zint)/cs2int/cp1
         else
           beta1 = gamma*gravz/(mpoly+1)
-          tmp = 1.0 + beta1*(z(n)-zint)/cs2int
+          tmp = (1.0 + beta1*(z(n)-zint)/cs2int)
           ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
             call fatal_error('polytropic_ss_z', &
                 'Imaginary entropy values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)
+          tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)/cp1
         endif
 !
 !  Smoothly blend the old value (above zblend) and the new one (below
@@ -1518,13 +1538,21 @@ module Energy
 !
       enddo; enddo
 !
-      if (isoth/=0.0) then
-        ssint = -gamma_m1*gravz*(zbot-zint)/cs2int
+      if (isoth/=0) then
+        if (present(fac_cs)) then
+          ssint = ssint - gamma_m1*gravz*(zbot-zint)/cs2int/cp1+2*log(fac_cs)/gamma/cp1
+        else
+          ssint = ssint - gamma_m1*gravz*(zbot-zint)/cs2int/cp1
+        endif
       else
         ssint = ssint + (1-mpoly*gamma_m1)/gamma &
-                      * log(1 + beta1*(zbot-zint)/cs2int)
+                      * log(1 + beta1*(zbot-zint)/cs2int)/cp1
       endif
-      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
+      if (isoth .and. present(fac_cs)) then
+        cs2int = fac_cs*cs2int ! cs2 at layer interface (bottom)
+      else
+        cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
+      endif
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
