@@ -42,6 +42,7 @@ module Particles_cdata
   integer :: inp=0, irhop=0, irhops=0
   integer :: idiag_nmigmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
+  integer :: iTp,iCOp
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.

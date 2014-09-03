@@ -1,6 +1,6 @@
-! $Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
+! $Id: particles_adsorbed.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
 !
-!  This module takes care of everything related to inertial particles.
+!  This module takes care of everything related to reactive particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -9,12 +9,12 @@
 !
 ! MPVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
-! CPARAM logical, parameter :: lparticles_temperature=.true.
+! CPARAM logical, parameter :: lparticles_adsorbed=.true.
 !
-!! PENCILS PROVIDED TTp
+!! PENCILS PROVIDED adsp
 !
 !***************************************************************
-module Particles_temperature
+module Particles_adsorbed
 !
   use Cdata
   use Cparam
@@ -28,24 +28,26 @@ module Particles_temperature
  !
   implicit none
 !
-  include 'particles_temperature.h'
+  include 'particles_adsorbed.h'
 !
-  real :: init_part_temp, emissivity
-  character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
+  character (len=labellen), dimension (ninit) :: init_adsorbed='nothing'
+  real :: init_surf_frac
+  real :: diffusivity=0.0
+  real :: init_thCO=0.0
 !
-  namelist /particles_TT_init_pars/ &
-      init_particle_temperature, init_part_temp, emissivity
+  namelist /particles_ads_init_pars/ &
+      init_adsorbed,init_surf_frac,init_thCO, diffusivity
 !
-  namelist /particles_TT_run_pars/ &
-      emissivity
+  namelist /particles_ads_run_pars/ &
+      diffusivity
 !
   contains
 !***********************************************************************
-    subroutine register_particles_TT()
+    subroutine register_particles_ads()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
-!  27-aug-14/jonas+nils: coded
+!  29-aug-14/jonas: coded
 !
       use FArrayManager, only: farray_register_auxiliary
 !
@@ -54,8 +56,8 @@ module Particles_temperature
 !
 !  Indices for particle position.
 !
-      iTp=npvar+1
-      pvarname(npvar+1)='iTp'
+      iCOp=npvar+1
+      pvarname(npvar+1)='iCOp'
 !
 !  Increase npvar accordingly.
 !
@@ -65,30 +67,30 @@ module Particles_temperature
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_temp','npvar > mpvar')
+        call fatal_error('register_ads','npvar > mpvar')
       endif
 !
-    endsubroutine register_particles_TT
+    endsubroutine register_particles_ads
 !***********************************************************************
-    subroutine initialize_particles_TT(f,lstarting)
+    subroutine initialize_particles_ads(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  28-aug-14/jonas+nils: coded
+!  29-aug-14/jonas coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       
 !
-    end subroutine initialize_particles_TT
+    end subroutine initialize_particles_ads
 !***********************************************************************
-    subroutine init_particles_TT(f,fp)
+    subroutine init_particles_ads(f,fp)
 !
-!  Initial particle temperature
+!  Initial particle surface fractions
 !
-!  28-aug-14/jonas+nils: coded
+!  01-sep-14/jonas: coded
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
@@ -100,43 +102,44 @@ module Particles_temperature
 !
       intent (out) :: f, fp
 !
-!  Initial particle position.
 !
-      fp(1:npar_loc,iTp)=0.
+! will have to be adapted to loop over all species
+      fp(1:npar_loc,iCOp)=0.
       do j=1,ninit
 !
-        select case (init_particle_temperature(j))
+        select case (init_adsorbed(j))
 !
         case ('nothing')
-          if (lroot .and. j==1) print*, 'init_particles: nothing'
+          if (lroot .and. j==1) print*, 'init_particles_ads: nothing'
         case ('constant')
-          if (lroot) print*, 'init_particles_temp: Constant temperature'
-          fp(1:npar_loc,iTp)=fp(1:npar_loc,iTp)+init_part_temp
+!loop over species
+          if (lroot) print*, 'init_particles_ads: Initial Surface Fraction of CO'
+          fp(1:npar_loc,iTp)=fp(1:npar_loc,iCOp)+init_thCO
         case default
           if (lroot) &
-              print*, 'init_particles_temp: No such such value for init_particle_temperature: ', &
-              trim(init_particle_temperature(j))
-          call fatal_error('init_particles_temp','')
+              print*, 'init_particles_ads: No such such value for init_ads: ', &
+              trim(init_adsorbed(j))
+          call fatal_error('init_ads','')
 !
         endselect
 !
       enddo
 !
-    endsubroutine init_particles_TT
+    endsubroutine init_particles_ads
 !***********************************************************************    
-subroutine pencil_criteria_par_TT()
+subroutine pencil_criteria_par_ads()
 !
-!  All pencils that the Particles_temperature module depends on are specified here.
+!  All pencils that the Particles_adsorbed module depends on are specified here.
 !
-!  29-aug-14/jonas+nils: coded
+!  01-sep-14/jonas: coded
 !
-    endsubroutine pencil_criteria_par_TT
+    endsubroutine pencil_criteria_par_ads
 !***********************************************************************
-    subroutine dpTT_dt(f,df,fp,dfp,ineargrid)
+    subroutine dpads_dt(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of particle temperature.
+!  Evolution of particle surface fractions.
 !
-!  28-aug-14/jonas+nils: coded
+!  01-sep-14/jonas: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -149,13 +152,13 @@ subroutine pencil_criteria_par_TT()
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dpTT_dt
+    endsubroutine dpads_dt
 !***********************************************************************
-    subroutine dpTT_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of particle temperature.
+!  Evolution of particle surface fractions
 !
-!  28-aug-14/jonas+nils: coded
+!  01-sep-14/jonas: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -173,59 +176,59 @@ subroutine pencil_criteria_par_TT()
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dpTT_dt_pencil
+    endsubroutine dpads_dt_pencil
 !***********************************************************************
-    subroutine read_particles_TT_init_pars(unit,iostat)
+    subroutine read_particles_ads_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_TT_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_ads_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_TT_init_pars,ERR=99)
+        read(unit,NML=particles_ads_init_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_TT_init_pars
+    endsubroutine read_particles_ads_init_pars
 !***********************************************************************
-    subroutine write_particles_TT_init_pars(unit)
+    subroutine write_particles_ads_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_TT_init_pars)
+      write(unit,NML=particles_ads_init_pars)
 !
-    endsubroutine write_particles_TT_init_pars
+    endsubroutine write_particles_ads_init_pars
 !***********************************************************************
-    subroutine read_particles_TT_run_pars(unit,iostat)
+    subroutine read_particles_ads_run_pars(unit,iostat)
 !
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_TT_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=particles_ads_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_TT_run_pars,ERR=99)
+        read(unit,NML=particles_ads_run_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_TT_run_pars
+    endsubroutine read_particles_ads_run_pars
 !***********************************************************************
-    subroutine write_particles_TT_run_pars(unit)
+    subroutine write_particles_ads_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_TT_run_pars)
+      write(unit,NML=particles_ads_run_pars)
 !
-    endsubroutine write_particles_TT_run_pars
+    endsubroutine write_particles_ads_run_pars
 !***********************************************************************
-    subroutine rprint_particles_TT(lreset,lwrite)
+    subroutine rprint_particles_ads(lreset,lwrite)
 !
-!  Read and register print parameters relevant for particles temperature.
+!  Read and register print parameters relevant for particles coverage fraction.
 !
-!  28-aug-14/jonas+nils: coded
+!  29-aug-14/jonas: coded
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -240,9 +243,9 @@ subroutine pencil_criteria_par_TT()
 !
       call keep_compiler_quiet(lreset)
 !
-    endsubroutine rprint_particles_TT
+    endsubroutine rprint_particles_ads
 !***********************************************************************    
-subroutine particles_TT_prepencil_calc(f)
+subroutine particles_ads_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded
 !
@@ -250,6 +253,6 @@ subroutine particles_TT_prepencil_calc(f)
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine particles_TT_prepencil_calc
+    endsubroutine particles_ads_prepencil_calc
 !***********************************************************************
-  end module Particles_temperature
+  end module Particles_adsorbed
