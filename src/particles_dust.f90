@@ -108,6 +108,8 @@ module Particles
   character (len=labellen) :: interp_pol_oo ='ngp'
   character (len=labellen) :: interp_pol_TT ='ngp'
   character (len=labellen) :: interp_pol_rho='ngp'
+  character (len=labellen) :: interp_pol_pp ='ngp'
+  character (len=labellen) :: interp_pol_species='ngp'
   character (len=labellen) :: interp_pol_gradTT='ngp'
 !
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
@@ -154,7 +156,8 @@ module Particles
       ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
-      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
+      interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
+      interp_pol_pp,interp_pol_species,brownian_T0, &
       thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
@@ -188,6 +191,7 @@ module Particles
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
+      interp_pol_pp,interp_pol_species, &
       brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
       rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &

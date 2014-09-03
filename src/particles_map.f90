@@ -1650,6 +1650,38 @@ module Particles_map
         endif
       endif
 !
+!  Pressure:
+!
+      if (interp%lpp) then
+        call fatal_error('interpolate_quantities',&
+            'Check that interpolation of pressure is properly implemented!')
+        allocate(interp_pp(k1:k2))
+        if (.not.allocated(interp_pp)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_pp'
+          call fatal_error('interpolate_quantities','')
+        endif
+        do k=k1,k2
+          interp_pp(k)=p%pp(ineargrid(k,1)-nghost)
+        enddo
+      endif
+!
+!  Species:
+!
+      if (interp%lspecies) then
+
+        call fatal_error('interpolate_quantities',&
+            'Interpolation of species not properly implemented yet!')
+        allocate(interp_species(k1:k2,nchemspec))
+        if (.not.allocated(interp_species)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_species'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,ichemspec(1),ichemspec(nchemspec),&
+            fp,ineargrid,interp_species,interp%pol_species)
+      endif
+!
     endsubroutine interpolate_quantities
 !***********************************************************************
     subroutine cleanup_interpolated_quantities

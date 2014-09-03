@@ -33,6 +33,7 @@ module Particles_cdata
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0
+  integer :: iTp=0, iCOp=0
   integer :: ivpx_cart,ivpy_cart,ivpz_cart
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
@@ -42,7 +43,6 @@ module Particles_cdata
   integer :: inp=0, irhop=0, irhops=0
   integer :: idiag_nmigmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
-  integer :: iTp,iCOp
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
@@ -68,10 +68,12 @@ module Particles_cdata
 !  Interpolation toggles:
 !
     logical :: luu, loo, lTT, lrho, lgradTT, lbb, lee
+    logical :: lpp, lspecies
 !
 !  Interpolation policies:
 !
     integer :: pol_uu, pol_oo, pol_TT, pol_rho, pol_gradTT, pol_bb, pol_ee
+    integer :: pol_pp, pol_species
   end type quant_interp_penc
 !  
   type(quant_interp_penc) :: interp
@@ -80,7 +82,8 @@ module Particles_cdata
 !  the f90 standard.
 !
     real, dimension(:,:), allocatable :: interp_uu, interp_oo, interp_gradTT
-    real, dimension(:), allocatable :: interp_TT, interp_rho
+    real, dimension(:,:), allocatable :: interp_species
+    real, dimension(:), allocatable :: interp_pp, interp_TT, interp_rho
     real, dimension(:), allocatable :: interp_bb, interp_ee
 !
 !  Interpolation policies:
