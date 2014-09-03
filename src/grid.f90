@@ -712,6 +712,23 @@ module Grid
             g3proc=z00+g3proc-g3lo
           endif
 !
+        case ('linear+log')
+          ! Grid distance is equidistant first and then increases logarithmically
+          ! .i.e., grid spacing increases linearly
+          ! d[log z] = const ==> dz = const*z
+          a=1.0
+          b=200
+          c=4.0/float(nzgrid)
+!
+          call grid_profile(a*(xi3-b)  ,grid_func(3),g3,g3der1,g3der2,param=c)
+          call grid_profile(a*(xi3lo-b),grid_func(3),g3lo,param=c)
+          call grid_profile(a*(xi3up-b),grid_func(3),g3up,param=c)
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          print*,z(10),g3up,g3lo
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
@@ -1732,6 +1749,35 @@ module Grid
         g=exp(xi)
         if (present(gder1)) gder1=  g
         if (present(gder2)) gder2=  g
+!
+      case ('linear+log')
+        ! Grid distance is equidistant near lower boundary and then 
+        ! increases logarithmically
+        if (present(param)) then
+          where (xi<0) 
+            g=1+param*xi
+          elsewhere
+            g=exp(param*xi)
+          endwhere
+          if (present(gder1)) then
+            where (xi<0) 
+              gder1=  param
+            elsewhere
+              gder1=  g*param
+            endwhere
+          endif
+          if (present(gder2)) then
+            where (xi<0) 
+              gder2=  0.0
+            elsewhere
+              gder2=  g*param**2
+            endwhere
+          endif
+        else
+          g=exp(xi)
+          if (present(gder1)) gder1=  g
+          if (present(gder2)) gder2=  g
+        endif
 !
       case ('power-law')
         ! Grid distance increases according to a power-law
