@@ -34,10 +34,12 @@ module Particles_chemistry
   real :: Particle_temperature
 
 
-!  private
+  real, dimension(mpar_loc) :: R_c_hat, R_j_hat, mod_surf_area
+
+
+  private
 !
-!  public :: input_particles, output_particles, boundconds_particles
-!
+  public :: get_R_c_hat, get_R_j_hat, get_mod_surf_area
 !
   contains
 !***********************************************************************
@@ -325,5 +327,29 @@ module Particles_chemistry
     endif
 !
     end subroutine register_particles_chemistry
+!***********************************************************************
+    subroutine get_R_c_hat(var)
+!
+      real, dimension(mpar_loc), intent(out) :: var 
+!
+      var=R_c_hat
+!
+    end subroutine get_R_c_hat
+!***********************************************************************
+    subroutine get_R_j_hat(var)
+!
+      real, dimension(mpar_loc), intent(out) :: var 
+!
+      var=R_j_hat
+!
+    end subroutine get_R_j_hat
+!***********************************************************************
+    subroutine get_mod_surf_area(var)
+!
+      real, dimension(mpar_loc), intent(out) :: var 
+!
+      var=mod_surf_area
+!
+    end subroutine get_mod_surf_area
 !***********************************************************************
   end module Particles_chemistry
