@@ -19,7 +19,7 @@
 &density_run_pars
   diffrho=0.2
   diffrho_shock=1.0
-  lmassdiff_fix=T
+  lmassdiff_fixkin=T
   idiff='normal','shock'
 /
 &grav_run_pars

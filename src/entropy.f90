@@ -1548,7 +1548,7 @@ module Energy
         ssint = ssint + (1-mpoly*gamma_m1)/gamma &
                       * log(1 + beta1*(zbot-zint)/cs2int)/cp1
       endif
-      if (isoth .and. present(fac_cs)) then
+      if (isoth.ne.0 .and. present(fac_cs)) then
         cs2int = fac_cs*cs2int ! cs2 at layer interface (bottom)
       else
         cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
