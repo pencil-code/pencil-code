@@ -76,12 +76,11 @@ module ImplicitDiffusion
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !
-! Implicitly integrate the diffusion term for components ivar1 to ivar2.
-! ivar2 can be omitted if only operating on one component.
+! Integrate the diffusion term for components ivar1 to ivar2 according 
+! to implicit_method.  ivar2 can be omitted if only operating on one 
+! component.
 !
-! 16-aug-13/ccyang: coded.
-!
-      use Shear, only: sheared_advection_fft
+! 04-sep-14/ccyang: coded.
 !
       external :: get_diffus_coeff
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -89,13 +88,6 @@ module ImplicitDiffusion
       integer, intent(in), optional :: ivar2
 !
       integer :: iv1, iv2
-      real :: dth
-!
-!  Sanity check
-!
-      if (nprocx /= 1) call fatal_error('integrate_diffusion', 'nprocx /= 1')
-      if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('integrate_diffusion', 'nxgrid /= nygrid')
-      if (nzgrid > 1 .and. mod(nxgrid, nprocz) /= 0) call fatal_error('integrate_diffusion', 'mod(nxgrid,nprocz) /= 0')
 !
 !  Check the indices.
 !
@@ -106,6 +98,41 @@ module ImplicitDiffusion
         iv2 = ivar1
       endif comp
 !
+!  Dispatch.
+!
+      method: select case (implicit_method)
+!
+      case ('full') method
+        call integrate_diffusion_full(get_diffus_coeff, f, iv1, iv2)
+!
+      case default method
+        call fatal_error('integrate_diffusion', 'unknown implicit_method = ' // implicit_method)
+!
+      endselect method
+!
+    endsubroutine integrate_diffusion
+!***********************************************************************
+    subroutine integrate_diffusion_full(get_diffus_coeff, f, ivar1, ivar2)
+!
+! Implicitly integrate the diffusion term for components ivar1 to ivar2
+! by full dimensional splitting.
+!
+! 04-sep-13/ccyang: coded.
+!
+      use Shear, only: sheared_advection_fft
+!
+      external :: get_diffus_coeff
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
+!
+      real :: dth
+!
+!  Sanity check
+!
+      if (nprocx /= 1) call fatal_error('integrate_diffusion', 'nprocx /= 1')
+      if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('integrate_diffusion', 'nxgrid /= nygrid')
+      if (nzgrid > 1 .and. mod(nxgrid, nprocz) /= 0) call fatal_error('integrate_diffusion', 'mod(nxgrid,nprocz) /= 0')
+!
 !  Get half the time step.
 !
       dth = 0.5 * dt
@@ -114,28 +141,28 @@ module ImplicitDiffusion
 !
       shearing: if (lshear) then
 !       Shear is present: Work in unsheared frame.
-        call zsweep(f, bcz1, bcz2, iv1, iv2, dth, get_diffus_coeff)
-        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
+        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
 !
-        call sheared_advection_fft(f, iv1, iv2, real(-t))
-        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
-        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
-        call sheared_advection_fft(f, iv1, iv2, real(t))
+        call sheared_advection_fft(f, ivar1, ivar2, real(-t))
+        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
+        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
+        call sheared_advection_fft(f, ivar1, ivar2, real(t))
 !
-        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
-        call zsweep(f, bcz1, bcz2, iv1, iv2, dth, get_diffus_coeff)
+        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
       else shearing
 !       No shear is present.
-        call xsweep(f, bcx1, bcx2, iv1, iv2, dth, get_diffus_coeff)
-        call ysweep(f, bcy1, bcy2, iv1, iv2, dth, get_diffus_coeff)
-        call zsweep(f, bcz1, bcz2, iv1, iv2, dth, get_diffus_coeff)
+        call xsweep(f, bcx1, bcx2, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, bcy1, bcy2, ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
 !
-        call zsweep(f, bcz1, bcz2, iv1, iv2, dth, get_diffus_coeff)
-        call ysweep(f, bcy1, bcy2, iv1, iv2, dth, get_diffus_coeff)
-        call xsweep(f, bcx1, bcx2, iv1, iv2, dth, get_diffus_coeff)
+        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, bcy1, bcy2, ivar1, ivar2, dth, get_diffus_coeff)
+        call xsweep(f, bcx1, bcx2, ivar1, ivar2, dth, get_diffus_coeff)
       endif shearing
 !
-    endsubroutine integrate_diffusion
+    endsubroutine integrate_diffusion_full
 !***********************************************************************
 !***********************************************************************
 !  LOCAL ROUTINES GO BELOW HERE.
