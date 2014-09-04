@@ -80,7 +80,7 @@ module ImplicitDiffusion
 ! to implicit_method.  ivar2 can be omitted if only operating on one 
 ! component.
 !
-! 04-sep-14/ccyang: coded.
+! 05-sep-14/ccyang: coded.
 !
       external :: get_diffus_coeff
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -104,6 +104,9 @@ module ImplicitDiffusion
 !
       case ('full') method
         call integrate_diffusion_full(get_diffus_coeff, f, iv1, iv2)
+!
+      case ('fft') method
+        call integrate_diffusion_fft(get_diffus_coeff, f, iv1, iv2)
 !
       case default method
         call fatal_error('integrate_diffusion', 'unknown implicit_method = ' // implicit_method)
@@ -164,6 +167,53 @@ module ImplicitDiffusion
 !
     endsubroutine integrate_diffusion_full
 !***********************************************************************
+    subroutine integrate_diffusion_fft(get_diffus_coeff, f, ivar1, ivar2)
+!
+! Integrate the diffusion term exactly for components ivar1 to ivar2 by
+! Fourier decomposition.  A constant diffusion coefficient is assumed.
+!
+! 05-sep-14/ccyang: coded.
+!
+      use Fourier, only: fourier_transform
+!
+      external :: get_diffus_coeff
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
+!
+      real, dimension(nx,ny,nz) :: a_re, a_im
+      real, dimension(nx) :: decay
+      real, dimension(1) :: dc
+      integer :: iv, j, k
+      real :: kx2, ky2
+!
+! Shear is not implemented.
+!
+      if (lshear) call fatal_error('integrate_diffusion_fft', 'shear solution is not implemented yet. ')
+!
+! Get the diffusion coefficient.
+!
+      call get_diffus_coeff(1, dc)
+!
+! Integrate.
+!
+      comp: do iv = ivar1, ivar2
+        a_re = f(l1:l2,m1:m2,n1:n2,iv)
+        a_im = 0.0
+        call fourier_transform(a_re, a_im)
+        xscan: do k = 1, nz
+          kx2 = kx_fft(k+ipz*nz)**2
+          yscan: do j = 1, ny
+            ky2 = ky_fft(j+ipy*ny)**2
+            decay = exp(-dc(1) * dt * (kx2 + ky2 + kz_fft(ipx*nx+1:(ipx+1)*nx)**2))
+            a_re(:,j,k) = decay * a_re(:,j,k)
+            a_im(:,j,k) = decay * a_im(:,j,k)
+          enddo yscan
+        enddo xscan
+        call fourier_transform(a_re, a_im, linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iv) = a_re
+      enddo comp
+!
+    endsubroutine integrate_diffusion_fft
 !***********************************************************************
 !  LOCAL ROUTINES GO BELOW HERE.
 !***********************************************************************
