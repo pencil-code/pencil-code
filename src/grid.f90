@@ -716,9 +716,9 @@ module Grid
           ! Grid distance is equidistant first and then increases logarithmically
           ! .i.e., grid spacing increases linearly
           ! d[log z] = const ==> dz = const*z
-          a=1.0
+          a=4.0/float(nzgrid)
           b=200
-          c=4.0/float(nzgrid)
+          c=5
 !
           call grid_profile(a*(xi3-b)  ,grid_func(3),g3,g3der1,g3der2,param=c)
           call grid_profile(a*(xi3lo-b),grid_func(3),g3lo,param=c)
@@ -1753,24 +1753,17 @@ module Grid
         ! Grid distance is equidistant near lower boundary and then 
         ! increases logarithmically
         if (present(param)) then
-          where (xi<0) 
-            g=1+param*xi
-          elsewhere
-            g=exp(param*xi)
-          endwhere
+            g=(1+xi)*0.5*(1.-tanh(param*xi))+exp(xi)*0.5*(1.+tanh(param*xi))
           if (present(gder1)) then
-            where (xi<0) 
-              gder1=  param
-            elsewhere
-              gder1=  g*param
-            endwhere
+              gder1=  0.5*((1.-tanh(param*xi))+ &
+                (1+xi)*param*(tanh(param*xi)**2-1.0)+ &
+                exp(xi)*(1.+param+tanh(param*xi)-param*tanh(param*xi)**2))
           endif
           if (present(gder2)) then
-            where (xi<0) 
-              gder2=  0.0
-            elsewhere
-              gder2=  g*param**2
-            endwhere
+              gder2 = 0.5*(1.+param)*(tanh(param*xi)**2-1.) + &
+                param**2*(1+xi)*(1.-tanh(param*xi)**2)*tanh(param*xi) + &
+                0.5*exp(xi)*(1.+2*param+(1.-2*param**2)*tanh(param*xi)- &
+                2*param*tanh(param*xi)**2+2*param**2*tanh(param*xi)**3)
           endif
         else
           g=exp(xi)
