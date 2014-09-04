@@ -2,6 +2,12 @@
 !
 !  Dummy
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: limplicit_diffusion = .false.
+!
 !***************************************************************
 module ImplicitDiffusion
 !
@@ -15,6 +21,28 @@ module ImplicitDiffusion
   include 'implicit_diffusion.h'
 !
   contains
+!***********************************************************************
+    subroutine read_implicit_diffusion_pars(unit, iostat)
+!
+!  Dummy
+!
+      integer, intent(in) :: unit
+      integer, intent(out), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
+    endsubroutine read_implicit_diffusion_pars
+!***********************************************************************
+    subroutine write_implicit_diffusion_pars(unit)
+!
+!  Dummy
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_implicit_diffusion_pars
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !

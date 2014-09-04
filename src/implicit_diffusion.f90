@@ -3,6 +3,12 @@
 !  This module provides general facilities to implicitly solve a
 !  diffusion equation.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: limplicit_diffusion = .true.
+!
 !***************************************************************
 module ImplicitDiffusion
 !
@@ -15,6 +21,12 @@ module ImplicitDiffusion
 !
   include 'implicit_diffusion.h'
 !
+!  Run-time parameters
+!
+  character(len=6) :: implicit_method = 'full'
+!
+  namelist /implicit_diffusion_pars/ implicit_method
+!
 !  Module-specific variables
 !
   real, dimension(nxgrid) :: ax_imp = 0.0, bx_imp = 0.0, cx_imp = 0.0
@@ -26,6 +38,41 @@ module ImplicitDiffusion
 !***********************************************************************
 !  PUBLIC ROUTINES GO BELOW HERE.
 !***********************************************************************
+!***********************************************************************
+    subroutine read_implicit_diffusion_pars(unit, iostat)
+!
+!  Reads the namelist implicit_diffusion_pars.
+!
+!  04-sep-14/ccyang: coded
+!
+      integer, intent(in) :: unit
+      integer, intent(out), optional :: iostat
+!
+      integer :: status
+!
+      read(unit, nml=implicit_diffusion_pars, iostat=status)
+      if (present(iostat)) then
+        iostat = status
+      else if (status /= 0) then
+        call fatal_error('read_implicit_diffusion_pars', 'unable to read namelist implicit_diffusion_pars')
+      endif
+!
+    endsubroutine read_implicit_diffusion_pars
+!***********************************************************************
+    subroutine write_implicit_diffusion_pars(unit)
+!
+!  Writes the namelist implicit_diffusion_pars.
+!
+!  04-sep-14/ccyang: coded
+!
+      integer, intent(in) :: unit
+!
+      integer :: status
+!
+      write(unit, nml=implicit_diffusion_pars, iostat=status)
+      if (status /= 0) call warning('write_implicit_diffusion_pars', 'unable to write namelist implicit_diffusion_pars')
+!
+    endsubroutine write_implicit_diffusion_pars
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !

@@ -25,6 +25,7 @@ module Param_IO
   use Gravity
   use Heatflux
   use Hydro
+  use ImplicitDiffusion
   use InitialCondition
   use Interstellar
   use Lorenz_gauge
@@ -505,6 +506,8 @@ module Param_IO
           if (lshock        ) print*,'&shock_run_pars           /'
           if (lviscosity    ) print*,'&viscosity_run_pars       /'
           if (lpower_spectrum)print*,'&power_spectrum_run_pars  /'
+          if (limplicit_diffusion) &
+                              print*,'&implicit_diffusion_pars  /'
         endif
 
 !!!        if (lstart.and.linitial_condition.and.present(label)) partype=''
@@ -601,6 +604,7 @@ module Param_IO
       call read_pars(unit,read_polymer_run_pars        ,'polymer',.true.)
       call read_pars(unit,particles_read_runpars       ,'particles',.true.)
       call read_pars(unit,read_power_spectrum_runpars  ,'power_spectrum',.true.)
+      call read_pars(unit,read_implicit_diffusion_pars ,'implicit_diffusion',.true.)
 !
       rewind(unit)
 !
@@ -775,6 +779,7 @@ module Param_IO
         call write_power_spectrum_runpars(unit)
         call write_polymer_run_pars(unit)
         call particles_wparam2(unit)
+        call write_implicit_diffusion_pars(unit)
 !
         if (unit /= 6) close(unit)
 !
