@@ -725,7 +725,6 @@ module Grid
           call grid_profile(a*(xi3up-b),grid_func(3),g3up,param=c)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
-          print*,z(10),g3up,g3lo
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
