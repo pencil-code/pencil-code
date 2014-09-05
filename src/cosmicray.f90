@@ -525,6 +525,9 @@ print*,"init_ecr: initecr = ", initecr
       call dot2_mn(gecr,gecr2)
 !
 !  if variable tensor, add extra terms and add result into decr/dt
+!  NB the implementation of this option is yet to be finished.
+!  Currently, gvKperp/gvKpara are are set to 0, leading to no
+!  effects.
 !
       if (lvariable_tensor_diff)then
 !
@@ -549,7 +552,8 @@ print*,"init_ecr: initecr = ", initecr
         do i=1,3
           tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
           do j=1,3
-            tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
+            tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi
+            tmpj(:)=tmpj(:)+gecr(:,j)*gvKperp(:,j)
           enddo
         enddo
 !

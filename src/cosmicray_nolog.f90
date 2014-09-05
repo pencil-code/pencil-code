@@ -615,6 +615,9 @@ module Cosmicray
       enddo
 !
 !  if variable tensor, add extra terms and add result into decr/dt
+!  NB the implementation of this option is yet to be finished. 
+!  Currently, gvKperp/gvKpara are are set to 0, leading to no
+!  effects.
 !
       if (lvariable_tensor_diff)then
 !
@@ -625,7 +628,7 @@ module Cosmicray
         vKpara(:)=Kpara
         vKperp(:)=Kperp
 !
-!  set gvKpara, gvKperp
+!  set gvKpara, gvKperp 
 !
         gvKperp(:,:)=0.0
         gvKpara(:,:)=0.0
@@ -640,6 +643,7 @@ module Cosmicray
           tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
           do j=1,3
             tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi
+            tmpj(:)=tmpj(:)+gecr(:,j)*gvKperp(:,j)
           enddo
         enddo
 !
