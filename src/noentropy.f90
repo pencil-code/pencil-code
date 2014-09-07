@@ -205,7 +205,7 @@ module Energy
       endif
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
-        if (lstratified) then
+        if (lstratz) then
           lpencil_in(i_glnrhos)=.true.
         else
           lpencil_in(i_glnrho)=.true.
@@ -237,7 +237,7 @@ module Energy
 !  fpres (=pressure gradient force)
 !
       fpres: if (lpencil(i_fpres)) then
-        strat: if (lstratified) then
+        strat: if (lstratz) then
           p%fpres = -spread(p%cs2,2,3) * p%glnrhos
         else strat
           do j=1,3

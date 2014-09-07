@@ -12,7 +12,6 @@
 ! CPARAM logical, parameter :: ldensity = .false.
 ! CPARAM logical, parameter :: lanelastic = .false.
 ! CPARAM logical, parameter :: lboussinesq = .true.
-! CPARAM logical, parameter :: lstratified = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
@@ -318,21 +317,6 @@ module Density
       call keep_compiler_quiet(init_average_density)
 !
     endsubroutine get_init_average_density
-!***********************************************************************
-    subroutine get_density_z(z, rho0z, dlnrho0dz)
-!
-!  Calculates equilibrium density rho0z and/or its derivative dlnrho0dz
-!  at height z.
-!
-!  19-may-14/ccyang: dummy.
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz
-!
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-!
-    endsubroutine get_density_z
 !***********************************************************************
     subroutine anelastic_after_mn(f, p, df, mass_per_proc)
 !

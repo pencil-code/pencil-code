@@ -2058,4 +2058,21 @@ module EquationOfState
 !
     endsubroutine read_Lewis
 !***********************************************************************
+    subroutine get_stratz(rho0z_out, dlnrho0dz_out, eth0z_out)
+!
+!  Get background stratification in z direction.
+!
+!  07-sep-14/ccyang: dummy
+!
+      real, dimension(mz), intent(out), optional :: rho0z_out, dlnrho0dz_out
+      real, dimension(mz), intent(out), optional :: eth0z_out
+!
+      if (lstratz) call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
+!
+      if (present(rho0z_out)) call keep_compiler_quiet(rho0z_out)
+      if (present(dlnrho0dz_out)) call keep_compiler_quiet(dlnrho0dz_out)
+      if (present(eth0z_out)) call keep_compiler_quiet(eth0z_out)
+!
+    endsubroutine get_stratz
+!***********************************************************************
 endmodule EquationOfState

@@ -10,7 +10,6 @@
 ! CPARAM logical, parameter :: ldensity = .false.
 ! CPARAM logical, parameter :: lanelastic = .true.
 ! CPARAM logical, parameter :: lboussinesq = .false.
-! CPARAM logical, parameter :: lstratified = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 5
@@ -1286,21 +1285,6 @@ module Density
       call fourier_transform_xy(phi,b1,linv=.true.)
 !
     endsubroutine inverse_laplacian_z
-!***********************************************************************
-    subroutine get_density_z(z, rho0z, dlnrho0dz)
-!
-!  Calculates equilibrium density rho0z and/or its derivative dlnrho0dz
-!  at height z.
-!
-!  19-may-14/ccyang: dummy.
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz
-!
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-!
-    endsubroutine get_density_z
 !***********************************************************************
     subroutine dynamical_diffusion(umax)
 !

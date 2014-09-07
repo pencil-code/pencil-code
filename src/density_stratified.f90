@@ -7,7 +7,6 @@
 ! CPARAM logical, parameter :: ldensity = .true.
 ! CPARAM logical, parameter :: lanelastic = .false.
 ! CPARAM logical, parameter :: lboussinesq = .false.
-! CPARAM logical, parameter :: lstratified = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -41,19 +40,15 @@ module Density
 !
   character(len=labellen), dimension(ninit) :: initrho = 'nothing'
   real, dimension(ninit) :: amplrho = 0.0
-  real, dimension(mz), target :: rho0z
-  real, dimension(mz) :: dlnrho0dz
-  character(len=8) :: zstrat = 'none'
   logical :: lconserve_mass = .false.
   logical :: ldiff_shock = .false.
   logical :: ldiff_hyper3_mesh = .false.
   logical :: lmassdiff_fix = .false.
-  real :: nu_epicycle = 1.0
   real :: density_floor = 0.0
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
 !
-  namelist /density_init_pars/ zstrat, nu_epicycle, initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
+  namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
   namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass, lmassdiff_fix
 !
@@ -107,6 +102,8 @@ module Density
 !
 !  Module Variables
 !
+  real, dimension(mz) :: rho0z = 0.0
+  real, dimension(mz) :: dlnrho0dz = 0.0
   real :: mass0 = 0.0
 !
 !  Dummy Variables
@@ -148,9 +145,9 @@ module Density
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  20-may-13/ccyang: coded.
+!  07-sep-14/ccyang: coded.
 !
-      use EquationOfState, only: select_eos_variable
+      use EquationOfState, only: select_eos_variable, get_stratz
       use SharedVariables, only: put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -162,11 +159,9 @@ module Density
 !
       call select_eos_variable('rho', irho)
 !
-!  Set the density stratification.
+!  Get density stratification.
 !
-      call set_stratification()
-      call put_shared_variable('rho0z', rho0z, ierr)
-      if (ierr /= 0) call fatal_error('initialize_density', 'cannot share variable rho0z. ')
+      if (lstratz) call get_stratz(rho0z, dlnrho0dz)
 !
 !  Disable the force-free considerations.
 !
@@ -970,51 +965,6 @@ module Density
       call keep_compiler_quiet(f)
 !
     endsubroutine boussinesq
-!***********************************************************************
-    subroutine get_density_z(z, rho0z, dlnrho0dz)
-!
-!  Calculates equilibrium density rho0z and/or its derivative dlnrho0dz
-!  at height z.
-!
-!  19-may-14/ccyang: coded.
-!
-      use EquationOfState, only: rho0, cs0
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz
-!
-      real :: h
-!
-      strat_type: select case (zstrat)
-!
-      case ('none') strat_type
-        if (present(rho0z)) rho0z = rho0
-        if (present(dlnrho0dz)) dlnrho0dz = 0.0
-!
-      case ('gaussian') strat_type
-        if (cs0 <= 0.0) call fatal_error('get_density_z', 'cs0 <= 0. ')
-        if (nu_epicycle <= 0.0) call fatal_error('get_density_z', 'nu_epicycle <= 0. ')
-!
-        h = cs0 / nu_epicycle
-        if (present(rho0z)) rho0z = rho0 * exp(-0.5 * (z / h)**2)
-        if (present(dlnrho0dz)) dlnrho0dz = -z / h**2
-!
-      case default strat_type
-        call fatal_error('get_density_z', 'unknown type of density stratification. ')
-!
-      endselect strat_type
-!
-    endsubroutine get_density_z
-!***********************************************************************
-    subroutine set_stratification()
-!
-!  Initializes and saves the density stratification
-!
-!  19-may-14/ccyang: coded.
-!
-      call get_density_z(z, rho0z, dlnrho0dz)
-!
-    endsubroutine set_stratification
 !***********************************************************************
     real function total_mass(f)
 !

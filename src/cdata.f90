@@ -652,5 +652,10 @@ module Cdata
   logical :: ldynamical_diffusion=.false.
   logical :: ldyndiff_urmsmxy = .false.
 !
+!  Background stratification.
+!
+  character(len=labellen) :: gztype = 'zero'
+  logical :: lstratz = .false.
+  real :: gz_coeff = 0.0
 !***********************************************************************
 endmodule Cdata

@@ -43,6 +43,7 @@
   public :: bc_ss_a2stemp_x,bc_ss_a2stemp_y,bc_ss_a2stemp_z
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
+  public :: get_stratz
 
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0
