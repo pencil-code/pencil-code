@@ -357,6 +357,8 @@ class read_var:
                     self.pp = N.exp(gamma*(self.ss+lnrho))
                 elif hasattr(self, 'lntt'):
                     self.pp = (cp-cv)*N.exp(self.lntt+lnrho)
+                elif hasattr(self, 'tt'):
+                    self.pp = (cp-cv)*self.tt*N.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
 
