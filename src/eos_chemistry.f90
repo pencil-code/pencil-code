@@ -483,6 +483,11 @@ module EquationOfState
          lpencil_in(i_rho1gpp)=.true.
        endif
 !
+       if (lpencil_in(i_ee)) then
+         lpencil_in(i_mu1)=.true.
+         lpencil_in(i_TT)=.true.
+       endif
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_eos
@@ -542,7 +547,13 @@ module EquationOfState
 !
         if (ltemperature_nolog) then
          if (lpencil(i_gTT)) call grad(f,iTT,p%gTT)
+         !NILS: The call below does not yield del2lnTT but rather del2TT, 
+         !NILS: this should be fixed before used. One should also look
+         !NILS: through the chemistry module to make sure del2lnTT is used
+         !NILS: corectly.
          if (lpencil(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+         call fatal_error('calc_pencils_eos',&
+             'del2lnTT is not correctly implemented - this must be fixed!')
         else
          if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
@@ -584,6 +595,10 @@ module EquationOfState
        if (lpencil(i_del2pp)) then
          call del2(pp_full(:,:,:),p%del2pp)
        endif
+!
+!  Energy per unit mass
+!
+      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT 
 !
 !      endif
 !
