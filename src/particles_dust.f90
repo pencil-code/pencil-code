@@ -553,7 +553,8 @@ module Particles
       endif
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
-          .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))
+          .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))&
+          .or.lparticles_temperature
       interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
@@ -4526,6 +4527,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='nu-mixture') then
         nu=nu_
       elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
