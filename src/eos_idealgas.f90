@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth; heth(3,3)
+! PENCILS PROVIDED eths; geths(3)
 !
 !***************************************************************
 module EquationOfState
@@ -689,6 +690,7 @@ module EquationOfState
         endif
 !
       case (irho_eth,ilnrho_eth)
+        if (lstratz .and. lpencil_in(i_eth)) lpencil_in(i_eths) = .true.
         if (lpencil_in(i_cs2).or. &
             lpencil_in(i_TT).or. &
             lpencil_in(i_lnTT).or. &
@@ -1015,9 +1017,19 @@ module EquationOfState
 !  Work out thermodynamic quantities for given lnrho or rho and eth.
 !
       case (irho_eth,ilnrho_eth)
-        if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
-        if (lpencil(i_geth)) call grad(f,ieth,p%geth)
-        if (lpencil(i_del2eth)) call del2(f,ieth,p%del2eth)
+        stratz: if (lstratz) then
+          if (lpencil(i_eths)) p%eths = 1.0 + f(l1:l2,m,n,ieth)
+          if (lpencil(i_geths)) call grad(f, ieth, p%geths)
+          if (lpencil(i_eth)) p%eth = eth0z(n) * p%eths
+          if (lpencil(i_geth)) call fatal_error('calc_pencils_eos', 'geth is not available. ')
+          if (lpencil(i_del2eth)) call fatal_error('calc_pencils_eos', 'del2eth is not available. ')
+        else stratz
+          if (lpencil(i_eth)) p%eth = f(l1:l2,m,n,ieth)
+          if (lpencil(i_geth)) call grad(f, ieth, p%geth)
+          if (lpencil(i_del2eth)) call del2(f, ieth, p%del2eth)
+          if (lpencil(i_eths)) call fatal_error('calc_pencils_eos', 'eths is not available. ')
+          if (lpencil(i_geths)) call fatal_error('calc_pencils_eos', 'geths is not available. ')
+        endif stratz
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
         if (lpencil(i_ee)) p%ee=p%rho1*p%eth

@@ -17,7 +17,7 @@
 ! MAUX CONTRIBUTION 0
 ! COMMUNICATED AUXILIARIES 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); transpeth
+! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth
 !
 !***************************************************************
 module Energy
@@ -133,6 +133,10 @@ module Energy
 !
   real :: Jeans_c0 = 0.
 !
+! Background stratification
+!
+  real, dimension(mz) :: eth0z = 0.0, dlneth0dz = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_energy()
@@ -167,7 +171,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
-      use EquationOfState, only: select_eos_variable, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
+      use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -236,6 +240,10 @@ module Energy
         endif
       endif Jeans
 !
+!  Get background stratification, if any.
+!
+      if (lstratz) call get_stratz(eth0z_out=eth0z, dlnrho0dz_out=dlneth0dz)  ! dlnrho0dz = dlneth0dz
+!
       if (llocal_iso) &
            call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
@@ -279,10 +287,10 @@ module Energy
           case ('const_eth'); f(:,:,:,ieth)=f(:,:,:,ieth)+eth_const
 !
           case ('basic_state')
-            if (gamma_m1 /= 0.) then
-              f(:,:,:,ieth) = f(:,:,:,ieth) + rho0 * cs20 / (gamma * gamma_m1)
+            if (lstratz) then
+              f(:,:,:,ieth) = 0.0
             else
-              f(:,:,:,ieth) = f(:,:,:,ieth) + rho0 * cs20
+              f(:,:,:,ieth) = rho0 * cs20 / (gamma * gamma_m1)
             endif
 !
           case default
@@ -309,14 +317,21 @@ module Energy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-      lpenc_requested(i_pp)=.true.
-      lpenc_requested(i_divu)=.true.
-      if (lweno_transport) then
-        lpenc_requested(i_transpeth)=.true.
-      else
-        lpenc_requested(i_geth)=.true.
-        lpenc_requested(i_eth)=.true.
-      endif
+      lpenc_requested(i_divu) = .true.
+      stratz: if (lstratz) then
+        lpenc_requested(i_eths) = .true.
+        lpenc_requested(i_ugeths) = .true.
+        lpenc_requested(i_uu) = .true.
+      else stratz
+        weno: if (lweno_transport) then
+          lpenc_requested(i_transpeth) = .true.
+        else weno
+          lpenc_requested(i_geth) = .true.
+          lpenc_requested(i_eth) = .true.
+          lpenc_requested(i_uu) = .true.
+        endif weno
+        lpenc_requested(i_pp) = .true.
+      endif stratz
       if (lhydro) lpenc_requested(i_fpres)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
@@ -327,12 +342,17 @@ module Energy
         lpenc_requested(i_grho)=.true.
         lpenc_requested(i_gTT)=.true.
       endif
-      if (chi_shock /= 0.) then
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_geth)=.true.
-        lpenc_requested(i_del2eth)=.true.
-      endif
+!
+      shock: if (chi_shock /= 0.0) then
+        lpenc_requested(i_shock) = .true.
+        lpenc_requested(i_gshock) = .true.
+        stratz1: if (lstratz) then
+          lpenc_requested(i_geths) = .true.
+        else stratz1
+          lpenc_requested(i_geth) = .true.
+          lpenc_requested(i_del2eth) = .true.
+        endif stratz1
+      endif shock
 !
 !  Diagnostic pencils.
 !
@@ -362,10 +382,20 @@ module Energy
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_fpres)) then
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_geth)=.true.
-      endif
+      fpres: if (lpencil_in(i_fpres)) then
+        stratz: if (lstratz) then
+          lpencil_in(i_rhos1) = .true.
+          lpencil_in(i_geths) = .true.
+        else stratz
+          lpencil_in(i_rho1) = .true.
+          lpencil_in(i_geth) = .true.
+        endif stratz
+      endif fpres
+!
+      ugeths: if (lpencil_in(i_ugeths)) then
+        lpencil_in(i_geths) = .true.
+        lpencil_in(i_uu) = .true.
+      endif ugeths
 !
     endsubroutine pencil_interdep_energy
 !***********************************************************************
@@ -378,21 +408,34 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  14-feb-11/bing: moved eth dependend pecnils to eos_idealgas
 !
-      use EquationOfState, only: gamma_m1
-      use Sub, only: del2
+      use EquationOfState, only: gamma, gamma_m1, cs20
+      use Sub, only: u_dot_grad
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      real, dimension(nx) :: penc
       integer :: j
+!
 ! fpres
-      if (lpencil(i_fpres)) then
-        do j=1,3
-          p%fpres(:,j)=-p%rho1*gamma_m1*p%geth(:,j)
-        enddo
-      endif
+!
+      fpres: if (lpencil(i_fpres)) then
+        stratz: if (lstratz) then
+          penc = cs20 / gamma * p%rhos1
+          forall(j = 1:3) p%fpres(:,j) = -penc * p%geths(:,j)
+          p%fpres(:,3) = p%fpres(:,3) + penc * (f(l1:l2,m,n,irho) - f(l1:l2,m,n,ieth)) * dlneth0dz(n)
+        else stratz
+          forall(j = 1:3) p%fpres(:,j) = -gamma_m1 * p%rho1 * p%geth(:,j)
+        endif stratz
+      endif fpres
+!
+! ugeths
+!
+      if (lpencil(i_ugeths)) call u_dot_grad(f, ieth, p%geths, p%uu, p%ugeths)
+!
 ! transpeth
+!
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
 !
@@ -410,20 +453,16 @@ module Energy
       use Diagnostics
       use EquationOfState, only: gamma
       use Special, only: special_calc_energy
-      use Sub, only: identify_bcs, u_dot_grad
+      use Sub, only: identify_bcs, u_dot_grad, del2
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: Hmax=0.0,ugeth
-      real, dimension(nx) :: d6eth
+      real, dimension(nx) :: Hmax=0.0, ugeth, d6eth, penc
       integer :: j
-!
-      intent(inout) :: f,p
-      intent(out) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -448,18 +487,24 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
+      stratz: if (lstratz) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%ugeths - p%eths * (gamma * p%divu + p%uu(:,3) * dlneth0dz(n))
+      else stratz
+!
 !  Add energy transport term.
 !
-      if (lweno_transport) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
-      else
-        call u_dot_grad(f, ieth, p%geth, p%uu, ugeth, UPWIND=lupw_eth)
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
-      endif
+        if (lweno_transport) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
+        else
+          call u_dot_grad(f, ieth, p%geth, p%uu, ugeth, UPWIND=lupw_eth)
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
+        endif
 !
 !  Add P*dV work.
 !
-      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%pp*p%divu
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%pp*p%divu
+!
+      endif stratz
 !
 !  Calculate viscous contribution to temperature.
 !
@@ -474,10 +519,15 @@ module Energy
 !
 !  Shock diffusion
 !
-      if (chi_shock /= 0.) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock*p%del2eth + sum(p%gshock*p%geth, 2))
-        if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock*p%shock*dxyz_2
-      endif
+      shock: if (chi_shock /= 0.0) then
+        stratz1: if (lstratz) then
+          call del2(f, ieth, penc)
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock * penc + sum(p%gshock*p%geths, 2))
+        else stratz1
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock * p%del2eth + sum(p%gshock*p%geth, 2))
+        endif stratz1
+        if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock * p%shock * dxyz_2
+      endif shock
 !
 !  Mesh hyper-diffusion
 !
