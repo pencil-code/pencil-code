@@ -24,20 +24,22 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Particles_radius
+  !use Particles_chemistry
  !
   implicit none
 !
   include 'particles_temperature.h'
 !
-  real :: init_part_temp, emissivity
+  real :: init_part_temp, emissivity, cp_part=1.
   character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
-      init_particle_temperature, init_part_temp, emissivity
+      init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ &
-      emissivity
+      emissivity, cp_part
+!
+  integer :: idiag_Tpm=0
 !
   contains
 !***********************************************************************
@@ -126,7 +128,7 @@ module Particles_temperature
 !***********************************************************************    
 subroutine pencil_criteria_par_TT()
 !
-!  All pencils that the Particles_temperature module depends on are specified here.
+!  All pencils that the Particles_temperature module depends on are specified here
 !
 !  29-aug-14/jonas+nils: coded
 !
@@ -142,6 +144,12 @@ subroutine pencil_criteria_par_TT()
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+!
+!  Diagnostic output
+!
+      if (ldiagnos) then
+        if (idiag_Tpm/=0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -162,16 +170,71 @@ subroutine pencil_criteria_par_TT()
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(nx) :: feed_back, volume_pencil
+      real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
+      integer :: k, inx0, ix0
 !
-      intent (in) :: f, df, fp, ineargrid
-      intent (inout) :: dfp
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: dfp, df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
+!
+      feed_back=0.
+!
+!  Loop over all particles in current pencil.
+!
+          do k=k1_imn(imn),k2_imn(imn)
+!
+!  Set reactive and radiative heat to zero for now
+!
+            Qreac=0.
+            Qrad=0.
+!
+!  For a quiecent fluid the Nusselt number is equal to 2. This must be
+!  changed when there is a relative velocity between the partciles and
+!  the fluid.
+!
+            Nusselt=2.                        
+!
+!  Calculate convective and conductive heat
+!
+            ix0=ineargrid(k,1)
+            inx0=ix0-nghost;
+            cond=p%lambda(inx0)
+            Ap=4.*pi*fp(k,iap)**2
+            heat_trans_coef=Nusselt*cond/(2*fp(k,iap))
+            Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+!
+!  Find the mass of the particle
+!
+            if (lparticles_mass) then
+              call fatal_error('dpTT_dt','Variable mass not implemented yet!')
+            else
+              pmass=4.*pi*fp(k,iap)**3*rhopmat/3.
+            endif
+!
+!  Calculate the change in particle temperature based on the cooling/heating 
+!  rates on the particle
+!
+            dfp(k,iTp)=(Qreac-Qc+Qrad)/(pmass*cp_part)
+!
+!  Calculate feed back 
+!
+            if (ltemperature_nolog) then
+              feed_back(inx0)=Qc*p%cv1(inx0)*p%rho1(inx0)*p%TT1(inx0)
+            else
+              feed_back(inx0)=Qc*p%cv1(inx0)*p%rho1(inx0)
+            endif
+!
+          enddo
+!
+!  Add feedback from particles on gas phase
+!
+          volume_pencil=1./(dx_1(l1:l2)*dy_1(m)*dz_1(n))
+          df(l1:l2,m,n,ilnTT)=feed_back/volume_pencil
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
@@ -227,6 +290,9 @@ subroutine pencil_criteria_par_TT()
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use Diagnostics
+!
+      integer :: iname
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -238,7 +304,17 @@ subroutine pencil_criteria_par_TT()
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'iox=', iox
 !
-      call keep_compiler_quiet(lreset)
+!
+!  Reset everything in case of reset.
+!
+      if (lreset) then
+        idiag_Tpm=0; 
+      endif
+!
+      if (lroot .and. ip<14) print*,'rprint_particles_TT: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Tpm',idiag_Tpm)
+      enddo
 !
     endsubroutine rprint_particles_TT
 !***********************************************************************    
