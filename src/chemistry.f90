@@ -917,8 +917,12 @@ module Chemistry
 ! Does anybody know why it is so?
 ! While this problem is not resolved
 ! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
+!  NILS: This is going to fail if nologtemperature=T. The real error
+!  NILS: should be found instead of making a quick fix.
+!  NILS: I am not able to reproduce the error natalia reported.
 !
-              T_loc= exp(f(l1:l2,m,n,ilnTT))
+!              T_loc= exp(f(l1:l2,m,n,ilnTT))
+              T_loc=p%TT
               where (T_loc <= T_mid)
                 p%H0_RT(:,k)=species_constants(k,iaa2(ii1)) &
                     +species_constants(k,iaa2(ii2))*T_loc/2 &
@@ -980,8 +984,12 @@ module Chemistry
 ! Does anybody know why it is so?
 ! While this problem is not resolved
 ! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
+!  NILS: This is going to fail if nologtemperature=T. The real error
+!  NILS: should be found instead of making a quick fix.
+!  NILS: I am not able to reproduce the error natalia reported.
 !
-              T_loc= exp(f(l1:l2,m,n,ilnTT))
+              T_loc=p%TT
+              !T_loc= exp(f(l1:l2,m,n,ilnTT))
               where(T_loc <= T_mid .and. T_low <= T_loc)
                 p%S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
                   +species_constants(k,iaa2(ii2))*T_loc &
@@ -4406,8 +4414,12 @@ module Chemistry
 !  Does anybody know why it is so?
 !  While this problem is not resolved
 !  I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
+!  NILS: This is going to fail if nologtemperature=T. The real error
+!  NILS: should be found instead of making a quick fix.
+!  NILS: I am not able to reproduce the error natalia reported.
 !
-        TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
+        !TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
+        TT1_loc=p%TT1
 !
         if (lwrite_first)  open(file_id,file=input_file)
 !
