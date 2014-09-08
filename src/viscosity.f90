@@ -2100,6 +2100,8 @@ module Viscosity
         endif
         if (lvisc_simplified) then
           nu_pencil=nu
+        elseif(lvisc_mixture) then
+          nu_pencil=nu          
         elseif (lvisc_rho_nu_const) then
           nu_pencil=nu*p%rho1
         elseif (lvisc_rho_nu_const_bulk) then
