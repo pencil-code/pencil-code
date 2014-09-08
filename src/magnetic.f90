@@ -1402,6 +1402,8 @@ module Magnetic
         case ('const_lou'); call const_lou(amplaa(j),f,iaa)
         case ('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,relhel_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
@@ -3416,7 +3418,6 @@ module Magnetic
             if (lua_as_aux) then
               call grad(f,iua,gua)
               dAdt = dAdt + p%uxb+fres-gua
-!              df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres-gua
             else
               call fatal_error('daa_dt','must put lua_as_aux=T')
             endif
@@ -3425,8 +3426,6 @@ module Magnetic
 !
           else
             dAdt = dAdt+ p%uxb+fres
-!            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres
-!            if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -(p%uxb+fres)
           endif
         endif
       else
@@ -3491,7 +3490,6 @@ module Magnetic
 !
         if (linduction) &
           dAdt= dAdt + uxb_upw + fres
-!             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
 !
 !  Add Hall term.
@@ -3499,7 +3497,6 @@ module Magnetic
       if (hall_term/=0.0) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
         dAdt=dAdt-hall_term*p%jxb
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*p%jxb
         if (lfirst.and.ldt) then
           advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
@@ -3511,6 +3508,7 @@ module Magnetic
 !
 !  Add Battery term.
 !  corrected by Mikhail Modestov
+!
       if (battery_term/=0.0) then
         if (headtt) print*,'daa_dt: battery_term=',battery_term
         call multsv_mn(p%rho1,p%fpres,baroclinic)
@@ -3519,7 +3517,7 @@ module Magnetic
             battery_term*maxval(baroclinic)
       endif
 !
-! Add jxb/(b^2\nu) Magneto-Frictional velocity to uxb term
+! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
         do ix=1,nx
@@ -3528,7 +3526,6 @@ module Magnetic
               (numag*(1.e-1+p%b2(ix)))
         end do
         dAdt = dAdt + magfric(1:nx,1:3)
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
@@ -3547,14 +3544,11 @@ module Magnetic
           eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_width))-eta
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
       if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,2)
-!      if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
-!          ampl_fcont_aa*p%fcont(:,:,2)
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
@@ -3569,7 +3563,6 @@ module Magnetic
 !
       if (tau_relprof/=0.0) then
         dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
-!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
       endif
 !
 !  Add ``va^2/dx^2'' contribution to timestep.

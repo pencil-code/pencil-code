@@ -34,7 +34,7 @@ module Initcond
   public :: triquad, isotdisk
   public :: diffrot, olddiffrot
   public :: const_omega
-  public :: powern, power_randomphase
+  public :: powern, power_randomphase, power_randomphase_hel
   public :: planet, planet_hc
   public :: random_isotropic_KS
   public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
@@ -2110,7 +2110,7 @@ module Initcond
 !
     endsubroutine sph_constb
 !***********************************************************************
-    subroutine hatwave(ampl,f,i,width,kx,ky,kz)
+    subroutine hatwave(ampl,f,i,width,kx,ky,kz,power)
 !
 !  cosine wave (as initial condition)
 !
@@ -2118,10 +2118,12 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,k=1.,fac,width
+      real,optional :: kx,ky,kz,power
+      real :: ampl,k=1.,fac,width,pow=1.
 !
 !  wavenumber k
+!
+      if (present(power)) pow=power
 !
 !  set x-dependent hat wave
 !
@@ -2131,7 +2133,8 @@ module Initcond
           if (lroot) print*,'hatwave: ampl=0; kx=',k
         else
           if (lroot) print*,'hatwave: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh(cos(k*x)/width),2,my),3,mz)
+          !f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh((cos(k*x)**pow)/width),2,my),3,mz)
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz)
         endif
       endif
 !
@@ -4356,7 +4359,6 @@ module Initcond
     subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2,lscale_tobox)
 !
 !   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
-!   Still just one processor (but can be remeshed afterwards).
 !
 !   07-may-03/tarek: coded
 !   08-may-08/nils: adapted to work on multiple processors
@@ -4474,6 +4476,161 @@ module Initcond
       if (allocated(kz)) deallocate(kz)
 !
     endsubroutine power_randomphase
+!***********************************************************************
+    subroutine power_randomphase_hel(ampl,initpower,cutoff,f,i1,i2,relhel,lscale_tobox)
+!
+!   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
+!
+!   08-sep-14/axel: adapted from power_randomphase
+!
+      use Fourier, only: fourier_transform
+!
+      logical, intent(in), optional :: lscale_tobox
+      logical :: lscale_tobox1
+      integer :: i,i1,i2,ikx,iky,ikz,stat
+      real, dimension (:,:,:,:), allocatable :: u_re, u_im
+      real, dimension (:,:,:), allocatable :: k2, r
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,initpower,mhalf,cutoff,scale_factor,relhel
+!
+      if (present(lscale_tobox)) then
+        lscale_tobox1 = lscale_tobox
+      else
+        lscale_tobox1 = .false.
+      endif
+!
+!  Allocate memory for arrays.
+!
+      allocate(k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      allocate(u_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
+      allocate(u_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
+      allocate(r(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('powern', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('powern', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),staT=stat)
+      if (stat>0) call fatal_error('powern', &
+          'Could not allocate memory for kz')
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
+      else
+!
+!  calculate k^2
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Lx
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Ly
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Lz
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+!
+!  integration over shells
+!
+        if (lroot .AND. ip<10) &
+             print*,'power_randomphase:fft done; now integrate over shells...'
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k2(ikx,iky,ikz)=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            enddo
+          enddo
+        enddo
+        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+!
+!  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
+!  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
+!  Further, since we operate on k^2, we need m/2 (called mhalf below)
+!
+        mhalf=.5*(.5*initpower-1)
+!
+!  generate all 3 velocity components separately
+!
+        do i=i1,i2
+          ! generate k^n spectrum with random phase (between -pi and pi)
+          call random_number_wrapper(r); u_re(:,:,:,i)=ampl*k2**mhalf*cos(pi*(2*r-1))
+          call random_number_wrapper(r); u_im(:,:,:,i)=ampl*k2**mhalf*sin(pi*(2*r-1))
+          ! cutoff (changed to hyperviscous cutoff filter)
+          if (cutoff /= 0.) then
+            u_re(:,:,:,i) = u_re(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
+            u_im(:,:,:,i) = u_im(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
+          endif
+        enddo !i
+!
+!  make it helical, i.e., multiply by dela_ij + epsilon_ijk ik_k*sigma
+!
+        if (relhel /= 0.) then
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                u_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1) &
+                    -kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,2)*relhel &
+                    +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,3)*relhel
+                u_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1) &
+                    +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,2)*relhel &
+                    -ky(iky+ipy*ny)*u_re(ikx,iky,ikz,3)*relhel
+                u_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2) &
+                    -kx(ikx)       *u_im(ikx,iky,ikz,3)*relhel &
+                    +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*relhel
+                u_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2) &
+                    +kx(ikx)       *u_re(ikx,iky,ikz,3)*relhel &
+                    -kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*relhel
+                u_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3) &
+                    -ky(iky+ipy*ny)*u_im(ikx,iky,ikz,1)*relhel &
+                    +kx(ikx)       *u_im(ikx,iky,ikz,2)*relhel
+                u_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3) &
+                    +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,1)*relhel &
+                    -kx(ikx)       *u_re(ikx,iky,ikz,2)*relhel
+              enddo
+            enddo
+          enddo
+        endif
+!
+!  back to real space
+!
+        do i=i1,i2
+          call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+        enddo !i
+        f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
+!
+!  notification
+!
+        if (lroot) then
+          if (cutoff==0) then
+            print*,'powern: k^',initpower,' spectrum : var  i=',i
+          else
+            print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+                initpower,', k0 =',cutoff,' : var  i=',i
+          endif
+        endif
+!
+      endif !(ampl==0)
+!
+!  Deallocate arrays.
+!
+      if (allocated(k2))   deallocate(k2)
+      if (allocated(u_re)) deallocate(u_re)
+      if (allocated(u_im)) deallocate(u_im)
+      if (allocated(r))  deallocate(r)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
+!
+    endsubroutine power_randomphase_hel
 !***********************************************************************
     subroutine random_isotropic_KS(initpower,f,i1,N_modes)
 !
