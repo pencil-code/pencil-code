@@ -1760,7 +1760,7 @@ module Grid
                 exp(xi)*(1.+param+tanh(param*xi)-param*tanh(param*xi)**2))
           endif
           if (present(gder2)) then
-              gder2 = 0.5*(1.+param)*(tanh(param*xi)**2-1.) + &
+              gder2 = param*(tanh(param*xi)**2-1.) + &
                 param**2*(1+xi)*(1.-tanh(param*xi)**2)*tanh(param*xi) + &
                 0.5*exp(xi)*(1.+2*param+(1.-2*param**2)*tanh(param*xi)- &
                 2*param*tanh(param*xi)**2+2*param**2*tanh(param*xi)**3)

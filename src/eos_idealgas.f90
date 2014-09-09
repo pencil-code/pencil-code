@@ -3030,7 +3030,7 @@ module EquationOfState
 !DM+PC next two lines need to be looked into.
 !AB: This was implemented in revision: 17029 dhruba.mitra, but it works!
         if (lread_oldsnap) &
-          cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*f(l2,m2,n2,ilnrho))
+          cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
         if (lentropy .and. .not. pretend_lnTT) then
 !
 !  Distinguish cases for linear and logarithmic density
