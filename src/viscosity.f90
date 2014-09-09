@@ -166,6 +166,10 @@ module Viscosity
                                 ! ZAVG_DOC: \mathcal{S}_{iy} \right>_{z}$
                                 ! ZAVG_DOC: ($y$-xomponent of viscous flux)
 !
+! Module Variables
+!
+  real, dimension(mz) :: eth0z = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_viscosity()
@@ -183,6 +187,7 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !
+      use EquationOfState, only: get_stratz
       use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
@@ -544,6 +549,10 @@ module Viscosity
               / (vis_xaver_range(2) - vis_xaver_range(1))
         endif
       endif
+!
+!  Get background energy stratification, if any.
+!
+      if (lstratz .and. lthermal_energy) call get_stratz(eth0z_out=eth0z)
 !
 !  debug output
 !
@@ -1888,7 +1897,11 @@ module Viscosity
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
         endif
       else if (lthermal_energy) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%rho*p%visc_heat
+        if (lstratz) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%rho * p%visc_heat / eth0z(n)
+        else
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%rho * p%visc_heat
+        endif
       endif
 !
 !  Calculate maximum heating (for time step constraint), so it is
