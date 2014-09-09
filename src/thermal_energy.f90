@@ -114,7 +114,7 @@ module Energy
 !
 ! General variables for operator split terms.
 !
-  real :: cv1 = 0., cv1_temp = 0.
+  real :: cv1 = 0.0, cv1_temp = 0.0
 !
 ! Coefficients for the KI02 terms
 !
@@ -203,6 +203,7 @@ module Energy
         if (.not. leos_idealgas) call fatal_error('initialize_energy', 'currently assumes eos_idealgas')
         call get_cv1(cv1)
         cv1_temp = cv1 * unit_temperature
+        if (lstratz) cv1_temp = cv1_temp * cs20 / (gamma * gamma_m1)
       endif ideal_gas
 !
 !  Initialize the KI02 terms.
@@ -940,11 +941,17 @@ module Energy
 !
 !  Update the energy.
 !
-        if (ldensity_nolog) then
+        deth: if (lstratz) then
+          zscan: do k = 1, mz
+            call get_delta_eth(real(t), dt, eth0z(k) * (1.0 + f(:,:,k,ieth)), rho0z(k) * (1.0 + f(:,:,k,irho)), &
+                               delta_eth(:,:,k), status(:,:,k))
+            delta_eth(:,:,k) = delta_eth(:,:,k) / eth0z(k)
+          enddo zscan
+        elseif (ldensity_nolog) then deth
           call get_delta_eth(real(t), dt, f(:,:,:,ieth), f(:,:,:,irho), delta_eth, status)
-        else
+        else deth
           call get_delta_eth(real(t), dt, f(:,:,:,ieth), exp(f(:,:,:,ilnrho)), delta_eth, status)
-        endif
+        endif deth
 !
         if (any(status < 0)) then
           write(message,10) count(status == -1), ' cells had underflows and ', &
@@ -1376,16 +1383,16 @@ module Energy
 !
 !  Finds the absolute temperature in Kelvins assuming the ideal-gas EOS.
 !
-!  04-feb-13/ccyang: coded.
+!  09-sep-14/ccyang: coded.
 !
       real, intent(in) :: eth, rho
 !
 !  Find the temperature.
 !
-      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
-        temp = cv1_temp * eth / rho
+      if (lstratz) then
+        temp = cv1_temp * (1.0 + eth) / (1.0 + rho)
       else
-        temp = 0.
+        temp = cv1_temp * eth / rho
       endif
 !
     endfunction get_temperature
