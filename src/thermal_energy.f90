@@ -318,6 +318,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !
       lpenc_requested(i_divu) = .true.
+      if (lvideo) lpenc_requested(i_pp) = .true.
       stratz: if (lstratz) then
         lpenc_requested(i_eths) = .true.
         lpenc_requested(i_ugeths) = .true.
@@ -769,24 +770,24 @@ module Energy
           endif density
 !
           xy: do m = m1, m2
-            call eoscalc(ieosvars, f(l1:l2,m,iz_loc,idensity), f(l1:l2,m,iz_loc,ieth), lnTT=penc)
+            call eoscalc(ieosvars, f(l1:l2,m,iz_loc,idensity), f(l1:l2,m,iz_loc,ieth), iz=iz_loc, lnTT=penc)
             slices%xy(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz2_loc,idensity), f(l1:l2,m,iz2_loc,ieth), lnTT=penc)
+            call eoscalc(ieosvars, f(l1:l2,m,iz2_loc,idensity), f(l1:l2,m,iz2_loc,ieth), iz=iz2_loc, lnTT=penc)
             slices%xy2(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz3_loc,idensity), f(l1:l2,m,iz3_loc,ieth), lnTT=penc)
+            call eoscalc(ieosvars, f(l1:l2,m,iz3_loc,idensity), f(l1:l2,m,iz3_loc,ieth), iz=iz3_loc, lnTT=penc)
             slices%xy3(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz4_loc,idensity), f(l1:l2,m,iz4_loc,ieth), lnTT=penc)
+            call eoscalc(ieosvars, f(l1:l2,m,iz4_loc,idensity), f(l1:l2,m,iz4_loc,ieth), iz=iz4_loc, lnTT=penc)
             slices%xy4(:,m-nghost) = penc
           enddo xy
 !
           xz: do n = n1, n2
-            call eoscalc(ieosvars, f(l1:l2,iy_loc,n,idensity), f(l1:l2,iy_loc,n,ieth), lnTT=penc)
+            call eoscalc(ieosvars, f(l1:l2,iy_loc,n,idensity), f(l1:l2,iy_loc,n,ieth), iz=n, lnTT=penc)
             slices%xz(:,n-nghost) = penc
           enddo xz
 !
           yz_z: do n = n1, n2
             yz_y: do m = m1, m2
-              call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), lnTT=a)
+              call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), iz=n, lnTT=a)
               slices%yz(m-nghost,n-nghost) = a
             enddo yz_y
           enddo yz_z
