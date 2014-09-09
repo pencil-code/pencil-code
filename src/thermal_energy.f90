@@ -33,7 +33,7 @@ module Energy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
-  real :: energy_floor = 0., temperature_floor = 0.
+  real :: energy_floor = 0.0, temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., cs_z=0.
   real :: TTref = 0., tau_cool = 1.
@@ -136,6 +136,7 @@ module Energy
 ! Background stratification
 !
   real, dimension(mz) :: eth0z = 0.0, dlneth0dz = 0.0
+  real, dimension(mz) :: rho0z = 0.0
 !
   contains
 !***********************************************************************
@@ -242,7 +243,7 @@ module Energy
 !
 !  Get background stratification, if any.
 !
-      if (lstratz) call get_stratz(eth0z_out=eth0z, dlnrho0dz_out=dlneth0dz)  ! dlnrho0dz = dlneth0dz
+      if (lstratz) call get_stratz(rho0z, dlneth0dz, eth0z)  ! dlnrho0dz = dlneth0dz
 !
       if (llocal_iso) &
            call fatal_error('initialize_energy', &
@@ -825,42 +826,65 @@ module Energy
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      real, dimension(nx) :: eth, rho, eth1
       integer :: i, j, k
-      real, dimension(nx) :: eth, rho
+      real :: deth
 !
 !  Impose the energy floor.
 !
-      if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
+      efloor: if (energy_floor > 0.0) then
+        stratz: if (lstratz) then
+          zscan: do k = 1, mz
+            deth = energy_floor / eth0z(k) - 1.0
+            where(f(:,:,k,ieth) < deth) f(:,:,k,ieth) = deth
+          enddo zscan
+        else stratz
+          where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
+        endif stratz
+      endif efloor
 !
 !  Apply Jeans energy floor.
 !
-      if (ljeans_floor) then
-        do k = n1, n2
-          do j = m1, m2
-            eth = f(l1:l2,j,k,ieth)
-            rho = f(l1:l2,j,k,irho)
-            if (.not. ldensity_nolog) rho = exp(rho)
-            call jeans_floor(eth, rho)
-            f(l1:l2,j,k,ieth) = eth
-          enddo
-        enddo
-      endif
+      jfloor: if (ljeans_floor) then
+        zscan1: do k = n1, n2
+          yscan1: do j = m1, m2
+            stratz1: if (lstratz) then
+              eth = eth0z(k) * (1.0 + f(l1:l2,j,k,ieth))
+              rho = rho0z(k) * (1.0 + f(l1:l2,j,k,irho))
+              eth1 = eth
+              call jeans_floor(eth, rho)
+              where(eth1 /= eth) f(l1:l2,j,k,ieth) = eth / eth0z(k) - 1.0
+            else stratz1
+              eth = f(l1:l2,j,k,ieth)
+              rho = f(l1:l2,j,k,irho)
+              if (.not. ldensity_nolog) rho = exp(rho)
+              call jeans_floor(eth, rho)
+              f(l1:l2,j,k,ieth) = eth
+            endif stratz1
+          enddo yscan1
+        enddo zscan1
+      endif jfloor
 !
 !  Stop the code if negative energy exists.
 !
-      if (lcheck_negative_energy) then
-        if (any(f(l1:l2,m1:m2,n1:n2,ieth) <= 0.)) then
-          do k = n1, n2
-            do j = m1, m2
-              do i = l1, l2
-                if (f(i,j,k,ieth) <= 0.) print 10, f(i,j,k,ieth), x(i), y(j), z(k)
-                10 format (1x, 'eth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
-              enddo
-            enddo
-          enddo
+      chkneg: if (lcheck_negative_energy) then
+        negeth: if (any(f(l1:l2,m1:m2,n1:n2,ieth) <= merge(-1.0, 0.0, lstratz))) then
+          zscan2: do k = n1, n2
+            yscan2: do j = m1, m2
+              xscan2: do i = l1, l2
+                if (lstratz) then
+                  if (f(i,j,k,ieth) <= -1.0) print 10, f(i,j,k,ieth), x(i), y(j), z(k)
+                else
+                  if (f(i,j,k,ieth) <= 0.0) print 20, f(i,j,k,ieth), x(i), y(j), z(k)
+                endif
+                10 format (1x, 'deth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
+                20 format (1x, 'eth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
+              enddo xscan2
+            enddo yscan2
+          enddo zscan2
           call fatal_error('impose_energy_floor', 'negative energy detected')
-        endif
-      endif
+        endif negeth
+      endif chkneg
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
