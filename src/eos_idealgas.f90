@@ -1410,7 +1410,9 @@ module EquationOfState
       case (ilnrho_ss,irho_ss)
         select case (psize)
         case (nx)
-          if (ieosvars==ilnrho_ss) then
+          if (lstratz) then
+            lnrho_ = log(rho0z(n)) + log(1.0 + f(l1:l2,m,n,ieosvar1))
+          elseif (ieosvars == ilnrho_ss) then
             lnrho_=f(l1:l2,m,n,ieosvar1)
           else
             lnrho_=log(f(l1:l2,m,n,ieosvar1))
@@ -1423,7 +1425,9 @@ module EquationOfState
             ss_=f(l1:l2,m,n,ieosvar2)
           endif
         case (mx)
-          if (ieosvars==ilnrho_ss) then
+          if (lstratz) then
+            lnrho_ = log(rho0z(n)) + log(1.0 + f(:,m,n,ieosvar1))
+          elseif (ieosvars == ilnrho_ss) then
             lnrho_=f(:,m,n,ieosvar1)
           else
             lnrho_=log(f(:,m,n,ieosvar1))
@@ -1498,7 +1502,9 @@ module EquationOfState
       case (ilnrho_cs2,irho_cs2)
         select case (psize)
         case (nx)
-          if (ieosvars==ilnrho_cs2) then
+          if (lstratz) then
+            lnrho_ = log(rho0z(n)) + log(1 + f(l1:l2,m,n,ieosvar1))
+          elseif (ieosvars == ilnrho_cs2) then
             lnrho_=f(l1:l2,m,n,ieosvar1)
           else
             lnrho_=log(f(l1:l2,m,n,ieosvar1))
@@ -1513,7 +1519,9 @@ module EquationOfState
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
         case (mx)
-          if (ieosvars==ilnrho_cs2) then
+          if (lstratz) then
+            lnrho_ = log(rho0z(n)) + log(1 + f(:,m,n,ieosvar1))
+          elseif (ieosvars == ilnrho_cs2) then
             lnrho_=f(:,m,n,ieosvar1)
           else
             lnrho_=log(f(:,m,n,ieosvar1))
@@ -1538,24 +1546,34 @@ module EquationOfState
         if (present(cs2)) cs2 = cs2_
 !
       case (irho_eth, ilnrho_eth)
-        select case (psize)
-        case (nx)
-          if (ieosvars == irho_eth) then
-            rho = f(l1:l2,m,n,irho)
-          else
-            rho = exp(f(l1:l2,m,n,ilnrho))
-          endif
-          eth = f(l1:l2,m,n,ieth)
-        case (mx)
-          if (ieosvars == irho_eth) then
-            rho = f(:,m,n,irho)
-          else
-            rho = exp(f(:,m,n,ilnrho))
-          endif
-          eth = f(:,m,n,ieth)
-        case default
+        rho_eth: select case (psize)
+        case (nx) rho_eth
+          strat1: if (lstratz) then
+            rho = rho0z(n) * (1.0 + f(l1:l2,m,n,irho))
+            eth = eth0z(n) * (1.0 + f(l1:l2,m,n,ieth))
+          else strat1
+            if (ldensity_nolog) then
+              rho = f(l1:l2,m,n,irho)
+            else
+              rho = exp(f(l1:l2,m,n,ilnrho))
+            endif
+            eth = f(l1:l2,m,n,ieth)
+          endif strat1
+        case (mx) rho_eth
+          strat2: if (lstratz) then
+            rho = rho0z(n) * (1.0 + f(:,m,n,irho))
+            eth = eth0z(n) * (1.0 + f(:,m,n,ieth))
+          else strat2
+            if (ldensity_nolog) then
+              rho = f(:,m,n,irho)
+            else
+              rho = exp(f(:,m,n,ilnrho))
+            endif
+            eth = f(:,m,n,ieth)
+          endif strat2
+        case default rho_eth
           call fatal_error('eoscalc_farray', 'no such pencil size')
-        endselect
+        endselect rho_eth
         if (present(lnrho)) lnrho = log(rho)
         if (present(lnTT)) lnTT = log(cv1 * eth / rho)
         if (present(ee)) ee = eth / rho
@@ -1575,7 +1593,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+    subroutine eoscalc_point(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
@@ -1591,13 +1609,14 @@ module EquationOfState
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
       integer, intent(in) :: ivars
+      integer, intent(in), optional :: iz
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      real :: rho1
+      real :: rho, eth
 !
       if (gamma_m1==0.and..not.lanelastic) call fatal_error &
         ('eoscalc_point','gamma=1 not allowed w/entropy')
@@ -1605,11 +1624,17 @@ module EquationOfState
       select case (ivars)
 !
       case (ilnrho_ss,irho_ss)
-        if (ivars==ilnrho_ss) then
-          lnrho_=var1
-        else
-          lnrho_=log(var1)
-        endif
+        stratz1: if (lstratz) then
+          if (present(iz)) then
+            lnrho_ = log(rho0z(iz)) + log(1.0 + var1)
+          else
+            call fatal_error('eoscalc_point', 'lstratz = .true. requires the optional argument iz. ')
+          endif
+        elseif (ivars == ilnrho_ss) then stratz1
+          lnrho_ = var1
+        else stratz1
+          lnrho_ = log(var1)
+        endif stratz1
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
@@ -1688,17 +1713,28 @@ module EquationOfState
         endif
 !
       case (irho_eth, ilnrho_eth)
-        density: if (ivars == irho_eth) then
-          if (present(lnrho)) lnrho_ = log(var1)
-          rho1 = 1. / var1
-        else density
-          if (present(lnrho)) lnrho_ = var1
-          rho1 = exp(-var1)
-        endif density
-        if (present(lnTT)) lnTT_ = log(cv1 * rho1 * var2)
-        if (present(ee)) ee_ = rho1 * var2
-        if (present(pp)) pp_ = gamma_m1 * var2
-        if (present(cs2)) cs2_ = gamma * gamma_m1 * rho1 * var2
+        strat: if (lstratz) then
+          chkiz: if (present(iz)) then
+            rho = rho0z(iz) * (1.0 + var1)
+            eth = eth0z(iz) * (1.0 + var2)
+            if (present(lnrho)) lnrho_ = log(rho0z(iz)) + log(1.0 + var1)
+          else chkiz
+            call fatal_error('eoscalc_point', 'lstratz = .true. requires the optional argument iz. ')
+          endif chkiz
+        else strat
+          if (ldensity_nolog) then
+            rho = var1
+            if (present(lnrho)) lnrho_ = log(var1)
+          else
+            rho = exp(var1)
+            if (present(lnrho)) lnrho_ = var1
+          endif
+          eth = var2
+        endif strat
+        if (present(lnTT)) lnTT_ = log(cv1 * eth / rho)
+        if (present(ee)) ee_ = eth / rho
+        if (present(pp)) pp_ = gamma_m1 * eth
+        if (present(cs2)) cs2_ = gamma * gamma_m1 * eth / rho
         if (present(ss)) call fatal_error('eoscalc_point', 'ss is not implemented for irho_eth')
         if (present(yH)) call fatal_error('eoscalc_point', 'yH is not implemented for irho_eth')
 !
@@ -1716,7 +1752,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_point
 !***********************************************************************
-    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+    subroutine eoscalc_pencil(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
@@ -1732,24 +1768,31 @@ module EquationOfState
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
       integer, intent(in) :: ivars
+      integer, intent(in), optional :: iz
       real, dimension(nx), intent(in) :: var1,var2
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      real, dimension(nx) :: rho1
+      real, dimension(nx) :: rho, eth
 !
       if (gamma_m1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 !
       case (ilnrho_ss,irho_ss)
-        if (ivars==ilnrho_ss) then
-          lnrho_=var1
-        else
-          lnrho_=log(var1)
-        endif
+        stratz1: if (lstratz) then
+          if (present(iz)) then
+            lnrho_ = log(rho0z(iz)) + log(1.0 + var1)
+          else
+            call fatal_error('eoscalc_pencil', 'lstratz = .true. requires the optional argument iz. ')
+          endif
+        elseif (ivars == ilnrho_ss) then stratz1
+          lnrho_ = var1
+        else stratz1
+          lnrho_ = log(var1)
+        endif stratz1
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
@@ -1805,17 +1848,28 @@ module EquationOfState
         cs2_=cp*gamma_m1*TT_
 !
       case (irho_eth, ilnrho_eth)
-        density: if (ivars == irho_eth) then
-          if (present(lnrho)) lnrho_ = log(var1)
-          rho1 = 1. / var1
-        else density
-          if (present(lnrho)) lnrho_ = var1
-          rho1 = exp(-var1)
-        endif density
-        if (present(lnTT)) lnTT_ = log(cv1 * rho1 * var2)
-        if (present(ee)) ee_ = rho1 * var2
-        if (present(pp)) pp_ = gamma_m1 * var2
-        if (present(cs2)) cs2_ = gamma * gamma_m1 * rho1 * var2
+        strat: if (lstratz) then
+          chkiz: if (present(iz)) then
+            rho = rho0z(iz) * (1.0 + var1)
+            eth = eth0z(iz) * (1.0 + var2)
+            if (present(lnrho)) lnrho_ = log(rho0z(iz)) + log(1.0 + var1)
+          else chkiz
+            call fatal_error('eoscalc_point', 'lstratz = .true. requires the optional argument iz. ')
+          endif chkiz
+        else strat
+          if (ldensity_nolog) then
+            rho = var1
+            if (present(lnrho)) lnrho_ = log(var1)
+          else
+            rho = exp(var1)
+            if (present(lnrho)) lnrho_ = var1
+          endif
+          eth = var2
+        endif strat
+        if (present(lnTT)) lnTT_ = log(cv1 * eth / rho)
+        if (present(ee)) ee_ = eth / rho
+        if (present(pp)) pp_ = gamma_m1 * eth
+        if (present(cs2)) cs2_ = gamma * gamma_m1 * eth / rho
         if (present(ss)) call fatal_error('eoscalc_pencil', 'ss is not implemented for irho_eth')
         if (present(yH)) call fatal_error('eoscalc_pencil', 'yH is not implemented for irho_eth')
 !
