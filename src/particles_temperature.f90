@@ -174,9 +174,13 @@ subroutine pencil_criteria_par_TT()
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
+      real :: volume_cell
       real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
-      real :: dy1, dz1
-      integer :: k, inx0, ix0
+      real :: dx1, dy1, dz1
+      integer :: k, inx0, ix0,iy0,iz0
+      real :: rho1_point, weight
+      integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
+      integer :: ixx,iyy,izz
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: dfp, df
@@ -206,6 +210,8 @@ subroutine pencil_criteria_par_TT()
 !  Calculate convective and conductive heat
 !
             ix0=ineargrid(k,1)
+            iy0=ineargrid(k,2)
+            iz0=ineargrid(k,3)
             inx0=ix0-nghost;
             cond=p%tcond(inx0)
             Ap=4.*pi*fp(k,iap)**2
@@ -225,38 +231,191 @@ subroutine pencil_criteria_par_TT()
 !
             dfp(k,iTp)=(Qreac-Qc+Qrad)/(pmass*cp_part)
 !
-!  Calculate feed back 
+!  Calculate feed back from the particles to the gas phase
 !
             if (lpart_temp_backreac) then
-              if (ltemperature_nolog) then
-                feed_back(inx0)=feed_back(inx0)+Qc*p%cv1(inx0)*p%rho1(inx0)
-              else
-                feed_back(inx0)=feed_back(inx0)&
-                    +Qc*p%cv1(inx0)*p%rho1(inx0)*p%TT1(inx0)
+!
+!  Find the indeces of the neighboring points on which the source
+!  should be distributed.
+!              
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+                  fp,k,ix0,iy0,iz0)
+!
+!  Loop over all neighbouring points
+!
+                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
+!  Find the relative weight of the current grid point
+!
+                  call find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+!
+!  Find the volume of the grid cell of interest
+!
+                  if (nxgrid ==1) then
+                    dx1=1./Lxyz(1)
+                  else
+                    dx1=dx_1(ixx)
+                  endif
+                  if (nygrid ==1) then
+                    dy1=1./Lxyz(2)
+                  else
+                    dy1=dy_1(iyy)
+                  endif
+                  if (nzgrid ==1) then
+                    dz1=1./Lxyz(3)
+                  else
+                    dz1=dz_1(izz)
+                  endif
+                  volume_cell=1./(dx1*dy1*dz1)
+!
+!  Find the gas phase density
+!
+                  if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                  else
+                    rho1_point = p%rho1(ixx-nghost)
+                  endif
+!
+!  Add the source to the df-array
+!  NILS: The values of cv and Tg are currently found from the nearest grid
+!  NILS: point also for CIC and TSC. This should be fixed!
+!
+                  if (ltemperature_nolog) then
+                    df(ixx,iyy,izz,ilnTT)=df(ixx,iyy,izz,ilnTT)&
+                        +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
+                  else
+                    df(ixx,iyy,izz,ilnTT)=df(ixx,iyy,izz,ilnTT)&
+                        +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                  endif
+                enddo; enddo; enddo
               endif
-            endif
-!
-          enddo
-!
-!  Add feedback from particles on gas phase
-!
-          if (lpart_temp_backreac) then
-            if (nygrid ==1) then
-              dy1=1./Lxyz(2)
-            else
-              dy1=dy_1(m)
-            endif
-            if (nzgrid ==1) then
-              dz1=1./Lxyz(3)
-            else
-              dz1=dz_1(n)
-            endif
-!
-            volume_pencil=1./(dx_1(l1:l2)*dy1*dz1)
-            df(l1:l2,m,n,ilnTT)=feed_back/volume_pencil
-          endif
+            enddo
 !
     endsubroutine dpTT_dt_pencil
+!***********************************************************************
+    subroutine find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+!
+      real :: weight
+      real :: weight_x, weight_y, weight_z
+      integer, intent(in) :: k,ixx,iyy,izz,ix0,iy0,iz0
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp   
+!
+      if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!
+!  Particle influences the 8 surrounding grid points. The reference point is
+!  the grid point at the lower left corner.
+!
+        weight=1.0
+        if (nxgrid/=1) &
+            weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+        if (nygrid/=1) &
+            weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+        if (nzgrid/=1) &
+            weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+      elseif (lparticlemesh_tsc) then
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+        if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+          weight_x=1.125-1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+              0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+        else
+          if (nxgrid/=1) &
+              weight_x=0.75-((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+        endif
+        if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+          weight_y=1.125-1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+              0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+        else
+          if (nygrid/=1) &
+              weight_y=0.75-((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+        endif
+        if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+          weight_z=1.125-1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+              0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+        else
+          if (nzgrid/=1) &
+              weight_z=0.75-((fp(k,izp)-z(izz))*dz_1(izz))**2
+        endif
+!
+        weight=1.0
+!
+        if (nxgrid/=1) weight=weight*weight_x
+        if (nygrid/=1) weight=weight*weight_y
+        if (nzgrid/=1) weight=weight*weight_z
+      else
+!
+!  Nearest Grid Point (NGP) scheme.
+!
+        weight=1.
+      endif
+!
+    end subroutine find_weight
+!***********************************************************************
+    subroutine find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+        fp,k,ix0,iy0,iz0)
+!
+      integer, intent(in)  :: k,ix0,iy0,iz0
+      integer, intent(out) :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp      
+!
+!  Cloud In Cell (CIC) scheme.
+!
+      if (lparticlemesh_cic) then
+        ixx0=ix0; iyy0=iy0; izz0=iz0
+        ixx1=ix0; iyy1=iy0; izz1=iz0
+!
+!  Particle influences the 8 surrounding grid points. The reference point is
+!  the grid point at the lower left corner.
+!
+        if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+        if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+        if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+        if (nxgrid/=1) ixx1=ixx0+1
+        if (nygrid/=1) iyy1=iyy0+1
+        if (nzgrid/=1) izz1=izz0+1
+      elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+        if (nxgrid/=1) then
+          ixx0=ix0-1; ixx1=ix0+1
+        else
+          ixx0=ix0  ; ixx1=ix0
+        endif
+        if (nygrid/=1) then
+          iyy0=iy0-1; iyy1=iy0+1
+        else
+          iyy0=iy0  ; iyy1=iy0
+        endif
+        if (nzgrid/=1) then
+          izz0=iz0-1; izz1=iz0+1
+        else
+          izz0=iz0  ; izz1=iz0
+        endif
+      else
+!
+!  Nearest Grid Point (NGP) scheme.
+!
+        ixx0=ix0
+        ixx1=ixx0
+        iyy0=m
+        iyy1=iyy0
+        izz0=n
+        izz1=izz0
+      endif
+!
+    end subroutine find_interpolation_indeces
 !***********************************************************************
     subroutine read_particles_TT_init_pars(unit,iostat)
 !
@@ -338,6 +497,25 @@ subroutine pencil_criteria_par_TT()
       enddo
 !
     endsubroutine rprint_particles_TT
+!***********************************************************************
+    real function get_gas_density(f, ix, iy, iz) result(rho)
+!   
+!  Reads the gas density at location (ix, iy, iz).
+!
+!  20-may-13/ccyang: coded.
+!  NILS: This should be made a general routine in order to avoid the
+!  NILS: current code dublication with particles_dust.f90
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix, iy, iz
+!
+      linear: if (ldensity_nolog) then
+        rho = f(ix, iy, iz, irho)
+      else linear
+        rho = exp(f(ix, iy, iz, ilnrho))
+      endif linear
+!   
+    endfunction get_gas_density
 !***********************************************************************    
 subroutine particles_TT_prepencil_calc(f)
 !
