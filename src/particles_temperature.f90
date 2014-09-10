@@ -30,6 +30,7 @@ module Particles_temperature
 !
   include 'particles_temperature.h'
 !
+  logical :: lpart_temp_backreac=.true.
   real :: init_part_temp, emissivity, cp_part=1.
   character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
 !
@@ -37,9 +38,9 @@ module Particles_temperature
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ &
-      emissivity, cp_part
+      emissivity, cp_part, lpart_temp_backreac
 !
-  integer :: idiag_Tpm=0
+  integer :: idiag_Tpm=0, idiag_etpm=0
 !
   contains
 !***********************************************************************
@@ -149,6 +150,8 @@ subroutine pencil_criteria_par_TT()
 !
       if (ldiagnos) then
         if (idiag_Tpm/=0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
+        if (imp/=0) call fatal_error('dpTT_dt','Calculate particle density properly when particle mass is solved for!')
+        if (idiag_etpm/=0) call sum_par_name(fp(1:npar_loc,iTp)*cp_part*4.*3.14*fp(1:npar_loc,iap)**3/3.*rhopmat,idiag_etpm)
       endif
 !
       call keep_compiler_quiet(f)
@@ -172,6 +175,7 @@ subroutine pencil_criteria_par_TT()
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
       real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
+      real :: dy1, dz1
       integer :: k, inx0, ix0
 !
       intent (in) :: f, fp, ineargrid
@@ -203,10 +207,17 @@ subroutine pencil_criteria_par_TT()
 !
             ix0=ineargrid(k,1)
             inx0=ix0-nghost;
-            cond=p%lambda(inx0)
+
+!NILS: The thermal conductivity is called lambda in the chemistry module
+!NILS: and tcond in the temperature_ionization module. This should be 
+!NILS: syncronized!!!!!
+ call fatal_error('dpTT_dt','Syncronize p%lambda and p%tcond!')
+!            cond=p%lambda(inx0)
+            cond=p%tcond(inx0)
             Ap=4.*pi*fp(k,iap)**2
             heat_trans_coef=Nusselt*cond/(2*fp(k,iap))
             Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+!print*,'Qc,cond,Ap=',Qc,cond,Ap
 !
 !  Find the mass of the particle
 !
@@ -223,18 +234,34 @@ subroutine pencil_criteria_par_TT()
 !
 !  Calculate feed back 
 !
-            if (ltemperature_nolog) then
-              feed_back(inx0)=Qc*p%cv1(inx0)*p%rho1(inx0)*p%TT1(inx0)
-            else
-              feed_back(inx0)=Qc*p%cv1(inx0)*p%rho1(inx0)
+            if (lpart_temp_backreac) then
+              if (ltemperature_nolog) then
+                feed_back(inx0)=feed_back(inx0)+Qc*p%cv1(inx0)*p%rho1(inx0)
+              else
+                feed_back(inx0)=feed_back(inx0)&
+                    +Qc*p%cv1(inx0)*p%rho1(inx0)*p%TT1(inx0)
+              endif
             endif
 !
           enddo
 !
 !  Add feedback from particles on gas phase
 !
-          volume_pencil=1./(dx_1(l1:l2)*dy_1(m)*dz_1(n))
-          df(l1:l2,m,n,ilnTT)=feed_back/volume_pencil
+          if (lpart_temp_backreac) then
+            if (nygrid ==1) then
+              dy1=1./Lxyz(2)
+            else
+              dy1=dy_1(m)
+            endif
+            if (nzgrid ==1) then
+              dz1=1./Lxyz(3)
+            else
+              dz1=dz_1(n)
+            endif
+!
+            volume_pencil=1./(dx_1(l1:l2)*dy1*dz1)
+            df(l1:l2,m,n,ilnTT)=feed_back/volume_pencil
+          endif
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
@@ -308,12 +335,13 @@ subroutine pencil_criteria_par_TT()
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_Tpm=0; 
+        idiag_Tpm=0; idiag_etpm=0; 
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_TT: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Tpm',idiag_Tpm)
+        call parse_name(iname,cname(iname),cform(iname),'etpm',idiag_etpm)
       enddo
 !
     endsubroutine rprint_particles_TT
