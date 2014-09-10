@@ -1148,7 +1148,7 @@ module Chemistry
 !  24-jun-10/Julien Savre: Modifications for lean methane/air combustion
 !  This routine set up the initial profiles used in 1D flame speed measurments
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
@@ -1377,7 +1377,7 @@ module Chemistry
 !
 ! 26-jul-10/Julien Savre: Copy from the flame_front case
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
@@ -1663,7 +1663,7 @@ module Chemistry
 ! NILS: This routine is essentially the samw as flame_front, but I leave
 ! NILS: flame_front as it is for now for backwards compatibility.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
       real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
@@ -1879,7 +1879,7 @@ module Chemistry
 !***********************************************************************
     subroutine flame_blob(f)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
       real :: mO2, mH2, mN2, mH2O
@@ -1994,7 +1994,7 @@ module Chemistry
 !  Set up two oppositely directed flame fronts in the x-direction.
 !  The two fronts have fresh gas between them.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
       real :: mO2, mH2, mN2, mH2O, lower,upper
@@ -2118,7 +2118,7 @@ module Chemistry
 !  Set up two oppositely directed flame fronts in the x-direction.
 !  The two fronts have fresh gas between them.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
       real :: lower,upper
@@ -5505,7 +5505,7 @@ module Chemistry
 !***********************************************************************
     subroutine air_field(f)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: sum_Y,tmp
 !
       logical :: emptyfile=.true.
@@ -5728,7 +5728,7 @@ module Chemistry
 !    Most of this routine is still hard-coded
 !    Should contain more tests to detect boundaries and set the reference conditions
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       integer :: sz_x, sz_y, sz_z, ll1, ll2, i
 !      integer :: sz_r_x, sz_l_x, sz_r_y, sz_l_y, sz_r_z, sz_l_z
