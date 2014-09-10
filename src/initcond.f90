@@ -4479,7 +4479,8 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,cutoff,f,i1,i2,relhel,lscale_tobox)
 !
-!   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
+!   Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
+!   The relative helicity is relhel.
 !
 !   08-sep-14/axel: adapted from power_randomphase
 !
@@ -4560,7 +4561,7 @@ module Initcond
 !
 !  generate all 3 velocity components separately
 !
-        do i=i1,i2
+        do i=1,3
           ! generate k^n spectrum with random phase (between -pi and pi)
           call random_number_wrapper(r); u_re(:,:,:,i)=ampl*k2**mhalf*cos(pi*(2*r-1))
           call random_number_wrapper(r); u_im(:,:,:,i)=ampl*k2**mhalf*sin(pi*(2*r-1))
@@ -4602,7 +4603,7 @@ module Initcond
 !
 !  back to real space
 !
-        do i=i1,i2
+        do i=1,3
           call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         enddo !i
         f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re

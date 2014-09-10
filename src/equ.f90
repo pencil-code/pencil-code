@@ -666,7 +666,7 @@ module Equ
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
             advec2=0.0
             if (ldensity) advec2=advec2+advec_cs2
-            if (lmagnetic) advec2=advec2+advec_va2
+            if (lmagnetic) advec2=advec2+advec_va2+advec_hall**2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2
             if (lpolymer) advec2=advec2+advec_poly
