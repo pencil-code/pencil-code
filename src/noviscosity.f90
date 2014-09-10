@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fvisc(3); visc_heat
+! PENCILS PROVIDED fvisc(3); visc_heat; nu
 !
 !***************************************************************
 module Viscosity
@@ -133,6 +133,7 @@ module Viscosity
 !
       if (lpencil(i_fvisc)) p%fvisc=0.0
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
+      if (lpencil(i_nu)) p%nu=0.0
 !
       call keep_compiler_quiet(f)
 !
