@@ -657,6 +657,7 @@ module Energy
       if (ldt.and.ldensity) lpenc_requested(i_cs2)=.true.
 !
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
+      if (lparticles_temperature) lpenc_requested(i_tcond)=.true.
 !
       if (lviscosity.and.lviscosity_heat) then
         lpenc_requested(i_cv1)=.true.
