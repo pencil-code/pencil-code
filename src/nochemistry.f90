@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ywater
+! PENCILS PROVIDED Ywater, lambda
 !
 !***************************************************************
 module Chemistry
