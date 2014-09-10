@@ -111,6 +111,7 @@ module Particles
   character (len=labellen) :: interp_pol_pp ='ngp'
   character (len=labellen) :: interp_pol_species='ngp'
   character (len=labellen) :: interp_pol_gradTT='ngp'
+  character (len=labellen) :: interp_pol_nu='ngp'
 !
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
@@ -559,6 +560,7 @@ module Particles
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
           .or. lthermophoretic_forces
+      interp%lnu=lchemistry
 !
 !  Determine interpolation policies:
 !   Make sure that interpolation of uu is chosen in a backwards compatible
@@ -634,6 +636,34 @@ module Particles
       case default
         call fatal_error('initialize_particles','No such such value for '// &
           'interp_pol_rho: '//trim(interp_pol_rho))
+      endselect
+!
+      select case (interp_pol_pp)
+      case ('tsc')
+        call fatal_error('initialize_particles','Not implemented pp'// &
+          'interp_pol_pp: '//trim(interp_pol_pp))
+      case ('cic')
+        call fatal_error('initialize_particles','Not implemented pp'// &
+          'interp_pol_pp: '//trim(interp_pol_pp))
+      case ('ngp')
+        interp%pol_pp=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_pp: '//trim(interp_pol_pp))
+      endselect
+!
+      select case (interp_pol_nu)
+      case ('tsc')
+        call fatal_error('initialize_particles','Not implemented nu'// &
+          'interp_pol_nu: '//trim(interp_pol_nu))
+      case ('cic')
+        call fatal_error('initialize_particles','Not implemented nu'// &
+          'interp_pol_nu: '//trim(interp_pol_nu))
+      case ('ngp')
+        interp%pol_nu=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_nu: '//trim(interp_pol_nu))
       endselect
 !
       if (l_shell) then
@@ -4529,7 +4559,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (ivis=='nu-const') then
         nu=nu_
       elseif (ivis=='nu-mixture') then
-        nu=nu_
+        nu=interp_nu
       elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
       elseif (ivis=='sqrtrho-nu-const') then
@@ -4609,6 +4639,8 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu(k)
       elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
       elseif (ivis=='sqrtrho-nu-const') then
@@ -4619,7 +4651,7 @@ k_loop:   do while (.not. (k>npar_loc))
         nu=nu_*sqrt(interp_TT(k))&
             /interp_rho(k)
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_draglaw_steadystate','No such ivis!')
       endif
 !
 !  Particle diameter
@@ -4674,6 +4706,8 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu(k)
       elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
       elseif (ivis=='sqrtrho-nu-const') then
@@ -4684,7 +4718,7 @@ k_loop:   do while (.not. (k>npar_loc))
         nu=nu_*sqrt(interp_TT(k))&
             /interp_rho(k)
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_brownian_force','No such ivis!')
       endif
 !
 !  Particle diameter:
@@ -4748,6 +4782,8 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         mu=nu_*interp_rho(k)
+      elseif (ivis=='nu-mixture') then
+        mu=interp_nu(k)*interp_rho(k)
       elseif (ivis=='rho-nu-const') then
         mu=nu_
       elseif (ivis=='sqrtrho-nu-const') then
@@ -4757,7 +4793,7 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (ivis=='mu-therm') then
         mu=nu_*sqrt(TT)
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_thermophoretic_force','No such ivis!')
       endif
       Cint=0.5
       if (interp%lgradTT) then

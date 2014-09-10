@@ -1644,7 +1644,6 @@ module Particles_map
         endif
         call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,&
             interp_rho,interp%pol_rho)
-!
         if (.not.ldensity_nolog) then
           interp_rho=exp(interp_rho)
         endif
@@ -1663,6 +1662,20 @@ module Particles_map
         endif
         do k=k1,k2
           interp_pp(k)=p%pp(ineargrid(k,1)-nghost)
+        enddo
+      endif
+!
+!  Viscosity:
+!
+      if (interp%lnu) then
+        allocate(interp_nu(k1:k2))
+        if (.not.allocated(interp_nu)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_nu'
+          call fatal_error('interpolate_quantities','')
+        endif
+        do k=k1,k2
+          interp_nu(k)=p%nu(ineargrid(k,1)-nghost)
         enddo
       endif
 !
@@ -1697,6 +1710,9 @@ module Particles_map
       if (allocated(interp_TT)) deallocate(interp_TT)
       if (allocated(interp_rho)) deallocate(interp_rho)
       if (allocated(interp_gradTT)) deallocate(interp_gradTT)
+      if (allocated(interp_nu)) deallocate(interp_nu)
+      if (allocated(interp_pp)) deallocate(interp_pp)
+      if (allocated(interp_species)) deallocate(interp_species)
 !
     endsubroutine cleanup_interpolated_quantities
 !***********************************************************************
