@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
 ! PENCILS PROVIDED ekin
 !
-! PENCILS PROVIDED glnrhos(3)
+! PENCILS PROVIDED rhos1; glnrhos(3)
 !
 !***************************************************************
 module Density
@@ -1713,6 +1713,11 @@ module Density
       endif
 ! ekin
       if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
+!
+!  Dummy pencils.
+!
+      if (lpencil(i_rhos1)) call fatal_error('calc_pencils_density', 'rhos1 is no implemented. ')
+      if (lpencil(i_glnrhos)) call fatal_error('calc_pencils_density', 'glnrhos is no implemented. ')
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
