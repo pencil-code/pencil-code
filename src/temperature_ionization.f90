@@ -425,6 +425,8 @@ module Energy
 !
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
 !
+      if (lparticles_temperature) lpenc_requested(i_tcond)=.true.
+!
     !  if (lchemistry) then
     !     lpenc_requested(i_lnTT)=.true.
     !     lpenc_requested(i_TT)=.true.
@@ -539,11 +541,15 @@ module Energy
       endif
 ! tcond
       if (lpencil(i_tcond)) then
-        if (lheatc_chiconst) then
-          p%tcond=chi*p%rho/p%cp1
+        if (lchemistry) then
+          p%tcond=p%lambda
         else
-          call fatal_error('calc_pencils_energy',  &
-              'This heatcond is not implemented to work with lpencil(i_cond)!')
+          if (lheatc_chiconst) then
+            p%tcond=chi*p%rho/p%cp1       
+          else
+            call fatal_error('calc_pencils_energy',  &
+                'This heatcond is not implemented to work with lpencil(i_cond)!')
+          endif
         endif
       endif
 !
