@@ -598,7 +598,8 @@ module EquationOfState
 !
 !  Energy per unit mass
 !
-      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT 
+!      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT 
+      if (lpencil(i_ee)) p%ee = p%cv*p%TT
 !
 !      endif
 !
