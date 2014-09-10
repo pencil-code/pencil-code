@@ -207,17 +207,10 @@ subroutine pencil_criteria_par_TT()
 !
             ix0=ineargrid(k,1)
             inx0=ix0-nghost;
-
-!NILS: The thermal conductivity is called lambda in the chemistry module
-!NILS: and tcond in the temperature_ionization module. This should be 
-!NILS: syncronized!!!!!
- call fatal_error('dpTT_dt','Syncronize p%lambda and p%tcond!')
-!            cond=p%lambda(inx0)
             cond=p%tcond(inx0)
             Ap=4.*pi*fp(k,iap)**2
             heat_trans_coef=Nusselt*cond/(2*fp(k,iap))
             Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
-!print*,'Qc,cond,Ap=',Qc,cond,Ap
 !
 !  Find the mass of the particle
 !
