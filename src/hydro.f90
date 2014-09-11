@@ -5143,6 +5143,7 @@ module Hydro
       real, dimension (mz) :: prof_amp3
       real, dimension (my) :: prof_amp4
       character (len=labellen) :: prof_diffrot
+      real :: tmp, tmp2
       logical :: ldiffrot_test
       integer :: llx
 !
@@ -5268,6 +5269,20 @@ module Hydro
       zbot=xyz0(3)
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
         -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+!
+!  vertical shear profile with sinz profile
+!
+      case ('vertical_shear_x_sinz')
+      zbot=xyz0(3)
+      if (z(n) <= 0.) then
+        tmp=ampl1_diffrot
+      else
+        tmp=0.
+      endif
+      tmp2=.5*pi/abs(zbot)
+      if (headtt) print*,''
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+        -tau_diffrot1*(f(l1:l2,m,n,iux)-tmp*sin(tmp2*(z(n))))
 !
 !  Vertical shear profile U_y(z) centred around given z, forcing the
 !  horizontally averaged flow.
