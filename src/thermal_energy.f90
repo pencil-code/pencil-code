@@ -320,7 +320,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !
       lpenc_requested(i_divu) = .true.
-      if (lvideo) lpenc_requested(i_pp) = .true.
+      lpenc_requested(i_pp) = .true.
       stratz: if (lstratz) then
         lpenc_requested(i_eths) = .true.
         lpenc_requested(i_ugeths) = .true.
