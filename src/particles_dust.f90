@@ -1166,6 +1166,50 @@ k_loop:   do while (.not. (k>npar_loc))
                 sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
           enddo
 !
+!  Shift to egg crate mode 2d, cos(x)cos(z)
+!
+        case ('cosxcosz')
+          if (lroot) print*, 'init_particles: shift particle positions'
+          if (.not. lequidistant) then
+            if (lroot) print*, 'init_particles: '// &
+            'must place particles equidistantly before shifting!'
+            call fatal_error('init_particles','')
+          endif
+          k2_xxp=kx_xxp**2+kz_xxp**2
+          if (k2_xxp==0.0) then
+            if (lroot) print*, & 
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            call fatal_error('init_particles','')
+          endif     
+          do k=1,npar_loc
+          fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
+              sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
+          fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
+              sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
+          enddo
+!
+!  Shift to egg crate mode 2d, sin(x)sin(z)
+!
+        case ('sinxsinz')
+          if (lroot) print*, 'init_particles: shift particle positions'
+          if (.not. lequidistant) then
+            if (lroot) print*, 'init_particles: '// &
+            'must place particles equidistantly before shifting!'
+            call fatal_error('init_particles','')
+          endif
+          k2_xxp=kx_xxp**2+kz_xxp**2
+          if (k2_xxp==0.0) then
+            if (lroot) print*, & 
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            call fatal_error('init_particles','')
+          endif     
+          do k=1,npar_loc
+          fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
+              cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
+          fp(k,izp) = fp(k,izp) + kz_xxp/k2_xxp*amplxxp* &
+              cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
+          enddo
+!
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
