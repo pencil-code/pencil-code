@@ -70,8 +70,8 @@ module Poisson
 !
 !  18-oct-2007/anders: dummy
 !
-      integer :: unit
-      integer, optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
@@ -96,8 +96,8 @@ module Poisson
 !
 !  18-oct-2007/anders: dummy
 !
-      integer :: unit
-      integer, optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)

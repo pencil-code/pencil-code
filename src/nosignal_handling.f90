@@ -36,8 +36,8 @@ endsubroutine signal_prepare
 !***********************************************************************
     subroutine read_signal_init_pars(unit,iostat)
 !
-      integer :: unit
-      integer, optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)

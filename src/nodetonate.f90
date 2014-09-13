@@ -53,7 +53,7 @@ module Detonate
 !  13-feb-14/ccyang: dummy
 !
       integer, intent(in) :: unit
-      integer, intent(in), optional :: iostat
+      integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
