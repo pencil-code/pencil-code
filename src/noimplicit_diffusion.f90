@@ -27,7 +27,7 @@ module ImplicitDiffusion
 !  Dummy
 !
       integer, intent(in) :: unit
-      integer, intent(out), optional :: iostat
+      integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
       if (present(iostat)) then

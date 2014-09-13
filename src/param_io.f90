@@ -411,7 +411,7 @@ module Param_IO
     interface
       subroutine reader(unit, iostat)
         integer, intent(in) :: unit
-        integer, intent(out), optional :: iostat
+        integer, intent(inout), optional :: iostat
       endsubroutine reader
     endinterface
     character(LEN=*), intent(IN):: name

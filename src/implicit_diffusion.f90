@@ -46,7 +46,7 @@ module ImplicitDiffusion
 !  04-sep-14/ccyang: coded
 !
       integer, intent(in) :: unit
-      integer, intent(out), optional :: iostat
+      integer, intent(inout), optional :: iostat
 !
       integer :: status
 !
