@@ -408,7 +408,12 @@ module Param_IO
     use General, only: loptest
 !
     integer,          intent(IN):: unit
-    external                    :: reader
+    interface
+      subroutine reader(unit, iostat)
+        integer, intent(in) :: unit
+        integer, intent(out), optional :: iostat
+      endsubroutine reader
+    endinterface
     character(LEN=*), intent(IN):: name
     logical,          intent(IN):: lierr
 !
