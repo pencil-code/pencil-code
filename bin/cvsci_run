@@ -32,7 +32,7 @@ foreach pdir ($dirlist)
 #
 #  add directories and files to cvs
 #
-  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat  data
+  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial data
 #
   if (-e data) then
       cd data
