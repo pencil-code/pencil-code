@@ -75,13 +75,13 @@ module Hydro
   real, dimension (ninit) :: kz_ux=0.0, kz_uy=0.0, kz_uz=0.0
   real, dimension (ninit) :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real :: omega_precession=0., alpha_precession=0.
-  real, dimension (ninit) :: ampluu=0.0
+  real, dimension (ninit) :: ampluu=0.0, uu_xz_angle=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   character (len=labellen), dimension(3) :: borderuu='nothing'
   real, dimension (3) :: uu_const=(/0.,0.,0./), mean_momentum=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real, dimension(nx) :: xmask_hyd
-   real, dimension(nz) :: zmask_hyd
+  real, dimension(nz) :: zmask_hyd
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
@@ -120,7 +120,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      relhel_uu, coefuu, r_omega, w_omega,&
+      uu_xz_angle, relhel_uu, coefuu, r_omega, w_omega,&
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, initpower, cutoff, u_out_kep, &
@@ -1045,7 +1045,7 @@ module Hydro
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      real :: dis, xold,yold,uprof
+      real :: dis, xold,yold,uprof, factx, factz
       integer :: j,i,l,ixy,ix,iy,iz
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1275,17 +1275,28 @@ module Hydro
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
           enddo; enddo
 !
-!
-        case ('bullets_x')
-!
 !  blob-like velocity perturbations in x-direction (bullets)
 !
+        case ('bullets_x')
           if (lroot) print*,'init_uu: velocity blobs in x-direction'
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iux)=uu_const(1)+f(l1:l2,m,n,iux) &
               +ampluu(j)*exp(-((x(l1:l2)-xsphere)**2+ &
                                    (y(m)-ysphere)**2+ &
-                                   (z(n)-zsphere)**2)/widthuu)
+                                   (z(n)-zsphere)**2)/widthuu**2)
+          enddo; enddo
+!
+!  blob-like velocity perturbations in x-direction (bullets)
+!
+        case ('bullets_xz_plane')
+          factx=ampluu(j)*sin(uu_xz_angle(j)*pi/180.)
+          factz=ampluu(j)*cos(uu_xz_angle(j)*pi/180.)
+          if (lroot) print*,'init_uu: velocity blobs in xz-plane'
+          do n=n1,n2; do m=m1,m2
+            tmp=exp(-((x(l1:l2)-xsphere)**2+ &
+              (y(m)-ysphere)**2+(z(n)-zsphere)**2)/widthuu**2)
+            f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+factx*tmp
+            f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+factz*tmp
           enddo; enddo
 !
 !  X-point, xy plane

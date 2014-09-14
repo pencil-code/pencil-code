@@ -178,7 +178,7 @@ module Magnetic
   logical :: lee_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
-  logical :: lbb_as_comaux=.false.
+  logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
@@ -192,7 +192,7 @@ module Magnetic
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, &
-      lcheck_positive_va2, lbb_as_aux, lbb_as_comaux, lee_as_aux,&
+      lcheck_positive_va2, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -278,7 +278,7 @@ module Magnetic
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
-      lbext_curvilinear, lbb_as_aux, lbb_as_comaux, ljj_as_aux, &
+      lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -2340,6 +2340,14 @@ module Magnetic
           n = nn(imn)
           call gij(f, iaa, aij, 1)
           call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+!
+!  Add imposed field, if any
+!
+          if (lB_ext_in_comaux) then
+            if (B_ext(1)/=0.0) bb(:,1)=bb(:,1)+B_ext(1)
+            if (B_ext(2)/=0.0) bb(:,2)=bb(:,2)+B_ext(2)
+            if (B_ext(3)/=0.0) bb(:,3)=bb(:,3)+B_ext(3)
+          endif
           f(l1:l2,m,n,ibx:ibz) = bb
         enddo mn_loop
       endif getbb
