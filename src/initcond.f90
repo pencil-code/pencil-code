@@ -4590,9 +4590,6 @@ module Initcond
             u_im(:,:,:,i) = u_im(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
           endif
         enddo !i
-u_re(:,:,:,i) = 0.
-u_im(:,:,:,i) = 0.
-u_im(1,2,1,3) = 1.
 !
 !  Apply projection operator
 !  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
