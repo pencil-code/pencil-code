@@ -4358,11 +4358,17 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2,lscale_tobox)
 !
-!   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
+!  Produces k^initpower*exp(-k**2/cutoff**2) spectrum.
+!  However, initpower=-3 produces a k^{-1} spectrum.
 !
-!   07-may-03/tarek: coded
-!   08-may-08/nils: adapted to work on multiple processors
-!   06-jul-08/nils+andre: Fixed problem when running on
+!  initpower=0 -> k^2
+!           =2 -> k^4
+!          =-3 -> k^{-1}
+!          =-5 -> k^{-3}
+!
+!  07-may-03/tarek: coded
+!  08-may-08/nils: adapted to work on multiple processors
+!  06-jul-08/nils+andre: Fixed problem when running on
 !      mult. procs (thanks to Andre Kapelrud for finding the bug)
 !
       use Fourier, only: fourier_transform
@@ -4397,7 +4403,7 @@ module Initcond
       allocate(ky(nygrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for ky')
-      allocate(kz(nzgrid),staT=stat)
+      allocate(kz(nzgrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kz')
 !
@@ -4433,7 +4439,7 @@ module Initcond
         enddo
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
-!  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
+!  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
@@ -4479,17 +4485,22 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,cutoff,f,i1,i2,relhel,lscale_tobox)
 !
-!   Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
-!   The relative helicity is relhel.
+!  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
+!  The relative helicity is relhel.
 !
-!   08-sep-14/axel: adapted from power_randomphase
+!  initpower=0 -> k^2
+!           =2 -> k^4
+!          =-3 -> k^{-1}
+!          =-5 -> k^{-3}
+!
+!  08-sep-14/axel: adapted from power_randomphase
 !
       use Fourier, only: fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
       logical :: lscale_tobox1
       integer :: i,i1,i2,ikx,iky,ikz,stat
-      real, dimension (:,:,:,:), allocatable :: u_re, u_im
+      real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4505,19 +4516,26 @@ module Initcond
 !
       allocate(k2(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      allocate(r(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
+!
       allocate(u_re(nx,ny,nz,3),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
       allocate(u_im(nx,ny,nz,3),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
-      allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
+!
+      allocate(v_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for v_re')
+      allocate(v_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('powern','Could not allocate memory for v_im')
+!
       allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kx')
       allocate(ky(nygrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for ky')
-      allocate(kz(nzgrid),staT=stat)
+      allocate(kz(nzgrid),stat=stat)
       if (stat>0) call fatal_error('powern', &
           'Could not allocate memory for kz')
 !
@@ -4540,20 +4558,21 @@ module Initcond
         if (lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
-!  integration over shells
+!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
+!  the full nx extent (which, currently, must be equal to nxgrid).
 !
         if (lroot .AND. ip<10) &
              print*,'power_randomphase:fft done; now integrate over shells...'
-        do ikz=1,nz
-          do iky=1,ny
-            do ikx=1,nx
-              k2(ikx,iky,ikz)=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
             enddo
           enddo
         enddo
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
-!  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
+!  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
@@ -4571,35 +4590,82 @@ module Initcond
             u_im(:,:,:,i) = u_im(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
           endif
         enddo !i
+u_re(:,:,:,i) = 0.
+u_im(:,:,:,i) = 0.
+u_im(1,2,1,3) = 1.
 !
-!  make it helical, i.e., multiply by dela_ij + epsilon_ijk ik_k*sigma
+!  Apply projection operator
+!  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
+!  Remember that for the return transform, data have to be
+!  arranged in the order (kz,kx,ky).
 !
-        if (relhel /= 0.) then
-          do ikz=1,nz
-            do iky=1,ny
-              do ikx=1,nx
-                u_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1) &
-                    -kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,2)*relhel &
-                    +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,3)*relhel
-                u_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1) &
-                    +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,2)*relhel &
-                    -ky(iky+ipy*ny)*u_re(ikx,iky,ikz,3)*relhel
-                u_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2) &
-                    -kx(ikx)       *u_im(ikx,iky,ikz,3)*relhel &
-                    +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*relhel
-                u_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2) &
-                    +kx(ikx)       *u_re(ikx,iky,ikz,3)*relhel &
-                    -kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*relhel
-                u_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3) &
-                    -ky(iky+ipy*ny)*u_im(ikx,iky,ikz,1)*relhel &
-                    +kx(ikx)       *u_im(ikx,iky,ikz,2)*relhel
-                u_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3) &
-                    +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,1)*relhel &
-                    -kx(ikx)       *u_re(ikx,iky,ikz,2)*relhel
-              enddo
+        r=1./k2
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+!
+!  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+              r(ikz,ikx,iky)=kx(ikx+ipy*ny)*u_re(ikz,ikx,iky,1) &
+                            +ky(iky+ipz*nz)*u_re(ikz,ikx,iky,2) &
+                            +kz(ikz+ipx*nx)*u_re(ikz,ikx,iky,3)
+              v_re(ikz,ikx,iky,1)=u_re(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
+              v_re(ikz,ikx,iky,2)=u_re(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
+              v_re(ikz,ikx,iky,3)=u_re(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+!
+!  Imaginary part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+              r(ikz,ikx,iky)=kx(ikx+ipy*ny)*u_im(ikz,ikx,iky,1) &
+                            +ky(iky+ipz*nz)*u_im(ikz,ikx,iky,2) &
+                            +kz(ikz+ipx*nx)*u_im(ikz,ikx,iky,3)
+              v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
+              v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
+              v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+!
             enddo
           enddo
-        endif
+        enddo
+!
+!  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ik_k*sigma.
+!  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
+!
+        r=relhel/sqrt(k2)
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+!
+!  (vx, vy, vz) -> ux
+!
+              u_re(ikz,ikx,iky,1)=v_re(ikz,ikx,iky,1) &
+                  +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
+                  -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky)
+              u_im(ikz,ikx,iky,1)=v_im(ikz,ikx,iky,1) &
+                  -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
+                  +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky)
+!
+!  (vx, vy, vz) -> uy
+!
+              u_re(ikz,ikx,iky,2)=v_re(ikz,ikx,iky,2) &
+                  +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
+                  -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky)
+              u_im(ikz,ikx,iky,2)=v_im(ikz,ikx,iky,2) &
+                  -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
+                  +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky)
+!
+!  (vx, vy, vz) -> uz
+!
+              u_re(ikz,ikx,iky,3)=v_re(ikz,ikx,iky,3) &
+                  +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
+                  -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky)
+              u_im(ikz,ikx,iky,3)=v_im(ikz,ikx,iky,3) &
+                  -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
+                  +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky)
+!
+            enddo
+          enddo
+        enddo
 !
 !  back to real space
 !
@@ -4624,9 +4690,11 @@ module Initcond
 !  Deallocate arrays.
 !
       if (allocated(k2))   deallocate(k2)
+      if (allocated(r))  deallocate(r)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
-      if (allocated(r))  deallocate(r)
+      if (allocated(v_re)) deallocate(v_re)
+      if (allocated(v_im)) deallocate(v_im)
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kz)) deallocate(kz)
