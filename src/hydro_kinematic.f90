@@ -397,7 +397,8 @@ module Hydro
 !   21-sep-13/MR  : returned to pencil mask as parameter lpenc_loc
 !   20-oct-13/MR  : Glen Roberts flow w.r.t. x and z added
 !   06-dec-13/MR  : error message for eps_kinflow=0 in Roberts flow IV added
-!
+!   15-sep-14/MR  : div for case 'roberts' corrected; div u, du_i/dx_j for case
+!                   'roberts_xz' added
       use Diagnostics
       use General
       use Sub
@@ -493,7 +494,7 @@ module Hydro
         endif
 ! divu
         if (lpenc_loc(i_divu)) & 
-            p%divu= (kx_uukin-ky_uukin)*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+            p%divu= eps1*(kx_uukin-ky_uukin)*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
 ! uij
         if (lpenc_loc(i_uij)) then
           p%uij(:,1,1)=+eps1*kx_uukin*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
@@ -516,8 +517,21 @@ module Hydro
           p%uu(:,2)=-sqrt2*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
           p%uu(:,3)= -eps1*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
         endif
-        if (lpenc_loc(i_divu) .or. lpenc_loc(i_uij)) &
-           call fatal_error('hydro_kinematic: kinflow=roberts_xz','div u and uij not yet implemented')
+! divu
+        if (lpenc_loc(i_divu)) & 
+            p%divu= eps1*(kx_uukin-kz_uukin)*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+! uij
+        if (lpenc_loc(i_uij)) then
+          p%uij(:,1,1)=+eps1 *kx_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uij(:,1,2)=+0.
+          p%uij(:,1,3)=-eps1 *kz_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,2,1)=-sqrt2*kx_uukin*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,2,2)=+0.
+          p%uij(:,2,3)=-sqrt2*kz_uukin*sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uij(:,3,1)=+eps1 *kx_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,3,2)=+0.
+          p%uij(:,3,3)=-eps1 *kz_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+        endif
 !
 ! Chandrasekhar-Kendall Flow
 !
@@ -1603,18 +1617,18 @@ module Hydro
       if (kinflow/='') then
         if (lfirst.and.ldt) then
           uu=p%uu
-           if (lspherical_coords) then
+          if (lspherical_coords) then
             advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
-                abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+                     abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
+                     abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
           elseif (lcylindrical_coords) then
             advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                abs(uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                abs(uu(:,3))*dz_1(  n  )
+                     abs(uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+                     abs(uu(:,3))*dz_1(  n  )
           else
             advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                abs(uu(:,2))*dy_1(  m  )+ &
-                abs(uu(:,3))*dz_1(  n  )
+                     abs(uu(:,2))*dy_1(  m  )+ &
+                     abs(uu(:,3))*dz_1(  n  )
           endif
         endif
       endif
