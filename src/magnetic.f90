@@ -2329,6 +2329,8 @@ module Magnetic
 !
       real, dimension(nx,3,3) :: aij
       real, dimension(nx,3) :: bb
+      real, dimension(3) :: b_ext
+      integer :: j
 !
 !  Find bb if as communicated auxiliary.
 !
@@ -2343,11 +2345,10 @@ module Magnetic
 !
 !  Add imposed field, if any
 !
-          if (lB_ext_in_comaux) then
-            if (B_ext(1)/=0.0) bb(:,1)=bb(:,1)+B_ext(1)
-            if (B_ext(2)/=0.0) bb(:,2)=bb(:,2)+B_ext(2)
-            if (B_ext(3)/=0.0) bb(:,3)=bb(:,3)+B_ext(3)
-          endif
+          bext: if (lB_ext_in_comaux) then
+            call get_bext(b_ext)
+            forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
+          endif bext
           f(l1:l2,m,n,ibx:ibz) = bb
         enddo mn_loop
       endif getbb
