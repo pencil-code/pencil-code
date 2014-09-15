@@ -5605,63 +5605,84 @@ module Mpicomm
 !  This routine remaps 3D arrays in x and y only for nprocx>1.
 !
 !  14-jul-2010/Bourdin.KIS: coded
+!  13-sep-2014/ccyang: revamped to accommodate either with or without ghost cells.
 !
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer, parameter :: inx=nx, iny=ny
-      integer, parameter :: onx=nxgrid, ony=ny/nprocx
-      integer :: inz, onz ! sizes of in and out arrays
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ltag=104, utag=105
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
+      integer, parameter :: bnx = nx, bny = ny / nprocx
+      integer, parameter :: ltag = 104, utag = 105
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: inx, iny, inz
+      integer :: onx, ony, onz
+      integer :: ibox, partner, nbox, alloc_err
+      integer :: ngc
 !
+!  No need to remap if nprocx = 1.
 !
-      if (nprocx == 1) then
+      nox: if (nprocx == 1) then
         out = in
         return
-      endif
+      endif nox
 !
-      inz = size (in, 3)
-      onz = size (out, 3)
-      nbox = bnx*bny*onz
+!  Check the dimensions.
 !
-      if (mod (ny, nprocx) /= 0) &
-          call stop_fatal ('remap_to_pencil_xy_3D: ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
+      if (mod(ny, nprocx) /= 0) &
+        call stop_fatal('remap_to_pencil_xy_3D: ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
 !
-      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
-          call stop_fatal ('remap_to_pencil_xy_3D: input array size mismatch /= nx,ny', lfirst_proc_xy)
-      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
-          call stop_fatal ('remap_to_pencil_xy_3D: output array size mismatch /= nxgrid,ny/nprocx', lfirst_proc_xy)
-      if (inz /= onz) &
-          call stop_fatal ('remap_to_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
+      inx = size(in, 1)
+      iny = size(in, 2)
+      dim: if (inx == nx .and. iny == ny) then
+        onx = nxgrid
+        ony = ny / nprocx
+        ngc = 0
+      elseif (inx == mx .and. iny == my) then dim
+        onx = mxgrid
+        ony = ny / nprocx + 2 * nghost
+        ngc = nghost
+      else dim
+        call stop_fatal('remap_to_pencil_xy_3D: input array size mismatch', lfirst_proc_xy)
+      endif dim
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      inz = size(in, 3)
+      onz = size(out, 3)
+      nbox = (bnx + 2 * ngc) * (bny + 2 * ngc) * onz
 !
-      do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
-        if (iproc == partner) then
-          ! data is local
-          out(bnx*ibox+1:bnx*(ibox+1),:,:) = in(:,bny*ibox+1:bny*(ibox+1),:)
-        else
-          ! communicate with partner
-          send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
-          if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
-          else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
-          endif
-          out(bnx*ibox+1:bnx*(ibox+1),:,:) = recv_buf
-        endif
-      enddo
+      if (size(out,1) /= onx .or. size(out,2) /= ony) &
+        call stop_fatal('remap_to_pencil_xy_3D: output array size mismatch', lfirst_proc_xy)
+!
+      if (inz /= onz) call stop_fatal('remap_to_pencil_xy_3D: sizes differ in the z direction', lfirst_proc_xy)
+!
+!  Allocate working arrays.
+!
+      allocate(send_buf(bnx+2*ngc,bny+2*ngc,inz), recv_buf(bnx+2*ngc,bny+2*ngc,inz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal('remap_to_pencil_xy_3D: allocation failed. ', .true.)
+!
+!  Communicate.
+!
+      box: do ibox = 0, nprocx - 1
+        partner = ipz * nprocxy + ipy * nprocx + ibox
+        local: if (iproc == partner) then  ! data is local
+          recv_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
+        else local                         ! communicate with partner
+          send_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
+          commun: if (iproc > partner) then  ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+          else commun                        ! below diagonal: receive first, send then 
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+          endif commun
+        endif local
+        out(ngc+bnx*ibox+1:ngc+bnx*(ibox+1),:,:) = recv_buf(ngc+1:ngc+bnx,:,:)
+        ghost: if (ngc > 0) then
+          if (ibox == 0) out(1:ngc,:,:) = recv_buf(1:ngc,:,:)
+          if (ibox == nprocx - 1) out(onx-ngc+1:onx,:,:) = recv_buf(ngc+bnx+1:bnx+2*ngc,:,:)
+        endif ghost
+      enddo box
+!
+!  Deallocate working arrays.
 !
       deallocate (send_buf, recv_buf)
 !
@@ -5877,65 +5898,87 @@ module Mpicomm
 !  This routine is the inverse of the remap function for nprocx>1.
 !
 !  14-jul-2010/Bourdin.KIS: coded
+!  14-sep-2014/ccyang: revamped to accommodate either with or without ghost cells.
 !
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer, parameter :: inx=nxgrid, iny=ny/nprocx
-      integer, parameter :: onx=nx, ony=ny
-      integer :: inz, onz ! sizes of in and out arrays
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ltag=106, utag=107
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
+      integer, parameter :: nypx = ny / nprocx
+      integer, parameter :: bnx = nx, bny = nypx
+      integer, parameter :: ltag = 106, utag = 107
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: inx, iny, inz
+      integer :: onx, ony, onz
+      integer :: ibox, partner, nbox, alloc_err
+      integer :: ngc
 !
+!  No need to unmap if nprocx = 1.
 !
-      if (nprocx == 1) then
+      nox: if (nprocx == 1) then
         out = in
         return
-      endif
+      endif nox
 !
-      inz = size (in, 3)
-      onz = size (out, 3)
-      nbox = bnx*bny*onz
+!  Check the dimensions.
 !
-      if (mod (ny, nprocx) /= 0) &
-          call stop_fatal ('unmap_from_pencil_xy_3D: ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
+      if (mod(ny, nprocx) /= 0) &
+        call stop_fatal('unmap_from_pencil_xy_3D: ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
 !
-      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
-          call stop_fatal ('unmap_from_pencil_xy_3D: input array size mismatch /= nxgrid,ny/nprocx', lfirst_proc_xy)
-      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
-          call stop_fatal ('unmap_from_pencil_xy_3D: output array size mismatch /= nx,ny', lfirst_proc_xy)
-      if (inz /= onz) &
-          call stop_fatal ('unmap_from_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
+      inx = size(in, 1)
+      iny = size(in, 2)
+      dim: if (inx == nxgrid .and. iny == nypx) then
+        onx = nx
+        ony = ny
+        ngc = 0
+      elseif (inx == mxgrid .and. iny == nypx + 2 * nghost) then dim
+        onx = mx
+        ony = my
+        ngc = nghost
+      else dim
+        call stop_fatal('unmap_from_pencil_xy_3D: input array size mismatch', lfirst_proc_xy)
+      endif dim
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      if (size(out, 1) /= onx .or. size(out, 2) /= ony) &
+        call stop_fatal('unmap_from_pencil_xy_3D: output array size mismatch', lfirst_proc_xy)
 !
-      do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
-        if (iproc == partner) then
-          ! data is local
-          out(:,bny*ibox+1:bny*(ibox+1),:) = in(bnx*ibox+1:bnx*(ibox+1),:,:)
-        else
-          ! communicate with partner
-          send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:)
-          if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
-          else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
-          endif
-          out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
-        endif
-      enddo
+      inz = size(in, 3)
+      onz = size(out, 3)
+      if (inz /= onz) call stop_fatal('unmap_from_pencil_xy_3D: sizes differ in the z direction', lfirst_proc_xy)
 !
-      deallocate (send_buf, recv_buf)
+      nbox = (bnx + 2 * ngc) * (bny + 2 * ngc) * onz
+!
+!  Allocate working arrays.
+!
+      allocate(send_buf(bnx+2*ngc,bny+2*ngc,inz), recv_buf(bnx+2*ngc,bny+2*ngc,inz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal('unmap_from_pencil_xy_3D: allocation failed. ', .true.)
+!
+!  Communicate.
+!
+      box: do ibox = 0, nprocx - 1
+        partner = ipz * nprocxy + ipy * nprocx + ibox
+        local: if (iproc == partner) then  ! data is local
+          recv_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
+        else local                         ! communicate with partner
+          send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
+          commun: if (iproc > partner) then  ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+          else commun                        ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+          endif commun
+        endif local
+        out(:,ngc+bny*ibox+1:ngc+bny*(ibox+1),:) = recv_buf(:,ngc+1:ngc+bny,:)
+        ghost: if (ngc > 0) then
+          if (ibox == 0) out(:,1:ngc,:) = recv_buf(:,1:ngc,:)
+          if (ibox == nprocx - 1) out(:,ony-ngc+1:ony,:) = recv_buf(:,ngc+bny+1:bny+2*ngc,:)
+        endif ghost
+      enddo box
+!
+!  Deallocate working arrays.
+!
+      deallocate(send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_xy_3D
 !***********************************************************************
