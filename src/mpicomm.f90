@@ -6125,7 +6125,7 @@ module Mpicomm
 !
     endsubroutine transp_pencil_xy_2D
 !***********************************************************************
-    subroutine transp_pencil_xy_3D(in, out)
+    subroutine transp_pencil_xy_3D(in, out, lghost)
 !
 !  Transpose 3D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -6133,72 +6133,79 @@ module Mpicomm
 !
 !  14-jul-2010/Bourdin.KIS: coded, adapted parts of transp_xy
 !  21-jun-2013/Bourdin.KIS: reworked, parellized MPI communication
+!  15-sep-2014/ccyang: revamped to accommodate arrays either with or without ghost cells
 !
       use General, only: count_bits
 !
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
+      logical, intent(in), optional :: lghost
 !
+      integer, parameter :: ltag = 108, utag = 109
+      real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: inx, iny, inz, onx, ony, onz ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: num_it ! number of iterations for box-data transfer
-      integer :: it, ibox, partner, alloc_err, pos_z
-      integer, parameter :: ltag=108, utag=109
-      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: ibox, partner, alloc_err, iz, ngc
 !
-      real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+!  Check if ghost cells are included.
 !
+      ngc = 0
+      if (present(lghost)) then
+        if (lghost) ngc = nghost
+      endif
 !
-      inx = size (in, 1)
-      iny = size (in, 2)
-      inz = size (in, 3)
-      onx = size (out, 1)
-      ony = size (out, 2)
-      onz = size (out, 3)
-      bnx = onx/nprocxy
-      bny = ony
-      nbox = bnx*bny*onz
+!  Check the dimensions.
 !
-      if (mod (onx, nprocxy) /= 0) &
-          call stop_fatal ('transp_pencil_xy_3D: onx needs to be an integer multiple of nprocxy', lfirst_proc_xy)
+      inx = size(in, 1)
+      iny = size(in, 2)
+      inz = size(in, 3)
+      onx = size(out, 1)
+      ony = size(out, 2)
+      onz = size(out, 3)
 !
-      if ((inx /= bny*nprocxy) .or. (iny /= bnx)) &
-          call stop_fatal ('transp_pencil_xy_3D: input array has unmatching size', lfirst_proc_xy)
-      if ((onx /= bnx*nprocxy) .or. (ony /= bny)) &
-          call stop_fatal ('transp_pencil_xy_3D: output array has unmatching size', lfirst_proc_xy)
-      if (inz /= onz) &
-          call stop_fatal ('transp_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
+      bnx = (inx - 2 * ngc) / nprocxy
+      bny = iny - 2 * ngc
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      if ((inx /= bnx * nprocxy + 2 * ngc) .or. (iny /= bny + 2 * ngc)) &
+        call stop_fatal('transp_pencil_xy_3D: input array has unmatching shape', lfirst_proc_xy)
+      if ((onx /= bny * nprocxy + 2 * ngc) .or. (ony /= bnx + 2 * ngc)) &
+        call stop_fatal('transp_pencil_xy_3D: output array has unmatching shape', lfirst_proc_xy)
+      if (inz /= onz) call stop_fatal('transp_pencil_xy_3D: sizes differ in the z direction', lfirst_proc_xy)
 !
-      num_it = 2**count_bits (nprocxy-1)
-      do it = 0, num_it-1
-        ibox = IEOR ((iproc - ipz*nprocxy), it)
-        partner = ipz*nprocxy + ibox
-        if (ibox >= nprocxy) cycle
-        if (iproc == partner) then
-          ! data is local
-          do pos_z = 1, onz
-            out(bnx*ibox+1:bnx*(ibox+1),:,pos_z) = transpose (in(bny*ibox+1:bny*(ibox+1),:,pos_z))
-          enddo
-        else
-          ! communicate with partner
-          do pos_z = 1, onz
-            send_buf(:,:,pos_z) = transpose (in(bny*ibox+1:bny*(ibox+1),:,pos_z))
-          enddo
-          if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
-          else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
-          endif
-          out(bnx*ibox+1:bnx*(ibox+1),:,:) = recv_buf
-        endif
-      enddo
+      nbox = (bnx + 2 * ngc) * (bny + 2 * ngc) * onz
+!
+!  Allocate working arrays.
+!
+      allocate (send_buf(bnx+2*ngc,bny+2*ngc,onz), recv_buf(bnx+2*ngc,bny+2*ngc,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal('transp_pencil_xy_3D: allocation failed. ', .true.)
+!
+!  Communicate.
+!
+      box: do ibox = 0, nprocxy - 1
+        partner = ipz * nprocxy + ibox
+        local: if (iproc == partner) then  ! data is local
+          recv_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
+        else local                        ! communicate with partner
+          send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
+          commun: if (iproc > partner) then  ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+          else commun                        ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+          endif commun
+        endif local
+        zscan: do iz = 1, inz
+          out(ngc+bny*ibox+1:ngc+bny*(ibox+1),:,iz) = transpose(recv_buf(:,ngc+1:ngc+bny,iz))
+          ghost: if (ngc > 0) then
+            if (ibox == 0) out(1:ngc,:,iz) = transpose(recv_buf(:,1:ngc,iz))
+            if (ibox == nprocxy - 1) out(onx-ngc+1:onx,:,iz) = transpose(recv_buf(:,ngc+bny+1:bny+2*ngc,iz))
+          endif ghost
+        enddo zscan
+      enddo box
+!
+!  Deallocate working arrays.
 !
       deallocate (send_buf, recv_buf)
 !
