@@ -1094,6 +1094,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI= #(giuseppe-desktop)
 #LIBMPISUFFIX= #(giuseppe-desktop)
 ##
+## lap-xiangyu
+##
+#FC=mpif90 #(lap-xiangyu*)
+#FFLAGS= -O3 -fno-underscoring #(lap-xiangy*)
+#CC=mpicc #(lap-xiangyu*)
+#CFLAGS=-O3 #(lap-xiangyu*)
+#LD_MPI= #(lap-xiangyu*)
+#LIBMPISUFFIX= #(lap-xiangyu*)
+##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
 ##
 #FC=mpif90 #(warp.hpc1.cs.cmu.edu*)
