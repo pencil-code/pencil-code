@@ -572,6 +572,7 @@ module Shear
 !  terms with either spline or polynomials.
 !
 !  25-feb-13/ccyang: coded.
+!  16-sep-14/ccyang: relax the restrictions of dimensions.
 !
 !  Input/Ouput Argument
 !    a: field to be advected and sheared
@@ -582,7 +583,7 @@ module Shear
 !
       use General, only: spline, polynomial_interpolation
       use Messages, only: warning, fatal_error
-      use Mpicomm, only: transp_xy
+      use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       character(len=*), intent(in) :: method
@@ -590,27 +591,16 @@ module Shear
       integer, intent(in) :: ic1, ic2
       real, intent(in) :: dt_shear
 !
-      real, dimension(:,:), allocatable :: b
-      real, dimension(nxgrid) :: xnew, penc, dpenc, yshift
-      real, dimension(nygrid) :: ynew, ynew1
+      integer, parameter :: nypx = ny / nprocx, nxpy = nx / nprocy
+      real, dimension(mxgrid,nypx+2*nghost,nz) :: b
+      real, dimension(nygrid,nxpy,nz) :: bt
+      real, dimension(nxgrid) :: xnew, px, dpenc, yshift
+      real, dimension(nygrid) :: ynew, ynew1, py
       real, dimension(mygrid) :: by
       character(len=256) :: message
       logical :: error
       integer :: istat
       integer :: ic, j, k
-!
-!  Santiy check
-!
-      if (nprocx /= 1) call fatal_error('sheared_advection_spline', 'currently only works with nprocx = 1.')
-      if (nygrid > 1 .and. nxgrid /= nygrid) &
-        call fatal_error('sheared_advection_spline', 'currently only works with nxgrid = nygrid.')
-!
-!  Allocate working arrays.
-!
-      alloc: if (nygrid > 1) then
-        allocate(b(nx,ny), stat=istat)
-        if (istat /= 0) call fatal_error('sheared_advection_spline', 'unable to allocate array b')
-      endif alloc
 !
 !  Find the displacement traveled with the advection.
 !
@@ -624,42 +614,42 @@ module Shear
 !
 !  Interpolation in x: assuming the correct boundary conditions have been applied.
 !
-        scan_xz: do k = n1, n2
-          scan_xy: do j = m1, m2
+        call remap_to_pencil_xy(a(:,:,n1:n2,ic), b)
+        scan_xz: do k = 1, nz
+          scan_xy: do j = nghost + 1, nghost + nypx
             xmethod: select case (method)
             case ('spline') xmethod
-              call spline(xglobal, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
+              call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
             case ('poly') xmethod
-              call polynomial_interpolation(xglobal, a(:,j,k,ic), xnew, penc, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
+              call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
                                             istatus=istat, message=message)
               error = istat /= 0
             case default xmethod
               call fatal_error('sheared_advection_nonfft', 'unknown method')
             endselect xmethod
             if (error) call warning('sheared_advection_nonfft', 'error in x interpolation; ' // trim(message))
-            a(l1:l2,j,k,ic) = penc(1:nx)
+            b(nghost+1:nghost+nxgrid,j,k) = px
           enddo scan_xy
         enddo scan_xz
 !
 !  Interpolation in y: assuming periodic boundary conditions
 !
         ydir: if (nygrid > 1) then
-          scan_yz: do k = n1, n2
-            b = a(l1:l2,m1:m2,k,ic)
-            call transp_xy(b)
-            scan_yx: do j = 1, ny
-              ynew1 = ynew - yshift(j+ipy*ny)
+          call transp_pencil_xy(b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:), bt)
+          scan_yz: do k = 1, nz
+            scan_yx: do j = 1, nxpy
+              ynew1 = ynew - yshift((ipy * nprocx + ipx) * nxpy + j)
               ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
 !
-              by(nghost+1:mygrid-nghost) = b(1:nygrid,j)
-              by(1:nghost) = by(mygrid-2*nghost+1:mygrid-nghost)
-              by(mygrid-nghost+1:mygrid) = by(nghost+1:nghost+nghost)
+              by(nghost+1:mygrid-nghost) = bt(:,j,k)
+              by(1:nghost) = by(mygrid-2*nghost:mygrid-nghost-1)
+              by(mygrid-nghost+1:mygrid) = by(nghost+1:2*nghost)
 !
               ymethod: select case (method)
               case ('spline') ymethod
-                call spline(yglobal, by, ynew1, penc, mygrid, nygrid, err=error, msg=message)
+                call spline(yglobal, by, ynew1, py, mygrid, nygrid, err=error, msg=message)
               case ('poly') ymethod
-                call polynomial_interpolation(yglobal, by, ynew1, penc, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
+                call polynomial_interpolation(yglobal, by, ynew1, py, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
               case default ymethod
@@ -667,22 +657,18 @@ module Shear
               endselect ymethod
               if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
-              b(:,j) = penc(1:nx)
+              bt(:,j,k) = py
             enddo scan_yx
-            call transp_xy(b)
-            a(l1:l2,m1:m2,k,ic) = b
           enddo scan_yz
+          call transp_pencil_xy(bt, b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:))
         endif ydir
+        call unmap_from_pencil_xy(b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:), a(l1:l2,m1:m2,n1:n2,ic))
 !
 !  Currently no interpolation in z
 !
         if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_nonfft', 'Advection in z is not implemented.')
 !
       enddo comp
-!
-!  Deallocate working arrays.
-!
-      if (nygrid > 1) deallocate(b)
 !
     endsubroutine sheared_advection_nonfft
 !***********************************************************************
