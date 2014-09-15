@@ -6217,6 +6217,7 @@ nameloop: do
       use Mpicomm, only: mpiallreduce_sum, mpireduce_sum   !!, mpicomm 
 !
 !      include 'mpif.h'
+!
       integer,                  intent(IN)   :: nproc,idir
       real, dimension(:,:,:,:), intent(INOUT):: arrm
 
