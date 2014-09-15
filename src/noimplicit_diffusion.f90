@@ -30,10 +30,7 @@ module ImplicitDiffusion
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) then
-        call keep_compiler_quiet(iostat)
-        iostat=0
-      endif
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_implicit_diffusion_pars
 !***********************************************************************
