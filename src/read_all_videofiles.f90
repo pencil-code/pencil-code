@@ -36,7 +36,7 @@ program rvid_box
       logical :: lread_slice_xz2
       real :: t,t_dummy
       real :: slice_pos=0.,slice_pos_dummy
-      integer :: stride=1
+      integer :: stride=0
 !
       character (len=fnlen) :: file='',fullname='',wfile='',directory=''
       character (len=fnlen) :: datadir='data',path='',cfield=''
@@ -72,7 +72,7 @@ program rvid_box
         close(lun_stride)
         print*,'Read stride.in. Will skip every ',stride,' slices'
       else
-        stride = 1 
+        stride = 0
       endif
 !
 ! Loop over all processors to find the positions of the slices.
