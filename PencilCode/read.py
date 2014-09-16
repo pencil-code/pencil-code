@@ -68,6 +68,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
             print("Interpolating...")
         tmin, tmax = t.min(), t.max()
         ti = tmin + (tmax - tmin) / (tsize - 1) * np.arange(tsize)
+        ti[0], ti[-1] = tmin, tmax
         avgi = np.core.records.array(len(var) * [np.zeros((tsize,nc))], names=var)
         for v in var:
             for k in range(nc):
