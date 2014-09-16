@@ -744,38 +744,54 @@ module Shear
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
 !
-      use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy
+      use Mpicomm, only: mpisend_real, mpirecv_real, mpibarrier
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
-      integer, parameter :: nypx = ny / nprocx
-      integer, parameter :: ll1 = nghost + 1
-      integer, parameter :: ll1i = 2 * nghost
-      integer, parameter :: ll2 = mxgrid - nghost
-      integer, parameter :: ll2i = mxgrid - 2 * nghost + 1
-      real, dimension(mxgrid,nypx+2*nghost,nz) :: a
-      integer :: iv
+      integer :: ltag = 101, rtag = 102
+      real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, dimension(4) :: nbcast
+      integer :: iv, nvar, istat
 !
-      comp: do iv = ivar1, ivar2
+!  Number of components
+!
+      nvar = ivar2 - ivar1 + 1
+      nbcast = (/ nghost, my, mz, nvar /)
 !
 !  Periodically assign the ghost cells in x direction.
 !
-        call remap_to_pencil_xy(f(:,:,n1:n2,iv), a)
-        xdir: if (nxgrid > 1) then
-          a(1:nghost,:,:) = a(ll2i:ll2,:,:)
-          a(ll2+1:mxgrid,:,:) = a(ll1:ll1i,:,:)
-        endif xdir
-        call unmap_from_pencil_xy(a, f(:,:,n1:n2,iv))
+      xdir: if (nxgrid > 1) then
+        perx: if (nprocx == 1) then
+          f(1:nghost,:,:,ivar1:ivar2) = f(l2-nghost+1:l2,:,:,ivar1:ivar2)
+          f(l2+1:mx,:,:,ivar1:ivar2) = f(l1+1:l1+nghost,:,:,ivar1:ivar2)
+        else perx
+          allocate(send_buf(nghost,my,mz,nvar), recv_buf(nghost,my,mz,nvar), stat=istat)
+          if (istat /= 0) call fatal_error('shift_ghostzones_nonfft', 'allocation failed. ')
+          commun: if (lfirst_proc_x) then
+            send_buf = f(l1+1:l1+nghost,:,:,ivar1:ivar2)
+            call mpirecv_real(recv_buf, nbcast, xlneigh, rtag)
+            call mpisend_real(send_buf, nbcast, xlneigh, ltag)
+            f(1:nghost,:,:,ivar1:ivar2) = recv_buf
+          elseif (llast_proc_x) then commun
+            send_buf = f(l2-nghost+1:l2,:,:,ivar1:ivar2)
+            call mpisend_real(send_buf, nbcast, xuneigh, rtag)
+            call mpirecv_real(recv_buf, nbcast, xuneigh, ltag)
+            f(l2+1:mx,:,:,ivar1:ivar2) = recv_buf
+          endif commun
+          deallocate(send_buf, recv_buf)
+          call mpibarrier()
+        endif perx
+      endif xdir
 !
 !  Shift the ghost cells in y direction.
 !
-        ydir: if (nygrid > 1) then
+      ydir: if (nygrid > 1) then
+        comp: do iv = ivar1, ivar2
           if (lfirst_proc_x) call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,iv), deltay, shear_method, lposdef(iv))
           if (llast_proc_x) call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,iv), -deltay, shear_method, lposdef(iv))
-        endif ydir
-!
-      enddo comp
+        enddo comp
+      endif ydir
 !
     endsubroutine shift_ghostzones_nonfft
 !***********************************************************************
