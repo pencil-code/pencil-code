@@ -212,16 +212,12 @@ module Boundcond
 !            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
 !
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
-              if (ip_ok) then
+              if (bc12(j) == 'she') then
+                if (bcx1(j) /= bcx2(j)) &
+                  call fatal_error_local('boundconds_x', 'generalize me to have sheared periodic boundary on only one end.')
+                if (k == 1) call boundcond_shear(f, j, j)
+              elseif (ip_ok) then
                 select case (bc12(j))
-                case ('she')
-                  bottom: if (k == 1) then
-                    both: if (bcx1(j) == bcx2(j)) then
-                      call boundcond_shear(f, j, j)
-                    else both
-                      call fatal_error_local('boundconds_x', 'generalize me to have sheared periodic boundary on only one end.')
-                    endif both
-                  endif bottom
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
                   call bc_zero_x(f,topbot,j)
