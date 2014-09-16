@@ -742,55 +742,66 @@ module Shear
 !  Shearing boundary conditions by spline interpolation.
 !
 !  25-feb-13/ccyang: coded.
+!  16-sep-14/ccyang: relax the nprocx=1 restriction.
+!
+      use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
-      integer :: nvar
+      integer, parameter :: nypx = ny / nprocx
+      integer, parameter :: ll1 = nghost + 1
+      integer, parameter :: ll1i = 2 * nghost
+      integer, parameter :: ll2 = mxgrid - nghost
+      integer, parameter :: ll2i = mxgrid - 2 * nghost + 1
+      real, dimension(mxgrid,nypx+2*nghost,nz) :: a
+      integer :: iv
+!
+      comp: do iv = ivar1, ivar2
 !
 !  Periodically assign the ghost cells in x direction.
 !
-      xdir: if (nxgrid > 1) then
-        f(1:nghost,       m1:m2, n1:n2, ivar1:ivar2) = f(l2-nghost+1:l2, m1:m2, n1:n2, ivar1:ivar2)
-        f(mx-nghost+1:mx, m1:m2, n1:n2, ivar1:ivar2) = f(l1:l1+nghost-1, m1:m2, n1:n2, ivar1:ivar2)
-      endif xdir
+        call remap_to_pencil_xy(f(:,:,n1:n2,iv), a)
+        xdir: if (nxgrid > 1) then
+          a(1:nghost,:,:) = a(ll2i:ll2,:,:)
+          a(ll2+1:mxgrid,:,:) = a(ll1:ll1i,:,:)
+        endif xdir
+        call unmap_from_pencil_xy(a, f(:,:,n1:n2,iv))
 !
 !  Shift the ghost cells in y direction.
 !
-      ydir: if (nygrid > 1) then
-        nvar = ivar2 - ivar1 + 1
-        call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay, shear_method, &
-                                             posdef=lposdef(ivar1:ivar2))
-        call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay, shear_method, &
-                                             posdef=lposdef(ivar1:ivar2))
-      endif ydir
+        ydir: if (nygrid > 1) then
+          if (lfirst_proc_x) call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,iv), deltay, shear_method, lposdef(iv))
+          if (llast_proc_x) call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,iv), -deltay, shear_method, lposdef(iv))
+        endif ydir
+!
+      enddo comp
 !
     endsubroutine shift_ghostzones_nonfft
 !***********************************************************************
-    subroutine shift_ghostzones_nonfft_subtask(a, nvar, shift, method, posdef)
+    subroutine shift_ghostzones_nonfft_subtask(a, shift, method, posdef)
 !
 !  Subtask for spline_shift_ghostzones.
 !
 !  25-feb-13/ccyang: coded.
+!  16-sep-14/ccyang: relax the nprocx=1 restriction.
 !
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
       use General, only: spline, polynomial_interpolation
       use Messages, only: warning, fatal_error
 !
-      integer, intent(in) :: nvar
-      real, dimension(nghost,ny,nz,nvar), intent(inout) :: a
-      logical, dimension(nvar), intent(in) :: posdef
+      real, dimension(nghost,ny,nz), intent(inout) :: a
+      logical, intent(in) :: posdef
       character(len=*), intent(in) :: method
       real, intent(in) :: shift
 !
-      real, dimension(nghost,ny,nz) :: work1
-      real, dimension(nghost,nygrid,nz) :: work2
+      real, dimension(nghost,nygrid,nz) :: work
       real, dimension(nygrid) :: ynew, penc, dpenc
       real, dimension(mygrid) :: worky
       character(len=256) :: message
       logical :: error
       integer :: istat
-      integer :: ivar, i, k
+      integer :: i, k
 !
 !  Find the new y-coordinates after shift.
 !
@@ -799,33 +810,29 @@ module Shear
 !
 !  Shift the ghost cells.
 !
-      comp: do ivar = 1, nvar
-        work1 = a(:,:,:,ivar)
-        call remap_to_pencil_y(work1, work2)
-        scan_z: do k = 1, nz
-          scan_x: do i = 1, nghost
-            worky(nghost+1:mygrid-nghost) = work2(i,:,k)
-            worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
-            worky(mygrid-nghost+1:mygrid) = worky(nghost+1:nghost+nghost)
+      call remap_to_pencil_y(a, work)
+      scan_z: do k = 1, nz
+        scan_x: do i = 1, nghost
+          worky(nghost+1:mygrid-nghost) = work(i,:,k)
+          worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
+          worky(mygrid-nghost+1:mygrid) = worky(nghost+1:nghost+nghost)
 !
-            dispatch: select case (method)
-            case ('spline') dispatch
-              call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
-            case ('poly') dispatch
-              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
-                                            posdef=lposdef_advection.and.posdef(ivar), istatus=istat, message=message)
-              error = istat /= 0
-            case default dispatch
-              call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
-            endselect dispatch
-            if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in spline; ' // trim(message))
+          dispatch: select case (method)
+          case ('spline') dispatch
+            call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
+          case ('poly') dispatch
+            call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                                          posdef=lposdef_advection.and.posdef, istatus=istat, message=message)
+            error = istat /= 0
+          case default dispatch
+            call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
+          endselect dispatch
+          if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in spline; ' // trim(message))
 !
-            work2(i,:,k) = penc
-          enddo scan_x
-        enddo scan_z
-        call unmap_from_pencil_y(work2, work1)
-        a(:,:,:,ivar) = work1
-      enddo comp
+          work(i,:,k) = penc
+        enddo scan_x
+      enddo scan_z
+      call unmap_from_pencil_y(work, a)
 !
     endsubroutine shift_ghostzones_nonfft_subtask
 !***********************************************************************
