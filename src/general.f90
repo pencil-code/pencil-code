@@ -1574,7 +1574,7 @@ module General
       endif pos_on
 !
       if (posdef1) then
-        yaa = log(ya)
+        yaa = log(max(ya,epsilon(1.0)))
       else
         yaa = ya
       endif
