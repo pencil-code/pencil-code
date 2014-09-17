@@ -24,8 +24,7 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  !use Particles_chemistry
- !
+!
   implicit none
 !
   include 'particles_temperature.h'
@@ -53,7 +52,7 @@ module Particles_temperature
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: particles_dust.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $")
+           "$Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
 !
 !  Indices for particle position.
 !
@@ -101,7 +100,7 @@ module Particles_temperature
       integer :: j
 !
 !
-      intent (out) :: f, fp
+      intent (inout) :: f, fp
 !
 !  Initial particle position.
 !

@@ -10,6 +10,7 @@ module Particles_main
   use Particles
   use Particles_adaptation
   use Particles_adsorbed
+  use Particles_chemistry
   use Particles_cdata
   use Particles_collisions
   use Particles_coagulation
@@ -198,6 +199,7 @@ module Particles_main
       call initialize_particles_collisions   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
       call initialize_particles_diagnos_dv   (f,lstarting)
+      call initialize_particles_ads          (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &

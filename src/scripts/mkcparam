@@ -90,6 +90,8 @@ my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $pencils_decl  = '^\s*!\s*PENCILS\s*PROVIDED\s*(.*)\s*$';
 my $cparam_decl   = '^\s*!\s*CPARAM\s*(.*?)\s*$';
+my $nadsspec_decl    = '^\s*!\s*NADSSPEC\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $nsurfreacspec_decl    = '^\s*!\s*NSURFREACSPEC\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 # ---------------------------------------------------------------------- #
 
 use strict;
@@ -98,7 +100,7 @@ use Getopt::Long;
 my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
-my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar) = (0) x 20;
+my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $nadsspec, $nsurfreacspec) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
 my @pencil_names;
@@ -149,6 +151,8 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $maux_com_decl, \$maux_com );
     extract_decl ($line, $mpvar_decl   , \$mpvar    );
     extract_decl ($line, $pscalar_decl , \$npscalar );
+    extract_decl ($line, $nadsspec_decl, \$nadsspec );
+    extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
 
     # Check for information about number of chemical and dust species
     # and discretization type:
@@ -280,6 +284,8 @@ integer, parameter :: mpvar=${\($mpvar+0)}
 integer, parameter :: ndustspec=${\($ndustspec+0)}
 integer, parameter :: nchemspec=${\($nchemspec+0)}
 integer, parameter :: npscalar=${\($npscalar+0)}
+integer, parameter :: nadsspec=${\($nadsspec+0)}
+integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 
 EOF
 
