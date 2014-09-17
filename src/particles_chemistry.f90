@@ -8,9 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 1
-! NADSSPEC CONTRIBUTION 5
-! NSURFREACSPEC CONTRIBUTION 8 
 !
 ! CPARAM logical, parameter :: lparticles_chemistry=.true.
 !
@@ -20,7 +17,7 @@ module Particles_chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use Particles_cdata, only: iap, irhopswarm
+  use Particles_cdata, only: iap, irhopswarm, iTp
   use Particles_sub
 !
   implicit none
@@ -1221,32 +1218,32 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 end subroutine create_dngas
 !**********************************************************************
-  subroutine find_entropy_of_reaction(fp,iTp)
+  subroutine find_entropy_of_reaction(fp)
 !  
-    integer :: k,j,i,iTp
-    real, dimension(mpar_loc,mpvar) :: f
+    integer :: k,j,i
+    real, dimension(mpar_loc,mpvar) :: fp
 !
 ! JONAS: units are in j/(kmol*K)
 !
-    if (inuH2O>0) surface_species_entropy(inuH2O)= 189.00e3+(0.0425e3*fp(:,iTp))
-    if (inuO2>0)  surface_species_entropy(inuO2) = 222.55e3+(0.0219e3*fp(:,iTp))
-    if (inuCO2>0) surface_species_entropy(inuCO2)= 212.19e3+(0.0556e3*fp(:,iTp))
-    if (inuH2>0)  surface_species_entropy(inuH2 )= 133.80e3+(0.0319e3*fp(:,iTp))
-    if (inuCO>0)  surface_species_entropy(inuCO )= 199.35e3+(0.0342e3*fp(:,iTp))
+    if (inuH2O>0) surface_species_entropy(:,inuH2O)= 189.00e3+(0.0425e3*fp(:,iTp))
+    if (inuO2>0)  surface_species_entropy(:,inuO2) = 222.55e3+(0.0219e3*fp(:,iTp))
+    if (inuCO2>0) surface_species_entropy(:,inuCO2)= 212.19e3+(0.0556e3*fp(:,iTp))
+    if (inuH2>0)  surface_species_entropy(:,inuH2 )= 133.80e3+(0.0319e3*fp(:,iTp))
+    if (inuCO>0)  surface_species_entropy(:,inuCO )= 199.35e3+(0.0342e3*fp(:,iTp))
 !
 !  taken from chemistry  webbook (1bar)
 !
-    if (inuCH>0)  surface_species_entropy(inuCH )= 183.00e3
-    if (inuHCO>0) surface_species_entropy(inuHCO)= 223.114e3+(0.0491e3*fp(:,iTp))
-    if (inuCH2>0) surface_species_entropy(inuCH2)= 193.297e3+(0.0467e3*fp(:,iTp))
+    if (inuCH>0)  surface_species_entropy(:,inuCH )=183.00e3
+    if (inuHCO>0) surface_species_entropy(:,inuHCO)=223.114e3+(0.0491e3*fp(:,iTp))
+    if (inuCH2>0) surface_species_entropy(:,inuCH2)=193.297e3+(0.0467e3*fp(:,iTp))
 !
 !  taken from chemistry webbook (1bar)
 !
-    if (inuCH4>0) surface_species_entropy(inuCH4)= 189.00e3
-    if (inuCH3>0) surface_species_entropy(inuCH3)= 190.18e3+(0.0601e3*fp(:,iTp))
+    if (inuCH4>0) surface_species_entropy(:,inuCH4)= 189.00e3
+    if (inuCH3>0) surface_species_entropy(:,inuCH3)= 190.18e3+(0.0601e3*fp(:,iTp))
 !
     if (imuadsO>0)    then
-       adsorbed_species_entropy(imuadsO) = &
+       adsorbed_species_entropy(:,imuadsO) = &
     (164.19e3+(0.0218e3*fp(:,iTp)))*0.72 - (3.3*gas_constant)
     else
     end if
@@ -1254,44 +1251,44 @@ end subroutine create_dngas
 !  this is guessed
 !
     if (imuadsO2>0)   then
-       adsorbed_species_entropy(imuadsO2) =  &
-            2*adsorbed_species_entropy(imuadsO)
+       adsorbed_species_entropy(:,imuadsO2) =  &
+            2*adsorbed_species_entropy(:,imuadsO)
     else
     end if
     if (imuadsOH>0)   then
-       adsorbed_species_entropy(imuadsOH) = &
+       adsorbed_species_entropy(:,imuadsOH) = &
          ((0.0319e3*fp(:,iTp)) + 186.88e3) * 0.7 - (3.3*gas_constant)
     else
     end if
     if (imuadsH>0)    then 
-       adsorbed_species_entropy(imuadsH) = &
+       adsorbed_species_entropy(:,imuadsH) = &
            (117.49e3+(0.0217e3*fp(:,iTp)))*0.54 - (3.3*gas_constant)
     else
     end if
     if (imuadsCO>0)   then
-       adsorbed_species_entropy(imuadsCO) = &
-            surface_species_entropy(inuCO)* &
+       adsorbed_species_entropy(:,imuadsCO) = &
+            surface_species_entropy(:,inuCO)* &
             0.6*(1+(1.44e-4*fp(:,iTp))) - (3.3*gas_constant)
     else
     end if
 !
 !  taken from nist
 !
-    if (imufree>0)    adsorbed_species_entropy(imufree) = 0
+    if (imufree>0)    adsorbed_species_entropy(:,imufree) = 0
 
       entropy_k=0
 !
     do k=1,N_surface_reactions
       do i=1,N_surface_species
-        entropy_k(k)=entropy_k(k)&
-            +nu_prime(i,k)*surface_species_entropy(i)&
-            -nu(i,k)*surface_species_entropy(i)
+        entropy_k(:,k)=entropy_k(:,k)&
+            +nu_prime(i,k)*surface_species_entropy(:,i)&
+            -nu(i,k)*surface_species_entropy(:,i)
       enddo
       if (N_adsorbed_species > 0) then
       do j=1,N_adsorbed_species
-        entropy_k(k)=entropy_k(k)&
-            +mu_prime(j,k)*adsorbed_species_entropy(j)&
-            -mu(j,k)*adsorbed_species_entropy(j)
+        entropy_k(:,k)=entropy_k(:,k)&
+            +mu_prime(j,k)*adsorbed_species_entropy(:,j)&
+            -mu(j,k)*adsorbed_species_entropy(:,j)
       enddo
       else
       end if
@@ -1299,93 +1296,22 @@ end subroutine create_dngas
 !
   end subroutine find_entropy_of_reaction
 !**********************************************************************
-  subroutine get_reverse_K_k(k,K_k,fp,iTp)
+  subroutine get_reverse_K_k(k,K_k,fp)
 !  
-  integer :: k,iTp
+    use Particles_cdata, only: interp_pp
+!
+  integer :: k
   real, dimension(mpar_loc) :: k_p,k_c
   real, dimension(mpar_loc) :: denominator, exponent
-  real, dimension(mpar_loc,mpvar) :: f
-  real, dimension(:) :: K_k
+  real, dimension(mpar_loc,mpvar) :: fp
+  real, dimension(:,:) :: K_k
 !
   denominator(:) = heating_k(:,k-1) - (entropy_k(:,k-1)*fp(:,iTp))
   exponent(:) = denominator(:)/(gas_constant*fp(:,iTp))
   k_p(:) = exp(-exponent(:))
-!
-!  JONAS: how to get pressure in here
-!
-  k_c(:) = k_p(:) / (((gas_constant)*fp(:,iTp)/press)**(dngas(k-1)))
+  k_c(:) = k_p(:) / (((gas_constant)*fp(:,iTp)/interp_pp)**(dngas(k-1)))
   K_k(:,k) = (K_k(:,k-1) / k_c(:))
 !
 end subroutine get_reverse_K_k
-!**********************************************************************
-  subroutine create_dependency(nu,dependent_reactant,&
-     n_surface_reactions,n_surface_reactants)
-!    
-    integer :: i,k,n_surface_reactions,n_surface_reactants
-    real, dimension(:,:) :: nu
-    integer, dimension(:) :: dependent_reactant
-!    
-    dependent_reactant = 0
-!    
-    do i=1,n_surface_reactants
-       do k=1,n_surface_reactions
-          if (nu(i,k) > 0) then
-             dependent_reactant(k) = i
-          else
-          end if
-       end do
-    end do
-!    
-  end subroutine create_dependency
-!**********************************************************************
-  subroutine create_arh_param(part,B_k,ER_k,sigma_k)
-!
-!  takes the first numerical in part and writes it to b_k
-!
-    character(10), dimension(:,:) :: part
-    real, dimension(:) :: B_k,ER_k,sigma_k
-    character(10) :: el_B_k,el_ER_k,el_sigma
-    real :: B_k_single,ER_k_single,sigma_single
-    logical :: done
-    integer :: i,k,stat
-!
-    B_k = 0.0
-    ER_k = 0.0
-    sigma_k = 0.0
-!    
-    do i=1, size(part,2)
-       if (part(size(part,1),i) == 'rev') then
-          B_k(i) = 1e1
-          ER_k(i) = 1.
-          sigma_k(i) = 1e1
-       else
-       done = .false.
-       do k=1, size(part,1)-2
-          el_B_k = part(k,i)
-          el_ER_k = part(k+1,i)
-          el_sigma = part(k+2,i)
-             read(el_B_k,*,iostat=stat) B_k_single
-             if (stat == 0 .and. (done .eqv. .false.)) then
-                B_k(i) = B_k_single
-                done = .true.
-                read(el_ER_k,*,iostat=stat) ER_k_single
-                if (stat == 0) then
-                   ER_k(i) = ER_k_single
-                else
-                end if
-                read(el_sigma,*,iostat=stat) sigma_single
-                if (stat == 0) then
-                   sigma_k(i) = sigma_single
-                else
-                end if
-             else
-             end if
-       end do
-       end if
-    end do
-!
-    ER_k = ER_k*1e6/gas_constant
-!          
-  end subroutine create_arh_param
 !**********************************************************************
   end module Particles_chemistry
