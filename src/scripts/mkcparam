@@ -100,9 +100,11 @@ use Getopt::Long;
 my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
-my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $nadsspec, $nsurfreacspec) = (0) x 20;
+my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
+my $nadsspec = 0;
+my $nsurfreacspec = 0;
 my @pencil_names;
 my @pencil_sizes;
 my %pencil_file_map;
@@ -260,6 +262,13 @@ if ($npscalar > 1) {
   $npscalar = 1;
 }
 
+# More processing of particle chemistry information:
+if ($nsurfreacspec >= 1) {
+  $mpvar = $mpvar + $nsurfreacspec;
+}
+if ($nadsspec >= 1) {
+  $mpvar = $mpvar + $nadsspec;
+}
 
 #
 # cparam.inc
