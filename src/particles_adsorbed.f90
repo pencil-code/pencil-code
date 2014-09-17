@@ -9,6 +9,7 @@
 !
 ! MPVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+! NADSSPEC CONTRIBUTION 5
 !
 ! CPARAM logical, parameter :: lparticles_adsorbed=.true.
 !
@@ -76,24 +77,12 @@ module Particles_adsorbed
 !  the adsorbed species surface and gas phase surface concentrations
 !
       call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
-      call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
 !      
       if (nadsspec/=(N_adsorbed_species-1) .and. &
-           nsurfreacspec/=N_surface_species .and. &
-           N_adsorbed_species>0) then
-         print*,'N_adsorbed_species: ',N_adsorbed_species
-         print*,'N_surface_species: ', N_surface_species
-         call fatal_error('register_particles_ads', & 
-              'wrong size of storage for adsorbed and surface species allocated.')
-         elseif (nadsspec/=(N_adsorbed_species-1) .and. &
            N_adsorbed_species>0) then
          print*,'N_adsorbed_species: ',N_adsorbed_species
          call fatal_error('register_particles_ads', & 
               'wrong size of storage for adsorbed species allocated.')
-         elseif (nsurfreacspec/=N_surface_species) then
-         print*,'N_surface_species: ', N_surface_species
-         call fatal_error('register_particles_ads', &
-              'wrong size of storage for surface species allocated')
          else
       endif
 !      
@@ -172,7 +161,7 @@ module Particles_adsorbed
       logical :: lstarting
 !
       if(lstarting) then
-         call transfer_initial_values(fp)
+         call get_initial_values(fp)
       else
       endif
 !

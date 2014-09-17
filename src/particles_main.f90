@@ -199,7 +199,7 @@ module Particles_main
       call initialize_particles_collisions   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
       call initialize_particles_diagnos_dv   (f,lstarting)
-      call initialize_particles_ads          (f,lstarting)
+!      call initialize_particles_chemistry    (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -742,6 +742,10 @@ module Particles_main
 !  (Clean-up should be performed at end of this subroutine!)
 !
      call interpolate_quantities(f,fp,p,ineargrid)
+!
+!
+!  This will be expanded to calculate values we need for reactive particles
+! JONAS     if(lparticles_chemistry) call calc_for_pchemistry()
 !
 !  Dynamical equations.
 !

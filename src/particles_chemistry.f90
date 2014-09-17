@@ -19,6 +19,7 @@ module Particles_chemistry
   use Messages
   use Particles_cdata, only: iap, irhopswarm, iTp
   use Particles_sub
+  use Particles_radius
 !
   implicit none
 !
@@ -37,7 +38,7 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: nu, nu_prime, mu, mu_prime
   real, dimension(:), allocatable :: B_k, ER_k, ac, aac, RR_method
   real, dimension(:), allocatable :: site_occupancy, sigma_k,dngas
-  real, allocatable, dimension(:) :: omega_pg_dbl
+  real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(50) :: reaction_enhancement=1
   character(3), dimension(:), allocatable, save :: reaction_direction
   character(3), dimension(:), allocatable ::flags
@@ -90,19 +91,46 @@ module Particles_chemistry
   real, dimension(:), allocatable :: Particle_temperature  
   real, dimension(:), allocatable :: mod_surf_area
   real, dimension(:), allocatable :: St_init
-  real, dimension(mpar_loc) :: initial_mass,rho_p_init
+  real, dimension(mpar_loc) :: init_mass,rho_p_init
+  real, dimension(mpar_loc) :: conversion
 !
   contains
 !***********************************************************************
   subroutine register_indep_pchem()
 !
-      integer :: i,k,nr,ns,stat,dummy
+      integer :: i,k,nr,ns,stat,dummy,N_surface_species
       logical :: lenhance
       character(10), dimension(40) :: species,reactants
 !
-      call get_pchem_info(species,'dummy',dummy,'quiet')
+      call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
+!      
+      if (nsurfreacspec/=N_surface_species) then
+         print*,'N_surface_species: ', N_surface_species
+         call fatal_error('register_particles_ads', &
+              'wrong size of storage for surface species allocated')
+         else
+      endif
+!
+      call get_species_list('solid_species',solid_species)
+!      
       call create_ad_sol_lists(species(:ns),adsorbed_species_names,'ad',ns)
       call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
+!
+!  Increase of npvar according to N_surface_species, which is
+!  the concentration of gas phase species at the particle surface
+!
+      if (N_surface_species>1) then
+         isurf = npvar+1
+         do i=1,N_surface_species
+! JONAS: where do we save this
+            pvarname(isurf+i-1)=solid_species(i)
+         enddo
+         npvar=npvar+N_surface_species-1
+         isurf_end=isurf+N_surface_species-1
+      else
+         call fatal_error('register_particles_ads', &
+              'N_surface_species must be > 1')
+      endif
 !
 !  Set some indeces (this is hard-coded for now)
 !    
@@ -342,6 +370,9 @@ module Particles_chemistry
       else
       endif
 !
+    allocate(init_mass(mpar_loc),STAT=stat)
+    if (stat>0) call fatal_error('register_dep_pchem',&
+        'Could not allocate memory for init_mass')
     allocate(x_surface(mpar_loc,N_surface_reactants)   ,STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for x_surface')
@@ -484,13 +515,9 @@ module Particles_chemistry
       real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc) :: mod_all,Sgc,mod_surf_area
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(mpar_loc) :: conversion
       integer :: end
       
 !
-      end = mpar_loc
-      conversion(1:end) = 1 - (4/3*pi*fp(1:end,irhopswarm)* &
-           fp(1:end,iap) * fp(1:end,iap) * fp(1:end,iap)/initial_mass(1:end))
       call get_St(St,fp)
 !
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
@@ -510,7 +537,6 @@ module Particles_chemistry
     subroutine get_St(var,fp)
 !      
       real, dimension(mpar_loc),intent(out) :: var
-      real, dimension(mpar_loc) :: conversion
       real, dimension(mpar_loc,mpvar) :: fp
       integer :: end
 !
@@ -519,9 +545,6 @@ module Particles_chemistry
 !  meeting, coal and biomass combustion and gasification eq. 19  
 !   
       St = 0.0
-      end = mpar_loc
-      conversion(1:end) = 1 - (4/3*pi*fp(1:end,irhopswarm)* &
-           fp(1:end,iap) * fp(1:end,iap) * fp(1:end,iap)/initial_mass(1:end))
       St(:)=(1-conversion(:))*St_init(:)* & 
            sqrt(1.0 - struct_par*log(fp(:,irhopswarm)/rho_p_init(:)))
       var = St
@@ -1193,16 +1216,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine get_species_list
 !**********************************************************************
-  subroutine transfer_initial_values(fp)
-!
-    real, dimension(mpar_loc,mpvar) :: fp
-!
-    initial_mass(:) = fp(:,irhopswarm) * 4 / 3 * pi * &
-         fp(:,iap) * fp(:,iap) * fp (:,iap)
-    rho_p_init(:) = fp(:,irhopswarm)
-
-  end subroutine transfer_initial_values
-!**********************************************************************
   subroutine create_dngas(nu,nu_prime,dngas)
 !
 !  Find the mole production of the forward reaction. This will later
@@ -1313,5 +1326,14 @@ end subroutine create_dngas
   K_k(:,k) = (K_k(:,k-1) / k_c(:))
 !
 end subroutine get_reverse_K_k
+!**********************************************************************
+  subroutine save_current_conversion(fp)
+!
+    real, dimension(mpar_loc,mpvar) :: fp
+!
+    conversion(:) = 4/3*pi*fp(:,irhop)*fp(:iap)*fp(:iap)*fp(:iap) &
+         / initial_mass(:)
+!
+  end subroutine save_current_conversion
 !**********************************************************************
   end module Particles_chemistry
