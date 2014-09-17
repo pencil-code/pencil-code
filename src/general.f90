@@ -1530,8 +1530,7 @@ module General
 !  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y)
 !  with error estimates dy.  If tvd is present and set true, the order
 !  will be reduced at places where the total variation diminishing is
-!  violated.  If posdef is present and set true, the interpolation is
-!  done in logarithmic scale.
+!  violated.
 !
 !  25-feb-13/ccyang: coded
 !
@@ -1544,8 +1543,7 @@ module General
       character(len=*), intent(out), optional :: message
 !
       character(len=256) :: msg
-      real, dimension(size(ya)) :: yaa
-      logical :: tvd1, posdef1, left, ok
+      logical :: fix_order, tvd1, posdef1, left, ok
       integer :: morder, moh
       integer :: nxa, ix, ix1, ix2
       integer :: i, n, istat
@@ -1573,11 +1571,7 @@ module General
         posdef1 = .false.
       endif pos_on
 !
-      if (posdef1) then
-        yaa = log(max(ya,tiny(1.0)))
-      else
-        yaa = ya
-      endif
+      fix_order = .not. tvd1 .and. .not. posdef1
 !
 !  Interpolate each point.
 !
@@ -1606,11 +1600,11 @@ module General
 !
 !  Send for polynomial interpolation.
 !
-          call poly_interp_one(xa(ix1:ix2), yaa(ix1:ix2), x(i), y(i), dy(i), istat, msg)
+          call poly_interp_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
           if (istat /= 0) exit loop
-          if (.not. tvd) exit order
+          if (fix_order) exit order
 !
-!  Check the total variation.
+!  Check the total variation and/or positive definiteness.
 !
           bracket: if (left) then
             ix1 = max(ix - 1, 1)
@@ -1622,12 +1616,11 @@ module General
 !
           ok = .true.
           if (tvd1 .and.  (y(i) - ya(ix1)) * (ya(ix2) - y(i)) < 0.0) ok = .false.
+          if (posdef1 .and. y(i) < 0.0) ok = .false.
           if (ok) exit order
           morder = morder - 1
         enddo order
       enddo loop
-!
-      if (posdef1) y = exp(y)
 !
 !  Error handling
 !
