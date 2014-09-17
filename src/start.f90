@@ -423,10 +423,10 @@ program start
   !if (linitial_condition) call initial_condition_all(f,df)
   if (linitial_condition) call initial_condition_all(f)
 !
-!  If requested, write original stratification to file.
+!  If requested, write original (z-dependent) stratification to file.
 !
   if (lwrite_stratification) then
-    call update_ghosts(f)
+    call update_ghosts(f,ilnrho)
     open(19,file=trim(directory_dist)//'/stratification.dat')
       write(19,*) f(l1,m1,:,ilnrho)
     close(19)
