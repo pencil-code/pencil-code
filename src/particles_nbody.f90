@@ -29,6 +29,7 @@ module Particles_nbody
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass=0.0, r_smooth=0.0, pmass1
   real, dimension(nspar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
+  real :: eccentricity=0.0, semimajor_axis=1.0
   real :: delta_vsp0=1.0, totmass, totmass1
   real :: create_jeans_constant=0.25, GNewton1
   real :: GNewton=impossible, density_scale=0.001
@@ -36,7 +37,7 @@ module Particles_nbody
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5, mspar_orig=1
-  integer :: iglobal_ggp=0, istar=1, imass=0
+  integer :: iglobal_ggp=0, istar=1, iplanet=2, imass=0
   integer :: maxsink=10*nspar, icreate=100
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar) :: lfollow_particle=.false., laccretion=.false.
@@ -63,7 +64,7 @@ module Particles_nbody
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, maxsink, lcreate_sinks, icreate, lcreate_gas, &
       lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody, lretrograde, &
-      linertial_frame
+      linertial_frame, eccentricity, semimajor_axis
 !
   namelist /particles_nbody_run_pars/ &
       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -575,6 +576,37 @@ module Particles_nbody
           endif
         enddo
 !
+      case ('eccentric')
+!
+!  Coded only for 2 bodies
+!
+        if (mspar /= 2) call fatal_error("init_particles_nbody",&
+             "This initial condition is currently coded for 2 massive particles only.")
+!
+!  Define iplanet. istar=1 and iplanet=2 is default
+!
+        if (istar == 2) iplanet=1 
+!       
+!  Radial position at barycentric coordinates. Start both at apocenter, 
+!
+!     r_i=(1+e)*a_i, where a_i = sma * m_j /(mi+mj)
+!
+!  See, i.e., Murray & Dermott, p.45, barycentric orbits.  
+!
+        position(iplanet,1)=(1+eccentricity) * semimajor_axis * pmass(  istar)/totmass
+        position(  istar,1)=(1+eccentricity) * semimajor_axis * pmass(iplanet)/totmass
+!
+!  Azimuthal position. Planet and star phased by pi.
+!
+        position(iplanet,2)=0
+        position(  istar,2)=pi
+!
+        do k=1,npar_loc
+          if (ipar(k) <= mspar) then
+            fp(k,ixp:izp) = position(ipar(k),1:3)
+          endif
+        enddo
+!
       case default
         if (lroot) print*,'init_particles_nbody: No such such value for'//&
             ' initxxsp: ',trim(initxxsp)
@@ -665,6 +697,23 @@ module Particles_nbody
 !
            endif
          enddo
+!
+      case ('eccentric')   
+!
+!  Coded only for 2 bodies
+!
+        if (mspar /= 2) call fatal_error("init_particles_nbody",&
+             "This initial condition is currently coded for 2 massive particles only.")
+!
+!  Define iplanet. istar=1 and iplanet=2 is default
+!
+        if (istar == 2) iplanet=1 
+        velocity(iplanet,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  istar)/totmass
+        velocity(  istar,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(iplanet)/totmass
+!        
+        do k=1,npar_loc
+          if (ipar(k)<=mspar) fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
+        enddo            
 !
       case default
         if (lroot) print*, 'init_particles_nbody: No such such value for'//&
