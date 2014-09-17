@@ -37,7 +37,7 @@ module Poisson
   namelist /poisson_run_pars/ &
       lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid, lisoz
 !
-  logical :: luse_fourier_transform
+  logical :: luse_fourier_transform = .false.
 !
   contains
 !***********************************************************************
@@ -177,13 +177,8 @@ module Poisson
 !  Solve Poisson equation.
 !
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
-        if ((kx_fft(ikx)==0.0) .and. &
-            (ky_fft(iky)==0.0) .and. (kz_fft(ikz)==0.0) ) then
-          phi(ikx,iky,ikz) = 0.0
-          b1(ikx,iky,ikz) = 0.0
-        else
-          if (.not. lrazor_thin) then
-            if (lshear) then
+        if (.not. lrazor_thin) then
+          if (lshear) then
 !
 !  Take into account that the Fourier transform has been done in shearing
 !  coordinates, and that the kx of each Fourier mode is different in the normal
@@ -196,38 +191,47 @@ module Poisson
 !  must be able to identify the x-direction in order to take shear into account.
 !  (see the subroutine transform_fftpack_shear in Mpicomm for details).
 !
-              if (nzgrid/=1) then ! Order (kz,ky',kx)
-                k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx+ipx*nx)**2
-              else                ! Order (kx,ky',kz)
-                k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
-              endif
-!  The ordering of the array is not important here, because there is no shear!
-            else
-              k2 = kx_fft(ikx+ipx*nx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+            if (nzgrid/=1) then ! Order (kz,ky',kx)
+              k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikx+ipx*nx)**2
+            else                ! Order (kx,ky',kz)
+              k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
             endif
+!  The ordering of the array is not important here, because there is no shear!
+          else
+            k2 = kx_fft(ikx+ipx*nx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+          endif
 !
 !  Solution of Poisson equation.
 !
+          if (k2 > 0.0) then
             phi(ikx,iky,ikz) = -phi(ikx,iky,ikz) / k2
             b1(ikx,iky,ikz)  = - b1(ikx,iky,ikz) / k2
-!
           else
+            phi(ikx,iky,ikz) = 0.0
+            b1(ikx,iky,ikz) = 0.0
+          endif
+!
+        else
 !
 !  Razor-thin approximation. Here we solve the equation
 !    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-            if (lshear) then
-              k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
-            else
-              k2 = kx_fft(ikx+ipx*nx)**2+ky_fft(iky+ipy*ny)**2
-            endif
+          if (lshear) then
+            k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
+          else
+            k2 = kx_fft(ikx+ipx*nx)**2+ky_fft(iky+ipy*ny)**2
+          endif
 !
+          if (k2 > 0.0) then
             phi(ikx,iky,ikz) = -.5*phi(ikx,iky,ikz) / sqrt(k2)
             b1(ikx,iky,ikz)  = -.5* b1(ikx,iky,ikz) / sqrt(k2)
+          else
+            phi(ikx,iky,ikz) = 0.0
+            b1(ikx,iky,ikz) = 0.0
           endif
         endif
 !
