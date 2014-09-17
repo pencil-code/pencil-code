@@ -46,7 +46,7 @@ module Particles_nbody
   logical :: lreset_cm=.false., lnogravz_star=.false., lexclude_frozen=.false.
   logical :: lnoselfgrav_star=.true.
   logical :: lramp=.false., lcreate_sinks=.false., lcreate_gas=.true.
-  logical :: ldt_nbody=.false., lcreate_dust=.true.
+  logical :: ldt_nbody=.true., lcreate_dust=.true.
   logical :: linterpolate_gravity=.false., linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
   logical :: laccrete_when_create=.true.
