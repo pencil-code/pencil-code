@@ -2713,14 +2713,6 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform x-direction.
-        do m = 1, pny
-          ax = cmplx (p_re(:,m), p_im(:,m))
-          call cfftf (nxgrid, ax, wsavex)
-          p_re(:,m) = real (ax)
-          p_im(:,m) = aimag (ax)
-        enddo
-!
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
 !
@@ -2736,6 +2728,14 @@ module Fourier
 !
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
+!
+        ! Transform x-direction.
+        do m = 1, pny
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftf (nxgrid, ax, wsavex)
+          p_re(:,m) = real (ax)
+          p_im(:,m) = aimag (ax)
+        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2753,6 +2753,14 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
 !
+        do m = 1, pny
+          ! Transform x-direction back.
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftb (nxgrid, ax, wsavex)
+          p_re(:,m) = real (ax)
+          if (lcompute_im) p_im(:,m) = aimag (ax)
+        enddo
+!
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
 !
@@ -2767,14 +2775,6 @@ module Fourier
 !
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
-!
-        do m = 1, pny
-          ! Transform x-direction back.
-          ax = cmplx (p_re(:,m), p_im(:,m))
-          call cfftb (nxgrid, ax, wsavex)
-          p_re(:,m) = real (ax)
-          if (lcompute_im) p_im(:,m) = aimag (ax)
-        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -3028,16 +3028,6 @@ module Fourier
           p_im = 0.0
         endif
 !
-        do pos_z = 1, inz
-          do m = 1, pny
-            ! Transform x-direction.
-            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
-            call cfftf (nxgrid, ax, wsavex)
-            p_re(:,m,pos_z) = real (ax)
-            p_im(:,m,pos_z) = aimag (ax)
-          enddo
-        enddo
-!
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
 !
@@ -3056,6 +3046,16 @@ module Fourier
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
 !
+        do pos_z = 1, inz
+          do m = 1, pny
+            ! Transform x-direction.
+            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+            call cfftf (nxgrid, ax, wsavex)
+            p_re(:,m,pos_z) = real (ax)
+            p_im(:,m,pos_z) = aimag (ax)
+          enddo
+        enddo
+!
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
@@ -3071,6 +3071,16 @@ module Fourier
         ! Remap the data we need into transposed pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
+!
+        do pos_z = 1, inz
+          do m = 1, pny
+            ! Transform x-direction back.
+            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+            call cfftb (nxgrid, ax, wsavex)
+            p_re(:,m,pos_z) = real (ax)
+            if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
+          enddo
+        enddo
 !
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
@@ -3088,16 +3098,6 @@ module Fourier
 !
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
-!
-        do pos_z = 1, inz
-          do m = 1, pny
-            ! Transform x-direction back.
-            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
-            call cfftb (nxgrid, ax, wsavex)
-            p_re(:,m,pos_z) = real (ax)
-            if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
-          enddo
-        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -3206,18 +3206,6 @@ module Fourier
           p_im = 0.0
         endif
 !
-        do pos_a = 1, ina
-          do pos_z = 1, inz
-            do m = 1, pny
-              ! Transform x-direction.
-              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
-              call cfftf (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z,pos_a) = real (ax)
-              p_im(:,m,pos_z,pos_a) = aimag (ax)
-            enddo
-          enddo
-        enddo
-!
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
 !
@@ -3238,6 +3226,18 @@ module Fourier
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
 !
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! Transform x-direction.
+              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+              call cfftf (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z,pos_a) = real (ax)
+              p_im(:,m,pos_z,pos_a) = aimag (ax)
+            enddo
+          enddo
+        enddo
+!
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
@@ -3253,6 +3253,18 @@ module Fourier
         ! Remap the data we need into transposed pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
+!
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! Transform x-direction back.
+              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+              call cfftb (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z,pos_a) = real (ax)
+              if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
+            enddo
+          enddo
+        enddo
 !
         call transp_pencil_xy (p_re, t_re)
         call transp_pencil_xy (p_im, t_im)
@@ -3272,18 +3284,6 @@ module Fourier
 !
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
-!
-        do pos_a = 1, ina
-          do pos_z = 1, inz
-            do m = 1, pny
-              ! Transform x-direction back.
-              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
-              call cfftb (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z,pos_a) = real (ax)
-              if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
-            enddo
-          enddo
-        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
