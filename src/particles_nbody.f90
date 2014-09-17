@@ -705,12 +705,18 @@ module Particles_nbody
         if (mspar /= 2) call fatal_error("init_particles_nbody",&
              "This initial condition is currently coded for 2 massive particles only.")
 !
-!  Define iplanet. istar=1 and iplanet=2 is default
+!  Define iplanet. istar=1 and iplanet=2 is default.
 !
         if (istar == 2) iplanet=1 
         velocity(iplanet,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  istar)/totmass
         velocity(  istar,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(iplanet)/totmass
 !        
+!  Revert all velocities if retrograde.
+!
+        if (lretrograde) velocity=-velocity
+!
+!  Loop through particles to allocate the velocities. 
+!
         do k=1,npar_loc
           if (ipar(k)<=mspar) fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
         enddo            
