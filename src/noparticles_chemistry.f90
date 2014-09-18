@@ -131,7 +131,7 @@ module Particles_chemistry
 !    
       real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var 
 !
-!      call keep_compiler_quiet(var)
+      call keep_compiler_quiet(var)
 !
     end subroutine get_R_j_hat
 !***********************************************************************
