@@ -195,6 +195,7 @@ end function count_max_elements
 !  09.09.14/jonas : coded 
 !        
       call keep_compiler_quiet(inputfile)
+      count_reactions=0.
 !
   end function count_reactions
 !***************************************************
