@@ -31,6 +31,7 @@
 
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+  public :: isendrcv_bdry_x
   public :: initiate_shearing, finalize_shearing
 
   public :: transp, transp_xy, transp_xy_other, transp_other

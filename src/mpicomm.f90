@@ -740,8 +740,8 @@ module Mpicomm
 !
 !   2-may-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
+      real, dimension(:,:,:,:), intent(inout) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbufx, j
 !

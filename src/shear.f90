@@ -463,6 +463,7 @@ module Shear
 !
       use Diagnostics, only: save_name
       use Messages, only: fatal_error
+      use Mpicomm, only: isendrcv_bdry_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -501,7 +502,11 @@ module Shear
           case ('spline', 'poly') method
             posdef = lposdef_advection .and. lposdef(ivar)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
-            if (.not. llast) call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
+            notlast: if (.not. llast) then
+              call isendrcv_bdry_x(df, ivar, ivar)
+              call shift_ghostzones_nonfft(df, ivar, ivar)
+              call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
+            endif notlast
           case default method
             call fatal_error('advance_shear', 'unknown method')
           end select method
@@ -681,8 +686,8 @@ module Shear
       use Mpicomm, only: initiate_shearing, finalize_shearing
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ivar1, ivar2
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
 !
       if (ip<12.and.headtt) print*, &
           'boundconds_x: use shearing sheet boundary condition'
@@ -711,16 +716,13 @@ module Shear
 !
       use Fourier, only: fourier_shift_yz_y
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ivar1, ivar2
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
 !
       real, dimension (ny,nz) :: f_tmp_yz
       integer :: i, ivar
 !
-      if (nxgrid/=1) then
-        f(l2+1:mx,m1:m2,n1:n2,ivar1:ivar2)=f(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2)
-        f( 1:l1-1,m1:m2,n1:n2,ivar1:ivar2)=f(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2)
-      endif
+      if (nxgrid > 1) call bcx_periodic(f, ivar1, ivar2)
 !
       if (nygrid/=1) then
         do ivar=ivar1,ivar2
@@ -746,43 +748,14 @@ module Shear
 !
       use Mpicomm, only: mpisend_real, mpirecv_real, mpibarrier
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
-      integer :: ltag = 101, rtag = 102
-      real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
-      integer, dimension(4) :: nbcast
-      integer :: iv, nvar, istat
-!
-!  Number of components
-!
-      nvar = ivar2 - ivar1 + 1
-      nbcast = (/ nghost, my, mz, nvar /)
+      integer :: iv
 !
 !  Periodically assign the ghost cells in x direction.
 !
-      xdir: if (nxgrid > 1) then
-        perx: if (nprocx == 1) then
-          f(1:nghost,:,:,ivar1:ivar2) = f(l2-nghost+1:l2,:,:,ivar1:ivar2)
-          f(l2+1:mx,:,:,ivar1:ivar2) = f(l1+1:l1+nghost,:,:,ivar1:ivar2)
-        else perx
-          allocate(send_buf(nghost,my,mz,nvar), recv_buf(nghost,my,mz,nvar), stat=istat)
-          if (istat /= 0) call fatal_error('shift_ghostzones_nonfft', 'allocation failed. ')
-          commun: if (lfirst_proc_x) then
-            send_buf = f(l1+1:l1+nghost,:,:,ivar1:ivar2)
-            call mpirecv_real(recv_buf, nbcast, xlneigh, rtag)
-            call mpisend_real(send_buf, nbcast, xlneigh, ltag)
-            f(1:nghost,:,:,ivar1:ivar2) = recv_buf
-          elseif (llast_proc_x) then commun
-            send_buf = f(l2-nghost+1:l2,:,:,ivar1:ivar2)
-            call mpisend_real(send_buf, nbcast, xuneigh, rtag)
-            call mpirecv_real(recv_buf, nbcast, xuneigh, ltag)
-            f(l2+1:mx,:,:,ivar1:ivar2) = recv_buf
-          endif commun
-          deallocate(send_buf, recv_buf)
-          call mpibarrier()
-        endif perx
-      endif xdir
+      if (nxgrid > 1) call bcx_periodic(f, ivar1, ivar2)
 !
 !  Shift the ghost cells in y direction.
 !
@@ -921,5 +894,52 @@ module Shear
       diff_hyper3x_mesh_out = diff_hyper3x_mesh
 !
     endsubroutine get_hyper3x_mesh
+!***********************************************************************
+    subroutine bcx_periodic(a, ivar1, ivar2)
+!
+!  Set the periodic boundary conditions in x direction.
+!
+!  19-sep-14/ccyang: coded.
+!
+      use Mpicomm, only: mpirecv_real, mpisend_real, mpibarrier
+!
+      real, dimension(:,:,:,:), intent(inout) :: a
+      integer, intent(in) :: ivar1, ivar2
+!
+      integer, parameter :: ltag = 101, rtag = 102
+      integer, parameter :: l1i = l1 + nghost - 1, l2i = l2 - nghost + 1
+      real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, dimension(4) :: nbcast
+      integer :: nvar, istat
+!
+!  Number of components
+!
+      nvar = ivar2 - ivar1 + 1
+      nbcast = (/ nghost, my, mz, nvar /)
+!
+!  Communicate and assign boundary ghost cells.
+!
+      perx: if (nprocx == 1) then
+        a(1:nghost,:,:,ivar1:ivar2) = a(l2i:l2,:,:,ivar1:ivar2)
+        a(l2+1:mx,:,:,ivar1:ivar2) = a(l1:l1i,:,:,ivar1:ivar2)
+      else perx
+        allocate(send_buf(nghost,my,mz,nvar), recv_buf(nghost,my,mz,nvar), stat=istat)
+        if (istat /= 0) call fatal_error('shift_ghostzones_nonfft', 'allocation failed. ')
+        commun: if (lfirst_proc_x) then
+          send_buf = a(l1:l1i,:,:,ivar1:ivar2)
+          call mpirecv_real(recv_buf, nbcast, xlneigh, rtag)
+          call mpisend_real(send_buf, nbcast, xlneigh, ltag)
+          a(1:nghost,:,:,ivar1:ivar2) = recv_buf
+        elseif (llast_proc_x) then commun
+          send_buf = a(l2i:l2,:,:,ivar1:ivar2)
+          call mpisend_real(send_buf, nbcast, xuneigh, rtag)
+          call mpirecv_real(recv_buf, nbcast, xuneigh, ltag)
+          a(l2+1:mx,:,:,ivar1:ivar2) = recv_buf
+        endif commun
+        deallocate(send_buf, recv_buf)
+        call mpibarrier()
+      endif perx
+!
+     endsubroutine bcx_periodic
 !***********************************************************************
 endmodule Shear

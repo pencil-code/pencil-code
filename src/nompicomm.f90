@@ -337,6 +337,17 @@ module Mpicomm
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
+    subroutine isendrcv_bdry_x(f,ivar1_opt,ivar2_opt)
+!
+!  Dummy
+!
+      real, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      if (ALWAYS_FALSE) print *, f, ivar1_opt, ivar2_opt
+!
+    endsubroutine isendrcv_bdry_x
+!***********************************************************************
     subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
       real, dimension (mx,my,mz,mfarray) :: f
