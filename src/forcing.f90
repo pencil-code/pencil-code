@@ -676,9 +676,9 @@ module Forcing
           profz_ampl=exp(-.5*z**2/radius_ff**2)
         elseif (iforcing_cont(i)=='fluxring_cylindrical') then
           if (lroot) print*,'forcing_cont: fluxring cylindrical'
-        elseif (iforcing_cont(i)=='counter_centrifugal') then
-          if (lroot) print*,'forcing_cont: counter_centrifugal'
-          !nothing...
+        !elseif (iforcing_cont(i)=='counter_centrifugal') then
+          !if (lroot) print*,'forcing_cont: counter_centrifugal'
+!AB: this wasn't doing anything, so we might as well skip it
         endif
       enddo
 !
@@ -4806,6 +4806,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=tmp
+!
+!  possibility of putting zero, e.g., for purely magnetic forcings
+!
+        case('zero')
+          force=0.
+!
+!  nothing (but why not?)
 !
         case ('nothing')
           if (i==1) call stop_it('forcing: no valid continuous iforcing_cont specified')
