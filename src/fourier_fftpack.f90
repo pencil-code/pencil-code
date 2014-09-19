@@ -3362,9 +3362,9 @@ module Fourier
 !  Forward FFT:
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
         endif
 !
         ! Remap the data we need into z-pencil shape.
@@ -3412,9 +3412,9 @@ module Fourier
         call unmap_from_pencil_yz (p_im, a_im)
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
         endif
 !
       endif
@@ -3494,9 +3494,9 @@ module Fourier
 !  Forward FFT:
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
         endif
 !
         ! Remap the data we need into z-pencil shape.
@@ -3548,9 +3548,9 @@ module Fourier
         call unmap_from_pencil_yz (p_im, a_im)
 !
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im, shift_y)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
         endif
 !
       endif
