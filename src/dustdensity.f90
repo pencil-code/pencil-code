@@ -1844,7 +1844,7 @@ module Dustdensity
           endif
         enddo
         endif
-        if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
+        if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
       endif
 !
@@ -2100,11 +2100,7 @@ module Dustdensity
               deltavd_therm = &
                 sqrt( 8*k_B/(pi*TT1(l))*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
             else
-!  28-dec-10/bing: what is the default value of deltavd_therm?
-!                  if ldeltavd_thermal=F then the variable is not set.
-!
-              call fatal_error('COAG_KERNEL', &
-                  'deltavd_therm may be used unitialized please check')
+              deltavd_therm=0.
             endif
 !
 !  Relative turbulent speed depends on stopping time regimes
@@ -2164,7 +2160,10 @@ module Dustdensity
           if (dndfac/=0.0) then
             df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
             df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
-            do k=j,ndustspec+1
+            !do k=j,ndustspec+1
+!AB: the above line is from revision r3271 (2004-04-12).
+!AB: but the index k=ndustspec+1 runs out of bounds, so I changed it.
+            do k=j,ndustspec
               if (p%md(l,i) + p%md(l,j) >= mdminus(k) &
                   .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
                 if (lmdvar) then
