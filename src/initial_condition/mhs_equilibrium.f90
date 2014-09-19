@@ -25,7 +25,7 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: g0=1,qgshear=1.5,density_power_law,temperature_power_law,plasma_beta
+  real :: g0=1,qgshear=1.5,density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
   logical :: lnumerical_mhsequilibrium=.true.
   logical :: lintegrate_potential=.true.
   logical :: lcap_field=.false.,lcap_field_radius=.false.,lcap_field_theta=.false.
