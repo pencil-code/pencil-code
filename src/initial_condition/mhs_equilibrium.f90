@@ -26,22 +26,23 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1,qgshear=1.5,density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
+  real :: rm_int=0.0,rm_ext=impossible
+  real :: tm_bot=0.0,tm_top=impossible
+  real :: ampluu_cs_factor=0.01
+  real :: rp1=1.
   logical :: lnumerical_mhsequilibrium=.true.
   logical :: lintegrate_potential=.true.
   logical :: lcap_field=.false.,lcap_field_radius=.false.,lcap_field_theta=.false.
-  real :: rm_int=0.0,rm_ext=impossible
-  real :: tm_bot=0.0,tm_top=impossible
   logical :: ladd_noise_propto_cs=.false. 
-  real :: ampluu_cs_factor=0.01
   logical :: lcorotational_frame=.false.
-  real :: rp1=1.
+  logical :: ladd_field=.true.
 !
   namelist /initial_condition_pars/ &
       g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
       ladd_noise_propto_cs, ampluu_cs_factor, lcorotational_frame, &
-      rp1
+      rp1,ladd_field
   
 !
   real :: ksi=1.
@@ -252,112 +253,115 @@ module InitialCondition
       integer :: i,ics2,irho,iprocx,iprocy,iserial_xy
       real, dimension(ny,nprocx*nprocy) :: procsum
       real, dimension(ny) :: procsum_loc,tmpy
+!      
+      if (ladd_field) then 
 !
 !  Get the sound speed globals 
 !
-      nullify(iglobal_cs2)
-      call farray_use_global('cs2',iglobal_cs2)
-      ics2=iglobal_cs2 
+        nullify(iglobal_cs2)
+        call farray_use_global('cs2',iglobal_cs2)
+        ics2=iglobal_cs2 
 !
 !  Density is already in linear after init_lnrho, so
 !
-      irho=ilnrho
+        irho=ilnrho
 !
-      do m=m1,m2
+        do m=m1,m2
 !
-        pressure=f(l1:l2,m,npoint,irho)*f(l1:l2,m,npoint,ics2)
+          pressure=f(l1:l2,m,npoint,irho)*f(l1:l2,m,npoint,ics2)
 !
 !  The following line assumes mu0=1
 !
-        BB = sqrt(2*pressure/plasma_beta)
-        if (lcap_field) then 
-          call cap_field(BB,Bphi)
-        else
-          Bphi=BB
-        endif
-!
-!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        !dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph(l1:l2)
-!
-        iserial_xy=ipx+nprocx*ipy+1
-        tmp2(0)=0.
-        do i=1,nx
-          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-          tmp2(i)=tmp2(i-1)+tmp(i)*dr
-        enddo
-        procsum_loc(m-m1+1)=tmp2(nx)
-      enddo
-!
-      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
-!
-      if (lroot) then 
-        procsum(:,1)=procsum_loc
-        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-          iserial_xy=iprocx+nprocx*iprocy+1
-          if (iserial_xy/=1) then
-            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
-            procsum(:,iserial_xy)=tmpy
+          BB = sqrt(2*pressure/plasma_beta)
+          if (lcap_field) then 
+            call cap_field(BB,Bphi)
+          else
+            Bphi=BB
           endif
-          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
-        enddo; enddo
-      else
-        call mpisend_real(procsum_loc,ny,0,111)
-      endif
-!
-      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
-!
-      do m=m1,m2;do n=n1,n2
-!
-        pressure=f(l1:l2,m,n,irho)*f(l1:l2,m,n,ics2)
-!
-!  The following line assumes mu0=1
-!
-        BB = sqrt(2*pressure/plasma_beta)
-        call cap_field(BB,Bphi)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
-        call get_radial_distance(rr_sph,rr_cyl)
-        !dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph(l1:l2)
+          call get_radial_distance(rr_sph,rr_cyl)
+          !dr=rr_sph(2)-rr_sph(1)
+          tmp=Bphi*rr_sph(l1:l2)
 !
-        if (nprocx==1) then 
+          iserial_xy=ipx+nprocx*ipy+1
           tmp2(0)=0.
           do i=1,nx
-            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
+            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
             tmp2(i)=tmp2(i-1)+tmp(i)*dr
           enddo
+          procsum_loc(m-m1+1)=tmp2(nx)
+        enddo
+!
+        if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+!
+        if (lroot) then 
+          procsum(:,1)=procsum_loc
+          do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+            iserial_xy=iprocx+nprocx*iprocy+1
+            if (iserial_xy/=1) then
+              call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+              procsum(:,iserial_xy)=tmpy
+            endif
+            if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+          enddo; enddo
         else
-          if (lfirst_proc_x) then 
+          call mpisend_real(procsum_loc,ny,0,111)
+        endif
+!
+        call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+!
+        do m=m1,m2; do n=n1,n2
+!
+          pressure=f(l1:l2,m,n,irho)*f(l1:l2,m,n,ics2)
+!
+!  The following line assumes mu0=1
+!
+          BB = sqrt(2*pressure/plasma_beta)
+          call cap_field(BB,Bphi)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          !dr=rr_sph(2)-rr_sph(1)
+          tmp=Bphi*rr_sph(l1:l2)
+!
+          if (nprocx==1) then 
             tmp2(0)=0.
             do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
               tmp2(i)=tmp2(i-1)+tmp(i)*dr
             enddo
-          else 
-            psum=0.
-            do iprocx=0,ipx-1
-              iserial_xy=iprocx+nprocx*ipy+1
-              psum=psum+procsum(m-m1+1,iserial_xy)
-            enddo
-            tmp2(0)=psum
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
-            enddo
+          else
+            if (lfirst_proc_x) then 
+              tmp2(0)=0.
+              do i=1,nx
+                dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+                tmp2(i)=tmp2(i-1)+tmp(i)*dr
+              enddo
+            else 
+              psum=0.
+              do iprocx=0,ipx-1
+                iserial_xy=iprocx+nprocx*ipy+1
+                psum=psum+procsum(m-m1+1,iserial_xy)
+              enddo
+              tmp2(0)=psum
+              do i=1,nx
+                dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+                tmp2(i)=tmp2(i-1)+tmp(i)*dr
+              enddo
+            endif
           endif
-        endif
-        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
-        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
-      enddo;enddo
+          Atheta=tmp2(1:nx)/rr_sph(l1:l2)
+          if (ladd_field) f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
+        enddo; enddo
+      endif
 !
 !  All quantities are set. Enforce numerical equilibrium.
 !
-    if (lnumerical_mhsequilibrium) &
-         call enforce_numerical_equilibrium(f,lhd=.false.)
+      if (lnumerical_mhsequilibrium) &
+           call enforce_numerical_equilibrium(f,lhd=.false.)
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
