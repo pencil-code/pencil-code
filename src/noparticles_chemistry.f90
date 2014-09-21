@@ -23,73 +23,9 @@ module Particles_chemistry
 !
   implicit none
 !
-!***************************************************************!
-!  Particle independent variables below here                    !
-!***************************************************************!
-  real, dimension(:), allocatable :: reaction_order
-  real, dimension(:), allocatable :: uscale,fscale,constr
-  real, dimension(:), allocatable :: qk_reac
-  real, dimension(:), allocatable :: effectiveness_factor_reaction
-  real, dimension(:), allocatable :: effectiveness_factor_old
-  real, dimension(:), allocatable :: mass_trans_coeff_reactants
-  real, dimension(:), allocatable :: diff_coeff_reactants
-  real, dimension(:,:), allocatable :: nu, nu_prime, mu, mu_prime
-  real, dimension(:), allocatable :: B_k, ER_k, ac, aac, RR_method
-  real, dimension(:), allocatable :: site_occupancy, sigma_k,dngas
-  real, allocatable, dimension(:) :: omega_pg_dbl
-  real, dimension(50) :: reaction_enhancement=1
-  character(3), dimension(:), allocatable, save :: reaction_direction
-  character(3), dimension(:), allocatable ::flags
-  character(10), dimension(:,:), allocatable, save :: part
-  character(10), dimension(:), allocatable :: solid_species 
-  character(10), dimension(50) :: species_name,adsorbed_species_names
-  integer, dimension(:), allocatable :: dependent_reactant
-  integer, dimension(:), allocatable :: j_of_inu
-  integer :: N_species, N_reactions 
-  integer :: N_surface_reactions, N_adsorbed_species
-  integer :: N_surface_reactants, N_surface_species
-  integer :: inuH2,inuCO2,inuH2O,inuCO,inuCH4,inuO2,inuCH,inuHCO,inuCH2,inuCH3
-  integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO,iads_end
-  real :: f_RPM, St_save, Sg_save
-  real :: x_s_total, rho_part
-  real :: effectiveness_factor
-  real :: effectiveness_factor_timeaver=1.
-  real :: eta_int=0.,delta_rho_surface=0.
-  logical :: first_pchem=.true.
+  include 'particles_chemistry.h'
 !
-!  Some physical constants
-!
-  real :: mol_mass_carbon=12.0
-  real :: Sgc_init=3e5
-  real :: struct_par=4.6
-!
-!  is already in the code (R_CGS), with ergs as unit!!!
-!
-  real :: gas_constant=8314.0 ![J/kmol/K]
-!
-!*********************************************************************!
-!               Particle dependent variables below here               !
-!*********************************************************************!
-!  
-  real, dimension(:), allocatable :: St
-  real, dimension(:,:), allocatable :: heating_k,entropy_k,R_c_hat
-  real, dimension(:,:), allocatable :: mdot_ck,RR_hat,K_k,x_surface
-  real, dimension(:,:), allocatable :: thiele
-  real, dimension(:,:), allocatable :: ndot, Cs
-  real, dimension(:,:), allocatable :: X_infty_reactants, St_array
-  real, dimension(:), allocatable :: initial_mass, initial_radius
-  real, dimension(:), allocatable :: initial_density
-  real, dimension(:,:), allocatable :: adsorbed_species_enthalpy
-  real, dimension(:,:), allocatable :: surface_species_enthalpy
-  real, dimension(:,:), allocatable :: adsorbed_species_entropy
-  real, dimension(:,:), allocatable :: surface_species_entropy
-  real, dimension(:), allocatable :: Qh,Qc,Qreac,Qrad
-  real, dimension(:), allocatable :: A_p,ndot_total  
-  real, dimension(:), allocatable :: Particle_temperature  
-  real, dimension(:), allocatable :: mod_surf_area
-  real, dimension(:), allocatable :: St_init,rho_p_init,m_p_init
-!
-  private
+  integer :: N_adsorbed_species=0
 !
   contains
 !***********************************************************************
@@ -195,11 +131,9 @@ end function count_max_elements
 !  09.09.14/jonas : coded 
 !        
       call keep_compiler_quiet(inputfile)
-      count_reactions=0.
+      count_reactions=0
 !
   end function count_reactions
-!***************************************************
-
 !*********************************************************************** 
 integer function find_species(species,unique_species,nlist)
 !
@@ -207,13 +141,23 @@ integer function find_species(species,unique_species,nlist)
 !
     integer :: i,nlist
     character(len=*) :: species
-    character(len=*), dimension(:) :: unique_species
+    character(len=*) :: unique_species
 !
-!      call keep_compiler_quiet(species)
-!      call keep_compiler_quiet(unique_species)
-!      call keep_compiler_quiet(nlist)
+    call keep_compiler_quiet(species)
+    call keep_compiler_quiet(unique_species)
+    call keep_compiler_quiet(nlist)
+    find_species=0
 !
   end function find_species
 !**********************************************************************
+  subroutine get_species_list(string,list)
+!  
+    character(*) :: string
+    character(10) :: list
+!
+    call keep_compiler_quiet(string)
+    call keep_compiler_quiet(list)
+!
+  end subroutine get_species_list
 !**********************************************************************
   end module Particles_chemistry
