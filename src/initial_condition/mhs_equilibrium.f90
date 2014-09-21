@@ -227,7 +227,7 @@ module InitialCondition
 !  Enforce numerical equilibrium then
 !
       if ((.not.lmagnetic).and.lnumerical_mhsequilibrium) &
-          call enforce_numerical_equilibrium(f,lhd=.true.)
+           call enforce_numerical_equilibrium(f,lhd=.true.)
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -537,7 +537,7 @@ module InitialCondition
       real, dimension (nx) :: cs2,rr_sph,rr_cyl,rho1
       real, dimension (nx) :: fpres_thermal,fpres_magnetic
       integer, pointer :: iglobal_cs2, iglobal_glnTT
-      integer :: j,irho,ics2,iglnTT
+      integer :: j,ics2,iglnTT
       logical :: lhd
 !
       if (.not.llocal_iso) call fatal_error("enforce_numerical_equilibrium",&
@@ -551,26 +551,19 @@ module InitialCondition
       nullify(iglobal_glnTT)
       call farray_use_global('glnTT',iglobal_glnTT);iglnTT=iglobal_glnTT
 !
-!  Use ilnrho as rho - works only for ldensity_nolog (which isn't passed 
-!  yet, but, hey, it's MY own custom initial condition file. I know what
-!  it does. :-) 
-!
-      if (lhd) then 
-        irho=iglnTT+2  !take an empty slot of f to put irho
-        f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      else
-        irho=ilnrho
-      endif
-!
 !  Azimuthal speed that perfectly balances the pressure gradient. 
 !
       do m=m1,m2
         do n=n1,n2
 !
-          call grad(f,irho,grho)
-          do j=1,3
-            glnrho(:,j)=grho(:,j)/f(l1:l2,m,n,irho)
-          enddo
+          if (ldensity_nolog) then 
+            call grad(f,irho,grho)
+            do j=1,3
+              glnrho(:,j)=grho(:,j)/f(l1:l2,m,n,irho)
+            enddo
+          else
+            call grad(f,ilnrho,glnrho)
+          endif
           cs2=f(l1:l2,m,n,ics2) 
           glnTT(:,1:2)=f(l1:l2,m,n,iglnTT:iglnTT+1)
 !
@@ -591,16 +584,12 @@ module InitialCondition
           endif
 !         
           call get_radial_distance(rr_sph,rr_cyl)
-     
+!
           f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+&
               sqrt(rr_sph*(fpres_thermal+fpres_magnetic)/cotth(m))
 !
         enddo
       enddo
-!
-!  Revert the free slot used for irho to its original value.
-!
-      if (lhd) f(:,:,:,iglnTT+2)=0.
 !
     endsubroutine enforce_numerical_equilibrium
 !***********************************************************************
