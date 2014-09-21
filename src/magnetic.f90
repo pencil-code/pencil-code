@@ -135,6 +135,7 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
+  real :: dipole_moment=0.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -201,7 +202,7 @@ module Magnetic
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
-      lbx_ext_global,lby_ext_global,lbz_ext_global
+      lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment
 !
 ! Run parameters
 !
@@ -1386,6 +1387,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real :: beq2,RFPradB12,RFPradJ12
+      real :: s,c
       integer :: j
 !
       do j=1,ninit
@@ -1644,6 +1646,25 @@ module Magnetic
         case ('torus-test'); call torus_test(amplaa(j),f)
         case ('relprof')
           f(l1:l2,m1:m2,n1:n2,iax:iay)=A_relprof
+!
+        case ('inclined-dipole') 
+!
+!  Inclined dipole initial condition. In principle can use precession as well (though for that it should be moved to 
+!  runtime). Works only for spherical coordinates, and needs global external storing of fields.
+!
+          if (.not.(lbx_ext_global.and.lby_ext_global.and.lbz_ext_global)) & 
+               call fatal_error("init_aa",&
+               "inclined-dipole: switch lb[xyz]_ext_global=T in magnetic_start_pars")
+          if (.not.lspherical_coords) &
+               call fatal_error("init_aa",&
+               "inclined-dipole: so far only implemented for spherical coordinates")
+!
+          c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
+          do n=n1,n2; do m=m1,m2 
+            f(l1:l2,m,n,iglobal_bx_ext) = dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
+            f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
+            f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)-omega_Bz_ext*t))                      /x(l1:l2)**3
+          enddo;enddo
 !
         case default
 !
