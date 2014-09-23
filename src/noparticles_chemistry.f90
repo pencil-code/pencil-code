@@ -26,6 +26,7 @@ module Particles_chemistry
   include 'particles_chemistry.h'
 !
   integer :: N_adsorbed_species=0
+  real :: mol_mass_carbon=12.0
 !
   contains
 !***********************************************************************

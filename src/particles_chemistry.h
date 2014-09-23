@@ -8,4 +8,5 @@
   public :: register_dep_pchem
   public :: get_species_list
   public :: get_pchem_info
+  public :: mol_mass_carbon
 

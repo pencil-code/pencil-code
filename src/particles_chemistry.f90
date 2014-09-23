@@ -17,7 +17,7 @@ module Particles_chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use Particles_cdata, only: iap, irhopswarm, iTp
+  use Particles_cdata, only: iap, irhopswarm, iTp, imp
   use Particles_sub
   use Particles_radius
 !
