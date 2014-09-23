@@ -48,18 +48,16 @@ module Particles_chemistry
 !    
     end subroutine get_pchem_info
 !***********************************************************************
-    subroutine get_R_c_hat(var,fp,iap)
+    subroutine get_R_c_hat(var,fp)
 !
 !  09.09.14/jonas : coded 
 !    
       real, dimension(mpar_loc), intent(out) :: var 
       real, dimension(mpar_loc,mpvar) :: fp
-      integer :: iap
 !
       call keep_compiler_quiet(var)
       call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(iap)
-
+!
     end subroutine get_R_c_hat
 !***********************************************************************
     subroutine get_R_j_hat(var)
@@ -87,32 +85,27 @@ module Particles_chemistry
 !
     end subroutine get_mod_surf_area
 !***********************************************************************
-    subroutine get_St(var,fp,iap)
+    subroutine get_St(var,fp)
 !
 !  09.09.14/jonas : coded 
 !        
       real, dimension(mpar_loc),intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
-      integer :: irhopswarm,iap
 !
       call keep_compiler_quiet(var)
       call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(iap)
 !
    end subroutine get_St
 !***********************************************************************
-    subroutine get_conversion(var,fp,irhopswarm,iap)
+    subroutine get_conversion(var,fp)
  !
 !  09.09.14/jonas : coded 
 !             
       real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
-      integer :: irhopswarm,iap
 !     
       call keep_compiler_quiet(var)
       call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(iap)
-      call keep_compiler_quiet(irhopswarm)
 !
    end subroutine get_conversion
 !***********************************************************************
