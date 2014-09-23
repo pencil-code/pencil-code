@@ -149,8 +149,15 @@ subroutine pencil_criteria_par_TT()
 !
       if (ldiagnos) then
         if (idiag_Tpm/=0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
-        if (imp/=0) call fatal_error('dpTT_dt','Calculate particle density properly when particle mass is solved for!')
-        if (idiag_etpm/=0) call sum_par_name(fp(1:npar_loc,iTp)*cp_part*4.*3.14*fp(1:npar_loc,iap)**3/3.*rhopmat,idiag_etpm)
+        if (idiag_etpm/=0) then        
+          if (imp/=0) then
+            call sum_par_name(fp(1:npar_loc,iTp)*cp_part*&
+                fp(1:npar_loc,imp),idiag_etpm)
+          else
+            call sum_par_name(fp(1:npar_loc,iTp)*cp_part*&
+                4.*3.14*fp(1:npar_loc,iap)**3/3.*rhopmat,idiag_etpm)
+          endif
+        endif
       endif
 !
       call keep_compiler_quiet(f)
