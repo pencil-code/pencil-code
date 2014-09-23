@@ -299,7 +299,7 @@ module Particles_collisions
 !                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
 !
                   if (ltauc_from_tauf) then
-                    if (lparticles_radius.and.lparticles_mass) then
+                    if (lparticles_radius.and.lparticles_density) then
                       tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
                           fp(j,irhopswarm)/rho0*(tausp_j+tausp_k)**2* &
                           min(tausp1_j,tausp1_k)**2

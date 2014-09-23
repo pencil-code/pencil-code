@@ -923,7 +923,7 @@ module Particles_sub
       integer  :: il,im,in
 !
       if (lcartesian_coords.and.all(lequidist)) then
-        if (lparticles_mass) then
+        if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
           rhop_swarm_tmp = &
@@ -951,7 +951,7 @@ module Particles_sub
       real, intent(out) :: rhop_swarm_tmp
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        if (lparticles_mass) then
+        if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
           rhop_swarm_tmp = &
@@ -980,7 +980,7 @@ module Particles_sub
       real, intent(out) :: rhop_swarm_tmp
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        if (lparticles_mass) then
+        if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
           rhop_swarm_tmp = &
@@ -1007,7 +1007,7 @@ module Particles_sub
       real, dimension(nx), intent(out) :: rhop_swarm_tmp
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        if (lparticles_mass) then
+        if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
           rhop_swarm_tmp = &

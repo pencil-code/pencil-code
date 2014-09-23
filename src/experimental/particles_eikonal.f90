@@ -511,7 +511,7 @@ module Particles
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
       if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
-          .and..not.lparticles_mass) then
+          .and..not.lparticles_density) then
         if (lroot) print*, 'initialize_particles: drag force on gas is '// &
             'not yet implemented for variable particle radius or number'
         call fatal_error('initialize_particles','')
@@ -2542,7 +2542,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name((fp(1:npar_loc,ivpy)- &
             qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
         if (idiag_ekinp/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           else
@@ -2595,7 +2595,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhopvpxm/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
                 idiag_rhopvpxm)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2605,7 +2605,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpym/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
                 idiag_rhopvpym)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2615,7 +2615,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpzm/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
                 idiag_rhopvpzm)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2625,7 +2625,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpxt/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
                 fp(1:npar_loc,ivpx),idiag_rhopvpxt)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2635,7 +2635,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpyt/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
                 fp(1:npar_loc,ivpy),idiag_rhopvpyt)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2645,7 +2645,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpzt/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
                 fp(1:npar_loc,ivpz),idiag_rhopvpzt)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2655,7 +2655,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_rhopvpysm/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)* &
                 Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
           elseif (lparticles_radius.and.lparticles_number) then
@@ -2665,7 +2665,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
         if (idiag_mpt/=0) then
-          if (lparticles_mass) then
+          if (lparticles_density) then
             call integrate_par_name((/fp(1:npar_loc,irhopswarm)/),idiag_mpt)
           elseif (lparticles_radius.and.lparticles_number) then
             call integrate_par_name((/four_pi_rhopmat_over_three* &

@@ -52,9 +52,9 @@ module Particles_adaptation
 !
 !  Report fatal error if Particle_mass module not used.
 !
-      if (.not.lparticles_mass) &
+      if (.not.lparticles_density) &
           call fatal_error('initialize_particles_adaptation', &
-          'must use Particles_mass module for particle adaptation')
+          'must use Particles_density module for particle adaptation')
 !
 !  We must be flexible about the particle number.
 !

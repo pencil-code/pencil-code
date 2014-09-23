@@ -1089,7 +1089,7 @@ module Particles_map
               if (nygrid/=1) iyy1=iyy0+1
               if (nzgrid/=1) izz1=izz0+1
 !
-              if (lparticles_mass) then
+              if (lparticles_density) then
                 weight0=fp(k,irhopswarm)
               elseif (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
@@ -1149,7 +1149,7 @@ module Particles_map
                 izz0=iz0  ; izz1=iz0
               endif
 !
-              if (lparticles_mass) then
+              if (lparticles_density) then
                 weight0=fp(k,irhopswarm)
               elseif (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
@@ -1203,7 +1203,7 @@ module Particles_map
 !  Nearest Grid Point (NGP) method.
 !
         else
-          if (lparticles_radius.or.lparticles_number.or.lparticles_mass) then
+          if (lparticles_radius.or.lparticles_number.or.lparticles_density) then
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               lsink=.false.
@@ -1214,7 +1214,7 @@ module Particles_map
               if ((.not.lnbody).and.(.not.lsink)) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
-                if (lparticles_mass) then
+                if (lparticles_density) then
                   weight0=fp(k,irhopswarm)
                 elseif (lparticles_radius.and.lparticles_number) then
                   weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
@@ -1237,7 +1237,7 @@ module Particles_map
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         if (.not.(lparticles_radius.or.lparticles_number.or. &
-            lparticles_mass)) then
+            lparticles_density)) then
           do m=m1,m2; do n=n1,n2
             call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
             f(l1:l2,m,n,irhop)=rhop_swarm_mn*f(l1:l2,m,n,irhop)

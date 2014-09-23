@@ -341,7 +341,7 @@ module Particles_selfgravity
                   potself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3), &
                       ipotself)
                 endif
-                if (lparticles_mass) then
+                if (lparticles_density) then
                   call sum_par_name(potself*fp(k,irhopswarm),idiag_potselfpm)
                 else
                   call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:), &

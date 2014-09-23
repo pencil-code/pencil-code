@@ -219,7 +219,7 @@ subroutine pencil_criteria_par_TT()
 !
 !  Find the mass of the particle
 !
-            if (lparticles_mass) then
+            if (lparticles_density) then
               call fatal_error('dpTT_dt','Variable mass not implemented yet!')
             else
               pmass=4.*pi*fp(k,iap)**3*rhopmat/3.

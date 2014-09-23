@@ -191,7 +191,7 @@ module Particles_radius
             fp(k,iap)=10**(alog10(ap0(j))+(ipar(k)-0.5)* &
                 (alog10(ap1)-alog10(ap0(j)))/npar)
           enddo
-          if (lparticles_mass) then 
+          if (lparticles_density) then 
             if (lgravz .and. lgravz_gas) then
               rhopm = eps_dtog*sqrt(2*pi)*1.0/Lz
             else

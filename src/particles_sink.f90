@@ -1141,7 +1141,7 @@ module Particles_sink
                               'for removal on proc', iproc
                         endif
                       endif
-                      if (lparticles_mass) then
+                      if (lparticles_density) then
 !
 !  Identify the nearest ghost image of the accreted particle.
 !

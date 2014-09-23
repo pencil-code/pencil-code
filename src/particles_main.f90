@@ -15,7 +15,7 @@ module Particles_main
   use Particles_collisions
   use Particles_coagulation
   use Particles_map
-  use Particles_mass
+  use Particles_density
   use Particles_mpicomm
   use Particles_nbody
   use Particles_number
@@ -54,7 +54,7 @@ module Particles_main
       call register_particles_radius       ()
       call register_particles_spin         ()
       call register_particles_number       ()
-      call register_particles_mass         ()
+      call register_particles_density         ()
       call register_particles_selfgrav     ()
       call register_particles_nbody        ()
       call register_particles_sink         ()
@@ -90,7 +90,7 @@ module Particles_main
       call rprint_particles_sink         (lreset,LWRITE=lroot)
       call rprint_particles_spin         (lreset,LWRITE=lroot)
       call rprint_particles_number       (lreset,LWRITE=lroot)
-      call rprint_particles_mass         (lreset,LWRITE=lroot)
+      call rprint_particles_density         (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
       call rprint_particles_viscosity    (lreset,LWRITE=lroot)
@@ -183,7 +183,7 @@ module Particles_main
       call initialize_particles_mpicomm      (f,lstarting)
       call initialize_particles              (f,lstarting)
       call initialize_particles_adaptation   (f,lstarting)
-      call initialize_particles_mass         (f,lstarting)
+      call initialize_particles_density         (f,lstarting)
       call initialize_particles_nbody        (f,lstarting)
       call initialize_particles_number       (f,lstarting)
       call initialize_particles_potential    (f,lstarting)
@@ -213,7 +213,7 @@ module Particles_main
 !
 !  Stop if rhop_swarm is zero.
 !
-      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_mass)) then
+      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density)) then
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
@@ -245,7 +245,7 @@ module Particles_main
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
-      if (lparticles_mass)          call init_particles_mass(f,fp)
+      if (lparticles_density)          call init_particles_density(f,fp)
       call init_particles(f,fp,ineargrid)
       if (lparticles_nbody)         call init_particles_nbody(f,fp)
       if (lparticles_sink)          call init_particles_sink(f,fp)
@@ -628,7 +628,7 @@ module Particles_main
       if (lparticles_radius)      call pencil_criteria_par_radius()
       if (lparticles_spin)        call pencil_criteria_par_spin()
       if (lparticles_number)      call pencil_criteria_par_number()
-      if (lparticles_mass)        call pencil_criteria_par_mass()
+      if (lparticles_density)        call pencil_criteria_par_mass()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
       if (lparticles_nbody)       call pencil_criteria_par_nbody()
       if (lparticles_temperature) call pencil_criteria_par_TT()
@@ -693,7 +693,7 @@ module Particles_main
       if (lparticles_temperature) call dpTT_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_adsorbed)    call dpads_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnpswarm_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_mass)        call drhopswarm_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_density)        call drhopswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
@@ -756,7 +756,7 @@ module Particles_main
       if (lparticles_temperature) call dpTT_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_adsorbed) call dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_number) call dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_mass)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_density)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_nbody) &
@@ -941,11 +941,11 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_mass) then
-        call read_particles_mass_init_pars(unit,iostat)
+      if (lparticles_density) then
+        call read_particles_dens_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_startpars('particles_mass_init_pars',iostat); return
+            call samplepar_startpars('particles_dens_init_pars',iostat); return
           endif
         endif
       endif
@@ -1025,7 +1025,7 @@ module Particles_main
       if (lparticles_spin)        call read_particles_spin_init_pars(unit)
       if (lparticles_sink)        call read_particles_sink_init_pars(unit)
       if (lparticles_number)      call read_particles_num_init_pars(unit)
-      if (lparticles_mass)        call read_particles_mass_init_pars(unit)
+      if (lparticles_density)        call read_particles_dens_init_pars(unit)
       if (lparticles_selfgravity) call read_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call read_particles_nbody_init_pars(unit)
       if (lparticles_viscosity)   call read_particles_visc_init_pars(unit)
@@ -1059,8 +1059,8 @@ module Particles_main
             print*,'&particles_sink_init_pars    /'
         if (lparticles_number) &
             print*,'&particles_number_init_pars  /'
-        if (lparticles_mass) &
-            print*,'&particles_mass_init_pars  /'
+        if (lparticles_density) &
+            print*,'&particles_dens_init_pars  /'
         if (lparticles_selfgravity) &
             print*,'&particles_selfgrav_init_pars/'
         if (lparticles_nbody) &
@@ -1096,7 +1096,7 @@ module Particles_main
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
       if (lparticles_sink)        call write_particles_sink_init_pars(unit)
       if (lparticles_number)      call write_particles_num_init_pars(unit)
-      if (lparticles_mass)        call write_particles_mass_init_pars(unit)
+      if (lparticles_density)        call write_particles_dens_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
       if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
@@ -1175,11 +1175,11 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_mass) then
-        call read_particles_mass_run_pars(unit,iostat)
+      if (lparticles_density) then
+        call read_particles_dens_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_runpars('particles_mass_run_pars',iostat); return
+            call samplepar_runpars('particles_dens_run_pars',iostat); return
           endif
         endif
       endif
@@ -1304,7 +1304,7 @@ module Particles_main
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
         if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
-        if (lparticles_mass)           print*,'&particles_mass_run_pars    /'
+        if (lparticles_density)           print*,'&particles_dens_run_pars    /'
         if (lparticles_selfgravity)    print*,'&particles_selfgrav_run_pars/'
         if (lparticles_nbody)          print*,'&particles_nbody_run_pars   /'
         if (lparticles_viscosity)      print*,'&particles_visc_run_pars    /'
@@ -1339,7 +1339,7 @@ module Particles_main
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
-      if (lparticles_mass)           call write_particles_mass_run_pars(unit)
+      if (lparticles_density)           call write_particles_dens_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
       if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
