@@ -151,7 +151,7 @@ module Diagnostics
         dVol_rel1=1./nwgrid
       endif
       if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
-        
+
     endsubroutine initialize_diagnostics
 !***********************************************************************
     subroutine prints
@@ -283,7 +283,7 @@ module Diagnostics
 !
       use General, only: safe_character_append
       use Sub, only: noform
-! 
+!
       character (len=640)          ,intent(OUT) :: fform
       character (len=640), optional,intent(OUT) :: legend
 !
@@ -298,9 +298,9 @@ module Diagnostics
         if (present(legend)) legend=''
 !
         do iname=1,nname
-          
+
           lcompl=itype_name(iname)>=ilabel_complex
-          
+
           if (lcompl) then
             tform = comma//'" ("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
@@ -1149,13 +1149,13 @@ module Diagnostics
 !  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
 !
 !   return value is iname if ctest matches
-!                   -1    if so and itest/=0 at call (indicates multiple 
+!                   -1    if so and itest/=0 at call (indicates multiple
 !                         occurrence of the same diagnostic in print.in
 !                   0     if ctest does not match
 !
 !   4-may-02/axel: coded
 !   6-apr-04/wolf: more liberate format reading
-!  26-feb-13/MR  : prepared for ignoring multiple occurrences of 
+!  26-feb-13/MR  : prepared for ignoring multiple occurrences of
 !                  diagnostics in print.in
 !  26-aug-13/MR  : removed unneeded 0p setting in format, added handling of D formats
 !  27-aug13/MR   : reinstated 0p
@@ -1577,7 +1577,7 @@ module Diagnostics
 !                first dimension of a is 1; if it is 2 considers a a complex
 !                pencil - stores real(imaginary) part in fname(fname_keep),
 !                sets type of diagnostic to complex
-! 
+!
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
@@ -1586,18 +1586,18 @@ module Diagnostics
       if (size(a,1)==1) then
         call sum_mn_name_std(a(1,:),iname,lsqrt,lint,ipart)
       else
-      
+
         call sum_mn_name_real(a(1,:),iname,fname,lsqrt,lint,ipart)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
         itype_name(iname)=itype_name(iname)+ilabel_complex
-      
+
       endif
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
     subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
 !
-!  20-aug-13/MR: derived from sum_mn_name, behaves as before 
+!  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
       use Cdata, only: fname
 !
@@ -1627,7 +1627,7 @@ module Diagnostics
 !  30-aug-07/wlad: adapted for cylindrical coordinates
 !  22-mar-08/axel: added ladd option, to add to previous values
 !  29-aug-11/Bourdin.KIS: added TODO and a comment about building the mean
-!  20-aug-13/MR: derived from sum_mn_name, made array of values fname a dummy argument 
+!  20-aug-13/MR: derived from sum_mn_name, made array of values fname a dummy argument
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
@@ -2130,7 +2130,7 @@ module Diagnostics
 !  m starts with mghost+1=4, so the correct index is m-nghost.
 !
         lmax=l2; ml=m-nghost
-!        
+!
         if (lav_smallx) lmax=ixav_max
         if (.not.loutside_avg) then
           if (lspherical_coords.and.nxgrid>1)then

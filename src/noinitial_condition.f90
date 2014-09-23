@@ -373,9 +373,9 @@ module InitialCondition
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-!  Uncomment these lines back in when you turn 
-!  this file into an initial condition, so it 
-!  is able to read the namelist.  
+!  Uncomment these lines back in when you turn
+!  this file into an initial condition, so it
+!  is able to read the namelist.
 !
 !!      if (present(iostat)) then
 !!        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
@@ -394,9 +394,9 @@ module InitialCondition
 !
       integer, intent(in) :: unit
 !
-!  Uncomment this line back in when you turn 
-!  this file into an initial condition, so it 
-!  is able to write the namelist.  
+!  Uncomment this line back in when you turn
+!  this file into an initial condition, so it
+!  is able to write the namelist.
 !
 !!      write(unit,NML=initial_condition_pars)
 !
@@ -408,7 +408,7 @@ module InitialCondition
 !
 !  04-may-11/dhruba: coded
 ! dummy
-!      
+!
     endsubroutine initial_condition_clean_up
 !***********************************************************************
 !***********************************************************************

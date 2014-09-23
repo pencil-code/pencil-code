@@ -661,14 +661,14 @@ module Param_IO
       subroutine get_downpars(ind,n,ip,lfirst_proc,llast_proc)
 !
 ! Calculates start indices & lengths for downsampled output
-! 
+!
 ! 13-feb-14/MR: coded
 !
         use General, only: get_range_no
 !
 ! coordinate direction, number of inner grid points, processor number
 !
-        integer, intent(IN) :: ind, n, ip  
+        integer, intent(IN) :: ind, n, ip
         logical, intent(IN) :: lfirst_proc,llast_proc
 !
       if ( downsampl(ind)>n ) then
@@ -678,9 +678,9 @@ module Param_IO
         downsampl(ind)=n
       endif
 !
-! first index in direction ind in local farray for output 
+! first index in direction ind in local farray for output
 !
-        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind)) 
+        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind))
 !
 ! number of output items in direction ind without ghost zones
 !

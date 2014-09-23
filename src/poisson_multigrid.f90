@@ -83,7 +83,7 @@ module Poisson
       do iter=1,niter_poisson
         if (lroot .and. ip<=12) then
           if (mod(iter,10) == 0) &
-              write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
+              write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson
         endif
         call v_cycle(phi,rhs,dxyz)
       enddo
@@ -130,7 +130,7 @@ module Poisson
 !       do iter=1,niter_poisson
 !         if (lroot .and. ip<=12) then
 !           if (mod(iter,10) == 0) &
-!               write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson 
+!               write(*,'(A,I4,"/",I4)') 'Iteration ', iter, niter_poisson
 !         endif
 !         if (present(h)) then
 !           call v_cycle_c2(phi,rhs,dxyz,h)
@@ -262,7 +262,7 @@ module Poisson
       if (present(h)) then
         call gauss_seidel_iterate(f, rhs, dxyz, h)
       else
-        call gauss_seidel_iterate(f, rhs, dxyz)        
+        call gauss_seidel_iterate(f, rhs, dxyz)
       endif
 !
       deallocate(res_coarse)
@@ -492,7 +492,7 @@ module Poisson
       real, dimension(:,:,:), optional :: h
       real, dimension(3)     :: dxyz
       real                   :: dx_2,dy_2,dz_2, sum
-      real                   :: denom1, denom 
+      real                   :: denom1, denom
       integer                :: nnx,nny,nnz, ix,iy,iz
 !
       intent(in)    :: rhs,dxyz,h
@@ -581,7 +581,7 @@ module Poisson
           'Cheating! This is not multigrid we are using')
 !
       call keep_compiler_quiet(phi)
-      call keep_compiler_quiet(h)      
+      call keep_compiler_quiet(h)
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************

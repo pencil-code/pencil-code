@@ -2376,13 +2376,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine list_particles_near_boundary(fp)
 !
-!  Makes a list of properties of the particles close to processor boundaries. 
+!  Makes a list of properties of the particles close to processor boundaries.
 ! These information about these particles must be communicated to processors
 ! who share those boundaries. This subroutine is useless in a single processor
 ! hence does nothing when a single processor is used; otherwise calls the subroutine
 ! that actually lists the particles near boundary
 !
-      
+
       if (ncpus .ne. 1) then
         call really_list_particles_near_boundary(fp)
       else

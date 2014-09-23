@@ -615,7 +615,7 @@ module Cosmicray
       enddo
 !
 !  if variable tensor, add extra terms and add result into decr/dt
-!  NB the implementation of this option is yet to be finished. 
+!  NB the implementation of this option is yet to be finished.
 !  Currently, gvKperp/gvKpara are are set to 0, leading to no
 !  effects.
 !
@@ -628,7 +628,7 @@ module Cosmicray
         vKpara(:)=Kpara
         vKperp(:)=Kperp
 !
-!  set gvKpara, gvKperp 
+!  set gvKpara, gvKperp
 !
         gvKperp(:,:)=0.0
         gvKpara(:,:)=0.0

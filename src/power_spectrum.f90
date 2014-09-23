@@ -85,7 +85,7 @@ module power_spectrum
         do i=1,parser( czrange, czranges, ',' )
 !
           if ( read_range( czranges(i), range, (/1,nzgrid,1/) ) ) &
-            ldum =  merge_ranges( zrange, iend_zrange, range ) 
+            ldum =  merge_ranges( zrange, iend_zrange, range )
             !!print*, 'iend_zrange, zrange(:,1:iend_zrange)=', iend_zrange, zrange(:,1:iend_zrange)
 !
         enddo
@@ -510,7 +510,7 @@ module power_spectrum
 !   18-jan-11/MR: modified for calculation of power spectra of scalar products
 !   10-may-11/MR: modified for use with ranges in kx, ky, z; for output of true
 !                 (complex and componentwise) instead of power spectra
-!    5-may-14/MR: modifications for request of individual components of a vector field 
+!    5-may-14/MR: modifications for request of individual components of a vector field
 !
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
@@ -569,16 +569,16 @@ module power_spectrum
   endif
   if (cpos==0) &
     call fatal_error('power_xy','no implementation for field '//trim(sp))
-    
+
   if ( sp_field=='u' .or. sp_field=='b' .or.  &
        sp_field=='a' .or. sp_field=='jxb' ) then  ! for vector fields
     if (len(trim(sp))>=cpos) then                 ! component specification expected
       ncomp=1
       select case (sp(cpos:cpos))
-      case ('x')  ; iveca=1 
-      case ('y')  ; iveca=2 
+      case ('x')  ; iveca=1
+      case ('y')  ; iveca=2
       case ('z')  ; iveca=3
-      case default; call fatal_error('power_xy','no components other than x,y,z may be selected')      
+      case default; call fatal_error('power_xy','no components other than x,y,z may be selected')
       end select
     else                                        ! no component specified -> all three components
       ncomp=3; iveca=1
@@ -796,7 +796,7 @@ module power_spectrum
       call mpireduce_sum(spectrum1,spectrum1_sum,nk)
     else
       call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
-      call mpigather_z(spectrum2_sum,spectrum2_global,nk) 
+      call mpigather_z(spectrum2_sum,spectrum2_global,nk)
     endif
 !
   else if (lintegrate_z) then
@@ -1369,7 +1369,7 @@ module power_spectrum
     b1=0
     a2=a1
 !
-    !!print*,'checking lcomplex, oned',lcomplex,oned 
+    !!print*,'checking lcomplex, oned',lcomplex,oned
 !
     if (lcomplex) then
       nc=2

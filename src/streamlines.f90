@@ -286,7 +286,7 @@ module Streamlines
     integer :: loop_count, outside
 !   number of adjacent grid points for the field interpolation
     integer :: n_int
-    
+
 !   initial step length dh
     dh = sqrt(h_max*h_min)
     loop_count = 0
@@ -425,14 +425,14 @@ module Streamlines
 !                       (grid_pos(:,2) > 0) .and. (grid_pos(:,2) <= ny) .and. &
 !                       (grid_pos(:,3) > 0) .and. (grid_pos(:,3) <= nz))) then
 !         communicate tracer to corresponding core
-            
+
 !         endif
       endif
 !
       if (tracer(6) >= l_max) exit
 !
       loop_count = loop_count + 1
-    enddo   
+    enddo
   endsubroutine trace_single
 !***********************************************************************
   subroutine trace_streamlines(f,tracers,n_tracers,vv)
@@ -466,7 +466,7 @@ module Streamlines
     do tracer_idx=1,n_tracers
       tracers(tracer_idx, 6:7) = 0.
       call trace_single(tracers(tracer_idx,:), f, vv)
-!       
+!
 !     check if tracer lies in different core
 !       if tracer in different core then
 !         communicate tracer to other core
@@ -524,7 +524,7 @@ module Streamlines
     integer :: ierr, flag
 !   the "borrowed" vector from the adjacent core
     real, dimension (3+mfarray) :: vvb
-!    
+!
     do
         if (receive == 0) then
           grid_pos_b(:) = 0

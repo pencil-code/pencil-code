@@ -111,7 +111,7 @@ module Viscosity
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound 
+      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -1424,12 +1424,12 @@ module Viscosity
           call write_zprof('visc_shock',pnu_shock)
           gradnu_shock(:,1) = 0.
           gradnu_shock(:,2) = 0.
-          gradnu_shock(:,3) = nu_shock*(nu_jump_shock-1.)* & 
+          gradnu_shock(:,3) = nu_shock*(nu_jump_shock-1.)* &
                             der_step(p%z_mn,znu_shock,-widthnu_shock)
 !
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
-          call multsv(pnu_shock*p%shock,tmp,tmp2)   
+          call multsv(pnu_shock*p%shock,tmp,tmp2)
           call multsv_add(tmp2,pnu_shock*p%divu,p%gshock,tmp)
           call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
           p%fvisc=p%fvisc+tmp
@@ -1453,14 +1453,14 @@ module Viscosity
           pnu_shock = nu_shock + nu_shock*(nu_jump_shock-1.)* &
                       step(tmp3,xnu_shock,widthnu_shock)
 !
-          gradnu_shock(:,1) = nu_shock*(nu_jump_shock-1.)* & 
+          gradnu_shock(:,1) = nu_shock*(nu_jump_shock-1.)* &
                             der_step(tmp3,xnu_shock,widthnu_shock)
           gradnu_shock(:,2) = 0.
           gradnu_shock(:,3) = 0.
 !
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
-          call multsv(pnu_shock*p%shock,tmp,tmp2)   
+          call multsv(pnu_shock*p%shock,tmp,tmp2)
           call multsv_add(tmp2,pnu_shock*p%divu,p%gshock,tmp)
           call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
           p%fvisc=p%fvisc+tmp
@@ -2114,7 +2114,7 @@ module Viscosity
         if (lvisc_simplified) then
           nu_pencil=nu
         elseif(lvisc_mixture) then
-          nu_pencil=nu          
+          nu_pencil=nu
         elseif (lvisc_rho_nu_const) then
           nu_pencil=nu*p%rho1
         elseif (lvisc_rho_nu_const_bulk) then
@@ -2187,8 +2187,8 @@ module Viscosity
 !  Calculates the lambda effect
 !
 !  20-apr-10/dhruba: coded
-! If lKit_Olem is true the lambda coefficients depends on dsdr which must be 
-! incorporated below. 
+! If lKit_Olem is true the lambda coefficients depends on dsdr which must be
+! incorporated below.
 !
 !
       use cdata, only: Omega

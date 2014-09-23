@@ -316,10 +316,10 @@ module Gravity
 !
       endselect
 !
-!  Pre-calculate the angular frequency of the rotating frame in the case a 
+!  Pre-calculate the angular frequency of the rotating frame in the case a
 !  secondary stationary body is added to the simulation.
 !
-      if (lsecondary_body) then 
+      if (lsecondary_body) then
         Omega_secondary = sqrt((g0+g1)/rp1**3)
       endif
 !
@@ -481,11 +481,11 @@ module Gravity
 !
       g2 = g1/rp1**2
 !
-      if (lcylindrical_coords) then 
+      if (lcylindrical_coords) then
 !
 !  Indirect terms
 !
-        if (lindirect_terms) then 
+        if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
           df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
         endif
@@ -500,11 +500,11 @@ module Gravity
 !
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
 !
-      else if (lspherical_coords) then 
+      else if (lspherical_coords) then
 !
 !  Indirect terms
 !
-        if (lindirect_terms) then 
+        if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cos(z(n))
           df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
@@ -921,10 +921,10 @@ module Gravity
       real, dimension(nx,3) :: ggp
       real, dimension(nx) :: rr2_pm,gp
 !
-      if (lcylindrical_coords) then 
-        if (lcylindrical_gravity) then 
+      if (lcylindrical_coords) then
+        if (lcylindrical_gravity) then
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + rp1_pot**2
-        else  
+        else
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
         endif
         gp = -g1*rr2_pm**(-1.5)
@@ -932,15 +932,15 @@ module Gravity
         ggp(:,2) =  gp *           rp1*sin(y(m))
         ggp(:,3) =  gp *  z(  n  )
         if (lcylindrical_gravity) ggp(:,3)=0.
-      else if (lspherical_coords) then 
+      else if (lspherical_coords) then
         rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cos(z(n)) + rp1_pot**2
         gp = -g1*rr2_pm**(-1.5)
-        ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n))) 
-        ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n)) 
+        ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n)))
+        ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n))
         ggp(:,3) =  gp *             rp1*         sin(z(n))
       else
         call fatal_error("secondary_body_gravity","not coded for Cartesian")
-      endif  
+      endif
       gg_mn = gg_mn + ggp
 !
     endsubroutine secondary_body_gravity

@@ -347,7 +347,7 @@ module Magnetic
 !  dummy
 !
       real, intent(in) :: umax
-!     
+!
       call keep_compiler_quiet(umax)
 !
     endsubroutine dynamical_resistivity

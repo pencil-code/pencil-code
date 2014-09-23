@@ -30,11 +30,11 @@ module LsodeForChemistry
     endsubroutine pde_chemistry
 !***********************************************************************
    subroutine lsode_fc (t1,t2,f,df)
-! 
-!  29-nov-10/Julien: coded, interface for the LSODE routine   
-!   
+!
+!  29-nov-10/Julien: coded, interface for the LSODE routine
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df  
+      real, dimension (mx,my,mz,mvar) :: df
       real :: t1, t2
 !
       call keep_compiler_quiet(f,df)

@@ -57,7 +57,7 @@ module Heatflux
   integer :: ierr
   real :: tau_inv_spitzer=0.,Kspitzer_para=0.
   real :: saturation_fluxuration=0.,nu_ee,ln_unit_TT
-  real :: Ksaturation_SI = 7e7,Ksaturation=0.   
+  real :: Ksaturation_SI = 7e7,Ksaturation=0.
   real :: e_m
 !
   real, target, dimension (nx,ny) :: divq_xy,divq_xy2,divq_xy3,divq_xy4
@@ -476,7 +476,7 @@ contains
     real, dimension(nx,3,3) ::  qij
     real, dimension(nx,3) :: qgradu,ugradq,qmu,qdivu
     real, dimension(nx,3) :: qxB,tmp_hf
-!    
+!
     call gij(f,iqx,qij,1)
     call u_dot_grad(f,iqx,qij,p%uu,ugradq)
 !

@@ -150,7 +150,7 @@ module Solid_Cells
         sphere_temp(1)=impossible
       else
 !
-! Find number of lines of longitude and latitude such that 
+! Find number of lines of longitude and latitude such that
 ! nforcepoints=nlong*(nlat+1) and nlat=nlong/2-1
 !
         nlong=int(sqrt(2.*nforcepoints))
@@ -180,7 +180,7 @@ module Solid_Cells
 !!$        yobj=objects(iobj)%x(2)
 !!$        zobj=objects(iobj)%x(3)
 !!$        robj=objects(iobj)%r
-!!$!        
+!!$!
 !!$        do iprocx=0,nprocx
 !!$          xbound=procx_bounds(iprocx)
 !!$          if ((xbound > xobj-robj) .and. (xbound < xobj-robj+gridlim*dx)) then
@@ -1472,7 +1472,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find velocity in given point by one of two different methods:
 !   1) Linear interploation (use the eight corner points of the cube), same
 !      method as used in the particle module
-!   2) Quadratic interpolation of the radial velocity and linear 
+!   2) Quadratic interpolation of the radial velocity and linear
 !      interpolation of the tangential velocities (itest_method>0)
 !
       itest_method=0
@@ -1496,17 +1496,17 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         rs=objects(iobj)%r
         r_sp=rp-rs
         call r_theta_phi_velocity_in_point(f,xxp,inear,iobj, &
-            o_global,rs,r_sp,vp_r,vp_theta,vp_phi)        
+            o_global,rs,r_sp,vp_r,vp_theta,vp_phi)
         call find_unit_vectors(xxp_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
         f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
         if (lclose_interpolation) then
           call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
               f_tmp,.false.)
         endif
-!        
+!
 !  What is the boundary conditions at the surface
 !  For itest_method=1 antisymmetric boundaries are used for velocity
-!  For itest_method=2 antisymmetric boundaries are used for tangential 
+!  For itest_method=2 antisymmetric boundaries are used for tangential
 !  velocity components while symmetric boundaries are used for radial velocity
 !
         if (itest_method==1) then
@@ -1575,11 +1575,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  For fluid points very close to the solid surface the value of the point
 !  is found from interpolation between the value at "g"
 !  and the value at the solid surface "s".
-!  The point "g" may be defined in two different ways: 
+!  The point "g" may be defined in two different ways:
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the ponint which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "close_interpolation_method=3" where
-!  "limit_close_linear" give the number of grid sizes which "g" is 
+!  "limit_close_linear" give the number of grid sizes which "g" is
 !  away from "s".
 !
 !  If fluid_point=.false. we are handling a point which is NOT a grid point,
@@ -1594,7 +1594,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  grid line in the direction away from the solid geometry to set a value
 !  at a grid point which is very close to the solid geometry.
 !
-!  The point we intend to find the value of, the interpolation point 
+!  The point we intend to find the value of, the interpolation point
 !  (lfluid_point=false) or grid point (lfluid_point=true), is called "p".
 !  Define a straight line "l" which pass through the point "p" and is normal
 !  to the surface of the object.
@@ -1680,7 +1680,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  We want special treatment if:
 !    1)  at least one of the corner points are inside the solid geometry
-!    2)  the distance from the surface is less than 
+!    2)  the distance from the surface is less than
 !        limit_close_linear*dxmin
 !    3)  this is a fluid point.
 !
@@ -1695,9 +1695,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  for the cases where one of the corner points of "gridplane" is inside
 !  the solid geometry.
 !  Due to the relatively small gradients of density close
-!  to the boundary, and, even more importantly, the small effect of 
+!  to the boundary, and, even more importantly, the small effect of
 !  density on particle transport, the close interpolation
-!  does not treat density.  
+!  does not treat density.
 !
           if (close_interpolation_method .ge. 2) then
             call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp,&
@@ -1743,7 +1743,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       rg=rs+(limit_close_linear)*dxmin
       g_local=p_local*rg/rp
-      g_global=g_local+o_global      
+      g_global=g_local+o_global
       call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
           lower_k,upper_k,x,y,z,g_global)
       inear=(/lower_i,lower_j,lower_k/)
@@ -1778,12 +1778,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       intent(out) :: f_tmp
       intent(in) ::  iobj
 !
-!  The point "g" may be defined in two different ways: 
+!  The point "g" may be defined in two different ways:
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the point which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "close_interpolation_method=3" where
-!  "limit_close_linear" give the number of grid sizes which "g" is 
-!  away from "s". 
+!  "limit_close_linear" give the number of grid sizes which "g" is
+!  away from "s".
 !
       if (close_interpolation_method == 3) then
         call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
@@ -1820,7 +1820,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  points of "gridplane". For lclose_interpolation_method==4 the r, phi and
 !  theta velocities must be found already for the points used for interpolation
 !  such that the interpolation used to find "g" is also done correctly. (This
-!  essentially means that the radial veolcity is found using the quadratic 
+!  essentially means that the radial veolcity is found using the quadratic
 !  interplation.)
 !
       if (lproper_inter) then
@@ -1834,7 +1834,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
          if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
               call fatal_error('close_inter_new','')
 !
-!  If lclose_quad_rad_inter = true we must find the velocities in the r, 
+!  If lclose_quad_rad_inter = true we must find the velocities in the r,
 !  theta and phi directions at the point "g".
 !
          if (lclose_quad_rad_inter) then
@@ -2508,7 +2508,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Store data in the ba array.
 !  If ba(ip,jp,kp,1)= 0 we are in a fluid cell (i.e. NOT inside a solid geometry)
 !  If ba(ip,jp,kp,1)=10 we are in a fluid cell which are so close to the
-!                       surface of the solid geometry that we must set the 
+!                       surface of the solid geometry that we must set the
 !                       value of this point by some special method
 !  If ba(ip,jp,kp,1)= 9 we are inside a solid geometry, but far from the boundary
 !  If ba(ip,jp,kp,1)=-1 we are inside a solid geometry, and the point at ip+1
@@ -3356,7 +3356,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: vc_r, vc_phi, vc_theta
 
 !
-!  For all the 8 corner points the velocity in the r, phi and theta 
+!  For all the 8 corner points the velocity in the r, phi and theta
 !  directions must be found. These are then used to found a scaling
 !  coefficient "A" for all three directions.
 !
@@ -3388,16 +3388,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       enddo
       enddo
 !
-!  Having found the scaling component for all 8 corner points and for all three 
-!  velocity components (stored in "A_corners") 
+!  Having found the scaling component for all 8 corner points and for all three
+!  velocity components (stored in "A_corners")
 !  we can now find the interpolated velocity of the
 !  three scaling components in point "g".
 !
       call linear_interpolate_quadratic(A_g,A_corners,x_corners,g_global)
 !
-!  Since we now know "A_g", the value of the three scaling components in 
+!  Since we now know "A_g", the value of the three scaling components in
 !  the point "g" we can use "A_g" to find the three velocity components of
-!  interest in "g". 
+!  interest in "g".
 !
       v_r    =A_g(1)*r_sg**2
       v_phi  =A_g(2)*r_sg

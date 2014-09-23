@@ -262,7 +262,7 @@ module Particles_selfgravity
         if (lselfgravity_particles) then
           do k=1,npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then 
+            if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then
               if (lparticlemesh_cic) then
                 if (lparticles_blocks) then
                   call interpolate_linear(f,igpotselfx,igpotselfz, &

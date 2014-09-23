@@ -714,11 +714,11 @@ module Particles_map
 !
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
 !
-!  Small fix for nbody particles. Some are allowed to be out of box; plus, 
-!  because they are kept by the root processor, they are not bound by the grid. 
+!  Small fix for nbody particles. Some are allowed to be out of box; plus,
+!  because they are kept by the root processor, they are not bound by the grid.
 !  If they are not within the bounds of the processor, the closest grid point
-!  if the first physical point. Perhaps the n-body module should be moved to a 
-!  dedicated code (e.g. independent of fp). 
+!  if the first physical point. Perhaps the n-body module should be moved to a
+!  dedicated code (e.g. independent of fp).
 !
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (lnbody) then
@@ -1045,10 +1045,10 @@ module Particles_map
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then 
+          if (.not.lnbody) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
-          endif  
+          endif
         enddo
       endif
 !

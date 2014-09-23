@@ -1036,7 +1036,7 @@ module Deriv
 !  computes 5th order derivative of function given by f at position j
 !
 !   3-oct-12/MR: coded
-! 
+!
       real, dimension(:),  intent(in) :: f, dc1
       integer           ,  intent(in) :: j
 !
@@ -1070,7 +1070,7 @@ module Deriv
       intent(in) :: f,k,i,j
       intent(out) :: df
 !
-! 
+!
 ! crash if this is called with i=j
 !
 !      if (i.eq.j) call fatal_error('derij_main','i=j, no derivative calculated')

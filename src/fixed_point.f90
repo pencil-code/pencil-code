@@ -24,7 +24,7 @@ module Fixed_point
   real, pointer, dimension (:) :: xt, yt, zt
 ! fixed points array for this core
   real, dimension (1000,3) :: fixed_points
-! fixed points array for all fixed points  
+! fixed points array for all fixed points
 !   real, pointer, dimension (:,:) :: fixed_points_all
   real, dimension (1000,3) :: fixed_points_all
 ! temporary array, which stores the transposed fixed_points array
@@ -93,7 +93,7 @@ module Fixed_point
           ifirst=1
         endif
       enddo
-    endif         
+    endif
 !
 !   find out which fixed points are destinated for this core
 !
@@ -106,7 +106,7 @@ module Fixed_point
       if ((x_proc == ipx) .and. (y_proc == ipy)) then
         fidx = fidx + 1
         fixed_points(fidx,:) = fixed_points_all(j,:)
-      endif      
+      endif
     enddo
 !     deallocate(fixed_points_all)
 !
@@ -415,9 +415,9 @@ module Fixed_point
     do j=1,(nx*trace_sub+addx-1)
       do l=1,(ny*trace_sub+addy-1)
         diff(1,:) = (/(tracers2(j+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+(l-1)*(nx*trace_sub+addx),1)) , &
-            (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)            
+            (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)
         if (diff(1,1)**2+diff(1,2)**2 /= 0) &
-            diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)            
+            diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)
         diff(2,:) = (/(tracers2(j+1+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),2))/)
         if (diff(2,1)**2+diff(2,2)**2 /= 0) &
@@ -474,7 +474,7 @@ module Fixed_point
           end do
           deallocate(tracers3)
 !
-!       iterate to find the fixed point from this starting point:        
+!       iterate to find the fixed point from this starting point:
 !
           call get_fixed_point(f,(/minx, miny/), &
               fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
@@ -702,7 +702,7 @@ module Fixed_point
           call fatal_error("streamlines", "MPI_SEND could not send")
       if (fidx > 0) then
         buffer_tmp = transpose(fixed_points)
-        call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
+        call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)
         if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_SEND could not send")
       endif
@@ -710,10 +710,10 @@ module Fixed_point
 !
 !   redistribute the fixed points to the appropriate cores
 !
-    if (iproc == 0) then 
+    if (iproc == 0) then
       call MPI_Bcast(fidx_all, 1, MPI_integer, 0, MPI_comm_world, ierr)
       buffer_tmp = transpose(fixed_points_all)
-      call MPI_Bcast(buffer_tmp, fidx_all*3, MPI_real, 0, MPI_comm_world, ierr)   
+      call MPI_Bcast(buffer_tmp, fidx_all*3, MPI_real, 0, MPI_comm_world, ierr)
     else
       call MPI_Bcast(fidx_all, 1, MPI_integer, 0, MPI_comm_world, ierr)
       call MPI_Bcast(buffer_tmp, fidx_all*3, MPI_real, 0, MPI_comm_world, ierr)
@@ -729,7 +729,7 @@ module Fixed_point
       if ((x_proc == ipx) .and. (y_proc == ipy)) then
         fidx = fidx + 1
         fixed_points(fidx,:) = fixed_points_all(j,:)
-      endif      
+      endif
     enddo
 !
 !   this is kept for the moment, but will be removed soon

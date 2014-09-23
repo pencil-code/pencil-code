@@ -250,14 +250,14 @@ program start
 !
   if (lav_smallx) call init_xaver
 !
-!  Size of box at local processor. The if-statement is for 
+!  Size of box at local processor. The if-statement is for
 !  backward compatibility.
 !
-  if (all(lequidist)) then 
+  if (all(lequidist)) then
     Lxyz_loc(1)=Lxyz(1)/nprocx
     Lxyz_loc(2)=Lxyz(2)/nprocy
     Lxyz_loc(3)=Lxyz(3)/nprocz
-    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
     xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
     xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
     xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
@@ -385,8 +385,8 @@ program start
 !  The dust-vortex auto-test requires that uu is initialised before
 !  lnrho
 ! DM: it seems to me that the sequence of calls below is important.
-! so this is just a caution : Please do not modify the sequence of 
-! calls to 'init' routines below. 
+! so this is just a caution : Please do not modify the sequence of
+! calls to 'init' routines below.
 !
     if (lanelastic) then
       call init_lnrho     (f)
@@ -458,7 +458,7 @@ program start
   call calc_selfpotential(f)
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term. The 
+!  definite heating rate we need to precalculate the viscosity term. The
 !  restivitity term for sixth order hyperresistivity with positive definite
 !  heating rate must also be precalculated.
 !
@@ -546,8 +546,8 @@ program start
   call xyaverages_clean_up()
   call xzaverages_clean_up()
   call yzaverages_clean_up()
-  if (lwrite_yaverages)    call yaverages_clean_up() 
-  if (lwrite_zaverages)    call zaverages_clean_up() 
+  if (lwrite_yaverages)    call yaverages_clean_up()
+  if (lwrite_zaverages)    call zaverages_clean_up()
   if (lwrite_phiaverages)  call phiaverages_clean_up()
   if (lwrite_phizaverages) call phizaverages_clean_up()
   if (lwrite_phiaverages)  call phiaverages_clean_up()

@@ -1398,7 +1398,7 @@ module Dustdensity
                       *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                     endif
 !print*,ff_tmp(k),k
-                    
+
                   endif
                 endif
               enddo
@@ -1427,47 +1427,47 @@ module Dustdensity
 !
                   ddt=1e-7
                   do i=1,int(dt/ddt)
-                  
+
                     do k=1,ndustspec
                       nd_substep_0(:,k)=nd_substep(:,k)
                     enddo
-!                  
+!
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
-!                     
+!
                     do k=1,ndustspec
                       K1(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo  
-!                    
+                    enddo
+!
                     do k=1,ndustspec
                       nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
-                    enddo  
+                    enddo
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                     do k=1,ndustspec
                       K2(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo  
+                    enddo
 !
                     do k=1,ndustspec
                       nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
-                    enddo  
+                    enddo
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                     do k=1,ndustspec
                       K3(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo  
+                    enddo
 !
                     do k=1,ndustspec
                       nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
-                    enddo 
+                    enddo
                     call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
                     do k=1,ndustspec
                       K4(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo  
-!                    
+                    enddo
+!
                     do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k)) 
+                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
                     enddo
 !
                   enddo
-!                  
+!
                   do k=1,ndustspec
                     p%dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
                   enddo
@@ -1478,8 +1478,8 @@ module Dustdensity
                     p%dndr(:,k)=-Imr*dndr_tmp(:,k)
                   enddo
                 endif
-                  
-                  
+
+
 
 !
               endif
@@ -2627,7 +2627,7 @@ module Dustdensity
 !  10-may-10/Natalia: coded
 !
 !      use General, only: spline, spline_derivative_double
- 
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
@@ -2676,7 +2676,7 @@ module Dustdensity
                   ff_tmp(jj,k)=nd_substep(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
                 else
                   ff_tmp(jj,k)=p%nd(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
-                endif      
+                endif
 !                endif
            enddo
          enddo
@@ -2691,7 +2691,7 @@ module Dustdensity
 !
 ! boundary onditions:
 
-           if (ndustspec >3) then 
+           if (ndustspec >3) then
               kk1=ndustspec-2
               kk2=ndustspec
              dndr_dr(:,kk1:kk2)=0.
@@ -2733,7 +2733,7 @@ module Dustdensity
         rr1=dsize_loc(k-1)
         rr2=dsize_loc(k)
         rr3=dsize_loc(k+1)
- 
+
         dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                       +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
                       +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))

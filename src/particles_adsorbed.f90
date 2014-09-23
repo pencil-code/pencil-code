@@ -77,15 +77,15 @@ module Particles_adsorbed
 !  the adsorbed species surface and gas phase surface concentrations
 !
       call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
-!      
+!
       if (nadsspec/=(N_adsorbed_species-1) .and. &
            N_adsorbed_species>0) then
          print*,'N_adsorbed_species: ',N_adsorbed_species
-         call fatal_error('register_particles_ads', & 
+         call fatal_error('register_particles_ads', &
               'wrong size of storage for adsorbed species allocated.')
          else
       endif
-!      
+!
       call get_species_list('solid_species',solid_species)
       call get_species_list('adsorbed_species_names',adsorbed_species_names)
 !
@@ -102,7 +102,7 @@ module Particles_adsorbed
             j = j+1
             else
             i = i+1
-            end if 
+            end if
          enddo
 !
 !  Increase of npvar according to N_adsorbed_species
@@ -192,7 +192,7 @@ module Particles_adsorbed
         case ('constant')
           if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
           do i=1,mpar_loc
-             fp(i,iads:iads_end)=fp(i,iads:iads_end)+ & 
+             fp(i,iads:iads_end)=fp(i,iads:iads_end)+ &
                   init_surf_ads_frac(1:(iads_end-iads+1))
           enddo
         case default
@@ -224,10 +224,10 @@ module Particles_adsorbed
       enddo
 !
     endsubroutine init_particles_ads
-!***********************************************************************    
+!***********************************************************************
 subroutine pencil_criteria_par_ads()
 !
-!  All pencils that the Particles_adsorbed 
+!  All pencils that the Particles_adsorbed
 !  module depends on are specified here.
 !
 !  01-sep-14/jonas: coded
@@ -268,7 +268,7 @@ subroutine pencil_criteria_par_ads()
       integer :: i, n_ads
 !
       intent (inout) :: dfp
-      intent (in) :: fp 
+      intent (in) :: fp
 !
 !
       call get_R_j_hat(R_j_hat)
@@ -278,7 +278,7 @@ subroutine pencil_criteria_par_ads()
       n_ads = iads_end - iads +1
 !
       do i=1,mpar_loc
-         dfp(i,iads:iads_end)=R_j_hat(i,1:n_ads)/ & 
+         dfp(i,iads:iads_end)=R_j_hat(i,1:n_ads)/ &
               total_carbon_sites + mod_surf_area(i)* &
               R_c_hat(i)*fp(i,iads:iads_end)
       enddo
@@ -333,7 +333,7 @@ subroutine pencil_criteria_par_ads()
 !***********************************************************************
     subroutine rprint_particles_ads(lreset,lwrite)
 !
-!  Read and register print parameters relevant for 
+!  Read and register print parameters relevant for
 ! vparticles coverage fraction.
 !
 !  29-aug-14/jonas: coded
@@ -352,7 +352,7 @@ subroutine pencil_criteria_par_ads()
       call keep_compiler_quiet(lreset)
 !
     end subroutine rprint_particles_ads
-!***********************************************************************    
+!***********************************************************************
     subroutine particles_ads_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded

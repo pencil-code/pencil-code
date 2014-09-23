@@ -122,7 +122,7 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
-      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, & 
+      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -845,10 +845,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, & 
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            if (lroot) print*, &
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
             call fatal_error('init_particles','')
-          endif     
+          endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
               sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
@@ -867,10 +867,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, & 
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            if (lroot) print*, &
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
             call fatal_error('init_particles','')
-          endif     
+          endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
               cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
@@ -1658,7 +1658,7 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
-              if (lcylindrical_gravity_par) then 
+              if (lcylindrical_gravity_par) then
                 rr=sqrt(fp(k,ixp)**2+gravsmooth2)
               else
                 rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
@@ -1799,7 +1799,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lparticles_density) then
             call integrate_par_name((/fp(1:npar_loc,irhopswarm)/),idiag_mpt)
           elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name((/four_pi_rhopmat_over_three* & 
+            call integrate_par_name((/four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)/),idiag_mpt)
           endif
         endif
@@ -2338,7 +2338,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  1/tau=omega when omega is not constant (as, for instance,
 !  global Keplerian disks, for which omega=rad**(-3/2)
 !
-          elseif (ldraglaw_variable) then 
+          elseif (ldraglaw_variable) then
             if (lcartesian_coords) then
               OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
             elseif (lcylindrical_coords) then
@@ -2630,7 +2630,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine rprint_particles
 !***********************************************************************
     real function get_gas_density(fb, ix, iy, iz, ib) result(rho)
-!   
+!
 !  Reads the gas density at one location in a block.
 !
 !  01-mar-13/ccyang: coded.
@@ -2643,7 +2643,7 @@ k_loop:   do while (.not. (k>npar_loc))
       else linear
         rho = exp(fb(ix, iy, iz, ilnrho, ib))
       endif linear
-!   
+!
     endfunction get_gas_density
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)

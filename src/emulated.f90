@@ -1,20 +1,20 @@
 !
 !  Module emulating not universally available intrinsics
 !
-module Emulated 
+module Emulated
 !
   implicit none
 !
   integer (KIND=4) :: inan
-!  integer (KIND=8) :: inan 
+!  integer (KIND=8) :: inan
   real (KIND=4), parameter :: rtype=0.
 !  real (KIND=8), parameter :: rtype=0.d0
 !
   data inan /Z'7FBFFFFF'/     !(KIND=4)
 !  data inan /Z'7FF7FFFFFFFFFFFF'/      !(KIND=8)
-! 
+!
   real :: rnan
-! 
+!
  contains
 !***********************************************************************
   subroutine initialize_nan()

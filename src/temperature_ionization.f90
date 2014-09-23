@@ -545,7 +545,7 @@ module Energy
           p%tcond=p%lambda
         else
           if (lheatc_chiconst) then
-            p%tcond=chi*p%rho/p%cp1       
+            p%tcond=chi*p%rho/p%cp1
           else
             call fatal_error('calc_pencils_energy',  &
                 'This heatcond is not implemented to work with lpencil(i_cond)!')

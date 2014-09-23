@@ -46,9 +46,9 @@ module Hypervisc_strict
            "$Id$")
 !
 !  Set indices for auxiliary variables
-! 
+!
       call farray_register_auxiliary('hypvis',ihypvis,vector=3)
-! 
+!
     endsubroutine register_hypervisc_strict
 !***********************************************************************
     subroutine hyperviscosity_strict(f)
@@ -163,7 +163,7 @@ module Hypervisc_strict
 !              call der_2nd_nof(f(:,:,:,iux+j-1),tmp(:,:,:,2),i) ! uji
 !
 ! find (nabla2 uij) and (nable2 uji)
-!          
+!
 !              call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,3))
 !              tmp(:,:,:,1)=tmp(:,:,:,3) ! nabla2 uij
 !              call del2_2nd_nof(tmp(:,:,:,2),tmp(:,:,:,3))
@@ -173,7 +173,7 @@ module Hypervisc_strict
 !
 !              sij2=sij2+tmp(l1:l2,m1:m2,n1:n2,1)*tmp(l1:l2,m1:m2,n1:n2,2) &
 !                   +0.5*tmp(l1:l2,m1:m2,n1:n2,1)**2 &
-!                   +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2 
+!                   +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2
 !            enddo
 !          enddo
 !
@@ -216,7 +216,7 @@ module Hypervisc_strict
 !
       if (j==2 .and. nygrid/=1) then
         fac=1./(2.*dy)
-        df(:,2:my-1,:) = df(:,2:my-1,:) &  
+        df(:,2:my-1,:) = df(:,2:my-1,:) &
                          + ( f(:,3:my,:,k)-f(:,1:my-2,:,k) )*fac
       endif
 !
@@ -225,7 +225,7 @@ module Hypervisc_strict
         df(:,:,2:mz-1) = df(:,:,2:mz-1) &
                          + ( f(:,:,3:mz,k)-f(:,:,1:mz-2,k) )*fac
       endif
-!      
+!
     endsubroutine der_2nd
 !***********************************************************************
     subroutine div_2nd(f,k,df)
@@ -250,7 +250,7 @@ module Hypervisc_strict
 !
       if (nygrid/=1) then
         fac=1./(2.*dy)
-        df(:,2:my-1,:) = df(:,2:my-1,:) &  
+        df(:,2:my-1,:) = df(:,2:my-1,:) &
                          + ( f(:,3:my,:,k+1)-f(:,1:my-2,:,k+1) )*fac
       endif
 !
@@ -259,7 +259,7 @@ module Hypervisc_strict
         df(:,:,2:mz-1) = df(:,:,2:mz-1) &
                          + ( f(:,:,3:mz,k+2)-f(:,:,1:mz-2,k+2) )*fac
       endif
-!      
+!
     endsubroutine div_2nd
 !***********************************************************************
     subroutine grad_2nd(f,k,df)
@@ -290,7 +290,7 @@ module Hypervisc_strict
         fac=1./(2.*dz)
         df(:,:,2:mz-1,3) = (f(:,:,3:mz,k)-f(:,:,1:mz-2,k))*fac
       endif
-!      
+!
     endsubroutine grad_2nd
 !***********************************************************************
     subroutine der_2nd_nof(var,tmp,j)
@@ -309,46 +309,46 @@ module Hypervisc_strict
       if (j==1 .and. nxgrid/=1) then
           tmp(     1,:,:) = (-3.*var(1,:,:) &
                              +4.*var(2,:,:) &
-                             -1.*var(3,:,:))/(2.*dx) 
+                             -1.*var(3,:,:))/(2.*dx)
           tmp(2:mx-1,:,:) = (-1.*var(1:mx-2,:,:) &
-                             +1.*var(3:mx  ,:,:))/(2.*dx) 
+                             +1.*var(3:mx  ,:,:))/(2.*dx)
           tmp(    mx,:,:) = (+1.*var(mx-2,:,:) &
                              -4.*var(mx-1,:,:) &
-                             +3.*var(mx  ,:,:))/(2.*dx) 
+                             +3.*var(mx  ,:,:))/(2.*dx)
       endif
 !
       if (j==2 .and. nygrid/=1) then
           tmp(:,     1,:) = (-3.*var(:,1,:) &
                              +4.*var(:,2,:) &
-                             -1.*var(:,3,:))/(2.*dy) 
+                             -1.*var(:,3,:))/(2.*dy)
           tmp(:,2:my-1,:) = (-1.*var(:,1:my-2,:) &
-                             +1.*var(:,3:my  ,:))/(2.*dy) 
+                             +1.*var(:,3:my  ,:))/(2.*dy)
           tmp(:,    my,:) = (+1.*var(:,my-2,:) &
                              -4.*var(:,my-1,:) &
-                             +3.*var(:,my  ,:))/(2.*dy) 
+                             +3.*var(:,my  ,:))/(2.*dy)
       endif
 !
       if (j==3 .and. nzgrid/=1) then
           tmp(:,:,     1) = (-3.*var(:,:,1) &
                              +4.*var(:,:,2) &
-                             -1.*var(:,:,3))/(2.*dz) 
+                             -1.*var(:,:,3))/(2.*dz)
           tmp(:,:,2:mz-1) = (-1.*var(:,:,1:mz-2) &
-                             +1.*var(:,:,3:mz  ))/(2.*dz) 
+                             +1.*var(:,:,3:mz  ))/(2.*dz)
           tmp(:,:,    mz) = (+1.*var(:,:,mz-2) &
                              -4.*var(:,:,mz-1) &
-                             +3.*var(:,:,mz  ))/(2.*dz) 
+                             +3.*var(:,:,mz  ))/(2.*dz)
       endif
 !
     endsubroutine der_2nd_nof
 !***********************************************************************
     subroutine del2v_2nd(f,del2f,k)
-!   
+!
 !  Calculate Laplacian of a vector, accurate to second order.
 !
 !  24-nov-03/nils: adapted from del2v
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: del2f 
+      real, dimension (mx,my,mz,3) :: del2f
       real, dimension (mx,my,mz) :: tmp
       integer :: i,k,k1
 !
@@ -431,19 +431,19 @@ module Hypervisc_strict
       if (j==1 .and. nxgrid/=1) then
         der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:,i) &
                              -2.*f(2:mx-1,:,:,i) &
-                             +1.*f(3:mx  ,:,:,i) ) / (dx**2) 
+                             +1.*f(3:mx  ,:,:,i) ) / (dx**2)
       endif
 !
      if (j==2 .and. nygrid/=1) then
         der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:,i) &
                              -2.*f(:,2:my-1,:,i) &
-                             +1.*f(:,3:my  ,:,i) ) / (dy**2) 
+                             +1.*f(:,3:my  ,:,i) ) / (dy**2)
       endif
 !
      if (j==3 .and. nzgrid/=1) then
         der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2,i) &
                              -2.*f(:,:,2:mz-1,i) &
-                             +1.*f(:,:,3:mz  ,i) ) / (dz**2) 
+                             +1.*f(:,:,3:mz  ,i) ) / (dz**2)
       endif
 !
     endsubroutine der2_2nd
@@ -467,19 +467,19 @@ module Hypervisc_strict
       if (j==1 .and. nxgrid/=1) then
         der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:) &
                              -2.*f(2:mx-1,:,:) &
-                             +1.*f(3:mx  ,:,:) ) / (dx**2) 
+                             +1.*f(3:mx  ,:,:) ) / (dx**2)
       endif
 !
      if (j==2 .and. nygrid/=1) then
         der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:) &
                              -2.*f(:,2:my-1,:) &
-                             +1.*f(:,3:my  ,:) ) / (dy**2) 
+                             +1.*f(:,3:my  ,:) ) / (dy**2)
       endif
 !
      if (j==3 .and. nzgrid/=1) then
         der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2) &
                              -2.*f(:,:,2:mz-1) &
-                             +1.*f(:,:,3:mz  ) ) / (dz**2) 
+                             +1.*f(:,:,3:mz  ) ) / (dz**2)
       endif
 !
     endsubroutine der2_2nd_nof

@@ -144,7 +144,7 @@ module FArrayManager
 !
 !  write varname into index.pro file (for idl)
 !
-      if (lroot) then 
+      if (lroot) then
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) 'i'//varname, '=', ivar
         close(3)
@@ -189,7 +189,7 @@ module FArrayManager
     subroutine farray_register_variable(varname,ivar,vartype,vector,ierr)
 !
 ! 12-may-12/MR: avoid writing of auxiliary variable index into index.pro if
-!               variable not written into var.dat 
+!               variable not written into var.dat
 !
       character (len=*) :: varname
       integer, target   :: ivar
@@ -337,11 +337,11 @@ module FArrayManager
 !
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
-! 
+!
       if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
-           vartype==iFARRAY_TYPE_AUXILIARY )) return 
+           vartype==iFARRAY_TYPE_AUXILIARY )) return
 
-      if (lroot) then 
+      if (lroot) then
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) 'i'//varname, '=', ivar
         close(3)

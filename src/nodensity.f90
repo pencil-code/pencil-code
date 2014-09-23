@@ -273,11 +273,11 @@ module Density
     endsubroutine anelastic_after_mn
 !***********************************************************************
     subroutine dynamical_diffusion(umax)
-!   
+!
 !  dummy routine
-!  
+!
       real, intent(in) :: umax
-!  
+!
       call keep_compiler_quiet(umax)
 !
     endsubroutine dynamical_diffusion
@@ -286,7 +286,7 @@ module Density
 !
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
-!  
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)

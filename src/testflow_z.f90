@@ -158,7 +158,7 @@ module Testflow
   integer :: idiag_zetaQ=0                          ! DIAG_DOC: $\zeta^Q$-scalar,      couples $\overline Q$ and ${\overline G}_z$
   integer :: idiag_xiQ=0                            ! DIAG_DOC: $\xi^Q$-scalar,        couples $\overline Q$ and $\partial^2 {\overline H}/\partial z^2$
 !
-  integer, dimension(3,3) :: idiag_galij=0          ! DIAG_DOC: 
+  integer, dimension(3,3) :: idiag_galij=0          ! DIAG_DOC:
   integer, dimension(3,2) :: idiag_aklamij=0        ! DIAG_DOC: $\alpha_{K,ij}$
   integer, dimension(3)   :: idiag_gammai=0         ! DIAG_DOC: $\gamma_i$
   integer, dimension(3,3) :: idiag_nuij=0           ! DIAG_DOC: $\nu_{ij}$
@@ -806,13 +806,13 @@ module Testflow
         if (jtest>0 .and. .not.lburgers_testflow) then
 !
           if (lkinem_testflow) then
-            !!call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers 
+            !!call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers
             call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h0)
           else
             call u_dot_grad(f,ilnrho, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)      ! Utest.grad(h)
             if (ltestflow_upw_lnrho) &
               U0ghtest = U0ghtest - abs(U0test(:,3))* &     ! in slot ilnrho there is hh, not hhfluct
-                         der5_single(glnrhomz,n-n1+1,dz_1(n1:n2))/(60.*dz_1(n-n1+1)**5) 
+                         der5_single(glnrhomz,n-n1+1,dz_1(n1:n2))/(60.*dz_1(n-n1+1)**5)
           endif
 !
           if ( .not.lburgers_testflow) &
@@ -878,7 +878,7 @@ module Testflow
 !
             if ( .not.lburgers_testflow ) then
 !
-              do i=1,3                                                       ! 
+              do i=1,3                                                       !
                 U0testgu(:,i) = uijfluct(:,i,3)*gH0test                      ! S(u).grad(H^T)
               enddo
 !
@@ -1492,7 +1492,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
               call surf_mn_name(    cz(indz)*Fipq(k,1)+  sz(indz)*Fipq(k,2), idiag_aklamij(k,1) )
             if ( idiag_aklamij(k,2)/=0 ) &
               call surf_mn_name(    cz(indz)*Fipq(k,3)+  sz(indz)*Fipq(k,4), idiag_aklamij(k,2) )
-! 
+!
             if ( idiag_nuij(k,1)/=0 ) &
               call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1) )
             if ( idiag_nuij(k,2)/=0 ) &
@@ -1527,7 +1527,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  calculate gammaQ-scalar
 !
             if ( idiag_gammaQ/=0 ) &
-              call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_gammaQ )           ! \gamma^Q  
+              call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_gammaQ )           ! \gamma^Q
 !
             if ( njtestflow>6 ) then
 
@@ -1542,7 +1542,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 call surf_mn_name( -Qipq(7)*  cz(indz)-Qipq(8)*  sz(indz), idiag_zetaQ )    ! \zetaQ
               if ( idiag_xiQ/=0 ) &
                 call surf_mn_name(  Qipq(7)*k1sz(indz)-Qipq(8)*k1cz(indz), idiag_xiQ )      ! \xiQ
- 
+
             endif
 
           endif
@@ -2438,7 +2438,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
             ind=ind+1
           enddo
         enddo
-        
+
         call insert( cname,entries,indx,nname)  ! by inquiries for all elements
         deallocate(entries)
 

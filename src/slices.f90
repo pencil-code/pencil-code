@@ -266,7 +266,7 @@ module Slices
         open(1,file=filename,form='unformatted',position='append',IOSTAT=iostat)
 !
 !  files data/procN/slice*.* are distributed and will be synchronized on I/O error
-!  
+!
         if (outlog(iostat,'open',filename,dist=1)) return
 !
         write(1,IOSTAT=iostat) a,tslice,pos
@@ -351,12 +351,12 @@ module Slices
         lwrite_slice_xy=lfirst_proc_z
         lwrite_slice_xz=.true.
 !
-! Another slice position for spherical coordinates, for global disks with 
+! Another slice position for spherical coordinates, for global disks with
 ! buffer zones. It will read the midplane (xz2), and three other surfaces:
-! the theta-phi wall at constant radius (yz); the meridional plane at constant 
-! azimuth (xy); and the upper "lid", a radius-azimuth surface at constant 
+! the theta-phi wall at constant radius (yz); the meridional plane at constant
+! azimuth (xy); and the upper "lid", a radius-azimuth surface at constant
 ! theta, in the upper disk (xz). Both xy and yz are taken 10 grid cells away from
-! the beginning of the grid. This is to avoid the boundary.  
+! the beginning of the grid. This is to avoid the boundary.
 !
       elseif (slice_position=='d') then
         ix_loc=l1+10; iy_loc=m1+10; iz_loc=n1
@@ -509,10 +509,10 @@ module Slices
       endif
 !
      open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
-!       
+!
 !  file 'data/procN/slice_position.dat' is distributed, but will not be synchronized
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary
-!       
+!
      if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) goto 99
 !
      write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy,iz_loc
@@ -542,8 +542,8 @@ module Slices
 !  make sure ix_loc,iy_loc,iy2_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries
 !
-99     ix_loc=min( ix_loc,l2) 
-       ix_loc=max( ix_loc,l1) 
+99     ix_loc=min( ix_loc,l2)
+       ix_loc=max( ix_loc,l1)
        iy_loc=min( iy_loc,m2) ; iy2_loc=min( iy2_loc,m2)
        iy_loc=max( iy_loc,m1) ; iy2_loc=max( iy2_loc,m1)
        iz_loc=min( iz_loc,n2) ; iz2_loc=min(iz2_loc,n2)

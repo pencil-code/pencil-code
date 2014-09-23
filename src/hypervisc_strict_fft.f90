@@ -46,9 +46,9 @@ module Hypervisc_strict
            "$Id$")
 !
 !  Set indices for auxiliary variables.
-! 
+!
       call farray_register_auxiliary('hypvis',ihypvis,vector=3)
-! 
+!
     endsubroutine register_hypervisc_strict
 !***********************************************************************
     subroutine hyperviscosity_strict(f)
@@ -112,7 +112,7 @@ module Hypervisc_strict
         else
           kx=kx_fft(ikx)
           ky=ky_fft(iky+ipy*ny)
-          kz=kz_fft(ikz+ipz*nz)        
+          kz=kz_fft(ikz+ipz*nz)
         endif
 !
         if (lshear) then

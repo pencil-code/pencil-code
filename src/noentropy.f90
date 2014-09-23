@@ -96,7 +96,7 @@ module Energy
 !
       if (llocal_iso) then
         if (lroot) call warning('initialize_energy',&
-             'llocal_iso=T. Make sure you have the appropriate ' // & 
+             'llocal_iso=T. Make sure you have the appropriate ' // &
              'INITIAL_CONDITION in Makefile.local.')
         call select_eos_variable('cs2',-2) !special local isothermal
       else

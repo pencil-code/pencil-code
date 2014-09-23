@@ -633,9 +633,9 @@ include 'NSCBC.h'
             L_k=0.
           endif
 !
-!  Julien: If an input velocity file is employed with NSCBC boundary conditions, 
-!          the LODI relations are modified to fix the fluctuating inlet 
-!          velocity as prescribed in the data file with a fast relaxation 
+!  Julien: If an input velocity file is employed with NSCBC boundary conditions,
+!          the LODI relations are modified to fix the fluctuating inlet
+!          velocity as prescribed in the data file with a fast relaxation
 !          time scale.
 !
           if (inlet_from_file) then
@@ -1133,7 +1133,7 @@ include 'NSCBC.h'
             do jjj=imin,imax
               do kkk=jmin,jmax
                 if (dir==1) then
-                   if (nzgrid>1) then 
+                   if (nzgrid>1) then
                       rad=sqrt((y(jjj)-jet_center(1))**2+&
                            (z(kkk)-jet_center(1))**2)
                    else
@@ -1164,7 +1164,7 @@ include 'NSCBC.h'
               enddo
             enddo
             print*,'1:u_in(*,1,1)=',u_in(:,1,1)
-! 
+!
          case ('single_jet_no_coflow2')
             if (lroot .and. it==1 .and. lfirst) &
                  print*,'inlet_profile: single_jet_no_coflow2'
@@ -1462,7 +1462,7 @@ include 'NSCBC.h'
             mu1=1.0
             grad_mu1=0.
           endif
-        else          
+        else
           gamma_=1.
         endif
 !
@@ -1616,7 +1616,7 @@ include 'NSCBC.h'
             dui_dxj(:,:,3,2)=tmp3(m1:m2,n1:n2)
             grad_rho(:,:,2)=tmp_lnrho(m1:m2,n1:n2)
             if (ilnTT>0) grad_T(:,:,2)=tmp_lnT(m1:m2,n1:n2)
-          else 
+          else
             dui_dxj(:,:,1,2)=0
             dui_dxj(:,:,2,2)=0
             dui_dxj(:,:,3,2)=0
@@ -1676,7 +1676,7 @@ include 'NSCBC.h'
             dui_dxj(:,:,2,3)=tmp2(l1:l2,n1:n2)
             dui_dxj(:,:,3,3)=tmp3(l1:l2,n1:n2)
             grad_rho(:,:,3)=tmp_lnrho(l1:l2,n1:n2)
-            if (ilnTT>0) grad_T(:,:,3)=tmp_lnT(l1:l2,n1:n2) 
+            if (ilnTT>0) grad_T(:,:,3)=tmp_lnT(l1:l2,n1:n2)
           else
             dui_dxj(:,:,1,3)=0
             dui_dxj(:,:,2,3)=0

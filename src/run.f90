@@ -295,7 +295,7 @@ program run
   endif
 !
 !  Get state length of random number generator and put the default value.
-!  With lreset_seed (which is not the default) we can reset the seed during 
+!  With lreset_seed (which is not the default) we can reset the seed during
 !  the run. This is necessary when lreinitialize_uu=T, inituu='gaussian-noise'.
 !
   if (lreset_seed) then

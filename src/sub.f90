@@ -482,7 +482,7 @@ module Sub
 !  24-jun-08/MR: ladd added for incremental work
 !
       use General, only: loptest
-!    
+!
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
 !
@@ -1797,7 +1797,7 @@ module Sub
       real, dimension(nx) :: tmp
       integer :: k
       integer :: i,j,kincrement
-!      
+!
 !
       if (.not. lcartesian_coords) &
         call fatal_error('sub','del2fi_dxjk implemented only in cartesian')
@@ -2216,7 +2216,7 @@ module Sub
 !  Calculate optionally b_i,j = eps_ikl A_l,kj,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji .
 !
-      if (present(bij)) then 
+      if (present(bij)) then
 !
         bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
         bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
@@ -5897,7 +5897,7 @@ nameloop: do
       integer :: j, inde
       logical :: lexpl
 !
-      inde = ioptest(indep,inda) 
+      inde = ioptest(indep,inda)
 !
       allocate(mean_tmp(inda:inde))
 !
@@ -5907,7 +5907,7 @@ nameloop: do
 !
 !  Compute mean for each field.
 !
-      lexpl = loptest(lexp) 
+      lexpl = loptest(lexp)
       do j=inda,inde
         if (lexpl) then
           mean(j) = mean(j) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
@@ -6125,8 +6125,8 @@ nameloop: do
 !  in direction idir, nproc - number of processors in this direction,
 !  direction can be a beam or a layer
 !
-!  12-sep-2013/MR: coded 
-!     
+!  12-sep-2013/MR: coded
+!
       use Mpicomm, only: mpiallreduce_sum
 !
       integer,                intent(IN)   :: nproc,idir
@@ -6154,7 +6154,7 @@ nameloop: do
 !  in direction idir, nproc - number of processors in this direction,
 !  direction can be a beam or a layer
 !
-!  12-sep-2013/MR: coded 
+!  12-sep-2013/MR: coded
 !
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -6183,8 +6183,8 @@ nameloop: do
 !  in direction idir, nproc - number of processors in this direction,
 !  direction can be a beam or a layer
 !
-!  12-sep-2013/MR: coded 
-!     
+!  12-sep-2013/MR: coded
+!
       use Mpicomm, only: mpiallreduce_sum
 !
       integer,              intent(IN)   :: nproc,idir
@@ -6212,9 +6212,9 @@ nameloop: do
 !  in direction idir, nproc - number of processors in this direction,
 !  direction can be a beam or a layer
 !
-!  12-sep-2013/MR: coded 
-!     
-      use Mpicomm, only: mpiallreduce_sum, mpireduce_sum   !!, mpicomm 
+!  12-sep-2013/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum, mpireduce_sum   !!, mpicomm
 !
 !      include 'mpif.h'
 !

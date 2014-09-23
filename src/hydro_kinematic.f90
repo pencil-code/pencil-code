@@ -254,9 +254,9 @@ module Hydro
         facy  = 1./nygrid
         facxy = 1./nxygrid
         facyz = 1./nyzgrid
-        
+
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
-! 
+!
         headtt_save=headtt
         do n=1,mz; do m=1,my
 !
@@ -281,7 +281,7 @@ module Hydro
           call finalize_aver(nprocxy,12,uumz)
         if (lcalc_uumeanx ) &
           call finalize_aver(nprocyz,23,uumx)
-        if (lcalc_uumeanxy) &     
+        if (lcalc_uumeanxy) &
           call finalize_aver(nprocz,3,uumxy)
         if (lcalc_uumeanxz) &
           call finalize_aver(nprocy,2,uumxz)
@@ -425,7 +425,7 @@ module Hydro
       integer :: modeN, ell
 !
 !  Choose from a list of different flow profiles.
-!  Begin with a 
+!  Begin with a
 !
       select case (kinematic_flow)
 !
@@ -443,7 +443,7 @@ module Hydro
         if (lpenc_loc(i_del2u)) p%del2u=0.
 !
 !constant flow in the
-!  (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction. 
+!  (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction.
 !
       case ('const-xyz')
         if (headtt) print*,'const-xyz'
@@ -456,7 +456,7 @@ module Hydro
 !
 !  ABC-flow
 !
-      case ('ABC') 
+      case ('ABC')
         if (headtt) print*,'ABC flow'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -469,7 +469,7 @@ module Hydro
 !
 !  nocosine or Archontis flow
 !
-      case ('nocos') 
+      case ('nocos')
           if (headtt) print*,'nocosine or Archontis flow'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -482,7 +482,7 @@ module Hydro
 !
 !  Roberts I flow with negative helicity
 !
-      case ('roberts') 
+      case ('roberts')
         if (headtt) print*,'Glen Roberts flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
 ! uu
         sqrt2=sqrt(2.)
@@ -493,7 +493,7 @@ module Hydro
           p%uu(:,3)=sqrt2*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
         endif
 ! divu
-        if (lpenc_loc(i_divu)) & 
+        if (lpenc_loc(i_divu)) &
             p%divu= eps1*(kx_uukin-ky_uukin)*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
 ! uij
         if (lpenc_loc(i_uij)) then
@@ -518,7 +518,7 @@ module Hydro
           p%uu(:,3)= -eps1*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
         endif
 ! divu
-        if (lpenc_loc(i_divu)) & 
+        if (lpenc_loc(i_divu)) &
             p%divu= eps1*(kx_uukin-kz_uukin)*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
 ! uij
         if (lpenc_loc(i_uij)) then
@@ -535,7 +535,7 @@ module Hydro
 !
 ! Chandrasekhar-Kendall Flow
 !
-      case ('ck') 
+      case ('ck')
         if (headtt) print*,'Chandrasekhar-Kendall flow'
 ! uu
         ell=kinflow_ck_ell
@@ -556,7 +556,7 @@ module Hydro
 !
 !  Roberts I flow with positive helicity
 !
-      case ('poshel-roberts') 
+      case ('poshel-roberts')
         if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
         fac=ampl_kinflow
         eps1=1.-eps_kinflow
@@ -681,7 +681,7 @@ module Hydro
 !
 !  1-D Glen-Roberts flow (positive helicity, no y-dependence)
 !
-      case ('poshel-roberts-1d') 
+      case ('poshel-roberts-1d')
         if (headtt) print*,'Pos Helicity Roberts flow; kx_uukin=',kx_uukin
         fac=ampl_kinflow
         eps1=1.-eps_kinflow
@@ -712,7 +712,7 @@ module Hydro
 !
 !  z-dependent Roberts flow (positive helicity)
 !
-      case ('zdep-roberts') 
+      case ('zdep-roberts')
         if (headtt) print*,'z-dependent Roberts flow; kx,ky=',kx_uukin,ky_uukin
         fpara=ampl_kinflow*(quintic_step(z(n),-1.+eps_kinflow,eps_kinflow) &
             -quintic_step(z(n),+1.-eps_kinflow,eps_kinflow))
@@ -733,7 +733,7 @@ module Hydro
 !
 !  "Incoherent" Roberts flow with cosinusoidal helicity variation (version 1)
 !
-      case ('IncohRoberts1') 
+      case ('IncohRoberts1')
         if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
             ' kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
@@ -748,7 +748,7 @@ module Hydro
 !
 !  "Incoherent" Roberts flow with cosinusoidal helicity variation (version 2)
 !
-      case ('IncohRoberts2') 
+      case ('IncohRoberts2')
         if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
@@ -764,7 +764,7 @@ module Hydro
 !  "Incoherent" Roberts flow with helicity variation and shear (version 1)
 !  Must use shear module and set eps_kinflow equal to shear
 !
-      case ('ShearRoberts1') 
+      case ('ShearRoberts1')
         if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
@@ -784,7 +784,7 @@ module Hydro
 !  Must use shear module and set eps_kinflow equal to shear
 !
       case ('ShearRoberts2')
-        if (headtt) print*,'Roberts flow with cosinusoidal helicity;',& 
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         ky_uukin=1.
@@ -802,7 +802,7 @@ module Hydro
 !  Time-dependent, nearly symmetric flow
 !
       case ('Herreman')
-        if (headtt) print*,'Herreman flow;',& 
+        if (headtt) print*,'Herreman flow;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         eps1=ampl_kinflow*eps_kinflow*cos(omega_kinflow*t)
@@ -816,7 +816,7 @@ module Hydro
 !
 !  Taylor-Green flow
 !
-      case ('TG') 
+      case ('TG')
         if (headtt) print*,'Taylor-Green flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -828,7 +828,7 @@ module Hydro
 !
 !  modified Taylor-Green flow
 !
-      case ('TGmod') 
+      case ('TGmod')
         if (headtt) print*,'modified Taylor-Green flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -850,7 +850,7 @@ module Hydro
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin
 !
-      case ('Galloway-Proctor') 
+      case ('Galloway-Proctor')
         if (headtt) print*,'Galloway-Proctor flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         ecost=eps_kinflow*cos(omega_kinflow*t)
@@ -868,8 +868,8 @@ module Hydro
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin
 !
-      case ('Galloway-Proctor-nohel') 
-        if (headtt) print*,'nonhelical Galloway-Proctor flow;',& 
+      case ('Galloway-Proctor-nohel')
+        if (headtt) print*,'nonhelical Galloway-Proctor flow;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow*sqrt(1.5)
         fac2=ampl_kinflow*sqrt(6.)
@@ -887,7 +887,7 @@ module Hydro
 !  Otani flow, U=curl(psi*zz) + psi*zz, where
 !  psi = 2*cos^2t * cosx - 2*csin2t * cosy
 !
-      case ('Otani') 
+      case ('Otani')
         if (headtt) print*,'Otani flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=2.*ampl_kinflow
         sin2t=sin(omega_kinflow*t)**2
@@ -905,7 +905,7 @@ module Hydro
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin
 !
-      case ('Tilgner') 
+      case ('Tilgner')
         if (headtt) print*,'Tilgner flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow*sqrt(2.)
         epst=eps_kinflow*t
@@ -923,7 +923,7 @@ module Hydro
 !  This makes sense only for kx_uukin=ky_uukin
 !  Here, W in Tilgner's equation is chosen to be 0.25.
 !
-      case ('Tilgner-orig') 
+      case ('Tilgner-orig')
         if (headtt) print*,'original Tilgner flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         epst=eps_kinflow*t
@@ -942,7 +942,7 @@ module Hydro
 !
 !  Galloway-Proctor flow with random temporal phase
 !
-      case ('Galloway-Proctor-RandomTemporalPhase') 
+      case ('Galloway-Proctor-RandomTemporalPhase')
         if (headtt) print*,'GP-RandomTemporalPhase; kx,ky=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         if (t>tphase_kinflow) then
@@ -963,7 +963,7 @@ module Hydro
 !
 !  Galloway-Proctor flow with random phase
 !
-      case ('Galloway-Proctor-RandomPhase') 
+      case ('Galloway-Proctor-RandomPhase')
         if (headtt) print*,'Galloway-Proctor-RandomPhase; kx,ky=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         if (t>tphase_kinflow) then
@@ -982,7 +982,7 @@ module Hydro
 !
 !  original Galloway-Proctor flow
 !
-      case ('Galloway-Proctor-orig') 
+      case ('Galloway-Proctor-orig')
         if (headtt) print*,'Galloway-Proctor-orig flow; kx_uukin=',kx_uukin
         fac=sqrt(1.5)*ampl_kinflow
         ecost=eps_kinflow*cos(omega_kinflow*t)
@@ -998,8 +998,8 @@ module Hydro
 !  Potential flow, u=gradphi, with phi=coskx*X cosky*Y coskz*Z,
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
-      case ('potential') 
-        if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',& 
+      case ('potential')
+        if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',&
             ampl_kinflow,omega_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
         fac=ampl_kinflow
@@ -1024,7 +1024,7 @@ module Hydro
 !  2nd Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
-      case ('potential2') 
+      case ('potential2')
         if (headtt) print*,'2nd potential; ampl_kinflow,omega_kinflow=',&
             ampl_kinflow,omega_kinflow
         if (headtt) print*,'2nd potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
@@ -1047,7 +1047,7 @@ module Hydro
 !  Incompressible 2D, u=curl(yy*psi), with psi=cos(kx*X+ky*Y+kz*Z),
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
-      case ('incompressible-2D-xz') 
+      case ('incompressible-2D-xz')
         if (headtt) print*,'incompr, 2D; ampl_kinflow,omega_kinflow=',&
             ampl_kinflow,omega_kinflow
         if (headtt) print*,'incompr, 2D; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
@@ -1063,7 +1063,7 @@ module Hydro
 !  1-D Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
-      case ('potentialz') 
+      case ('potentialz')
         if (headtt) print*,'1-D potential; ampl_kinflow,omega_kinflow=',&
             ampl_kinflow,omega_kinflow
         if (headtt) print*,'1-D potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
@@ -1084,7 +1084,7 @@ module Hydro
 !  Potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz;
 !  assume kx_uukin=ky_uukin=kz_uukin.
 !
-      case ('potential_random') 
+      case ('potential_random')
         if (headtt) print*,'potential_random; kx_uukin,ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'potential_random; kx_uukin=',kx_uukin,ky_uukin,kz_uukin
         fac=ampl_kinflow
@@ -1129,7 +1129,7 @@ module Hydro
 !
 !  Twist (Yousef & Brandenburg 2003)
 !
-      case ('Twist') 
+      case ('Twist')
         if (headtt) print*,'Twist flow; eps_kinflow,kx=',eps_kinflow,kx_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1141,7 +1141,7 @@ module Hydro
 !
 !  Eddy (Brandenburg & Zweibel 1994)
 !
-      case ('eddy') 
+      case ('eddy')
         if (headtt) print*,'eddy flow; eps_kinflow,kx=',eps_kinflow,kx_uukin
         cos1_mn=max(cos(.5*pi*p%rcyl_mn),0.)
         cos2_mn=cos1_mn**2
@@ -1157,7 +1157,7 @@ module Hydro
 !
 !  Shearing wave
 !
-      case ('ShearingWave') 
+      case ('ShearingWave')
         if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
         ky_uukin=1.
         kx_uukin=-ky_uukin*Sshear*t
@@ -1172,7 +1172,7 @@ module Hydro
 !
 !  Helical Shearing wave
 !
-      case ('HelicalShearingWave') 
+      case ('HelicalShearingWave')
         if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
         ky_uukin=1.
         kx_uukin=-ky_uukin*Sshear*t
@@ -1189,7 +1189,7 @@ module Hydro
 !
 ! step function along z
 !
-      case ('zstep') 
+      case ('zstep')
         if (headtt) print*,'wind:step function along z'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1201,7 +1201,7 @@ module Hydro
 ! uniform radial shear with a cutoff at rmax
 ! uniform radial shear with saturation.
 !
-      case ('rshear-sat') 
+      case ('rshear-sat')
         if (headtt) print*,'radial shear saturated'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1231,7 +1231,7 @@ module Hydro
 !  U_phi adapted from
 !  Ghizaru-Charbonneau-Smolarkiewicz (ApJL 715:L133-L137, 2010)
 !
-      case ('gcs') 
+      case ('gcs')
         if (headtt) print*,'gcs:gcs_rzero ',gcs_rzero
         fac=ampl_kinflow
 ! uu
@@ -1274,7 +1274,7 @@ module Hydro
 !
 !  Spoke-like differential rotation profile
 !
-      case ('spoke-like') 
+      case ('spoke-like')
         if (headtt) print*,'spoke-like ',ampl_kinflow
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1287,7 +1287,7 @@ module Hydro
 !
 !  Spoke-like differential rotation profile with near-surface shear layer
 !
-      case ('spoke-like-NSSL') 
+      case ('spoke-like-NSSL')
         if (headtt) print*,'spoke-like-NSSL',ampl_kinflow
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1302,7 +1302,7 @@ module Hydro
 !
 !  Vertical wind
 !
-      case ('vertical-wind') 
+      case ('vertical-wind')
         if (headtt) print*,'vertical-wind along z'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1314,7 +1314,7 @@ module Hydro
 !
 !  Vertical wind that goes to zero for z < 0.
 !
-      case ('vertical-wind-surface') 
+      case ('vertical-wind-surface')
         if (headtt) print*,'vertical-wind along z'
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1326,7 +1326,7 @@ module Hydro
 !
 ! Radial wind
 !
-      case ('radial-wind') 
+      case ('radial-wind')
         if (headtt) print*,'Radial wind'
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
@@ -1355,7 +1355,7 @@ module Hydro
 !  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
 !  uy=-dpsi/dx=-x*(y-y0)*(y-y1)
 !
-      case ('circ_cartesian') 
+      case ('circ_cartesian')
         if (headtt) print*,'just circulation'
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=+circ_amp*(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
@@ -1367,7 +1367,7 @@ module Hydro
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
-      case ('circ_cartesian_rho1') 
+      case ('circ_cartesian_rho1')
         if (headtt) print*,'circulation with 1/rho dependency'
         if (lpenc_loc(i_uu)) then
           rho_prof=(1.33333/(x(l1:l2)+1.13333)-0.97)**1.5
@@ -1384,7 +1384,7 @@ module Hydro
 !  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
 !  uy=-dpsi/dx=-x*(y-y0)*(y-y1)
 !
-      case ('circ_cartesian_xz') 
+      case ('circ_cartesian_xz')
         if (headtt) print*,'just circulation'
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=-(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*z(n)
@@ -1398,7 +1398,7 @@ module Hydro
 !
 !  meridional circulation
 !
-      case ('circ_spherical') 
+      case ('circ_spherical')
         if (headtt) print*,'just circulation (spherical)'
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
@@ -1410,7 +1410,7 @@ module Hydro
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
-      case ('mer_flow_dg11') 
+      case ('mer_flow_dg11')
         if (headtt) print*,'meridional flow as in Dikpati & Gilman 2011 (spherical)'
         if (lpenc_loc(i_uu)) then
           rho_prof=(1./x(l1:l2)-0.97)**1.5
@@ -1436,7 +1436,7 @@ module Hydro
 !
 ! Radial wind+circulation
 !
-      case ('radial-wind+circ') 
+      case ('radial-wind+circ')
         if (headtt) print*,'Radial wind and circulation'
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
@@ -1476,7 +1476,7 @@ module Hydro
 !
 !  Radial shear + radial wind + circulation.
 !
-      case ('rshear-sat+rwind+circ') 
+      case ('rshear-sat+rwind+circ')
         if (headtt) print*,'radial shear, wind, circulation: not complete yet'
 !
 !  First set wind and cirulation.
@@ -1520,7 +1520,7 @@ module Hydro
 !
 !  KS-flow
 !
-      case ('KS') 
+      case ('KS')
         p%uu=0.
         do modeN=1,KS_modes  ! sum over KS_modes modes
           kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
@@ -1646,7 +1646,7 @@ module Hydro
         if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
 !
 !  Kinetic field components at one point (=pt).
- 
+
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)

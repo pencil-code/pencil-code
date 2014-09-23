@@ -76,8 +76,8 @@ module ImplicitDiffusion
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !
-! Integrate the diffusion term for components ivar1 to ivar2 according 
-! to implicit_method.  ivar2 can be omitted if only operating on one 
+! Integrate the diffusion term for components ivar1 to ivar2 according
+! to implicit_method.  ivar2 can be omitted if only operating on one
 ! component.
 !
 ! 05-sep-14/ccyang: coded.
@@ -226,7 +226,7 @@ module ImplicitDiffusion
 !***********************************************************************
     subroutine integrate_diffusion_zonly(get_diffus_coeff, f, ivar1, ivar2)
 !
-! Integrate the diffusion term for components ivar1 to ivar2 by Fourier 
+! Integrate the diffusion term for components ivar1 to ivar2 by Fourier
 ! decomposition horizontally and implicit solution vertically.  It is
 ! assumed that the diffusion coefficient does not depend on x or y.
 !

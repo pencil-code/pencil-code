@@ -1204,7 +1204,7 @@ module Particles_sink
             k=k-1
           enddo
 !
-!  Give new position, velocity and mass to the sink particle. Angular momentum 
+!  Give new position, velocity and mass to the sink particle. Angular momentum
 !  is not conserved - this is assumed to be stored in internal rotation of
 !  the sink particle.
 !
@@ -1231,7 +1231,7 @@ module Particles_sink
 !***********************************************************************
     subroutine subgrid_accretion(f,fp,ineargrid,xk,yk,zk,j,k,laccrete)
 !
-!  Integrate the particle trajectory inside the radius of the sink particle. 
+!  Integrate the particle trajectory inside the radius of the sink particle.
 !
 !  07-aug-12/anders: coded
 !
@@ -1338,7 +1338,7 @@ module Particles_sink
 !  Calculate the length of the radius vector.
 !
       r=sqrt(xk**2+yk**2+zk**2)
-! 
+!
 !  Keep track of number of particle orbits.
 !
       nhalforbx=0; nhalforby=0; nhalforbz=0
@@ -1427,7 +1427,7 @@ module Particles_sink
           k0(4) = -gmass/r2*xk/r - tausp1*(vxk-uu_gas(1)) + 2*Omega*vyk
           k0(5) = -gmass/r2*yk/r - tausp1*(vyk-uu_gas(2)) - (2-qshear)*Omega*vxk
           k0(6) = -gmass/r2*zk/r - tausp1*(vzk-uu_gas(3)) - Omega**2*zk
-!         
+!
           if (itsubsub==1) k1=k0*dtsub
           if (itsubsub==2) k2=k0*dtsub
           if (itsubsub==3) k3=k0*dtsub

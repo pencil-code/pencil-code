@@ -18,7 +18,7 @@ subroutine cfftb ( n, c, wsave )
 !
 !    The transform is defined by:
 !
-!      C_out(J) = sum ( 1 <= K <= N ) 
+!      C_out(J) = sum ( 1 <= K <= N )
 !        C_in(K) * exp ( sqrt ( - 1 ) * ( J - 1 ) * ( K - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -36,21 +36,21 @@ subroutine cfftb ( n, c, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !    The method is more efficient when N is the product of small primes.
 !
 !    Input/output, complex C(N).
@@ -58,9 +58,9 @@ subroutine cfftb ( n, c, wsave )
 !    On output, C contains the sequence of data values that correspond
 !    to the input coefficients.
 !
-!    Input, real WSAVE(4*N+15).  The array must be initialized by calling 
+!    Input, real WSAVE(4*N+15).  The array must be initialized by calling
 !    CFFTI.  A different WSAVE array must be used for each different
-!    value of N.  
+!    value of N.
 !
   implicit none
 !
@@ -95,7 +95,7 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input/output, complex C(N).
 !    On input, C contains the sequence of Fourier coefficients.
@@ -171,7 +171,7 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
     else if ( ip == 3 ) then
 
       ix2 = iw + 2 * ido
- 
+
       if ( na == 0 ) then
         call passb3 ( 2*ido, l1, c, ch, wa(iw), wa(ix2) )
       else
@@ -231,7 +231,7 @@ subroutine cfftb_2d ( ldf, n, f, wsave )
 !    The routine computes the backward two dimensional fast Fourier transform,
 !    of a complex N by N matrix of data.
 !
-!    The output is unscaled, that is, a call to CFFTB_2D followed by a call 
+!    The output is unscaled, that is, a call to CFFTB_2D followed by a call
 !    to CFFTF_2D will return the original data multiplied by N*N.
 !
 !    For some applications it is desirable to have the transform scaled so
@@ -313,7 +313,7 @@ subroutine cfftf ( n, c, wsave )
 !
 !    The transform is defined by:
 !
-!      C_out(J) = sum ( 1 <= K <= N ) 
+!      C_out(J) = sum ( 1 <= K <= N )
 !        C_in(K) * exp ( - sqrt ( -1 ) * ( J - 1 ) * ( K - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -331,30 +331,30 @@ subroutine cfftf ( n, c, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !    The method is more efficient when N is the product of small primes.
 !
 !    Input/output, complex C(N).
 !    On input, the data sequence to be transformed.
 !    On output, the Fourier coefficients.
 !
-!    Input, real WSAVE(4*N+15).  The array must be initialized by calling 
+!    Input, real WSAVE(4*N+15).  The array must be initialized by calling
 !    CFFTI.  A different WSAVE array must be used for each different
-!    value of N. 
+!    value of N.
 !
   implicit none
 !
@@ -389,7 +389,7 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input/output, complex C(N).
 !    On input, the data sequence to be transformed.
@@ -442,7 +442,7 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 
       ix2 = iw + 2 * ido
       ix3 = ix2 + 2 * ido
- 
+
       if ( na == 0 ) then
         call passf4 ( 2*ido, l1, c, ch, wa(iw), wa(ix2), wa(ix3) )
       else
@@ -590,12 +590,12 @@ subroutine cffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! CFFTI initializes WSAVE, used in CFFTF and CFFTB. 
+!! CFFTI initializes WSAVE, used in CFFTF and CFFTB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -613,14 +613,14 @@ subroutine cffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
@@ -630,7 +630,7 @@ subroutine cffti ( n, wsave )
 !    Input, integer N, the length of the sequence to be transformed.
 !
 !    Output, real WSAVE(4*N+15), contains data, dependent on the value
-!    of N, which is necessary for the CFFTF or CFFTB routines.  
+!    of N, which is necessary for the CFFTF or CFFTB routines.
 !
   implicit none
 !
@@ -745,17 +745,17 @@ subroutine cosqb ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! COSQB computes the fast cosine transform of quarter wave data. 
+!! COSQB computes the fast cosine transform of quarter wave data.
 !
 !
 !  Discussion:
 !
-!    COSQB computes a sequence from its representation in terms of a cosine 
+!    COSQB computes a sequence from its representation in terms of a cosine
 !    series with odd wave numbers.
 !
 !    The transform is defined by:
 !
-!      X_out(I) = sum ( 1 <= K <= N ) 
+!      X_out(I) = sum ( 1 <= K <= N )
 !
 !        4 * X_in(K) * cos ( ( 2 * K - 1 ) * ( I - 1 ) * PI / ( 2 * N ) )
 !
@@ -779,14 +779,14 @@ subroutine cosqb ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
@@ -800,10 +800,10 @@ subroutine cosqb ( n, x, wsave )
 !    On input, the cosine series coefficients.
 !    On output, the corresponding data vector.
 !
-!    Input, real WSAVE(3*N+15), contains data, depending on N, and 
-!    required by the algorithm.  The WSAVE array must be initialized by 
+!    Input, real WSAVE(3*N+15), contains data, depending on N, and
+!    required by the algorithm.  The WSAVE array must be initialized by
 !    calling COSQI.  A different WSAVE array must be used for each different
-!    value of N. 
+!    value of N.
 !
   implicit none
 !
@@ -844,7 +844,7 @@ subroutine cosqb1 ( n, x, w, xh )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array.  
+!    Input, integer N, the length of the array.
 !
 !    Input/output, real X(N).
 !    On input, the cosine series coefficients.
@@ -907,13 +907,13 @@ subroutine cosqf ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! COSQF computes the fast cosine transform of quarter wave data. 
+!! COSQF computes the fast cosine transform of quarter wave data.
 !
 !
 !  Discussion:
 !
-!    COSQF computes the coefficients in a cosine series representation 
-!    with only odd wave numbers. 
+!    COSQF computes the coefficients in a cosine series representation
+!    with only odd wave numbers.
 !
 !    COSQF is the unnormalized inverse of COSQB since a call of COSQF
 !    followed by a call of COSQB will multiply the input sequence X
@@ -942,14 +942,14 @@ subroutine cosqf ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
@@ -963,10 +963,10 @@ subroutine cosqf ( n, x, wsave )
 !    On input, the data to be transformed.
 !    On output, the transformed data.
 !
-!    Input, real WSAVE(3*N+15), contains data, depending on N, and 
-!    required by the algorithm.  The WSAVE array must be initialized by 
+!    Input, real WSAVE(3*N+15), contains data, depending on N, and
+!    required by the algorithm.  The WSAVE array must be initialized by
 !    calling COSQI.  A different WSAVE array must be used for each different
-!    value of N. 
+!    value of N.
 !
   implicit none
 !
@@ -1007,7 +1007,7 @@ subroutine cosqf1 ( n, x, w, xh )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Input/output, real X(N).
 !    On input, the data to be transformed.
@@ -1066,12 +1066,12 @@ subroutine cosqi ( n, wsave )
 !
 !*******************************************************************************
 !
-!! COSQI initializes WSAVE, used in COSQF and COSQB. 
+!! COSQI initializes WSAVE, used in COSQF and COSQB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -1089,25 +1089,25 @@ subroutine cosqi ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The method 
+!    Input, integer N, the length of the array to be transformed.  The method
 !    is more efficient when N is the product of small primes.
 !
-!    Output, real WSAVE(3*N+15), contains data, depending on N, and 
-!    required by the COSQB and COSQF algorithms.  
+!    Output, real WSAVE(3*N+15), contains data, depending on N, and
+!    required by the COSQB and COSQF algorithms.
 !
   implicit none
 !
@@ -1959,13 +1959,13 @@ subroutine dcost ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! DCOST computes the discrete Fourier cosine transform of an even sequence. 
+!! DCOST computes the discrete Fourier cosine transform of an even sequence.
 !
 !
 !  Discussion:
 !
 !    This routine is the unnormalized inverse of itself.  Two successive
-!    calls will multiply the input sequence X by 2*(N-1). 
+!    calls will multiply the input sequence X by 2*(N-1).
 !
 !    The array WSAVE must be initialized by calling DCOSTI.
 !
@@ -1990,21 +1990,21 @@ subroutine dcost ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The 
+!    Input, integer N, the length of the sequence to be transformed.  The
 !    method is more efficient when N-1 is the product of small primes.
 !
 !    Input/output, double precision X(N).
@@ -2012,8 +2012,8 @@ subroutine dcost ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, double precision WSAVE(3*N+15).
-!    The WSAVE array must be initialized by calling DCOSTI.  A different 
-!    array must be used for each different value of N. 
+!    The WSAVE array must be initialized by calling DCOSTI.  A different
+!    array must be used for each different value of N.
 !
   implicit none
 !
@@ -2100,7 +2100,7 @@ subroutine dcosti ( n, wsave )
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -2118,24 +2118,24 @@ subroutine dcosti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The 
+!    Input, integer N, the length of the sequence to be transformed.  The
 !    method is more efficient when N-1 is the product of small primes.
 !
-!    Output, double precision WSAVE(3*N+15), contains data, depending on N, and 
+!    Output, double precision WSAVE(3*N+15), contains data, depending on N, and
 !    required by the DCOST algorithm.
 !
   implicit none
@@ -2172,8 +2172,8 @@ subroutine dfftf ( n, r, wsave )
 !  Discussion:
 !
 !    This process is sometimes called Fourier analysis.
-! 
-!    The transform is unnormalized.  A call to DFFTF followed by a call 
+!
+!    The transform is unnormalized.  A call to DFFTF followed by a call
 !    to DFFTB will multiply the input sequence by N.
 !
 !    The transform is defined by:
@@ -2209,30 +2209,30 @@ subroutine dfftf ( n, r, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, double precision R(N).
 !    On input, the sequence to be transformed.
 !    On output, the transformed sequence.
 !
-!    Input, double precision WSAVE(2*N+15), a work array.  The WSAVE array 
-!    must be initialized by calling DFFTI.  A different WSAVE array must be 
-!    used for each different value of N.  
+!    Input, double precision WSAVE(2*N+15), a work array.  The WSAVE array
+!    must be initialized by calling DFFTI.  A different WSAVE array must be
+!    used for each different value of N.
 !
   implicit none
 !
@@ -2267,7 +2267,7 @@ subroutine dfftf1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Input/output, double precision C(N).
 !    On input, the sequence to be transformed.
@@ -2390,12 +2390,12 @@ subroutine dffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! DFFTI initializes WSAVE, used in DFFTF and DFFTB. 
+!! DFFTI initializes WSAVE, used in DFFTF and DFFTB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -2413,24 +2413,24 @@ subroutine dffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
-!    Output, double precision WSAVE(2*N+15), contains data, dependent 
-!    on the value of N, which is necessary for the DFFTF and DFFTB routines.  
+!    Output, double precision WSAVE(2*N+15), contains data, dependent
+!    on the value of N, which is necessary for the DFFTF and DFFTB routines.
 !
   implicit none
 !
@@ -2464,7 +2464,7 @@ subroutine dffti1 ( n, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input, double precision WA(N).
 !
@@ -2548,17 +2548,17 @@ subroutine dsct ( n, x, y )
 !    This routine is provided for illustration and testing.  It is inefficient
 !    relative to optimized routines that use fast Fourier techniques.
 !
-!      Y(1) = Sum ( 1 <= J <= N ) X(J) 
+!      Y(1) = Sum ( 1 <= J <= N ) X(J)
 !
 !      For I from 2 to N-1:
 !
-!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J) 
+!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J)
 !          * cos ( PI * ( I - 1 ) * ( J - 1 ) / ( N - 1 ) )
 !
 !      Y(N) = Sum ( X(1:N:2) ) - Sum ( X(2:N:2) )
 !
 !    Applying the routine twice in succession should yield the original data,
-!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness 
+!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness
 !    and accuracy.
 !
 !  Modified:
@@ -2608,7 +2608,7 @@ subroutine dsint ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! DSINT computes the discrete Fourier sine transform of an odd sequence. 
+!! DSINT computes the discrete Fourier sine transform of an odd sequence.
 !
 !
 !  Discussion:
@@ -2620,7 +2620,7 @@ subroutine dsint ( n, x, wsave )
 !
 !    The transform is defined by:
 !
-!      X_out(I) = sum ( 1 <= K <= N ) 
+!      X_out(I) = sum ( 1 <= K <= N )
 !        2 * X_in(K) * sin ( K * I * PI / ( N + 1 ) )
 !
 !  Modified:
@@ -2638,30 +2638,30 @@ subroutine dsint ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
-!    The method is most efficient when N+1 is the product of small primes. 
+!    Input, integer N, the length of the sequence to be transformed.
+!    The method is most efficient when N+1 is the product of small primes.
 !
 !    Input/output, real X(N).
 !    On input, the sequence to be transformed.
 !    On output, the transformed sequence.
 !
-!    Input, double precision WSAVE((5*N+30)/2), a work array.  The WSAVE 
-!    array must be initialized by calling DSINTI.  A different WSAVE array 
-!    must be used for each different value of N. 
+!    Input, double precision WSAVE((5*N+30)/2), a work array.  The WSAVE
+!    array must be initialized by calling DSINTI.  A different WSAVE array
+!    must be used for each different value of N.
 !
   implicit none
 !
@@ -2699,7 +2699,7 @@ subroutine dsint1 ( n, war, was, xh, x, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input/output, double precision WAR(N).
 !    On input, the sequence to be transformed.
@@ -2795,7 +2795,7 @@ subroutine dsinti ( n, wsave )
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -2813,25 +2813,25 @@ subroutine dsinti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !    The method is most efficient when N+1 is a product of small primes.
 !
-!    Output, double precision WSAVE((5*N+30)/2), contains data, dependent 
-!    on the value of N, which is necessary for the DSINT routine.  
+!    Output, double precision WSAVE((5*N+30)/2), contains data, dependent
+!    on the value of N, which is necessary for the DSINT routine.
 !
   implicit none
 !
@@ -2866,7 +2866,7 @@ subroutine dsst ( n, x, y )
 !  Discussion:
 !
 !    This routine is provided for illustration and testing.  It is inefficient
-!    relative to optimized routines that use fast Fourier techniques.  
+!    relative to optimized routines that use fast Fourier techniques.
 !
 !    For I from 1 to N,
 !
@@ -2885,7 +2885,7 @@ subroutine dsst ( n, x, y )
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values. 
+!    Input, integer N, the number of data values.
 !
 !    Input, double precision X(N), the data sequence.
 !
@@ -3083,11 +3083,11 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !
 !    EZFFTB is a simplified but slower version of RFFTB.
 !
-!    The transform is defined by: 
+!    The transform is defined by:
 !
 !      R(I) = AZERO + sum ( 1 <= K <= N/2 )
 !
-!          A(K) * cos ( K * ( I - 1 ) * 2 * PI / N ) 
+!          A(K) * cos ( K * ( I - 1 ) * 2 * PI / N )
 !        + B(K) * sin ( K * ( I - 1 ) * 2 * PI / N )
 !
 !  Modified:
@@ -3105,21 +3105,21 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the output array.  The 
+!    Input, integer N, the length of the output array.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Output, real R(N), the reconstructed data sequence.
@@ -3129,8 +3129,8 @@ subroutine ezfftb ( n, r, azero, a, b, wsave )
 !    Input, real A(N/2), B(N/2), the Fourier coefficients.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling EZFFFTI.  A different WSAVE array must be used 
-!    for each different value of N. 
+!    initialized by calling EZFFFTI.  A different WSAVE array must be used
+!    for each different value of N.
 !
   implicit none
 !
@@ -3224,28 +3224,28 @@ subroutine ezfftf ( n, r, azero, a, b, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input, real R(N), the sequence to be transformed.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling EZFFTI.  A different WSAVE array must be used 
-!    for each different value of N. 
+!    initialized by calling EZFFTI.  A different WSAVE array must be used
+!    for each different value of N.
 !
 !    Output, real AZERO, the constant Fourier coefficient.
 !
@@ -3301,12 +3301,12 @@ subroutine ezffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! EZFFTI initializes WSAVE, used in EZFFTF and EZFFTB. 
+!! EZFFTI initializes WSAVE, used in EZFFTF and EZFFTB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -3324,25 +3324,25 @@ subroutine ezffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Output, real WSAVE(3*N+15), contains data, dependent on the value
-!    of N, which is necessary for the EZFFTF or EZFFTB routines.  
+!    of N, which is necessary for the EZFFTF or EZFFTB routines.
 !
   implicit none
 !
@@ -3376,7 +3376,7 @@ subroutine ezffti1 ( n, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed. 
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Output, real WA(N).
 !
@@ -6288,13 +6288,13 @@ subroutine rcost ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! RCOST computes the discrete Fourier cosine transform of an even sequence. 
+!! RCOST computes the discrete Fourier cosine transform of an even sequence.
 !
 !
 !  Discussion:
 !
 !    This routine is the unnormalized inverse of itself.  Two successive
-!    calls will multiply the input sequence X by 2*(N-1). 
+!    calls will multiply the input sequence X by 2*(N-1).
 !
 !    The array WSAVE must be initialized by calling RCOSTI.
 !
@@ -6319,21 +6319,21 @@ subroutine rcost ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The 
+!    Input, integer N, the length of the sequence to be transformed.  The
 !    method is more efficient when N-1 is the product of small primes.
 !
 !    Input/output, real X(N).
@@ -6341,8 +6341,8 @@ subroutine rcost ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(3*N+15).
-!    The WSAVE array must be initialized by calling RCOSTI.  A different 
-!    array must be used for each different value of N. 
+!    The WSAVE array must be initialized by calling RCOSTI.  A different
+!    array must be used for each different value of N.
 !
   implicit none
 !
@@ -6429,7 +6429,7 @@ subroutine rcosti ( n, wsave )
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -6447,24 +6447,24 @@ subroutine rcosti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  The 
+!    Input, integer N, the length of the sequence to be transformed.  The
 !    method is more efficient when N-1 is the product of small primes.
 !
-!    Output, real WSAVE(3*N+15), contains data, depending on N, and 
+!    Output, real WSAVE(3*N+15), contains data, depending on N, and
 !    required by the RCOST algorithm.
 !
   implicit none
@@ -6536,21 +6536,21 @@ subroutine rfftb ( n, r, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real R(N).
@@ -6558,7 +6558,7 @@ subroutine rfftb ( n, r, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(2*N+15), a work array.  The WSAVE array must be
-!    initialized by calling RFFTI.  A different WSAVE array must be used 
+!    initialized by calling RFFTI.  A different WSAVE array must be used
 !    for each different value of N.
 !
   implicit none
@@ -6594,7 +6594,7 @@ subroutine rfftb1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Input/output, real C(N).
 !    On input, the sequence to be transformed.
@@ -6726,8 +6726,8 @@ subroutine rfftf ( n, r, wsave )
 !  Discussion:
 !
 !    This process is sometimes called Fourier analysis.
-! 
-!    The transform is unnormalized.  A call to RFFTF followed by a call 
+!
+!    The transform is unnormalized.  A call to RFFTF followed by a call
 !    to RFFTB will multiply the input sequence by N.
 !
 !    The transform is defined by:
@@ -6763,21 +6763,21 @@ subroutine rfftf ( n, r, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real R(N).
@@ -6785,8 +6785,8 @@ subroutine rfftf ( n, r, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(2*N+15), a work array.  The WSAVE array must be
-!    initialized by calling RFFTI.  A different WSAVE array must be used 
-!    for each different value of N.  
+!    initialized by calling RFFTI.  A different WSAVE array must be used
+!    for each different value of N.
 !
   implicit none
 !
@@ -6821,7 +6821,7 @@ subroutine rfftf1 ( n, c, ch, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Input/output, real C(N).
 !    On input, the sequence to be transformed.
@@ -6944,12 +6944,12 @@ subroutine rffti ( n, wsave )
 !
 !*******************************************************************************
 !
-!! RFFTI initializes WSAVE, used in RFFTF and RFFTB. 
+!! RFFTI initializes WSAVE, used in RFFTF and RFFTB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -6967,24 +6967,24 @@ subroutine rffti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Output, real WSAVE(2*N+15), contains data, dependent on the value
-!    of N, which is necessary for the RFFTF and RFFTB routines.  
+!    of N, which is necessary for the RFFTF and RFFTB routines.
 !
   implicit none
 !
@@ -7018,7 +7018,7 @@ subroutine rffti1 ( n, wa, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input, real WA(N).
 !
@@ -7102,17 +7102,17 @@ subroutine rsct ( n, x, y )
 !    This routine is provided for illustration and testing.  It is inefficient
 !    relative to optimized routines that use fast Fourier techniques.
 !
-!      Y(1) = Sum ( 1 <= J <= N ) X(J) 
+!      Y(1) = Sum ( 1 <= J <= N ) X(J)
 !
 !      For I from 2 to N-1:
 !
-!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J) 
+!        Y(I) = 2 * Sum ( 1 <= J <= N ) X(J)
 !          * cos ( PI * ( I - 1 ) * ( J - 1 ) / ( N - 1 ) )
 !
 !      Y(N) = Sum ( X(1:N:2) ) - Sum ( X(2:N:2) )
 !
 !    Applying the routine twice in succession should yield the original data,
-!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness 
+!    multiplied by 2 * ( N + 1 ).  This is a good check for correctness
 !    and accuracy.
 !
 !  Modified:
@@ -7174,7 +7174,7 @@ subroutine rsftb ( n, r, azero, a, b )
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values. 
+!    Input, integer N, the number of data values.
 !
 !    Output, real R(N), the reconstructed data sequence.
 !
@@ -7273,7 +7273,7 @@ subroutine rsht ( n, a, b  )
 !
 !  Discussion:
 !
-!    The discrete Hartley transform B of a set of data A is 
+!    The discrete Hartley transform B of a set of data A is
 !
 !      B(I) = 1/sqrt(N) * Sum ( 0 <= J <= N-1 ) A(J) * CAS(2*PI*I*J/N)
 !
@@ -7283,7 +7283,7 @@ subroutine rsht ( n, a, b  )
 !    transform is its own inverse.
 !
 !    This routine is provided for illustration and testing.  It is inefficient
-!    relative to optimized routines.  
+!    relative to optimized routines.
 !
 !  Modified:
 !
@@ -7336,7 +7336,7 @@ subroutine rsst ( n, x, y )
 !  Discussion:
 !
 !    This routine is provided for illustration and testing.  It is inefficient
-!    relative to optimized routines that use fast Fourier techniques.  
+!    relative to optimized routines that use fast Fourier techniques.
 !
 !    For I from 1 to N,
 !
@@ -7355,7 +7355,7 @@ subroutine rsst ( n, x, y )
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values. 
+!    Input, integer N, the number of data values.
 !
 !    Input, real X(N), the data sequence.
 !
@@ -7401,7 +7401,7 @@ subroutine rsqctb ( n, x, y )
 !  Reference:
 !
 !    Briggs and Henson,
-!    The Discrete Fourier Transform, 
+!    The Discrete Fourier Transform,
 !    SIAM,
 !    QA403.5 B75
 !
@@ -7473,7 +7473,7 @@ subroutine rsqctf ( n, x, y )
 !  Reference:
 !
 !    Briggs and Henson,
-!    The Discrete Fourier Transform, 
+!    The Discrete Fourier Transform,
 !    SIAM,
 !    QA403.5 B75
 !
@@ -7517,9 +7517,9 @@ subroutine rsqstb ( n, x, y )
 !
 !
 !  Discussion:
-!    
+!
 !    This routine is provided for illustration and testing.  It is inefficient
-!    relative to optimized routines that use fast Fourier techniques.  
+!    relative to optimized routines that use fast Fourier techniques.
 !
 !    For I from 0 to N-1,
 !
@@ -7537,13 +7537,13 @@ subroutine rsqstb ( n, x, y )
 !  Reference:
 !
 !    Briggs and Henson,
-!    The Discrete Fourier Transform, 
+!    The Discrete Fourier Transform,
 !    SIAM,
 !    QA403.5 B75
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values. 
+!    Input, integer N, the number of data values.
 !
 !    Input, real X(N), the data sequence.
 !
@@ -7585,9 +7585,9 @@ subroutine rsqstf ( n, x, y )
 !
 !
 !  Discussion:
-!    
+!
 !    This routine is provided for illustration and testing.  It is inefficient
-!    relative to optimized routines that use fast Fourier techniques.  
+!    relative to optimized routines that use fast Fourier techniques.
 !
 !    For I from 1 to N,
 !
@@ -7604,13 +7604,13 @@ subroutine rsqstf ( n, x, y )
 !  Reference:
 !
 !    Briggs and Henson,
-!    The Discrete Fourier Transform, 
+!    The Discrete Fourier Transform,
 !    SIAM,
 !    QA403.5 B75
 !
 !  Parameters:
 !
-!    Input, integer N, the number of data values. 
+!    Input, integer N, the number of data values.
 !
 !    Input, real X(0:N-1), the data sequence.
 !
@@ -7846,12 +7846,12 @@ subroutine sinqb ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! SINQB computes the fast sine transform of quarter wave data. 
+!! SINQB computes the fast sine transform of quarter wave data.
 !
 !
 !  Discussion:
 !
-!    SINQB computes a sequence from its representation in terms of a sine 
+!    SINQB computes a sequence from its representation in terms of a sine
 !    series with odd wave numbers.
 !
 !    SINQF is the unnormalized inverse of SINQB since a call of SINQB
@@ -7880,21 +7880,21 @@ subroutine sinqb ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real X(N).
@@ -7902,8 +7902,8 @@ subroutine sinqb ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling SINQI.  A different WSAVE array must be used 
-!    for each different value of N. 
+!    initialized by calling SINQI.  A different WSAVE array must be used
+!    for each different value of N.
 !
   implicit none
 !
@@ -7935,18 +7935,18 @@ subroutine sinqf ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! SINQF computes the fast sine transform of quarter wave data. 
+!! SINQF computes the fast sine transform of quarter wave data.
 !
 !
 !  Discussion:
 !
-!    SINQF computes the coefficients in a sine series representation with 
-!    only odd wave numbers. 
+!    SINQF computes the coefficients in a sine series representation with
+!    only odd wave numbers.
 !
 !    SINQB is the unnormalized inverse of SINQF since a call of SINQF
 !    followed by a call of SINQB will multiply the input sequence X by 4*N.
 !
-!    The array WSAVE, which is used by SINQF, must be initialized by 
+!    The array WSAVE, which is used by SINQF, must be initialized by
 !    calling SINQI.
 !
 !    The transform is defined by:
@@ -7969,21 +7969,21 @@ subroutine sinqf ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  The 
+!    Input, integer N, the length of the array to be transformed.  The
 !    method is more efficient when N is the product of small primes.
 !
 !    Input/output, real X(N).
@@ -7991,8 +7991,8 @@ subroutine sinqf ( n, x, wsave )
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE(3*N+15), a work array.  The WSAVE array must be
-!    initialized by calling SINQI.  A different WSAVE array must be used 
-!    for each different value of N. 
+!    initialized by calling SINQI.  A different WSAVE array must be used
+!    for each different value of N.
 !
   implicit none
 !
@@ -8019,12 +8019,12 @@ subroutine sinqi ( n, wsave )
 !
 !*******************************************************************************
 !
-!! SINQI initializes WSAVE, used in SINQF and SINQB. 
+!! SINQI initializes WSAVE, used in SINQF and SINQB.
 !
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -8042,24 +8042,24 @@ subroutine sinqi ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the array to be transformed.  
+!    Input, integer N, the length of the array to be transformed.
 !
 !    Output, real WSAVE(3*N+15), contains data, dependent on the value
-!    of N, which is necessary for the SINQF or SINQB routines.  
+!    of N, which is necessary for the SINQF or SINQB routines.
 !
   implicit none
 !
@@ -8075,7 +8075,7 @@ subroutine rsint ( n, x, wsave )
 !
 !*******************************************************************************
 !
-!! RSINT computes the discrete Fourier sine transform of an odd sequence. 
+!! RSINT computes the discrete Fourier sine transform of an odd sequence.
 !
 !
 !  Discussion:
@@ -8087,7 +8087,7 @@ subroutine rsint ( n, x, wsave )
 !
 !    The transform is defined by:
 !
-!      X_out(I) = sum ( 1 <= K <= N ) 
+!      X_out(I) = sum ( 1 <= K <= N )
 !        2 * X_in(K) * sin ( K * I * PI / ( N + 1 ) )
 !
 !  Modified:
@@ -8105,30 +8105,30 @@ subroutine rsint ( n, x, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
-!    The method is most efficient when N+1 is the product of small primes. 
+!    Input, integer N, the length of the sequence to be transformed.
+!    The method is most efficient when N+1 is the product of small primes.
 !
 !    Input/output, real X(N).
 !    On input, the sequence to be transformed.
 !    On output, the transformed sequence.
 !
 !    Input, real WSAVE((5*N+30)/2), a work array.  The WSAVE array must be
-!    initialized by calling RSINTI.  A different WSAVE array must be used 
-!    for each different value of N. 
+!    initialized by calling RSINTI.  A different WSAVE array must be used
+!    for each different value of N.
 !
   implicit none
 !
@@ -8166,7 +8166,7 @@ subroutine rsint1 ( n, war, was, xh, x, ifac )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed. 
+!    Input, integer N, the length of the sequence to be transformed.
 !
 !    Input/output, real WAR(N).
 !    On input, the sequence to be transformed.
@@ -8260,7 +8260,7 @@ subroutine rsinti ( n, wsave )
 !
 !  Discussion:
 !
-!    The prime factorization of N together with a tabulation of the 
+!    The prime factorization of N together with a tabulation of the
 !    trigonometric functions are computed and stored in WSAVE.
 !
 !  Modified:
@@ -8278,25 +8278,25 @@ subroutine rsinti ( n, wsave )
 !    Numerical Methods and Software,
 !    Prentice Hall, 1988.
 !
-!    P N Swarztrauber, 
-!    Vectorizing the FFT's, 
+!    P N Swarztrauber,
+!    Vectorizing the FFT's,
 !    in Parallel Computations,
-!    G. Rodrigue, editor, 
+!    G. Rodrigue, editor,
 !    Academic Press, 1982, pages 51-83.
 !
-!    B L Buzbee, 
-!    The SLATEC Common Math Library, 
+!    B L Buzbee,
+!    The SLATEC Common Math Library,
 !    in Sources and Development of Mathematical Software,
 !    W. Cowell, editor,
 !    Prentice Hall, 1984, pages 302-318.
 !
 !  Parameters:
 !
-!    Input, integer N, the length of the sequence to be transformed.  
+!    Input, integer N, the length of the sequence to be transformed.
 !    The method is most efficient when N+1 is a product of small primes.
 !
 !    Output, real WSAVE((5*N+30)/2), contains data, dependent on the value
-!    of N, which is necessary for the RSINT routine.  
+!    of N, which is necessary for the RSINT routine.
 !
   implicit none
 !

@@ -740,7 +740,7 @@ module Testfield
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
-! 
+!
       if (lvideo.and.lfirst) then
         do j=1,3
           bb1_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
@@ -753,18 +753,18 @@ module Testfield
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
-! 
+!
 !  Write slices for animation of magnetic variables.
-! 
+!
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
-! 
+!
       use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
 !  Loop over slices
-! 
+!
       select case (trim(slices%name))
 !
 !  Magnetic field
@@ -1127,7 +1127,7 @@ module Testfield
       endif
 !
 !  check for those quantities that we want to evaluate online
-! 
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alpPERP',idiag_alpPERP)
         call parse_name(iname,cname(iname),cform(iname),'alpPARA',idiag_alpPARA)

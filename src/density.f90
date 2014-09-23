@@ -428,7 +428,7 @@ module Density
           call fatal_error("initialize_density",&
                "Dynamical diffusion requires mesh hyper-diffusion, switch idiff='hyper3-mesh'")
         endif
-!        
+!
       endif
 !
 !  lmassdiff_fixmom and lmassdiff_fixkin cannot be both set.
@@ -580,7 +580,7 @@ module Density
         call put_shared_variable('profz_ffree',profz_ffree,ierr)
       endif
 !
-!  Check if we are reduced sound speed is used and communicate to 
+!  Check if we are reduced sound speed is used and communicate to
 !  entropy
 !
       call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed,ierr)
@@ -588,7 +588,7 @@ module Density
       if (lreduced_sound_speed) then
         call put_shared_variable('reduce_cs2',reduce_cs2,ierr)
 !
-        if (lscale_to_cs2top) then 
+        if (lscale_to_cs2top) then
            if (lgravx) reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
            if (lgravz) reduce_cs2_profz(n1:n2)=cs2top/(rss_coef1-rss_coef2*(z(n1:n2)-z0))
         else
@@ -1306,7 +1306,7 @@ module Density
 !
      use Mpicomm, only: mpiallreduce_sum
 !
-     real :: mean_density 
+     real :: mean_density
 
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -1327,7 +1327,7 @@ module Density
         enddo
         mean_density=mean_density+tmp*dVol_z(n)
       enddo
-! 
+!
       mean_density = mean_density/box_volume
 !
       if (ncpus>1) then
@@ -1970,11 +1970,11 @@ module Density
         endif
       endif
 !
-!  Add the continuity equation terms to the RHS of the density df. 
+!  Add the continuity equation terms to the RHS of the density df.
 !
       if (ldensity_nolog) then
         df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
-      else 
+      else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
       endif
 !

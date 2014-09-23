@@ -164,8 +164,8 @@ module Particles
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
         communicated=lparticles_sink.or.lcommunicate_rhop)
 !
-! This module shall always require electric field and magnetic field stored as 
-! a auxiliary array. 
+! This module shall always require electric field and magnetic field stored as
+! a auxiliary array.
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -220,7 +220,7 @@ module Particles
         call fatal_error('initialize_particles','particles_charged works only if ibb,iee .ne. 0')
       endif
 !
-! By default all interpolation policies are chosen as cic in this module. 
+! By default all interpolation policies are chosen as cic in this module.
 !
 !  Overwrite with new policy variables:
 !
@@ -1256,14 +1256,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_grhop)) then
         if (irhop/=0) then
-          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_rhop=T in particles_run_pars")  
+               "Switch on lcommunicate_rhop=T in particles_run_pars")
           call grad(f,irhop,p%grhop)
         else
-          if ((nprocx/=1).and.(.not.lcommunicate_np)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_np)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_np=T in particles_run_pars")  
+               "Switch on lcommunicate_np=T in particles_run_pars")
           call grad(f,inp,p%grhop)
           p%grhop=rhop_swarm*p%grhop
         endif
@@ -1688,7 +1688,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate and add acceleration on charged particles.
 !
           velocity=fp(k,ivpx:ivpz)
-          vsqr=velocity(1)*velocity(1) + & 
+          vsqr=velocity(1)*velocity(1) + &
             velocity(2)*velocity(2) + velocity(3)*velocity(3)
           vsqr_max=max(vsqr_max,vsqr)
           if (lonly_eforce) then
@@ -2202,7 +2202,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
     real function get_gas_density(f, ix, iy, iz) result(rho)
-!   
+!
 !  Reads the gas density at location (ix, iy, iz).
 !
 !  20-may-13/ccyang: coded.
@@ -2215,7 +2215,7 @@ k_loop:   do while (.not. (k>npar_loc))
       else linear
         rho = exp(f(ix, iy, iz, ilnrho))
       endif linear
-!   
+!
     endfunction get_gas_density
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)

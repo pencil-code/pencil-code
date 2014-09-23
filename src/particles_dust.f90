@@ -201,7 +201,7 @@ module Particles
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
-      thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
+      thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell
 !
@@ -1177,10 +1177,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, & 
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            if (lroot) print*, &
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
             call fatal_error('init_particles','')
-          endif     
+          endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
               sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
@@ -1199,10 +1199,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, & 
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!' 
+            if (lroot) print*, &
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
             call fatal_error('init_particles','')
-          endif     
+          endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
               cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
@@ -2359,14 +2359,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_grhop)) then
         if (irhop/=0) then
-          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_rhop=T in particles_run_pars")  
+               "Switch on lcommunicate_rhop=T in particles_run_pars")
           call grad(f,irhop,p%grhop)
         else
-          if ((nprocx/=1).and.(.not.lcommunicate_np)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_np)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_np=T in particles_run_pars")  
+               "Switch on lcommunicate_np=T in particles_run_pars")
           call grad(f,inp,p%grhop)
           p%grhop=rhop_swarm*p%grhop
         endif
@@ -2422,14 +2422,14 @@ k_loop:   do while (.not. (k>npar_loc))
         if (nzgrid/=1) &
             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
-      elseif (.not.lparticles_nbody) then 
+      elseif (.not.lparticles_nbody) then
 !
-!  In the case that the N-body code is used, the update in polar grids 
-!  in done by transforming the variables first to Cartesian, to achieve a 
-!  better conservation of the Jacobi constant. We (Wlad and Joe) tested that 
+!  In the case that the N-body code is used, the update in polar grids
+!  in done by transforming the variables first to Cartesian, to achieve a
+!  better conservation of the Jacobi constant. We (Wlad and Joe) tested that
 !  the Tisserand tails in the 3-body problem are not well-reproduced in cylindrical
-!  unless the update is done in Cartesian. The conservation of the Jacobi constant 
-!  then passes from 1e-4 to 1e-7, a significant improvement. 
+!  unless the update is done in Cartesian. The conservation of the Jacobi constant
+!  then passes from 1e-4 to 1e-7, a significant improvement.
 !
         if (lcylindrical_coords) then
           if (nxgrid/=1) &
@@ -2896,7 +2896,7 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
-              if (lcylindrical_gravity_par) then 
+              if (lcylindrical_gravity_par) then
                 rr=sqrt(fp(k,ixp)**2+gravsmooth2)
               else
                 rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
@@ -5137,7 +5137,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine rprint_particles
 !***********************************************************************
     real function get_gas_density(f, ix, iy, iz) result(rho)
-!   
+!
 !  Reads the gas density at location (ix, iy, iz).
 !
 !  20-may-13/ccyang: coded.
@@ -5150,7 +5150,7 @@ k_loop:   do while (.not. (k>npar_loc))
       else linear
         rho = exp(f(ix, iy, iz, ilnrho))
       endif linear
-!   
+!
     endfunction get_gas_density
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)

@@ -121,7 +121,7 @@ module Testfield
   integer :: idiag_E91xy=0      ! DIAG_DOC: $E_{91}$
   integer :: idiag_E92xy=0      ! DIAG_DOC: $E_{92}$
   integer :: idiag_E93xy=0      ! DIAG_DOC: $E_{93}$
-! The 27 coefficients in blocks of 3 
+! The 27 coefficients in blocks of 3
   integer :: idiag_a11xy=0      ! DIAG_DOC: $\alpha_{11}$
   integer :: idiag_a12xy=0      ! DIAG_DOC: $\alpha_{12}$
   integer :: idiag_a13xy=0      ! DIAG_DOC: $\alpha_{13}$
@@ -132,25 +132,25 @@ module Testfield
   integer :: idiag_a32xy=0      ! DIAG_DOC: $\alpha_{32}$
   integer :: idiag_a33xy=0      ! DIAG_DOC: $\alpha_{33}$
 !
-  integer :: idiag_b111xy=0      ! DIAG_DOC: $\b_{111}$ 
-  integer :: idiag_b121xy=0      ! DIAG_DOC: $\b_{121}$ 
-  integer :: idiag_b131xy=0      ! DIAG_DOC: $\b_{131}$ 
-  integer :: idiag_b211xy=0      ! DIAG_DOC: $\b_{211}$ 
-  integer :: idiag_b221xy=0      ! DIAG_DOC: $\b_{221}$ 
-  integer :: idiag_b231xy=0      ! DIAG_DOC: $\b_{231}$ 
-  integer :: idiag_b311xy=0      ! DIAG_DOC: $\b_{311}$ 
-  integer :: idiag_b321xy=0      ! DIAG_DOC: $\b_{321}$ 
-  integer :: idiag_b331xy=0      ! DIAG_DOC: $\b_{331}$ 
+  integer :: idiag_b111xy=0      ! DIAG_DOC: $\b_{111}$
+  integer :: idiag_b121xy=0      ! DIAG_DOC: $\b_{121}$
+  integer :: idiag_b131xy=0      ! DIAG_DOC: $\b_{131}$
+  integer :: idiag_b211xy=0      ! DIAG_DOC: $\b_{211}$
+  integer :: idiag_b221xy=0      ! DIAG_DOC: $\b_{221}$
+  integer :: idiag_b231xy=0      ! DIAG_DOC: $\b_{231}$
+  integer :: idiag_b311xy=0      ! DIAG_DOC: $\b_{311}$
+  integer :: idiag_b321xy=0      ! DIAG_DOC: $\b_{321}$
+  integer :: idiag_b331xy=0      ! DIAG_DOC: $\b_{331}$
 !
-  integer :: idiag_b112xy=0      ! DIAG_DOC: $\b_{112}$ 
-  integer :: idiag_b122xy=0      ! DIAG_DOC: $\b_{122}$ 
-  integer :: idiag_b132xy=0      ! DIAG_DOC: $\b_{132}$ 
-  integer :: idiag_b212xy=0      ! DIAG_DOC: $\b_{212}$ 
-  integer :: idiag_b222xy=0      ! DIAG_DOC: $\b_{222}$ 
-  integer :: idiag_b232xy=0      ! DIAG_DOC: $\b_{232}$ 
-  integer :: idiag_b312xy=0      ! DIAG_DOC: $\b_{312}$ 
-  integer :: idiag_b322xy=0      ! DIAG_DOC: $\b_{322}$ 
-  integer :: idiag_b332xy=0      ! DIAG_DOC: $\b_{332}$ 
+  integer :: idiag_b112xy=0      ! DIAG_DOC: $\b_{112}$
+  integer :: idiag_b122xy=0      ! DIAG_DOC: $\b_{122}$
+  integer :: idiag_b132xy=0      ! DIAG_DOC: $\b_{132}$
+  integer :: idiag_b212xy=0      ! DIAG_DOC: $\b_{212}$
+  integer :: idiag_b222xy=0      ! DIAG_DOC: $\b_{222}$
+  integer :: idiag_b232xy=0      ! DIAG_DOC: $\b_{232}$
+  integer :: idiag_b312xy=0      ! DIAG_DOC: $\b_{312}$
+  integer :: idiag_b322xy=0      ! DIAG_DOC: $\b_{322}$
+  integer :: idiag_b332xy=0      ! DIAG_DOC: $\b_{332}$
 !
 !  arrays for azimuthally averaged uxb and jxb
 !
@@ -233,11 +233,11 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
       integer :: jtest, ierr
-! 
+!
 ! Stop the code if we are not in spherical coordinates
 !
-      if (.not.lspherical_coords) & 
-        call stop_it('initialize_testfiled: testfield_meri works only in spherical coordinates') 
+      if (.not.lspherical_coords) &
+        call stop_it('initialize_testfiled: testfield_meri works only in spherical coordinates')
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -283,7 +283,7 @@ module Testfield
         select case (itestfield)
         case ('j0-P1'); iE0=0
         case ('SRSRC07'); iE0=0
-        case('harmonic') 
+        case('harmonic')
           xtf=krtf*(x(l1:l2)-x(l1))/Lx
           if (krtf /= 0.) krtf1=Lx/krtf
           ytf=khtf*y(m1:m2);
@@ -540,11 +540,11 @@ module Testfield
         call gij(f,iaxtest,aijtest,1)
 !
 ! bbtest
-! 
+!
        call curl_mn(aijtest,bbtest,aatest)
 !
 ! bijtest,gradfiv_atest
-! 
+!
        call gij_etc(f,iaxtest,aatest,aijtest,bijtest,GRADDIV=graddiv_atest)
 !
 ! jjtest
@@ -560,7 +560,7 @@ module Testfield
         select case (itestfield)
           case ('j0-P1'); call set_bbtest_j0_P1(B0test,jtest)
 !
-! Simplest test fields not obeying solenoidal condition from 
+! Simplest test fields not obeying solenoidal condition from
 ! Table 1 of Schrinner et al. (2007)
 !
           case ('SRSRC07'); call set_bbtest_srsrc07(B0test,jtest)
@@ -660,21 +660,21 @@ module Testfield
         if (idiag_E93xy/=0) call zsum_mn_name_xy(Eipq(:,3,i9),idiag_E93xy)
 !
 ! Invert the testfield equations here to get the transport coeffecients,
-! in terms of the testfields and the calculated EMF. 
+! in terms of the testfields and the calculated EMF.
 ! ( \tilde{a} (Schrinner et al 2007 ArXiv:astro-ph/0609752
 !  http://arxiv.org/abs/astro-ph/0609752
 !  see also notes in tex/notes/testfield/spherical.tex )
 !
         call invert_testfield_eqn
 !
-! Now calculate the (a,b) from tilde (a,b) 
+! Now calculate the (a,b) from tilde (a,b)
 !
         call get_ab_from_tildeab
       endif
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
-! 
+!
       if (lvideo.and.lfirst) then
         do j=1,3
           bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
@@ -687,13 +687,13 @@ module Testfield
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine invert_testfield_eqn
-! 
+!
 ! Invert the testfield equations to get the 'tilde'-(a,b) in terms of
-! EMF and testfields. For different choice of testfield different 
-! subroutines are called. 
-! 
-!  dhruba+piyali: 
-! 
+! EMF and testfields. For different choice of testfield different
+! subroutines are called.
+!
+!  dhruba+piyali:
+!
       select case (itestfield)
       case ('j0-P1'); call invert_bbtest_j0_P1
       case ('SRSRC07'); call invert_bbtest_srsrc07
@@ -706,11 +706,11 @@ module Testfield
     endsubroutine invert_testfield_eqn
 !***********************************************************************
     subroutine invert_bbtest_srsrc07
-! 
+!
 ! Inversion for the testfield in Schrinner '07 paper.
-! 
-!  dhruba+piyali: 
-! 
+!
+!  dhruba+piyali:
+!
       use Cdata
       integer :: ivec
 !
@@ -740,11 +740,11 @@ module Testfield
     endsubroutine invert_bbtest_srsrc07
 !***********************************************************************
     subroutine invert_bbtest_harmonic
-! 
+!
 ! Inversion for the harmonic testfield in r and \theta.
-! 
-!  dhruba+piyali: 
-! 
+!
+!  dhruba+piyali:
+!
       use Cdata
       integer :: ivec
 !
@@ -775,11 +775,11 @@ module Testfield
 !***********************************************************************
     subroutine invert_bbtest_j0_P1
       use Cdata
-! 
+!
 ! Inversion for the testfield for spherical bessel and legendre.
-! 
-!  dhruba+piyali: 
-! 
+!
+!  dhruba+piyali:
+!
       integer :: ivec
 !
       call fatal_error('invert_bbtest_j0_P1','not coded yet')
@@ -803,35 +803,35 @@ module Testfield
 !***********************************************************************
     subroutine get_ab_from_tildeab
       use Cdata
-! 
+!
 ! Get the a and b (alpha and beta in our notation) from the tilde (a,b)
 ! Eq. (16) page 6, Schrinner 2007 (Arxiv version)
-! 
-!  dhruba+piyali: 
+!
+!  dhruba+piyali:
 !
 !
-      do ix=1, nx 
+      do ix=1, nx
         alpha(ix,:,1) = atilde(ix,:,1) - btilde(ix,:,2,2)/x(ix+3)
         alpha(ix,:,2) = atilde(ix,:,2) - btilde(ix,:,1,2)/x(ix+3)
       enddo
-      alpha(:,:,3) = atilde(:,:,3) 
+      alpha(:,:,3) = atilde(:,:,3)
       beta = btilde
 
     endsubroutine get_ab_from_tildeab
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
-! 
+!
 !  Write slices for animation of magnetic variables.
-! 
+!
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
-! 
+!
       use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
 !  Loop over slices
-! 
+!
       select case (trim(slices%name))
 !
 !  Magnetic field
@@ -906,7 +906,7 @@ module Testfield
 !  is zero, but for Ubar x b, if it is saved in the f array.
 !
 !                 uu=f(l1:l2,m,n,iux:iuz)
-! 
+!
               uu=f(l1:l2,m,n,iux:iuz)
               if (lcalc_uumeanxy) then
                 do j=1,3
@@ -1125,7 +1125,7 @@ module Testfield
       endif
 !
 !  check for those quantities that we want to evaluate online
-! 
+!
       do iname=1,nname
 !DM work here
       enddo

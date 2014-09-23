@@ -75,7 +75,7 @@ module Particles_cdata
     integer :: pol_uu, pol_oo, pol_TT, pol_rho, pol_gradTT, pol_bb, pol_ee
     integer :: pol_pp, pol_species, pol_nu
   end type quant_interp_penc
-!  
+!
   type(quant_interp_penc) :: interp
 !
 !  Interpolated quantities: moved outside type to conform to

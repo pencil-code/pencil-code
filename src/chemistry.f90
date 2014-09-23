@@ -5666,7 +5666,7 @@ module Chemistry
         else
           if (ldensity_nolog) then
             tmp=(PP/(k_B_cgs/m_u_cgs)*&
-                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3 
+                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3
             f(:,:,:,ilnTT)=alog(tmp)!+f(:,:,:,ilnTT)
           else
             tmp=(PP/(k_B_cgs/m_u_cgs)*&

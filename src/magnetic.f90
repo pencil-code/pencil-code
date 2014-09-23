@@ -289,7 +289,7 @@ module Magnetic
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, & 
+      lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -1647,12 +1647,12 @@ module Magnetic
         case ('relprof')
           f(l1:l2,m1:m2,n1:n2,iax:iay)=A_relprof
 !
-        case ('inclined-dipole') 
+        case ('inclined-dipole')
 !
-!  Inclined dipole initial condition. In principle can use precession as well (though for that it should be moved to 
+!  Inclined dipole initial condition. In principle can use precession as well (though for that it should be moved to
 !  runtime). Works only for spherical coordinates, and needs global external storing of fields.
 !
-          if (.not.(lbx_ext_global.and.lby_ext_global.and.lbz_ext_global)) & 
+          if (.not.(lbx_ext_global.and.lby_ext_global.and.lbz_ext_global)) &
                call fatal_error("init_aa",&
                "inclined-dipole: switch lb[xyz]_ext_global=T in magnetic_start_pars")
           if (.not.lspherical_coords) &
@@ -1660,7 +1660,7 @@ module Magnetic
                "inclined-dipole: so far only implemented for spherical coordinates")
 !
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
-          do n=n1,n2; do m=m1,m2 
+          do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iglobal_bx_ext) = dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
             f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)-omega_Bz_ext*t))                      /x(l1:l2)**3
@@ -3161,7 +3161,7 @@ module Magnetic
         call write_zprof('resi_shock',peta_shock)
         gradeta_shock(:,1) = 0.
         gradeta_shock(:,2) = 0.
-        gradeta_shock(:,3) = eta_shock*(eta_jump_shock-1.)* & 
+        gradeta_shock(:,3) = eta_shock*(eta_jump_shock-1.)* &
                               der_step(p%z_mn,eta_zshock,-eta_width_shock)
         if (lweyl_gauge) then
           do i=1,3
@@ -3189,7 +3189,7 @@ module Magnetic
         peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
                       step(tmp1,eta_xshock,eta_width_shock)
 !
-        gradeta_shock(:,1) = eta_shock*(eta_jump_shock-1.)* & 
+        gradeta_shock(:,1) = eta_shock*(eta_jump_shock-1.)* &
                               der_step(tmp1,eta_xshock,eta_width_shock)
         gradeta_shock(:,2) = 0.
         gradeta_shock(:,3) = 0.
@@ -6888,8 +6888,8 @@ module Magnetic
 !
         case ('two_step','two-step')
 !
-!  Allow for the each step to have its width. If they are 
-!  not specified, then eta_xwidth takes precedence. 
+!  Allow for the each step to have its width. If they are
+!  not specified, then eta_xwidth takes precedence.
 !
            if (eta_xwidth .ne. 0.) then
              eta_xwidth0 =eta_xwidth

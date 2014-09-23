@@ -583,15 +583,15 @@ module Messages
 !
 !  code(IN): errorcode from IOSTAT
 !  mode(IN): describes failed action, starts with 'open', 'openr', 'openw', 'read', 'write' or 'close'
-!            for 'read' and 'write': should contain the name of the relevant variable(s) 
-!  file(IN): file at which operation failed, 
+!            for 'read' and 'write': should contain the name of the relevant variable(s)
+!  file(IN): file at which operation failed,
 !            if omitted assumed to be the one saved in curfile
 !            usually set by the call with mode='open'
 !  dist(IN): indicator for distributed files (>0) and need of synchronization of file states across nodes
 !            or simple backskipping (<0);|dist| = logical unit number
 !            only considered in calls with mode='open'
 !  msg(IN) : additional message text
-!  lcont(IN): flag for continue despite of READ error 
+!  lcont(IN): flag for continue despite of READ error
 !  location(IN): name of program unit, in which error occurred
 !                if omitted assumed to be the one saved in curloc
 !                usually set by the call with mode='open'
@@ -599,7 +599,7 @@ module Messages
 !  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
 !                statement ending the present group of I/O operations as outlog closes (tries to close) the file.
 !                It is in the responsibility of the programmer that by this jump no relevant statements are missed.
-!                          
+!
 !  3-nov-11/MR: coded;
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 ! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
@@ -629,7 +629,7 @@ module Messages
     outlog = .false.
 !
     lopen = mode(1:4)=='open'
-    lread = mode(1:4)=='read' 
+    lread = mode(1:4)=='read'
     if (.not.lread .and. len_trim(mode)>4) then
       lread = lread .or. mode(1:5)=='openr'
       lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
@@ -662,7 +662,7 @@ module Messages
         else
           outlog = .true.
           call fatal_error(curloc, 'End-Of-File'//trim (filename)//trim (message))      !add mode?
-        endif 
+        endif
       elseif (code > 0 .and. .not.(lread.and.lcontl)) then
         outlog = .true.
         call fatal_error(curloc, 'I/O error (code '//trim (itoa (code))//')'// &
@@ -681,7 +681,7 @@ module Messages
         curdist = 0
       endif
 !
-      curback = 0                                      ! counter for successfully read records set back  
+      curback = 0                                      ! counter for successfully read records set back
 !
     endif
 !
@@ -693,14 +693,14 @@ module Messages
 !
     lsync = .false.
 !
-    if (curdist/=0) then                               ! backskipping enabled 
+    if (curdist/=0) then                               ! backskipping enabled
 !
       if ( ncpus==1 .and. curdist>0 ) curdist = -curdist
 !
-      if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose.or.lread) ) then      
+      if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose.or.lread) ) then
                                                                ! read/write/close on distributed file failed (somewhere)
-        lsync = report_clean_output(code/=0, errormsg) 
-        if (lsync.and..not.lread) then                         ! synchronization necessary as at least 
+        lsync = report_clean_output(code/=0, errormsg)
+        if (lsync.and..not.lread) then                         ! synchronization necessary as at least
                                                                ! one processor failed in writing
           if (lserial_io) then                                 ! no backskipping, needs to be checked
             submsg = ' not synchronized (lserial_io=T)!'
@@ -711,10 +711,10 @@ module Messages
             if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
 !
             if ( backskip(curdist,curback) ) then                                ! try to set back file pointer by curback records
-              if (lroot) submsg = trim(submsg)//' not synchronized!' 
+              if (lroot) submsg = trim(submsg)//' not synchronized!'
             else
               if (lroot) submsg = trim(submsg)//' synchronized.'
-            endif  
+            endif
 !
             close(curdist,IOSTAT=iostat)               ! try to close file
             if (iostat/=0) call safe_character_append(submsg,'. File not closed!')
@@ -726,7 +726,7 @@ module Messages
       else if ( curdist<0 .and. code/=0 ) then         ! undistributed file, operation failed
 !
         lsync = .false.
-        if (lwrite.or.lclose) then 
+        if (lwrite.or.lclose) then
 !
           if ( backskip(abs(curdist),curback) ) submsg = trim(submsg)//' pointer not set back!'
 !
@@ -747,9 +747,9 @@ module Messages
       if ( lopen.or.lread.or.lwrite.or.lclose ) then
 !
         call safe_character_append(errormsg,' when '//mode(1:4)//'ing ')
-        
+
         if (mode(1:5)=='openr') then
-          call safe_character_append(errormsg,' for reading ') 
+          call safe_character_append(errormsg,' for reading ')
         elseif (mode(1:5)=='openw') then
           call safe_character_append(errormsg,' for writing ')
         endif
@@ -781,7 +781,7 @@ module Messages
 
       if ( submsg/='File' ) call safe_character_append(errormsg,'. '//trim(submsg))
       if ( present(msg) ) call safe_character_append(errormsg,'. '//trim(msg))
-!    
+!
 ! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
 ! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerrors.log.
 !
@@ -835,7 +835,7 @@ module Messages
     character (LEN=3) :: model
     character (LEN=fnlen) :: line
     integer :: lun=90,i,count,io_err
-   
+
     if ( .not.present(mode) ) then
       model='any'
     else
@@ -851,7 +851,7 @@ module Messages
       read(lun,'(a)',IOSTAT=io_err) line
       if (io_err < 0) then
         exit
-      else if (io_err > 0) then 
+      else if (io_err > 0) then
         cycle
       endif
 !
@@ -867,10 +867,10 @@ module Messages
         endif
       enddo
 !
-      if (count == nstr) then 
+      if (count == nstr) then
         scanfile = .true.
         exit
-      endif 
+      endif
 !
     enddo
 !

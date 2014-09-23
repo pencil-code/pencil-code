@@ -83,7 +83,7 @@ module Timestep
         enddo; enddo; enddo
 !
         if (lspecial) call special_after_timestep(f,df,tau_sts(itsub))
-        
+
 !  Increase time.
 !
         t = t + tau_sts(itsub)
@@ -132,4 +132,4 @@ module Timestep
     endsubroutine substeps
 !***********************************************************************
 endmodule Timestep
-  
+

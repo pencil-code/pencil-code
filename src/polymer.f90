@@ -100,9 +100,9 @@ module Polymer
       endif
 !
 ! give warning if polymeric backreaction is set true but polymer
-! density, mu_poly is set to zero. 
+! density, mu_poly is set to zero.
 ! The warning is given only by the root processor but not when we are running
-! start. 
+! start.
 !
       if ((lroot).and.lpolyback.and.(mu_poly==0.).and.(.not.lstart)) &
           call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
@@ -139,13 +139,13 @@ module Polymer
                print*,'init_poly: rods'
                print*, 'The rods point along the vector:',rod_dirn
             endif
-            f(:,:,:,ip11) = rod_dirn(1)*rod_dirn(1) 
-            f(:,:,:,ip12) = rod_dirn(1)*rod_dirn(2) 
-            f(:,:,:,ip13) = rod_dirn(1)*rod_dirn(3) 
-            f(:,:,:,ip22) = rod_dirn(2)*rod_dirn(2) 
-            f(:,:,:,ip23) = rod_dirn(2)*rod_dirn(3) 
+            f(:,:,:,ip11) = rod_dirn(1)*rod_dirn(1)
+            f(:,:,:,ip12) = rod_dirn(1)*rod_dirn(2)
+            f(:,:,:,ip13) = rod_dirn(1)*rod_dirn(3)
+            f(:,:,:,ip22) = rod_dirn(2)*rod_dirn(2)
+            f(:,:,:,ip23) = rod_dirn(2)*rod_dirn(3)
             f(:,:,:,ip33) = rod_dirn(3)*rod_dirn(3)
-            f(:,:,:,ipoly:ipoly+5) = pamp*f(:,:,:,ipoly:ipoly+5) 
+            f(:,:,:,ipoly:ipoly+5) = pamp*f(:,:,:,ipoly:ipoly+5)
           case default
 !
 !  Catch unknown values.
@@ -379,7 +379,7 @@ module Polymer
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
-!   Always calculate the maximum value of fr 
+!   Always calculate the maximum value of fr
       call  max_mn(p%fr,frmax_local)
       if (idiag_frmax/=0 ) fname(idiag_frmax) =  frmax_local
       if (idiag_polytrm/=0)   call sum_mn_name(p%trp,idiag_polytrm)
@@ -432,7 +432,7 @@ module Polymer
         enddo
       endif
 !
-!  GraduDotC and CDotGraduT . 
+!  GraduDotC and CDotGraduT .
 !
       call mult_matrix(p%uij,p%poly,GraduDotC)
       call transpose_mn(p%uij,uijT)

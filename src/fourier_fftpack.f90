@@ -2344,7 +2344,7 @@ module Fourier
 !
       if (lshear) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
 !
-      if (lshift) then 
+      if (lshift) then
         allocate (dshift_z(ina), stat=stat)
         if (stat > 0) call fatal_error ('fft_z_parallel_2D', &
              'Could not allocate memory for shift', .true.)
@@ -2820,9 +2820,9 @@ module Fourier
       nx_other=size(a_re,1); ny_other=size(a_re,2)
       nxgrid_other=nx_other*nprocx
       nygrid_other=ny_other*nprocy
-!     
+!
       pnx=nxgrid_other
-      pny=nygrid_other/nprocxy 
+      pny=nygrid_other/nprocxy
 !
 ! pencil shaped transposed data sizes
 !

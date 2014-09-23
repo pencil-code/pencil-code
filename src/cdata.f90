@@ -604,23 +604,23 @@ module Cdata
 ! to accomodate the following.
   real :: kinematic_phase=0.
 !
-!  Switch for Galilean-invariant advection for global disks (fargo). Used 
+!  Switch for Galilean-invariant advection for global disks (fargo). Used
 !  in connection with special/fargo
 !
   logical :: lfargo_advection=.false.
 !
 !  Switch for local isothermal approximation: a hardcoded time-invariant
-!  temperature gradient for global disks. 
+!  temperature gradient for global disks.
 !
   logical :: llocal_iso=.false.
 !
 !  Switch for using the full speed in less-than-3D simulations
-!  when the velocity in the non-existent direction dominates. 
+!  when the velocity in the non-existent direction dominates.
 !
   logical :: lisotropic_advection=.false.
 !
 !  Used together with entropy, turns iss into ilntt (i.e., entropy
-!  becomes log temperature). It does the same as using the 
+!  becomes log temperature). It does the same as using the
 !  temperature_idealgas.f90 procedure, but draws on the more available
 !  functionality extant in entropy.f90.
 !

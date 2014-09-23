@@ -89,7 +89,7 @@ module General
     module procedure write_by_ranges_2d_cmplx
   endinterface
 
-  interface lextend_vector    
+  interface lextend_vector
     module procedure lextend_vector_float
     module procedure lextend_vector_char
   endinterface
@@ -1323,7 +1323,7 @@ module General
 !
 !  01-apr-00/John Crowe (Newcastle): written
 !  10-avr-12/dintrans: recoded entirely because the old version did
-!  not work (I realized that by inverting pentadiagonal systems with known 
+!  not work (I realized that by inverting pentadiagonal systems with known
 !  analytical solutions, e.g. laplacian of cos/sin functions)
 !
       real, dimension(:), intent(in)  :: a,b,c,d,e,r
@@ -2192,8 +2192,8 @@ module General
 ! Returns number of found substrings.
 !
 !  10-apr-11/MR: coded
-!  18-nov-13/MR: removed dummy parameter lenf, can be inferred from feld 
-!                
+!  18-nov-13/MR: removed dummy parameter lenf, can be inferred from feld
+!
       character (LEN=*),               intent(in)  :: zeile
       character (LEN=*), dimension(:), intent(out) :: feld
       character,                       intent(in)  :: tz
@@ -2282,7 +2282,7 @@ module General
  1  nd = get_range_no(range,1)
     if ( nd==0 ) return
 !
-    ncoll = ioptest(ncol,8) 
+    ncoll = ioptest(ncol,8)
     is = range(3)
 !
     if ( unfilled > 0 ) then
@@ -2372,7 +2372,7 @@ module General
         iai=ranges(1,i); iei=ranges(2,i); stepi=ranges(3,i)
 !
 ! has ranges(:,i) same stepsize as range?
-! 
+!
         if ( stepi == step ) then
 !
           if ( iar <= iei+stepi .and. &
@@ -2477,8 +2477,8 @@ module General
 !***********************************************************************
     subroutine find_ranges(list,ranges,ie)
 !
-! extracts ranges start:stop:stop from a list and adds them to array of 
-! ie ranges, updates ie accordingly 
+! extracts ranges start:stop:stop from a list and adds them to array of
+! ie ranges, updates ie accordingly
 !
 ! 4-feb-14/MR: coded
 !
@@ -2524,7 +2524,7 @@ module General
 ! if <step> missing it is set to 1.
 ! adjusts range not to exceed limits of default range 'defrange'
 ! crange is interpreted as far as possible, missing data are taken from defrange
-! 
+!
 ! 20-apr-11/MR: coded
 ! 20-sep-12/MR: made defrange optional, changed order of dummy arguments
 ! 10-feb-14/MR: use of defrange debugged
@@ -2535,10 +2535,10 @@ module General
 !
       integer :: isep, isep1, ios, ios1, ios2, lenrng
       real    :: tmp
-      logical :: ldefr         
+      logical :: ldefr
 !
       ldefr = present(defrange)
-     
+
       ios=0; ios1=0; ios2=0
 !
       if ( crange /= '' ) then
@@ -2616,7 +2616,7 @@ module General
       integer, dimension(3), intent(in), optional :: defrange
 !
       integer :: isep, isep1, ios, ios1, ios2, lenrng, tmp
-      logical :: ldefr         
+      logical :: ldefr
 !
       ldefr = present(defrange)
 !
@@ -2655,7 +2655,7 @@ module General
               read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)
 !
               if ( ios2 == 0 ) range(3) = abs(range(3))
-!       
+!
             endif
           endif
 !
@@ -2945,8 +2945,8 @@ module General
   endfunction string_in_array
 !***********************************************************************
     logical function loptest(lopt,ldef)
-!  
-!  returns value of optional logical parameter opt if present, 
+!
+!  returns value of optional logical parameter opt if present,
 !  otherwise the default value ldef, if present, .false. if not
 !
 !  20-aug-13/MR: coded
@@ -2965,8 +2965,8 @@ module General
     endfunction loptest
 !***********************************************************************
     integer function ioptest(iopt,idef)
-!  
-!  returns value of optional integer parameter iopt if present, 
+!
+!  returns value of optional integer parameter iopt if present,
 !  otherwise the default value idef, if present, zero, if not.
 !
 !  20-aug-13/MR: coded
@@ -2984,7 +2984,7 @@ module General
     endfunction ioptest
 !***********************************************************************
     real function roptest(ropt,rdef)
-!  
+!
 !  returns value of optional real parameter ropt if present,
 !  otherwise the default value rdef, if present, zero, if not.
 !
@@ -3003,8 +3003,8 @@ module General
     endfunction roptest
 !***********************************************************************
     real(KIND=8) function doptest(dopt,ddef)
-!  
-!  returns value of optional real*8 parameter dopt if present, 
+!
+!  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
 !
 !  20-aug-13/MR: coded

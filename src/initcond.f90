@@ -5607,7 +5607,7 @@ module Initcond
       real :: amp, rpart
 
       integer :: m,l
- 
+
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
@@ -5632,7 +5632,7 @@ module Initcond
       real :: amp, rpart
 
       integer :: m,l
- 
+
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
@@ -5847,8 +5847,8 @@ module Initcond
       end if
 
 !
-!   Every processor reads from the same datafile. Depending on the indices, 
-!   a specific data point in written into proper domain. 
+!   Every processor reads from the same datafile. Depending on the indices,
+!   a specific data point in written into proper domain.
 !   Format of the data:
 !   l  m  n  value
 !   The datafiles do not include boundary zones!
@@ -5856,13 +5856,13 @@ module Initcond
       io_status = 0
       do while (io_status == 0)
         read (19,*, iostat=io_status) lfile, mfile, nfile, value
-        l = lfile - ipx*nx + 3 
-        m = mfile - ipy*ny + 3 
-        n = nfile - ipz*nz + 3 
-        if (l >= l1 .AND. m >= m1 .AND. n >= n1 .AND. l <= l2 .AND. m <= m2 .AND. n <= n2) then 
+        l = lfile - ipx*nx + 3
+        m = mfile - ipy*ny + 3
+        n = nfile - ipz*nz + 3
+        if (l >= l1 .AND. m >= m1 .AND. n >= n1 .AND. l <= l2 .AND. m <= m2 .AND. n <= n2) then
           f(l,m,n,i) = value
-        end if 
-      end do   
+        end if
+      end do
 !
       close(19)
 !
@@ -5877,7 +5877,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       logical :: exfile
       integer :: l,m,n, lfile, mfile, nfile, io_status, i
-      real :: value1, value2, value3 
+      real :: value1, value2, value3
       character(len=*) :: datafile
 !
       inquire (file=datafile, exist=exfile)
@@ -5887,8 +5887,8 @@ module Initcond
         open(19,file=datafile)
       end if
 !
-!   Every processor reads from the same datafile. Depending on the indices, 
-!   a specific data point in written into proper domain. 
+!   Every processor reads from the same datafile. Depending on the indices,
+!   a specific data point in written into proper domain.
 !   Format of the data:
 !   l  m  n  value_x  value_y  value_z
 !   The datafiles do not include boundary zones!
@@ -5896,15 +5896,15 @@ module Initcond
       io_status = 0
       do while (io_status == 0)
         read (19,*, iostat=io_status) lfile, mfile, nfile, value1, value2, value3
-        l = lfile - ipx*nx + 3 
-        m = mfile - ipy*ny + 3 
-        n = nfile - ipz*nz + 3 
-        if (l >= l1 .AND. m >= m1 .AND. n >= n1 .AND. l <= l2 .AND. m <= m2 .AND. n <= n2) then 
+        l = lfile - ipx*nx + 3
+        m = mfile - ipy*ny + 3
+        n = nfile - ipz*nz + 3
+        if (l >= l1 .AND. m >= m1 .AND. n >= n1 .AND. l <= l2 .AND. m <= m2 .AND. n <= n2) then
           f(l,m,n,i) = value1
           f(l,m,n,i+1) = value2
           f(l,m,n,i+2) = value3
-        end if 
-      end do   
+        end if
+      end do
 !
       close(19)
 !

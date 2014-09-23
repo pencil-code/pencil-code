@@ -154,7 +154,7 @@ module Particles_spin
 !
 !       endselect
 !     enddo
-!       
+!
     endsubroutine init_particles_spin
 !***********************************************************************
     subroutine particles_spin_prepencil_calc(f)

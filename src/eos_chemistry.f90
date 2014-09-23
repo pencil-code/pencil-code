@@ -547,7 +547,7 @@ module EquationOfState
 !
         if (ltemperature_nolog) then
          if (lpencil(i_gTT)) call grad(f,iTT,p%gTT)
-         !NILS: The call below does not yield del2lnTT but rather del2TT, 
+         !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
@@ -598,7 +598,7 @@ module EquationOfState
 !
 !  Energy per unit mass
 !
-!      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT 
+!      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT
       if (lpencil(i_ee)) p%ee = p%cv*p%TT
 !
 !      endif

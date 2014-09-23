@@ -48,9 +48,9 @@ module Particles_mpicomm
       intent (in) :: f, lstarting
 !
 !  Distribute particles evenly among processors to begin with.
-!  DM: for some initial conditions it may be better not to distribute 
+!  DM: for some initial conditions it may be better not to distribute
 !  particles evenly so the logical variable ldist_particles_evenly has been
-!  introduced. This variable is true by default.  
+!  introduced. This variable is true by default.
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
       call keep_compiler_quiet(f)
@@ -80,7 +80,7 @@ module Particles_mpicomm
 !  For runs with few particles (rather arbitrarily set to npar==nspar),
 !  set them all at the root processor at first. Not an optimal solution, but
 !  it will do for now. The best thing would be to allocate all nbody particles
-!  at the root and the rest (if any) distributed evenly 
+!  at the root and the rest (if any) distributed evenly
 !
       if (lparticles_nbody.and.(npar==nspar)) then
         if (lroot) then
@@ -154,7 +154,7 @@ module Particles_mpicomm
           endif
 !
 !  Distribute particle species evenly among processors.
-!        
+!
           npar_per_species=npar/npar_species
 !
           do jspec=1,npar_species
@@ -358,33 +358,33 @@ module Particles_mpicomm
             enddo
           endif
 !
-!  Fix for error that might occur when a particle lands exactly at the 
+!  Fix for error that might occur when a particle lands exactly at the
 !  box boundary and is assigned to a non-existing processor.
 !
           if (lcheck_exact_frontier) then
-            if (nprocx/=1) then 
+            if (nprocx/=1) then
 !
-!  Check if the particle is really closer to a grid cell than to a  
-!  ghost one. otherwise, this is a more serious particle position 
+!  Check if the particle is really closer to a grid cell than to a
+!  ghost one. otherwise, this is a more serious particle position
 !  problem, that should be allowed to lead to a crash.
 !
               if (ipx_rec==-1) then
                 if (xyz0(1)-fp(k,ixp)<=(x(l1)-x(l1-1))/2) ipx_rec=0
               endif
-              if (ipx_rec==nprocx) then 
+              if (ipx_rec==nprocx) then
                 if (fp(k,ixp)-xyz1(1)<=(x(l2+1)-x(l2))/2) ipx_rec=nprocx-1
               endif
             endif
-            if (nprocy/=1) then 
+            if (nprocy/=1) then
               if (ipy_rec==-1) then
                 if (xyz0(2)-fp(k,iyp)<=(y(m1)-y(m1-1))/2) ipy_rec=0
               endif
-              if (ipy_rec==nprocy) then 
+              if (ipy_rec==nprocy) then
                 if (fp(k,iyp)-xyz1(2)<=(y(m2+1)-y(m2))/2) ipy_rec=nprocy-1
               endif
             endif
-            if (nprocz/=1) then 
-              if (ipz_rec==-1) then 
+            if (nprocz/=1) then
+              if (ipz_rec==-1) then
                 if (xyz0(3)-fp(k,izp)<=(z(n1)-z(n1-1))/2) ipz_rec=0
               endif
               if (ipz_rec==nprocz) then
@@ -721,9 +721,9 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine find_index_by_bisection(qpar,q,iq0)
 !
-!  Given a particle location (qpar), find the index of 
+!  Given a particle location (qpar), find the index of
 !  the nearest grid cell by bisecting the interval. Its main
-!  use is for non-equidistant grids. Adapted from existing code. 
+!  use is for non-equidistant grids. Adapted from existing code.
 !
 !  27-mar-11/wlad: coded
 !
@@ -750,7 +750,7 @@ module Particles_mpicomm
       else
         iq0=ju
       endif
-!      
+!
     endsubroutine find_index_by_bisection
 !***********************************************************************
     subroutine get_brick_index(xxp, iproc, ibrick)

@@ -247,7 +247,7 @@ module Boundcond
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('a2r')
-                  ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$ 
+                  ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
                   ! BCX_DOC: This is the replacement of zero second derivative
                   ! BCX_DOC: in spherical coordinates, in radial direction.
                   call bc_a2r_x(f,topbot,j)
@@ -264,7 +264,7 @@ module Boundcond
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpz_x(f,topbot,j)
                 case ('spr')
-                  ! BCX_DOC: spherical perfect conductor 
+                  ! BCX_DOC: spherical perfect conductor
                   ! BCX_DOC: implies $f''+2f'/R=0$ and $f(x_N)=0$
                   call bc_spr_x(f,topbot,j)
                 case ('v')
@@ -628,7 +628,7 @@ module Boundcond
               case ('spt')
                 ! BCY_DOC: spherical perfect conducting boundary condition
                 ! BCY_DOC: along $\theta$ boundary
-                ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$ 
+                ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$
                 call bc_spt_y(f,topbot,j)
               case ('pfc')
                 ! BCY_DOC: perfect conducting boundary condition
@@ -673,7 +673,7 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !  02-apr-13/MR  : added new boundary condition 'fs' = frozen boundary value
-!                  + symmetry about boundary; added 'fa' for alternative reference to 
+!                  + symmetry about boundary; added 'fa' for alternative reference to
 !                  already existing freezing condition (includes antisymmetry)
 !
       use Special, only: special_boundconds
@@ -1246,8 +1246,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_a2r_x(f,topbot,j)
 !
-!  Setting d^2f/dr^2 + 2*/r*df/dr - 2*f/r^2 =0, 
-!  to set del2=0 in spherical coordinates. 
+!  Setting d^2f/dr^2 + 2*/r*df/dr - 2*f/r^2 =0,
+!  to set del2=0 in spherical coordinates.
 !
 !
 !  24-nov-12/joern: coded
@@ -1518,7 +1518,7 @@ module Boundcond
                       +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
 !
       case ('top')               ! top boundary
-        tmp=x(l2)*dx_1(l2)  
+        tmp=x(l2)*dx_1(l2)
 !
         f(l2,:,:,j)  =0
         f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
@@ -1977,7 +1977,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_stratified_y(f,topbot,j)
 !
-!  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction. 
+!  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction.
 !  This boundary is coded only for linear density in spherical coordinates
 !
 !  06-oct-13/wlad: coded
@@ -2777,7 +2777,7 @@ module Boundcond
         case default
           call warning('bc_set_jethat_x',topbot//" should be 'top' or 'bot'")
         endselect
-       
+
      else
         call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
      endif
@@ -2788,7 +2788,7 @@ module Boundcond
 !
 !  Sets tophat velocity profile at the inner (bot) boundary
 !
-!  06-nov-2013/nils: adapted from bc_set_jethat_x. Made this new routine 
+!  06-nov-2013/nils: adapted from bc_set_jethat_x. Made this new routine
 !                    because there some awckward choices made in the
 !                    other one, and the other one is for spherical geometries.
 !
@@ -2828,7 +2828,7 @@ module Boundcond
          case default
             call warning('bc_set_jethat_x',topbot//" should be 'top' or 'bot'")
          endselect
-!       
+!
       else
          call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
       endif
@@ -2837,7 +2837,7 @@ module Boundcond
 ! **********************************************************************
     subroutine jet_x(prof,vel,rad)
 !
-!  06-nov-2013/nils: Set jet profile 
+!  06-nov-2013/nils: Set jet profile
 !
       use Sub, only: step
 !
@@ -2883,8 +2883,8 @@ module Boundcond
 !
 !  Normal field boundary condition for spherical coordinate system.
 !  d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r with A_{\theta} = 0 sets
-!  B_r = B_{\phi} = 0 in spherical polar coordinate system. This subroutine 
-!  sets only the first part of this boundary condition for 'j'-th component 
+!  B_r = B_{\phi} = 0 in spherical polar coordinate system. This subroutine
+!  sets only the first part of this boundary condition for 'j'-th component
 !  of f.
 !
 !  25-Aug-2007/dhruba: coded
@@ -4108,7 +4108,7 @@ module Boundcond
 !  It maintains a power law.
 !
 !  y_{b+i} = y_b + a * (x_{b+1} - x_b)
-! 
+!
 !  where a = (y_b - y_{b-1})/(x_b-x_{b-1})
 !
 !  18-dec-08/wlad: coded
@@ -7894,7 +7894,7 @@ module Boundcond
 !  induces mass inflows which are too high to be physically sustainable.
 !
 !  13-feb-11/fred: adapted from bc_ctz
-!  16-apr-14/fred: revised constant from 10. to 1.11 to preserve exponential 
+!  16-apr-14/fred: revised constant from 10. to 1.11 to preserve exponential
 !                  reduction in density with height ref Ferriere Review 2001
 !                  Eq.(5)
 !
@@ -8103,23 +8103,23 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      select case (topbot) 
-      case ('top') 
+      select case (topbot)
+      case ('top')
         f(l2+1,:,:,j) = + 4.*f(l2,:,:,j)   - 6.*f(l2-1,:,:,j) &
-                        + 4.*f(l2-2,:,:,j) -    f(l2-3,:,:,j) 
+                        + 4.*f(l2-2,:,:,j) -    f(l2-3,:,:,j)
         f(l2+2,:,:,j) = +10.*f(l2,:,:,j)   -20.*f(l2-1,:,:,j) &
-                        +15.*f(l2-2,:,:,j) - 4.*f(l2-3,:,:,j) 
+                        +15.*f(l2-2,:,:,j) - 4.*f(l2-3,:,:,j)
         f(l2+3,:,:,j) = +20.*f(l2,:,:,j)   -45.*f(l2-1,:,:,j) &
-                        +36.*f(l2-2,:,:,j) -10.*f(l2-3,:,:,j) 
-      case ('bot')                      
+                        +36.*f(l2-2,:,:,j) -10.*f(l2-3,:,:,j)
+      case ('bot')
         f(l1-1,:,:,j) = + 4.*f(l1,:,:,j)   - 6.*f(l1+1,:,:,j) &
-                        + 4.*f(l1+2,:,:,j) -    f(l1+3,:,:,j) 
+                        + 4.*f(l1+2,:,:,j) -    f(l1+3,:,:,j)
         f(l1-2,:,:,j) = +10.*f(l1,:,:,j)   -20.*f(l1+1,:,:,j) &
-                        +15.*f(l1+2,:,:,j) - 4.*f(l1+3,:,:,j) 
+                        +15.*f(l1+2,:,:,j) - 4.*f(l1+3,:,:,j)
         f(l1-3,:,:,j) = +20.*f(l1,:,:,j)   -45.*f(l1+1,:,:,j) &
-                        +36.*f(l1+2,:,:,j) -10.*f(l1+3,:,:,j) 
+                        +36.*f(l1+2,:,:,j) -10.*f(l1+3,:,:,j)
       endselect
-!      
+!
     endsubroutine tayler_expansion
 !***********************************************************************
 endmodule Boundcond

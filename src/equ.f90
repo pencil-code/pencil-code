@@ -468,10 +468,10 @@ module Equ
 !  Calculate pencils for the pencil_case.
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,
 !  so it would be wrong to check for lhydro etc in such cases.
-! DM : in the formulation of lambda effect due to Kitchanov and Olemski, 
+! DM : in the formulation of lambda effect due to Kitchanov and Olemski,
 ! DM : we need to have dsdr to calculate lambda. Hence, the way it is done now,
-! DM : we need to have energy pencils calculated before viscosity pencils. 
-! DM : This is *bad* practice and must be corrected later. 
+! DM : we need to have energy pencils calculated before viscosity pencils.
+! DM : This is *bad* practice and must be corrected later.
 ! To check ghost cell consistency, please uncomment the following 2 lines:
 !       if (.not. lpencil_check_at_work .and. necessary(imn)) &
 !       call check_ghosts_consistency (f, 'before calc_pencils_*')
@@ -1079,7 +1079,7 @@ module Equ
 !
 !  0-D Diagnostics.
 !
-      if (ldiagnos) then 
+      if (ldiagnos) then
         call diagnostic(fname,nname)
         call diagnostic(fname_keep,nname,lcomplex=.true.)
       endif

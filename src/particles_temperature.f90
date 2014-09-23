@@ -82,7 +82,7 @@ module Particles_temperature
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      
+
 !
     end subroutine initialize_particles_TT
 !***********************************************************************
@@ -125,7 +125,7 @@ module Particles_temperature
       enddo
 !
     endsubroutine init_particles_TT
-!***********************************************************************    
+!***********************************************************************
 subroutine pencil_criteria_par_TT()
 !
 !  All pencils that the Particles_temperature module depends on are specified here
@@ -149,7 +149,7 @@ subroutine pencil_criteria_par_TT()
 !
       if (ldiagnos) then
         if (idiag_Tpm/=0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
-        if (idiag_etpm/=0) then        
+        if (idiag_etpm/=0) then
           if (imp/=0) then
             call sum_par_name(fp(1:npar_loc,iTp)*cp_part*&
                 fp(1:npar_loc,imp),idiag_etpm)
@@ -211,7 +211,7 @@ subroutine pencil_criteria_par_TT()
 !  changed when there is a relative velocity between the partciles and
 !  the fluid.
 !
-            Nusselt=2.                        
+            Nusselt=2.
 !
 !  Calculate convective and conductive heat
 !
@@ -232,7 +232,7 @@ subroutine pencil_criteria_par_TT()
               pmass=4.*pi*fp(k,iap)**3*rhopmat/3.
             endif
 !
-!  Calculate the change in particle temperature based on the cooling/heating 
+!  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
             dfp(k,iTp)=(Qreac-Qc+Qrad)/(pmass*cp_part)
@@ -243,7 +243,7 @@ subroutine pencil_criteria_par_TT()
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
-!              
+!
               call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
                   fp,k,ix0,iy0,iz0)
 !
@@ -304,7 +304,7 @@ subroutine pencil_criteria_par_TT()
       real :: weight
       real :: weight_x, weight_y, weight_z
       integer, intent(in) :: k,ixx,iyy,izz,ix0,iy0,iz0
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp   
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
 !
       if (lparticlemesh_cic) then
 !
@@ -372,7 +372,7 @@ subroutine pencil_criteria_par_TT()
 !
       integer, intent(in)  :: k,ix0,iy0,iz0
       integer, intent(out) :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp      
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
 !
 !  Cloud In Cell (CIC) scheme.
 !
@@ -493,7 +493,7 @@ subroutine pencil_criteria_par_TT()
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_Tpm=0; idiag_etpm=0; 
+        idiag_Tpm=0; idiag_etpm=0;
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_TT: run through parse list'
@@ -505,7 +505,7 @@ subroutine pencil_criteria_par_TT()
     endsubroutine rprint_particles_TT
 !***********************************************************************
     real function get_gas_density(f, ix, iy, iz) result(rho)
-!   
+!
 !  Reads the gas density at location (ix, iy, iz).
 !
 !  20-may-13/ccyang: coded.
@@ -520,9 +520,9 @@ subroutine pencil_criteria_par_TT()
       else linear
         rho = exp(f(ix, iy, iz, ilnrho))
       endif linear
-!   
+!
     endfunction get_gas_density
-!***********************************************************************    
+!***********************************************************************
 subroutine particles_TT_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded

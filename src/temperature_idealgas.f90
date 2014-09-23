@@ -112,7 +112,7 @@ module Energy
   integer :: idiag_guxgTm=0       ! DIAG_DOC: $\left< \nabla u_x \cdot \nabla T \right>$
   integer :: idiag_guygTm=0       ! DIAG_DOC: $\left< \nabla u_y \cdot \nabla T \right>$
   integer :: idiag_guzgTm=0       ! DIAG_DOC: $\left< \nabla u_z \cdot \nabla T \right>$
-  integer :: idiag_Tugux_uxugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right> 
+  integer :: idiag_Tugux_uxugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>
                                   ! DIAG_DOC:  =\left< \uv\cdot\nabla(u_x T) \right>$
   integer :: idiag_Tuguy_uyugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>
                                   ! DIAG_DOC:  =\left< \uv\cdot\nabla(u_y T) \right>$
@@ -125,8 +125,8 @@ module Energy
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
                               ! DIAG_DOC: \quad(radiative flux at the top)
   integer :: idiag_yHmax=0    ! DIAG_DOC: DOCUMENT ME
-  integer :: idiag_yHmin=0    ! DIAG_DOC: DOCUMENT ME 
-  integer :: idiag_yHm=0      ! DIAG_DOC: DOCUMENT ME 
+  integer :: idiag_yHmin=0    ! DIAG_DOC: DOCUMENT ME
+  integer :: idiag_yHm=0      ! DIAG_DOC: DOCUMENT ME
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
@@ -421,7 +421,7 @@ module Energy
         call compute_gravity_star(f, wheat, luminosity, star_cte)
         if (rcool==0.) rcool=r_ext
       endif
-!     
+!
       if (lmultilayer) then
         hcond1=(mpoly1+1.)/(mpoly0+1.)
         hcond2=(mpoly2+1.)/(mpoly0+1.)
@@ -894,7 +894,7 @@ module Energy
       type (pencil_case), intent (inout) :: p
       integer :: j
       real, dimension(nx,3) :: gpp
-!   
+!
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! uglnTT
@@ -913,9 +913,9 @@ module Energy
 !
             call grad(f,ipp,gpp)
             if (dt==0.) then
-              p%fpres=gpp   
+              p%fpres=gpp
             else
-              p%fpres=gpp/dt   
+              p%fpres=gpp/dt
             endif
         else
           do j=1,3
@@ -984,7 +984,7 @@ module Energy
           call identify_bcs('lnTT',ilnTT)
         endif
       endif
-! 
+!
 !  Sound speed squared.
 !
       if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
@@ -1037,7 +1037,7 @@ module Energy
       if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
 !
 !  Thermal conduction
-!     
+!
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
@@ -1134,7 +1134,7 @@ module Energy
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
 
-        if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)  
+        if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
         if (idiag_uxTm/=0)  call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
         if (idiag_uyTm/=0)  call sum_mn_name(p%uu(:,2)*p%TT,idiag_uyTm)
@@ -1142,7 +1142,7 @@ module Energy
         if (idiag_Tugux_uxugTm/=0) call sum_mn_name(p%TT*p%ugu(:,1)+p%uu(:,1)*p%ugTT,idiag_Tugux_uxugTm)
         if (idiag_Tuguy_uyugTm/=0) call sum_mn_name(p%TT*p%ugu(:,2)+p%uu(:,2)*p%ugTT,idiag_Tuguy_uyugTm)
         if (idiag_Tuguz_uzugTm/=0) call sum_mn_name(p%TT*p%ugu(:,3)+p%uu(:,3)*p%ugTT,idiag_Tuguz_uzugTm)
-        if (idiag_Tdxpm/=0)  call sum_mn_name(p%TT*p%fpres(:,1),idiag_Tdxpm) 
+        if (idiag_Tdxpm/=0)  call sum_mn_name(p%TT*p%fpres(:,1),idiag_Tdxpm)
         if (idiag_Tdypm/=0)  call sum_mn_name(p%TT*p%fpres(:,2),idiag_Tdypm)
         if (idiag_Tdzpm/=0)  call sum_mn_name(p%TT*p%fpres(:,3),idiag_Tdzpm)
 !
@@ -1875,8 +1875,8 @@ module Energy
 !
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
-        idiag_TugTm=0; idiag_Trms=0 
-        idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0 
+        idiag_TugTm=0; idiag_Trms=0
+        idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0
         idiag_guxgTm=0; idiag_guygTm=0; idiag_guzgTm=0
         idiag_Tugux_uxugTm=0; idiag_Tuguy_uyugTm=0; idiag_Tuguz_uzugTm=0
         idiag_Tdxpm=0; idiag_Tdypm=0; idiag_Tdzpm=0
@@ -1968,7 +1968,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTmz',idiag_uyTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTmz',idiag_uzTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
-!      
+!
       enddo
 !
 !  Check for those quantities for which we want z-averages.

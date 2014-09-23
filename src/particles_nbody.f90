@@ -375,7 +375,7 @@ module Particles_nbody
       intent (in) :: f
       intent (out) :: fp
 !
-!  Break if there are N-body particles without mass. 
+!  Break if there are N-body particles without mass.
 !
       if (mspar < nspar) then
         call warning("init_particles_nbody", 'mspar < nspar:')
@@ -392,7 +392,7 @@ module Particles_nbody
       if (mspar > 0) then
         position(1:nspar,1) = xsp0 ; velocity(1:nspar,1) = vspx0
         position(1:nspar,2) = ysp0 ; velocity(1:nspar,2) = vspy0
-        position(1:nspar,3) = zsp0 ; velocity(1:nspar,3) = vspz0        
+        position(1:nspar,3) = zsp0 ; velocity(1:nspar,3) = vspz0
       endif
 !
 !  Initialize particles' positions.
@@ -585,13 +585,13 @@ module Particles_nbody
 !
 !  Define iplanet. istar=1 and iplanet=2 is default
 !
-        if (istar == 2) iplanet=1 
-!       
-!  Radial position at barycentric coordinates. Start both at apocenter, 
+        if (istar == 2) iplanet=1
+!
+!  Radial position at barycentric coordinates. Start both at apocenter,
 !
 !     r_i=(1+e)*a_i, where a_i = sma * m_j /(mi+mj)
 !
-!  See, i.e., Murray & Dermott, p.45, barycentric orbits.  
+!  See, i.e., Murray & Dermott, p.45, barycentric orbits.
 !
         position(iplanet,1)=(1+eccentricity) * semimajor_axis * pmass(  istar)/totmass
         position(  istar,1)=(1+eccentricity) * semimajor_axis * pmass(iplanet)/totmass
@@ -698,7 +698,7 @@ module Particles_nbody
            endif
          enddo
 !
-      case ('eccentric')   
+      case ('eccentric')
 !
 !  Coded only for 2 bodies
 !
@@ -707,19 +707,19 @@ module Particles_nbody
 !
 !  Define iplanet. istar=1 and iplanet=2 is default.
 !
-        if (istar == 2) iplanet=1 
+        if (istar == 2) iplanet=1
         velocity(iplanet,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  istar)/totmass
         velocity(  istar,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(iplanet)/totmass
-!        
+!
 !  Revert all velocities if retrograde.
 !
         if (lretrograde) velocity=-velocity
 !
-!  Loop through particles to allocate the velocities. 
+!  Loop through particles to allocate the velocities.
 !
         do k=1,npar_loc
           if (ipar(k)<=mspar) fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
-        enddo            
+        enddo
 !
       case default
         if (lroot) print*, 'init_particles_nbody: No such such value for'//&
@@ -1008,7 +1008,7 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
 !
-      if (linertial_frame) then 
+      if (linertial_frame) then
         call loop_through_nbodies_inertial(fp,dfp,k,sq_hills,ineargrid)
       else
         call loop_through_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
@@ -1020,7 +1020,7 @@ module Particles_nbody
 !
 !  Subroutine that adds the gravity from all massive particles.
 !  Particle gravity has always to be added in Cartesian, for better
-!  conservation of the Jacobi constant. 
+!  conservation of the Jacobi constant.
 !
 !  07-mar-08/wlad:coded
 !
@@ -1052,8 +1052,8 @@ module Particles_nbody
 !
 !  If there is accretion, remove the accreted particles from the simulation, if any.
 !
-          if (laccretion(ks)) then 
-            rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)            
+          if (laccretion(ks)) then
+            rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
             if (r2_ij<=rs2) then
               call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
               !add mass of the removed particle to the accreting particle
@@ -1077,9 +1077,9 @@ module Particles_nbody
 !  velocities to angular changes in position.
 !
           acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
-          if (lcartesian_coords) then 
+          if (lcartesian_coords) then
             dfp(k,ivpx:ivpz) =  dfp(k,ivpx:ivpz) + acc_cart
-          else 
+          else
             ! separate this N-body acceleration from other, added elsewhere in the code
             dfp(k,ivpx_cart:ivpz_cart) =  dfp(k,ivpx_cart:ivpz_cart) + acc_cart
           endif
@@ -1105,8 +1105,8 @@ module Particles_nbody
 !**********************************************************
     subroutine loop_through_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
 !
-!  Gravity acceleration for all bodies, in the reference frame of the star. 
-!  So far, works only for two massive bodies, in Cartesian coordinates. 
+!  Gravity acceleration for all bodies, in the reference frame of the star.
+!  So far, works only for two massive bodies, in Cartesian coordinates.
 !
 !  23-jun-14/wlad: coded
 !
@@ -1123,7 +1123,7 @@ module Particles_nbody
       intent(inout) :: fp, dfp
       intent(in)  :: k
 !
-      if (ipar(k) == istar) then 
+      if (ipar(k) == istar) then
         dfp(k,ivpx:ivpz) = 0.
       else
         acc_cart=0.
@@ -1134,9 +1134,9 @@ module Particles_nbody
 !
             r2_ij=sum(evr_cart**2)
             invr3_ij = r2_ij**(-1.5)
-!            
+!
             acc_cart = - GNewton*invr3_ij*evr_cart(1:3)
-!  
+!
             dfp(k,ivpx:ivpz) =  dfp(k,ivpx:ivpz) + acc_cart
           endif
         enddo
@@ -1147,7 +1147,7 @@ module Particles_nbody
     subroutine get_evr(xxp,xxsp,evr_cart)
 !
 !  Point-to-point vector distance, in different coordinate systems.
-!  Return always in Cartesian. 
+!  Return always in Cartesian.
 !
 !  14-feb-14/wlad: coded
 !
@@ -1167,7 +1167,7 @@ module Particles_nbody
         x2=xxsp(1)*cos(xxsp(2))
         y2=xxsp(1)*sin(xxsp(2))
         z2=xxsp(3)
-      elseif (lspherical_coords) then 
+      elseif (lspherical_coords) then
         x1=xxp(1)*sin(xxp(2))*cos(xxp(3))
         y1=xxp(1)*sin(xxp(2))*sin(xxp(3))
         z1=xxp(1)*cos(xxp(2))
@@ -1838,7 +1838,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine add_indirect_term(ks,ggt)
 !
-!  Add the terms due to the reference frame being away from the baricenter. 
+!  Add the terms due to the reference frame being away from the baricenter.
 !  So far, only for one perturber (two massive bodies), and in Cartesian coordinates.
 !
 !  23-jun-14/wlad: coded
@@ -1858,9 +1858,9 @@ module Particles_nbody
 !***********************************************************************
     subroutine advance_particles_in_cartesian(fp,dfp)
 !
-! With N-body gravity, the particles should have their position advanced in 
-! Cartesian coordinates, for better conservation of the Jacobi constant, even 
-! if the grid is polar. 
+! With N-body gravity, the particles should have their position advanced in
+! Cartesian coordinates, for better conservation of the Jacobi constant, even
+! if the grid is polar.
 !
 ! 14-feb-14/wlad: coded
 !
@@ -1873,7 +1873,7 @@ module Particles_nbody
 !
       if (lcylindrical_coords) then
 !
-!  The input position, velocities, and accelerations in cylindrical coordinates. 
+!  The input position, velocities, and accelerations in cylindrical coordinates.
 !
         rad  = fp(1:npar_loc,ixp)   ; phi  = fp(1:npar_loc,iyp)
         vrad = fp(1:npar_loc,ivpx)  ; vphi = fp(1:npar_loc,ivpy)
@@ -1882,13 +1882,13 @@ module Particles_nbody
 !  Shortcuts.
 !
         cosp=cos(phi) ; sinp=sin(phi)
-! 
+!
 !  Transform the position, velocities, and accelerations to Cartesian coordinates.
 !
         xp=rad*cosp ; yp=rad*sinp ; zp=fp(1:npar_loc,izp)
 !
         vx=vrad*cosp - vphi*sinp
-        vy=vrad*sinp + vphi*cosp      
+        vy=vrad*sinp + vphi*cosp
         vz=fp(1:npar_loc,izp)
 !
 !  Add the Cartesian acceleration.
@@ -1899,11 +1899,11 @@ module Particles_nbody
 !
       else if (lspherical_coords) then
 !
-!  The input position, velocities, and accelerations in spherical coordinates. 
+!  The input position, velocities, and accelerations in spherical coordinates.
 !
-        rad  = fp(1:npar_loc,ixp)   ; tht  = fp(1:npar_loc,iyp)   ; phi  = fp(1:npar_loc,izp)       
+        rad  = fp(1:npar_loc,ixp)   ; tht  = fp(1:npar_loc,iyp)   ; phi  = fp(1:npar_loc,izp)
         vrad = fp(1:npar_loc,ivpx)  ; vtht = fp(1:npar_loc,ivpy)  ; vphi = fp(1:npar_loc,ivpz)
-        arad = dfp(1:npar_loc,ivpx) ; atht = dfp(1:npar_loc,ivpy) ; aphi = dfp(1:npar_loc,ivpz)    
+        arad = dfp(1:npar_loc,ivpx) ; atht = dfp(1:npar_loc,ivpy) ; aphi = dfp(1:npar_loc,ivpz)
 !
 !  Shortcuts.
 !
@@ -1915,11 +1915,11 @@ module Particles_nbody
         xp=rad*sint*cosp ; yp=rad*sint*sinp ; zp=rad*cost
 !
         vx=vrad*sint*cosp + vtht*cost*cosp - vphi*sinp
-        vy=vrad*sint*sinp + vtht*cost*sinp + vphi*cosp      
+        vy=vrad*sint*sinp + vtht*cost*sinp + vphi*cosp
         vz=vrad*cost      - vtht*sint
 !
 !  Add the Cartesian acceleration.
-! 
+!
         ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfp(1:npar_loc,ivpx_cart)
         ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfp(1:npar_loc,ivpy_cart)
         az=arad*cost      - atht*sint                  + dfp(1:npar_loc,ivpz_cart)
@@ -1944,9 +1944,9 @@ module Particles_nbody
       real, dimension (npar_loc), intent(in) :: vx,vy,vz
       real, dimension (npar_loc), intent(inout) :: xp,yp,zp
 !
-!  Input vx and vy into the dfp array, for the Runge-Kutta integration. 
-!  It is needed because of the high order of the RK integration (dfp is 
-!  updated every subtimestep. 
+!  Input vx and vy into the dfp array, for the Runge-Kutta integration.
+!  It is needed because of the high order of the RK integration (dfp is
+!  updated every subtimestep.
 !
       dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + vx
       dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + vy
@@ -2219,7 +2219,7 @@ module Particles_nbody
 !
 !***********************************************************************
 !***********************************************************************
-!  
+!
 !  STUFF RELATED TO EARLY IMPLEMENTATION OF PARTICLE SINKS.
 !
 !***********************************************************************

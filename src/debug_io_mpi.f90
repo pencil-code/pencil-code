@@ -448,7 +448,7 @@ contains
 !
       if (lroot) then
         open(lun_output,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(directory)//'/dxyz.dat')) return 
+        if (outlog(iostat,'open',trim(directory)//'/dxyz.dat')) return
 !
         write(lun_output,IOSTAT=iostat) dx,dy,dz
         if (outlog(iostat,'write dx,dy,dz')) return

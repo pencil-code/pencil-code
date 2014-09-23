@@ -855,7 +855,7 @@ module Particles_main
 !
 !  In the case that the N-body code is used, the update in polar grids
 !  in done by transforming the variables first to Cartesian, to achieve a
-!  better conservation of the Jacobi constant, and this code is not called. 
+!  better conservation of the Jacobi constant, and this code is not called.
 !
 !  15-sep-07/wlad: coded
 !
@@ -1016,7 +1016,7 @@ module Particles_main
           endif
         endif
       endif
-!      
+!
       if (lparticles_adsorbed) then
         call read_particles_ads_init_pars(unit,iostat)
         if (present(iostat)) then
@@ -1050,7 +1050,7 @@ module Particles_main
       if (lparticles_viscosity)   call read_particles_visc_init_pars(unit)
       if (lparticles_mass)        call read_particles_mass_init_pars(unit)
       if (lparticles_temperature) call read_particles_TT_init_pars(unit)
-      if (lparticles_adsorbed)    call read_particles_ads_init_pars(unit)     
+      if (lparticles_adsorbed)    call read_particles_ads_init_pars(unit)
       if (lparticles_stalker)     call read_pstalker_init_pars(unit)
 !
     endsubroutine particles_rparam
@@ -1123,8 +1123,8 @@ module Particles_main
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
       if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
-      if (lparticles_mass)        call write_particles_mass_init_pars(unit)      
-      if (lparticles_temperature) call write_particles_TT_init_pars(unit)      
+      if (lparticles_mass)        call write_particles_mass_init_pars(unit)
+      if (lparticles_temperature) call write_particles_TT_init_pars(unit)
       if (lparticles_adsorbed)    call write_particles_ads_init_pars(unit)
 
 !

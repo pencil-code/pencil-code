@@ -69,10 +69,10 @@ module Deriv
     module procedure  der_onesided_4_slice_other_pt
   endinterface
 
-!  interface deri_3d                  !not working, why?             
+!  interface deri_3d                  !not working, why?
 !    module procedure deri_3d_ind
 !    module procedure deri_3d_inds
-!  endinterface  
+!  endinterface
 !
   contains
 !
@@ -83,14 +83,14 @@ module Deriv
 !
       integer :: i
 
-      do i=1,6 
+      do i=1,6
 
         if (lspherical_coords) then                         !-> grid.f90
           r1i  (:,i) = r1_mn**i
           sth1i(:,i) = sin1th**i
         endif
         if (lcylindrical_coords) r1i(:,i) = rcyl_mn1**i
-        
+
       enddo
 
       der_coef(:,1) = (/  0.   ,   3./4., -3./20.,  1./60./)
@@ -98,7 +98,7 @@ module Deriv
       der_coef(:,4) = (/ 28./3., -13./2.,  2.    , -1./6. /)
       der_coef(:,5) = (/  0.   ,   2.5  , -2.    ,  0.5   /)
       der_coef(:,6) = (/-20.   ,  15.   , -6.    ,  1.    /)
-                                                           
+
       select case (der2_type)
 !
       case ('standard')
@@ -115,7 +115,7 @@ module Deriv
       if ( lequidist(1) ) then
 
         if (.not.allocated(coeffsx)) allocate( coeffsx(-3:3,8,2) )
-        
+
         do i=1,6
           coeffsx( 0:3,i,1) = der_coef(:,i)*dx_1(1)**i
           coeffsx( 0:3,i,2) = der_coef(:,i)
@@ -176,7 +176,7 @@ module Deriv
           call calc_coeffs( z(i-nghost+1:i+nghost)-z(i-nghost:i+nghost-1), coeffsz(-3,1,i-n1+1) )
         enddo
 !        call test( z, dz_1, nz, coeffsz )
-     
+
         call calc_coeffs_1( z(n1-1:n1+2)-z(n1-2:n1+1), coeffsz_1(-2,1,1) )
         call calc_coeffs_1( z(n2-1:n2+2)-z(n2-2:n2+1), coeffsz_1(-2,1,2) )
 
@@ -238,7 +238,7 @@ module Deriv
 !
     endsubroutine der_other
 !***********************************************************************
-    subroutine deri_3d(f,df,i,j,lignored,lnometric)    
+    subroutine deri_3d(f,df,i,j,lignored,lnometric)
 !
 !  Along one pencil in NON f variable
 !  calculate derivative of a scalar, get scalar
@@ -264,8 +264,8 @@ module Deriv
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
 !
       is = 1
-      if ( present(lignored) ) then 
-        if (lignored) is=2 
+      if ( present(lignored) ) then
+        if (lignored) is=2
       endif
 
       if (present(lnometric)) then
@@ -277,8 +277,8 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if ( lequidist(j) ) then
-            if ( mod(i,2) == 0 ) then 
-              df =  coeffsx(0,i,is)* f(l1  :l2  ,m,n)                   &    
+            if ( mod(i,2) == 0 ) then
+              df =  coeffsx(0,i,is)* f(l1  :l2  ,m,n)                   &
                   + coeffsx(1,i,is)*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
                   + coeffsx(2,i,is)*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
                   + coeffsx(3,i,is)*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n))
@@ -287,8 +287,8 @@ module Deriv
                   + coeffsx(2,i,is)*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
                   + coeffsx(3,i,is)*(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n))
             endif
-          else 
-            df =  coeffsx(-3,i,:)*f(l1-3:l2-3,m,n) & 
+          else
+            df =  coeffsx(-3,i,:)*f(l1-3:l2-3,m,n) &
                 + coeffsx(-2,i,:)*f(l1-2:l2-2,m,n) &
                 + coeffsx(-1,i,:)*f(l1-1:l2-1,m,n) &
                 + coeffsx( 0,i,:)*f(l1  :l2  ,m,n) &
@@ -305,18 +305,18 @@ module Deriv
         if (nygrid/=1) then
           if ( lequidist(j) ) then
             if ( mod(i,2) == 0 ) then
-              df =  coeffsy(0,i,is)* f(l1:l2,m  ,n)                 & 
+              df =  coeffsy(0,i,is)* f(l1:l2,m  ,n)                 &
                   + coeffsy(1,i,is)*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
                   + coeffsy(2,i,is)*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                  + coeffsy(3,i,is)*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n))   
+                  + coeffsy(3,i,is)*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n))
             else
               df =  coeffsy(1,i,is)*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
                   + coeffsy(2,i,is)*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
                   + coeffsy(3,i,is)*(f(l1:l2,m+3,n)-f(l1:l2,m-3,n))
             endif
-          else 
+          else
             mm = m-m1+1
-            df =  coeffsy(-3,i,mm)*f(l1:l2,m-3,n) & 
+            df =  coeffsy(-3,i,mm)*f(l1:l2,m-3,n) &
                 + coeffsy(-2,i,mm)*f(l1:l2,m-2,n) &
                 + coeffsy(-1,i,mm)*f(l1:l2,m-1,n) &
                 + coeffsy( 0,i,mm)*f(l1:l2,m  ,n) &
@@ -337,7 +337,7 @@ module Deriv
               df =  coeffsz(0,i,is)* f(l1:l2,m,n  )                 &
                   + coeffsz(1,i,is)*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
                   + coeffsz(2,i,is)*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                  + coeffsz(3,i,is)*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3))     
+                  + coeffsz(3,i,is)*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3))
             else
               df =  coeffsz(1,i,is)*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
                   + coeffsz(2,i,is)*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
@@ -345,7 +345,7 @@ module Deriv
             endif
           else
             nn = n-n1+1
-            df =  coeffsz(-3,i,nn)*f(l1:l2,m,n-3) & 
+            df =  coeffsz(-3,i,nn)*f(l1:l2,m,n-3) &
                 + coeffsz(-2,i,nn)*f(l1:l2,m,n-2) &
                 + coeffsz(-1,i,nn)*f(l1:l2,m,n-1) &
                 + coeffsz( 0,i,nn)*f(l1:l2,m,n  ) &
@@ -390,7 +390,7 @@ module Deriv
           do ii=1,nx
             li = l1+ii-1
             ini = inds(ii)
-            df =  coeffsx(-3,ini,ii)*f(li-3,m,n) & 
+            df =  coeffsx(-3,ini,ii)*f(li-3,m,n) &
                 + coeffsx(-2,ini,ii)*f(li-2,m,n) &
                 + coeffsx(-1,ini,ii)*f(li-1,m,n) &
                 + coeffsx( 0,ini,ii)*f(li,  m,n) &
@@ -405,7 +405,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           mm = m-m1+1
-          df =  coeffsy(-3,inds,mm)*f(l1:l2,m-3,n) & 
+          df =  coeffsy(-3,inds,mm)*f(l1:l2,m-3,n) &
               + coeffsy(-2,inds,mm)*f(l1:l2,m-2,n) &
               + coeffsy(-1,inds,mm)*f(l1:l2,m-1,n) &
               + coeffsy( 0,inds,mm)*f(l1:l2,m  ,n) &
@@ -420,7 +420,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           nn = n-n1+1
-          df =  coeffsz(-3,inds,nn)*f(l1:l2,m,n-3) & 
+          df =  coeffsz(-3,inds,nn)*f(l1:l2,m,n-3) &
               + coeffsz(-2,inds,nn)*f(l1:l2,m,n-2) &
               + coeffsz(-1,inds,nn)*f(l1:l2,m,n-1) &
               + coeffsz( 0,inds,nn)*f(l1:l2,m,n  ) &
@@ -459,7 +459,7 @@ module Deriv
             df(1:n1) =  coefs(0,i,1)* f(i1  :i2  )               &
                       + coefs(1,i,1)*(f(i1+1:i2+1)+f(i1-1:i2-1)) &
                       + coefs(2,i,1)*(f(i1+2:i2+2)+f(i1-2:i2-2)) &
-                      + coefs(3,i,1)*(f(i1+3:i2+3)+f(i1-3:i2-3))   
+                      + coefs(3,i,1)*(f(i1+3:i2+3)+f(i1-3:i2-3))
           else
             df(1:n1) =  coefs(1,i,1)*(f(i1+1:i2+1)-f(i1-1:i2-1)) &
                       + coefs(2,i,1)*(f(i1+2:i2+2)-f(i1-2:i2-2)) &
@@ -469,13 +469,13 @@ module Deriv
         else
           df(1:n1) =  coefs(-3,i,1:n1)*f(i1-3:i2-3) &
                     + coefs(-2,i,1:n1)*f(i1-2:i2-2) &
-                    + coefs(-1,i,1:n1)*f(i1-1:i2-1) & 
+                    + coefs(-1,i,1:n1)*f(i1-1:i2-1) &
                     + coefs( 0,i,1:n1)*f(i1  :i2  ) &
                     + coefs( 1,i,1:n1)*f(i1+1:i2+1) &
                     + coefs( 2,i,1:n1)*f(i1+2:i2+2) &
                     + coefs( 3,i,1:n1)*f(i1+3:i2+3)
         endif
-        
+
       else
         df(1:n1) = 0.
         if (ip<=5) print*, 'deri: Degenerate case!'
@@ -507,7 +507,7 @@ module Deriv
             df(1:n1) =  coefs(0,i,1)* f(:,j  )           &
                       + coefs(1,i,1)*(f(:,j+1)+f(:,j-1)) &
                       + coefs(2,i,1)*(f(:,j+2)+f(:,j-2)) &
-                      + coefs(3,i,1)*(f(:,j+3)+f(:,j-3))   
+                      + coefs(3,i,1)*(f(:,j+3)+f(:,j-3))
           else
             df(1:n1) =  coefs(1,i,1)*(f(:,j+1)-f(:,j-1)) &
                       + coefs(2,i,1)*(f(:,j+2)-f(:,j-2)) &
@@ -517,13 +517,13 @@ module Deriv
         else
           df(1:n1) =  coefs(-3,i,1:n1)*f(:,j-3) &
                     + coefs(-2,i,1:n1)*f(:,j-2) &
-                    + coefs(-1,i,1:n1)*f(:,j-1) & 
+                    + coefs(-1,i,1:n1)*f(:,j-1) &
                     + coefs( 0,i,1:n1)*f(:,j  ) &
                     + coefs( 1,i,1:n1)*f(:,j+1) &
                     + coefs( 2,i,1:n1)*f(:,j+2) &
                     + coefs( 3,i,1:n1)*f(:,j+3)
         endif
-        
+
       else
         df(1:n1) = 0.
         if (ip<=5) print*, 'deri_2d: Degenerate case!'
@@ -1036,7 +1036,7 @@ module Deriv
 !
       if ( i==j ) return     !warning??
 
-      lbidiag = lbidiagonal_derij .and. lequidist(i) .and. lequidist(j) 
+      lbidiag = lbidiagonal_derij .and. lequidist(i) .and. lequidist(j)
 
       if (lbidiag) then
         !
@@ -1112,7 +1112,7 @@ module Deriv
                 call deri_2d(f(l1:l2,:,n+ii),work(1,ii),m,1,coeffsy,lequidist(2))   ! y-derivative   performance?
             enddo
 
-            call deri_2d(work,df,4,1,coeffsz,lequidist(3))                          ! z-derivative    
+            call deri_2d(work,df,4,1,coeffsz,lequidist(3))                          ! z-derivative
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
@@ -1125,7 +1125,7 @@ module Deriv
                 call deri(f(1,m,n+ii),work(1,ii),l1,l2,1,coeffsx,lequidist(1))  ! x-derivative
             enddo
 
-            call deri_2d(work,df,4,1,coeffsz,lequidist(3))                      ! z-derivative 
+            call deri_2d(work,df,4,1,coeffsz,lequidist(3))                      ! z-derivative
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
@@ -1229,7 +1229,7 @@ module Deriv
                   call deri(f(1,m,n+ii,k),work(1,ii),l1,l2,5,coeffsx,lequidist(1))      ! x-derivative
               enddo
 
-              call deri_2d(work,df,4,1,coeffsz,lequidist(3))                            ! z-derivative 
+              call deri_2d(work,df,4,1,coeffsz,lequidist(3))                            ! z-derivative
               if (lspherical_coords) df = df*r1i(:,1)*sth1i(m,1)                        !(minus extra terms) tbc
 
           else
@@ -1244,7 +1244,7 @@ module Deriv
                   call deri(f(1,m,n+ii,k),work(1,ii),l1,l2,1,coeffsx,lequidist(1))      ! x-derivative
               enddo
 
-              call deri_2d(work,df,4,5,coeffsz,lequidist(3))                            ! z-derivative 
+              call deri_2d(work,df,4,5,coeffsz,lequidist(3))                            ! z-derivative
               if (lspherical_coords) df = df*r1i(:,5)*sth1i(m,5)                        ! (minus extra terms) tbc
 
           else
@@ -1259,7 +1259,7 @@ module Deriv
                   call deri_2d(f(l1:l2,:,n+ii,k),work(1,ii),m,5,coeffsy,lequidist(2))   ! y-derivative   performance?
               enddo
 
-              call deri_2d(work,df,4,1,coeffsz,lequidist(3))                            ! z-derivative    
+              call deri_2d(work,df,4,1,coeffsz,lequidist(3))                            ! z-derivative
               if (lspherical_coords  ) df = df*r1i(:,6)*sth1i(m,1)                      ! (minus extra terms) tbc
               if (lcylindrical_coords) df = df*r1i(:,5)                                 ! (minus extra terms) tbc
 
@@ -1275,7 +1275,7 @@ module Deriv
                   call deri_2d(f(l1:l2,:,n+ii,k),work(1,ii),m,1,coeffsy,lequidist(2))   ! y-derivative   performance?
               enddo
 
-              call deri_2d(work,df,4,5,coeffsz,lequidist(3))                            ! z-derivative    
+              call deri_2d(work,df,4,5,coeffsz,lequidist(3))                            ! z-derivative
               if (lspherical_coords  ) df = df*r1i(:,6)*sth1i(m,5)                      ! (minus extra terms) tbc
               if (lcylindrical_coords) df = df*r1i(:,1)                                 ! (minus extra terms) tbc
 
@@ -1607,9 +1607,9 @@ module Deriv
    hm1   = grid(0);   hm2   = grid(-1);hm3   = grid(-2)
    h12   = h1 + h2;   h23   = h2+h3;   h13   = h12+h3
    hm12  = hm1 + hm2; hm23  = hm2+hm3; hm13  = hm12+hm3
-   h1m1  = h1 + hm1;  h1m12 = h1+hm12;      h1m13 = h1 + hm13  
-   h12m1 = h12 + hm1; h12m12 = h12 + hm12; h12m13 = h12 + hm13  
-   h13m1 = h13 + hm1; h13m12 = h13 + hm12; h13m13 = h13 + hm13  
+   h1m1  = h1 + hm1;  h1m12 = h1+hm12;      h1m13 = h1 + hm13
+   h12m1 = h12 + hm1; h12m12 = h12 + hm12; h12m13 = h12 + hm13
+   h13m1 = h13 + hm1; h13m12 = h13 + hm12; h13m13 = h13 + hm13
 
    coeffs(:,1) = (/ -h1*h12*h13*hm1*hm12/(hm3*hm13*hm23*h1m13*h12m13*h13m13), &
                      h1*h12*h13*hm1*hm13/(hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
@@ -1676,7 +1676,7 @@ module Deriv
                         -(-h13*(hm1+hm13) + hm1*hm13  +(h1+h12)*(h13-hm1-hm13) + h1*h12)/ &
                          (hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
                          (-h13*(hm12+hm13)+ hm12*hm13 +(h1+h12)*(h13-hm12-hm13)+ h1*h12)/ &
-                         (hm1*hm2*hm23*h1m1*h12m1*h13m1),     &  
+                         (hm1*hm2*hm23*h1m1*h12m1*h13m1),     &
                          0.,                                  &
                          (hm1*(hm12+hm13)+ hm12*hm13 -(h12+h13)*(hm1+hm12+hm13)+ h12*h13)/ &
                          (h1*h2*h23*h1m1*h1m12*h1m13),       &
@@ -1687,13 +1687,13 @@ module Deriv
 
    coeffs(0,4) = -sum(coeffs(:,4))
 
-   coeffs(:,5) = 120.*(/-(h1 + h12 + h13 - hm1  - hm12)/(hm3*hm13*hm23*h1m13*h12m13*h13m13), &     
+   coeffs(:,5) = 120.*(/-(h1 + h12 + h13 - hm1  - hm12)/(hm3*hm13*hm23*h1m13*h12m13*h13m13), &
                          (h1 + h12 + h13 - hm1  - hm13)/(hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
                         -(h1 + h12 + h13 - hm12 - hm13)/(hm1*hm2*hm23*h1m1*h12m1*h13m1),     &
                           0.,                                                                &
                         -(h12 + h13 - hm1 - hm12 - hm13)/(h1*h2*h23*h1m1*h1m12*h1m13),       &
                          (h1  + h13 - hm1 - hm12 - hm13)/(h2*h3*h12*h12m1*h12m12*h12m13),    &
-                        -(h1  + h12 - hm1 - hm12 - hm13)/(h3*h13*h23*h13m1*h13m12*h13m13)     /)                 
+                        -(h1  + h12 - hm1 - hm12 - hm13)/(h3*h13*h23*h13m1*h13m12*h13m13)     /)
 
    coeffs(0,5) = -sum(coeffs(:,5))
 
@@ -1709,14 +1709,14 @@ module Deriv
 
 !upwind 1st deriv, 5th order, u>0
 
-   coeffs((/-3,-2,-1,1,2,3/),7) = (h1*h12*hm1*hm12*hm13/720.)*coeffs((/-3,-2,-1,1,2,3/),6) 
+   coeffs((/-3,-2,-1,1,2,3/),7) = (h1*h12*hm1*hm12*hm13/720.)*coeffs((/-3,-2,-1,1,2,3/),6)
    coeffs(0,7) = -sum(coeffs(:,7))
 
    coeffs(:,7) = (h1*h12*hm1*hm12*hm13/720.)*coeffs(:,6)
 
 !upwind 1st deriv, 5th order, u<0, sign already inverted!   tbc
 
-   coeffs((/-3,-2,-1,1,2,3/),8) = (h1*h12*h13*hm1*hm12/720.)*coeffs((/-3,-2,-1,1,2,3/),6) 
+   coeffs((/-3,-2,-1,1,2,3/),8) = (h1*h12*h13*hm1*hm12/720.)*coeffs((/-3,-2,-1,1,2,3/),6)
    coeffs(0,8) = -sum(coeffs(:,8))
 
    coeffs(:,8) = (h1*h12*h13*hm1*hm12/720.)*coeffs(:,6)
@@ -1731,8 +1731,8 @@ module Deriv
    real :: h1, h2, hm1, hm2, h12, hm12, h1m1, h1m12, h12m1, h12m12
 
    h1    = grid(1);   h2    = grid(2)  ; hm1  = grid(0);   hm2   = grid(-1)
-   h12   = h1 + h2;   hm12  = hm1 + hm2; h1m1 = h1 + hm1;  h1m12 = h1+hm12 
-   h12m1 = h12 + hm1; h12m12 = h12 + hm12  
+   h12   = h1 + h2;   hm12  = hm1 + hm2; h1m1 = h1 + hm1;  h1m12 = h1+hm12
+   h12m1 = h12 + hm1; h12m12 = h12 + hm12
 
 ! 2nd order 1st derivative
 
@@ -1740,7 +1740,7 @@ module Deriv
    coeffs(0,1) = -sum(coeffs(:,1))
 
 ! 4th order 1st dervative
- 
+
    coeffs(:,2) = (/ h1*h12*hm1/(hm2*hm12*h1m12*h12m12), -h1*h12*hm12/(hm1*hm2*h1m1*h12m1), 0.,  &
                    +h12*hm1*hm12/(h1*h2*h1m1*h1m12),    -h1*hm1*hm12/(h2*h12*h12m1*h12m12)       /)
    coeffs(0,2) = -sum(coeffs(:,2))
@@ -1755,7 +1755,7 @@ module Deriv
    logical,                 intent(in), optional :: ldiff
 
    real, dimension(-3:3) :: funcl
- 
+
    if ( present(ldiff) ) then
      funcl = func(i-3:i+3) - func(i)
      derivative = sum(funcl*coeffs(:,i))
@@ -1766,14 +1766,14 @@ module Deriv
    endfunction derivative
 !*************************************************************************************************************
    real function derivative_1( func, i, coeffs, ldiff )
-                          
+
    integer              , intent(in)           :: i
    real, dimension(-2:*), intent(in)           :: func
    real, dimension(-2:2), intent(in)           :: coeffs
    logical,               intent(in), optional :: ldiff
 
    real, dimension(-2:2) :: funcl
- 
+
    if ( present(ldiff) ) then
      funcl = func(i-2:i+2) - func(i)
      derivative_1 = sum(funcl*coeffs)
@@ -1809,7 +1809,7 @@ module Deriv
        call fatal_error('heatflux_boundcond_x', &
          'Illegal value for parameter "topbot"')
      endif
-     
+
      do im=ia,ie,is
 
        ima = abs(im)
@@ -1833,7 +1833,7 @@ module Deriv
          enddo
        endif
 
-       work_yz = fac*work_yz  
+       work_yz = fac*work_yz
 
        if (ima<3) then
 
@@ -1876,7 +1876,7 @@ module Deriv
    entry test_1( coord, dc_1, nc, coefs_1 )
 
    t1=.true.
-   
+
  1 mc = nc+2*nghost
 
    do i=1,mc

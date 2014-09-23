@@ -683,7 +683,7 @@ module Particles_coagulation
       real :: r, kernel, dt1_coag_par
       integer :: j, l
 !
-!  If first timestep calculate the r_ik-matrix and the total rates. 
+!  If first timestep calculate the r_ik-matrix and the total rates.
 !  Loop over all particle pairs.
 !
 !  We also need to get the cumulative distributions to pick the particles.
@@ -712,7 +712,7 @@ module Particles_coagulation
             elseif (lproduct_kernel_test) then
               kernel=kernel_pro* &
                 four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(l,iap)**3
-!  Physical kernels 
+!  Physical kernels
             elseif (lconstant_deltav) then    ! constant relative velocity
               kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
             elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
@@ -736,7 +736,7 @@ module Particles_coagulation
         enddo
       endif
 !
-!  Now get the timestep (time until next collision) and put in 
+!  Now get the timestep (time until next collision) and put in
 !  inverse time-step array. Use eq. 5 i Zsom & Dullemond 2008
 !
       call random_number_wrapper(r)
@@ -747,7 +747,7 @@ module Particles_coagulation
 !***********************************************************************
     subroutine particles_coag_outcome_zd(fp)
 !
-!  Calculate which two particles collide and the outcome with the same 
+!  Calculate which two particles collide and the outcome with the same
 !  scheme as in Zsom & Dullemond (2008). Only use for kernel tests.
 !  Assume perfect sticking for now.
 !
@@ -761,8 +761,8 @@ module Particles_coagulation
       integer :: i, j, k, l
       real :: delta_r       ! change in r_i rate
 !
-!  Get the particles that is involved in the collision with 
-!  random numbers and cumulative distribution functions. 
+!  Get the particles that is involved in the collision with
+!  random numbers and cumulative distribution functions.
 !  N.B. Using un-normalized cumulative functions.
 !  Use the bisection method to find the right particle.
 !
@@ -782,10 +782,10 @@ module Particles_coagulation
            (1.0/(1.0+(fp(l,iap)/fp(j,iap))**3))
       fp(j,iap)=(fp(j,iap)**3+fp(l,iap)**3)**(1.0/3.0)
 !
-!  Update r_ik matrix. Only need to update elements with representative 
+!  Update r_ik matrix. Only need to update elements with representative
 !  particle i = j (column) and physical particle k = j (row).
 !
-!  Loop over i and update row with k = j. Skip k = i = j 
+!  Loop over i and update row with k = j. Skip k = i = j
 !  (value in i = j column).
 !
       i = 1
@@ -800,7 +800,7 @@ module Particles_coagulation
           elseif (lproduct_kernel_test) then
             kernel=kernel_pro* &
                    four_pi_rhopmat_over_three2*fp(i,iap)**3*fp(j,iap)**3
-!  Physical kernels 
+!  Physical kernels
           elseif (lconstant_deltav) then    ! constant relative velocity
             kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
           elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
@@ -817,7 +817,7 @@ module Particles_coagulation
           cum_func_sec_ik(i, j:) = cum_func_sec_ik(i, j:) + &
                                    delta_r
         endif
-! 
+!
         i = i + 1            ! go to next superparticle
         if(i == npar + 1) exit
       enddo
@@ -834,7 +834,7 @@ module Particles_coagulation
         elseif (lproduct_kernel_test) then
           kernel=kernel_pro* &
                  four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
-!  Physical kernels 
+!  Physical kernels
         elseif (lconstant_deltav) then    ! constant relative velocity
           kernel=deltav*pi*(fp(j,iap)+fp(l,iap))**2
         elseif (lmaxwell_deltav) then  ! maxwellian relative velocity
@@ -856,7 +856,7 @@ module Particles_coagulation
       enddo
 !
 !  Update total rate and cumulative function for rep. particles
-!   
+!
     i = 1
     do while (.true.)
       if (i == 1) then
@@ -874,7 +874,7 @@ module Particles_coagulation
 !***********************************************************************
     subroutine particles_coagulation_bisection(qArr, qVal, iPart)
 !
-!  Given random value qVal [0,max_rate[ find particle iPart through the bisection 
+!  Given random value qVal [0,max_rate[ find particle iPart through the bisection
 !  method given cumulative function qArr.
 !
 !  15-nov-12/KWJ: coded
@@ -890,7 +890,7 @@ module Particles_coagulation
       ju = size(qArr)                ! upper index limit
       if (qVal <= qArr(1)) then      ! qVal is in first bin
         iPart = 1
-      else 
+      else
         do while ((ju-jl) > 1)       ! not yet done
           jm = (ju+jl)/2             ! midpoint
           if (qVal >= qArr(jm)) then
@@ -906,10 +906,10 @@ module Particles_coagulation
 !***********************************************************************
     subroutine particles_coag_maxwell_johnk(dv, alpha)
 !
-!  Generate a Maxwell-Boltzmann distributed relative velocity dv with 
-!  parameter alpha through the Johnk's algorithm. 
+!  Generate a Maxwell-Boltzmann distributed relative velocity dv with
+!  parameter alpha through the Johnk's algorithm.
 !
-!  For particles following the gas: alpha = sqrt(k_B*T/m) 
+!  For particles following the gas: alpha = sqrt(k_B*T/m)
 !  Mean velocity = 2*sqrt(2/pi)*alpha
 !
 !  14-jan-13/KWJ: coded
@@ -943,10 +943,10 @@ module Particles_coagulation
 !***********************************************************************
     subroutine particles_coag_maxwell(dv, alpha)
 !
-!  Generate a Maxwell-Boltzmann distributed relative velocity dv with 
-!  parameter alpha through the algorithm described in Mohamed (2011). 
+!  Generate a Maxwell-Boltzmann distributed relative velocity dv with
+!  parameter alpha through the algorithm described in Mohamed (2011).
 !
-!  For particles following the gas: alpha = sqrt(k_B*T/m) 
+!  For particles following the gas: alpha = sqrt(k_B*T/m)
 !  Mean velocity = 2*sqrt(2/pi)*alpha
 !
 !  14-jan-13/KWJ: coded

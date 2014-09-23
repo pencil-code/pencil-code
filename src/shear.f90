@@ -288,10 +288,10 @@ module Shear
 !  Advection of all variables by shear flow.
 !
       if (.not. lshearadvection_as_shift) then
-! 
+!
         if ( ltestflow ) then
 !
-!  Treatment of variables in two segments necessary as 
+!  Treatment of variables in two segments necessary as
 !  shear is potentially handled differently in testflow
 !
           nseg = 2
@@ -394,11 +394,11 @@ module Shear
     subroutine shear_variables(f,df,nvars,jstart,jstep,shear1)
 !
 !  Allow shear treatment of variables in other modules
-!  jstart, jend - start and end indices of slots in df 
+!  jstart, jend - start and end indices of slots in df
 !                 to which advection term is added
-!  jstep        - stepsize in df for selecting slots to 
+!  jstep        - stepsize in df for selecting slots to
 !                 which Langrangian shear is added;
-!                 only relevant for velocity variables, 
+!                 only relevant for velocity variables,
 !                 jstart corresponds to u_x; default value: 3
 !                 = 0 : Langrangian shear is not added
 !
@@ -409,7 +409,7 @@ module Shear
       real, dimension(mx,my,mz,mfarray), intent(in)    :: f
       real, dimension(mx,my,mz,mvar)   , intent(inout) :: df
 !
-      integer, intent(in) :: nvars, jstart 
+      integer, intent(in) :: nvars, jstart
       integer, intent(in), optional :: jstep
       logical, intent(in), optional :: shear1
 !
@@ -450,7 +450,7 @@ module Shear
         enddo
       endif
 !
-    endsubroutine shear_variables  
+    endsubroutine shear_variables
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
 !

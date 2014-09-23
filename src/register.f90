@@ -211,7 +211,7 @@ module Register
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
       use Gravity,          only: initialize_gravity
-      use Heatflux,         only: initialize_heatflux      
+      use Heatflux,         only: initialize_heatflux
       use Hydro,            only: initialize_hydro
       use InitialCondition, only: initialize_initial_condition
       use Interstellar,     only: initialize_interstellar

@@ -41,9 +41,9 @@ module Hyperresi_strict
           "$Id$")
 !
 !  Set indices for auxiliary variables
-! 
+!
       call farray_register_auxiliary('hypres',ihypres,vector=3)
-! 
+!
     endsubroutine register_hyperresi_strict
 !***********************************************************************
     subroutine hyperresistivity_strict(f)
@@ -142,19 +142,19 @@ module Hyperresi_strict
       if (j==1 .and. nxgrid/=1) then
         der2f(2:mx-1,:,:) = (+1.*f(1:mx-2,:,:,i) &
                              -2.*f(2:mx-1,:,:,i) &
-                             +1.*f(3:mx  ,:,:,i) ) / (dx**2) 
+                             +1.*f(3:mx  ,:,:,i) ) / (dx**2)
       endif
 !
      if (j==2 .and. nygrid/=1) then
         der2f(:,2:my-1,:) = (+1.*f(:,1:my-2,:,i) &
                              -2.*f(:,2:my-1,:,i) &
-                             +1.*f(:,3:my  ,:,i) ) / (dy**2) 
+                             +1.*f(:,3:my  ,:,i) ) / (dy**2)
       endif
 !
      if (j==3 .and. nzgrid/=1) then
         der2f(:,:,2:mz-1) = (+1.*f(:,:,1:mz-2,i) &
                              -2.*f(:,:,2:mz-1,i) &
-                             +1.*f(:,:,3:mz  ,i) ) / (dz**2) 
+                             +1.*f(:,:,3:mz  ,i) ) / (dz**2)
       endif
 !
     endsubroutine der2_2nd

@@ -183,7 +183,7 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine find_index_by_bisection(qpar,q,iq0)
 !
-!  Given a particle location (qpar), find the index of 
+!  Given a particle location (qpar), find the index of
 !  the nearest grid cell by bisecting the interval.
 !
 !  28-mar-11/anders: dummy
@@ -195,7 +195,7 @@ module Particles_mpicomm
       call keep_compiler_quiet(q)
       call keep_compiler_quiet(qpar)
       call keep_compiler_quiet(iq0)
-!      
+!
     endsubroutine find_index_by_bisection
 !***********************************************************************
     subroutine get_brick_index(xxp, iproc, ibrick)

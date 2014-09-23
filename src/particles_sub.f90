@@ -68,7 +68,7 @@ module Particles_sub
 !
 !  If we are inserting particles contiuously during the run root must
 !  know the total number of particles in the simulation.
-!    
+!
       if (npar_loc/=0) then
         call mpireduce_max_scl_int(maxval(ipar(1:npar_loc)),npar_total)
       else
@@ -138,7 +138,7 @@ module Particles_sub
 !
 !  Reversing direction of looping is needed for removal.
 !
-      if ((bcpx=='rmv').or.(bcpy=='rmv').or.(bcpz=='rmv')) then 
+      if ((bcpx=='rmv').or.(bcpy=='rmv').or.(bcpz=='rmv')) then
         k1=npar_loc; k2=1; ik=-1
       else
         k1=1; k2=npar_loc; ik=1
@@ -232,25 +232,25 @@ module Particles_sub
             if (lcylindrical_coords) then
               if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
 !   Flush to outer boundary
-                fp(k,ixp)  = rp_ext  
+                fp(k,ixp)  = rp_ext
 !   Random new azimuthal y position
-                call random_number_wrapper(fp(k,iyp))   
+                call random_number_wrapper(fp(k,iyp))
                 fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
 !   Zero radial, Keplerian azimuthal, velocities
-                fp(k,ivpx) = 0. 
+                fp(k,ivpx) = 0.
 !   Keplerian azimuthal velocity
-                fp(k,ivpy) = fp(k,ixp)**(-1.5) 
+                fp(k,ivpy) = fp(k,ixp)**(-1.5)
               endif
 !
-            elseif (lcartesian_coords) then 
+            elseif (lcartesian_coords) then
 !
 ! The Cartesian case has the option cylinder_in_a_box, sphere_in_a_box
 ! and nothing (assumed to be the common shearing box. Only the cylinder
-! is considered. The code will break otherwise 
+! is considered. The code will break otherwise
 !
-              if (lcylinder_in_a_box) then 
+              if (lcylinder_in_a_box) then
 !
-                if (boundy/='out') then 
+                if (boundy/='out') then
                   call fatal_error_local("boundconds_particles",&
                        "The radial boundary already does it all"//&
                        "so the y-boundary has to be set to 'out'")
@@ -270,7 +270,7 @@ module Particles_sub
                 call fatal_error_local('boundconds_particles',&
                      'no clue how to do flush-keplerian in a cartesian box')
               endif
-            elseif (lspherical_coords) then  
+            elseif (lspherical_coords) then
               call fatal_error_local('boundconds_particles',&
                    'flush-keplerian not ready for spherical coords')
             endif
@@ -287,8 +287,8 @@ module Particles_sub
                   call remove_particle(fp,ipar,k)
                 endif
               endif
-            elseif (lcartesian_coords) then 
-              if (lcylinder_in_a_box) then 
+            elseif (lcartesian_coords) then
+              if (lcylinder_in_a_box) then
                 if ((rad< rp_int).or.(rad>= rp_ext)) then
                   if (present(dfp)) then
                     call remove_particle(fp,ipar,k,dfp)
@@ -305,7 +305,7 @@ module Particles_sub
                   endif
                 endif
               endif
-            elseif (lspherical_coords) then 
+            elseif (lspherical_coords) then
               call fatal_error_local('boundconds_particles',&
                    'remove particles not ready for spherical coords')
             endif
@@ -682,8 +682,8 @@ module Particles_sub
     endsubroutine sharpen_tsc_density
 !***********************************************************************
     subroutine get_particles_interdistance(xx1,xx2,vector,distance,lsquare)
-!      
-!  The name of the subroutine is pretty self-explanatory. 
+!
+!  The name of the subroutine is pretty self-explanatory.
 !
 !  14-mar-08/wlad: moved here from particles_nbody
 !
@@ -697,19 +697,19 @@ module Particles_sub
       e2=xx1(2);e20=xx2(2)
       e3=xx1(3);e30=xx2(3)
 !
-!  Get the distances in each ortogonal component. 
+!  Get the distances in each ortogonal component.
 !  These are NOT (x,y,z) for all.
 !  For cartesian it is (x,y,z), for cylindrical (s,phi,z)
 !  for spherical (r,theta,phi)
-! 
+!
       if (lcartesian_coords) then
-        evr(1) = e1 - e10  
-        evr(2) = e2 - e20  
-        evr(3) = e3 - e30  
+        evr(1) = e1 - e10
+        evr(2) = e2 - e20
+        evr(3) = e3 - e30
       elseif (lcylindrical_coords) then
-        evr(1) = e1 - e10*cos(e2-e20)  
-        evr(2) = e10*sin(e2-e20)       
-        evr(3) = e3 - e30              
+        evr(1) = e1 - e10*cos(e2-e20)
+        evr(2) = e10*sin(e2-e20)
+        evr(3) = e3 - e30
       elseif (lspherical_coords) then
         evr(1) = e1 - e10*sin(e2)*sin(e20)*cos(e3-e30)
         evr(2) = e10*(sin(e2)*cos(e20) - cos(e2)*sin(e20)*cos(e3-e30))
@@ -721,8 +721,8 @@ module Particles_sub
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !  invr3_ij = r_ij**(-3)
 !
-      if (present(distance)) then 
-        if (present(lsquare)) then 
+      if (present(distance)) then
+        if (present(lsquare)) then
           distance =      sum(evr**2)
         else
           distance = sqrt(sum(evr**2))
@@ -744,7 +744,7 @@ module Particles_sub
 !
       logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
-!   
+!
       intent (inout) :: fp, dfp, ineargrid
       intent (in)    :: k, ks
 !
@@ -755,8 +755,8 @@ module Particles_sub
       lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
 !
       if (lnbody) then
-        if (present(ks)) then 
-          print*, 'nbody particle ', ks 
+        if (present(ks)) then
+          print*, 'nbody particle ', ks
           print*, 'is removing the following nbody particle:'
         else
           print*, 'the following nbody particle is being removed'
@@ -852,7 +852,7 @@ module Particles_sub
         log_ap_loc      = (log_ap_loc_low + log_ap_loc_high)/2
         if (lroot) then
           inquire(file=trim(datadir)//'/particle_size_dist.dat', &
-              exist=file_exists) 
+              exist=file_exists)
           if (.not. file_exists) then
             open(20,file=trim(datadir)//'/particle_size_dist.dat', &
                 status='new')
@@ -897,18 +897,18 @@ module Particles_sub
     endsubroutine output_particle_size_dist
 !***********************************************************************
     subroutine get_rhopswarm_ineargrid(mp_swarm_tmp,fp,k,ineark,rhop_swarm_tmp)
-!     
-!  Subroutine to calculate rhop_swarm, the mass density of a single 
-!  superparticle. The fundamental quantity is actually mp_swarm, the 
-!  mass of a superparticle. From that one calculates rhop_swarm=mp_swarm/dV, 
-!  where dV is the volume of a cell. In an equidistant Cartesian grid
-!  this is simply a constant, and set in the beginning of the code. In 
-!  polar and non-equidistant grids dV varies with position such that 
 !
-!    dV = dVol_x(l) * dVol_y(m) * dVol_z(n) 
-!  
-!  This subroutine takes care of this variation, also ensuring that the 
-!  impact on equidistant Cartesian grids is minimal. 
+!  Subroutine to calculate rhop_swarm, the mass density of a single
+!  superparticle. The fundamental quantity is actually mp_swarm, the
+!  mass of a superparticle. From that one calculates rhop_swarm=mp_swarm/dV,
+!  where dV is the volume of a cell. In an equidistant Cartesian grid
+!  this is simply a constant, and set in the beginning of the code. In
+!  polar and non-equidistant grids dV varies with position such that
+!
+!    dV = dVol_x(l) * dVol_y(m) * dVol_z(n)
+!
+!  This subroutine takes care of this variation, also ensuring that the
+!  impact on equidistant Cartesian grids is minimal.
 !
 !  Retrieves a scalar.
 !
@@ -932,16 +932,16 @@ module Particles_sub
           rhop_swarm_tmp = rhop_swarm
         endif
       else
-        il = ineark(1) ; im = ineark(2) ; in = ineark(3) 
+        il = ineark(1) ; im = ineark(2) ; in = ineark(3)
         rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(il)*dVol1_y(im)*dVol1_z(in)
       endif
 !
     endsubroutine get_rhopswarm_ineargrid
 !***********************************************************************
     subroutine get_rhopswarm_point(mp_swarm_tmp,fp,k,il,im,in,rhop_swarm_tmp)
-!     
-!  Same as get_rhopswarm_ineargrid, for general grid points il,im,in. 
-!  Retrieves a scalar. 
+!
+!  Same as get_rhopswarm_ineargrid, for general grid points il,im,in.
+!  Retrieves a scalar.
 !
 !  29-apr-11/wlad: coded
 !
@@ -950,7 +950,7 @@ module Particles_sub
       integer, intent(in) :: k, il, im, in
       real, intent(out) :: rhop_swarm_tmp
 !
-      if (lcartesian_coords.and.all(lequidist)) then 
+      if (lcartesian_coords.and.all(lequidist)) then
         if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
@@ -966,9 +966,9 @@ module Particles_sub
     endsubroutine get_rhopswarm_point
 !***********************************************************************
     subroutine get_rhopswarm_block(mp_swarm_tmp,fp,k,il,im,in,ib,rhop_swarm_tmp)
-!     
+!
 !  Same as get_rhopswarm_point, but for the volume elements as block arrays.
-!  Retrieves a scalar. 
+!  Retrieves a scalar.
 !
 !  29-apr-11/wlad: coded
 !
@@ -979,7 +979,7 @@ module Particles_sub
       integer, intent(in) :: k, il, im, in, ib
       real, intent(out) :: rhop_swarm_tmp
 !
-      if (lcartesian_coords.and.all(lequidist)) then 
+      if (lcartesian_coords.and.all(lequidist)) then
         if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then
@@ -1006,7 +1006,7 @@ module Particles_sub
       integer, intent(in) :: k, im, in
       real, dimension(nx), intent(out) :: rhop_swarm_tmp
 !
-      if (lcartesian_coords.and.all(lequidist)) then 
+      if (lcartesian_coords.and.all(lequidist)) then
         if (lparticles_density) then
           rhop_swarm_tmp = fp(k,irhopswarm)
         elseif (lparticles_radius.and.lparticles_number) then

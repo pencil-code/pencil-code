@@ -63,7 +63,7 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap,ch)
-      
+
       if (lsnap) then
 !
         if (msnap==mfarray) &
@@ -77,9 +77,9 @@ module Snapshot
         !!                       iay, iay+ndyi-1, firstind(2), ndown(2),&
           !!                     iaz, iaz+ndzi-1, firstind(3), ndown(3)
 !
-! copy downsampled data from *inner* grid 
+! copy downsampled data from *inner* grid
 !
-        buffer(iax:iax+ndxi-1,iay:iay+ndyi-1,iaz:iaz+ndzi-1,:) = &         
+        buffer(iax:iax+ndxi-1,iay:iay+ndyi-1,iaz:iaz+ndzi-1,:) = &
             a(firstind(1):l2:isx,firstind(2):m2:isy,firstind(3):n2:isz,:)
 !
 ! generate ghost zone data - not yet operational

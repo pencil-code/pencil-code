@@ -151,10 +151,10 @@ module BorderProfiles
           any(border_frac_z/=0)) &
         lborder_quenching=.true.
 !
-!  Use a fixed timescale to drive the boundary, independently of radius. 
-!  Else use some fraction of the local orbital time. 
+!  Use a fixed timescale to drive the boundary, independently of radius.
+!  Else use some fraction of the local orbital time.
 !
-      if (tborder/=0.) then 
+      if (tborder/=0.) then
         tborder1=1./tborder
       else
         fraction_tborder1=1./fraction_tborder
@@ -360,7 +360,7 @@ module BorderProfiles
 ! conditions for driving of the meridional border
 !
         lmeridional=lmeridional_border_drive.and.&
-               ((y(m)<=theta_lower_border+2*wborder_theta_lower).or.& ! lower stripe  
+               ((y(m)<=theta_lower_border+2*wborder_theta_lower).or.& ! lower stripe
                 (y(m)>=theta_upper_border-2*wborder_theta_upper))     ! upper stripe
 !
         if (lradial.or.lmeridional) then
@@ -406,7 +406,7 @@ module BorderProfiles
       pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT= 1.) + &
                   cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
 !
-      if (lmeridional_border_drive) pborder = pborder + & 
+      if (lmeridional_border_drive) pborder = pborder + &
            1-cubic_step(y(m),theta_lower_border,wborder_theta_lower,SHIFT= 1.) + &
              cubic_step(y(m),theta_upper_border,wborder_theta_upper,SHIFT=-1.)
 !

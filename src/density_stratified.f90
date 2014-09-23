@@ -305,7 +305,7 @@ module Density
 !  xy-average related
 !
       ruumz: if (idiag_rux2mz /= 0 .or. idiag_ruy2mz /= 0 .or. idiag_ruz2mz /= 0 .or. &
-                 idiag_ruxuymz /= 0 .or. idiag_ruxuzmz /= 0 .or. idiag_ruyuzmz /= 0) then 
+                 idiag_ruxuymz /= 0 .or. idiag_ruxuzmz /= 0 .or. idiag_ruyuzmz /= 0) then
         lpenc_diagnos(i_rho) = .true.
         lpenc_diagnos(i_uu) = .true.
       endif ruumz
@@ -313,7 +313,7 @@ module Density
 !  yz-average related
 !
       ruumx: if (idiag_rux2mx /= 0 .or. idiag_ruy2mx /= 0 .or. idiag_ruz2mx /= 0 .or. &
-                 idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) then 
+                 idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) then
         lpenc_diagnos(i_rho) = .true.
         lpenc_diagnos(i_uu) = .true.
       endif ruumx
@@ -959,7 +959,7 @@ module Density
 !
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
-!  
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)

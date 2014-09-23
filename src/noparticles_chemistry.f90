@@ -32,27 +32,27 @@ module Particles_chemistry
 !***********************************************************************
     subroutine register_indep_pchem()
 !
-!  09.09.14/jonas : coded 
+!  09.09.14/jonas : coded
 !
     end subroutine register_indep_pchem
 !***********************************************************************
     subroutine register_dep_pchem()
 !
-!  09.09.14/jonas : coded 
-!    
+!  09.09.14/jonas : coded
+!
     end subroutine register_dep_pchem
 !***********************************************************************
     subroutine get_pchem_info()
 !
-!  09.09.14/jonas : coded 
-!    
+!  09.09.14/jonas : coded
+!
     end subroutine get_pchem_info
 !***********************************************************************
     subroutine get_R_c_hat(var,fp)
 !
-!  09.09.14/jonas : coded 
-!    
-      real, dimension(mpar_loc), intent(out) :: var 
+!  09.09.14/jonas : coded
+!
+      real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
 !
       call keep_compiler_quiet(var)
@@ -62,9 +62,9 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_R_j_hat(var)
 !
-!  09.09.14/jonas : coded 
-!    
-      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var 
+!  09.09.14/jonas : coded
+!
+      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var
 !
       call keep_compiler_quiet(var)
 !
@@ -72,9 +72,9 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_mod_surf_area(var,fp,irhopswarm,iap)
 !
-!  09.09.14/jonas : coded 
-!  
-      real, dimension(mpar_loc), intent(out) :: var 
+!  09.09.14/jonas : coded
+!
+      real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
       integer :: irhopswarm,iap
 !
@@ -87,8 +87,8 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_St(var,fp)
 !
-!  09.09.14/jonas : coded 
-!        
+!  09.09.14/jonas : coded
+!
       real, dimension(mpar_loc),intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
 !
@@ -99,11 +99,11 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_conversion(var,fp)
  !
-!  09.09.14/jonas : coded 
-!             
+!  09.09.14/jonas : coded
+!
       real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
-!     
+!
       call keep_compiler_quiet(var)
       call keep_compiler_quiet(fp)
 !
@@ -112,8 +112,8 @@ module Particles_chemistry
 integer function count_max_elements(inputfile)
   character(*) :: inputfile
 !
-!  09.09.14/jonas : coded 
-!        
+!  09.09.14/jonas : coded
+!
      call keep_compiler_quiet(inputfile)
       count_max_elements=0
 !
@@ -122,13 +122,13 @@ end function count_max_elements
   integer function count_reactions(inputfile)
   character(*) :: inputfile
 !
-!  09.09.14/jonas : coded 
-!        
+!  09.09.14/jonas : coded
+!
       call keep_compiler_quiet(inputfile)
       count_reactions=0
 !
   end function count_reactions
-!*********************************************************************** 
+!***********************************************************************
 integer function find_species(species,unique_species,nlist)
 !
    implicit none
@@ -145,7 +145,7 @@ integer function find_species(species,unique_species,nlist)
   end function find_species
 !**********************************************************************
   subroutine get_species_list(string,list)
-!  
+!
     character(*) :: string
     character(10) :: list
 !

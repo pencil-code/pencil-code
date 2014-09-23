@@ -10,7 +10,7 @@ module Particles_kmeans
 !
   contains
 !***********************************************************************
-    subroutine ppcvq(measure, dims, dim1, dim2, no_tr_vec, trainv, weights, & 
+    subroutine ppcvq(measure, dims, dim1, dim2, no_tr_vec, trainv, weights, &
         cb_size, codebk, codew, do_split, do_norm, do_detail)
 !
 !  08-aug-13/anders+chao-chin: dummy

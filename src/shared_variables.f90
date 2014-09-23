@@ -1107,7 +1107,7 @@ module SharedVariables
 !
       character(LEN=labellen), intent(IN) :: name
       real, dimension(:),      pointer    :: prof, gprof    !intent(OUT)
-      
+
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)
@@ -1131,7 +1131,7 @@ module SharedVariables
       character(LEN=labellen), intent(IN) :: name
       real, dimension(:,:),    pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:),  pointer    :: gprof   !intent(OUT)
-      
+
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)
@@ -1152,7 +1152,7 @@ module SharedVariables
       character(LEN=labellen),  intent(IN) :: name
       real, dimension(:,:,:),   pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:,:), pointer    :: gprof   !intent(OUT)
-      
+
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)

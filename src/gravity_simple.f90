@@ -108,7 +108,7 @@ module Gravity
   integer :: idiag_epotmz=0        ! XYAVG_DOC: $\left<\varrho \Phi_{\rm grav}
                                    ! XYAVG_DOC: \right>_{xy}$
   integer :: idiag_epotuzmz=0      ! XYAVG_DOC: $\left<\varrho \Phi_{\rm grav}
-                                   ! XYAVG_DOC: u_z \right>_{xy}$ 
+                                   ! XYAVG_DOC: u_z \right>_{xy}$
                                    ! XYAVG_DOC: \quad(potential energy flux)
 !
 ! xz averaged diagnostics given in xzaver.in
@@ -121,7 +121,7 @@ module Gravity
   integer :: idiag_epotmx=0        ! YZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
                                    ! YZAVG_DOC: \right>_{yz}$
   integer :: idiag_epotuxmx=0      ! YZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
-                                   ! YZAVG_DOC: u_x \right>_{yz}$ 
+                                   ! YZAVG_DOC: u_x \right>_{yz}$
                                    ! YZAVG_DOC: \quad(potential energy flux)
 !
 ! z averaged diagnostics given in zaver.in
@@ -129,7 +129,7 @@ module Gravity
   integer :: idiag_epotmxy=0       ! ZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
                                    ! ZAVG_DOC: \right>_{z}$
   integer :: idiag_epotuxmxy=0     ! ZAVG_DOC: $\left<\varrho \Phi_{\rm grav}
-                                   ! ZAVG_DOC: u_x \right>_{z}$ 
+                                   ! ZAVG_DOC: u_x \right>_{z}$
                                    ! ZAVG_DOC: \quad(potential energy flux)
 !
   contains
@@ -238,7 +238,7 @@ module Gravity
 !
 ! Linear gravity profile in x for planetary core dynamos
 !
- case ('linear_x')      
+ case ('linear_x')
         if (lroot) print*,'initialize_gravity: linear x-grav, gravx=', gravx
         gravx_xpencil = -gravx*x
         potx_xpencil  = 0.5*gravx*(x**2-xinfty**2)

@@ -133,7 +133,7 @@ module Syscalls
 !
       integer :: unit=1, ierr
       character :: ch
-      logical :: lcount 
+      logical :: lcount
 !
       count_lines=-1
       if (.not. file_exists(file)) return

@@ -88,8 +88,8 @@ module Dustvelocity
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
-      ladvection_dust, lcoriolisforce_dust, gravx_dust, & 
-      beta_dPdr_dust, tausgmin, cdtd, nud_shock, & 
+      ladvection_dust, lcoriolisforce_dust, gravx_dust, &
+      beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
       nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
 !
   integer :: idiag_ekintot_dust=0
@@ -488,7 +488,7 @@ module Dustvelocity
         case ('zero', '0')
           do k=1,ndustspec; f(:,:,:,iudx(k):iudz(k))=0.0; enddo
           if (lroot) print*,'init_uud: zero dust velocity'
-!          
+!
         case ('constant')
           do l=1,mx
             f(l,:,:,iudx(1)) = uudx0

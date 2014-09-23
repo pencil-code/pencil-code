@@ -329,7 +329,7 @@ module Pscalar
       if (idiag_gcguzm/=0) then
        lpenc_diagnos(i_uij)=.true.
        lpenc_diagnos(i_gcc)=.true.
-      endif 
+      endif
       if (idiag_cluz_uzlcm/=0) then
         lpenc_diagnos(i_del2u)=.true.
         lpenc_diagnos(i_del2cc)=.true.
@@ -952,7 +952,7 @@ module Pscalar
       use Mpicomm, only: mpiallreduce_sum
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
- 
+
       real, dimension(npscalar) :: ccm, ccm_tmp
       integer :: i
 

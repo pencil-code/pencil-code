@@ -372,7 +372,7 @@ module Io
 !
       call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not prepare property list')
-      call h5pset_chunk_f (h5_plist, n_dims+1, local_size, h5_err) 
+      call h5pset_chunk_f (h5_plist, n_dims+1, local_size, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set chunk properties')
       call h5dcreate_f (h5_file, file, H5T_NATIVE_INTEGER, h5_fspace, h5_dset, h5_err, h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset')
@@ -391,7 +391,7 @@ module Io
 !
 ! Prepare data transfer.
 !
-      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err) 
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set data transfer properties')
       call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select collective IO')
@@ -438,7 +438,7 @@ module Io
 !
       call h5sclose_f (h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file space')
-      call h5sclose_f (h5_mspace, h5_err) 
+      call h5sclose_f (h5_mspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the memory space')
       call h5dclose_f (h5_dset, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset')

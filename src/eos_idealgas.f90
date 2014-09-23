@@ -63,7 +63,7 @@ module EquationOfState
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=0.0
-  real :: fac_cs=1.0 
+  real :: fac_cs=1.0
   real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
   real :: sigmaSBt=1.0
@@ -2317,7 +2317,7 @@ module EquationOfState
     subroutine bc_ss_flux_turb(f,topbot)
 !
 !  Black body boundary condition for entropy (called when bcz='Fgs')
-!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the 
+!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the
 !  Stefan-Boltzmann constant.
 !
 !   04-may-2009/axel: adapted from bc_ss_flux
@@ -2465,7 +2465,7 @@ module EquationOfState
     subroutine bc_ss_flux_turb_x(f,topbot)
 !
 !  Black body boundary condition for entropy (called when bcx='Fgs')
-!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the 
+!  setting F = sigmaSBt*T^4 where sigmaSBt is related to the
 !  Stefan-Boltzmann constant.
 !
 !   31-may-2010/pete: adapted from bc_ss_flux_turb
@@ -2687,7 +2687,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: chi, hcondzbot, hcondztop 
+      real, pointer :: chi, hcondzbot, hcondztop
       real, pointer :: chi_t, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
       logical, pointer :: lheatc_chiconst

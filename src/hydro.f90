@@ -46,7 +46,7 @@ module Hydro
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
   real, dimension (mz,3) :: uumz
-  real, dimension (nz,3) :: guumz=0.0 
+  real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (mx,my,3) :: uumxy=0.0
   real, dimension (mx,mz,3) :: uumxz=0.0
@@ -192,7 +192,7 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, & 
+      hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, &
       uzjet, ydampint, ydampext, mean_momentum
 !
@@ -543,7 +543,7 @@ module Hydro
     module procedure calc_pencils_hydro_pencpar
     module procedure calc_pencils_hydro_std
   endinterface calc_pencils_hydro
-!    
+!
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -736,13 +736,13 @@ module Hydro
              'initialize_hydro: fargo used. turned off advection of velocity'
       endif
 !
-!  Border profile backward compatibility. For a vector, if only the first 
+!  Border profile backward compatibility. For a vector, if only the first
 !  borderuu is set, then the other components get the same value.
 !
       if (lpropagate_borderuu     .and. &
            borderuu(1)/='nothing' .and. &
            borderuu(2)=='nothing' .and. &
-           borderuu(3)=='nothing') then 
+           borderuu(3)=='nothing') then
         borderuu(2)=borderuu(1)
         borderuu(3)=borderuu(1)
       endif
@@ -806,7 +806,7 @@ module Hydro
           zmask_hyd = 1.
         elsewhere
           zmask_hyd = 0.
-        endwhere 
+        endwhere
         hydro_zaver_range(1) = max(hydro_zaver_range(1), xyz0(3))
         hydro_zaver_range(2) = min(hydro_zaver_range(2), xyz1(3))
         zmask_hyd = zmask_hyd*Lxyz(3)/(hydro_zaver_range(2) - hydro_zaver_range(1))
@@ -903,7 +903,7 @@ module Hydro
 !***********************************************************************
       subroutine calc_means_hydro(f)
 !
-! calculates various means 
+! calculates various means
 !
 !  14-oct-13/MR: outsourced from calc_lhydro_pars
 !
@@ -969,7 +969,7 @@ module Hydro
         call finalize_aver(nprocxy,12,uumz)
 !
         do j=1,3
-          call der_z(uumz(:,j),guumz(:,j)) 
+          call der_z(uumz(:,j),guumz(:,j))
         enddo
 !
       endif
@@ -1219,7 +1219,7 @@ module Hydro
 
           if (lroot) print*,'init_uu: tanhy_perturbed'
           do l=l1,l2;  do m=m1,m2
-            uprof=amp_factor*cos(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
+            uprof=amp_factor*cos(kx_uu*x(l))*exp(-abs(y(m))/widthuu)
             do n=n1,n2
               f(l,m,n,iuy)=uprof
               f(l,m,n,iux)=0.0
@@ -1230,7 +1230,7 @@ module Hydro
 
           if (lroot) print*,'init_uu: tanhy_perturbed'
           do l=l1,l2;  do m=m1,m2
-            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
+            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu)
             do n=n1,n2
               f(l,m,n,iuy)=uprof
               f(l,m,n,iux)=0.0
@@ -1243,12 +1243,12 @@ module Hydro
 !
           if (lroot) print*,'init_uu: tanhy_perturbed'
           do l=l1,l2;  do m=m1,m2
-            uprof=ampluu(j)*tanh(y(m)/widthuu) 
+            uprof=ampluu(j)*tanh(y(m)/widthuu)
             do n=n1,n2
               f(l,m,n,iux)=uprof
             enddo
-            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu) 
-!            uprof=0.0001*sin(94.2477796*x(l))*exp(-0.1*abs(y(m))/widthuu) 
+            uprof=amp_factor*sin(kx_uu*x(l))*exp(-abs(y(m))/widthuu)
+!            uprof=0.0001*sin(94.2477796*x(l))*exp(-0.1*abs(y(m))/widthuu)
             do n=n1,n2
               f(l,m,n,iuy)=uprof
             enddo
@@ -1913,11 +1913,11 @@ module Hydro
 !***********************************************************************
     subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
-! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is 
-! selected or not. 
-! 
+! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is
+! selected or not.
+!
 ! 24-jun-13/dhruba: coded
-! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
 !                   for which pencils are calculated, default: all
 ! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
@@ -1935,7 +1935,7 @@ module Hydro
 !***********************************************************************
     subroutine calc_pencils_hydro_std(f,p)
 !
-! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with 
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
 ! lpenc_loc=lpencil
 !
 ! 21-sep-13/MR    : coded
@@ -1955,9 +1955,9 @@ module Hydro
 !  08-nov-04/tony: coded
 !  26-mar-07/axel: started using the gij_etc routine
 !  24-jun-13/dhruba: the earlier calc_pencils_hydro routine is copied here.
-!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
 !                    for which pencils are calculated, default: all
-!  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc 
+!  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc
 !
       use Deriv
       use Sub
@@ -2131,7 +2131,7 @@ module Hydro
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-jun-13/dhruba: aped from calc_pencils_hydro from previous version
-!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds, 
+!  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
 !                    for which pencils are calculated, default: all
 !  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc
 !
@@ -2185,8 +2185,8 @@ module Hydro
 ! ugu2
       if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu2 pencil')
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
-      if (lpenc_loc(i_u3u21).or.lpenc_loc(i_u1u32).or.lpenc_loc(i_u2u13)  & 
-        .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then 
+      if (lpenc_loc(i_u3u21).or.lpenc_loc(i_u1u32).or.lpenc_loc(i_u2u13)  &
+        .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
         call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
       endif
 ! del4u and del6u
@@ -3136,7 +3136,7 @@ module Hydro
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !  12-sep-13/MR  : use finalize_aver
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
       real, dimension (3) :: OO, dOO

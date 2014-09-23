@@ -462,9 +462,9 @@ module Io
       real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb
       real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg
 
-      real(KIND=8) :: dxdb,dydb,dzdb,deltaydb      
+      real(KIND=8) :: dxdb,dydb,dzdb,deltaydb
       real(KIND=4) :: dxsg,dysg,dzsg,deltaysg
- 
+
       if (lread_from_other_prec) then
         if (kind(a)==4) then
           allocate(adb(mx,my,mz,nv),xdb(mx),ydb(my),zdb(mz))
@@ -1221,7 +1221,7 @@ module Io
       real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb
       real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg
 
-      real(KIND=8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb      
+      real(KIND=8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb
       real(KIND=4) :: dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg
 
       open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')

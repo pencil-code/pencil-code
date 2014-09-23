@@ -5670,7 +5670,7 @@ module Mpicomm
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
             call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
             call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
-          else commun                        ! below diagonal: receive first, send then 
+          else commun                        ! below diagonal: receive first, send then
             call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
             call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif commun
@@ -7049,7 +7049,7 @@ module Mpicomm
             if ( zrangel(1,irz) == 0 ) exit
 !
             iza = max(n1g,zrangel(1,irz))-n1g+1
-            ize = min(n2g,zrangel(2,irz))-n1g+1  
+            ize = min(n2g,zrangel(2,irz))-n1g+1
 !
 ! loop over all z indices in range irz
 !
@@ -7071,14 +7071,14 @@ module Mpicomm
                   if ( kyrangel(1,iry) == 0 ) exit
 !
                   iya = max(m1g,kyrangel(1,iry))-m1g+1
-                  iye = min(m2g,kyrangel(2,iry))-m1g+1  
+                  iye = min(m2g,kyrangel(2,iry))-m1g+1
 !
 ! loop over all ky indices in range iry
 !
                   do iy = iya, iye, kyrangel(3,iry)
                      !!if (lroot) print*, 'iy=', iy
 !
-! loop over all processors in beam 
+! loop over all processors in beam
 !
                     l2g=0
                     do ipx=0,nprocx-1
@@ -7097,8 +7097,8 @@ module Mpicomm
                         if ( kxrangel(1,irx) == 0 ) exit
 !
                         ixa = max(l1g,kxrangel(1,irx))-l1g+1
-                        ixe = min(l2g,kxrangel(2,irx))-l1g+1 
-                        ixs = kxrangel(3,irx) 
+                        ixe = min(l2g,kxrangel(2,irx))-l1g+1
+                        ixs = kxrangel(3,irx)
 !
                         if (ixe>=ixa) then
 
@@ -7165,7 +7165,7 @@ module Mpicomm
         enddo
 !
         if (lroot.and.unfilled>0) then
-          write(1,'(a)') 
+          write(1,'(a)')
           unfilled=0
         endif
 !

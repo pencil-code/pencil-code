@@ -121,12 +121,12 @@ module ImplicitPhysics
 ! variables that are needed everywhere in this module
 !
       call get_cp1(cp1)
-      if (dx>0.) then 
+      if (dx>0.) then
          dx_2 = 1.0 / dx**2
       else
          dx_2 = 0.0
       endif
-      if (dy>0.) then 
+      if (dy>0.) then
          dy_2 = 1.0 / dy**2
       else
          dy_2 = 0.0
@@ -300,19 +300,19 @@ module ImplicitPhysics
         select case (bcz1(ilnTT))
           ! Constant temperature at the bottom
           case ('cT')
-            bz(1)=1.  ; cz(1)=0. 
+            bz(1)=1.  ; cz(1)=0.
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
           case ('c1')
             bz(1)=1.   ; cz(1)=-1
             rhsz(1)=dz*Fbot/hcond0
-! we can use here the second-order relation for the first derivative: 
-! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
+! we can use here the second-order relation for the first derivative:
+! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
 !           cz(1)=cz(1)+az(1)
 !           rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
-          case default 
+          case default
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
@@ -350,7 +350,7 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-! BC important not for the x-direction (always periodic) but for 
+! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
       call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
@@ -431,7 +431,7 @@ module ImplicitPhysics
          case ('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
-         case default 
+         case default
           call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
        endselect
 !
@@ -491,7 +491,7 @@ module ImplicitPhysics
       call update_ghosts(f)
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
 !
-! BC important not for the x-direction (always periodic) but for 
+! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
 !
@@ -580,7 +580,7 @@ module ImplicitPhysics
           case ('c3')
             bz(1)=1. ; cz(1)=-1.
             rhsz(1)=0.
-          case default 
+          case default
             call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
         endselect
         call tridag(az, bz, cz, rhsz, workz, err, msg)
@@ -601,7 +601,7 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine boundary_ADI(f_2d, hcond)
 !
-! 13-Sep-07/gastine: computed two different types of boundary 
+! 13-Sep-07/gastine: computed two different types of boundary
 ! conditions for the implicit solver:
 !     - Always periodic in x-direction
 !     - Possibility to choose between 'cT' and 'c3' in z direction
@@ -632,7 +632,7 @@ module ImplicitPhysics
         case ('c3') ! constant flux
           if (.not. present(hcond)) then
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
-          else 
+          else
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond(:)
           endif
       endselect
@@ -643,7 +643,7 @@ module ImplicitPhysics
     subroutine ADI_Kconst_1d(f)
 !
 ! 18-sep-07/dintrans: coded
-! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
+! Implicit Crank Nicolson scheme in 1-D for a constant K (not
 ! really an ADI but keep the generic name for commodity).
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
@@ -723,7 +723,7 @@ module ImplicitPhysics
         rhs(nz)=0.
         if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
-          b(1)=1. ; c(1)=0. 
+          b(1)=1. ; c(1)=0.
           rhs(1)=0.
         else
 ! Constant flux at the bottom: d/dz [T^(n+1)-T^n] = 0
@@ -781,7 +781,7 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j) &  
+        rhsx=TT(l1:l2,j) &
           +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
           +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
           +dt*source(l1:l2,j)
@@ -815,7 +815,7 @@ module ImplicitPhysics
             bz(1)=1.  ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
           case ('c1') ! Constant flux at the bottom
             bz(1)=1.  ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
-          case default 
+          case default
             call fatal_error('ADI_Kconst_MPI','bcz on TT must be cT or c1')
         endselect
 !
@@ -846,7 +846,7 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine heatcond_TT_1d(TT, hcond, dhcond)
 !
-! 18-Sep-07/dintrans: computed 1-D radiative conductivity 
+! 18-Sep-07/dintrans: computed 1-D radiative conductivity
 ! hcond(T) with its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
@@ -928,7 +928,7 @@ module ImplicitPhysics
         rhs(nz)=0.
         if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
-          b(1)=1. ; c(1)=0. 
+          b(1)=1. ; c(1)=0.
           rhs(1)=0.
         else
 ! Constant flux at the bottom: d/dz [T^(n+1)-T^n] = 0
@@ -951,7 +951,7 @@ module ImplicitPhysics
 !
 !  28-fev-2010/dintrans: coded
 !  simpler version where one part of the radiative diffusion term is
-!  computed during the explicit step. The implicit part remains 
+!  computed during the explicit step. The implicit part remains
 !  of Yakonov's form:
 !
 !    (1-dt/2*J_x)*lambda = f_x(T^n) + f_z(T^n) + source
@@ -978,7 +978,7 @@ module ImplicitPhysics
       call update_ghosts(f)
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-! BC important not for the x-direction (always periodic) but for 
+! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
       call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
@@ -1039,7 +1039,7 @@ module ImplicitPhysics
          case ('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
-         case default 
+         case default
           call fatal_error('ADI_Kprof_mixed','bcz on TT must be cT or c3')
        endselect
 !
@@ -1067,7 +1067,7 @@ module ImplicitPhysics
 !
 !  where Lambda_x and Lambda_z denote diffusion operators and the source
 !  term comes from the explicit advance.
-!  Note: this form is more adapted for a parallelisation compared the 
+!  Note: this form is more adapted for a parallelisation compared the
 !  Peaceman & Rachford one.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
@@ -1138,7 +1138,7 @@ module ImplicitPhysics
           case ('c1')
             bz(1)=1.   ; cz(1)=-1
             rhsz(1)=dz*Fbot/hcond0
-          case default 
+          case default
             call fatal_error('ADI_Kconst_yakonov','bcz on TT must be cT or c1')
         endselect
 !
@@ -1261,7 +1261,7 @@ module ImplicitPhysics
           ! Constant flux at the bottom: c1 condition
           case ('c1')
             bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
-          case default 
+          case default
             call fatal_error('ADI_poly','bcz on TT must be cT or c1')
         endselect
 !
@@ -1349,7 +1349,7 @@ module ImplicitPhysics
           case ('c1')
 !            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
             bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
-          case default 
+          case default
             call fatal_error('ADI_poly_MPI','bcz on TT must be cT or c1')
         endselect
 !
@@ -1460,7 +1460,7 @@ module ImplicitPhysics
           ! Constant flux at the bottom: c1 condition
           case ('c1')
             bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
-          case default 
+          case default
             call fatal_error('ADI_poly','bcz on TT must be cT or c1')
         endselect
 !
@@ -1578,7 +1578,7 @@ module ImplicitPhysics
           case ('c1')
 !            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
             bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
-          case default 
+          case default
             call fatal_error('ADI_poly','bcz on TT must be cT or c1')
         endselect
 !

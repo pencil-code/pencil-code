@@ -93,7 +93,7 @@ module Forcing
   logical, dimension(n_forcing_cont) :: lgentle=.false.
   character (len=labellen), dimension(n_forcing_cont) :: iforcing_cont='nothing'
   real, dimension(n_forcing_cont) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
-  real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible  
+  real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible
   real, dimension(n_forcing_cont) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
   real, dimension(n_forcing_cont) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
   real, dimension(n_forcing_cont) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4

@@ -4,9 +4,9 @@
 program rvid_box
 !
 !  read and combine slices from individual processor directories data
-!  /procN, write them to data/, where they can be used by rvid_box.pro. 
+!  /procN, write them to data/, where they can be used by rvid_box.pro.
 !
-!  Adapated from read_videofiles.f90 but reads all files without waiting 
+!  Adapated from read_videofiles.f90 but reads all files without waiting
 !  for a user input.
 !
 !  17-dec-10/bing: coded
@@ -44,11 +44,11 @@ program rvid_box
 !
       logical :: exists,lfirst_slice=.true.
 !
-!  Read name of the field from a file containing the field to be read. 
-!  Use videoread.in as default. If that does not exist, use video.in 
-!  (that will read all fields). video.in is the default file used to 
-!  tell the code which fields to write slices. Ideally, we should have 
-!  a separate file telling read_all_videofiles which slices to read. 
+!  Read name of the field from a file containing the field to be read.
+!  Use videoread.in as default. If that does not exist, use video.in
+!  (that will read all fields). video.in is the default file used to
+!  tell the code which fields to write slices. Ideally, we should have
+!  a separate file telling read_all_videofiles which slices to read.
 !
       inquire(file='videoread.in',exist=exists)
       if (exists) then
@@ -224,7 +224,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
@@ -267,7 +267,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
@@ -310,7 +310,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
@@ -353,7 +353,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xy_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xy_loc,t,slice_pos
@@ -396,7 +396,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xz_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xz_loc,t,slice_pos
@@ -439,7 +439,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) xz_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) xz_loc,t,slice_pos
@@ -482,7 +482,7 @@ program rvid_box
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
-                  do istride=1,stride 
+                  do istride=1,stride
                     read(lun_read,iostat=iostat) yz_loc_dummy,t_dummy,slice_pos_dummy
                   enddo
                   read(lun_read,iostat=iostat) yz_loc,t,slice_pos

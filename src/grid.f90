@@ -431,14 +431,14 @@ module Grid
                            'No such x grid function - '//grid_func(1))
         endselect
 !
-!  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary, 
+!  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary,
 !  this makes sure that the second derivertive is zero, if you choose a2 for example.
 !  Still in the testing phase, that why it is commented out.
 !
 !        if ( .not.lequidist(1) ) then
 !          if (xprim2(l1) .ne. 0) then
 !            print*, 'use polynomia extension in x bottom'
-!            if (lfirst_proc_x) then 
+!            if (lfirst_proc_x) then
 !              a3=xprim2(l1+1)/6.
 !              a1=xprim(l1+1) - xprim2(l1+1)/2.
 !             a0=x(l1+1) - xprim(l1+1) + xprim2(l1+1)/3.
@@ -1750,7 +1750,7 @@ module Grid
         if (present(gder2)) gder2=  g
 !
       case ('linear+log')
-        ! Grid distance is equidistant near lower boundary and then 
+        ! Grid distance is equidistant near lower boundary and then
         ! increases logarithmically
         if (present(param)) then
             g=(1+xi)*0.5*(1.-tanh(param*xi))+exp(xi)*0.5*(1.+tanh(param*xi))

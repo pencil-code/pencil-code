@@ -175,7 +175,7 @@ module Energy
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
-      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, & 
+      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond
 !
 !  Diagnostic variables for print.in
@@ -347,7 +347,7 @@ module Energy
 !
 !  21-jul-02/wolf: coded
 !  28-mar-13/axel: reinitialize_ss added
-!  26-feb-13/MR  : added temperature rescaling 
+!  26-feb-13/MR  : added temperature rescaling
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
@@ -561,7 +561,7 @@ module Energy
             hcondxbot=hcond0
             hcondxtop=hcond0
             FbotKbot=Fbot/hcond0
-            if (lroot) & 
+            if (lroot) &
               print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
                 hcondxbot, hcondxtop, FbotKbot
           else
@@ -868,7 +868,7 @@ module Energy
         else
           do n=n1,n2; do m=m1,m2
 !
-!  WL: Why are these pencils recalculated here? They belong to grid.f90! 
+!  WL: Why are these pencils recalculated here? They belong to grid.f90!
 !  AB: Anders, you inserted these lines in revision 14718.
 !
             if (lgravz) then
@@ -1007,7 +1007,7 @@ module Energy
 !
       use EquationOfState, only: get_cp1
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f 
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
       real, dimension(mx,my) :: ssmxy
       real :: cp1_
@@ -2584,7 +2584,7 @@ module Energy
 !
 !  extra pencils for variable cooling time
 !
-        if (ltau_cool_variable) then 
+        if (ltau_cool_variable) then
           if (lcartesian_coords.or.lcylindrical_coords) then
             lpenc_requested(i_rcyl_mn1)=.true.
           elseif (lspherical_coords) then
@@ -2776,7 +2776,7 @@ module Energy
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
 ! dsdr
-     !if (lpencil(i_dsdr)) then 
+     !if (lpencil(i_dsdr)) then
      !    call grad(f,iss,gradS)
      !    p%dsdr=gradS(:,1)
      !endif
@@ -3157,7 +3157,7 @@ module Energy
       endif
 !
 !
-!  For the 2D averages of the baroclinic term  
+!  For the 2D averages of the baroclinic term
 !
        if (l2davgfirst) then
          if (idiag_gTxgsxmxy/=0 .or. &
@@ -3910,7 +3910,7 @@ module Energy
       pchi_shock = chi_shock + chi_shock*(chi_jump_shock-1.)* &
                       step(p%r_mn,xchi_shock,widthchi_shock)
 !
-          gradchi_shock(:,1) = chi_shock*(chi_jump_shock-1.)* & 
+          gradchi_shock(:,1) = chi_shock*(chi_jump_shock-1.)* &
                             der_step(p%r_mn,xchi_shock,widthchi_shock)
           gradchi_shock(:,2) = 0.
           gradchi_shock(:,3) = 0.
@@ -3919,9 +3919,9 @@ module Energy
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
 !
 !  Shock entropy diffusivity with a radial profile
-!  Write: chi_shock = pchi_shock*shock, gshock=grad(shock) 
+!  Write: chi_shock = pchi_shock*shock, gshock=grad(shock)
 !  and gradchi_shock=grad(pchi_shock) so
-!  Ds/Dt = ... + pchi_shock*[shock*(del2ss+glnTT.gss+glnrho.gss) + gshock.gss] 
+!  Ds/Dt = ... + pchi_shock*[shock*(del2ss+glnTT.gss+glnrho.gss) + gshock.gss]
 !              + shock*gradchi_shock.gss
 !
       if (headtt) print*,'calc_heatcond_shock_profr: use shock diffusion with radial profile'
@@ -3930,7 +3930,7 @@ module Energy
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
       call dot(gradchi_shock,p%glnTT,gchiglnTT)
 
-! 
+!
       if (pretend_lnTT) then
         thdiff=gamma*(pchi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)+gchiglnTT*p%shock)
       else
@@ -4752,10 +4752,10 @@ module Energy
       real, dimension(nx), intent(inout) :: a
       integer :: i
 !
-      do i=1,nx 
+      do i=1,nx
         if (a(i) < TT_floor) a(i)=TT_floor
       enddo
-!      
+!
     endsubroutine apply_floor
 !***********************************************************************
     subroutine calc_heat_cool_variable(heat,p)
@@ -4782,28 +4782,28 @@ module Energy
 !
 ! Set the constants
 !
-      if (lfirstcall) then 
+      if (lfirstcall) then
         tau1_cool=1./tau_cool
         if (lphotoelectric_heating) rho01=1./rho0
         lfirstcall=.false.
       endif
 !
-      if (lphotoelectric_heating) then 
-        TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01      
-      else  
-        TT_drive=TTref_cool*rr1**TT_powerlaw      
+      if (lphotoelectric_heating) then
+        TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01
+      else
+        TT_drive=TTref_cool*rr1**TT_powerlaw
       endif
 !
       if (TT_floor /= impossible) call apply_floor(TT_drive)
 !
-!  Apply tapering function. The idea is to smooth it to zero near the 
+!  Apply tapering function. The idea is to smooth it to zero near the
 !  boundaries. Useful in connection with border profiles when the initial
-!  condition is not the same as the power law. 
+!  condition is not the same as the power law.
 !
-      if (lborder_heat_variable) then 
+      if (lborder_heat_variable) then
         pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT=1.) - &
                 quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
-      else 
+      else
         pborder=1.
       endif
 !
@@ -5448,7 +5448,7 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0; 
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
         idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0

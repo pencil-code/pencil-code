@@ -43,11 +43,11 @@ module Particles_chemistry
   character(3), dimension(:), allocatable, save :: reaction_direction
   character(3), dimension(:), allocatable ::flags
   character(10), dimension(:,:), allocatable, save :: part
-  character(10), dimension(:), allocatable :: solid_species 
+  character(10), dimension(:), allocatable :: solid_species
   character(10), dimension(50) :: species_name,adsorbed_species_names
   integer, dimension(:), allocatable :: dependent_reactant
   integer, dimension(:), allocatable :: j_of_inu
-  integer :: N_species, N_reactions 
+  integer :: N_species, N_reactions
   integer :: N_surface_reactions, N_adsorbed_species=1
   integer :: N_surface_reactants, N_surface_species
   integer :: inuH2,inuCO2,inuH2O,inuCO,inuCH4,inuO2,inuCH,inuHCO,inuCH2,inuCH3
@@ -72,7 +72,7 @@ module Particles_chemistry
 !*********************************************************************!
 !               Particle dependent variables below here               !
 !*********************************************************************!
-!  
+!
   real, dimension(:), allocatable :: St
   real, dimension(:,:), allocatable :: heating_k,entropy_k
   real, dimension(:), allocatable :: R_c_hat
@@ -87,8 +87,8 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: adsorbed_species_entropy
   real, dimension(:,:), allocatable :: surface_species_entropy
   real, dimension(:), allocatable :: Qh,Qc,Qreac,Qrad
-  real, dimension(:), allocatable :: A_p_init,ndot_total  
-  real, dimension(:), allocatable :: Particle_temperature  
+  real, dimension(:), allocatable :: A_p_init,ndot_total
+  real, dimension(:), allocatable :: Particle_temperature
   real, dimension(:), allocatable :: mod_surf_area
   real, dimension(:), allocatable :: St_init
   real, dimension(mpar_loc) :: init_mass,rho_p_init
@@ -103,7 +103,7 @@ module Particles_chemistry
       character(10), dimension(40) :: species,reactants
 !
       call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
-!      
+!
       if (nsurfreacspec/=N_surface_species) then
          print*,'N_surface_species: ', N_surface_species
          call fatal_error('register_particles_ads', &
@@ -112,7 +112,7 @@ module Particles_chemistry
       endif
 !
       call get_species_list('solid_species',solid_species)
-!      
+!
       call create_ad_sol_lists(species(:ns),adsorbed_species_names,'ad',ns)
       call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
 !
@@ -133,7 +133,7 @@ module Particles_chemistry
       endif
 !
 !  Set some indeces (this is hard-coded for now)
-!    
+!
       if (nadsspec>0) then
          imuadsO =find_species('C(O)',adsorbed_species_names,N_adsorbed_species)
          imuadsO2=find_species('C2(O2)',adsorbed_species_names,N_adsorbed_species)
@@ -155,7 +155,7 @@ module Particles_chemistry
           lenhance=.true.
         endif
       enddo
-      if (lenhance) call sleep(4)      
+      if (lenhance) call sleep(4)
 !
 ! Allocate memory for a number of arrays
 !
@@ -260,7 +260,7 @@ module Particles_chemistry
         'Could not allocate memory for site_occupancy')
     else
     end if
-       
+
 !
 ! Define the aac array which gives the amount of carbon in the
 ! adsorbed species.
@@ -348,22 +348,22 @@ module Particles_chemistry
       print*, adsorbed_species_names
       print*,'Solid_species'
       print*, solid_species
-!        
+!
       write(*,'(A20," ",10I4)') 'j_of_inu=', j_of_inu
       write(*,'(A20," ",10F4.0)') 'ac=',ac
       write(*,'(A20," ",10F4.0)') 'site_occupancy=',site_occupancy
       write(*,'(A20," ",30I4)') 'dependent_reactant=',dependent_reactant
       write(*,'(A20," ",10E12.5)') 'sigma_k=',sigma_k
-!        
+!
     endif
 !
     end subroutine register_indep_pchem
 !***********************************************************************
     subroutine register_dep_pchem()
-!      
+!
       integer :: stat,dummy
-      character(10), dimension(40) :: trash   
-!      
+      character(10), dimension(40) :: trash
+!
       if (first_pchem) then
          call get_pchem_info(trash,'dummy',dummy,'verbose')
          first_pchem = .false.
@@ -409,7 +409,7 @@ module Particles_chemistry
 !
     if (nadsspec>0) then
            allocate(adsorbed_species_entropy(mpar_loc,N_adsorbed_species) &
-                ,STAT=stat)    
+                ,STAT=stat)
            if (stat>0) call fatal_error('register_dep_pchem',&
                 'Could not allocate memory for adsorbed_species_entropy')
            allocate(adsorbed_species_enthalpy(mpar_loc,N_adsorbed_species) &
@@ -438,7 +438,7 @@ module Particles_chemistry
       character(*) :: string,talk
 !
       N_surface_reactions = count_reactions('mechanics.in')
-      N_max_elements = count_max_elements('mechanics.in') + 1 
+      N_max_elements = count_max_elements('mechanics.in') + 1
 !
 !  Allocate some arrays
 !
@@ -477,7 +477,7 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_R_c_hat(var,fp)
 !
-      real, dimension(mpar_loc), intent(out) :: var 
+      real, dimension(mpar_loc), intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
 !
 !  JONAS talk to nils how to implement things from equ.f90
@@ -493,13 +493,13 @@ module Particles_chemistry
 !***********************************************************************
     subroutine get_R_j_hat(var)
 !
-      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var 
+      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var
       real, dimension(mpar_loc,N_adsorbed_species) :: R_j_hat
       integer :: j,k
 !
-!  Calculation of R_j_hat according to eq.50 in 8th US combustion 
+!  Calculation of R_j_hat according to eq.50 in 8th US combustion
 !  meeting, coal and  biomass combustion and gasification.
-!      
+!
       R_j_hat = 0.0
       do k=1,N_surface_reactions
          do j=1,N_adsorbed_species-1
@@ -516,14 +516,14 @@ module Particles_chemistry
       real, dimension(mpar_loc) :: mod_all,Sgc,mod_surf_area
       real, dimension(mpar_loc,mpvar) :: fp
       integer :: end
-      
+
 !
       call get_St(St,fp)
 !
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
 !  biomass combustion and gasification.
 !
-      mod_all(:) = St_init(:)*St_init(:)*struct_par* & 
+      mod_all(:) = St_init(:)*St_init(:)*struct_par* &
            (1-conversion(:)) * (1-conversion(:)) / &
            (2*St(:)**2)
       Sgc(:) = St(:)/fp(:,irhopswarm)
@@ -535,17 +535,17 @@ module Particles_chemistry
     end subroutine get_mod_surf_area
 !***********************************************************************
     subroutine get_St(var,fp)
-!      
+!
       real, dimension(mpar_loc),intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
       integer :: end
 !
 !
 !  Evolution of the total surface area according to 8th US combustion
-!  meeting, coal and biomass combustion and gasification eq. 19  
-!   
+!  meeting, coal and biomass combustion and gasification eq. 19
+!
       St = 0.0
-      St(:)=(1-conversion(:))*St_init(:)* & 
+      St(:)=(1-conversion(:))*St_init(:)* &
            sqrt(1.0 - struct_par*log(fp(:,irhopswarm)/rho_p_init(:)))
       var = St
 !
@@ -558,7 +558,7 @@ integer function count_max_elements(inputfile)
   character(150) :: line
   character :: tab = char(9)
   character :: spc = char(32)
-!      
+!
  open(30, file=inputfile,iostat=stat)
     if(stat==0) then
           maxelement=1
@@ -591,7 +591,7 @@ integer function count_max_elements(inputfile)
        end do
 530 close(30)
       count_max_elements=maxelement
-    else 
+    else
        maxelement=0
        write(*,*) 'Problem with the single elements of the mechanics.in file'
     endif
@@ -605,7 +605,7 @@ end function count_max_elements
     integer :: stat,reactions
     character(150) :: line
     character(*) :: inputfile
-!    
+!
  open(20, file=inputfile,iostat=stat)
     if(stat==0) then
 !       write(*,*) 'Counting reactions'
@@ -624,13 +624,13 @@ end function count_max_elements
 520    close(20)
        count_reactions=reactions
 610 format(A150)
-    else 
+    else
        count_reactions=0
        write(*,*) 'Could not open mechanics file'
     endif
 !
   end function count_reactions
-!*********************************************************************** 
+!***********************************************************************
 integer function find_species(species,unique_species,nlist)
 !
 !  function to replace the imu/inuX variables
@@ -640,7 +640,7 @@ integer function find_species(species,unique_species,nlist)
     integer :: i,nlist
     character(len=*) :: species
     character(len=*), dimension(:) :: unique_species
-!   
+!
     find_species = 0
 !
     do i=1,nlist
@@ -658,7 +658,7 @@ integer function find_species(species,unique_species,nlist)
     real, dimension(:) :: RR_method
     character(10), dimension(:,:) :: part
     character(10) :: element
-!    
+!
     do i=1,size(part,2)
        do j=1,size(part,1)
           element = part(j,i)
@@ -686,7 +686,7 @@ integer function find_species(species,unique_species,nlist)
     B_k = 0.0
     ER_k = 0.0
     sigma_k = 0.0
-!    
+!
     do i=1, size(part,2)
        if (part(size(part,1),i) == 'rev') then
           B_k(i) = 1e1
@@ -719,18 +719,18 @@ integer function find_species(species,unique_species,nlist)
     end do
 !
     ER_k = ER_k*1e6/gas_constant
-!          
+!
   end subroutine create_arh_param
 !**********************************************************************
   subroutine create_dependency(nu,dependent_reactant,&
      n_surface_reactions,n_surface_reactants)
-!   
+!
     integer :: i,k,n_surface_reactions,n_surface_reactants
     real, dimension(:,:) :: nu
     integer, dimension(:) :: dependent_reactant
-!   
+!
     dependent_reactant = 0
-!   
+!
     do i=1,n_surface_reactants
        do k=1,n_surface_reactions
           if (nu(i,k) > 0) then
@@ -739,11 +739,11 @@ integer function find_species(species,unique_species,nlist)
           end if
        end do
     end do
-!   
+!
   end subroutine create_dependency
 !**********************************************************************
   subroutine create_occupancy(adsorbed_species_names,site_occupancy)
-!    
+!
     integer :: i
     character(10), dimension(:) :: adsorbed_species_names
     real, dimension(:) :: site_occupancy
@@ -831,12 +831,12 @@ integer function find_species(species,unique_species,nlist)
         else
         end if
     end do
-!    
+!
   end subroutine get_ac
 !**********************************************************************
  subroutine sort_compounds(lhslist,species_list,nlist,n_big)
 !
-!  this file reads in the order of the 
+!  this file reads in the order of the
 !  compounds as prescribed
 !
    integer :: nlist,i,n_big,j
@@ -864,12 +864,12 @@ integer function find_species(species,unique_species,nlist)
       if (.not. is_reactant) then
          temp_list(nlist-end) = species_list(i)
          end = end + 1
-      else 
+      else
          temp_list(1+front) = species_list(i)
          front = front + 1
       end if
    end do
-!   
+!
    do i=1,nlist-1
       if (temp_list(i) == 'Cf') then
          temp = temp_list(nlist)
@@ -892,7 +892,7 @@ integer function find_species(species,unique_species,nlist)
   integer :: i ,nlist
   integer :: place
   place = 1
-!    
+!
     do i = 1,nlist
        if (ad_sol == 'ad') then
           if (scan(list(i),'()') > 0 .or.&
@@ -947,9 +947,9 @@ integer function find_species(species,unique_species,nlist)
   integer :: k
   character(10), dimension(:) :: list
   character(10) :: entry
-!  
+!
   is_not_in_list = .true.
-!  
+!
   do k=1,size(list,1)
      if (entry == list(k)) then
         is_not_in_list = .false.
@@ -969,7 +969,7 @@ integer function find_species(species,unique_species,nlist)
     logical :: lhs, to_append, to_append_prod,to_append_reac
     character(10), dimension(40) :: species,reactants,products
     character(10), dimension(40) :: temp,temp_reac,temp_prod
-!  
+!
     temp = 'nothing'
     jmax = size(part,1)
     place = 1
@@ -999,8 +999,8 @@ integer function find_species(species,unique_species,nlist)
              read(element(:1),*,iostat=stat) number
              if (stat==0)  element = element(2:)
 !
-!  appending the components to the list 
-!  of global, reactand and product uniques          
+!  appending the components to the list
+!  of global, reactand and product uniques
 !
           to_append = is_not_in_list(temp,element)
           to_append_reac = is_not_in_list(temp_reac,element)
@@ -1010,19 +1010,19 @@ integer function find_species(species,unique_species,nlist)
           temp(place) = element
           place = place+1
           else
-          end if  
+          end if
 !
           if (to_append_reac .and. lhs) then
           temp_reac(place_reac) = element
           place_reac = place_reac+1
           else
-          end if  
+          end if
 !
           if (to_append_prod .and. (lhs .eqv. .false.)) then
           temp_prod(place_prod) = element
           place_prod = place_prod+1
           else
-          end if  
+          end if
 !
           else
           end if
@@ -1057,9 +1057,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     character(3), dimension(:) :: direction
     integer :: ireaction
     integer :: i,numerical,marker
-    real :: real_number 
+    real :: real_number
     character(10), dimension(:,:) :: target_list
-!    
+!
     marker = index(string,'<>')
     numerical = 1
     i = marker
@@ -1077,7 +1077,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        else
        end if
     end do
-!    
+!
     lhs = trim(string(:marker-1))
     sign = trim(string(marker:marker+1))
     rhs = trim(string(marker+2:i))
@@ -1140,7 +1140,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !**********************************************************************
   subroutine read_mechanics_file(inputfile,target_list,n_max_elements,&
     reaction_direction,talk)
-!  
+!
     integer :: stat,ireaction,i,n_max_elements
     character(150) :: string
     character(*) :: inputfile,talk
@@ -1152,7 +1152,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     write(writeformat(2:3),'(I2)') n_max_elements
     open(20, file=inputfile,iostat=stat)
     open(29, file='mech_outputfile.dat',iostat=stat)
-!    
+!
     if(stat==0) then
        if(talk=='verbose') write(*,*) 'Opened mechanics file'
        ireaction = 1
@@ -1181,14 +1181,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        end if
        close(29)
 510 format (A150)
-    else 
+    else
        write(*,*) 'Could not open mechanics file'
     endif
 !
   end subroutine read_mechanics_file
 !**********************************************************************
   subroutine get_species_list(string,list)
-!  
+!
     character(*) :: string
     character(10), dimension(40) :: list,species,reactants
     integer :: nr,ns,stat,dummy,N_adsorbed_species
@@ -1207,7 +1207,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     call create_ad_sol_lists(species(:ns),solid_species,'sol',ns)
     call sort_compounds(reactants,solid_species,N_surface_species,nr)
 !
-    if (trim(string)=='solid_species') & 
+    if (trim(string)=='solid_species') &
          list(1:N_surface_species)=solid_species(:)
     if (trim(string)=='adsorbed_species_names') &
          list(1:N_adsorbed_species)=adsorbed_species_names(:N_adsorbed_species)
@@ -1232,7 +1232,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 end subroutine create_dngas
 !**********************************************************************
   subroutine find_entropy_of_reaction(fp)
-!  
+!
     integer :: k,j,i
     real, dimension(mpar_loc,mpvar) :: fp
 !
@@ -1273,7 +1273,7 @@ end subroutine create_dngas
          ((0.0319e3*fp(:,iTp)) + 186.88e3) * 0.7 - (3.3*gas_constant)
     else
     end if
-    if (imuadsH>0)    then 
+    if (imuadsH>0)    then
        adsorbed_species_entropy(:,imuadsH) = &
            (117.49e3+(0.0217e3*fp(:,iTp)))*0.54 - (3.3*gas_constant)
     else
@@ -1305,12 +1305,12 @@ end subroutine create_dngas
       enddo
       else
       end if
-    enddo      
+    enddo
 !
   end subroutine find_entropy_of_reaction
 !**********************************************************************
   subroutine get_reverse_K_k(k,K_k,fp)
-!  
+!
     use Particles_cdata, only: interp_pp
 !
   integer :: k
