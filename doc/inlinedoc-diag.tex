@@ -13,6 +13,7 @@
 %%   advective_gauge.f90
 %%   anelastic.f90
 %%   bfield.f90
+%%   blame.f90
 %%   chemistry.f90
 %%   coronae.f90
 %%   density_stratified.f90
@@ -184,6 +185,8 @@
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
   \var{oy2m}      & $\left<\omega_y^2\right>$ \\
   \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
   \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
   \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
   \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
@@ -613,6 +616,22 @@
   \var{vAmin}     & $\min v_A$ \\
   \var{vAm}       & $\langle v_A\rangle$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{blame.f90}} \\
+\midrule
+  \var{rhom}      & $\left<\varrho\right>$
+                    \quad(mean density) \\
+  \var{rhomxmask} & $\left<\varrho\right>$ for
+                    the density_xaver_range \\
+  \var{rhomzmask} & $\left<\varrho\right>$ for
+                    the density_zaver_range \\
+  \var{rhomin}    & $\min(\rho)$ \\
+  \var{rhomax}    & $\max(\rho)$ \\
+  \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{totmass}   & $\int\varrho\,dV$ \\
+  \var{mass}      & $\int\varrho\,dV$ \\
+  \var{vol}       & $\int\,dV$ (volume) \\
+  \var{grhomax}   & $\max (|\nabla \varrho|)$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{Y1m}       & $\left<Y_1\right>$ \\
@@ -924,9 +943,9 @@
   \var{ethm}      & $\left< e_{\text{th}}\right> =
                     \left< c_v \rho T \right> $
                     \quad(mean thermal energy) \\
-  \var{eem}       & $\left< e \right> =
-                    \left< c_v T \right>$
+  \var{eem}       & $\left< e \right> $
                     \quad(mean internal energy) \\
+  \var{ppm}       & $\left< p \right> $ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_axisym.f90}} \\
 \midrule
@@ -1663,6 +1682,7 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
+  \var{etot}      & $\langle e_\textrm{th} + \rho u^2 / 2\rangle$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
