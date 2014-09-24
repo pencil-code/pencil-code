@@ -21,7 +21,6 @@ module Particles_mass
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-!  use Particles_map
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry
@@ -31,14 +30,14 @@ module Particles_mass
   include 'particles_mass.h'
 !
   logical :: lpart_mass_backreac=.true.
-  real :: mass_const
+  real :: mass_const,dmpdt=1e-3
   character (len=labellen), dimension (ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ &
       init_particle_mass, mass_const
 !
   namelist /particles_mass_run_pars/ &
-      lpart_mass_backreac
+      lpart_mass_backreac,dmpdt
 !
   integer :: idiag_mpm=0
 !
@@ -102,6 +101,10 @@ print*,'imp,npvar=',imp,npvar
       real :: rhom
       integer :: j, k
 !
+!  Initial particle position.
+!
+      fp(1:npar_loc,imp)=0.
+!
       do j=1,ninit
 !
         select case (init_particle_mass(j))
@@ -115,6 +118,20 @@ print*,'imp,npvar=',imp,npvar
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
           fp(1:npar_loc,imp)=mass_const
+!
+        case ('rhopmat')
+          if (lroot) then
+            print*, 'init_particles_mass: constant particle mass'
+            print*, 'init_particles_mass: mass_const=', mass_const
+          endif          
+          fp(1:npar_loc,imp)=4.*pi*fp(1:npar_loc,iap)**3*rhopmat/3.
+print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
+!
+        case default
+          if (lroot) &
+              print*, 'init_particles_mass: No such such value for init_particle_mass: ', &
+              trim(init_particle_mass(j))
+          call fatal_error('init_particles_mass','')
 !
         endselect
 !
@@ -197,13 +214,13 @@ print*,'imp,npvar=',imp,npvar
 !
 !  Calculate the change in particle mass
 !
-          dfp(k,imp)=-St(k)*Rc_hat(k)*mol_mass_carbon
+          dfp(k,imp)=dfp(k,imp)-St(k)*Rc_hat(k)*mol_mass_carbon
 !
         enddo
 !
       else
         do k=k1_imn(imn),k2_imn(imn)
-          dfp(k,imp)=-1e-3
+          dfp(k,imp)=dfp(k,imp)-dmpdt
         enddo
       endif
 !
@@ -269,6 +286,8 @@ print*,'imp,npvar=',imp,npvar
 !
 !  23-sep-14/Nils: adapted
 !
+      use Diagnostics
+!      
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -281,7 +300,16 @@ print*,'imp,npvar=',imp,npvar
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'imp=', imp
 !
-      call keep_compiler_quiet(lreset)
+!  Reset everything in case of reset.
+!
+      if (lreset) then
+        idiag_mpm=0;
+      endif
+!
+      if (lroot .and. ip<14) print*,'rprint_particles_mass: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
+      enddo
 !
     endsubroutine rprint_particles_mass
 !***********************************************************************
