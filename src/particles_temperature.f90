@@ -182,7 +182,6 @@ subroutine pencil_criteria_par_TT()
       real, dimension(nx) :: feed_back, volume_pencil
       real :: volume_cell
       real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
-      real :: dx1, dy1, dz1
       integer :: k, inx0, ix0,iy0,iz0
       real :: rho1_point, weight
       integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
@@ -244,6 +243,8 @@ subroutine pencil_criteria_par_TT()
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
+!NILS: All this interpolation should be streamlined and made more efficient.
+!NILS: Is it possible to calculate it only once, and then re-use it later?
               call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
                   fp,k,ix0,iy0,iz0)
 !
@@ -257,22 +258,7 @@ subroutine pencil_criteria_par_TT()
 !
 !  Find the volume of the grid cell of interest
 !
-                  if (nxgrid ==1) then
-                    dx1=1./Lxyz(1)
-                  else
-                    dx1=dx_1(ixx)
-                  endif
-                  if (nygrid ==1) then
-                    dy1=1./Lxyz(2)
-                  else
-                    dy1=dy_1(iyy)
-                  endif
-                  if (nzgrid ==1) then
-                    dz1=1./Lxyz(3)
-                  else
-                    dz1=dz_1(izz)
-                  endif
-                  volume_cell=1./(dx1*dy1*dz1)
+                  call find_grid_volume(ixx,iyy,izz,volume_cell)
 !
 !  Find the gas phase density
 !
@@ -298,6 +284,35 @@ subroutine pencil_criteria_par_TT()
             enddo
 !
     endsubroutine dpTT_dt_pencil
+!***********************************************************************
+    subroutine find_grid_volume(ixx,iyy,izz,volume_cell)
+!
+!  Find the volume of the grid cell
+!
+!  24-sep-14/nils: coded
+!
+      real, intent(out) :: volume_cell
+      integer, intent(in) :: ixx,iyy,izz
+      real :: dx1, dy1, dz1
+!
+      if (nxgrid ==1) then
+        dx1=1./Lxyz(1)
+      else
+        dx1=dx_1(ixx)
+      endif
+      if (nygrid ==1) then
+        dy1=1./Lxyz(2)
+      else
+        dy1=dy_1(iyy)
+      endif
+      if (nzgrid ==1) then
+        dz1=1./Lxyz(3)
+      else
+        dz1=dz_1(izz)
+      endif
+      volume_cell=1./(dx1*dy1*dz1)
+!
+    end subroutine find_grid_volume
 !***********************************************************************
     subroutine find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
