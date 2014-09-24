@@ -235,7 +235,7 @@ subroutine pencil_criteria_par_TT()
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-            dfp(k,iTp)=(Qreac-Qc+Qrad)/(pmass*cp_part)
+            dfp(k,iTp)=dfp(k,iTp)+(Qreac-Qc+Qrad)/(pmass*cp_part)
 !
 !  Calculate feed back from the particles to the gas phase
 !
@@ -477,10 +477,10 @@ subroutine pencil_criteria_par_TT()
 !
       use Diagnostics
 !
-      integer :: iname
       logical :: lreset
       logical, optional :: lwrite
 !
+      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro
@@ -488,7 +488,6 @@ subroutine pencil_criteria_par_TT()
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'iox=', iox
-!
 !
 !  Reset everything in case of reset.
 !
