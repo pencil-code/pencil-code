@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3,n_forcing_cont)
+! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
 !
 !***************************************************************
 !
@@ -89,25 +89,26 @@ module Forcing
 !
 !  continuous forcing variables
 !
+  integer :: n_forcing_cont=n_forcing_cont_max
   logical :: lembed=.false.,lshearing_adjust_old=.false.
-  logical, dimension(n_forcing_cont) :: lgentle=.false.
-  character (len=labellen), dimension(n_forcing_cont) :: iforcing_cont='nothing'
-  real, dimension(n_forcing_cont) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
-  real, dimension(n_forcing_cont) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible
-  real, dimension(n_forcing_cont) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
-  real, dimension(n_forcing_cont) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
-  real, dimension(n_forcing_cont) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
-  real, dimension(n_forcing_cont) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
+  logical, dimension(n_forcing_cont_max) :: lgentle=.false.
+  character (len=labellen), dimension(n_forcing_cont_max) :: iforcing_cont='nothing'
+  real, dimension(n_forcing_cont_max) :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
+  real, dimension(n_forcing_cont_max) :: kf_fcont=impossible, kf_fcont_x=impossible, kf_fcont_y=impossible, kf_fcont_z=impossible
+  real, dimension(n_forcing_cont_max) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
+  real, dimension(n_forcing_cont_max) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
+  real, dimension(n_forcing_cont_max) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
+  real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
   real :: omega_tidal, R0_tidal, phi_tidal
 !
 !  auxiliary functions for continuous forcing function
 !
-  real, dimension (my,n_forcing_cont) :: phi1_ff
-  real, dimension (mx,n_forcing_cont) :: phi2_ff
-  real, dimension (mx,n_forcing_cont) :: sinx,cosx,sinxt,cosxt,embedx
-  real, dimension (my,n_forcing_cont) :: siny,cosy,sinyt,cosyt,embedy
-  real, dimension (mz,n_forcing_cont) :: sinz,cosz,sinzt,coszt,embedz
+  real, dimension (my,n_forcing_cont_max) :: phi1_ff
+  real, dimension (mx,n_forcing_cont_max) :: phi2_ff
+  real, dimension (mx,n_forcing_cont_max) :: sinx,cosx,sinxt,cosxt,embedx
+  real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy
+  real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -165,6 +166,8 @@ module Forcing
 !
 !  read seed field parameters
 !  nothing done from start.f90 (lstarting=.true.)
+!
+!  25-sep-2014/MR: determine n_forcing_cont according to the actual selection
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -587,9 +590,13 @@ module Forcing
 !
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
 
-      do i=1,n_forcing_cont
-
-        if ( iforcing_cont(i)/='' ) then
+      if (lstarting) return
+      
+      do i=1,n_forcing_cont_max
+        if ( iforcing_cont(i)=='nothing' ) then
+          n_forcing_cont=i-1
+          exit
+        else
           if (kf_fcont(i)  ==impossible) kf_fcont(i)  =k1_ff
           if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
           if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
@@ -681,6 +688,7 @@ module Forcing
 !AB: this wasn't doing anything, so we might as well skip it
         endif
       enddo
+      if (n_forcing_cont==0) call stop_it('forcing: no valid continuous iforcing_cont specified')
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -4544,6 +4552,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
 !
 !  divide by rho if lmomentum_ff=T
+!  MR: better to place it in hydro
 !
           if (i==1 .and. lmomentum_ff) call multsv_mn(p%rho1,p%fcont(:,:,1),p%fcont(:,:,1))
         enddo

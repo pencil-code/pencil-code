@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3,n_forcing_cont)
+! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
 !
 !***************************************************************
 module Forcing
@@ -28,6 +28,7 @@ module Forcing
   include 'forcing.h'
 !
   integer :: idiag_rufm=0
+  integer :: n_forcing_cont=n_forcing_cont_max
 !
   contains
 !***********************************************************************

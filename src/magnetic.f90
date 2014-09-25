@@ -241,6 +241,7 @@ module Magnetic
   logical :: lcalc_aameanz=.false., lcalc_aamean
   equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
   logical :: lforcing_cont_aa=.false.
+  integer :: iforcing_cont_aa=0
   logical :: lelectron_inertia=.false.
   logical :: lkinematic=.false.
   logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
@@ -832,6 +833,7 @@ module Magnetic
       use SharedVariables, only: put_shared_variable
       use EquationOfState, only: cs0
       use Initcond
+      use Forcing, only: n_forcing_cont
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -1362,6 +1364,11 @@ module Magnetic
         close (1)
       endif
 !
+      if (lforcing_cont_aa) then
+        iforcing_cont_aa=min(n_forcing_cont,2)
+        if (iforcing_cont_aa==0) &
+          call fatal_error('initialize_magnetic','no valid continuous forcing available')
+      endif
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -3578,7 +3585,7 @@ module Magnetic
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,2)
+      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,iforcing_cont_aa)
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
@@ -3768,12 +3775,12 @@ module Magnetic
 !  Mean dot product of forcing and magnetic field, <f.b>.
 !
         if (idiag_fbm/=0) then
-          call dot(p%fcont(:,:,2),p%bb,fb)
+          call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,fb)
           call sum_mn_name(fb,idiag_fbm)
         endif
 !
         if (idiag_fxbxm/=0) then
-          fxbx=p%fcont(:,1,2)*p%bb(:,1)
+          fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
           call sum_mn_name(fxbx,idiag_fxbxm)
         endif
 !
