@@ -20,7 +20,7 @@ module Particles_sub
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
-  public :: get_rhopswarm, find_grid_volume, find_weight
+  public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces
 !
   interface get_rhopswarm
@@ -1051,7 +1051,7 @@ module Particles_sub
 !
     end subroutine find_grid_volume
 !***********************************************************************
-    subroutine find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+    subroutine find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
       real :: weight
       real :: weight_x, weight_y, weight_z
@@ -1117,7 +1117,7 @@ module Particles_sub
         weight=1.
       endif
 !
-    end subroutine find_weight
+    end subroutine find_interpolation_weight
 !***********************************************************************
     subroutine find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
         fp,k,ix0,iy0,iz0)

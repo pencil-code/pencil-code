@@ -254,7 +254,7 @@ subroutine pencil_criteria_par_TT()
 !
 !  Find the relative weight of the current grid point
 !
-                  call find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
 !  Find the volume of the grid cell of interest
 !

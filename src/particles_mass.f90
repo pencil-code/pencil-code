@@ -245,7 +245,7 @@ print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
 !
 !  Find the relative weight of the current grid point
 !
-            call find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+            call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
 !  Find the volume of the grid cell of interest
 !
