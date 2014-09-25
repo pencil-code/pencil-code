@@ -30,17 +30,23 @@ module Particles_chemistry
 !
   contains
 !***********************************************************************
-    subroutine register_indep_pchem()
+  subroutine register_particles_surfchem()
 !
 !  09.09.14/jonas : coded
 !
-    end subroutine register_indep_pchem
+  end subroutine register_particles_surfchem
 !***********************************************************************
-    subroutine register_dep_pchem()
+  subroutine register_dep_psurfchem()
 !
-!  09.09.14/jonas : coded
+!  19.09.2014/Jonas:coded
 !
-    end subroutine register_dep_pchem
+  end subroutine register_dep_psurfchem
+!***********************************************************************
+  subroutine register_indep_psurfchem()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine register_indep_psurfchem
 !***********************************************************************
     subroutine get_pchem_info()
 !
@@ -96,50 +102,19 @@ module Particles_chemistry
       call keep_compiler_quiet(fp)
 !
    end subroutine get_St
-!***********************************************************************
-    subroutine get_conversion(var,fp)
- !
-!  09.09.14/jonas : coded
-!
-      real, dimension(mpar_loc), intent(out) :: var
-      real, dimension(mpar_loc,mpvar) :: fp
-!
-      call keep_compiler_quiet(var)
-      call keep_compiler_quiet(fp)
-!
-   end subroutine get_conversion
-!***********************************************************************
-integer function count_max_elements(inputfile)
-  character(*) :: inputfile
-!
-!  09.09.14/jonas : coded
-!
-     call keep_compiler_quiet(inputfile)
-      count_max_elements=0
-!
-end function count_max_elements
 !**************************************************
-  integer function count_reactions(inputfile)
-  character(*) :: inputfile
+  integer function count_reactions()
 !
 !  09.09.14/jonas : coded
 !
-      call keep_compiler_quiet(inputfile)
-      count_reactions=0
+     count_reactions=0
 !
   end function count_reactions
 !***********************************************************************
-integer function find_species(species,unique_species,nlist)
+integer function find_species()
 !
    implicit none
 !
-    integer :: i,nlist
-    character(len=*) :: species
-    character(len=*) :: unique_species
-!
-    call keep_compiler_quiet(species)
-    call keep_compiler_quiet(unique_species)
-    call keep_compiler_quiet(nlist)
     find_species=0
 !
   end function find_species
@@ -154,4 +129,100 @@ integer function find_species(species,unique_species,nlist)
 !
   end subroutine get_species_list
 !**********************************************************************
+  subroutine get_conversion()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine get_conversion
+!***********************************************************************
+  subroutine calc_St()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_St
+!***********************************************************************
+  subroutine calc_surf_enthalpy()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_surf_enthalpy
+!***********************************************************************
+  subroutine calc_surf_entropy()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_surf_entropy
+!***********************************************************************
+  subroutine calc_mod_surf_area()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_mod_surf_area
+!***********************************************************************
+  subroutine find_enthalpy_of_reaction()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine find_enthalpy_of_reaction
+!***********************************************************************
+  subroutine find_entropy_of_reaction()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine find_entropy_of_reaction
+!***********************************************************************
+  subroutine init_particles_surf(f,fp)
+
+    real, dimension(mx,my,mz,mpvar) :: f
+    real, dimension(mpar_loc,mpvar) :: fp
+!
+!  19.09.2014/Jonas:coded
+!
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(fp)
+!
+  end subroutine init_particles_surf
+!***********************************************************************
+  subroutine read_particles_surf_run_pars()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine read_particles_surf_run_pars
+!***********************************************************************
+  subroutine read_particles_surf_init_pars()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine read_particles_surf_init_pars
+!***********************************************************************
+  subroutine rprint_particles_surf()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine rPrint_particles_surf
+!***********************************************************************
+  subroutine write_particles_surf_init_pars()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine write_particles_surf_init_pars
+!***********************************************************************
+  subroutine write_particles_surf_run_pars()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine write_particles_surf_run_pars
+!***********************************************************************
+  subroutine calc_conversion()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_conversion
+!***********************************************************************
+  subroutine calc_R_c_hat()
+!
+!  19.09.2014/Jonas:coded
+!
+  end subroutine calc_R_c_hat
+!***********************************************************************
   end module Particles_chemistry

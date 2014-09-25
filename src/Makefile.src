@@ -730,9 +730,9 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpif90 #(Samos|fire)
 #LD_MPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43)
-#FC=mpif90 #(jonas-Latitude-E7440)
-#FFLAGS=-O3 -DFUNDERSC=1 -I/urs/lib/mpich/include   #(jonas-Latitude-E7440)
-#LD_MPI=-L/usr/lib/mpich/lib -lmpich  #(jonas-Latitude-E7440)
+#FC=g95 #(jonas-Latitude-E7440)
+#FFLAGS=  #(jonas-Latitude-E7440)
+#LD_MPI=  #(jonas-Latitude-E7440)
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)

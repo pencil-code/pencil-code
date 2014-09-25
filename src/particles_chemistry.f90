@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 0
+! NSURFREACSPEC CONTRIBUTION 8
 !
 ! CPARAM logical, parameter :: lparticles_chemistry=.true.
 !
@@ -15,11 +16,13 @@
 module Particles_chemistry
 !
   use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
-  use Particles_cdata, only: iap, irhopswarm, iTp, imp
+  use Particles_cdata
   use Particles_sub
   use Particles_radius
+  use Particles_map
 !
   implicit none
 !
@@ -35,28 +38,34 @@ module Particles_chemistry
   real, dimension(:), allocatable :: effectiveness_factor_old
   real, dimension(:), allocatable :: mass_trans_coeff_reactants
   real, dimension(:), allocatable :: diff_coeff_reactants
-  real, dimension(:,:), allocatable :: nu, nu_prime, mu, mu_prime
-  real, dimension(:), allocatable :: B_k, ER_k, ac, aac, RR_method
-  real, dimension(:), allocatable :: site_occupancy, sigma_k,dngas
+  real, dimension(:,:), allocatable :: nu, nu_prime
+  real, dimension(:), allocatable :: B_k, ER_k, ac, RR_method
+  real, dimension(:), allocatable :: sigma_k,dngas
   real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(50) :: reaction_enhancement=1
+  real, dimension(10) :: surf_gas_frac=0.
+  character (len=labellen), dimension (ninit) :: init_surf='nothing'
   character(3), dimension(:), allocatable, save :: reaction_direction
   character(3), dimension(:), allocatable ::flags
   character(10), dimension(:,:), allocatable, save :: part
   character(10), dimension(:), allocatable :: solid_species
   character(10), dimension(50) :: species_name,adsorbed_species_names
+  character(10), dimension(40) :: reactants
   integer, dimension(:), allocatable :: dependent_reactant
   integer, dimension(:), allocatable :: j_of_inu
   integer :: N_species, N_reactions
+  integer :: placeholder=1
   integer :: N_surface_reactions, N_adsorbed_species=1
   integer :: N_surface_reactants, N_surface_species
   integer :: inuH2,inuCO2,inuH2O,inuCO,inuCH4,inuO2,inuCH,inuHCO,inuCH2,inuCH3
-  integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO,iads_end
+  integer :: nr, ns, np
+  integer :: isurf=0,isurf_end=0
   real :: f_RPM, St_save, Sg_save
   real :: x_s_total, rho_part
   real :: effectiveness_factor
   real :: effectiveness_factor_timeaver=1.
   real :: eta_int=0.,delta_rho_surface=0.
+  real :: St_first, A_p_first, rho_p_first
   logical :: first_pchem=.true.
 !
 !  Some physical constants
@@ -78,31 +87,47 @@ module Particles_chemistry
   real, dimension(:), allocatable :: R_c_hat
   real, dimension(:,:), allocatable :: mdot_ck,RR_hat,K_k,x_surface
   real, dimension(:,:), allocatable :: thiele
-  real, dimension(:,:), allocatable :: ndot, Cs
+  real, dimension(:,:), allocatable :: ndot
   real, dimension(:,:), allocatable :: X_infty_reactants, St_array
-  real, dimension(:), allocatable :: initial_radius
   real, dimension(:), allocatable :: initial_density
-  real, dimension(:,:), allocatable :: adsorbed_species_enthalpy
   real, dimension(:,:), allocatable :: surface_species_enthalpy
-  real, dimension(:,:), allocatable :: adsorbed_species_entropy
   real, dimension(:,:), allocatable :: surface_species_entropy
   real, dimension(:), allocatable :: Qh,Qc,Qreac,Qrad
   real, dimension(:), allocatable :: A_p_init,ndot_total
   real, dimension(:), allocatable :: Particle_temperature
   real, dimension(:), allocatable :: mod_surf_area
   real, dimension(:), allocatable :: St_init
-  real, dimension(mpar_loc) :: init_mass,rho_p_init
-  real, dimension(mpar_loc) :: conversion
+  real, dimension(:), allocatable :: init_mass,rho_p_init
+  real, dimension(:), allocatable :: conversion
+!
+  namelist /particles_surf_init_pars/ &
+  St_first, A_p_first, rho_p_first, &
+  struct_par,surf_gas_frac
+!
+  namelist /particles_surf_run_pars/ &
+  placeholder
 !
   contains
 !***********************************************************************
-  subroutine register_indep_pchem()
+  subroutine register_particles_surfchem()
+!!$!
+    character(10), dimension(40) :: species
 !
-      integer :: i,k,nr,ns,stat,dummy,N_surface_species
+!  This is a wrapper routine for particle dependent and particle
+!  independent variables
+!  JONAS: Back to standalone via mpar_loc=1?
+
+    call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
+    call register_indep_psurfchem()
+    call register_dep_psurfchem()
+!!$!
+  end subroutine register_particles_surfchem
+!***********************************************************************
+  subroutine register_indep_psurfchem()
+!
+      integer :: i,k,stat
       logical :: lenhance
-      character(10), dimension(40) :: species,reactants
-!
-      call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
+      character(10), dimension(40) :: all_species
 !
       if (nsurfreacspec/=N_surface_species) then
          print*,'N_surface_species: ', N_surface_species
@@ -113,18 +138,16 @@ module Particles_chemistry
 !
       call get_species_list('solid_species',solid_species)
 !
-      call create_ad_sol_lists(species(:ns),adsorbed_species_names,'ad',ns)
-      call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
-!
 !  Increase of npvar according to N_surface_species, which is
 !  the concentration of gas phase species at the particle surface
 !
       if (N_surface_species>1) then
          isurf = npvar+1
-         do i=1,N_surface_species
+!         do i=1,N_surface_species
 ! JONAS: where do we save this
-            pvarname(isurf+i-1)=solid_species(i)
-         enddo
+! JONAS: commented for now
+!            pvarname(isurf+i-1)=solid_species(i)
+!         enddo
          npvar=npvar+N_surface_species-1
          isurf_end=isurf+N_surface_species-1
       else
@@ -132,17 +155,12 @@ module Particles_chemistry
               'N_surface_species must be > 1')
       endif
 !
-!  Set some indeces (this is hard-coded for now)
+!  Check that the fp and dfp arrays are big enough
 !
-      if (nadsspec>0) then
-         imuadsO =find_species('C(O)',adsorbed_species_names,N_adsorbed_species)
-         imuadsO2=find_species('C2(O2)',adsorbed_species_names,N_adsorbed_species)
-         imuadsOH=find_species('C(OH)',adsorbed_species_names,N_adsorbed_species)
-         imuadsH =find_species('C(H)',adsorbed_species_names,N_adsorbed_species)
-         imuadsCO=find_species('C(CO)',adsorbed_species_names,N_adsorbed_species)
-         imufree =find_species('Cf',adsorbed_species_names,N_adsorbed_species)
-      else
-      end if
+      if (npvar > mpvar) then
+        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        call fatal_error('register_ads','npvar > mpvar')
+      endif
 !
 ! Check if any of the reactions are enhanced
 !
@@ -160,118 +178,77 @@ module Particles_chemistry
 ! Allocate memory for a number of arrays
 !
     allocate(omega_pg_dbl(N_species),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for omega_pg_dbl')
     allocate(nu(N_surface_species,N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for nu')
     allocate(nu_prime(N_surface_species,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for nu_prime')
     allocate(reaction_order(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for reaction_order')
     allocate(B_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for B_k')
     allocate(Er_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for Er_k')
     allocate(sigma_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for sigma_k')
     allocate(RR_method(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for RR_method')
-    allocate(heating_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for heating_k')
-    allocate(entropy_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for heating_k')
     allocate(ac(N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for ac')
     allocate(j_of_inu(N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for j_of_inu')
     allocate(solid_species(N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for solid_species')
     allocate(mass_trans_coeff_reactants(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for mass_trans_coeff_reactants')
     allocate(diff_coeff_reactants(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for diff_coeff_reactants')
     allocate(St_array(mpar_loc,N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for St_array')
     allocate(dngas(N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
          'Could not allocate memory for dngas')
     allocate(uscale(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for uscale')
     allocate(fscale(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for fscale')
     allocate(constr(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for constr')
     allocate(dependent_reactant(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for dependent_reactant')
     allocate(effectiveness_factor_reaction(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for effectiveness_factor_reaction')
     effectiveness_factor_reaction=1.0
     allocate(effectiveness_factor_old(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for effectiveness_factor_old')
+!
     effectiveness_factor_old=1.
-    allocate(thiele(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for thiele')
-    allocate(qk_reac(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-         'Could not allocate memory for qk_reac')
-    allocate(St(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-         'Could not allocate memory for St')
-    allocate(R_c_hat(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-         'Could not allocate memory for R_c_hat')
-!
-!  Allocate only if adsorbed species in mechanism
-!
-    if(Nadsspec>0) then
-       allocate(mu(N_adsorbed_species,N_surface_reactions),STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for mu')
-       allocate(mu_prime(N_adsorbed_species,N_surface_reactions)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for mu_prime')
-       allocate(aac(N_adsorbed_species)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for aac')
-       allocate(site_occupancy(N_adsorbed_species)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for site_occupancy')
-    else
-    end if
-
-!
-! Define the aac array which gives the amount of carbon in the
-! adsorbed species.
-!
-    aac=0
-    if (imuadsCO>0) aac(imuadsCO)=1
 !
 ! Define the Stoichiometric matrixes. Here i=1 correspond to H2O, i=2 is CO2,
 ! i=3 is H2 and finally i=4 is O2
 !
-    call create_ad_sol_lists(species(:ns),solid_species,'sol',ns)
+    call get_species_list('all',all_species)
+    call create_ad_sol_lists(all_species,solid_species,'sol',ns)
     call sort_compounds(reactants,solid_species,n_surface_species,nr)
 !
     inuH2O=find_species('H2O',solid_species,n_surface_species)
@@ -292,10 +269,6 @@ module Particles_chemistry
 !
     call create_stoc(part,solid_species,nu,.true.,N_surface_species)
     call create_stoc(part,solid_species,nu_prime,.false.,N_surface_species)
-    call create_stoc(part,adsorbed_species_names,mu,.true.,N_adsorbed_species)
-    call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
-        N_adsorbed_species)
-    if(nadsspec>0) call create_occupancy(adsorbed_species_names,site_occupancy)
 !
 ! Define which gas phase reactants the given reaction depends on
 !
@@ -324,17 +297,17 @@ module Particles_chemistry
         write(*,'(A4," ",I4,3F4.0)') 'nu=',k,nu(1:3,k)
       end do
 !
-      do k=1,N_surface_reactions
-        write(*,'(A4," ",I4,4F4.0)') 'mu=',k,mu(1:3,k)
-      end do
+!!$      do k=1,N_surface_reactions
+!!$        write(*,'(A4," ",I4,4F4.0)') 'mu=',k,mu(1:3,k)
+!!$      end do
 !
       do k=1,N_surface_reactions
         write(*,'(A4," ",I4,3F4.0)') 'nu_prime=',k,nu_prime(1:3,k)
       end do
 !
-      do k=1,N_surface_reactions
-        write(*,'(A4," ",I4,4F4.0)') 'mu_prime=',k,mu_prime(1:3,k)
-      end do
+!!$      do k=1,N_surface_reactions
+!!$        write(*,'(A4," ",I4,4F4.0)') 'mu_prime=',k,mu_prime(1:3,k)
+!!$      end do
 !
       do k=1,N_surface_reactions
         write(*,'(A12,I4,2E12.5)') 'ER_k, B_k=',&
@@ -344,85 +317,84 @@ module Particles_chemistry
         write(*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
       end do
 !
-      print*,'Adsorbed_species_names'
-      print*, adsorbed_species_names
+!!$      print*,'Adsorbed_species_names'
+!!$      print*, adsorbed_species_names
       print*,'Solid_species'
       print*, solid_species
 !
       write(*,'(A20," ",10I4)') 'j_of_inu=', j_of_inu
       write(*,'(A20," ",10F4.0)') 'ac=',ac
-      write(*,'(A20," ",10F4.0)') 'site_occupancy=',site_occupancy
+!      write(*,'(A20," ",10F4.0)') 'site_occupancy=',site_occupancy
       write(*,'(A20," ",30I4)') 'dependent_reactant=',dependent_reactant
       write(*,'(A20," ",10E12.5)') 'sigma_k=',sigma_k
 !
     endif
 !
-    end subroutine register_indep_pchem
+    end subroutine register_indep_psurfchem
 !***********************************************************************
-    subroutine register_dep_pchem()
+    subroutine register_dep_psurfchem()
 !
-      integer :: stat,dummy
-      character(10), dimension(40) :: trash
+      integer :: stat
 !
-      if (first_pchem) then
-         call get_pchem_info(trash,'dummy',dummy,'verbose')
-         first_pchem = .false.
-      else
-      endif
-!
+    allocate(conversion(mpar_loc),STAT=stat)
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
+        'Could not allocate memory for conversion')
     allocate(init_mass(mpar_loc),STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for init_mass')
+    allocate(rho_p_init(mpar_loc),STAT=stat)
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
+        'Could not allocate memory for rho_p_init')
     allocate(x_surface(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for x_surface')
     allocate(RR_hat(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for RR_hat')
     allocate(ndot(mpar_loc,N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for ndot')
     allocate(mdot_ck(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for mdot_ck')
     allocate(x_infty_reactants(mpar_loc,N_surface_reactants) &
          ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for x_infty_reactants')
     allocate(surface_species_enthalpy(mpar_loc,N_surface_species) &
          ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for surface_species_enthalpy')
     allocate(surface_species_entropy(mpar_loc,N_surface_species) &
          ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for surface_species_entropy')
     allocate(k_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for k_k')
     allocate(A_p_init(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for A_p_init')
     allocate(St(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for St')
+    allocate(thiele(mpar_loc,N_surface_reactants)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+        'Could not allocate memory for thiele')
+    allocate(qk_reac(N_surface_reactions)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+         'Could not allocate memory for qk_reac')
+    allocate(R_c_hat(mpar_loc)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+         'Could not allocate memory for R_c_hat')
+    allocate(heating_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+        'Could not allocate memory for heating_k')
+    allocate(entropy_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+        'Could not allocate memory for heating_k')
 !
-    if (nadsspec>0) then
-           allocate(adsorbed_species_entropy(mpar_loc,N_adsorbed_species) &
-                ,STAT=stat)
-           if (stat>0) call fatal_error('register_dep_pchem',&
-                'Could not allocate memory for adsorbed_species_entropy')
-           allocate(adsorbed_species_enthalpy(mpar_loc,N_adsorbed_species) &
-                ,STAT=stat)
-           if (stat>0) call fatal_error('register_dep_pchem',&
-                'Could not allocate memory for adsorbed_species_enthalpy')
-           allocate(Cs(mpar_loc,N_adsorbed_species)   ,STAT=stat)
-           if (stat>0) call fatal_error('register_dep_pchem',&
-                'Could not allocate memory for Cs')
-    else
-    end if
-!
-    end subroutine register_dep_pchem
+    end subroutine register_dep_psurfchem
 !***********************************************************************
     subroutine get_pchem_info(species,string,variable,talk)
 !
@@ -432,7 +404,7 @@ module Particles_chemistry
 !
 !  Count number of heterogeneous reactions and elements
 !
-      integer :: ns,nr,np,N_trash,N_max_elements,variable,stat
+      integer :: N_trash,N_max_elements,variable,stat
       character(10), dimension(40) :: species,products,reactants
       character(10), dimension(:,:), allocatable, save :: part
       character(*) :: string,talk
@@ -464,7 +436,7 @@ module Particles_chemistry
 !
 !  Count heterogeneous species
 !
-      call count_species(part,species,reactants,products,ns,nr,np)
+      call count_species(part,species,reactants,products)
       call count_species_type(species(:ns),N_adsorbed_species,&
           N_surface_species,ns)
       call count_species_type(reactants,N_trash,N_surface_reactants,nr)
@@ -475,50 +447,24 @@ module Particles_chemistry
 !
     end subroutine get_pchem_info
 !***********************************************************************
-    subroutine get_R_c_hat(var,fp)
-!
-      real, dimension(mpar_loc), intent(out) :: var
-      real, dimension(mpar_loc,mpvar) :: fp
+    subroutine calc_R_c_hat()
+! 
 !
 !  JONAS talk to nils how to implement things from equ.f90
 !  JONAS implement mdot_ck
 !
       R_c_hat = 0.0
-      call get_St(St,fp)
       R_c_hat(:) = -sum(mdot_ck,DIM=2)/(St(:)*mol_mass_carbon)
 !
-      var = R_c_hat
-!
-    end subroutine get_R_c_hat
+    end subroutine calc_R_c_hat
 !***********************************************************************
-    subroutine get_R_j_hat(var)
+    subroutine calc_mod_surf_area(fp)
 !
-      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var
-      real, dimension(mpar_loc,N_adsorbed_species) :: R_j_hat
-      integer :: j,k
-!
-!  Calculation of R_j_hat according to eq.50 in 8th US combustion
-!  meeting, coal and  biomass combustion and gasification.
-!
-      R_j_hat = 0.0
-      do k=1,N_surface_reactions
-         do j=1,N_adsorbed_species-1
-            R_j_hat(:,j)=R_j_hat(:,j)+(mu_prime(j,k)-mu(j,k))*RR_hat(j,k)
-         enddo
-      enddo
-      var = R_j_hat
-!
-    end subroutine get_R_j_hat
-!***********************************************************************
-    subroutine get_mod_surf_area(var,fp)
-!
-      real, dimension(mpar_loc), intent(out) :: var
-      real, dimension(mpar_loc) :: mod_all,Sgc,mod_surf_area
+      real, dimension(mpar_loc) :: mod_all,Sgc,St
       real, dimension(mpar_loc,mpvar) :: fp
-      integer :: end
 
 !
-      call get_St(St,fp)
+      call get_St(St)
 !
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
 !  biomass combustion and gasification.
@@ -526,30 +472,24 @@ module Particles_chemistry
       mod_all(:) = St_init(:)*St_init(:)*struct_par* &
            (1-conversion(:)) * (1-conversion(:)) / &
            (2*St(:)**2)
-      Sgc(:) = St(:)/fp(:,irhopswarm)
+      Sgc(:) = St(:)/fp(:,irhop)
 !
       mod_surf_area(:) = (1-mod_all(:))*Sgc(:)*mol_mass_carbon
 !
-      var = mod_surf_area
-!
-    end subroutine get_mod_surf_area
+    end subroutine calc_mod_surf_area
 !***********************************************************************
-    subroutine get_St(var,fp)
+    subroutine calc_St(fp)
 !
-      real, dimension(mpar_loc),intent(out) :: var
       real, dimension(mpar_loc,mpvar) :: fp
-      integer :: end
-!
 !
 !  Evolution of the total surface area according to 8th US combustion
 !  meeting, coal and biomass combustion and gasification eq. 19
 !
       St = 0.0
       St(:)=(1-conversion(:))*St_init(:)* &
-           sqrt(1.0 - struct_par*log(fp(:,irhopswarm)/rho_p_init(:)))
-      var = St
+           sqrt(1.0 - struct_par*log(fp(:,irhop)/rho_p_init(:)))
 !
-   end subroutine get_St
+   end subroutine calc_St
 !***********************************************************************
 integer function count_max_elements(inputfile)
 !
@@ -959,12 +899,12 @@ integer function find_species(species,unique_species,nlist)
 !
   end function is_not_in_list
 !**********************************************************************
-  subroutine count_species(part,species,reactants,products,ns,nr,np)
+  subroutine count_species(part,species,reactants,products)
 !
     character(10), dimension(:,:) :: part
     character(10) :: element
     real :: numeric
-    integer :: i,j,jmax,stat,place,ns,nr,np,number
+    integer :: i,j,jmax,stat,place,number
     integer :: place_reac, place_prod
     logical :: lhs, to_append, to_append_prod,to_append_reac
     character(10), dimension(40) :: species,reactants,products
@@ -1191,7 +1131,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     character(*) :: string
     character(10), dimension(40) :: list,species,reactants
-    integer :: nr,ns,stat,dummy,N_adsorbed_species
+    integer :: stat,N_adsorbed_species
     integer :: N_surface_species
 !
     call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
@@ -1204,13 +1144,19 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     if (stat>0) call fatal_error('register_indep_pchem',&
         'Could not allocate memory for solid_species')
 !
-    call create_ad_sol_lists(species(:ns),solid_species,'sol',ns)
+    call create_ad_sol_lists(species,solid_species,'sol',ns)
     call sort_compounds(reactants,solid_species,N_surface_species,nr)
 !
     if (trim(string)=='solid_species') &
          list(1:N_surface_species)=solid_species(:)
     if (trim(string)=='adsorbed_species_names') &
          list(1:N_adsorbed_species)=adsorbed_species_names(:N_adsorbed_species)
+    if (trim(string)=='all') then
+       list(1:N_surface_species)=solid_species(:)
+       list(N_surface_species+1:N_surface_species+N_adsorbed_species)= &
+            adsorbed_species_names(:N_adsorbed_species)
+    else
+    endif
 !
     deallocate(solid_species)
 !
@@ -1231,9 +1177,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 end subroutine create_dngas
 !**********************************************************************
-  subroutine find_entropy_of_reaction(fp)
+  subroutine calc_surf_entropy(fp)
 !
-    integer :: k,j,i
     real, dimension(mpar_loc,mpvar) :: fp
 !
 ! JONAS: units are in j/(kmol*K)
@@ -1255,41 +1200,16 @@ end subroutine create_dngas
     if (inuCH4>0) surface_species_entropy(:,inuCH4)= 189.00e3
     if (inuCH3>0) surface_species_entropy(:,inuCH3)= 190.18e3+(0.0601e3*fp(:,iTp))
 !
-    if (imuadsO>0)    then
-       adsorbed_species_entropy(:,imuadsO) = &
-    (164.19e3+(0.0218e3*fp(:,iTp)))*0.72 - (3.3*gas_constant)
-    else
-    end if
-!
-!  this is guessed
-!
-    if (imuadsO2>0)   then
-       adsorbed_species_entropy(:,imuadsO2) =  &
-            2*adsorbed_species_entropy(:,imuadsO)
-    else
-    end if
-    if (imuadsOH>0)   then
-       adsorbed_species_entropy(:,imuadsOH) = &
-         ((0.0319e3*fp(:,iTp)) + 186.88e3) * 0.7 - (3.3*gas_constant)
-    else
-    end if
-    if (imuadsH>0)    then
-       adsorbed_species_entropy(:,imuadsH) = &
-           (117.49e3+(0.0217e3*fp(:,iTp)))*0.54 - (3.3*gas_constant)
-    else
-    end if
-    if (imuadsCO>0)   then
-       adsorbed_species_entropy(:,imuadsCO) = &
-            surface_species_entropy(:,inuCO)* &
-            0.6*(1+(1.44e-4*fp(:,iTp))) - (3.3*gas_constant)
-    else
-    end if
-!
-!  taken from nist
-!
-    if (imufree>0)    adsorbed_species_entropy(:,imufree) = 0
+    end subroutine calc_surf_entropy
+!*********************************************************************
+ subroutine find_entropy_of_reaction(adsorbed_species_entropy,&
+      N_adsorbed_species, mu, mu_prime)
 
-      entropy_k=0
+   integer :: i,j,k, N_adsorbed_species
+   real, dimension(:,:) :: mu, mu_prime
+   real, dimension(:,:) :: adsorbed_species_entropy
+!
+    entropy_k=0
 !
     do k=1,N_surface_reactions
       do i=1,N_surface_species
@@ -1327,13 +1247,205 @@ end subroutine create_dngas
 !
 end subroutine get_reverse_K_k
 !**********************************************************************
-  subroutine save_current_conversion(fp)
+  subroutine calc_conversion(fp)
 !
     real, dimension(mpar_loc,mpvar) :: fp
 !
-    conversion(:) = 4/3*pi*fp(:,irhop)*fp(:iap)*fp(:iap)*fp(:iap) &
-         / initial_mass(:)
+    conversion(:) = 4/3*pi*fp(:,irhop)*fp(:,iap)*fp(:,iap)*fp(:,iap) &
+         / init_mass(:)
 !
-  end subroutine save_current_conversion
+  end subroutine calc_conversion
+!**********************************************************************
+    subroutine read_particles_surf_init_pars(unit,iostat)
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=particles_surf_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=particles_surf_init_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_particles_surf_init_pars
+!***********************************************************************
+    subroutine write_particles_surf_init_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      write(unit,NML=particles_surf_init_pars)
+!
+    endsubroutine write_particles_surf_init_pars
+!***********************************************************************
+    subroutine read_particles_surf_run_pars(unit,iostat)
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=particles_surf_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=particles_surf_run_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_particles_surf_run_pars
+!***********************************************************************
+    subroutine write_particles_surf_run_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      write(unit,NML=particles_surf_run_pars)
+!
+    endsubroutine write_particles_surf_run_pars
+!***********************************************************************
+    subroutine rprint_particles_surf(lreset,lwrite)
+!
+!  Read and register print parameters relevant for 
+!  solid species volume fraction in the near field.
+!
+!  29-aug-14/jonas: coded
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      logical :: lwr
+!
+!  Write information to index.pro
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+      if (lwr) write(3,*) 'iox=', iox
+!
+      call keep_compiler_quiet(lreset)
+!
+    end subroutine rprint_particles_surf
+!***********************************************************************
+!  subroutine get_R_j_hat(var)
+!
+!  JONAS: inconsistent, commented for now. any ideas?
+!
+!    real, dimension(:,:) :: var
+!
+!    var = R_j_hat
+!
+!***********************************************************************
+  subroutine get_St(var)
+!
+    real, dimension(:) :: var
+!
+    var = St
+!
+  end subroutine get_St
+!***********************************************************************
+  subroutine get_R_c_hat(var)
+!
+    real, dimension(:) :: var
+!
+    var = R_c_hat
+!
+  end subroutine get_R_c_hat
+!***********************************************************************
+  subroutine get_mod_surf_area(var)
+!
+    real, dimension(:) :: var
+!
+    var = mod_surf_area
+!
+  end subroutine get_mod_surf_area
+!***********************************************************************
+  subroutine get_conversion(var)
+!
+    real, dimension(:) :: var
+!
+    var = conversion
+!
+  end subroutine get_conversion
+!***********************************************************************
+    subroutine init_particles_surf(f,fp)
+!
+!  Initial particle surface fractions
+!
+!  01-sep-14/jonas: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer :: j,i
+!
+      intent (in) :: f 
+      intent (out) :: fp
+!
+      call keep_compiler_quiet(f)
+!
+      fp(:,isurf:isurf_end)=0.
+      do j=1,ninit
+!
+!  Writing the initial surface species fractions
+!
+        select case (init_surf(j))
+        case ('nothing')
+          if (lroot .and. j==1) print*, 'init_particles_ads,gas phase: nothing'
+        case ('constant')
+          if (lroot) print*, 'init_particles_ads: Initial Surface Fractions'
+          do i=1,mpar_loc
+             fp(i,isurf:isurf_end)=fp(i,isurf:isurf_end) + &
+                  surf_gas_frac(1:N_surface_species)
+          enddo
+          case default
+          if (lroot) &
+              print*, 'init_particles_ads: No such such value for init_surf: ', &
+              trim(init_surf(j))
+          call fatal_error('init_particles_ads','')
+        endselect
+      enddo
+!
+    endsubroutine init_particles_surf
+!***********************************************************************
+    subroutine calc_surf_enthalpy(fp)
+!
+    real, dimension(mpar_loc,mpvar) :: fp
+!
+!  Unit: J/kmolK
+!
+       if (inuH2O>0) surface_species_enthalpy(:,inuH2O)=-242.18e6-(5.47e3*fp(:,iTp))
+       if (inuO2>0)  surface_species_enthalpy(:,inuO2) = 0.
+       if (inuCO2>0) surface_species_enthalpy(:,inuCO2)=-392.52e6-(2.109e3*fp(:,iTp))
+       if (inuH2>0)  surface_species_enthalpy(:,inuH2 )= 0.
+       if (inuCO>0)  surface_species_enthalpy(:,inuCO )=-105.95e6-6.143e3*fp(:,iTp)
+       if (inuCH>0)  surface_species_enthalpy(:,inuCH )= 594.13e6
+       if (inuHCO>0) surface_species_enthalpy(:,inuHCO)=  45.31e6-(5.94e3*fp(:,iTp))
+       if (inuCH2>0) surface_species_enthalpy(:,inuCH2)= 387.93e6-(5.8e3*fp(:,iTp))
+       if (inuCH4>0) surface_species_enthalpy(:,inuCH4)= -75e6
+       if (inuCH3>0) surface_species_enthalpy(:,inuCH3)= 144.65e6-(6.79e3*fp(:,iTp))
+!
+    end subroutine calc_surf_enthalpy
+!**********************************************************************    
+  subroutine find_enthalpy_of_reaction(adsorbed_species_enthalpy,&
+      N_adsorbed_species, mu, mu_prime)
+!
+    integer :: i,k,j,N_adsorbed_species
+    real, dimension(:,:) :: mu, mu_prime
+    real, dimension(:,:) :: adsorbed_species_enthalpy
+!
+    heating_k=0
+    do k=1,N_surface_reactions
+      do i=1,N_surface_species
+        heating_k(:,k)=heating_k(:,k)&
+            +nu_prime(i,k)*surface_species_enthalpy(:,i)&
+            -nu(i,k)*surface_species_enthalpy(:,i)
+      enddo
+      if (N_adsorbed_species > 0) then
+      do j=1,N_adsorbed_species
+        heating_k(:,k)=heating_k(:,k)&
+            +mu_prime(j,k)*adsorbed_species_enthalpy(:,j)&
+            -mu(j,k)*adsorbed_species_enthalpy(:,j)
+      enddo
+      else
+      end if
+    enddo
+  end subroutine find_enthalpy_of_reaction
 !**********************************************************************
   end module Particles_chemistry

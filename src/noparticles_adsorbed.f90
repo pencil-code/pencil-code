@@ -182,4 +182,10 @@ module Particles_adsorbed
 !
     endsubroutine particles_ads_prepencil_calc
 !***********************************************************************
+  subroutine calc_pchem_factors()
+!
+!  19.09.2014/jonas:coded
+!
+  end subroutine calc_pchem_factors
+!***********************************************************************
 endmodule Particles_adsorbed
