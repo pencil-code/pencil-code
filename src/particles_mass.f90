@@ -56,8 +56,6 @@ module Particles_mass
 !
       imp=npvar+1
       pvarname(npvar+1)='imp'
-print*,'imp,npvar=',imp,npvar
-
 !
 !  Increase npvar accordingly.
 !
@@ -125,7 +123,6 @@ print*,'imp,npvar=',imp,npvar
             print*, 'init_particles_mass: mass_const=', mass_const
           endif          
           fp(1:npar_loc,imp)=4.*pi*fp(1:npar_loc,iap)**3*rhopmat/3.
-print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
 !
         case default
           if (lroot) &
