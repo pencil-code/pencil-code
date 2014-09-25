@@ -386,11 +386,10 @@ module Energy
       logical, dimension(npencils) :: lpencil_in
 !
       fpres: if (lpencil_in(i_fpres)) then
+        lpencil_in(i_rho1) = .true.
         stratz: if (lstratz) then
-          lpencil_in(i_rhos1) = .true.
           lpencil_in(i_geths) = .true.
         else stratz
-          lpencil_in(i_rho1) = .true.
           lpencil_in(i_geth) = .true.
         endif stratz
       endif fpres
@@ -425,9 +424,10 @@ module Energy
 !
       fpres: if (lpencil(i_fpres)) then
         stratz: if (lstratz) then
-          penc = cs20 / gamma * p%rhos1
-          forall(j = 1:3) p%fpres(:,j) = -penc * p%geths(:,j)
-          p%fpres(:,3) = p%fpres(:,3) + penc * (f(l1:l2,m,n,irho) - f(l1:l2,m,n,ieth)) * dlneth0dz(n)
+          penc = gamma_m1 * eth0z(n) * p%rho1
+          p%fpres = -p%geths
+          p%fpres(:,3) = p%fpres(:,3) + (f(l1:l2,m,n,irho) - f(l1:l2,m,n,ieth)) * dlneth0dz(n)
+          forall(j = 1:3) p%fpres(:,j) = penc * p%fpres(:,j)
         else stratz
           forall(j = 1:3) p%fpres(:,j) = -gamma_m1 * p%rho1 * p%geth(:,j)
         endif stratz
