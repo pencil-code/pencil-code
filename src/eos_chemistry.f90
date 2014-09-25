@@ -596,10 +596,10 @@ module EquationOfState
          call del2(pp_full(:,:,:),p%del2pp)
        endif
 !
-!  Energy per unit mass
+!  Energy per unit mass (this has been moved to chemistry.f90 in order
+!  to get the correct cv.
 !
-!      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT
-      if (lpencil(i_ee)) p%ee = p%cv*p%TT
+      !if (lpencil(i_ee)) p%ee = p%cv*p%TT
 !
 !      endif
 !

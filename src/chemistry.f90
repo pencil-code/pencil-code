@@ -1139,6 +1139,10 @@ module Chemistry
         endif
       endif
 !
+!  Energy per unit mass
+!
+      if (lpencil(i_ee)) p%ee = p%cv*p%TT
+!
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
       subroutine flame_front(f)
