@@ -13,7 +13,7 @@ module Cparam
   integer, parameter :: nprocxy=nprocx*nprocy
   integer, parameter :: nprocyz=nprocy*nprocz
   integer, parameter :: nprocxz=nprocx*nprocz
-  integer, parameter :: n_forcing_cont=2
+  integer, parameter :: n_forcing_cont_max=2
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
 !
   include 'cparam.inc'
