@@ -4276,32 +4276,24 @@ module EquationOfState
       case ('zero', 'none') gz
         rho0z = rho0
         dlnrho0dz = 0.0
-        if (lthermal_energy) eth0z = cs20 / (gamma * gamma_m1) * rho0z
 !
 !  Linear acceleration: -gz_coeff^2 * z
 !
       case ('linear') gz
         if (gz_coeff == 0.0) call fatal_error('set_stratz', 'gz_coeff = 0')
         if (lroot) print *, 'Set z stratification: g_z = -gz_coeff^2 * z'
-        energy: if (lenergy) then
-          etype: if (lthermal_energy) then
-            h = cs0 / gz_coeff / sqrt(gamma_m1)
-            rho0z = rho0 * (1.0 - 0.5 * (z / h)**2)**(1.0 / gamma_m1)
-            dlnrho0dz = -z / (gamma_m1 * (h**2 - 0.5 * z**2))
-            eth0z = cs20 / (gamma * gamma_m1) * rho0z
-          else etype
-            call fatal_error('set_stratz', 'energy stratification for this energy module is not implemented. ')
-          endif etype
-        else energy
-          h = cs0 / gz_coeff
-          rho0z = rho0 * exp(-0.5 * (z / h)**2)
-          dlnrho0dz = -z / h**2
-        endif energy
+        h = cs0 / gz_coeff
+        rho0z = rho0 * exp(-0.5 * (z / h)**2)
+        dlnrho0dz = -z / h**2
 !
       case default gz
         call fatal_error('set_stratz', 'unknown type of stratification; gztype = ' // trim(gztype))
 !
       endselect gz
+!
+!  Energy stratification
+!
+      if (lthermal_energy) eth0z = cs20 / (gamma * gamma_m1) * rho0z
 !
     endsubroutine set_stratz
 !***********************************************************************
