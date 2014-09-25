@@ -688,7 +688,7 @@ module Forcing
 !AB: this wasn't doing anything, so we might as well skip it
         endif
       enddo
-      if (n_forcing_cont==0) call stop_it('forcing: no valid continuous iforcing_cont specified')
+      if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
 !
     endsubroutine initialize_forcing
 !***********************************************************************
