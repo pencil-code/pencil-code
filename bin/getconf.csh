@@ -842,6 +842,21 @@ else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ ip
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
+ echo "Hornet - HLRS, Stuttgart, Germany"
+ if ( $?PBS_JOBID ) then
+   echo "Running job: $PBS_JOBID"
+   touch $PBS_O_WORKDIR/data/jobid.dat
+   echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+ endif
+ set mpirunops = ''
+ set mpirun = 'aprun'
+ set npops = "-n $ncpus"
+ set local_disc = 0
+ set one_local_disc = 0
+ set remote_top     = 1
+ set local_binary = 0
+#----------------------------------------------
 else if ($hn =~ emil-login*.pdc.kth.se*) then
   echo $SHELL
   if ($USER =~ gustavog) then
