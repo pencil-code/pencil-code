@@ -184,10 +184,11 @@ print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nx) :: feed_back, volume_pencil
-      real :: volume_cell
+      real, dimension(nx) :: volume_pencil
+      real :: volume_cell, rho1_point, weight,dmass
       real, dimension (mpar_loc) :: St, Rc_hat
-      integer :: k
+      integer :: k, ix0,iy0,iz0
+      integer :: izz,izz0,izz1,iyy,iyy0,iyy1,ixx,ixx0,ixx1
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: dfp, df
@@ -197,32 +198,79 @@ print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
-      feed_back=0.
+!  Loop over all particles in current pencil.
+!
+      do k=k1_imn(imn),k2_imn(imn)
 !
 !  Check if particles chemistry is turned on
 !
-      if (lparticles_chemistry) then
+        if (lparticles_chemistry) then
 !
 !  Get total surface area and molar reaction rate of carbon
 !
-        call get_St(St,fp)
-        call get_R_c_hat(Rc_hat,fp)
-
-!  Loop over all particles in current pencil.
-!
-        do k=k1_imn(imn),k2_imn(imn)
+          call get_St(St,fp)
+          call get_R_c_hat(Rc_hat,fp)
 !
 !  Calculate the change in particle mass
 !
-          dfp(k,imp)=dfp(k,imp)-St(k)*Rc_hat(k)*mol_mass_carbon
+          dmass=-St(k)*Rc_hat(k)*mol_mass_carbon
 !
-        enddo
+        else
+          dmass=-dmpdt
+        endif
 !
-      else
-        do k=k1_imn(imn),k2_imn(imn)
-          dfp(k,imp)=dfp(k,imp)-dmpdt
-        enddo
-      endif
+!  Add the change in particle mass to the dfp array
+!
+        dfp(k,imp)=dfp(k,imp)+dmass
+!
+!  Calculate feed back from the particles to the gas phase
+!
+        if (lpart_mass_backreac) then
+!
+          ix0=ineargrid(k,1)
+          iy0=ineargrid(k,2)
+          iz0=ineargrid(k,3)
+!
+!  Find the indeces of the neighboring points on which the source
+!  should be distributed.
+!
+!NILS: All this interpolation should be streamlined and made more efficient.
+!NILS: Is it possible to calculate it only once, and then re-use it later?
+          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+              fp,k,ix0,iy0,iz0)
+!
+!  Loop over all neighbouring points
+!
+          do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
+!  Find the relative weight of the current grid point
+!
+            call find_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+!
+!  Find the volume of the grid cell of interest
+!
+            call find_grid_volume(ixx,iyy,izz,volume_cell)
+!
+!  Find the gas phase density
+!
+            if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+              rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+            else
+              rho1_point = p%rho1(ixx-nghost)
+            endif
+!
+!  Add the source to the df-array
+!
+            if (ldensity_nolog) then
+              df(ixx,iyy,izz,irho)=df(ixx,iyy,izz,irho)&
+                  -dmass*weight/volume_cell
+            else
+              df(ixx,iyy,izz,ilnrho)=df(ixx,iyy,izz,ilnrho)&
+                  -dmass*rho1_point*weight/volume_cell
+            endif
+          enddo; enddo; enddo
+        endif
+      enddo
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
@@ -312,5 +360,24 @@ print*,'fp(1,imp),pi,fp(1,iap),rhopmat=',fp(1,imp),pi,fp(1,iap),rhopmat
       enddo
 !
     endsubroutine rprint_particles_mass
+!***********************************************************************
+    real function get_gas_density(f, ix, iy, iz) result(rho)
+!
+!  Reads the gas density at location (ix, iy, iz).
+!
+!  20-may-13/ccyang: coded.
+!  NILS: This should be made a general routine in order to avoid the
+!  NILS: current code dublication with particles_dust.f90
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix, iy, iz
+!
+      linear: if (ldensity_nolog) then
+        rho = f(ix, iy, iz, irho)
+      else linear
+        rho = exp(f(ix, iy, iz, ilnrho))
+      endif linear
+!
+    endfunction get_gas_density
 !***********************************************************************
 endmodule Particles_mass
