@@ -287,7 +287,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; Shortcut for getting magnetic field bb.
 ;
   default, bbtoo, 0
-  if (bbtoo) then begin
+  if (bbtoo and ~any(strmatch(varcontent.idlvar, 'bb'))) then begin
     variables=[variables,'bb']
     magic=1
   endif
