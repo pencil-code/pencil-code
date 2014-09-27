@@ -83,10 +83,19 @@ pro pc_write_vdf, vdf_file, var, tags=tags, timestep=timestep, max_timesteps=max
 	time = pc_get_quantity ('time', var, tags, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
 	vdf_settusertime, mdo, timestep, [ time ] ; possible bug in VAPOR-IDL: time is expected to be a 1-element array
 
-	; set grid coordinates
+	; get grid coordinates
 	x = pc_get_quantity ('x', var, tags, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
 	y = pc_get_quantity ('y', var, tags, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
 	z = pc_get_quantity ('z', var, tags, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+
+	; reduce grid resolution, if necessary
+	if (any (reduce ne 1)) then begin
+		x = congrid (x, round (dim.nx/reduce[0]), 1, 1, /cubic, /interpolate)
+		y = congrid (y, round (dim.ny/reduce[1]), 1, 1, /cubic, /interpolate)
+		z = congrid (z, round (dim.nz/reduce[2]), 1, 1, /cubic, /interpolate)
+	end
+
+	; set grid coordinates
 	vdf_settxcoords, mdo, timestep, x
 	vdf_settycoords, mdo, timestep, y
 	vdf_settzcoords, mdo, timestep, z
@@ -108,7 +117,7 @@ pro pc_write_vdf, vdf_file, var, tags=tags, timestep=timestep, max_timesteps=max
 		data = float (pc_get_quantity (quantity, var, tags, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, cleanup=cleanup))
 		num_layers = dim.nz
 
-		; reduce data, if necessary
+		; reduce the data, if necessary
 		if (any (reduce ne 1)) then begin
 			num_layers = round (dim.nz/reduce[2])
 			data = congrid (data, round (dim.nx/reduce[0]), round (dim.ny/reduce[1]), round (num_layers), /cubic, /interpolate)
