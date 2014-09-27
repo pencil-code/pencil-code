@@ -3,11 +3,31 @@
 ; Description:
 ;   Writes a given data array to a VDF file for Vapor.
 ;
+; Parameters:
+;   * vdf_file       Output VDF2 file name.
+;   * var            Variables array from 'pc_read_var_raw'.
+;
+; Optional parameters:
+;   * coarsening     Number of coarsening levels (Default: 0 = off).
+;   * reduce         Factor for reduction of the data (Default: 1 = off).
+;   * quantities     Quantity name(s) to write (Default: MHD = [u,rho,Temp,B]).
+;                    More quantities are listed in "pc_check_quantities.pro":
+;                    IDL> help, pc_check_quantities (/all), /str
+;
+; Examples:
+; =========
+;
+;   Load parts of a varfile and save the magnetic flux density to a VDF2 file:
+;   IDL> pc_read_var_raw, obj=var, tags=tags, varfile='var.dat', var_list=['aa'], dim=dim, grid=grid
+;   IDL> pc_write_vdf, 'B_abs.vdf', var, tags=tags, quantities='B_abs', dim=dim, grid=grid
+;
+;   Load varfile from "data/allprocs/" and save a given set of quantities to a VDF2 file:
+;   IDL> pc_read_var_raw, obj=var, tags=tags, varfile='VAR123', /allprocs, dim=dim, grid=grid
+;   IDL> pc_write_vdf, '', var, tags=tags, quantities=['B_abs','B_z'], dim=dim, grid=grid
 
 pro pc_write_vdf, vdf_file, var, tags=tags, timestep=timestep, max_timesteps=max_timesteps, reset=reset, coarsening=coarsening, reduce=reduce, quantities=quantities, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, varcontent=varcontent
 
 	; default settings
-	default, vdf_file, 'var.vdf'
 	default, quantities, ['u_x','u_y','u_z','rho','Temp','B_x','B_y','B_z']
 	default, timestep, 0
 	default, max_timesteps, max (timestep) + 1
