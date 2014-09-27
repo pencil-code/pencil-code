@@ -20,7 +20,7 @@
 ;   Load parts of a varfile and save the magnetic flux density to a VDF2 file:
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, varfile='var.dat', var_list=['aa'], dim=dim, grid=grid
 ;   IDL> B_abs = pc_get_quantity ('B_abs', var, tags, dim=dim, grid=grid)
-;   IDL> pc_write_vdf, 'B_abs.vdf', 'B_abs', B_abs, var, tags, dim=dim, grid=grid
+;   IDL> pc_save_vdf, 'B_abs.vdf', 'B_abs', B_abs, var, tags, dim=dim, grid=grid
 
 pro pc_save_vdf, vdf_file, quantity, data, var, tags, timestep=timestep, max_timesteps=max_timesteps, reset=reset, coarsening=coarsening, reduce=reduce, dim=dim, grid=grid
 
