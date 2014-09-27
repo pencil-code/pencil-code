@@ -7,8 +7,19 @@
 ;   * vdf_file       Output VDF2 file name.
 ;   * quantity       Quantity name to write.
 ;   * data           Data array as output from 'pc_get_quantity'.
+;   * x              x-coordinates.
+;   * y              y-coordinates.
+;   * z              z-coordinates.
+;   * size           Array with the box dimensions.
+;   * origin         Array with the box origin coordinates.
+;   * periodic       Array indicating the periodicity.
+;   * equidist       Array indicating the equidistancy.
+;   * time           Time of the data.
 ;
 ; Optional parameters:
+;   * timestep       Number of the timestep (Default: 0).
+;   * max_timesteps  Number of timesteps (Default: 1).
+;   * reset          Force to overwrite an existing file (Default: 0 = off).
 ;   * coarsening     Number of coarsening levels (Default: 0 = off).
 ;   * reduce         Factor for reduction of the data (Default: 1 = off).
 ;
