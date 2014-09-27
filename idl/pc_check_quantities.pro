@@ -205,6 +205,12 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		inv_dx:'inverse grid distance x', $
 		inv_dy:'inverse grid distance y', $
 		inv_dz:'inverse grid distance z', $
+		size_x:'box size x', $
+		size_y:'box size y', $
+		size_z:'box size z', $
+		origin_x:'origin x', $
+		origin_y:'origin y', $
+		origin_z:'origin z', $
 		Spitzer_K_parallel:'field-aligned Spitzer coefficient' $
 	}
 
@@ -316,7 +322,13 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dz:'', $
 		inv_dx:'', $
 		inv_dy:'', $
-		inv_dz:'' $
+		inv_dz:'', $
+		size_x:'', $
+		size_y:'', $
+		size_z:'', $
+		origin_x:'', $
+		origin_y:'', $
+		origin_z:'' $
 	}
 
 	; Fill default values

@@ -733,6 +733,16 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[m1:m2] / unit.length
 	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[n1:n2] / unit.length
 
+	; Box size
+	if (strcmp (quantity, 'size_x', /fold_case)) then return, (x[l2]-x[l1] + lperi[0] * mean (1.0 / dx_1[[l1,l2]])) * unit.length
+	if (strcmp (quantity, 'size_y', /fold_case)) then return, (y[m2]-y[m1] + lperi[1] * mean (1.0 / dy_1[[m1,m2]])) * unit.length
+	if (strcmp (quantity, 'size_z', /fold_case)) then return, (z[n2]-z[n1] + lperi[2] * mean (1.0 / dz_1[[n1,n2]])) * unit.length
+
+	; Box origin
+	if (strcmp (quantity, 'origin_x', /fold_case)) then return, (x[l1] - lperi[0] * 0.5 / dx_1[l1]) * unit.length
+	if (strcmp (quantity, 'origin_y', /fold_case)) then return, (y[m1] - lperi[1] * 0.5 / dy_1[m1]) * unit.length
+	if (strcmp (quantity, 'origin_z', /fold_case)) then return, (z[n1] - lperi[2] * 0.5 / dz_1[n1]) * unit.length
+
 	print, "ERROR: Unknown quantity '"+quantity+"'"
 	return, !Values.D_NaN
 end
