@@ -67,7 +67,7 @@ module Hydro
   real :: relhel_uu=1.,urandi=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
-  real :: initpower=1.,cutoff=0.
+  real :: initpower=1.,initpower2=-5./3.,cutoff=0.,ncutoff=1., kpeak=10.
   real :: xhalf
   real, dimension (ninit) :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
   real, dimension (ninit) :: kx_ux=0.0, kx_uy=0.0, kx_uz=0.0
@@ -123,7 +123,8 @@ module Hydro
       uu_xz_angle, relhel_uu, coefuu, r_omega, w_omega,&
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
-      uy_left, uy_right, uu_const, Omega, initpower, cutoff, u_out_kep, &
+      uy_left, uy_right, uu_const, Omega, u_out_kep, &
+      initpower, initpower2, cutoff, ncutoff, kpeak, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -1457,9 +1458,15 @@ module Hydro
 ! initial spectrum k^power
           call powern(ampluu(j),initpower,cutoff,f,iux,iuz)
 !
-        case ('power_randomphase')
 ! initial spectrum k^power
+!
+        case ('power_randomphase')
           call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
+!
+! initial spectrum k^power
+!
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(ampluu(j),initpower,initpower2,cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

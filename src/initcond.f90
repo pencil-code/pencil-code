@@ -4361,11 +4361,6 @@ module Initcond
 !  Produces k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  However, initpower=-3 produces a k^{-1} spectrum.
 !
-!  initpower=0 -> k^2
-!           =2 -> k^4
-!          =-3 -> k^{-1}
-!          =-5 -> k^{-3}
-!
 !  07-may-03/tarek: coded
 !  08-may-08/nils: adapted to work on multiple processors
 !  06-jul-08/nils+andre: Fixed problem when running on
@@ -4483,14 +4478,15 @@ module Initcond
 !
     endsubroutine power_randomphase
 !***********************************************************************
-    subroutine power_randomphase_hel(ampl,initpower,cutoff,f,i1,i2,relhel,lscale_tobox)
+    subroutine power_randomphase_hel(ampl,initpower,initpower2,cutoff,ncutoff,kpeak,f,i1,i2,relhel,lscale_tobox)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
 !
-!  initpower=0 -> k^2
+!  initpower=0 -> k^2  (if used for vector potential)
 !           =2 -> k^4
 !          =-3 -> k^{-1}
+!          =-3.67 k^{-5/3}
 !          =-5 -> k^{-3}
 !
 !  08-sep-14/axel: adapted from power_randomphase
@@ -4504,7 +4500,8 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,initpower,mhalf,cutoff,scale_factor,relhel
+      real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
+      real :: nfact=4.,kpeak21,nexp1,nexp2,ncutoff
 !
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
@@ -4572,6 +4569,14 @@ module Initcond
         enddo
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
+!  generate flat spectrum with random phase (between -pi and pi)
+!
+        do i=1,3
+          call random_number_wrapper(r)
+          u_re(:,:,:,i)=ampl*k2**mhalf*cos(pi*(2*r-1))
+          u_im(:,:,:,i)=ampl*k2**mhalf*sin(pi*(2*r-1))
+        enddo !i
+!
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
@@ -4579,16 +4584,22 @@ module Initcond
         mhalf=.5*(.5*initpower-1)
 !
 !  generate all 3 velocity components separately
+!  generate k^n spectrum with random phase (between -pi and pi)
+!
+        nexp1=.5*nfact*(initpower-initpower2)
+        nexp2=1./nfact
+        kpeak21=1./kpeak**2
+        r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+!
+!  cutoff (changed to hyperviscous cutoff filter)
+!
+        if (cutoff /= 0.) r=r*exp(-(k2/cutoff**2.)**ncutoff)
+!
+!  scale with r
 !
         do i=1,3
-          ! generate k^n spectrum with random phase (between -pi and pi)
-          call random_number_wrapper(r); u_re(:,:,:,i)=ampl*k2**mhalf*cos(pi*(2*r-1))
-          call random_number_wrapper(r); u_im(:,:,:,i)=ampl*k2**mhalf*sin(pi*(2*r-1))
-          ! cutoff (changed to hyperviscous cutoff filter)
-          if (cutoff /= 0.) then
-            u_re(:,:,:,i) = u_re(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
-            u_im(:,:,:,i) = u_im(:,:,:,i)*exp(-(k2/cutoff**2.)**2)
-          endif
+          u_re(:,:,:,i)=r*u_re(:,:,:,i)
+          u_im(:,:,:,i)=r*u_im(:,:,:,i)
         enddo !i
 !
 !  Apply projection operator
