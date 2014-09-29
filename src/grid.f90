@@ -808,13 +808,16 @@ module Grid
 !  20-jul-10/wlad: moved here from register
 !  21-apr-11/axel: insert special ldegenerate_directions option for degenerate directions
 !  3-mar-14/MR: outsourced calculation of box_volume into box_vol
-!
+!  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
+!                coordinates into coords_aux; set coordinate switsches at the
+!                beginning
+
       use Sub, only: remove_zprof
       use Mpicomm
 !
       real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
-      real :: sinth_min=1e-5,costh_min=1e-5, fact
+      real :: fact
       integer :: xj,yj,zj,itheta
 !
 ! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe
@@ -839,16 +842,40 @@ module Grid
 !
       call box_vol
 !
-!  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
-!  Introduce new names (spherical_coords), in addition to the old ones.
+! Set flags.
+!
+      lcartesian_coords=.false.
+      lspherical_coords=.false.
+      lcylindrical_coords=.false.
+      lpipe_coords=.false.
 !
       if (coord_system=='cartesian') then
         lcartesian_coords=.true.
-        lspherical_coords=.false.
-        lcylindrical_coords=.false.
-        lpipe_coords=.false.
+!
+!  Introduce new names (spherical_coords), in addition to the old ones.
+!
+      elseif (coord_system=='spherical' &
+        .or.coord_system=='spherical_coords') then
+        lspherical_coords=.true.
+!
+!  Introduce new names (cylindrical_coords), in addition to the old ones.
+!
+      elseif (coord_system=='cylindric' &
+          .or.coord_system=='cylindrical_coords') then
+        lcylindrical_coords=.true.
+      else if (coord_system=='pipeflows') then
+        lpipe_coords=.true.
+      elseif (coord_system=='Lobachevskii') then
+      endif
+!
+!  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
+!
+      call coords_aux(x,y,z)
 !
 !  Volume element.
+!
+      if (lcartesian_coords) then
+!
 !  x-extent
 !
         if (nxgrid/=1) then
@@ -875,75 +902,9 @@ module Grid
 !
 !  Spherical coordinate system
 !
-      elseif (coord_system=='spherical' &
-        .or.coord_system=='spherical_coords') then
-        lcartesian_coords=.false.
-        lspherical_coords=.true.
-        lcylindrical_coords=.false.
-        lpipe_coords=.false.
+      elseif (lspherical_coords) then
 !
-! For spherical coordinates
-!
-        r_mn=x(l1:l2)
-        if (x(l1)==0.) then
-          r1_mn(2:)=1./x(l1+1:l2)
-          r1_mn(1)=0.
-        else
-          r1_mn=1./x(l1:l2)
-        endif
-        r2_mn=r1_mn**2
-!
-!  Calculate sin(theta). Make sure that sinth=1 if there is no y extent,
-!  regardless of the value of y. This is needed for correct integrations.
-!
-        if (ny==1) then
-          sinth=1.
-        else
-          sinth=sin(y)
-        endif
-!
-!  Calculate cos(theta) via latitude, which allows us to ensure
-!  that sin(lat(midpoint)) = 0 exactly.
-!
-        if (luse_latitude) then
-          lat=pi/2-y
-          costh=sin(lat)
-        else
-          costh=cos(y)
-        endif
-!
-!  Calculate 1/sin(theta). To avoid the axis we check that sinth
-!  is always larger than a minmal value, sinth_min. The problem occurs
-!  on theta=pi, because the theta range is normally only specified
-!  with no more than 6 digits, e.g. theta = 0., 3.14159.
-!
-        where(abs(sinth)>sinth_min)
-          sin1th=1./sinth
-        elsewhere
-          sin1th=0.
-        endwhere
-        sin2th=sin1th**2
-!
-!  Calculate cot(theta).
-!
-        cotth=costh*sin1th
-!
-!  Calculate 1/cos(theta). To avoid the axis we check that costh
-!  is always larger than a minmal value, costh_min. The problem occurs
-!  on theta=pi, because the theta range is normally only specified
-!  with no more than 6 digits, e.g. theta = 0., 3.14159.
-!
-        where(abs(costh)>costh_min)
-          cos1th=1./costh
-        elsewhere
-          cos1th=0.
-        endwhere
-!
-!  Calculate tan(theta).
-!
-        tanth=sinth*cos1th
-!
-!  Box volume and volume element - it is wrong for spherical, since
+!  Volume element - it is wrong for spherical, since
 !  sinth also changes with y-position.
 !
 !  WL: Is this comment above still relevant?
@@ -1000,7 +961,9 @@ module Grid
           enddo
         endif
 !
-!  Calculate the volume of the box, for non-cartesian coordinates.
+!  Calculate the volume of the box, for spherical coordinates.
+!  MR: Why needed? Box_volume should be the same (but more accurate).
+!      nVol, nVol1 never used!
 !
         nVol=0.
         do xj=l1,l2
@@ -1014,36 +977,19 @@ module Grid
 !
 !  Trapezoidal rule
 !
-        if (lfirst_proc_x)  r2_weight( 1)=.5*r2_weight( 1)
-        if (llast_proc_x) r2_weight(nx)=.5*r2_weight(nx)
+        if (lfirst_proc_x) r2_weight( 1)=.5*r2_weight( 1)
+        if (llast_proc_x ) r2_weight(nx)=.5*r2_weight(nx)
 !
-        if (lfirst_proc_y)  sinth_weight(m1)=.5*sinth_weight(m1)
-        if (llast_proc_y) sinth_weight(m2)=.5*sinth_weight(m2)
-        sinth_weight_across_proc(1)=0.5*sinth_weight_across_proc(1)
+        if (lfirst_proc_y) sinth_weight(m1)=.5*sinth_weight(m1)
+        if (llast_proc_y ) sinth_weight(m2)=.5*sinth_weight(m2)
+        sinth_weight_across_proc(1     )=0.5*sinth_weight_across_proc(1)
         sinth_weight_across_proc(nygrid)=0.5*sinth_weight_across_proc(nygrid)
 !
 !  End of coord_system=='spherical_coords' query.
-!  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='cylindric') then
-        lcartesian_coords=.false.
-        lspherical_coords=.false.
-        lcylindrical_coords=.true.
-        lpipe_coords=.false.
+      elseif (lcylindrical_coords) then
 !
-!  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
-!  not rcyl_mn1.
-!
-        rcyl_mn=x(l1:l2)
-        if (x(l1)==0.) then
-          rcyl_mn1(2:)=1./x(l1+1:l2)
-          rcyl_mn1(1)=0.
-        else
-          rcyl_mn1=1./x(l1:l2)
-        endif
-        rcyl_mn2=rcyl_mn1**2
-!
-!  Box volume and volume element.
+!  Volume element.
 !
         if (nxgrid/=1) then
           dVol_x=x*xprim
@@ -1078,16 +1024,12 @@ module Grid
 !  Trapezoidal rule
 !
         rcyl_weight=rcyl_mn
-        if (lfirst_proc_x)  rcyl_weight( 1)=.5*rcyl_weight( 1)
-        if (llast_proc_x) rcyl_weight(nx)=.5*rcyl_weight(nx)
+        if (lfirst_proc_x) rcyl_weight( 1)=.5*rcyl_weight( 1)
+        if (llast_proc_x ) rcyl_weight(nx)=.5*rcyl_weight(nx)
 !
 !  Pipe coordinates (for hydraulic applications)
 !
-      elseif (coord_system=='pipeflows') then
-        lcartesian_coords=.false.
-        lspherical_coords=.false.
-        lcylindrical_coords=.false.
-        lpipe_coords=.true.
+      elseif (lpipe_coords) then
 !
 !  Compute profile function.
 !
@@ -1105,11 +1047,7 @@ module Grid
 !
 !  Lobachevskii space
 !
-      elseif (coord_system=='Lobachevskii') then
-        lcartesian_coords=.false.
-        lspherical_coords=.false.
-        lcylindrical_coords=.false.
-        lpipe_coords=.false.
+!      else
 !
 !  Stop if no existing coordinate system is specified
 !
@@ -1176,17 +1114,17 @@ module Grid
 !
       if (.not.lperi(1)) then
         if (lfirst_proc_x) dVol_x(l1)=.5*dVol_x(l1)
-        if (llast_proc_x) dVol_x(l2)=.5*dVol_x(l2)
+        if (llast_proc_x ) dVol_x(l2)=.5*dVol_x(l2)
       endif
 !
       if (.not.lperi(2)) then
         if (lfirst_proc_y) dVol_y(m1)=.5*dVol_y(m1)
-        if (llast_proc_y)  dVol_y(m2)=.5*dVol_y(m2)
+        if (llast_proc_y ) dVol_y(m2)=.5*dVol_y(m2)
       endif
 !
       if (.not.lperi(3)) then
         if (lfirst_proc_z) dVol_z(n1)=.5*dVol_z(n1)
-        if (llast_proc_z)  dVol_z(n2)=.5*dVol_z(n2)
+        if (llast_proc_z ) dVol_z(n2)=.5*dVol_z(n2)
       endif
 !
 !  Print the value for which output is being produced.
@@ -1274,12 +1212,12 @@ module Grid
 !***********************************************************************
     subroutine coords_aux(x,y,z)
 !
-!  6-mar-14/MR: coded
+!  6-mar-14/MR: outsourced from initialize_grid
 !
       real, dimension(:) :: x,y,z
 !
       real, dimension(size(y)) :: lat
-      real :: sinth_min=1e-5,costh_min=1e-5
+      real, parameter :: sinth_min=1e-5,costh_min=1e-5
 !
       if (lspherical_coords) then
 !
@@ -1329,9 +1267,9 @@ module Grid
 !
         cotth=costh*sin1th
 !
-!  Calculate 1/cos(theta). To avoid the axis we check that costh
+!  Calculate 1/cos(theta). To avoid the equator we check that costh
 !  is always larger than a minmal value, costh_min. The problem occurs
-!  on theta=pi, because the theta range is normally only specified
+!  on theta=pi/2., because the theta range is normally only specified
 !  with no more than 6 digits, e.g. theta = 0., 3.14159.
 !
         where(abs(costh)>costh_min)
@@ -1383,8 +1321,7 @@ module Grid
       elseif (coord_system=='spherical' &
           .or.coord_system=='spherical_coords') then
 !
-!  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
-!  and assume that sinth=1 if there is no theta extent.
+!  Assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
 !
 !  r extent
