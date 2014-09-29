@@ -175,9 +175,9 @@ module ImplicitDiffusion
 ! Integrate the diffusion term exactly for components ivar1 to ivar2 by
 ! Fourier decomposition.  A constant diffusion coefficient is assumed.
 !
-! 05-sep-14/ccyang: coded.
+! 25-sep-14/ccyang: coded.
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
 !
       interface
         subroutine get_diffus_coeff(ndc, dc, iz)
@@ -193,7 +193,7 @@ module ImplicitDiffusion
       real, dimension(nx) :: decay
       real, dimension(1) :: dc
       integer :: iv, j, k
-      real :: kx2, ky2
+      real :: ky2, kz2
 !
 ! Shear is not implemented.
 !
@@ -208,17 +208,17 @@ module ImplicitDiffusion
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0
-        call fourier_transform(a_re, a_im)
-        xscan: do k = 1, nz
-          kx2 = kx_fft(k+ipz*nz)**2
+        call fft_xyz_parallel(a_re, a_im)
+        zscan: do k = 1, nz
+          kz2 = kz_fft(k+ipz*nz)**2
           yscan: do j = 1, ny
             ky2 = ky_fft(j+ipy*ny)**2
-            decay = exp(-dc(1) * dt * (kx2 + ky2 + kz_fft(ipx*nx+1:(ipx+1)*nx)**2))
+            decay = exp(-dc(1) * dt * (kx_fft(ipx*nx+1:(ipx+1)*nx)**2 + ky2 + kz2))
             a_re(:,j,k) = decay * a_re(:,j,k)
             a_im(:,j,k) = decay * a_im(:,j,k)
           enddo yscan
-        enddo xscan
-        call fourier_transform(a_re, a_im, linv=.true.)
+        enddo zscan
+        call fft_xyz_parallel(a_re, a_im, linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iv) = a_re
       enddo comp
 !
