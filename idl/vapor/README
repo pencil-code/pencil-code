@@ -1,11 +1,8 @@
-This directory contains idl routines that can be used with VAPOR,
-a suite of visualization and analysis tools developed at NCAR.
-See http://www.vapor.ucar.edu for VAPOR documentation
+This directory contains idl routines that can be used with VAPOR.
+See http://www.vapor.ucar.edu/ for VAPOR documentation.
 
-  Contents
-  --------
-  1. Tony's Getting Started Instructions
-  2. Alan's original instructions (annotated)
+"pc_write_vapor.pro" is an IDL routine that converts a Pencil varfile set to
+a VAPOR VDF file, so that the VAPOR tools can then be applied to the data.
 
 Sample Output
 -------------
@@ -13,94 +10,67 @@ Sample Output
 
 Getting Started
 ---------------
-To generate the Vapor file (defaults to data/var.vdf)
-just run pc_write_vapor!  You need Vapor first (the source version didn't
-work for me)
+1)
+You need to install VAPOR first:
 
-   http://www.vapor.ucar.edu/,
+   http://www.vapor.ucar.edu/
 
-Download it and run vaporinstall.sh, I installed in /opt/vapor.  The install
-failed for me first time as it needed "ex" (aka vi) in "/bin" so I creates a symlink
-there from /usr/bin.  Make sure you have /your/install/path/vapor/lib in
-both LD_LIBRARY_PATH and IDL_DLM_PATH eg:
-    setenv LD_LIBRARY_PATH /opt/vapor/lib:$LD_LIBRARY_PATH
-    setenv IDL_DLM_PATH /opt/vapor/lib:IDL_DLM_PATH
-or
-    export LD_LIBRARY_PATH=/opt/vapor/lib:$LD_LIBRARY_PATH
-    export IDL_DLM_PATH=/opt/vapor/lib:IDL_DLM_PATH
-before running IDL!
+Download it and run vaporinstall.sh, I installed in /opt/vapor.
+Make sure you have /your/install/path/vapor/lib in both
+LD_LIBRARY_PATH and IDL_DLM_PATH, e.g. for a 'sh' or 'bash' shell:
+    export LD_LIBRARY_PATH="/opt/vapor/lib:$LD_LIBRARY_PATH"
+    export IDL_DLM_PATH="/opt/vapor/lib:$IDL_DLM_PATH"
+or for a 'csh'-compatible shell:
+    setenv LD_LIBRARY_PATH "/opt/vapor/lib:$LD_LIBRARY_PATH"
+    setenv IDL_DLM_PATH "/opt/vapor/lib:$IDL_DLM_PATH"
+before starting IDL.
 
-You just run pc_write_vapor which by default should write
-all the variables from varfile (there is a problem with vector quantities at
-present).  You can add options like the pc_read_var command eg:
+2)
+To generate a VDF-file (default: data/var.vdf) just run "pc_write_vapor"!
+This should write all the variables from varfile.
+
+You can add options like the pc_read_var command, e.g.:
    variables=['lnrho','ss']
 or
-   variables=['rho','tt'],/magic
-can specify a varfile:
+   variables=['rho','tt'], /magic
+
+You can specify an input varfile:
    varfile='VAR20'
 or
    varfile='VAR',ivar=20
-or even a whole sequence
-   varfile='VAR',ivarmin=1,ivarmax=20
-you can also specify an alternative vdffile:
+
+Or you can convert a sequence of files:
+   varfile='VAR', ivarmin=1, ivarmax=20
+You can also specify an alternative VDF output file:
    vdffile='mydata.vdf'
-and pretty much anything else you can do with pc_read_var.  Except
-that it ALWAYS trim ghost zones off the data!
 
-Then run vaporgui (again the env. variables must be set!)  Go to the data
-menu and "Load data into the current session".  (You can even do this
-while IDL is still writing the remaining data for a sequence!)
+Be aware that this ALWAYS trims the ghost zones off the data!
+More parameters are listed in the header of "pc_write_vapor.pro".
 
-The click around!  eg. go to the DVR tab (volume rendering) select a variable,
-enable rendering and adjust the opacity.
+3)
+Then run "vaporgui" with the same environment variables set.
 
-If you put multiple varfiles in to the vapor data you can not switch to the
-animation tab and hit play!
+4)
+Go to the "data" menu and click "Load data into the current session".
+(You can do this while IDL still writes the remaining data for a sequence!)
 
-I'll add some of this to this the idl/vapor/README.
+5)
+Play! E.g., go to the "DVR" tab (volume rendering), select a variable,
+enable rendering, and adjust the opacity.
 
--Antony Mee (A.J.Mee@ncl.ac.uk)
+Note:
+If you put multiple varfiles into one VAPOR VDF file,
+you can not switch to the animation tab and hit play.
+For that, you need to store each varfile in separate VDF files.
+
 
 Original Instructions
 ---------------------
-pc_write_vapor.pro is an idl routine that converts a pencil dataset to
-a vapor dataset, so that the vapor tools can then be applied to the data.
-To convert a pencil dataset to vapor, you need first to have the vapor 
-libraries installed (as described on the website http://www.vapor.ucar.edu).  
-You will also need to set up your vapor idl environment (e.g. the LD_LIBRARY_PATH 
-and the IDL_DLM_PATH.  These are set for you when you follow the VAPOR
-installation instructions )  Then do the following:
 
-(tony: Step 1 in now done by pc_write_vapor automatically)
-1.  From the command line, run "vdfcreate" to create the vapor metadata 
-for your dataset.  You will need to specify the data size and variable 
-names in the arguments to vdfcreate, and the variable names need to be 
-specified in the order that pencil uses them.  You need to specify the 
-total number of timesteps that you would (eventually) like to convert.  
-Make sure to specify that the metadata file is created in a file system 
-with adequate space to hold the data, because the vapor data will be 
-stored in the same directory. (Note: there are also vapor idl routines 
-to create the metadata).
-
-(tony: pc_write_vapor is now command line compatible with pc_read_ routines)
-2. In a vapor IDL session run pc_write_vapor with the following arguments:
-    the absolute path to the root of the pencil data
-    the number of processors used to create the pencil data
-    the absolute path to the vdf file (created in step 1)
-    the timestep being converted
-    optionally, the name of the var files (if it is not "var", as in "var.dat")
- 
-3. Run "vaporgui" to visualize the resulting data.  Load the metadata you created in step 1
-
-pc_write_vapor should convert all of the pencil variables for the specified time 
-step.   If there is more than one time step, you need to do step 2. for 
-each additional time step.  The code has not been well tested, but 
-it should correctly handle both double and single precision data.  
-It correctly handles any assignment of processors to data, as long 
-as they form a grid.  The chunks don't have to be the same size, but all 
-the chunks at a given x coordinate must have the same x-size, and 
-similarly for y and z.  This code converts all the variables that are named 
-in the vdfcreate command, but does not deal with auxiliary variables.
-
--Alan Norton (alan@ucar.edu)
+In a VAPOR IDL session run "pc_write_vapor" with the following arguments:
+the absolute path to the root of the pencil data,
+the number of processors used to create the pencil data,
+the absolute path to the vdf file (created in step 1),
+the timestep being converted optionally, and
+the name of the var files (if it is not "var", as in "var.dat").
 
