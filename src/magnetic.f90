@@ -1796,8 +1796,6 @@ module Magnetic
         lpenc_requested(i_fpres)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
-      if (.not.lweyl_gauge.and.lcartesian_coords) &
-          lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or. &
           lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
