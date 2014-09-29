@@ -4,7 +4,7 @@
 &run_pars
   cvsid = '$Id$'
   nt = 1000, it1 = 10
-  tmax = 10.0
+  tmax = 10.1, dsnap = 10.0
   cdt = 0.4
   lpencil_check = .true.
 /
@@ -20,4 +20,7 @@
 &viscosity_run_pars
   limplicit_viscosity = .true.
   ivisc = 'simplified', nu = 0.1
+/
+&implicit_diffusion_pars
+  implicit_method = 'fft'
 /

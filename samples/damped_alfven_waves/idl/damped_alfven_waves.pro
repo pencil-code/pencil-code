@@ -32,19 +32,19 @@ pro damped_alfven_waves, double=double, varfile=varfile
   compile_opt idl2
 
 ; Read the data.
-  pc_read_var, obj=f, varfile=varfile, /trimall, /quiet
   pc_read_dim, obj=dim, /quiet
   pc_read_param, obj=par1, /quiet
   pc_read_param, obj=par2, /param2, /quiet
+  pc_read_var, obj=f, varfile=varfile, /bb, /trimall, /quiet
 
 ; Calculate relevant parameters.
-  ki = par1.k0
+  ki = par1.init_k0
   nu = par2.nu
   eta = par2.eta
   omega = transpose(ki) # par2.b_ext / sqrt(par1.mu0 * par1.rho0)
   ot = omega * f.t
   decay = exp(-0.5 * total(ki^2, double=double) * (nu + eta) * f.t)
-  du = [par1.amp0[0], par1.amp0[1], par1.amp0[2]] * decay
+  du = [par1.init_amp0[0], par1.init_amp0[1], par1.init_amp0[2]] * decay
   db = du * sqrt(par1.mu0 * par1.rho0)
   du2 = total(du^2, double=double)
   db2 = total(db^2, double=double)

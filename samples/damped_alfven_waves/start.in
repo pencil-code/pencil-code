@@ -3,12 +3,13 @@
 !
 &init_pars
   cvsid = '$Id$'
+  lwrite_aux = .true.
 /
 &eos_init_pars
 /
 &initial_condition_pars
-  amp0 = 0.001, 0.001, -0.004
-  k0 = 2.0, 2.0, 1.0
+  init_amp0 = 0.001, 0.001, -0.004
+  init_k0 = 2.0, 2.0, 1.0
 /
 &hydro_init_pars
 /

@@ -10,7 +10,8 @@ DENSITY   = nodensity
 HYDRO     =   hydro
 MAGNETIC  =   bfield
 
-INITIAL_CONDITION  =   alfven_waves
+INITIAL_CONDITION  =   initial_condition/alfven_wave
 IMPLICIT_DIFFUSION =   implicit_diffusion
+FOURIER            =   fourier_fftpack
 
 REAL_PRECISION = double
