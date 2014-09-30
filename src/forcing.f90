@@ -32,7 +32,7 @@ module Forcing
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
-  real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1.
+  real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
   real :: slope_ff=0.,work_ff=0.,omega_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
@@ -129,7 +129,7 @@ module Forcing
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        ABC_A, ABC_B, ABC_C, &
-       lforcing_cont,iforcing_cont, z_center_fcont, &
+       lforcing_cont,iforcing_cont, z_center_fcont, z_center, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
        kf_fcont, omega_fcont, omegay_fcont, omegaz_fcont, eps_fcont, &
        lsamesign, lshearing_adjust_old, equator, &
@@ -601,6 +601,7 @@ module Forcing
           if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
           if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
           if (kf_fcont_z(i)==impossible) kf_fcont_z(i)=kz_ff
+          if (z_center_fcont(i)==0.) z_center_fcont(i)=z_center
         endif
 
         if (iforcing_cont(i)=='ABC') then
@@ -670,6 +671,7 @@ module Forcing
           cosx(:,i)=cos(kf_fcont_x(i)*x)
           sinx(:,i)=sin(kf_fcont_x(i)*x)
           profz_ampl  = exp(-(kf_fcont_z(i) *(z-z_center_fcont(i)))**2)
+print*,'NS: z_center=',z_center_fcont
           d1profz_ampl= -2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*profz_ampl
           d2profz_ampl=(-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2)*profz_ampl
         elseif (iforcing_cont(i)=='J0_k1x') then
@@ -4725,7 +4727,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case ('(0,cosx*expmz2,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))
+          !force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))
+          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*profz_ampl(n)
           force(:,3)=0.
 !
 !  f=(0,cosx*expmz2,0)_Lor, Lorentz force belonging to f=(0,cosx*expmz2,0)
