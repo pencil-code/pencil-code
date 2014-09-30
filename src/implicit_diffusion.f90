@@ -254,7 +254,7 @@ module ImplicitDiffusion
 !
 ! 05-sep-14/ccyang: coded.
 !
-      use Fourier, only: fourier_transform_xy
+      use Fourier, only: fft_xy_parallel
 !
       interface
         subroutine get_diffus_coeff(ndc, dc, iz)
@@ -269,6 +269,7 @@ module ImplicitDiffusion
       real, dimension(nx,ny,nz) :: a_re, a_im
       real, dimension(nx) :: k2dt, decay
       real, dimension(nzgrid) :: dc
+      integer :: ll1, ll2, m0, n0
       integer :: iv, j, k
 !
 ! Shear is not implemented.
@@ -281,19 +282,23 @@ module ImplicitDiffusion
 !
 ! Integrate.
 !
+      ll1 = ipx * nx + 1
+      ll2 = (ipx + 1) * nx
+      m0 = ipy * ny
+      n0 = ipz * nz
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0
-        call fourier_transform_xy(a_re, a_im)
+        call fft_xy_parallel(a_re, a_im)
         yscan: do j = 1, ny
-          k2dt = dt * (kx_fft(j+ipy*ny)**2 + ky_fft(ipx*nx+1:(ipx+1)*nx)**2)
+          k2dt = dt * (kx_fft(ll1:ll2)**2 + ky_fft(m0+j)**2)
           zscan: do k = 1, nz
-            decay = exp(-dc(k+ipz*nz) * k2dt)
+            decay = exp(-dc(n0+k) * k2dt)
             a_re(:,j,k) = decay * a_re(:,j,k)
             a_im(:,j,k) = decay * a_im(:,j,k)
           enddo zscan
         enddo yscan
-        call fourier_transform_xy(a_re, a_im, linv=.true.)
+        call fft_xy_parallel(a_re, a_im, linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iv) = a_re
       enddo comp
 !
@@ -464,7 +469,7 @@ module ImplicitDiffusion
 !
 ! Implicitly integrate the diffusion term in the z-direction.
 !
-! 16-aug-13/ccyang: coded
+! 30-sep-14/ccyang: coded
 !
 ! Input Arguments
 !   bcz1: array of the lower boundary conditions for each component
@@ -475,7 +480,7 @@ module ImplicitDiffusion
 ! Input Procedure
 !   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
-      use Mpicomm, only: transp_xz, transp_zx
+      use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       character(len=*), dimension(mcom), intent(in) :: bcz1, bcz2
@@ -483,29 +488,26 @@ module ImplicitDiffusion
       real, intent(in) :: dt
       external :: get_diffus_coeff
 !
-      integer, parameter :: nxt = nx / nprocz
-      real, dimension(nx,nz) :: axz
-      real, dimension(nzgrid,nxt) :: azx
+      integer, parameter :: nyt = ny / nprocz
+      real, dimension(nx,nyt,nzgrid) :: ft
       real, dimension(0:nzgrid+1) :: penc
       real, dimension(nzgrid) :: a, b, c
       real, dimension(nzgrid) :: adt, opbdt, ombdt, cdt
-      integer :: j, k, l
+      integer :: i, j, iv
 !
       int_z: if (nzgrid > 1) then
         call set_diffusion_equations(get_diffus_coeff, 3, a, b, c)
         call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
-        comp: do l = ivar1, ivar2
-          yscan: do j = m1, m2
-            axz = f(l1:l2,j,n1:n2,l)
-            call transp_xz(axz, azx)
-            xscan: do k = 1, nxt
-              penc(1:nzgrid) = azx(:,k)
-              call implicit_pencil(penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(l), bcz2(l))
-              azx(:,k) = penc(1:nzgrid)
+        comp: do iv = ivar1, ivar2
+          call remap_to_pencil_yz(f(l1:l2,m1:m2,n1:n2,iv), ft)
+          yscan: do j = 1, nyt
+            xscan: do i = 1, nx
+              penc(1:nzgrid) = ft(i,j,:)
+              call implicit_pencil(penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv))
+              ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
-            call transp_zx(azx, axz)
-            f(l1:l2,j,n1:n2,l) = axz
           enddo yscan
+          call unmap_from_pencil_yz(ft, f(l1:l2,m1:m2,n1:n2,iv))
         enddo comp
       endif int_z
 !
