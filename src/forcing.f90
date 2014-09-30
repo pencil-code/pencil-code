@@ -599,7 +599,9 @@ module Forcing
         else
           if (kf_fcont(i)  ==impossible) kf_fcont(i)  =k1_ff
           if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
-          if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
+!          if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
+!NS: bug; replaced kf_fcont_x(i) -> kf_fcont_y(i)
+          if (kf_fcont_y(i)==impossible) kf_fcont_y(i)=ky_ff
           if (kf_fcont_z(i)==impossible) kf_fcont_z(i)=kz_ff
           if (z_center_fcont(i)==0.) z_center_fcont(i)=z_center
         endif
