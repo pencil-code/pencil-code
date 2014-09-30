@@ -104,12 +104,13 @@ pro pc_save_vdf, vdf_file, quantity, data, x, y, z, size, origin, periodic, equi
 	bwh = vdc_bufwritecreate (vdf_file)
 
 	; write the quantity
-	data = quantity
 	num_layers = nz
 
 	; write the xy-slices
 	vdc_openvarwrite, bwh, timestep, quantity, -1
-	for z = 0, num_layers-1 do vdc_bufwriteslice, bwh, data[*,*,z]
+	for pz = 0, num_layers-1 do begin
+		vdc_bufwriteslice, bwh, reform (float (data[*,*,pz]))
+	end
 	vdc_closevar, bwh
 
 	; destroy the "buffered write" handle
