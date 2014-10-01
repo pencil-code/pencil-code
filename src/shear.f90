@@ -599,7 +599,7 @@ module Shear
       integer, parameter :: nypx = ny / nprocx, nxpy = nx / nprocy
       real, dimension(mxgrid,nypx+2*nghost,nz) :: b
       real, dimension(nygrid,nxpy,nz) :: bt
-      real, dimension(nxgrid) :: xnew, px, dpenc, yshift
+      real, dimension(nxgrid) :: xnew, px, yshift
       real, dimension(nygrid) :: ynew, ynew1, py
       real, dimension(mygrid) :: by
       character(len=256) :: message
@@ -626,7 +626,7 @@ module Shear
             case ('spline') xmethod
               call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
             case ('poly') xmethod
-              call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
+              call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
                                             istatus=istat, message=message)
               error = istat /= 0
             case default xmethod
@@ -654,7 +654,7 @@ module Shear
               case ('spline') ymethod
                 call spline(yglobal, by, ynew1, py, mygrid, nygrid, err=error, msg=message)
               case ('poly') ymethod
-                call polynomial_interpolation(yglobal, by, ynew1, py, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
+                call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
               case default ymethod
@@ -785,7 +785,7 @@ module Shear
       real, intent(in) :: shift
 !
       real, dimension(nghost,nygrid,nz) :: work
-      real, dimension(nygrid) :: ynew, penc, dpenc
+      real, dimension(nygrid) :: ynew, penc
       real, dimension(mygrid) :: worky
       character(len=256) :: message
       logical :: error
@@ -810,7 +810,7 @@ module Shear
           case ('spline') dispatch
             call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
           case ('poly') dispatch
-            call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+            call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, &
                                           posdef=lposdef_advection.and.posdef, istatus=istat, message=message)
             error = istat /= 0
           case default dispatch

@@ -1457,22 +1457,22 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
-    subroutine poly_interp_one(xa, ya, x, y, dy, istatus, message)
+    subroutine poly_interp_one(xa, ya, x, y, istatus, message)
 !
-!  Uses polynomial interpolation to interpolate (xa, ya) to (x, y) with
-!  error estimate dy.  The order of the interpolation is the size of
-!  (xa, ya).
+!  Uses polynomial interpolation to interpolate (xa, ya) to (x, y), 
+!  where y(n) is the n-th order interpolation, 0 <= n <= size(xa)-1.
 !
-!  24-feb-13/ccyang: adapted from Numerical Recipes.
+!  01-oct-14/ccyang: adapted from Numerical Recipes.
 !
       real, dimension(:), intent(in) :: xa, ya
       real, intent(in) :: x
-      real, intent(out) :: y, dy
+      real, dimension(0:size(xa)-1), intent(out) :: y
       integer, intent(out), optional :: istatus
       character(len=*), intent(out), optional :: message
 !
-      integer :: m, n, ns
       real, dimension(size(xa)) :: c, d, den, ho
+      integer :: m, n, ns
+      real :: dy
 !
 !  Check the sizes of the input arrays.
 !
@@ -1495,7 +1495,7 @@ module General
 !
 !  Initial approximation to y.
 !
-      y = ya(ns)
+      y(0) = ya(ns)
       ns = ns - 1
 !
 !  For each column of the tableau, loop over the current c's and d's and update them.
@@ -1516,7 +1516,7 @@ module General
           dy = d(ns)
           ns = ns - 1
         endif take_side
-        y = y + dy
+        y(m) = y(m-1) + dy
       enddo update
 !
 !  Clean exit
@@ -1525,33 +1525,33 @@ module General
 !
     endsubroutine poly_interp_one
 !***********************************************************************
-    subroutine poly_interp_fixorder(xa, ya, x, y, dy, norder, tvd, posdef, istatus, message)
+    subroutine poly_interp_fixorder(xa, ya, x, y, norder, tvd, posdef, istatus, message)
 !
-!  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y)
-!  with error estimates dy.  If tvd is present and set true, the order
-!  will be reduced at places where the total variation diminishing is
-!  violated.
+!  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y).
+!  If tvd or posdef is present and set true, the order will be reduced 
+!  at places where the total variation diminishing or positive 
+!  definiteness is violated, respectively.
 !
-!  25-feb-13/ccyang: coded
+!  01-oct-14/ccyang: coded
 !
       real, dimension(:), intent(in) :: xa, ya
       real, dimension(:), intent(in) :: x
-      real, dimension(:), intent(out) :: y, dy
+      real, dimension(:), intent(out) :: y
       integer, intent(in) :: norder
       logical, intent(in), optional :: tvd, posdef
       integer, intent(out), optional :: istatus
       character(len=*), intent(out), optional :: message
 !
+      real, dimension(0:norder) :: yi
       character(len=256) :: msg
-      logical :: fix_order, tvd1, posdef1, left, ok
-      integer :: morder, moh
-      integer :: nxa, ix, ix1, ix2
+      logical :: tvd1, posdef1, left, lodd, ok
+      integer :: ord, noh, nxa, ix, ix1, ix2
       integer :: i, n, istat
 !
 !  Check the dimension of the output arrays.
 !
       n = size(x)
-      incompatible: if (size(y) /= n .or. size(dy) /= n) then
+      incompatible: if (size(y) /= n) then
         if (present(istatus)) istatus = -3
         if (present(message)) message = 'Arrays x, y, and/or dy are incompatible.'
         return
@@ -1571,41 +1571,40 @@ module General
         posdef1 = .false.
       endif pos_on
 !
-      fix_order = .not. tvd1 .and. .not. posdef1
 !
 !  Interpolate each point.
 !
       istat = 0
       nxa = size(xa)
+      noh = norder / 2
+      lodd = mod(norder, 2) /= 0
       loop: do i = 1, n
-        morder = max(norder, 0)
-        order: do
 !
 !  Find the index range to construct the interpolant.
 !
-          ix = find_index(xa, x(i))
-          left = x(i) < xa(ix)
-          moh = morder / 2
-          ix1 = ix - moh
-          ix2 = ix + moh
-          odd: if (mod(morder, 2) /= 0) then
-            side: if (left) then
-              ix1 = ix1 - 1
-            else side
-              ix2 = ix2 + 1
-            endif side
-          endif odd
-          ix1 = max(ix1, 1)
-          ix2 = min(ix2, nxa)
+        ix = find_index(xa, x(i))
+        left = x(i) < xa(ix)
+        ix1 = ix - noh
+        ix2 = ix + noh
+        odd: if (lodd) then
+          side: if (left) then
+            ix1 = ix1 - 1
+          else side
+            ix2 = ix2 + 1
+          endif side
+        endif odd
+        ix1 = max(ix1, 1)
+        ix2 = min(ix2, nxa)
+        ord = ix2 - ix1
 !
 !  Send for polynomial interpolation.
 !
-          call poly_interp_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
-          if (istat /= 0) exit loop
-          if (fix_order) exit order
+        call poly_interp_one(xa(ix1:ix2), ya(ix1:ix2), x(i), yi, istat, msg)
+        if (istat /= 0) exit loop
 !
 !  Check the total variation and/or positive definiteness.
 !
+        order: if (tvd1 .or. posdef1) then
           bracket: if (left) then
             ix1 = max(ix - 1, 1)
             ix2 = ix
@@ -1614,12 +1613,17 @@ module General
             ix2 = min(ix + 1, nxa)
           endif bracket
 !
-          ok = .true.
-          if (tvd1 .and.  (y(i) - ya(ix1)) * (ya(ix2) - y(i)) < 0.0) ok = .false.
-          if (posdef1 .and. y(i) < 0.0) ok = .false.
-          if (ok) exit order
-          morder = morder - 1
-        enddo order
+          reduce: do while (ord > 0)
+            ok = .true.
+            if (tvd1 .and. (yi(ord) - ya(ix1)) * (ya(ix2) - yi(ord)) < 0.0) ok = .false.
+            if (posdef1 .and. yi(ord) < 0.0) ok = .false.
+            if (ok) exit reduce
+            ord = ord - 1
+          enddo reduce
+        endif order
+!
+        y(i) = yi(ord)
+!
       enddo loop
 !
 !  Error handling
