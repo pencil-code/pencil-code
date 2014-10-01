@@ -899,7 +899,7 @@ module Gravity
         gg_mn(:,3)=0.
         if (lcylindrical_gravity) then
           gg_mn(:,1) = gr*sinth(m)
-          gg_mn(:,3) = gr*costh(m)
+          gg_mn(:,2) = gr*costh(m)
         else
           gg_mn(:,1) = gr
         endif
