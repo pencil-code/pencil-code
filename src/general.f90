@@ -1553,7 +1553,7 @@ module General
       n = size(x)
       incompatible: if (size(y) /= n) then
         if (present(istatus)) istatus = -3
-        if (present(message)) message = 'Arrays x, y, and/or dy are incompatible.'
+        if (present(message)) message = 'Arrays x and y are incompatible.'
         return
       endif incompatible
 !
@@ -1571,13 +1571,13 @@ module General
         posdef1 = .false.
       endif pos_on
 !
-!
 !  Interpolate each point.
 !
       istat = 0
       nxa = size(xa)
       noh = norder / 2
       lodd = mod(norder, 2) /= 0
+!
       loop: do i = 1, n
 !
 !  Find the index range to construct the interpolant.
