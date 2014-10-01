@@ -124,6 +124,7 @@ module Cosmicrayflux
 !  19-nov-04/anders: coded
 !
       if (omegahat/=0.) lpenc_requested(i_ucr)=.true.
+      if (lhydro) lpenc_requested(i_rho)=.true.
       lpenc_requested(i_gecr)=.true.
       lpenc_requested(i_bb)=.true.
 !
@@ -183,9 +184,9 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: delucrxbb, ucrxbb, jcrxbr
+      real, dimension (nx,3) :: delucrxbb, delucrxbb2
       real, dimension (nx)   :: b2, b21
-      real, dimension (nx)   :: tmp
+      real, dimension (nx)   :: tmp, ratio
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -201,19 +202,21 @@ module Cosmicrayflux
         call identify_bcs('Fecz',ifcrz)
       endif
 !
-      call cross(p%ucr-p%uu,p%bb,delucrxbb)
+      call cross(omegahat*(p%ucr-p%uu),p%bb,delucrxbb)
 !
 !  Cosmic Ray Flux equation.
 !
       df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-        +omegahat*delucrxbb
+        +delucrxbb
 !
 !  Add Lorentz force
 !
       if (lhydro) then
-        call cross(p%ucr,p%bb,ucrxbb)
-        call multsv_mn(-(J_param/Ma_param**2)*p%ecr,ucrxbb,jcrxbr)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+jcrxbr
+        ratio=p%ecr/p%rho
+        call multsv(-ratio,delucrxbb,delucrxbb2)
+        do j=1,3
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-delucrxbb2
+        enddo
       endif
 !
 !  Calculate diagnostic quantities.
