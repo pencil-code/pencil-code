@@ -195,6 +195,13 @@ module Particles_mass
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
+!  JONAS: this place is better for new "pencil-calling" of variables
+!
+!  Get total surface area and molar reaction rate of carbon
+!
+          call get_St(St,k1_imn(imn),k2_imn(imn))
+          call get_R_c_hat(Rc_hat,k1_imn(imn),k2_imn(imn))
+!
 !  Loop over all particles in current pencil.
 !
       do k=k1_imn(imn),k2_imn(imn)
@@ -202,11 +209,6 @@ module Particles_mass
 !  Check if particles chemistry is turned on
 !
         if (lparticles_chemistry) then
-!
-!  Get total surface area and molar reaction rate of carbon
-!
-          call get_St(St,fp)
-          call get_R_c_hat(Rc_hat,fp)
 !
 !  Calculate the change in particle mass
 !

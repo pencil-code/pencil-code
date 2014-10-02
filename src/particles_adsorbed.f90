@@ -36,43 +36,33 @@ module Particles_adsorbed
 !
   include 'particles_adsorbed.h'
 !
-  character (len=labellen), dimension (ninit) :: init_adsorbed='nothing'
-  character(10), dimension(15)  :: species_name,adsorbed_species_names
-  real, dimension(10) :: init_surf_ads_frac,init_surf_gas_frac
-  real, dimension(:,:), allocatable :: R_j_hat
-  real :: diffusivity=0.0
-  real :: init_thCO=0.0
-  real :: total_carbon_sites=1.08e-7
-  integer :: iads=0, iads_end=0
-  real :: gas_constant=8314.0 ![J/kmol/K]
-!
 !*****************************************************************
 ! Particle number independent variables
 !*****************************************************************
 !
-  real, dimension(:,:), allocatable :: mu, mu_prime
   real, dimension(:), allocatable :: site_occupancy
-  real, dimension(:), allocatable :: aac
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
-  integer :: N_surface_species, N_surface_reactions, nr,ns,np
-  integer :: N_adsorbed_species
+  integer :: nr,ns,np
+  character (len=labellen), dimension (ninit) :: init_adsorbed='nothing'
+  real, dimension(10) :: init_surf_ads_frac
+  real, dimension(:,:), allocatable :: R_j_hat
+  real :: init_thCO=0.0
+  real :: adsplaceholder=0.0
+  real :: sum_ads
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
 !*********************************************************************!
 !  
-  real, dimension(:,:), allocatable :: adsorbed_species_enthalpy
-  real, dimension(:,:), allocatable :: adsorbed_species_entropy
+
   real, dimension(:,:), allocatable :: Cs
 !
   namelist /particles_ads_init_pars/ &
       init_adsorbed, &
-      init_surf_ads_frac, &
-      init_surf_gas_frac, diffusivity, &
-      total_carbon_sites
+      init_surf_ads_frac
 !
   namelist /particles_ads_run_pars/ &
-      diffusivity
+      adsplaceholder
 !
   contains
 !***********************************************************************
@@ -96,9 +86,10 @@ module Particles_adsorbed
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      integer :: i,N_surface_species,stat,j
-      character(10), dimension(40) :: species
+      integer :: i,N_surface_species,stat,j,N_max_elements,N_surface_reactions
+      character(10), dimension(40) :: species,reactants
       character(10), dimension(40) :: solid_species, adsorbed_species_names
+      character(10), dimension(:,:), allocatable :: part
 !
       if (lroot) call svn_id( &
            "$Id: particles_adsorbed.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
@@ -117,6 +108,7 @@ module Particles_adsorbed
       endif
 !
       call get_species_list('adsorbed_species_names',adsorbed_species_names)
+      call get_reactants(reactants)
       call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
 !
 !  Set some indeces (this is hard-coded for now)
@@ -184,6 +176,20 @@ module Particles_adsorbed
     else
     end if
 !
+!  JONAS: VERY roundabout way of doing things
+!
+      N_surface_reactions = count_reactions('mechanics.in')
+      N_max_elements = count_max_elements('mechanics.in') + 1
+!
+!  Allocate some arrays
+!
+      if (.not. allocated(part)) then
+         allocate(part(N_max_elements,N_surface_reactions))
+      else
+      end if
+!
+      call get_part(part)
+!
 ! Define the aac array which gives the amount of carbon in the
 ! adsorbed species.
 !
@@ -195,12 +201,13 @@ module Particles_adsorbed
         N_adsorbed_species)
     call create_occupancy(adsorbed_species_names,site_occupancy)
 !
+    deallocate(part)
+!
     end subroutine register_indep_ads
 !***********************************************************************
   subroutine register_dep_ads()
 !
       integer :: stat
-      character(10), dimension(40) :: trash   
 !
       allocate(R_j_hat(mpar_loc,N_adsorbed_species-1)   ,STAT=stat)
       if (stat>0) call fatal_error('register_particles_ads',&
@@ -219,21 +226,20 @@ module Particles_adsorbed
 !
   end subroutine register_dep_ads
 !***********************************************************************
-
     subroutine initialize_particles_ads(fp,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  29-aug-14/jonas coded
+!  JONAS: do i need this?
 !
       real, dimension (mpar_loc,mpvar) :: fp
       logical :: lstarting
 !
-      if(lstarting) then
-         call get_initial_values(fp)
-      else
-      endif
+!  
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(lstarting)
 !
     end subroutine initialize_particles_ads
 !***********************************************************************
@@ -261,6 +267,17 @@ module Particles_adsorbed
           if (lroot .and. j==1) print*, 'init_particles_ads,adsorbed: nothing'
         case ('constant')
           if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
+          sum_ads = sum(init_surf_ads_frac(1:N_adsorbed_species))
+!
+!  This ensures that we don't have unphysical values as init
+!
+          if (sum_ads > 1.) then
+             print*, 'sum of init_surf_ads_frac > 1, normalizing...'
+             init_surf_ads_frac(1:N_adsorbed_species) = & 
+                  init_surf_ads_frac(1:N_adsorbed_species) / sum_ads
+          else
+          endif
+!
           do i=1,mpar_loc
              fp(i,iads:iads_end)=fp(i,iads:iads_end)+ &
                   init_surf_ads_frac(1:(iads_end-iads+1))
@@ -312,10 +329,11 @@ subroutine pencil_criteria_par_ads()
       real, dimension (mx,my,my,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (mpar_loc) :: mod_surf_area,R_c_hat
+      real, dimension (:), allocatable :: mod_surf_area,R_c_hat
       type (pencil_case) :: p
-      real, dimension(mpar_loc,3) :: ineargrid
-      integer :: i, n_ads
+      real :: total_carbon_sites
+      integer, dimension(mpar_loc,3) :: ineargrid
+      integer :: i, n_ads,stat
 !
       intent (inout) :: dfp
       intent (in) :: fp
@@ -324,16 +342,34 @@ subroutine pencil_criteria_par_ads()
 !   or read it from memory
 !
 !      call _R_j_hat(R_j_hat)
-      call get_mod_surf_area(mod_surf_area)
-      call get_R_c_hat(R_c_hat)
+!
+!  Allocate some arrays for use in dfp
+!
+      allocate(mod_surf_area(k1_imn(imn):k2_imn(imn)),STAT=stat)
+      if (stat>0) call fatal_error('dpads_dt_pencil',&
+           'Could not allocate memory for mod_surf_area')
+      allocate(R_c_hat(k1_imn(imn):k2_imn(imn)),STAT=stat)
+      if (stat>0) call fatal_error('dpads_dt_pencil',&
+           'Could not allocate memory for R_c_hat')
+!
+!  Fill these arrays with values from particles_chemistry
+!
+      call get_mod_surf_area(mod_surf_area,k1_imn(imn),k2_imn(imn))
+      call get_R_c_hat(R_c_hat,k1_imn(imn),k2_imn(imn))
+      call get_total_carbon_sites(total_carbon_sites)
 !
       n_ads = iads_end - iads +1
 !
-      do i=1,mpar_loc
+      do i=k1_imn(imn),k2_imn(imn)
          dfp(i,iads:iads_end)=R_j_hat(i,1:n_ads)/ &
               total_carbon_sites + mod_surf_area(i)* &
               R_c_hat(i)*fp(i,iads:iads_end)
       enddo
+!
+!  Deallocate arrays
+!
+      deallocate(mod_surf_area)
+      deallocate(R_c_hat)
 !
     endsubroutine dpads_dt_pencil
 !***********************************************************************
@@ -417,13 +453,21 @@ subroutine pencil_criteria_par_ads()
 !***********************************************************************
    subroutine calc_R_j_hat()
 !
-      integer :: j,k
+      integer :: j,k,stat
+      real, dimension(:,:), allocatable :: RR_hat
 !
 !  Calculation of R_j_hat according to eq.50 in 8th US combustion 
 !  meeting, coal and  biomass combustion and gasification.
 !
-!  JONAS: RR_hat still needed, get() from chemistry ?
-!      
+!  JONAS: RR_hat still to be calculated, get() from chemistry 
+!
+      allocate(RR_hat(k1_imn(imn):k2_imn(imn), &
+           N_surface_reactions),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+        'Could not allocate memory for St_array')
+!
+      call get_RR_hat(RR_hat,k1_imn(imn),k2_imn(imn))
+!
       R_j_hat = 0.0
       do k=1,N_surface_reactions
          do j=1,N_adsorbed_species-1
@@ -433,83 +477,26 @@ subroutine pencil_criteria_par_ads()
 !
     end subroutine calc_R_j_hat
 !***********************************************************************
-  subroutine calc_pchem_factors()
+  subroutine get_adsorbed_data(var_entr,var_enth,var_mu,var_mu_prime,var_aac,start,end)
 !
-    call calc_conversion(fp)
-    call calc_St(fp)
-    call calc_mod_surf_area(fp)
-    call calc_R_c_hat()
+!  02-oct-2014/jonas:coded  
 !
-       call calc_R_j_hat()
+!  JONAS: transport routine to particles_surfspec this code is not done
+!  for this
 !
-  end subroutine calc_pchem_factors
-!***********************************************************************
-  subroutine calc_ads_entropy(fp)
+    real, dimension(:,:) :: var_mu, var_mu_prime
+    real, dimension(:,:) :: var_entr,var_enth
+    real, dimension(:) :: var_aac
+    integer :: start,end
 !
-    real, dimension(mpar_loc,mpvar) :: fp
+    var_mu = mu
+    var_mu_prime = mu_prime
+    var_enth = adsorbed_species_enthalpy
+    var_entr = adsorbed_species_entropy
+    var_aac = aac
+    start = iads
+    end = iads_end
 !
-!  Unit: J/kmolK
-!
-    if (imuadsO>0)    then
-       adsorbed_species_entropy(:,imuadsO) = &
-    (164.19e3+(0.0218e3*fp(:,iTp)))*0.72 - (3.3*gas_constant)
-    else
-    end if
-!
-!  this is guessed
-!
-    if (imuadsO2>0)   then
-       adsorbed_species_entropy(:,imuadsO2) =  &
-            2*adsorbed_species_entropy(:,imuadsO)
-    else
-    end if
-    if (imuadsOH>0)   then
-       adsorbed_species_entropy(:,imuadsOH) = &
-         ((0.0319e3*fp(:,iTp)) + 186.88e3) * 0.7 - (3.3*gas_constant)
-    else
-    end if
-    if (imuadsH>0)    then 
-       adsorbed_species_entropy(:,imuadsH) = &
-           (117.49e3+(0.0217e3*fp(:,iTp)))*0.54 - (3.3*gas_constant)
-    else
-    end if
-    if (imuadsCO>0)   then
-       adsorbed_species_entropy(:,imuadsCO) = &
-            surface_species_entropy(:,inuCO)* &
-            0.6*(1+(1.44e-4*fp(:,iTp))) - (3.3*gas_constant)
-    else
-    end if
-!
-!  taken from nist
-!
-    if (imufree>0)    adsorbed_species_entropy(:,imufree) = 0
-  end subroutine calc_ads_entropy
+  end subroutine get_adsorbed_data
 !*********************************************************************
-  subroutine calc_ads_enthalpy(fp)
-!
-    real, dimension(mpar_loc,mpvar) :: fp
-    real, dimension(mpar_loc) :: enth_ads_O, enth_ads_O2
-    real, dimension(mpar_loc) :: enth_ads_OH,enth_ads_H
-    real, dimension(mpar_loc) :: enth_ads_CO
-!
-!  JONAS: values are from nist and solid_phase.f90 of the stanford
-!  code Units: J/kmol
-!
-    
 
-    enth_ads_O = -148.14e6 + (0.0024e6*(fp(:,iTp)-273.15))
-    enth_ads_CO = -199.94e6 - (0.0167e6*(fp(:,iTp)-273.15))
-    enth_ads_H = -19.5e6
-    enth_ads_OH = -148e6
-    enth_ads_O2(:) =2 * enth_ads_O(:)
-!
-    if (imuadsO>0)    adsorbed_species_enthalpy(:,imuadsO) = enth_ads_O
-    if (imuadsO2>0)   adsorbed_species_enthalpy(:,imuadsO2)= enth_ads_O2
-    if (imuadsOH>0)   adsorbed_species_enthalpy(:,imuadsOH)= enth_ads_OH
-    if (imuadsH>0)    adsorbed_species_enthalpy(:,imuadsH) = enth_ads_H
-    if (imuadsCO>0)   adsorbed_species_enthalpy(:,imuadsCO)= enth_ads_CO
-    if (imufree>0)    adsorbed_species_enthalpy(:,imufree) = 0.
-!
-  end subroutine calc_ads_enthalpy
-!*********************************************************************
-  end module Particles_adsorbed

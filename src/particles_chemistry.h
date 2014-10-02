@@ -1,27 +1,44 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
  
-  public :: register_particles_surfchem
-  public :: register_indep_psurfchem
-  public :: register_dep_psurfchem
-  public :: get_St, calc_St
-  public :: get_conversion, calc_conversion
-  public :: get_R_c_hat, calc_R_c_hat
-  public :: get_mod_surf_area, calc_mod_surf_area
+  public :: register_particles_chem
+  public :: get_St
+  public :: get_conversion
+  public :: get_R_c_hat
+  public :: get_mod_surf_area
   public :: get_species_list
   public :: get_pchem_info
+  public :: get_reactants
+  public :: get_part
+  public :: get_total_carbon_sites
+  public :: get_RR_hat
+  public :: get_ac
 
   public :: find_species
-  public :: find_entropy_of_reaction
-  public :: find_enthalpy_of_reaction
+
+  public :: calc_entropy_of_reaction
+  public :: calc_enthalpy_of_reaction
+  public :: calc_RR_hat
+  public :: calc_ndot_mdot_R_j_hat
+  public :: calc_mod_surf_area
+  public :: calc_R_c_hat
+  public :: calc_conversion
+  public :: calc_St
+  public :: calc_ads_entropy
+  public :: calc_ads_enthalpy
   public :: calc_surf_enthalpy
   public :: calc_surf_entropy
+  public :: create_stoc
+  public :: create_dependency
+  public :: create_dngas
+  public :: create_occupancy
+  public :: create_ad_sol_lists
+  
+  public :: sort_compounds
+
+  public :: count_reactions, count_max_elements
+
   public :: mol_mass_carbon
 
-  public :: read_particles_surf_init_pars
-  public :: write_particles_surf_init_pars
-  public :: read_particles_surf_run_pars
-  public :: write_particles_surf_run_pars
-  public :: rprint_particles_surf
-  public :: init_particles_surf
+  
 

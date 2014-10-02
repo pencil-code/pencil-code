@@ -11,6 +11,7 @@ module Particles_main
   use Particles_adaptation
   use Particles_adsorbed
   use Particles_chemistry
+  use Particles_surfspec
   use Particles_cdata
   use Particles_collisions
   use Particles_coagulation
@@ -62,6 +63,8 @@ module Particles_main
       call register_particles_TT           ()
       call register_particles_mass         ()
       call register_particles_ads          ()
+      call register_particles_chem         ()
+      call register_particles_surfspec     ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
 !
@@ -750,9 +753,12 @@ module Particles_main
 !
      call interpolate_quantities(f,fp,p,ineargrid)
 !
+!  If reactive particles are enabled, needed quantities are calculated
 !
-!  This will be expanded to calculate values we need for reactive particles
-! JONAS     if(lparticles_chemistry) call calc_for_pchemistry()
+     if (lparticles_chemistry .and. lparticles_adsorbed) then
+        call calc_pchem_factors(fp)
+     else
+     endif
 !
 !  Dynamical equations.
 !

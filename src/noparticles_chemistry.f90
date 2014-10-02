@@ -30,39 +30,22 @@ module Particles_chemistry
 !
   contains
 !***********************************************************************
-  subroutine register_particles_surfchem()
-!
-!  09.09.14/jonas : coded
-!
-  end subroutine register_particles_surfchem
-!***********************************************************************
-  subroutine register_dep_psurfchem()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine register_dep_psurfchem
-!***********************************************************************
-  subroutine register_indep_psurfchem()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine register_indep_psurfchem
-!***********************************************************************
     subroutine get_pchem_info()
 !
 !  09.09.14/jonas : coded
 !
     end subroutine get_pchem_info
 !***********************************************************************
-    subroutine get_R_c_hat(var,fp)
+    subroutine get_R_c_hat(var,start,end)
 !
 !  09.09.14/jonas : coded
 !
-      real, dimension(mpar_loc), intent(out) :: var
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(:), intent(out) :: var
+      integer :: start,end
 !
       call keep_compiler_quiet(var)
-      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(start)
+      call keep_compiler_quiet(end)
 !
     end subroutine get_R_c_hat
 !***********************************************************************
@@ -91,15 +74,16 @@ module Particles_chemistry
 !
     end subroutine get_mod_surf_area
 !***********************************************************************
-    subroutine get_St(var,fp)
+    subroutine get_St(var,start,end)
 !
 !  09.09.14/jonas : coded
 !
-      real, dimension(mpar_loc),intent(out) :: var
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(:),intent(out) :: var
+      integer :: start, end
 !
       call keep_compiler_quiet(var)
-      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(start)
+      call keep_compiler_quiet(end)
 !
    end subroutine get_St
 !**************************************************
@@ -113,11 +97,15 @@ module Particles_chemistry
 !***********************************************************************
 integer function find_species()
 !
-   implicit none
-!
     find_species=0
 !
   end function find_species
+!*********************************************************************
+  integer function count_max_elements()
+!
+    count_max_elements=0
+!
+  end function count_max_elements
 !**********************************************************************
   subroutine get_species_list(string,list)
 !
@@ -141,17 +129,6 @@ integer function find_species()
 !
   end subroutine calc_St
 !***********************************************************************
-  subroutine calc_surf_enthalpy()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine calc_surf_enthalpy
-!***********************************************************************
-  subroutine calc_surf_entropy()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine calc_surf_entropy
 !***********************************************************************
   subroutine calc_mod_surf_area()
 !
@@ -159,59 +136,17 @@ integer function find_species()
 !
   end subroutine calc_mod_surf_area
 !***********************************************************************
-  subroutine find_enthalpy_of_reaction()
+  subroutine calc_enthalpy_of_reaction()
 !
 !  19.09.2014/Jonas:coded
 !
-  end subroutine find_enthalpy_of_reaction
+  end subroutine calc_enthalpy_of_reaction
 !***********************************************************************
-  subroutine find_entropy_of_reaction()
+  subroutine calc_entropy_of_reaction()
 !
 !  19.09.2014/Jonas:coded
 !
-  end subroutine find_entropy_of_reaction
-!***********************************************************************
-  subroutine init_particles_surf(f,fp)
-
-    real, dimension(mx,my,mz,mpvar) :: f
-    real, dimension(mpar_loc,mpvar) :: fp
-!
-!  19.09.2014/Jonas:coded
-!
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(fp)
-!
-  end subroutine init_particles_surf
-!***********************************************************************
-  subroutine read_particles_surf_run_pars()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine read_particles_surf_run_pars
-!***********************************************************************
-  subroutine read_particles_surf_init_pars()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine read_particles_surf_init_pars
-!***********************************************************************
-  subroutine rprint_particles_surf()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine rPrint_particles_surf
-!***********************************************************************
-  subroutine write_particles_surf_init_pars()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine write_particles_surf_init_pars
-!***********************************************************************
-  subroutine write_particles_surf_run_pars()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine write_particles_surf_run_pars
+  end subroutine calc_entropy_of_reaction
 !***********************************************************************
   subroutine calc_conversion()
 !
@@ -224,5 +159,121 @@ integer function find_species()
 !  19.09.2014/Jonas:coded
 !
   end subroutine calc_R_c_hat
+!***********************************************************************
+ subroutine create_dependency()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine create_dependency
+!***********************************************************************
+ subroutine create_ad_sol_lists()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine create_ad_sol_lists
+!***********************************************************************
+ subroutine create_occupancy()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine create_occupancy
+!***********************************************************************
+ subroutine create_dngas()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine create_dngas
+!***********************************************************************
+ subroutine create_stoc()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine create_stoc
+!***********************************************************************
+ subroutine get_ac()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine get_ac
+!***********************************************************************
+ subroutine get_part()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine get_part
+!***********************************************************************
+ subroutine get_reactants()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine get_reactants
+!***********************************************************************
+ subroutine get_RR_hat()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine get_RR_hat
+!***********************************************************************
+ subroutine get_total_carbon_sites()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine get_total_carbon_sites
+!***********************************************************************
+ subroutine sort_compounds()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine sort_compounds
+!***********************************************************************
+ subroutine register_particles_chem()
+!
+! 30.09.2014/Jonas:coded
+!
+  end subroutine register_particles_chem
+!***********************************************************************
+ subroutine calc_RR_hat()
+!
+! 30.09.2014/Jonas:coded
+!
+ end subroutine calc_RR_hat
+!***********************************************************************
+ subroutine calc_ndot_mdot_R_j_hat()
+!
+! 30.09.2014/Jonas:coded
+!
+ end subroutine calc_ndot_mdot_R_j_hat
+!***********************************************************************
+  subroutine calc_surf_enthalpy()
+!
+!  30.09.2014/jonas:coded
+!
+  end subroutine calc_surf_enthalpy
+!**************************************************************
+  subroutine calc_surf_entropy()
+!
+!  30.09.2014/jonas:coded
+!
+  end subroutine calc_surf_entropy
+!**************************************************************
+  subroutine calc_ads_enthalpy(fp)
+!
+!  30.09.2014/jonas:coded
+!
+    real, dimension(:,:) :: fp
+!
+    call keep_compiler_quiet(fp)
+!
+  end subroutine calc_ads_enthalpy
+!***********************************************************************
+  subroutine calc_ads_entropy(fp)
+!
+!  30.09.2014/jonas:coded
+!
+    real, dimension(:,:) :: fp
+!
+    call keep_compiler_quiet(fp)
+!
+  end subroutine calc_ads_entropy
 !***********************************************************************
   end module Particles_chemistry
