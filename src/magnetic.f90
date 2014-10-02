@@ -185,6 +185,7 @@ module Magnetic
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
+  logical :: lskip_projection=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -194,7 +195,8 @@ module Magnetic
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff, kpeak, &
-      lcheck_positive_va2, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      lcheck_positive_va2, lskip_projection, &
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -1413,7 +1415,7 @@ module Magnetic
         case ('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
         case ('power_randomphase_hel')
-          call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa,cutoff_aa,ncutoff,kpeak,f,iax,iaz,relhel_aa)
+          call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa,cutoff_aa,ncutoff,kpeak,f,iax,iaz,relhel_aa,lskip_projection)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)

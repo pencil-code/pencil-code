@@ -4478,7 +4478,8 @@ module Initcond
 !
     endsubroutine power_randomphase
 !***********************************************************************
-    subroutine power_randomphase_hel(ampl,initpower,initpower2,cutoff,ncutoff,kpeak,f,i1,i2,relhel,lscale_tobox)
+    subroutine power_randomphase_hel(ampl,initpower,initpower2, &
+      cutoff,ncutoff,kpeak,f,i1,i2,relhel,lskip_projection,lscale_tobox)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4494,7 +4495,7 @@ module Initcond
       use Fourier, only: fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
-      logical :: lscale_tobox1
+      logical :: lscale_tobox1, lskip_projection
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
@@ -4607,6 +4608,10 @@ module Initcond
 !  Remember that for the return transform, data have to be
 !  arranged in the order (kz,kx,ky).
 !
+        if (lskip_projection) then
+          v_re=u_re
+          v_im=u_im
+        else
         r=1./k2
         do iky=1,nz
           do ikx=1,ny
@@ -4635,6 +4640,7 @@ module Initcond
             enddo
           enddo
         enddo
+        endif
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ik_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
