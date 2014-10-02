@@ -6,6 +6,7 @@
 ;;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 ;;
 ;;  27-nov-02/tony: coded
+;;   2-oct-14/MR: keyword parameter down added for use with downsampled data
 ;;
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
     nx=nx, ny=ny, nz=nz, $
@@ -17,7 +18,7 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
     ipx=ipx,ipy=ipy,ipz=ipz, $
     l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
     object=object, datadir=datadir, proc=proc, reduced=reduced, $
-    print=print, quiet=quiet, help=help
+    print=print, quiet=quiet, help=help, down=down
 COMPILE_OPT IDL2, HIDDEN
 ;
   if ( keyword_set(HELP) ) then begin
@@ -106,6 +107,13 @@ nprocz=0L
 ;
 get_lun, file
 ;
+; Default filename
+;
+if (not keyword_set(down)) then $
+  dimfile='dim.dat' $
+else $
+  dimfile='dim_down.dat'
+;
 ;  Build the full path and filename.
 ;
 if (n_elements(proc) eq 1) then begin
@@ -114,13 +122,13 @@ if (n_elements(proc) eq 1) then begin
 ;
   if (keyword_set(reduced)) then $
       message, "pc_read_dim: /reduced and 'proc' cannot be set both."
-  filename=datadir+'/proc'+str(proc)+'/dim.dat'
+  filename=datadir+'/proc'+str(proc)+'/'+dimfile
 endif else begin
 ;
 ;  Read global dimensions.
 ;
-  filename=datadir+'/dim.dat'
-  if (keyword_set(reduced)) then filename=datadir+'/reduced/dim.dat'
+  filename=datadir+'/'+dimfile
+  if (keyword_set(reduced)) then filename=datadir+'/reduced/'+dimfile
 endelse
 ;
 ;  Check for existence and read the data.

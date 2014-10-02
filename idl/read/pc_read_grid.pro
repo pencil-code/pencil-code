@@ -8,10 +8,11 @@
 ;;  $Revision: 1.17 $
 ;;
 ;;  27-nov-02/tony: coded
+;;   2-oct-14/MR: keyword parameter down added for use with downsampled data
 ;;
 pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $
-    swap_endian=swap_endian, allprocs=allprocs, reduced=reduced
+    swap_endian=swap_endian, allprocs=allprocs, reduced=reduced, down=down
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -50,12 +51,19 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
+; Default filename
+;
+if (not keyword_set(down)) then $
+  gridfile='grid.dat' $
+else $
+  gridfile='grid_down.dat'
+;
 ; Default allprocs.
 ;
 default, allprocs, -1
 if (allprocs eq -1) then begin
   allprocs=0
-  if (file_test(datadir+'/allprocs/grid.dat') and (n_elements(proc) eq 0)) then allprocs=1
+  if (file_test(datadir+'/allprocs/'+gridfile) and (n_elements(proc) eq 0)) then allprocs=1
 end
 ;
 ; Check if allprocs is consistent with proc.
@@ -71,9 +79,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; Get necessary dimensions.
 ;
 if (n_elements(dim) eq 0) then $
-    pc_read_dim,object=dim,datadir=datadir,proc=proc,reduced=reduced,QUIET=QUIET
+    pc_read_dim,object=dim,datadir=datadir,proc=proc,reduced=reduced,QUIET=QUIET, down=down
 if (n_elements(param) eq 0) then $
-    pc_read_param,object=param,datadir=datadir,QUIET=QUIET
+    pc_read_param,object=param,datadir=datadir,QUIET=QUIET, down=down
 
 if ((allprocs gt 0) or keyword_set (reduced)) then begin
   ncpus=1
@@ -129,15 +137,15 @@ get_lun, file
 for i=0,ncpus-1 do begin
   ; Build the full path and filename
   if (keyword_set (reduced)) then begin
-    filename=datadir+'/reduced/grid.dat'
+    filename=datadir+'/reduced/'+gridfile
   end else if (allprocs gt 0) then begin
-    filename=datadir+'/allprocs/grid.dat'
+    filename=datadir+'/allprocs/'+gridfile
   endif else if (n_elements(proc) ne 0) then begin
-    filename=datadir+'/proc'+str(proc)+'/grid.dat'
+    filename=datadir+'/proc'+str(proc)+'/'+gridfile
   endif else begin
-    filename=datadir+'/proc'+str(i)+'/grid.dat'
+    filename=datadir+'/proc'+str(i)+'/'+gridfile
     ; Read processor box dimensions
-    pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET
+    pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET, down=down
     xloc=fltarr(procdim.mx)*one
     yloc=fltarr(procdim.my)*one
     zloc=fltarr(procdim.mz)*one
