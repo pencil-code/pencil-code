@@ -81,7 +81,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 if (n_elements(dim) eq 0) then $
     pc_read_dim,object=dim,datadir=datadir,proc=proc,reduced=reduced,QUIET=QUIET, down=down
 if (n_elements(param) eq 0) then $
-    pc_read_param,object=param,datadir=datadir,QUIET=QUIET, down=down
+    pc_read_param,object=param,datadir=datadir,QUIET=QUIET
 
 if ((allprocs gt 0) or keyword_set (reduced)) then begin
   ncpus=1
