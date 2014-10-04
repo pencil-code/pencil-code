@@ -1415,7 +1415,8 @@ module Magnetic
         case ('power_randomphase')
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
         case ('power_randomphase_hel')
-          call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa,cutoff_aa,ncutoff,kpeak,f,iax,iaz,relhel_aa,lskip_projection)
+          call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
+            cutoff_aa,ncutoff,kpeak,f,iax,iaz,relhel_aa,lskip_projection)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)

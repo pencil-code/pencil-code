@@ -37,6 +37,13 @@ $Id$
 Brief status description about some modules
 ===========================================
 
+The bfield module
+-----------------
+
+This module has been developed by Chao-Chin Yang <ccyang@astro.lu.se>
+between June 2013 and July 2014. However, for all usual applications we
+continue to use magnetic.f90, which uses the magnetic vector potential.
+
 The EOS module
 --------------
 

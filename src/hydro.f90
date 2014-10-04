@@ -1467,7 +1467,8 @@ module Hydro
 ! initial spectrum k^power
 !
         case ('power_randomphase_hel')
-          call power_randomphase_hel(ampluu(j),initpower,initpower2,cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,lskip_projection)
+          call power_randomphase_hel(ampluu(j),initpower,initpower2,cutoff, &
+            ncutoff,kpeak,f,iux,iuz,relhel_uu,lskip_projection)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

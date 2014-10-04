@@ -596,7 +596,7 @@ module Magnetic
 !
       real, dimension(mx) :: eta_penc
 !
-!  dB/dt = curl(E).
+!  dB/dt = -curl(E).
 !
       df(l1:l2,m,n,ibx:ibz) =  df(l1:l2,m,n,ibx:ibz) - p%curle
 !

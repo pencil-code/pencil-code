@@ -48,7 +48,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB
-  real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log
+  real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
@@ -90,7 +90,8 @@ module Dustdensity
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
-      adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
+      adpeak, amplnd, amplnd_rel, phase_nd, kx_nd, ky_nd, kz_nd, &
+      widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
@@ -273,6 +274,7 @@ module Dustdensity
       endselect
 !
 !  Special coagulation equation test cases require initialization of kernel.
+!  These are all special cases and not relevant to production runs.
 !
       do j=1,ninit
         select case (initnd(j))
@@ -528,6 +530,14 @@ module Dustdensity
           f(:,:,:,ind) = 0.
           do k=1,2
             f(:,:,:,ind(k)) = nd0/2
+          enddo
+        case ('replicate_bins')
+          if (headtt) then
+            print*, 'init_nd: replicate particles from first to other bins.'
+            print*, 'init_nd: amplnd_rel=',amplnd_rel
+          endif
+          do k=2,ndustspec
+            f(:,:,:,ind(k))=f(:,:,:,ind(k))+amplnd_rel(k)*f(:,:,:,ind(1))
           enddo
         case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
