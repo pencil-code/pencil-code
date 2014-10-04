@@ -21,6 +21,7 @@
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;       proc: Specifies processor to get the data from. Default: ALL [integer]
 ;    varfile: Name of the var file. Default: 'var.dat'.              [string]
+;             Also for downsampled snapshots (VARd<n>)
 ;       ivar: Number of the varfile, to be appended optionally.      [integer]
 ;   allprocs: Load data from the allprocs directory.                 [integer]
 ;   /reduced: Load reduced collective varfiles.
@@ -154,10 +155,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     varfile=varfile_
   endelse
 ;
+; Downsampled snapshot?
+;
+  ldownsampled=strmid(varfile,0,4) eq 'VARd'
+;
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
@@ -171,7 +176,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if (n_elements(grid) eq 0) then $
       pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
       proc=proc, allprocs=allprocs, reduced=reduced, $
-      swap_endian=swap_endian, /quiet
+      swap_endian=swap_endian, /quiet, down=ldownsampled
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
@@ -187,7 +192,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     procdim=dim
   endif else begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet, down=ldownsampled
   endelse
 ;
 ; ... and check pc_precision is set for all Pencil Code tools.
@@ -350,11 +355,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     if (execute(varcontent[iv].idlvar+'='+varcontent[iv].idlinit,0) ne 1) then $
         message, 'Error initialising ' + varcontent[iv].variable $
         +' - '+ varcontent[iv].idlvar, /info
-    if (nprocs gt 1) then begin
-      if (execute(varcontent[iv].idlvarloc+'='+varcontent[iv].idlinitloc,0) ne 1) then $
-          message, 'Error initialising ' + varcontent[iv].variable $
-          +' - '+ varcontent[iv].idlvarloc, /info
-    endif
 ;
 ; For vector quantities skip the required number of elements of the f array.
 ;
@@ -393,7 +393,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
             print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
             strtrim(str(nprocs)), ' (', $
             strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
+        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled
       endelse
     endelse
 ;
@@ -424,7 +424,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         i0xloc=0L
         i1xloc=procdim.mx-1L
       endif else begin
-        i0x=procdim.ipx*procdim.nx+procdim.nghostx
+        i0x=i1x-procdim.nghostx+1L
         i1x=i0x+procdim.mx-1L-procdim.nghostx
         i0xloc=procdim.nghostx
         i1xloc=procdim.mx-1L
@@ -435,24 +435,25 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         i1y=i0y+procdim.my-1L
         i0yloc=0L
         i1yloc=procdim.my-1L
-      endif else begin
-        i0y=procdim.ipy*procdim.ny+procdim.nghosty
+      endif else if procdim.ipy ne ipy_prec then begin
+        i0y=i1y-procdim.nghosty+1L
         i1y=i0y+procdim.my-1L-procdim.nghosty
         i0yloc=procdim.nghosty
         i1yloc=procdim.my-1L
-      endelse
+      endif
 ;
       if (procdim.ipz eq 0L) then begin
         i0z=0L
         i1z=i0z+procdim.mz-1L
         i0zloc=0L
         i1zloc=procdim.mz-1L
-      endif else begin
-        i0z=procdim.ipz*procdim.nz+procdim.nghostz
+      endif else if procdim.ipz ne ipz_prec then begin
+        i0z=i1z-procdim.nghostz+1L
         i1z=i0z+procdim.mz-1L-procdim.nghostz
         i0zloc=procdim.nghostz
         i1zloc=procdim.mz-1L
-      endelse
+      endif
+      ipy_prec=procdim.ipy & ipz_prec=procdim.ipz
 ;
 ; Skip this processor if it makes no contribution to the requested
 ; subset of the domain.
@@ -468,6 +469,15 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;       if (n_elements(nzrange)==2) then begin
 ;         if ((i0z gt nzrange[1]+procdim.nghostz) or (i1z lt nzrange[0]+procdim.nghostz)) then continue
 ;       endif
+
+      mxloc=procdim.mx & myloc=procdim.my & mzloc=procdim.mz
+
+      for iv=0L,totalvars-1L do begin
+        if (execute(varcontent[iv].idlvarloc+'='+varcontent[iv].idlinitloc,0) ne 1) then $
+            message, 'Error initialising ' + varcontent[iv].variable $
+                      +' - '+ varcontent[iv].idlvarloc, /info
+        iv=iv+varcontent[iv].skip
+      endfor
     endif
 ;
 ; Open a varfile and read some data!
