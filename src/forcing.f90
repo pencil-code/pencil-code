@@ -611,10 +611,16 @@ module Forcing
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
           sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
-        elseif (iforcing_cont(i)=='RobertsFlow' .or. iforcing_cont(i)=='RobertsFlow_exact' ) then
+        elseif (iforcing_cont(i)=='RobertsFlow' .or. &
+            iforcing_cont(i)=='RobertsFlowMask' .or. &
+            iforcing_cont(i)=='RobertsFlow_exact' ) then
           if (lroot) print*,'forcing_cont: Roberts Flow'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          if (iforcing_cont(i)=='RobertsFlowMask') then
+            profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)
+            profy_ampl=exp(-.5*y**2/radius_ff**2)
+          endif
         elseif (iforcing_cont(i)=='RobertsFlow-zdep') then
           if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
@@ -4643,6 +4649,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)
           force(:,2)=+fact*sinx(l1:l2,i)*cosy(m,i)
           force(:,3)=+relhel*fact*cosx(l1:l2,i)*cosy(m,i)*sqrt2
+        case('RobertsFlowMask')
+          tmp=ampl_ff(i)*profx_ampl*profy_ampl(m)
+          force(:,1)=-tmp*cosx(l1:l2,i)*siny(m,i)
+          force(:,2)=+tmp*sinx(l1:l2,i)*cosy(m,i)
+          force(:,3)=+relhel*tmp*cosx(l1:l2,i)*cosy(m,i)*sqrt2
         case('RobertsFlow2d')
           fact=ampl_ff(i)
           i2d1=1;i2d2=2;i2d3=3
