@@ -821,8 +821,8 @@ module Shear
           case ('spline') dispatch
             call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
           case ('poly') dispatch
-            call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, &
-                                          posdef=lposdef_advection.and.posdef, istatus=istat, message=message)
+            call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
+                                          istatus=istat, message=message)
             error = istat /= 0
           case default dispatch
             call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
