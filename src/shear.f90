@@ -504,7 +504,7 @@ module Shear
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
             notlast: if (.not. llast) then
               call isendrcv_bdry_x(df, ivar, ivar)
-              call shift_ghostzones_nonfft(df, ivar, ivar)
+              call shift_ghostzones_nonfft(df, ivar, ivar, ldf=.true.)
               call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
             endif notlast
           case default method
@@ -739,7 +739,7 @@ module Shear
 !
     endsubroutine fourier_shift_ghostzones
 !***********************************************************************
-    subroutine shift_ghostzones_nonfft(f, ivar1, ivar2)
+    subroutine shift_ghostzones_nonfft(f, ivar1, ivar2, ldf)
 !
 !  Shearing boundary conditions by spline interpolation.
 !
@@ -750,8 +750,17 @@ module Shear
 !
       real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
+      logical, intent(in), optional :: ldf
 !
+      logical :: posdef
       integer :: iv
+!
+!  Check if the field is df.
+!
+      posdef = lposdef_advection
+      if (present(ldf)) then
+        posdef = posdef .and. .not. ldf
+      endif
 !
 !  Periodically assign the ghost cells in x direction.
 !
@@ -761,8 +770,10 @@ module Shear
 !
       ydir: if (nygrid > 1) then
         comp: do iv = ivar1, ivar2
-          if (lfirst_proc_x) call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,iv), deltay, shear_method, lposdef(iv))
-          if (llast_proc_x) call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,iv), -deltay, shear_method, lposdef(iv))
+          if (lfirst_proc_x) call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,iv), deltay, &
+                                                                  shear_method, posdef .and. lposdef(iv))
+          if (llast_proc_x) call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,iv), -deltay, &
+                                                                 shear_method, posdef .and. lposdef(iv))
         enddo comp
       endif ydir
 !
