@@ -108,7 +108,7 @@ function pc_generate_parameter_abbreviation, param, label=label
 		unit_length = pc_get_parameter ('unit_length', label=label)
 		unit_velocity = pc_get_parameter ('unit_velocity', label=label)
 		eta_total = pc_get_parameter ('eta_total', label=label)
-		return, eta_total * (unit.length*unit.velocity) ; Magnetic resistivity [SI: m^2/s]
+		return, eta_total * (unit_length*unit_velocity) ; Magnetic resistivity [SI: m^2/s]
 	end
 
 	return, !Values.D_NaN
