@@ -51,7 +51,7 @@ function pc_generate_parameter_abbreviation, param, label=label
 	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
-	if (any (strcmp (param, ['mu_0', 'mu0_SI','mu0_4_pi'], /fold_case))) then begin
+	if (any (strcmp (param, ['mu0_SI', 'mu0_4_pi'], /fold_case))) then begin
 		mu0 = pc_get_parameter ('mu0', label=label)
 		unit_magnetic = pc_get_parameter ('unit_magnetic', label=label)
 		unit_density = pc_get_parameter ('unit_density', label=label)
@@ -64,9 +64,14 @@ function pc_generate_parameter_abbreviation, param, label=label
 		return, 1 / (mu0_SI * c^2) ; Dielectrical vacuum permittivity [SI: A*s/(V*m)]
 	end
 	if (strcmp (param, 'sigma_total', /fold_case)) then begin
-		mu0_SI = pc_get_parameter ('mu0_SI', label=label)
+		mu0 = pc_get_parameter ('mu0', label=label)
 		eta_total = pc_get_parameter ('eta_total', label=label)
-		return, 1 / (mu0_SI * eta_total) ; Electric field [SI: V/m]
+		return, 1 / (mu0 * eta_total) ; Electric conductivity
+	end
+	if (strcmp (param, 'sigma_SI', /fold_case)) then begin
+		mu0_SI = pc_get_parameter ('mu0_SI', label=label)
+		eta_SI = pc_get_parameter ('eta_SI', label=label)
+		return, 1 / (mu0_SI * eta_SI) ; Electric conductivity [SI: 1/(Ohm*m)]
 	end
 	if (strcmp (param, 'eta_total', /fold_case)) then begin
 		resistivities = pc_get_parameter ('iresistivity', label=label)
@@ -98,6 +103,12 @@ function pc_generate_parameter_abbreviation, param, label=label
 		end
 		if (eta_found le 0) then eta_total = !Values.D_NaN
 		return, eta_total
+	end
+	if (strcmp (param, 'eta_SI', /fold_case)) then begin
+		unit_length = pc_get_parameter ('unit_length', label=label)
+		unit_velocity = pc_get_parameter ('unit_velocity', label=label)
+		eta_total = pc_get_parameter ('eta_total', label=label)
+		return, eta_total * (unit.length*unit.velocity) ; Magnetic resistivity [SI: m^2/s]
 	end
 
 	return, !Values.D_NaN
