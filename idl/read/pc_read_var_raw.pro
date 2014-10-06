@@ -67,7 +67,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings.
 ;
-  default, allprocs, 0
   default, swap_endian, 0
   default, reduced, 0
   if (keyword_set (reduced)) then allprocs = 1
@@ -79,6 +78,14 @@ COMPILE_OPT IDL2,HIDDEN
 ; Name and path of varfile to read.
 ;
   if (not keyword_set (varfile)) then varfile = 'var.dat'
+;
+; Default to allprocs, if available.
+;
+  default, allprocs, -1
+  if (allprocs eq -1) then begin
+    allprocs = 0
+    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+  end
 ;
 ; Check if reduced keyword is set.
 ;
