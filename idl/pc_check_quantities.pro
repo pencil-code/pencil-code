@@ -263,7 +263,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'B', $
 		B_y:'B', $
 		B_z:'B', $
-		E:'A', $
+		E:['u','A'], $
 		E_abs:'E', $
 		E_x:'E', $
 		E_y:'E', $
