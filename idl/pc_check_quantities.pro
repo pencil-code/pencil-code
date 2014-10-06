@@ -99,6 +99,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_Temp_abs:'grad temperature', $
 		S:'entropy', $
 		j_abs:'current density', $
+		j_x:'current density x', $
+		j_y:'current density y', $
+		j_z:'current density z', $
 		F_Lorentz_x:'Lorentz force x', $
 		F_Lorentz_y:'Lorentz force y', $
 		F_Lorentz_z:'Lorentz force z', $
@@ -117,6 +120,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
+		E_abs:'electric field strength', $
+		E_x:'electric field x', $
+		E_y:'electric field y', $
+		E_z:'electric field z', $
 		beta:'plasma beta', $
 		rho_mag:'magnetic energy density', $
 		Poynting_j_x:'current Poynting flux x', $
@@ -149,8 +156,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
 		Coulomb_logarithm:'Coulomb logarithm', $
 		collision_frequency_e:'electron collision frequency', $
-		conductivity:'electric conductivity', $
-		mag_diffusivity:'magnetic diffusivity', $
+		WKB_conductivity:'WKB electric conductivity', $
+		WKB_mag_diffusivity:'WKB magnetic diffusivity', $
 		rho_c:'minimum density (Alfven < c)', $
 		rho_c_ratio:'density/min. Alfven density', $
 		rho:'density', $
@@ -189,6 +196,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
+		E:'electric field', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure' $
 	}
@@ -233,6 +241,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B:'A', $
 		j:'A', $
 		j_abs:'j', $
+		j_x:'j', $
+		j_y:'j', $
+		j_z:'j', $
 		F_Lorentz:['j', 'B'], $
 		F_Lorentz_x:'F_Lorentz', $
 		F_Lorentz_y:'F_Lorentz', $
@@ -252,6 +263,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'B', $
 		B_y:'B', $
 		B_z:'B', $
+		E:'A', $
+		E_abs:'E', $
+		E_x:'E', $
+		E_y:'E', $
+		E_z:'E', $
 		beta:['P_therm', 'B_2'], $
 		rho_mag:'B_2', $
 		Poynting:['u', 'B', 'j'], $
@@ -290,8 +306,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
 		Coulomb_logarithm:'Temp', $
 		collision_frequency_e:['B'], $
-		conductivity:['n_rho', 'collision_frequency_e'], $
-		mag_diffusivity:'conductivity', $
+		WKB_conductivity:['n_rho', 'collision_frequency_e'], $
+		WKB_mag_diffusivity:'WKB_conductivity', $
 		rho_c:['rho', 'B'], $
 		rho_c_ratio:['rho', 'rho_c'], $
 		rho:{ rho:['lnrho', 'rho'] }, $

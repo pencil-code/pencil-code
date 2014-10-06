@@ -315,17 +315,17 @@ function pc_compute_quantity, vars, index, quantity
 		q_electron = pc_get_parameter ('q_electron', label=quantity)
 		return, (q_electron / (m_electron * c)) * pc_compute_quantity (vars, index, 'B_abs')
 	end
-	if (strcmp (quantity, 'conductivity', /fold_case)) then begin
+	if (strcmp (quantity, 'WKB_conductivity', /fold_case)) then begin
 		; Electrical conductivity in a two-component WKB plasma [A / (V*m)]
 		c = pc_get_parameter ('c', label=quantity)
 		q_electron = pc_get_parameter ('q_electron', label=quantity)
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
 		return, (q_electron * c) * n_rho / pc_compute_quantity (vars, index, 'B_abs')
 	end
-	if (strcmp (quantity, 'mag_diffusivity', /fold_case)) then begin
+	if (strcmp (quantity, 'WKB_mag_diffusivity', /fold_case)) then begin
 		; Magnetic diffusivity [m^2 / s]
 		mu0_SI_inv = 1 / pc_get_parameter ('mu0_SI', label=quantity)
-		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'conductivity')
+		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'WKB_conductivity')
 	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin
@@ -478,7 +478,7 @@ function pc_compute_quantity, vars, index, quantity
 		return, bb
 	end
 	if (strcmp (quantity, 'B_abs', /fold_case)) then begin
-		; Magnetic field strengh
+		; Magnetic field strengh [T]
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		return, sqrt (B_2)
 	end
@@ -489,19 +489,52 @@ function pc_compute_quantity, vars, index, quantity
 		return, B_2
 	end
 	if (strcmp (quantity, 'B_x', /fold_case)) then begin
-		; Magnetic field x-component
+		; Magnetic field x-component [T]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, bb[*,*,*,0]
 	end
 	if (strcmp (quantity, 'B_y', /fold_case)) then begin
-		; Magnetic field y-component
+		; Magnetic field y-component [T]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, bb[*,*,*,1]
 	end
 	if (strcmp (quantity, 'B_z', /fold_case)) then begin
-		; Magnetic field z-component
+		; Magnetic field z-component [T]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, bb[*,*,*,2]
+	end
+	if (strcmp (quantity, 'E', /fold_case)) then begin
+		; Electric field [V/m]
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		c = 1.0 / pc_get_parameter ('c', label=quantity)
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		E = -(1.0/c) * cross (uu, bb)
+		for pa = 0, 2 do E[*,*,*,pa] += sigma_SI_inv * jj[*,*,*,pa]
+		return, E
+	end
+	if (strcmp (quantity, 'E_abs', /fold_case)) then begin
+		; Electric field strengh [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')))
+	end
+	if (strcmp (quantity, 'E_x', /fold_case)) then begin
+		; Electric field x-component [V/m]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		return, sigma_SI_inv * jj[*,*,*,0]
+	end
+	if (strcmp (quantity, 'E_y', /fold_case)) then begin
+		; Electric field y-component [V/m]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		return, sigma_SI_inv * jj[*,*,*,1]
+	end
+	if (strcmp (quantity, 'E_z', /fold_case)) then begin
+		; Electric field z-component [V/m]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		return, sigma_SI_inv * jj[*,*,*,2]
 	end
 	if (strcmp (quantity, 'beta', /fold_case)) then begin
 		; Plasma beta
@@ -541,6 +574,21 @@ function pc_compute_quantity, vars, index, quantity
 		; Absolute value of the current density [A / m^2]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, sqrt (dot2 (jj))
+	end
+	if (strcmp (quantity, 'j_x', /fold_case)) then begin
+		; Current density x-component [A / m^2]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, jj[*,*,*,0]
+	end
+	if (strcmp (quantity, 'j_y', /fold_case)) then begin
+		; Current density <-component [A / m^2]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, jj[*,*,*,1]
+	end
+	if (strcmp (quantity, 'j_z', /fold_case)) then begin
+		; Current density z-component [A / m^2]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, jj[*,*,*,2]
 	end
 	if (strcmp (quantity, 'eta_j', /fold_case)) then begin
 		; Current density times eta [A / s]
@@ -598,10 +646,10 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3 * (m/s)^3 / m]
-		mu0 = pc_get_parameter ('mu0', label=quantity)
-		eta = pc_get_parameter ('eta_total', label=quantity)
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		eta_SI = pc_get_parameter ('eta_SI', label=quantity)
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, eta * mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
+		return, eta_SI * mu0_SI * dot2 (jj)
 	end
 	if (strcmp (quantity, 'HR_ohm_particle', /fold_case)) then begin
 		; Ohming heating rate per particle [W]
