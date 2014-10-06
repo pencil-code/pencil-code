@@ -63,6 +63,11 @@ function pc_generate_parameter_abbreviation, param, label=label
 		c = pc_get_parameter ('c', label=label)
 		return, 1 / (mu0_SI * c^2) ; Dielectrical vacuum permittivity [SI: A*s/(V*m)]
 	end
+	if (strcmp (param, 'sigma_total', /fold_case)) then begin
+		mu0_SI = pc_get_parameter ('mu0_SI', label=label)
+		eta_total = pc_get_parameter ('eta_total', label=label)
+		return, 1 / (mu0_SI * eta_total) ; Electric field [SI: V/m]
+	end
 	if (strcmp (param, 'eta_total', /fold_case)) then begin
 		resistivities = pc_get_parameter ('iresistivity', label=label)
 		eta = pc_get_parameter ('eta', label=label)
