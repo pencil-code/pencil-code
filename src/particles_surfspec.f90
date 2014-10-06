@@ -7,9 +7,9 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 0
+! MPVAR CONTRIBUTION 8
 ! MAUX CONTRIBUTION 0
-! NADSSPEC CONTRIBUTION 
+! NADSSPEC CONTRIBUTION 0
 !
 ! CPARAM logical, parameter :: lparticles_surfspec=.true.
 !
@@ -37,38 +37,24 @@ module Particles_surfspec
 !*********************************************************************!
 !
   character (len=labellen), dimension (ninit) :: init_surf='nothing'
-  character(10), dimension(40) :: reactants
   real, dimension(10) :: init_surf_gas_frac
-  real :: diffusivity=0.0
   real :: surfplaceholder=0.0
-  real, dimension(:), allocatable :: ac,dngas
-  real, dimension(:), allocatable :: mass_trans_coeff_reactants
-  real, dimension(:), allocatable :: diff_coeff_reactants
+  real, dimension(:), allocatable :: ac
   real, dimension(:), allocatable :: uscale,fscale,constr
-  integer :: inuH2,inuCO2,inuH2O,inuCO,inuCH4,inuO2
-  integer :: inuCH,inuHCO,inuCH2,inuCH3
-  integer :: nr,ns,np
-  integer :: N_max_elements
-  integer, dimension(:), allocatable :: j_of_inu
   integer, dimension(:), allocatable :: dependent_reactant
-  integer :: iads,iads_end
 !
 !  JONAS: implement j_of_inu to communicate with
 !  gas phase
 !
   integer :: jH2=1, jO2=2, jCO2=3, jCO=4, jCH4=5, jN2=6, jH2O=7
   integer :: jOH=8, jAR=9, jO=10, jH=11, jCH=12, jCH2=13, jHCO=14, jCH3=15
+  integer :: idiag_isurf
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
 !*********************************************************************!
 !
-  real, dimension(:,:), allocatable :: thiele
-  real, dimension(:,:), allocatable :: ndot,K_k
   real, dimension(:,:), allocatable :: X_infty_reactants
-  real, dimension(:), allocatable :: initial_density
-  real, dimension(:), allocatable :: Qh,Qc,Qreac,Qrad
-
 !
   namelist /particles_surf_init_pars/ &
        init_surf, &
@@ -80,20 +66,14 @@ module Particles_surfspec
   contains
 !***********************************************************************
   subroutine register_particles_surfspec()
-!
-    character(10), dimension(40) :: species
-!
+!!
 !  This is a wrapper routine for particle dependent and particle
 !  independent variables
 !  JONAS: Back to standalone via mpar_loc=1?
 !
-    N_surface_reactions = count_reactions('mechanics.in')
+          if (lroot) call svn_id( &
+          "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
-    call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
-    call get_pchem_info(species,'N_surface_reactants',N_surface_reactants,'quiet')
-    call get_pchem_info(species,'N_species',ns,'quiet')
-    call get_pchem_info(species,'N_reactants',nr,'quiet')
-    call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
     call register_indep_psurfspec()
     call register_dep_psurfspec()
 !!$!
@@ -102,7 +82,6 @@ module Particles_surfspec
   subroutine register_indep_psurfspec()
 !
       integer :: i,k,stat
-      character(10), dimension(40) :: all_species
 !
       if (nsurfreacspec/=N_surface_species) then
          print*,'N_surface_species: ', N_surface_species
@@ -110,8 +89,6 @@ module Particles_surfspec
               'wrong size of storage for surface species allocated')
          else
       endif
-!
-      call get_species_list('solid_species',solid_species)
 !
 !  Increase of npvar according to N_surface_species, which is
 !  the concentration of gas phase species at the particle surface
@@ -139,9 +116,6 @@ module Particles_surfspec
 !
 ! Allocate memory for a number of arrays
 !
-    allocate(dngas(N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-         'Could not allocate memory for dngas')
     allocate(dependent_reactant(N_surface_reactions)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for dependent_reactant')
@@ -176,12 +150,6 @@ module Particles_surfspec
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for constr')
 !
-! Define the Stoichiometric matrixes. Here i=1 correspond to H2O, i=2 is CO2,
-! i=3 is H2 and finally i=4 is O2
-!
-    call get_species_list('all',all_species)
-    call create_ad_sol_lists(all_species,solid_species,'sol',ns)
-    call get_reactants(reactants)
     call sort_compounds(reactants,solid_species,n_surface_species,nr)
 !
     inuH2O=find_species('H2O',solid_species,n_surface_species)
@@ -208,20 +176,6 @@ module Particles_surfspec
 !
     call get_ac(ac,solid_species,N_surface_species)
 !
-!  JONAS: VERY roundabout way of doing things
-!
-      N_surface_reactions = count_reactions('mechanics.in')
-      N_max_elements = count_max_elements('mechanics.in') + 1
-!
-!  Allocate some arrays
-!
-      if (.not. allocated(part)) then
-         allocate(part(N_max_elements,N_surface_reactions))
-      else
-      end if
-!
-      call get_part(part)
-!
 !  Set the stoichiometric matrixes
 !
     call create_stoc(part,solid_species,nu,.true.,N_surface_species)
@@ -234,7 +188,7 @@ module Particles_surfspec
 !
 ! Find the mole production of the forward reaction
 !
-    call create_dngas(nu,nu_prime,dngas)
+    call create_dngas()
 !
     end subroutine register_indep_psurfspec
 !***********************************************************************
@@ -242,37 +196,10 @@ module Particles_surfspec
 !
       integer :: stat
 !
-    allocate(x_surface(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
-        'Could not allocate memory for x_surface')
-    allocate(ndot(mpar_loc,N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
-        'Could not allocate memory for ndot')
-    allocate(ndot_total(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
-        'Could not allocate memory for ndot_total')
     allocate(x_infty_reactants(mpar_loc,N_surface_reactants) &
          ,STAT=stat)
     if (stat>0) call fatal_error('register_dep_psurfchem',&
         'Could not allocate memory for x_infty_reactants')
-    allocate(surface_species_enthalpy(mpar_loc,N_surface_species) &
-         ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
-        'Could not allocate memory for surface_species_enthalpy')
-    allocate(surface_species_entropy(mpar_loc,N_surface_species) &
-         ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
-        'Could not allocate memory for surface_species_entropy')
-    allocate(thiele(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for thiele')
-    allocate(Rck(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for Rck')
-    allocate(Rck_max(mpar_loc,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for Rck_max')
-
 !
     end subroutine register_dep_psurfspec
 !***********************************************************************
@@ -322,27 +249,6 @@ module Particles_surfspec
 !
     endsubroutine write_particles_surf_run_pars
 !***********************************************************************
-    subroutine rprint_particles_surf(lreset,lwrite)
-!
-!  Read and register print parameters relevant for 
-!  solid species volume fraction in the near field.
-!
-!  29-aug-14/jonas: coded
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
-!
-      call keep_compiler_quiet(lreset)
-!
-    end subroutine rprint_particles_surf
 !***********************************************************************
     subroutine init_particles_surf(f,fp)
 !
@@ -394,37 +300,8 @@ module Particles_surfspec
       enddo
 !
     endsubroutine init_particles_surf
-!**********************************************************************
-  subroutine calc_pchem_factors(f,fp)
-!
-    real, dimension(mpar_loc,mpvar) :: fp
-    real, dimension(mx,my,mz,mfarray) :: f
-    integer :: stat,k1,k2
-!
-!  Routine to calcute quantities used for reactive particles
-!
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
-
-    call calc_conversion(fp(k1:k2,:))
-    call calc_St(fp(k1:k2,:))
-    call calc_mod_surf_area(fp(k1:k2,:))
-!
-    call calc_ads_entropy(fp(k1:k2,:))
-    call calc_ads_enthalpy(fp(k1:k2,:))
-    call calc_surf_entropy(fp(k1:k2,:))
-    call calc_surf_enthalpy(fp(k1:k2,:))
-!
-    call calc_enthalpy_of_reaction()
-    call calc_entropy_of_reaction()
-!
-    call calc_RR_hat(f,fp(k1:k2,:))
-    call calc_ndot_mdot_R_j_hat(fp(k1:k2,:))
-    call calc_R_c_hat(fp(k1:k2,:))
-!
-  end subroutine calc_pchem_factors
-!***************************************************    
-subroutine initialize_particles_surf(fp,lstarting)
+!********************************************************************** 
+subroutine initialize_particles_surf(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -432,11 +309,11 @@ subroutine initialize_particles_surf(fp,lstarting)
 !  29-sep-14/jonas coded
 !  JONAS: needs to be filled with life
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mx,my,z,mfarray) :: f
       logical :: lstarting
 !
 !  
-      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     end subroutine initialize_particles_surf
@@ -495,5 +372,38 @@ subroutine initialize_particles_surf(fp,lstarting)
 !
    end do
     endsubroutine dpsurf_dt_pencil
+!***********************************************************************
+    subroutine rprint_particles_surf(lreset,lwrite)
+!
+!  Read and register print parameters relevant for
+! vparticles near field gas composition
+!
+!  06-oct-14/jonas: adapted
+!
+      use Diagnostics
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      logical :: lwr
+      integer :: iname
+!
+!  Write information to index.pro
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+      if (lwr) write(3,*) 'surf=', isurf
+!
+      if (lreset) then
+         idiag_isurf=0;
+      endif
+!
+      if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
+!
+      do iname=1,nname
+         call parse_name(iname,cname(iname),cform(iname),'isurf',idiag_isurf)
+      enddo
+!
+    end subroutine rprint_particles_surf
 !***********************************************************************
   end module Particles_surfspec

@@ -16,6 +16,7 @@
 
   public :: find_species
 
+  public :: calc_chemistry_pencils
   public :: calc_entropy_of_reaction
   public :: calc_enthalpy_of_reaction
   public :: calc_RR_hat
@@ -34,11 +35,16 @@
   public :: create_occupancy
   public :: create_ad_sol_lists
   
+  public :: cleanup_chemistry_pencils
+  
   public :: sort_compounds
 
   public :: count_reactions, count_max_elements
 
   public :: mol_mass_carbon
+
+  public :: read_particles_chem_init_pars, write_particles_chem_init_pars
+  public :: read_particles_chem_run_pars, write_particles_chem_run_pars
 
   
 

@@ -129,6 +129,17 @@ integer function find_species()
 !
   end subroutine calc_St
 !***********************************************************************
+  subroutine calc_chemistry_pencils(f,fp)
+!
+!  06-oct-14/jonas:coded
+!
+    real, dimension(mpar_loc,mpvar)  :: fp
+    real, dimension(mx,my,mz,mfarray)  :: f
+!
+  call keep_compiler_quiet(f)
+  call keep_compiler_quiet(fp)
+!
+  end subroutine calc_chemistry_pencils
 !***********************************************************************
   subroutine calc_mod_surf_area()
 !
@@ -275,5 +286,48 @@ integer function find_species()
     call keep_compiler_quiet(fp)
 !
   end subroutine calc_ads_entropy
+!***********************************************************************
+  subroutine cleanup_chemistry_pencils()
+!
+!  06-oct-14/jonas: coded
+!
+  end subroutine cleanup_chemistry_pencils
+!***********************************************************************
+!***************************************************
+    subroutine read_particles_chem_init_pars(unit,iostat)
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      if(present(iostat)) call keep_compiler_quiet(iostat) 
+!
+    endsubroutine read_particles_chem_init_pars
+!***********************************************************************
+    subroutine write_particles_chem_init_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_chem_init_pars
+!***********************************************************************
+    subroutine read_particles_chem_run_pars(unit,iostat)
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      if(present(iostat)) call keep_compiler_quiet(iostat) 
+!
+    endsubroutine read_particles_chem_run_pars
+!***********************************************************************
+    subroutine write_particles_chem_run_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_chem_run_pars
 !***********************************************************************
   end module Particles_chemistry

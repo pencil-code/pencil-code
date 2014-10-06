@@ -160,13 +160,7 @@ module Particles_adsorbed
       logical :: lreset
       logical, optional :: lwrite
 !
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
       call keep_compiler_quiet(lreset)
 !

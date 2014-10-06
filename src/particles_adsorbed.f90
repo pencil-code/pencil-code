@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 0
+! MPVAR CONTRIBUTION 5
 ! MAUX CONTRIBUTION 0
 ! NADSSPEC CONTRIBUTION 5
 !
@@ -25,12 +25,9 @@ module Particles_adsorbed
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Particles_radius
   use Particles_chemistry
-  use Particles_temperature
 !
   implicit none
 !
@@ -41,25 +38,24 @@ module Particles_adsorbed
 !*****************************************************************
 !
   real, dimension(:), allocatable :: site_occupancy
-  integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
-  integer :: nr,ns,np
   character (len=labellen), dimension (ninit) :: init_adsorbed='nothing'
   real, dimension(10) :: init_surf_ads_frac
-  real, dimension(:,:), allocatable :: R_j_hat
   real :: init_thCO=0.0
   real :: adsplaceholder=0.0
   real :: sum_ads
+  real :: dpads=0.0
+  logical :: experimental_adsorbed=.false.
+  integer :: idiag_iads=0
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
 !*********************************************************************!
-!  
-
-  real, dimension(:,:), allocatable :: Cs
 !
   namelist /particles_ads_init_pars/ &
       init_adsorbed, &
-      init_surf_ads_frac
+      init_surf_ads_frac,&
+      experimental_adsorbed,&
+      dpads
 !
   namelist /particles_ads_run_pars/ &
       adsplaceholder
@@ -68,11 +64,12 @@ module Particles_adsorbed
 !***********************************************************************
   subroutine register_particles_ads()
 !
-    character(10), dimension(40) :: species
 !  this is a wrapper function for registering particle number
 !  in- and independent variables
 !
-    call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
+          if (lroot) call svn_id( &
+          "$Id: particles_adsorbed.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
+!
     call register_indep_ads()
     call register_dep_ads()
  !   
@@ -86,22 +83,15 @@ module Particles_adsorbed
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      integer :: i,N_surface_species,stat,j,N_max_elements,N_surface_reactions
-      character(10), dimension(40) :: species,reactants
-      character(10), dimension(40) :: solid_species, adsorbed_species_names
-      character(10), dimension(:,:), allocatable :: part
-!
-      if (lroot) call svn_id( &
-           "$Id: particles_adsorbed.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
+      integer :: i,stat,j
 !
 !  check if enough storage was reserved in fp and dfp to store
 !  the adsorbed species surface and gas phase surface concentrations
 !
-      call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
-!
       if (nadsspec/=(N_adsorbed_species-1) .and. &
            N_adsorbed_species>0) then
-         print*,'N_adsorbed_species: ',N_adsorbed_species
+         print*,'N_adsorbed_species: ',N_adsorbed_species-1
+         print*,'nadsspec: ',nadsspec
          call fatal_error('register_particles_ads', &
               'wrong size of storage for adsorbed species allocated.')
          else
@@ -129,16 +119,18 @@ module Particles_adsorbed
          j=1
          iads = npvar+1
          i=1
+!
 !  JONAS: commented for now, wait for own pvarnamespace
-!         do while (i<=(N_adsorbed_species-1))
-!            if (adsorbed_species_names(i)/='Cf') then
-!            pvarname(iads+j-1) = adsorbed_species_names(i)
-!            i = i+1
-!            j = j+1
-!            else
-!            i = i+1
-!            end if 
-!         enddo
+!
+         do while (i<=(N_adsorbed_species-1))
+            if (adsorbed_species_names(i)/='Cf') then
+            pvarname(iads+j-1) = adsorbed_species_names(i)
+            i = i+1
+            j = j+1
+            else
+            i = i+1
+            end if 
+         enddo
 !
 !  Increase of npvar according to N_adsorbed_species
 !  The -2 is there to account for Cf being in adsorbed_species_names
@@ -161,34 +153,22 @@ module Particles_adsorbed
 !  Allocate only if adsorbed species in mechanism
 !
     if(Nadsspec>0) then
+       print*,allocated(mu)
+       print*,N_adsorbed_species,N_surface_reactions
        allocate(mu(N_adsorbed_species,N_surface_reactions),STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
+       if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for mu')
        allocate(mu_prime(N_adsorbed_species,N_surface_reactions)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
+       if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for mu_prime')
        allocate(aac(N_adsorbed_species)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
+       if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for aac')
        allocate(site_occupancy(N_adsorbed_species)   ,STAT=stat)
-       if (stat>0) call fatal_error('register_indep_pchem',&
+       if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for site_occupancy')
     else
     end if
-!
-!  JONAS: VERY roundabout way of doing things
-!
-      N_surface_reactions = count_reactions('mechanics.in')
-      N_max_elements = count_max_elements('mechanics.in') + 1
-!
-!  Allocate some arrays
-!
-      if (.not. allocated(part)) then
-         allocate(part(N_max_elements,N_surface_reactions))
-      else
-      end if
-!
-      call get_part(part)
 !
 ! Define the aac array which gives the amount of carbon in the
 ! adsorbed species.
@@ -209,20 +189,7 @@ module Particles_adsorbed
 !
       integer :: stat
 !
-      allocate(R_j_hat(mpar_loc,N_adsorbed_species-1)   ,STAT=stat)
-      if (stat>0) call fatal_error('register_particles_ads',&
-           'Could not allocate memory for R_j_hat')
-      allocate(adsorbed_species_entropy(mpar_loc,N_adsorbed_species) &
-           ,STAT=stat)    
-      if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for adsorbed_species_entropy')
-      allocate(adsorbed_species_enthalpy(mpar_loc,N_adsorbed_species) &
-           ,STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for adsorbed_species_enthalpy')
-      allocate(Cs(mpar_loc,N_adsorbed_species)   ,STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for Cs')
+      stat=0
 !
   end subroutine register_dep_ads
 !***********************************************************************
@@ -279,6 +246,7 @@ module Particles_adsorbed
           endif
 !
           do i=1,mpar_loc
+
              fp(i,iads:iads_end)=fp(i,iads:iads_end)+ &
                   init_surf_ads_frac(1:(iads_end-iads+1))
           enddo
@@ -333,10 +301,13 @@ subroutine pencil_criteria_par_ads()
       type (pencil_case) :: p
       real :: total_carbon_sites
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i, n_ads,stat
+      integer :: n_ads,stat,k1,k2,k
 !
       intent (inout) :: dfp
       intent (in) :: fp
+!
+      k1=k1_imn(imn)
+      k2=k2_imn(imn)
 !
 !  JONAS incosistency, should i implement another get()?
 !   or read it from memory
@@ -345,26 +316,32 @@ subroutine pencil_criteria_par_ads()
 !
 !  Allocate some arrays for use in dfp
 !
-      allocate(mod_surf_area(k1_imn(imn):k2_imn(imn)),STAT=stat)
+      allocate(mod_surf_area(k1:k2),STAT=stat)
       if (stat>0) call fatal_error('dpads_dt_pencil',&
            'Could not allocate memory for mod_surf_area')
-      allocate(R_c_hat(k1_imn(imn):k2_imn(imn)),STAT=stat)
+      allocate(R_c_hat(k1:k2),STAT=stat)
       if (stat>0) call fatal_error('dpads_dt_pencil',&
            'Could not allocate memory for R_c_hat')
 !
 !  Fill these arrays with values from particles_chemistry
 !
-      call get_mod_surf_area(mod_surf_area,k1_imn(imn),k2_imn(imn))
-      call get_R_c_hat(R_c_hat,k1_imn(imn),k2_imn(imn))
+      call get_mod_surf_area(mod_surf_area,k1,k2)
+      call get_R_c_hat(R_c_hat,k1,k2)
       call get_total_carbon_sites(total_carbon_sites)
 !
       n_ads = iads_end - iads +1
 !
-      do i=k1_imn(imn),k2_imn(imn)
-         dfp(i,iads:iads_end)=R_j_hat(i,1:n_ads)/ &
-              total_carbon_sites + mod_surf_area(i)* &
-              R_c_hat(i)*fp(i,iads:iads_end)
-      enddo
+      if (experimental_adsorbed) then
+         do k=k1,k2
+            dfp(k,iads:iads_end)=dpads
+         enddo
+      else
+         do k=k1,k2
+            dfp(k,iads:iads_end)=R_j_hat(k,1:n_ads)/ &
+                 total_carbon_sites + mod_surf_area(k)* &
+                 R_c_hat(k)*fp(k,iads:iads_end)
+         enddo
+      endif
 !
 !  Deallocate arrays
 !
@@ -422,22 +399,33 @@ subroutine pencil_criteria_par_ads()
     subroutine rprint_particles_ads(lreset,lwrite)
 !
 !  Read and register print parameters relevant for
-! vparticles coverage fraction.
+!  particles coverage fraction.
 !
-!  29-aug-14/jonas: coded
+!  06-oct-14/jonas: adapted
+!
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       logical :: lwr
+      integer :: iname
 !
 !  Write information to index.pro
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (lwr) write(3,*) 'iads=', iads
 !
-      call keep_compiler_quiet(lreset)
+      if (lreset) then
+         idiag_iads=0;
+      endif
+!
+      if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
+!
+      do iname=1,nname
+         call parse_name(iname,cname(iname),cform(iname),'iads',idiag_iads)
+      enddo
 !
     end subroutine rprint_particles_ads
 !***********************************************************************
@@ -477,26 +465,4 @@ subroutine pencil_criteria_par_ads()
 !
     end subroutine calc_R_j_hat
 !***********************************************************************
-  subroutine get_adsorbed_data(var_entr,var_enth,var_mu,var_mu_prime,var_aac,start,end)
-!
-!  02-oct-2014/jonas:coded  
-!
-!  JONAS: transport routine to particles_surfspec this code is not done
-!  for this
-!
-    real, dimension(:,:) :: var_mu, var_mu_prime
-    real, dimension(:,:) :: var_entr,var_enth
-    real, dimension(:) :: var_aac
-    integer :: start,end
-!
-    var_mu = mu
-    var_mu_prime = mu_prime
-    var_enth = adsorbed_species_enthalpy
-    var_entr = adsorbed_species_entropy
-    var_aac = aac
-    start = iads
-    end = iads_end
-!
-  end subroutine get_adsorbed_data
-!*********************************************************************
-
+  end module Particles_adsorbed

@@ -62,8 +62,8 @@ module Particles_main
       call register_particles_sink         ()
       call register_particles_TT           ()
       call register_particles_mass         ()
-      call register_particles_ads          ()
       call register_particles_chem         ()
+      call register_particles_ads          ()
       call register_particles_surfspec     ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
@@ -95,13 +95,14 @@ module Particles_main
       call rprint_particles_sink         (lreset,LWRITE=lroot)
       call rprint_particles_spin         (lreset,LWRITE=lroot)
       call rprint_particles_number       (lreset,LWRITE=lroot)
-      call rprint_particles_density         (lreset,LWRITE=lroot)
+      call rprint_particles_density      (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
       call rprint_particles_viscosity    (lreset,LWRITE=lroot)
       call rprint_particles_TT           (lreset,LWRITE=lroot)
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
+      call rprint_particles_surf         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
       call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
@@ -189,7 +190,7 @@ module Particles_main
       call initialize_particles_mpicomm      (f,lstarting)
       call initialize_particles              (f,lstarting)
       call initialize_particles_adaptation   (f,lstarting)
-      call initialize_particles_density         (f,lstarting)
+      call initialize_particles_density      (f,lstarting)
       call initialize_particles_nbody        (f,lstarting)
       call initialize_particles_number       (f,lstarting)
       call initialize_particles_potential    (f,lstarting)
@@ -202,11 +203,11 @@ module Particles_main
       call initialize_particles_TT           (f,lstarting)
       call initialize_particles_mass         (f,lstarting)
       call initialize_particles_ads          (f,lstarting)
+      call initialize_particles_surf         (f,lstarting)
       call initialize_particles_coag         (f,lstarting)
       call initialize_particles_collisions   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
       call initialize_particles_diagnos_dv   (f,lstarting)
-!      call initialize_particles_chemistry    (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -260,6 +261,7 @@ module Particles_main
       if (lparticles_temperature)   call init_particles_TT(f,fp)
       if (lparticles_mass)          call init_particles_mass(f,fp)
       if (lparticles_adsorbed)      call init_particles_ads(f,fp)
+      if (lparticles_surfspec)      call init_particles_surf(f,fp)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
 !
     endsubroutine particles_init
@@ -702,6 +704,7 @@ module Particles_main
       if (lparticles_mass)        call dpmass_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_temperature) call dpTT_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_adsorbed)    call dpads_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_surfspec)    call dpsurf_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnpswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_density)     call drhopswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
@@ -756,7 +759,7 @@ module Particles_main
 !  If reactive particles are enabled, needed quantities are calculated
 !
      if (lparticles_chemistry .and. lparticles_adsorbed) then
-        call calc_pchem_factors(fp)
+        call calc_chemistry_pencils(f,fp)
      else
      endif
 !
@@ -769,6 +772,7 @@ module Particles_main
       if (lparticles_mass)   call dpmass_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_temperature) call dpTT_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_adsorbed) call dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_surfspec) call dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_number) call dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_density)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
@@ -789,6 +793,7 @@ module Particles_main
       if (lparticles_coagulation) &
           call particles_coagulation_timestep(fp,ineargrid)
 !
+      call cleanup_chemistry_pencils()
       call cleanup_interpolated_quantities()
       call timing('particles_pde_pencil','finished',mnloop=.true.)
 !
@@ -1034,6 +1039,28 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_surfspec) then
+        call read_particles_surf_init_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_startpars('read_particles_surf_init_pars',&
+                iostat)
+            return
+          endif
+        endif
+      endif
+!
+     if (lparticles_chemistry) then
+        call read_particles_chem_init_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_startpars('read_particles_chem_init_pars',&
+                iostat)
+            return
+          endif
+        endif
+      endif
+!
     endsubroutine particles_read_startpars
 !***********************************************************************
     subroutine particles_rparam(unit)
@@ -1057,6 +1084,7 @@ module Particles_main
       if (lparticles_mass)        call read_particles_mass_init_pars(unit)
       if (lparticles_temperature) call read_particles_TT_init_pars(unit)
       if (lparticles_adsorbed)    call read_particles_ads_init_pars(unit)
+      if (lparticles_surfspec)    call read_particles_surf_init_pars(unit)
       if (lparticles_stalker)     call read_pstalker_init_pars(unit)
 !
     endsubroutine particles_rparam
@@ -1101,6 +1129,10 @@ module Particles_main
             print*,'&particles_TT_init_pars/'
         if (lparticles_adsorbed) &
             print*,'&particles_ads_init_pars/'
+        if (lparticles_chemistry) &
+            print*,'&particles_chem_init_pars/'
+        if (lparticles_surfspec) &
+            print*,'&particles_surf_init_pars/'
         print*,'------END sample particles namelist -------'
         print*
         if (present(label)) &
@@ -1132,7 +1164,8 @@ module Particles_main
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
       if (lparticles_temperature) call write_particles_TT_init_pars(unit)
       if (lparticles_adsorbed)    call write_particles_ads_init_pars(unit)
-
+      if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
+      if (lparticles_chemistry)   call write_particles_chem_init_pars(unit)
 !
     endsubroutine particles_wparam
 !***********************************************************************
@@ -1324,6 +1357,26 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_surfspec) then
+        call read_particles_surf_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('read_particles_surf_run_pars',&
+                iostat); return
+          endif
+        endif
+      endif
+!
+      if (lparticles_chemistry) then
+        call read_particles_chem_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('read_particles_chem_run_pars',&
+                iostat); return
+          endif
+        endif
+      endif
+!
     endsubroutine particles_read_runpars
 !***********************************************************************
     subroutine samplepar_runpars(label,iostat)
@@ -1356,6 +1409,8 @@ module Particles_main
         if (lparticles_mass)           print*,'&particles_mass_run_pars /'
         if (lparticles_temperature)    print*,'&particles_TT_run_pars /'
         if (lparticles_adsorbed)       print*,'&particles_ads_run_pars /'
+        if (lparticles_surfspec)       print*,'&particles_surf_run_pars /'
+        if (lparticles_chemistry)      print*,'&particles_chem_run_pars /'
         print*,'------END sample particle namelist -------'
         print*
         if (present(label)) &
@@ -1392,7 +1447,8 @@ module Particles_main
       if (lparticles_mass)           call write_particles_mass_run_pars(unit)
       if (lparticles_temperature)    call write_particles_TT_run_pars(unit)
       if (lparticles_adsorbed)       call write_particles_ads_run_pars(unit)
-
+      if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
+      if (lparticles_chemistry)      call write_particles_chem_run_pars(unit)
 !
     endsubroutine particles_wparam2
 !***********************************************************************
