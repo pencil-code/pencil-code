@@ -111,6 +111,8 @@ module Dustdensity
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
+  integer :: idiag_rmom0=0, idiag_rmom1=0, idiag_rmom2=0, idiag_rmom3=0
+  integer :: idiag_rmom4=0, idiag_rmom5=0, idiag_rmom6=0, idiag_rmom7=0, idiag_rmom8=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
@@ -1856,6 +1858,18 @@ module Dustdensity
         endif
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
+!
+!  compute moments, assume lmdvar=.true.
+!
+        if (idiag_rmom0/=0) call sum_mn_name(sum(p%md**(0./3.)*p%nd,2),idiag_rmom0)
+        if (idiag_rmom1/=0) call sum_mn_name(sum(p%md**(1./3.)*p%nd,2),idiag_rmom1)
+        if (idiag_rmom2/=0) call sum_mn_name(sum(p%md**(2./3.)*p%nd,2),idiag_rmom2)
+        if (idiag_rmom3/=0) call sum_mn_name(sum(p%md**(3./3.)*p%nd,2),idiag_rmom3)
+        if (idiag_rmom4/=0) call sum_mn_name(sum(p%md**(4./3.)*p%nd,2),idiag_rmom4)
+        if (idiag_rmom5/=0) call sum_mn_name(sum(p%md**(5./3.)*p%nd,2),idiag_rmom5)
+        if (idiag_rmom6/=0) call sum_mn_name(sum(p%md**(6./3.)*p%nd,2),idiag_rmom6)
+        if (idiag_rmom7/=0) call sum_mn_name(sum(p%md**(7./3.)*p%nd,2),idiag_rmom7)
+        if (idiag_rmom8/=0) call sum_mn_name(sum(p%md**(8./3.)*p%nd,2),idiag_rmom8)
       endif
 !
 !  2d-averages
@@ -2307,6 +2321,8 @@ module Dustdensity
         idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
         idiag_ndmz=0
+        idiag_rmom0=0; idiag_rmom1=0; idiag_rmom2=0; idiag_rmom3=0
+        idiag_rmom4=0; idiag_rmom5=0; idiag_rmom6=0; idiag_rmom7=0; idiag_rmom8=0
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics).
@@ -2382,6 +2398,15 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdm',idiag_mdm)
+        call parse_name(iname,cname(iname),cform(iname),'rmom0',idiag_rmom0)
+        call parse_name(iname,cname(iname),cform(iname),'rmom1',idiag_rmom1)
+        call parse_name(iname,cname(iname),cform(iname),'rmom2',idiag_rmom2)
+        call parse_name(iname,cname(iname),cform(iname),'rmom3',idiag_rmom3)
+        call parse_name(iname,cname(iname),cform(iname),'rmom4',idiag_rmom4)
+        call parse_name(iname,cname(iname),cform(iname),'rmom5',idiag_rmom5)
+        call parse_name(iname,cname(iname),cform(iname),'rmom6',idiag_rmom6)
+        call parse_name(iname,cname(iname),cform(iname),'rmom7',idiag_rmom7)
+        call parse_name(iname,cname(iname),cform(iname),'rmom8',idiag_rmom8)
       enddo
 !
     endsubroutine rprint_dustdensity
