@@ -710,7 +710,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
+      real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -958,31 +958,43 @@ module Particles
 !
 ! Start the particles obeying a power law pdlaw
 !
-            tmp=2-pdlaw
+            tmp=2.!2-pdlaw         
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
 !
 ! Random in azimuth
 !
-            call random_number_wrapper(phi)
-!
             if (lcartesian_coords) then
+              call random_number_wrapper(phi)
               phi = 2*pi*phi
               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
-            elseif (lcylindrical_coords) then
-              phi = xyz0_par(2)+phi*Lxyz_par(2)
-              if (nxgrid/=1) fp(k,ixp)=rad
-              if (nygrid/=1) fp(k,iyp)=phi
-            elseif (lspherical_coords) then
-              call fatal_error('init_particles','random-cylindrical '// &
-                  'not implemented for spherical coordinates')
-            endif
-!
-            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-            if (nzgrid/=1) &
+              if (nzgrid/=1) then 
+                call random_number_wrapper(fp(k,izp))
                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+              endif
+            elseif (lcylindrical_coords) then
+              if (nxgrid/=1) fp(k,ixp)=rad
+              if (nygrid/=1) then 
+                call random_number_wrapper(phi)
+                fp(k,iyp) = xyz0_par(2)+phi*Lxyz_par(2)
+              endif
+              if (nzgrid/=1) then 
+                call random_number_wrapper(fp(k,izp))
+                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+              endif
+            elseif (lspherical_coords) then
+              if (nxgrid/=1) fp(k,ixp)=rad
+              if (nygrid/=1) then 
+                call random_number_wrapper(tht)
+                fp(k,iyp) = xyz0_par(2)+tht*Lxyz_par(2)
+              endif
+              if (nzgrid/=1) then 
+                call random_number_wrapper(phi)
+                fp(k,izp) = xyz0_par(3)+phi*Lxyz_par(3)
+              endif
+            endif
 !
           enddo
 !
@@ -1570,9 +1582,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*, 'init_particles: Keplerian velocity'
-            if (lspherical_coords) call fatal_error('init_particles', &
-                 'Keplerian particle initial condition: '// &
-                 'not implemented for spherical coordinates')
             if (lshear) call fatal_error("init_particles",&
                  "Keplerian initial condition is for global disks, not shearing boxes")
           endif
@@ -1589,6 +1598,9 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpx) =  0.0
               fp(k,ivpy) =  OO*rad
               fp(k,ivpz) =  0.0
+            elseif (lspherical_coords) then 
+              rad=fp(k,ixp)*sin(fp(k,iyp))
+              OO=sqrt(gravr)*rad**(-1.5)
             endif
           enddo
 !
@@ -3796,10 +3808,7 @@ k_loop:   do while (.not. (k>npar_loc))
             elseif (lcylindrical_coords) then
               OO=fp(k,ixp)**(-1.5)
             elseif (lspherical_coords) then
-              call fatal_error("get_frictiontime",&
-                   "variable draglaw not implemented for"//&
-                   "spherical coordinates")
-              OO=0.
+              OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
               call fatal_error("get_frictiontime", &
                   "no valid coord system")
@@ -4024,9 +4033,11 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lcylindrical_coords) then
             OO=fp(k,ixp)**(-1.5)
           elseif (lspherical_coords) then
-            call fatal_error('get_frictiontime', &
-                'variable draglaw not implemented for '//&
-                'spherical coordinates')
+            OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
+          else
+            call fatal_error("calc_draglaw_parameters", &
+                 "no valid coord system")
+            OO=0.
           endif
         else
           OO=nu_epicycle
