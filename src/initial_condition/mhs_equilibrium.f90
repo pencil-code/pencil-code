@@ -133,7 +133,11 @@ module InitialCondition
           if (lgrav) then 
             call acceleration(g_r)
           ! Cylindrical Keplerian velocity: GM/rr_cyl**3
-            OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
+            if (.not.lcylindrical_gravity) then 
+              OOK2=max(-g_r/(rr_sph*sinth(m)**3),0.)
+            else
+              OOK2=max(-g_r/rr_cyl,0.)
+            endif
           elseif (lparticles_nbody) then 
             call power_law(g0,rr_cyl,2*qgshear,OOK2)
           endif
@@ -141,7 +145,13 @@ module InitialCondition
           !H2 defined as in Fromang et al. 2011
           H2=f(:,m,n,ics2)/(gamma*OOK2)
 !
-          tmp=1 + q*(1-sinth(m)) + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
+!  pressure correction
+!
+          if (.not.lcylindrical_gravity) then 
+            tmp=1 + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.) + q*(1-sinth(m)) 
+          else
+            tmp=1 + H2/rr_cyl**2*(ksi*(p+q-2.) + 2.)
+          endif
           OO2=OOK2*tmp
 !
           f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*(sqrt(OO2)-OOcorot)
@@ -217,7 +227,11 @@ module InitialCondition
             tmp1=-g0/rr_sph 
             tmp2=-g0/rr_cyl
           endif
-          strat=-gamma*(tmp1-tmp2)/(cs2*ksi)
+          if (lcylindrical_gravity) then 
+            strat=0.
+          else
+            strat=-gamma*(tmp1-tmp2)/(cs2*ksi)
+          endif
           f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
 !
         enddo
@@ -543,6 +557,9 @@ module InitialCondition
       if (.not.llocal_iso) call fatal_error("enforce_numerical_equilibrium",&
            "not coded for other than the local isothermal approximation."//&
            "Switch lnumerical_mhsequilibrium=F in start.in")
+!
+      if (lcylindrical_gravity) call fatal_error("enforce_numerical_equilibrium",&
+           "switch lenforce_mhsequilibrium=F in initial_condition_pars")
 !
 !  Get the temperature globals
 !
