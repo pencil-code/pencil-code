@@ -124,6 +124,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_x:'electric field x', $
 		E_y:'electric field y', $
 		E_z:'electric field z', $
+		E_parallel:'field-aligned electric field', $
+		E_perpendicular:'field-perpendicular electric field', $
+;		grad_E_abs_abs:'grad electric field strength', $
 		beta:'plasma beta', $
 		rho_mag:'magnetic energy density', $
 		Poynting_j_x:'current Poynting flux x', $
@@ -197,6 +200,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
 		E:'electric field', $
+;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure' $
 	}
@@ -268,6 +272,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_x:'E', $
 		E_y:'E', $
 		E_z:'E', $
+		E_parallel:'E', $
+		E_perpendicular:'E', $
+		grad_E_abs:'E', $
+		grad_E_abs_abs:'E', $
 		beta:['P_therm', 'B_2'], $
 		rho_mag:'B_2', $
 		Poynting:['u', 'B', 'j'], $

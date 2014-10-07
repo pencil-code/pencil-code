@@ -536,6 +536,24 @@ function pc_compute_quantity, vars, index, quantity
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		return, sigma_SI_inv * jj[*,*,*,2]
 	end
+	if (strcmp (quantity, 'E_parallel', /fold_case)) then begin
+		; Electric field strengh parallel to the magnetic field [V/m]
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		return, dot (pc_compute_quantity (vars, index, 'E'), bb) / sqrt (B_2)
+	end
+	if (strcmp (quantity, 'E_perpendicular', /fold_case)) then begin
+		; Electric field strengh perpendicular to the magnetic field [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')) - pc_compute_quantity (vars, index, 'E_parallel')^2)
+	end
+	if (strcmp (quantity, 'grad_E_abs', /fold_case)) then begin
+		; Gradient of electric field strenght [V/m^2]
+		return, !Values.D_NaN ; not yet implemented...
+	end
+	if (strcmp (quantity, 'grad_E_abs_abs', /fold_case)) then begin
+		; Absolute value of electric field strength gradient [V/m^2]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_E_abs')))
+	end
 	if (strcmp (quantity, 'beta', /fold_case)) then begin
 		; Plasma beta
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
