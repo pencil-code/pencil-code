@@ -597,6 +597,8 @@ module Shear
       real, intent(in) :: dt_shear
 !
       integer, parameter :: nypx = ny / nprocx, nxpy = nx / nprocy
+      integer, parameter :: mm1 = nghost + 1, mm1i = 2 * nghost
+      integer, parameter :: mm2 = mygrid - nghost, mm2i = mygrid - 2 * nghost + 1
       real, dimension(mxgrid,nypx+2*nghost,nz) :: b
       real, dimension(nygrid,nxpy,nz) :: bt
       real, dimension(nxgrid) :: xnew, px, yshift
@@ -646,9 +648,9 @@ module Shear
               ynew1 = ynew - yshift((ipy * nprocx + ipx) * nxpy + j)
               ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
 !
-              by(nghost+1:mygrid-nghost) = bt(:,j,k)
-              by(1:nghost) = by(mygrid-2*nghost:mygrid-nghost-1)
-              by(mygrid-nghost+1:mygrid) = by(nghost+1:2*nghost)
+              by(mm1:mm2) = bt(:,j,k)
+              by(1:nghost) = by(mm2i:mm2)
+              by(mm2+1:mygrid) = by(mm1:mm1i)
 !
               ymethod: select case (method)
               case ('spline') ymethod
