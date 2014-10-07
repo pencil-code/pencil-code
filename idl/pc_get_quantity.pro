@@ -575,6 +575,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'grad_E_abs', /fold_case)) then begin
 		; Gradient of electric field strenght [V/m^2]
+		return, !Values.D_NaN ; not yet implemented...
 
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
