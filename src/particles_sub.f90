@@ -280,7 +280,7 @@ module Particles_sub
 !
 !  Remove the particle from the simulation
 !
-            if (lcylindrical_coords) then
+            if (lspherical_coords.or.lcylindrical_coords) then
               if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
                 if (present(dfp)) then
                   call remove_particle(fp,ipar,k,dfp)
@@ -306,9 +306,6 @@ module Particles_sub
                   endif
                 endif
               endif
-            elseif (lspherical_coords) then
-              call fatal_error_local('boundconds_particles',&
-                   'remove particles not ready for spherical coords')
             endif
           elseif (boundx=='hw') then
 !
