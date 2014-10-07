@@ -396,10 +396,10 @@ module InitialCondition
       do m=1,my; do n=1,mz
         lheader=((m==1).and.(n==1).and.lroot)
         call get_radial_distance(rr_sph,rr_cyl)
-        if (lsphere_in_a_box.or.lspherical_coords) then
+        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then 
+          rr=rr_cyl 
+        elseif (lsphere_in_a_box.or.lspherical_coords) then
           rr=rr_sph
-        elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
-          rr=rr_cyl
         else
           call fatal_error("initial_condition_lnrho",&
                "no valid coordinate system")
@@ -456,10 +456,10 @@ module InitialCondition
 !  Midplane density
 !
         call get_radial_distance(rr_sph,rr_cyl)
-        if (lsphere_in_a_box.or.lspherical_coords) then
-          rr=rr_sph
-        elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
+        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then
           rr=rr_cyl
+        elseif (lsphere_in_a_box.or.lspherical_coords) then
+          rr=rr_sph
         endif
 !
         if (lexponential_smooth) then
