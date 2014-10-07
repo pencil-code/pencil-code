@@ -457,19 +457,19 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential
-		return, vars[l1:l2,m1:m2,n1:n2,index.aa] * unit.magnetic_field
+		return, vars[l1:l2,m1:m2,n1:n2,index.aa] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
 		; Magnetic vector potential x-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.ax] * unit.magnetic_field
+		return, vars[l1:l2,m1:m2,n1:n2,index.ax] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_y', /fold_case)) then begin
 		; Magnetic vector potential y-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.ay] * unit.magnetic_field
+		return, vars[l1:l2,m1:m2,n1:n2,index.ay] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_z', /fold_case)) then begin
 		; Magnetic vector potential z-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.az] * unit.magnetic_field
+		return, vars[l1:l2,m1:m2,n1:n2,index.az] * (unit.magnetic_field*unit.length)
 	end
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
@@ -502,6 +502,33 @@ function pc_compute_quantity, vars, index, quantity
 		; Magnetic field z-component [T]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, bb[*,*,*,2]
+	end
+	if (strcmp (quantity, 'dB_dx', /fold_case)) then begin
+		; Magnetic field x-derivative [T/m]
+		dB_dx = dblarr (nx, ny, nz, 3, /nozero)
+		dB_dx[*,*,*,*] = unit.magnetic_field / unit.length
+		dB_dx[*,*,*,0] *= (xderyder (vars[*,*,*,index.az]) - xderzder (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
+		dB_dx[*,*,*,1] *= (xder2    (vars[*,*,*,index.az]) - xderzder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		dB_dx[*,*,*,2] *= (xder2    (vars[*,*,*,index.ay]) - xderyder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		return, dB_dx
+	end
+	if (strcmp (quantity, 'dB_dy', /fold_case)) then begin
+		; Magnetic field y-derivative [T/m]
+		dB_dy = dblarr (nx, ny, nz, 3, /nozero)
+		dB_dy[*,*,*,*] = unit.magnetic_field / unit.length
+		dB_dy[*,*,*,0] *= (yder2    (vars[*,*,*,index.az]) - yderzder (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
+		dB_dy[*,*,*,1] *= (yderxder (vars[*,*,*,index.az]) - yderzder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		dB_dy[*,*,*,2] *= (yderxder (vars[*,*,*,index.ay]) - yder2    (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		return, dB_dy
+	end
+	if (strcmp (quantity, 'dB_dz', /fold_case)) then begin
+		; Magnetic field z-derivative [T/m]
+		dB_dz = dblarr (nx, ny, nz, 3, /nozero)
+		dB_dz[*,*,*,*] = unit.magnetic_field / unit.length
+		dB_dz[*,*,*,0] *= (zderyder (vars[*,*,*,index.az]) - zder2    (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
+		dB_dz[*,*,*,1] *= (zderxder (vars[*,*,*,index.az]) - zder2    (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		dB_dz[*,*,*,2] *= (zderxder (vars[*,*,*,index.ay]) - zderyder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
+		return, dB_dz
 	end
 	if (strcmp (quantity, 'E', /fold_case)) then begin
 		; Electric field [V/m]
@@ -548,7 +575,17 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'grad_E_abs', /fold_case)) then begin
 		; Gradient of electric field strenght [V/m^2]
-		return, !Values.D_NaN ; not yet implemented...
+
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		c = 1.0 / pc_get_parameter ('c', label=quantity)
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		E = -(1.0/c) * cross (uu, bb)
+		for pa = 0, 2 do E[*,*,*,pa] += sigma_SI_inv * jj[*,*,*,pa]
+		return, E
+
+		return, grad (pc_compute_quantity (vars, index, 'E_abs'))
 	end
 	if (strcmp (quantity, 'grad_E_abs_abs', /fold_case)) then begin
 		; Absolute value of electric field strength gradient [V/m^2]

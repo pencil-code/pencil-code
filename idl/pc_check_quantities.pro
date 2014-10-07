@@ -199,6 +199,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
+		dB_dx:'magnetic field x-derivative', $
+		dB_dy:'magnetic field y-derivative', $
+		dB_dz:'magnetic field z-derivative', $
 		E:'electric field', $
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
@@ -267,6 +270,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'B', $
 		B_y:'B', $
 		B_z:'B', $
+		dB_dx:'A', $
+		dB_dy:'A', $
+		dB_dz:'A', $
 		E:['u','A'], $
 		E_abs:'E', $
 		E_x:'E', $
