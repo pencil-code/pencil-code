@@ -190,11 +190,27 @@ module Particles_mpicomm
 !
       real, dimension (:) :: q
       real :: qpar
-      integer :: iq0
+      integer :: iq0,jl,ju,jm
 !
-      call keep_compiler_quiet(q)
-      call keep_compiler_quiet(qpar)
-      call keep_compiler_quiet(iq0)
+      intent (in) :: qpar,q
+      intent (out) :: iq0
+!
+      jl=1+nghost
+      ju=size(q)-nghost
+!
+      do while((ju-jl)>1)
+        jm=(ju+jl)/2
+        if (qpar > q(jm)) then
+          jl=jm
+        else
+          ju=jm
+        endif
+      enddo
+      if (qpar-q(jl) <= q(ju)-qpar) then
+        iq0=jl
+      else
+        iq0=ju
+      endif
 !
     endsubroutine find_index_by_bisection
 !***********************************************************************
