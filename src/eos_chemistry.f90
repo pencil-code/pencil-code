@@ -1036,10 +1036,11 @@ module EquationOfState
 !
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_ss_flux
 !***********************************************************************
     subroutine bc_ss_flux_turb(f,topbot)
@@ -1049,7 +1050,7 @@ module EquationOfState
 !   4-may-2009/axel: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1063,7 +1064,7 @@ module EquationOfState
 !   31-may-2010/pete: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1104,7 +1105,7 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1120,7 +1121,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1135,7 +1136,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1150,7 +1151,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1165,7 +1166,7 @@ module EquationOfState
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1181,7 +1182,7 @@ module EquationOfState
 !   1-may-2003/axel: added the same for top boundary
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1196,7 +1197,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1209,7 +1210,7 @@ module EquationOfState
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z', &
           'not implemented in eos_chemistry.f90')
@@ -1226,7 +1227,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1241,7 +1242,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1256,7 +1257,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1271,7 +1272,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1286,7 +1287,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1301,7 +1302,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1318,7 +1319,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1328,7 +1329,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1342,7 +1343,7 @@ module EquationOfState
 !
 !  21-aug-2006/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1356,7 +1357,7 @@ module EquationOfState
 !
 !  12-Juil-2006/dintrans: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
       call keep_compiler_quiet(f)
@@ -1370,7 +1371,7 @@ module EquationOfState
 !  stratification in Fourier space.
 !  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
       call keep_compiler_quiet(f)

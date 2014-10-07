@@ -1379,7 +1379,7 @@ module EquationOfState
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
 !
-!   01-dec-2009/piyali+dhrube: coded
+!   01-dec-2009/piyali+dhruba: coded
 !
       use Cdata
 !
@@ -1408,8 +1408,8 @@ module EquationOfState
       logical, pointer :: lmultilayer, lheatc_chiconst
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,TT_xy,rho_xy,yH_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy,TT_xy,rho_xy,yH_xy
       integer :: i,ierr
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
@@ -1531,7 +1531,7 @@ module EquationOfState
 !   4-may-2009/axel: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1545,7 +1545,7 @@ module EquationOfState
 !   31-may-2010/pete: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1557,7 +1557,7 @@ module EquationOfState
 !   23-apr-2014/pete: dummy
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1569,7 +1569,7 @@ module EquationOfState
 !   15-jul-2014/pete: dummy
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1589,7 +1589,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1608,7 +1608,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1627,7 +1627,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1646,7 +1646,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1664,7 +1664,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1682,7 +1682,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1701,7 +1701,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1715,7 +1715,7 @@ module EquationOfState
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z', &
           'not implemented in eos_ionization.f90')
@@ -1735,7 +1735,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1754,7 +1754,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1773,8 +1773,8 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,nghost) :: lnrho,ss,yH,lnTT,TT,K,sqrtK,yH_term,one_yH_term
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2),nghost) :: lnrho,ss,yH,lnTT,TT,K,sqrtK,yH_term,one_yH_term
       integer :: i
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -1825,8 +1825,8 @@ module EquationOfState
           f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
         enddo
 !
-        lnrho=f(:,:,n2+1:mz,ilnrho)
-        lnTT=f(:,:,n2+1:mz,ilnTT)
+        lnrho=f(:,:,n2+1:,ilnrho)
+        lnTT =f(:,:,n2+1:,ilnTT)
         TT=exp(lnTT)
 !
         K=exp(lnrho_e-lnrho-TT_ion/TT)*(TT/TT_ion)**1.5
@@ -1848,8 +1848,8 @@ module EquationOfState
         ss=ss_ion*((1+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                     -yH_term-one_yH_term-xHe_term)
 !
-        f(:,:,n2+1:mz,iyH)=yH
-        f(:,:,n2+1:mz,iss)=ss
+        f(:,:,n2+1:,iyH)=yH
+        f(:,:,n2+1:,iss)=ss
 !
       case default
         print*,"bc_ss_stemp_z: invalid argument"
@@ -1868,7 +1868,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1887,7 +1887,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1906,7 +1906,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1926,7 +1926,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
 !  the boundaries.
@@ -1945,7 +1945,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1959,7 +1959,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1973,7 +1973,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1987,7 +1987,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
@@ -1998,17 +1998,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_transport_data
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
-!
     endsubroutine read_transport_data
 !***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
+    subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
 !***********************************************************************

@@ -26,7 +26,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: a
+      real, dimension (:,:,:,:) :: a
 !
       call keep_compiler_quiet(a)
 !
@@ -36,7 +36,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       call keep_compiler_quiet(f)
@@ -49,7 +49,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       call keep_compiler_quiet(f)
@@ -62,7 +62,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       call keep_compiler_quiet(f)
@@ -75,7 +75,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       call keep_compiler_quiet(f)
@@ -88,7 +88,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -102,7 +102,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -116,7 +116,7 @@ module Boundcond
 !
 !  23-nov-09/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !

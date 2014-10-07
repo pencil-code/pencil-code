@@ -539,9 +539,9 @@ module Gravity
       use Sub,     only: poly
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz) :: pot
+      real, dimension (:,:,:) :: pot
       real, optional :: pot0           ! potential at r=0
-      real, dimension (mx,my,mz) :: rr
+      real, dimension (size(pot,1),size(pot,2),size(pot,3)) :: rr
       integer :: j
 !
       intent(out) :: pot,pot0

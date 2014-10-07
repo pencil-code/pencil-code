@@ -1010,7 +1010,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   8-jul-2002/axel: split old bc_ss into two
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1026,7 +1026,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   4-may-2009/axel: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1040,7 +1040,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   31-may-2010/pete: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1081,7 +1081,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1097,7 +1097,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1113,7 +1113,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1129,7 +1129,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1145,7 +1145,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1161,7 +1161,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1178,7 +1178,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1192,7 +1192,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z', &
           'not implemented in eos_fixed_ionization.f90')
@@ -1209,7 +1209,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1225,7 +1225,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1241,7 +1241,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1257,7 +1257,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1273,7 +1273,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1289,7 +1289,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_ss_a2stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1306,7 +1306,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  11-jul-2002/nils: moved into the entropy module
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
 !  the boundaries.
@@ -1321,7 +1321,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     subroutine bc_stellar_surface(f,topbot)
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1333,7 +1333,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1345,7 +1345,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1357,7 +1357,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1368,17 +1368,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine read_transport_data
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
-!
     endsubroutine read_transport_data
 !***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
+    subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
 !***********************************************************************

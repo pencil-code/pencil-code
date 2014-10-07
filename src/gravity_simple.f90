@@ -781,7 +781,7 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz) :: pot
+      real, dimension (:,:,:) :: pot
       real, optional :: pot0
 !
       call fatal_error('potential_global','this subroutine has been '// &
@@ -798,10 +798,10 @@ module Gravity
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (nx) :: pot
+      real, dimension (:) :: pot
       real, optional :: ymn,zmn,pot0
-      real, optional, dimension (nx) :: xmn,rmn
-      real, optional, dimension (nx,3) :: grav
+      real, optional, dimension (size(pot)) :: xmn,rmn
+      real, optional, dimension (size(pot),3) :: grav
 !
       intent(in) :: xmn,ymn,zmn,rmn
       intent(out) :: pot
