@@ -7,6 +7,32 @@
 #
 # Chao-Chin Yang, 2013-10-21
 #=======================================================================
+def stratz(datadir='./data'):
+    """Finds the vertical background stratification.
+
+    Returned Values:
+        The z coordinates and the corresponding density stratification.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+    """
+    # Chao-Chin Yang, 2014-10-08
+    from . import read
+    import numpy as np
+    # Read the dimensions and the parameters.
+    dim = read.dimensions(datadir=datadir)
+    par = read.parameters(datadir=datadir)
+    # Construct the z coordinates.
+    z = par.xyz0[2] + par.lxyz[2] / dim.nzgrid * (np.arange(dim.nzgrid) + 0.5)
+    # Find the density stratification.
+    if par.gztype in {'zero', 'none'}:
+        rho = par.rho0 * np.ones(dim.nzgrid,)
+    elif par.gztype == 'linear':
+        h = par.cs0 / par.gz_coeff
+        rho = par.rho0 * np.exp(-0.5 * (z / h)**2)
+    return z, rho
+#=======================================================================
 def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     """Finds the time average of each given diagnostic variable.
 
