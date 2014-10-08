@@ -255,6 +255,7 @@ module Magnetic
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
   logical :: lremove_meanaz=.false.
+  logical :: ladd_global_field=.true. 
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -294,7 +295,7 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock
+      eta_width_shock, eta_xshock, ladd_global_field
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1672,9 +1673,9 @@ module Magnetic
 !
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iglobal_bx_ext) = dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
-            f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))/x(l1:l2)**3
-            f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)-omega_Bz_ext*t))                      /x(l1:l2)**3
+            f(l1:l2,m,n,iglobal_bx_ext) = dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)))/x(l1:l2)**3
+            f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)))/x(l1:l2)**3
+            f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
 !
         case default
@@ -1926,6 +1927,8 @@ module Magnetic
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
       if (lhydro .and. llorentzforce) lpenc_requested(i_jxbr)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_oo)=.true.
+!
+      if (dipole_moment/=0.0) lpenc_requested(i_r_mn1)=.true.
 !
 !  ua pencil if lua_as_aux
 !
@@ -2487,6 +2490,17 @@ module Magnetic
           if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
         endif
 !
+!  Add a precessing dipole not in the bext field
+!
+        if (dipole_moment .ne. 0) then 
+          c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
+          p%bb(:,1) = p%bb(:,1) + dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,2) = p%bb(:,2) + dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,3) = p%bb(:,3) + dipole_moment *   (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          if (ladd_global_field) call fatal_error("calc_pencils_magnetic_pencpar",&
+               "Switch ladd_global_field=F in magnetic_run_pars in run.in")
+        endif
+!
 !  Add the external potential field.
 !
 !        if (lB_ext_pot) then
@@ -2496,9 +2510,11 @@ module Magnetic
 !
 !  Add external B-field.
 !
-        if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
-        if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
-        if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
+        if (ladd_global_field) then
+          if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
+          if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
+          if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
+        endif
       endif
 !
 !  b2 now (since 18 June 2013) includes B_ext by default.
