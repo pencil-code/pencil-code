@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ecr; gecr(3); ugecr; bgecr; bglnrho
+! PENCILS PROVIDED ecr; ecr1; gecr(3); ugecr; bgecr; bglnrho
 !
 !***************************************************************
 module Cosmicray
@@ -154,7 +154,9 @@ module Cosmicray
 !  superimpose something else
 !
       select case (initecr2)
-        case ('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
+        case ('wave-x'); call wave(amplecr2,f,iecr,kx=kx_ecr)
+        case ('wave-y'); call wave(amplecr2,f,iecr,ky=ky_ecr)
+        case ('wave-z'); call wave(amplecr2,f,iecr,kz=kz_ecr)
         case ('constant'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
         case ('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
       endselect
@@ -221,6 +223,8 @@ module Cosmicray
       intent(inout) :: p
 ! ecr
       if (lpencil(i_ecr)) p%ecr=f(l1:l2,m,n,iecr)
+! ecr1
+      if (lpencil(i_ecr1)) p%ecr1=1./f(l1:l2,m,n,iecr)
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr

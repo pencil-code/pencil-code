@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ucr(3); ucrij(3,3); ucrgucr(3); divucr
+! PENCILS PROVIDED ucr(3); ucrij(3,3); ucrgucr(3); divucr; del2ucr(3)
 !
 !***************************************************************
 module Cosmicrayflux
@@ -27,13 +27,14 @@ module Cosmicrayflux
 !
   character (len=labellen) :: initfcr='zero'
   real :: amplfcr=0., omegahat=0., fcr_const=0., J_param=0., Ma_param=1.
+  real :: kx_fcr=1., ky_fcr=1., kz_fcr=1., cs2cr=1., nu_cr=0.
   logical :: lupw_ucr=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       omegahat, initfcr, fcr_const
+       omegahat, initfcr, amplfcr, fcr_const, kx_fcr, ky_fcr, kz_fcr, cs2cr
 !
   namelist /cosmicrayflux_run_pars/ &
-       omegahat, lupw_ucr, J_param, Ma_param
+       omegahat, lupw_ucr, J_param, Ma_param, cs2cr, nu_cr
 !
   contains
 !***********************************************************************
@@ -101,6 +102,9 @@ module Cosmicrayflux
 
       case ('zero', '0'); f(:,:,:,ifcrx:ifcrz) = 0.
       case ('const_fcr'); f(:,:,:,ifcrz) = fcr_const
+      case ('wave-x'); call wave(amplfcr,f,ifcrx,kx=kx_fcr)
+      case ('wave-y'); call wave(amplfcr,f,ifcry,ky=ky_fcr)
+      case ('wave-z'); call wave(amplfcr,f,ifcrz,kz=kz_fcr)
 !
       case default
 !
@@ -123,8 +127,11 @@ module Cosmicrayflux
 !
 !  19-nov-04/anders: coded
 !
-      if (omegahat/=0.) lpenc_requested(i_ucr)=.true.
-      if (lhydro) lpenc_requested(i_rho)=.true.
+      lpenc_requested(i_ucr)=.true.
+      lpenc_requested(i_ecr1)=.true.
+      lpenc_requested(i_ucrgucr)=.true.
+      lpenc_requested(i_del2ucr)=.true.
+      if (lhydro) lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_gecr)=.true.
       lpenc_requested(i_bb)=.true.
 !
@@ -147,7 +154,7 @@ module Cosmicrayflux
 !
 !  Calculate Cosmicray Flux pencils - to be done
 !
-      use Sub, only: u_dot_grad, gij, div_mn
+      use Sub, only: u_dot_grad, gij, div_mn, del2v
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -166,6 +173,8 @@ module Cosmicrayflux
         if (headtt.and.lupw_ucr) print *,'calc_pencils_cosmicray_current: upwinding advection term'
         call u_dot_grad(f,ifcr,p%ucrij,p%ucr,p%ucrgucr,UPWIND=lupw_ucr)
       endif
+      if (lpencil(i_del2ucr)) call del2v(f,ifcr,p%del2ucr)
+!
 ! fcr
 !      if (lpencil(i_fcr)) p%fcr=f(l1:l2,m,n,ifcrx:ifcrz)
 !
@@ -184,7 +193,7 @@ module Cosmicrayflux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: delucrxbb, delucrxbb2
+      real, dimension (nx,3) :: delucrxbb, delucrxbb2, gecr_over_ecr
       real, dimension (nx)   :: b2, b21
       real, dimension (nx)   :: tmp, ratio
       integer :: i,j
@@ -202,21 +211,26 @@ module Cosmicrayflux
         call identify_bcs('Fecz',ifcrz)
       endif
 !
+!  Time step control.
+!
+      if (lfirst.and.ldt) advec_cs2cr=cs2cr*dxyz_2
+!
+!  Compute auxiliary terms.
+!
       call cross(omegahat*(p%ucr-p%uu),p%bb,delucrxbb)
+      call multsv(cs2cr*p%ecr1,p%gecr,gecr_over_ecr)
 !
 !  Cosmic Ray Flux equation.
 !
       df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-        +delucrxbb
+        +delucrxbb-p%ucrgucr-gecr_over_ecr+nu_cr*p%del2ucr
 !
 !  Add Lorentz force
 !
       if (lhydro) then
-        ratio=p%ecr/p%rho
+        ratio=p%ecr*p%rho1
         call multsv(-ratio,delucrxbb,delucrxbb2)
-        do j=1,3
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-delucrxbb2
-        enddo
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+delucrxbb2
       endif
 !
 !  Calculate diagnostic quantities.

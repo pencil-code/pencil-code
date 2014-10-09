@@ -429,6 +429,7 @@ module Equ
           endif
           if (lcosmicray) then
             diffus_cr=0.0
+            advec_cs2cr=0.0
           endif
           if (lneutraldensity) then
             diffus_diffrhon=0.0; diffus_diffrhon3=0.0
@@ -669,6 +670,7 @@ module Equ
             if (lmagnetic) advec2=advec2+advec_va2+advec_hall**2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2
+            if (lcosmicray) advec2=advec2+advec_cs2cr
             if (lpolymer) advec2=advec2+advec_poly
             maxadvec=maxadvec+sqrt(advec2)
           endif

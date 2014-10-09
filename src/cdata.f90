@@ -113,7 +113,7 @@ module Cdata
   logical :: lreset_tstart=.false.
 !
   logical :: lini_t_eq_zero=.false.
-  real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
+  real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2,advec_cs2cr
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: advec_special,advec_poly,diffus_eta_poly
   real, dimension (nx) :: advec_hypermesh_rho,advec_hypermesh_uu

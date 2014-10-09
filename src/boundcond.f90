@@ -584,7 +584,9 @@ module Boundcond
               case ('fB')
                 ! BCZ_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                !call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+!AB: wasn't this a mistake??
+                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)

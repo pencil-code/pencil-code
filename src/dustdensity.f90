@@ -61,7 +61,7 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2
-  real :: delta=1.2, delta0=1.2
+  real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  BB0, Ntot
@@ -73,12 +73,12 @@ module Dustdensity
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   character (len=labellen) :: bordernd='nothing'
   character (len=labellen) :: advec_ddensity='normal'
-  logical :: ludstickmax=.false.
+  logical :: ludstickmax=.false., lno_deltavd=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
   logical :: ldiffusion_dust=.true., ldust_cdtc=.false.
- logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
+  logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
   logical :: ldiffd_simpl_anisotropic=.false.
@@ -101,9 +101,9 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep
 !
   namelist /dustdensity_run_pars/ &
-      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
+      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, &
+      ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, deltavd_const, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic
@@ -2159,7 +2159,11 @@ module Dustdensity
                   ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.)
               if (deltavd > ust) deltavd = 0.
             endif
-            dkern(l,i,j) = scolld(i,j)*deltavd
+            if (lno_deltavd) then
+              dkern(l,i,j) = scolld(i,j)*deltavd_const
+            else
+              dkern(l,i,j) = scolld(i,j)*deltavd
+            endif
             dkern(l,j,i) = dkern(l,i,j)
           enddo
         enddo
