@@ -537,7 +537,7 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		E = -cross (uu, bb)
-		for pa = 0, 2 do E[*,*,*,pa] += sigma_SI_inv * jj
+		for pa = 0, 2 do E[*,*,*,pa] += sigma_SI_inv * jj[*,*,*,pa]
 		return, E
 	end
 	if (strcmp (quantity, 'E_abs', /fold_case)) then begin
