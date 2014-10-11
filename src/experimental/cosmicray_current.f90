@@ -27,14 +27,19 @@ module Cosmicrayflux
 !
   character (len=labellen) :: initfcr='zero'
   real :: amplfcr=0., omegahat=0., fcr_const=0., J_param=0., Ma_param=1.
-  real :: kx_fcr=1., ky_fcr=1., kz_fcr=1., cs2cr=1., nu_cr=0.
+  real :: kx_fcr=1., ky_fcr=1., kz_fcr=1., cs2cr=1., gamma_cr=1., nu_cr=0.
+  real, parameter :: rhocr0=1.
   logical :: lupw_ucr=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       omegahat, initfcr, amplfcr, fcr_const, kx_fcr, ky_fcr, kz_fcr, cs2cr
+       omegahat, initfcr, amplfcr, fcr_const, kx_fcr, ky_fcr, kz_fcr, &
+       cs2cr, gamma_cr
 !
   namelist /cosmicrayflux_run_pars/ &
        omegahat, lupw_ucr, J_param, Ma_param, cs2cr, nu_cr
+!
+  integer :: idiag_ekincr=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv_{\rm cr}^2\right>$
+  integer :: idiag_ethmcr=0       ! DIAG_DOC: $\left<\varrho_{\rm cr} e_{\rm cr}\right>$
 !
   contains
 !***********************************************************************
@@ -190,12 +195,14 @@ module Cosmicrayflux
       use Slices
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: delucrxbb, delucrxbb2, gecr_over_ecr
-      real, dimension (nx)   :: b2, b21
+      real, dimension (nx)   :: b2, b21, ucr2
       real, dimension (nx)   :: tmp, ratio
+      real :: fact
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -220,6 +227,12 @@ module Cosmicrayflux
       call cross(omegahat*(p%ucr-p%uu),p%bb,delucrxbb)
       call multsv(cs2cr*p%ecr1,p%gecr,gecr_over_ecr)
 !
+!  Take care of gamma_cr factor
+!
+      if (gamma_cr/=0.) then
+        call multsv((p%ecr/rhocr0)**(gamma_cr-1.),gecr_over_ecr,gecr_over_ecr)
+      endif
+!
 !  Cosmic Ray Flux equation.
 !
       df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
@@ -236,6 +249,15 @@ module Cosmicrayflux
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
+        if (idiag_ekincr/=0) then
+          call dot2 (p%ucr,ucr2)
+          call sum_mn_name(.5*p%ecr*ucr2,idiag_ekincr)
+        endif
+!
+        if (idiag_ethmcr/=0) then
+          fact=(1.-1./gamma_cr)*rhocr0*cs2cr
+          call sum_mn_name(fact*(p%ecr/rhocr0)**gamma_cr,idiag_ethmcr)
+        endif
 !
 !  cosmicrayflux components at one point (=pt)
 !
@@ -301,7 +323,7 @@ module Cosmicrayflux
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Sub
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
@@ -314,13 +336,15 @@ module Cosmicrayflux
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!        idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
+        idiag_ekincr=0
+        idiag_ethmcr=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
 !
       do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
+        call parse_name(iname,cname(iname),cform(iname),'ekincr',idiag_ekincr)
+        call parse_name(iname,cname(iname),cform(iname),'ethmcr',idiag_ethmcr)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
