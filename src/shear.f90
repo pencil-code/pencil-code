@@ -601,6 +601,8 @@ module Shear
       integer, parameter :: mm2 = mygrid - nghost, mm2i = mygrid - 2 * nghost + 1
       real, dimension(mxgrid,nypx+2*nghost,nz) :: b
       real, dimension(nygrid,nxpy,nz) :: bt
+      real, dimension(nxgrid,nypx,nz) :: b1
+      real, dimension(nx,ny,nz) :: a1
       real, dimension(nxgrid) :: xnew, px, yshift
       real, dimension(nygrid) :: ynew, ynew1, py
       real, dimension(mygrid) :: by
@@ -641,8 +643,9 @@ module Shear
 !
 !  Interpolation in y: assuming periodic boundary conditions
 !
+        b1 = b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:)
         ydir: if (nygrid > 1) then
-          call transp_pencil_xy(b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:), bt)
+          call transp_pencil_xy(b1, bt)
           scan_yz: do k = 1, nz
             scan_yx: do j = 1, nxpy
               ynew1 = ynew - yshift((ipy * nprocx + ipx) * nxpy + j)
@@ -667,9 +670,10 @@ module Shear
               bt(:,j,k) = py
             enddo scan_yx
           enddo scan_yz
-          call transp_pencil_xy(bt, b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:))
+          call transp_pencil_xy(bt, b1)
         endif ydir
-        call unmap_from_pencil_xy(b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:), a(l1:l2,m1:m2,n1:n2,ic))
+        call unmap_from_pencil_xy(b1, a1)
+        a(l1:l2,m1:m2,n1:n2,ic) = a1
 !
 !  Currently no interpolation in z
 !
@@ -754,6 +758,7 @@ module Shear
       integer, intent(in) :: ivar1, ivar2
       logical, intent(in), optional :: ldf
 !
+      real, dimension(nghost,ny,nz) :: a
       logical :: posdef
       integer :: iv
 !
@@ -772,10 +777,16 @@ module Shear
 !
       ydir: if (nygrid > 1) then
         comp: do iv = ivar1, ivar2
-          if (lfirst_proc_x) call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,iv), deltay, &
-                                                                  shear_method, posdef .and. lposdef(iv))
-          if (llast_proc_x) call shift_ghostzones_nonfft_subtask(f(l2+1:mx,m1:m2,n1:n2,iv), -deltay, &
-                                                                 shear_method, posdef .and. lposdef(iv))
+          first: if (lfirst_proc_x) then
+            a = f(1:nghost,m1:m2,n1:n2,iv)
+            call shift_ghostzones_nonfft_subtask(a, deltay, shear_method, posdef .and. lposdef(iv))
+            f(1:nghost,m1:m2,n1:n2,iv) = a
+          endif first
+          last: if (llast_proc_x) then
+            a = f(l2+1:mx,m1:m2,n1:n2,iv)
+            call shift_ghostzones_nonfft_subtask(a, -deltay, shear_method, posdef .and. lposdef(iv))
+            f(l2+1:mx,m1:m2,n1:n2,iv) = a
+          endif last
         enddo comp
       endif ydir
 !
