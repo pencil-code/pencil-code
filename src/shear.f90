@@ -630,6 +630,8 @@ module Shear
             case ('spline') xmethod
               call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
             case ('poly') xmethod
+              if (posdef .and. any(b(:,j,k) < 0.0)) &
+                call warning('sheared_advection_nonfft', 'negative value(s) before interpolation in x')
               call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
                                             istatus=istat, message=message)
               error = istat /= 0
@@ -659,6 +661,8 @@ module Shear
               case ('spline') ymethod
                 call spline(yglobal, by, ynew1, py, mygrid, nygrid, err=error, msg=message)
               case ('poly') ymethod
+                if (posdef .and. any(by < 0.0)) &
+                  call warning('sheared_advection_nonfft', 'negative value(s) before interpolation in y')
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
@@ -834,6 +838,8 @@ module Shear
           case ('spline') dispatch
             call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
           case ('poly') dispatch
+            if (posdef .and. any(worky < 0.0)) &
+              call warning('shift_ghostzones_nonfft_subtask', 'negative value(s) before interpolation')
             call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
                                           istatus=istat, message=message)
             error = istat /= 0
