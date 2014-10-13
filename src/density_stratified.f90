@@ -161,7 +161,7 @@ module Density
 !
 !  Get density stratification.
 !
-      if (lstratz) call get_stratz(rho0z, dlnrho0dz)
+      if (lstratz) call get_stratz(z, rho0z, dlnrho0dz)
 !
 !  Disable the force-free considerations.
 !

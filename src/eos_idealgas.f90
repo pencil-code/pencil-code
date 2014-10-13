@@ -4261,12 +4261,16 @@ module EquationOfState
 !
     endsubroutine read_Lewis
 !***********************************************************************
-    subroutine set_stratz()
+    subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
-!  Set background stratification in z direction.
+!  Get background stratification in z direction.
 !
-!  07-sep-14/ccyang: coded.
+!  13-oct-14/ccyang: coded.
 !
+      real, dimension(:), intent(in) :: z
+      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
+!
+      real, dimension(size(z)) :: rho, dlnrhodz
       real :: h
 !
       gz: select case (gztype)
@@ -4274,8 +4278,8 @@ module EquationOfState
 !  No stratification
 !
       case ('zero', 'none') gz
-        rho0z = rho0
-        dlnrho0dz = 0.0
+        rho = rho0
+        dlnrhodz = 0.0
 !
 !  Linear acceleration: -gz_coeff^2 * z
 !
@@ -4283,33 +4287,31 @@ module EquationOfState
         if (gz_coeff == 0.0) call fatal_error('set_stratz', 'gz_coeff = 0')
         if (lroot) print *, 'Set z stratification: g_z = -gz_coeff^2 * z'
         h = cs0 / gz_coeff
-        rho0z = rho0 * exp(-0.5 * (z / h)**2)
-        dlnrho0dz = -z / h**2
+        rho = rho0 * exp(-0.5 * (z / h)**2)
+        dlnrhodz = -z / h**2
 !
       case default gz
         call fatal_error('set_stratz', 'unknown type of stratification; gztype = ' // trim(gztype))
 !
       endselect gz
 !
+      if (present(rho0z)) rho0z = rho
+      if (present(dlnrho0dz)) dlnrho0dz = dlnrhodz
+!
 !  Energy stratification
 !
-      if (lthermal_energy) eth0z = cs20 / (gamma * gamma_m1) * rho0z
-!
-    endsubroutine set_stratz
-!***********************************************************************
-    subroutine get_stratz(rho0z_out, dlnrho0dz_out, eth0z_out)
-!
-!  Get background stratification in z direction.
-!
-!  07-sep-14/ccyang: coded.
-!
-      real, dimension(mz), intent(out), optional :: rho0z_out, dlnrho0dz_out
-      real, dimension(mz), intent(out), optional :: eth0z_out
-!
-      if (present(rho0z_out)) rho0z_out = rho0z
-      if (present(dlnrho0dz_out)) dlnrho0dz_out = dlnrho0dz
-      if (present(eth0z_out)) eth0z_out = eth0z
+      if (lthermal_energy .and. present(eth0z)) eth0z = cs20 / (gamma * gamma_m1) * rho
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine set_stratz()
+!
+!  Set background stratification in z direction.
+!
+!  13-oct-14/ccyang: coded.
+!
+      call get_stratz(z, rho0z, dlnrho0dz, eth0z)
+!
+    endsubroutine set_stratz
 !***********************************************************************
 endmodule EquationOfState

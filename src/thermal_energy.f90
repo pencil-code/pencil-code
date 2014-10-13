@@ -244,7 +244,7 @@ module Energy
 !
 !  Get background stratification, if any.
 !
-      if (lstratz) call get_stratz(rho0z, dlneth0dz, eth0z)  ! dlnrho0dz = dlneth0dz
+      if (lstratz) call get_stratz(z, rho0z, dlneth0dz, eth0z)  ! dlnrho0dz = dlneth0dz
 !
       if (llocal_iso) &
            call fatal_error('initialize_energy', &

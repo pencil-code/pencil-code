@@ -552,7 +552,7 @@ module Viscosity
 !
 !  Get background energy stratification, if any.
 !
-      if (lstratz .and. lthermal_energy) call get_stratz(eth0z_out=eth0z)
+      if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
 !
 !  debug output
 !
