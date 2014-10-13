@@ -1437,7 +1437,7 @@ module Dustdensity
                     nd_substep(:,k)=f(l1:l2,m,n,ind(k))
                   enddo
 !
-                  ddt=1e-7
+                  ddt=2e-7
                   do i=1,int(dt/ddt)
 
                     do k=1,ndustspec
