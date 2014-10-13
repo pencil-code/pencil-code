@@ -330,4 +330,22 @@ integer function find_species()
 !
     endsubroutine write_particles_chem_run_pars
 !***********************************************************************
+    subroutine calc_St_init()
+!
+!  07-oct-14/jonas: coded
+!
+    end subroutine calc_St_init
+!***********************************************************************
+    subroutine calc_rho_p_init()
+!
+!  07-oct-14/jonas: coded
+!
+    end subroutine calc_rho_p_init
+!***********************************************************************
+    subroutine calc_rho_p()
+!
+!  07-oct-14/jonas: coded
+!
+    end subroutine calc_rho_p
+!***********************************************************************
   end module Particles_chemistry

@@ -25,6 +25,8 @@
   public :: calc_R_c_hat
   public :: calc_conversion
   public :: calc_St
+  public :: calc_St_init
+  public :: calc_rho_p_init
   public :: calc_ads_entropy
   public :: calc_ads_enthalpy
   public :: calc_surf_enthalpy
@@ -34,6 +36,7 @@
   public :: create_dngas
   public :: create_occupancy
   public :: create_ad_sol_lists
+
   
   public :: cleanup_chemistry_pencils
   

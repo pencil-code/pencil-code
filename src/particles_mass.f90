@@ -101,7 +101,7 @@ module Particles_mass
 !
 !  Initial particle position.
 !
-      fp(1:npar_loc,imp)=0.
+      fp(1:mpar_loc,imp)=0.
 !
       do j=1,ninit
 !
@@ -115,14 +115,14 @@ module Particles_mass
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
-          fp(1:npar_loc,imp)=mass_const
+          fp(1:mpar_loc,imp)=mass_const
 !
         case ('rhopmat')
           if (lroot) then
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif          
-          fp(1:npar_loc,imp)=4.*pi*fp(1:npar_loc,iap)**3*rhopmat/3.
+          fp(1:mpar_loc,imp)=4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
 !
         case default
           if (lroot) &
@@ -159,7 +159,7 @@ module Particles_mass
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_mpm/=0)  call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
+        if (idiag_mpm/=0)  call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
       endif
 !
       call keep_compiler_quiet(f)

@@ -44,8 +44,8 @@ module Particles_adsorbed
   real :: adsplaceholder=0.0
   real :: sum_ads
   real :: dpads=0.0
-  logical :: experimental_adsorbed=.false.
-  integer :: idiag_iads=0
+  logical :: lexperimental_adsorbed=.false.
+  integer :: idiag_ads=0
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
@@ -54,7 +54,7 @@ module Particles_adsorbed
   namelist /particles_ads_init_pars/ &
       init_adsorbed, &
       init_surf_ads_frac,&
-      experimental_adsorbed,&
+      lexperimental_adsorbed,&
       dpads
 !
   namelist /particles_ads_run_pars/ &
@@ -97,8 +97,8 @@ module Particles_adsorbed
          else
       endif
 !
-      call get_species_list('adsorbed_species_names',adsorbed_species_names)
-      call get_reactants(reactants)
+!      call get_species_list('adsorbed_species_names',adsorbed_species_names)
+!      call get_reactants(reactants)
       call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
 !
 !  Set some indeces (this is hard-coded for now)
@@ -139,8 +139,8 @@ module Particles_adsorbed
          npvar=npvar+N_adsorbed_species-1
          iads_end=iads+N_adsorbed_species-2
       else
-         call fatal_error('register_particles_ads', &
-              'N_adsorbed_species must be > 1')
+!!$         call fatal_error('register_particles_ads', &
+!!$              'N_adsorbed_species must be > 1')
       endif
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -152,9 +152,9 @@ module Particles_adsorbed
 !
 !  Allocate only if adsorbed species in mechanism
 !
+      print*,'Number of adsorbed species: ', N_adsorbed_species
+!
     if(Nadsspec>0) then
-       print*,allocated(mu)
-       print*,N_adsorbed_species,N_surface_reactions
        allocate(mu(N_adsorbed_species,N_surface_reactions),STAT=stat)
        if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for mu')
@@ -176,9 +176,10 @@ module Particles_adsorbed
     aac=0
     if (imuadsCO>0) aac(imuadsCO)=1
 !
-    call create_stoc(part,adsorbed_species_names,mu,.true.,N_adsorbed_species)
+    
+    call create_stoc(part,adsorbed_species_names,mu,.true.,N_adsorbed_species,mu_power)
     call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
-        N_adsorbed_species)
+        N_adsorbed_species,mu_pr_power)
     call create_occupancy(adsorbed_species_names,site_occupancy)
 !
     deallocate(part)
@@ -282,9 +283,17 @@ subroutine pencil_criteria_par_ads()
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
+ !     call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
+!
+      if (ldiagnos) then
+         if (idiag_ads /= 0) then
+            call sum_par_name(fp(1:mpar_loc,iads),idiag_ads)
+         else
+         endif
+      else
+      endif
 !
     endsubroutine dpads_dt
 !***********************************************************************
@@ -331,7 +340,7 @@ subroutine pencil_criteria_par_ads()
 !
       n_ads = iads_end - iads +1
 !
-      if (experimental_adsorbed) then
+      if (lexperimental_adsorbed) then
          do k=k1,k2
             dfp(k,iads:iads_end)=dpads
          enddo
@@ -418,13 +427,13 @@ subroutine pencil_criteria_par_ads()
       if (lwr) write(3,*) 'iads=', iads
 !
       if (lreset) then
-         idiag_iads=0;
+         idiag_ads=0;
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
 !
       do iname=1,nname
-         call parse_name(iname,cname(iname),cform(iname),'iads',idiag_iads)
+         call parse_name(iname,cname(iname),cform(iname),'ads',idiag_ads)
       enddo
 !
     end subroutine rprint_particles_ads

@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 8
 ! MAUX CONTRIBUTION 0
 ! NADSSPEC CONTRIBUTION 0
+! NSURFREACSPEC CONTRIBUTION 8
 !
 ! CPARAM logical, parameter :: lparticles_surfspec=.true.
 !
@@ -21,11 +22,9 @@ module Particles_surfspec
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_map
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry
-  use Particles_adsorbed
 !
 !
   implicit none
@@ -39,16 +38,18 @@ module Particles_surfspec
   character (len=labellen), dimension (ninit) :: init_surf='nothing'
   real, dimension(10) :: init_surf_gas_frac
   real :: surfplaceholder=0.0
-  real, dimension(:), allocatable :: ac
   real, dimension(:), allocatable :: uscale,fscale,constr
   integer, dimension(:), allocatable :: dependent_reactant
+  integer :: surf_save
+
+  
 !
 !  JONAS: implement j_of_inu to communicate with
 !  gas phase
 !
-  integer :: jH2=1, jO2=2, jCO2=3, jCO=4, jCH4=5, jN2=6, jH2O=7
-  integer :: jOH=8, jAR=9, jO=10, jH=11, jCH=12, jCH2=13, jHCO=14, jCH3=15
-  integer :: idiag_isurf
+  integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
+  integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
+  integer :: idiag_surf_save=0
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
@@ -76,6 +77,8 @@ module Particles_surfspec
 !
     call register_indep_psurfspec()
     call register_dep_psurfspec()
+!
+
 !!$!
   end subroutine register_particles_surfspec
 !************************************************************************
@@ -85,7 +88,8 @@ module Particles_surfspec
 !
       if (nsurfreacspec/=N_surface_species) then
          print*,'N_surface_species: ', N_surface_species
-         call fatal_error('register_particles_ads', &
+         print*,'NSURFREACSPEC :', nsurfreacspec
+         call fatal_error('register_particles_surf', &
               'wrong size of storage for surface species allocated')
          else
       endif
@@ -162,6 +166,8 @@ module Particles_surfspec
     inuCH2=find_species('CH2',solid_species,n_surface_species)
     inuCH3=find_species('CH3',solid_species,n_surface_species)
 !
+    call find_homogeneous_indexes()
+!
     if(inuH2O > 0)     j_of_inu(inuH2O)=jH2O
     if(inuCO2 > 0)     j_of_inu(inuCO2)=jCO2
     if(inuH2 > 0)      j_of_inu(inuH2) =jH2
@@ -171,6 +177,8 @@ module Particles_surfspec
     if(inuHCO > 0)     j_of_inu(inuHCO)=jHCO
     if(inuCH2 > 0)     j_of_inu(inuCH2)=jCH2
     if(inuCH3 > 0)     j_of_inu(inuCH3)=jCH3
+
+    print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
 ! Set number of carbon atoms for each surface species
 !
@@ -178,8 +186,14 @@ module Particles_surfspec
 !
 !  Set the stoichiometric matrixes
 !
-    call create_stoc(part,solid_species,nu,.true.,N_surface_species)
-    call create_stoc(part,solid_species,nu_prime,.false.,N_surface_species)
+    print*, 'Number of surface species: ',N_surface_species
+!
+    call create_stoc(part,solid_species,nu,.true., &
+         N_surface_species,nu_power)
+    call create_stoc(part,solid_species,nu_prime,.false., &
+         N_surface_species,nu_pr_power)
+
+    print*, 'do we get here?'
 !
 ! Define which gas phase reactants the given reaction depends on
 !
@@ -299,9 +313,14 @@ module Particles_surfspec
         endselect init
       enddo
 !
+!  calculate initial values that are used in evolving others
+!
+      call calc_rho_p_init(fp)
+      call calc_St_init(fp)
+!
     endsubroutine init_particles_surf
 !********************************************************************** 
-subroutine initialize_particles_surf(f,lstarting)
+    subroutine initialize_particles_surf(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -309,7 +328,7 @@ subroutine initialize_particles_surf(f,lstarting)
 !  29-sep-14/jonas coded
 !  JONAS: needs to be filled with life
 !
-      real, dimension (mx,my,z,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  
@@ -334,49 +353,64 @@ subroutine initialize_particles_surf(f,lstarting)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
+!      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
+      if (ldiagnos) then
+         if (idiag_surf_save/=0) then
+            call sum_par_name(fp(1:mpar_loc,isurf),idiag_surf_save)
+         else
+         endif
+      else
+      endif
+!
     endsubroutine dpsurf_dt
 !*****************************************************************
-    subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
+  subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of particle temperature.
 !  (all particles on one pencil)
 !
 !  23-sep-14/Nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: k
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (mx,my,mz,mvar) :: df
+    real, dimension (mpar_loc,mpvar) :: fp, dfp
+    type (pencil_case) :: p
+    integer, dimension (mpar_loc,3) :: ineargrid
+    integer :: k,k1,k2
 
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: dfp, df
+    intent (in) :: f, fp, ineargrid
+    intent (inout) :: dfp, df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(ineargrid)
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(df)
+    call keep_compiler_quiet(p)
+    call keep_compiler_quiet(ineargrid)
+!
+    k1 = k1_imn(imn)
+    k2 = k2_imn(imn)
 !
 !  JONAS: equations.pdf eq. 37, look in 
 !  particles_mass for looping and such
 !
-   do k=k1_imn(imn),k2_imn(imn)
+!   print*,fp(k1:k2,isurf:isurf_end)
+!
+   do k=k1,k2
 !
 !  JONAS: implicit?/explicit?
 !  communicating with gas phase?
 !
+      dfp(k,isurf:isurf_end)=-1e-2
    end do
-    endsubroutine dpsurf_dt_pencil
+!
+  endsubroutine dpsurf_dt_pencil
 !***********************************************************************
-    subroutine rprint_particles_surf(lreset,lwrite)
+  subroutine rprint_particles_surf(lreset,lwrite)
 !
 !  Read and register print parameters relevant for
-! vparticles near field gas composition
+!  particles near field gas composition
 !
 !  06-oct-14/jonas: adapted
 !
@@ -390,20 +424,106 @@ subroutine initialize_particles_surf(f,lstarting)
 !
 !  Write information to index.pro
 !
-      lwr = .false.
+         lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'surf=', isurf
+      if (lwr) write(3,*) 'isurf_save=', surf_save
 !
       if (lreset) then
-         idiag_isurf=0;
+         idiag_surf_save=0;
       endif
 !
-      if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
+      if (lroot .and. ip<14) print*,'rprint_particles_surf: run through parse list'
 !
       do iname=1,nname
-         call parse_name(iname,cname(iname),cform(iname),'isurf',idiag_isurf)
+         call parse_name(iname,cname(iname),cform(iname),'surf_save',idiag_surf_save)
       enddo
 !
     end subroutine rprint_particles_surf
+!***********************************************************************
+    subroutine find_homogeneous_indexes()
+!
+!  07-oct-2014/jonas:coded
+!
+!  find the indexes used in chemistry.f90 of species present 
+!  in the near field of the particle
+!
+      use EquationOfState
+!
+      integer :: index_glob, index_chem
+      logical :: found_specie=.false.
+!
+      call find_species_index('H2',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jH2 = index_chem
+      else    
+         if(inuH2 > 0) call fatal_error('find_homogeneous_indexes','no H2 found')
+      endif
+!!$!
+!!$      call find_species_index('H',index_glob,index_chem,found_specie)
+!!$      if (found_specie) then
+!!$         jH = index_chem
+!!$      else    
+!!$         if(inuH > 0) call fatal_error('find_homogeneous_indexes','no H found')
+!!$      endif
+!
+      call find_species_index('CO2',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCO2 = index_chem
+      else
+         if(inuCO2 > 0) call fatal_error('find_homogeneous_indexes','no CO2 found')
+      endif
+!
+      call find_species_index('CO',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCO = index_chem
+      else
+         if(inuCO > 0) call fatal_error('find_homogeneous_indexes','no CO found')
+      endif
+!
+      call find_species_index('CH4',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCH4 = index_chem
+      else
+         if(inuCH4 > 0) call fatal_error('find_homogeneous_indexes','no CH4 found')
+      endif
+!
+      call find_species_index('H2O',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jH2O = index_chem
+      else
+         if(inuH2O > 0) call fatal_error('find_homogeneous_indexes','no H2O found')
+      endif
+!
+      call find_species_index('CH3',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCH3 = index_chem
+      else
+         if(inuCH3 > 0) call fatal_error('find_homogeneous_indexes','no CH3 found')
+      endif
+!
+      call find_species_index('CH',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCH = index_chem
+      else
+         if(inuCH > 0) call fatal_error('find_homogeneous_indexes','no CH found')
+      endif
+!
+      call find_species_index('CH2',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jCH2 = index_chem
+      else
+         if(inuCH2 > 0) call fatal_error('find_homogeneous_indexes','no CH2 found')
+      endif
+!
+      call find_species_index('HCO',index_glob,index_chem,found_specie)
+      if (found_specie) then
+         jHCO = index_chem
+      else
+        if(inuHCO > 0)  call fatal_error('find_homogeneous_indexes','no CHO found')
+      endif
+!
+!  JONAS: talk to nils, if not found, should i throw an error?
+!
+    end subroutine find_homogeneous_indexes
 !***********************************************************************
   end module Particles_surfspec
