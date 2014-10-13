@@ -632,8 +632,7 @@ module InitialCondition
 
 !
 !        emptyFile=.false.
-!      enddo dataloop
-!
+!   !
 
     if (lACTOS_read) then
         open(143,file="ACTOS_new.out")
@@ -665,8 +664,8 @@ module InitialCondition
         PP_aver=sum(PP_data)/Ndata
         PP_data=PP_aver
 
-        
-        
+  print*,'PP_aver=',PP_aver      
+  print*,TT_data(int(0.05*nygrid)),TT_data(nygrid-int(0.05*nygrid))      
         
        if (ladd_points) then
          k=1

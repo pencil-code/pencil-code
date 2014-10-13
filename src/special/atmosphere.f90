@@ -78,6 +78,7 @@ module Special
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
+  real :: lnTT1, lnTT2, Ntot_ratio
 
 
 ! Keep some over used pencils
@@ -87,11 +88,11 @@ module Special
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lnTT1,lnTT2
 !
 !
   integer :: idiag_dtcrad=0
@@ -479,8 +480,8 @@ module Special
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
            if (lzone_right) then
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-!
-!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT2))*dt1
            endif
          elseif (j==2) then
            mm1=1
@@ -488,7 +489,8 @@ module Special
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
            if (lzone_left) then
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT1))*dt1
            endif
          endif
 !
@@ -1487,12 +1489,12 @@ subroutine bc_satur_x(f,bc)
                107.25, 114.13, 121.45, 129.24, 137.53, 146.35, 155.74, 165.73, 176.36, 187.67,&
                199.71, 212.52, 226.15, 304.42, 356.429, 417.324, 488.622, 572.102, 669.844, 784.284,&
                918.276, 1075.161, 1258.848, 1473.918, 1725.732, 2020.567, 2365.775, 2769.959]
-
-
+!
+       nd_data=nd_data*Ntot_ratio
        dsize_data=dsize_data*1e-7/2.
-
-!call spline(dsize_data,nd_data,dsize,init_distr2,76,20)
-
+!
+!      call spline(dsize_data,nd_data,dsize,init_distr2,76,20)
+!
                do k=1,ndustspec
                  stop_find=.false.
                do i=1,76
@@ -1549,6 +1551,7 @@ subroutine bc_satur_x(f,bc)
 !
         if (lACTOS) then
           ttt=spline_integral(dsize,init_distr2)
+!
           Ntot_=ttt(ndustspec)
           Ntot =Ntot_
           print*,'Ntot=',Ntot
