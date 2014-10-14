@@ -504,7 +504,7 @@ module Shear
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
             notlast: if (.not. llast) then
               call isendrcv_bdry_x(df, ivar, ivar)
-              call shift_ghostzones_nonfft(df, ivar, ivar, ldf=.true.)
+              call shift_ghostzones_nonfft(df, ivar, ivar, dt_shear, ldf=.true.)
               call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
             endif notlast
           case default method
@@ -749,7 +749,7 @@ module Shear
 !
     endsubroutine fourier_shift_ghostzones
 !***********************************************************************
-    subroutine shift_ghostzones_nonfft(f, ivar1, ivar2, ldf)
+    subroutine shift_ghostzones_nonfft(f, ivar1, ivar2, dt_shear, ldf)
 !
 !  Shearing boundary conditions by spline interpolation.
 !
@@ -761,10 +761,21 @@ module Shear
       real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
       logical, intent(in), optional :: ldf
+      real, intent(in), optional :: dt_shear
 !
       real, dimension(nghost,ny,nz) :: a
       logical :: posdef
       integer :: iv
+      real :: shift
+!
+!  Get the shift.
+!
+      if (present(dt_shear)) then
+        shift = -Sshear * Lx * dt_shear
+        shift = shift - int(shift / Ly) * Ly
+      else
+        shift = deltay
+      endif
 !
 !  Check if the field is df.
 !
@@ -776,6 +787,7 @@ module Shear
 !  Periodically assign the ghost cells in x direction.
 !
       if (nxgrid > 1) call bcx_periodic(f, ivar1, ivar2)
+      if (shift == 0.0) return
 !
 !  Shift the ghost cells in y direction.
 !
@@ -783,12 +795,12 @@ module Shear
         comp: do iv = ivar1, ivar2
           first: if (lfirst_proc_x) then
             a = f(1:nghost,m1:m2,n1:n2,iv)
-            call shift_ghostzones_nonfft_subtask(a, deltay, shear_method, posdef .and. lposdef(iv))
+            call shift_ghostzones_nonfft_subtask(a, shift, shear_method, posdef .and. lposdef(iv))
             f(1:nghost,m1:m2,n1:n2,iv) = a
           endif first
           last: if (llast_proc_x) then
             a = f(l2+1:mx,m1:m2,n1:n2,iv)
-            call shift_ghostzones_nonfft_subtask(a, -deltay, shear_method, posdef .and. lposdef(iv))
+            call shift_ghostzones_nonfft_subtask(a, -shift, shear_method, posdef .and. lposdef(iv))
             f(l2+1:mx,m1:m2,n1:n2,iv) = a
           endif last
         enddo comp
