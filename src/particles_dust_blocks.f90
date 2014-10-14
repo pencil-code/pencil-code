@@ -38,6 +38,7 @@ module Particles
 !
   include 'particles.h'
 !
+  real, dimension(mz) :: rho0z = 1.0
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
@@ -204,7 +205,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: cs0,rho0
+      use EquationOfState, only: cs0, rho0, get_stratz
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
@@ -227,6 +228,14 @@ module Particles
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
       if (tausp/=0.0) tausp1=1/tausp
+!
+!  Get density stratification.
+!
+      if (lstratz) then
+        call get_stratz(z, rho0z)
+      else
+        rho0z = rho0
+      endif
 !
 !  For drag force calculation we need to fill blocks with information about
 !  the gas density field and the gas velocity field.
@@ -2633,16 +2642,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Reads the gas density at one location in a block.
 !
-!  01-mar-13/ccyang: coded.
+!  04-mar-13/ccyang: coded.
+!
+      use EquationOfState, only: get_stratz
 !
       real, dimension(mxb,myb,mzb,mfarray,0:nblockmax-1), intent(in) :: fb
       integer, intent(in) :: ix, iy, iz, ib
 !
-      linear: if (ldensity_nolog) then
+      real, dimension(1) :: rho0
+!
+      stratz: if (lstratz) then
+        call get_stratz((/zb(iz,ib)/), rho0z=rho0)
+        rho = rho0(1) * (1.0 + fb(ix, iy, iz, irho, ib))
+      elseif (ldensity_nolog) then stratz
         rho = fb(ix, iy, iz, irho, ib)
-      else linear
+      else stratz
         rho = exp(fb(ix, iy, iz, ilnrho, ib))
-      endif linear
+      endif stratz
 !
     endfunction get_gas_density
 !***********************************************************************
