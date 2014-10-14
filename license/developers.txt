@@ -15,7 +15,7 @@ Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +35 8
 Steve Berukoff,       steveb/physics.ucla.edu        ,
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192
 Philippe Bourdin,     bourdin/mps.mpg.de,            Bourdin.KIS,          +49 5556 979 408,  +49 5551 5895372
-Axel Brandenburg,     brandenb/nordita.org,          brandenb,             +46 8 5537 8707,   +46 70 574 0650,          axelbrandenburg
+Axel Brandenburg,     brandenb/nordita.org,          brandenb,             +46 8 5537 8707,   +46 73 270 4376,          axelbrandenburg
 Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 746 003 7611,                            iomsn1
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600 
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529      +47 9845 2367,            mppiyali
