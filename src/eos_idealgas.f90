@@ -103,6 +103,7 @@ module EquationOfState
 !
   real, dimension(mz) :: rho0z = 0.0, dlnrho0dz = 0.0
   real, dimension(mz) :: eth0z = 0.0
+  logical :: lstratset = .false.
 !
   contains
 !***********************************************************************
@@ -308,6 +309,7 @@ module EquationOfState
 !  Set background stratification, if any.
 !
       if (lstratz) call set_stratz()
+      lstratset = .true.
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -4271,7 +4273,10 @@ module EquationOfState
       real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
 !
       real, dimension(size(z)) :: rho, dlnrhodz
+      logical :: info
       real :: h
+!
+      info = lroot .and. .not. lstratset
 !
       gz: select case (gztype)
 !
@@ -4285,7 +4290,7 @@ module EquationOfState
 !
       case ('linear') gz
         if (gz_coeff == 0.0) call fatal_error('set_stratz', 'gz_coeff = 0')
-        if (lroot) print *, 'Set z stratification: g_z = -gz_coeff^2 * z'
+        if (info) print *, 'Set z stratification: g_z = -gz_coeff^2 * z'
         h = cs0 / gz_coeff
         rho = rho0 * exp(-0.5 * (z / h)**2)
         dlnrhodz = -z / h**2
