@@ -66,6 +66,16 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         magic.append('bb')
     except:
         pass
+    try:
+        index = variables.index('jj')
+        magic.append('jj')
+    except:
+        pass
+    try:
+        index = variables.index('j_mag')
+        magic.append('jj')
+    except:
+        pass
 
     # reading pc variables and setting dimensions
     var = pc.read_var(varfile = varfile, datadir = datadir, proc = proc,
@@ -353,6 +363,16 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
     try:
         index = variables.index('b_mag')
         magic.append('bb')
+    except:
+        pass
+    try:
+        index = variables.index('jj')
+        magic.append('jj')
+    except:
+        pass
+    try:
+        index = variables.index('j_mag')
+        magic.append('jj')
     except:
         pass
 
