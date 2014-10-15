@@ -30,9 +30,10 @@ module InitialCondition
 ! [xyz]shift = shift in each dimension in a 2*pi box
 
   character (len=labellen) :: vtkFile='gm2pc.vtk'
+  real :: B_bkg = 0.0
 !
   namelist /initial_condition_pars/ &
-      vtkFile
+      vtkFile, B_bkg
 !
   contains
 !***********************************************************************
@@ -184,6 +185,14 @@ module InitialCondition
       do j=1,3
           ju=iaa-1+j
           f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
+      enddo
+!
+!     Add a background field to the braid
+      do l=1,mx
+        do m=1,my
+          f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
+          f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
+        enddo
       enddo
 !      
 !
