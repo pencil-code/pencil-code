@@ -145,13 +145,13 @@ module InitialCondition
         do m = 1, vtkY
           do l = 1, vtkX
             if (p64 == 0) then
-              read(0, rec = pos+4*(0 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb(1,l,m,n)
-              read(0, rec = pos+4*(1 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb(2,l,m,n)
-              read(0, rec = pos+4*(2 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb(3,l,m,n)
+              read(0, rec = pos+4*(0 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb(1,l,m,n)
+              read(0, rec = pos+4*(1 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb(2,l,m,n)
+              read(0, rec = pos+4*(2 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb(3,l,m,n)
             else
-              read(0, rec = pos+8*(0 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb64(1,l,m,n)
-              read(0, rec = pos+8*(1 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb64(2,l,m,n)
-              read(0, rec = pos+8*(2 + (n-1)*3 + (m-1)*vtkZ*3 + (l-1)*vtkZ*vtkY*3)) bb64(3,l,m,n)
+              read(0, rec = pos+8*(0 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb64(1,l,m,n)
+              read(0, rec = pos+8*(1 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb64(2,l,m,n)
+              read(0, rec = pos+8*(2 + (l-1)*3 + (m-1)*vtkX*3 + (n-1)*vtkX*vtkY*3)) bb64(3,l,m,n)
               bb(1,l,m,n) = real(bb64(1,l,m,n))
               bb(2,l,m,n) = real(bb64(2,l,m,n))
               bb(3,l,m,n) = real(bb64(3,l,m,n))
