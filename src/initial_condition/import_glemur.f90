@@ -21,15 +21,7 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-! ampl = amplitude of the magnetic field
-! width_ring = width of the flux tube
-! C = offset from the center of the knot, should be > 1
-! D = extention coefficient for the z direction
-! phase = relative phase of the z-variation
-! [xyz]scale = scale in each dimension
-! [xyz]shift = shift in each dimension in a 2*pi box
-
-  character (len=labellen) :: vtkFile='gm2pc.vtk'
+  character (len=50) :: vtkFile='gm2pc.vtk'
   real :: B_bkg = 0.0
 !
   namelist /initial_condition_pars/ &
@@ -107,7 +99,7 @@ module InitialCondition
 !
 ! check the length of the file and allocate array for the raw unformatted data
       inquire(file = vtkFile, size = fileSize)
-      write(*,*) 'file size = ', fileSize, '  bytes'
+      write(*,*) 'vtkFile = ', vtkFile, '  file size = ', fileSize, '  bytes'
       allocate(character(len = fileSize) :: raw)
 !
 ! open the binary file
@@ -130,7 +122,7 @@ module InitialCondition
 !
 ! determine if single or double precision
       pos = index(raw, "VECTORS bfield")
-      if (index(raw(pos+1:pos+7), 'double') > 0) then
+      if (index(raw(pos+15:pos+21), 'double') > 0) then
         write(*,*) 'double = true'
         p64 = 1
         allocate(bb64(3,vtkX,vtkY,vtkZ))
@@ -158,7 +150,6 @@ module InitialCondition
               bb(3,l,m,n) = real(bb64(3,l,m,n))
             endif
             f(l+nghost,m+nghost,n+nghost,iax:iaz) = bb(:,l,m,n)
-!             write(*,*) f(l,m,n,iax:iaz)
           enddo
         enddo
       enddo
