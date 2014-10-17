@@ -4,7 +4,7 @@
 # 
 # Date:   December 2013.
 # --------------------------------------------------------------------------
-#=doc
+#>doc
 # ## Read particles
 # 
 # Source: `julia/src/particles.jl`
@@ -88,7 +88,7 @@
 # 
 # Need to implement the `proc` parameter.
 # 
-#=end
+#>end
 
 #################
 #

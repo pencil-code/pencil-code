@@ -13,7 +13,7 @@
 # 
 # Date:   December 2013.
 # --------------------------------------------------------------------------
-#=doc
+#>doc
 # ## Read dimensions
 # 
 # Source: `julia/src/dimensions.jl`
@@ -112,7 +112,7 @@
 # | `datadir="xxx"` | Path to the data directory (default: "data").                   |
 # | `proc=n`        | Read the `dim` or `pdim` file from the `data/proc$n` directory. |
 # 
-#=end
+#>end
 
 function read_pdim(;datadir="data",proc=-1)
 	

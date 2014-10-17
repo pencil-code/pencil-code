@@ -34,9 +34,9 @@ for file = jl_files
 	save = false
 	for line = readlines(src)
 		
-		if beginswith(line,"#=doc")
+		if beginswith(line,"#>doc")
 			save = true
-		elseif beginswith(line,"#=end")
+		elseif beginswith(line,"#>end")
 			save = false
 		elseif save
 			if beginswith(line,"#")  start = 2  end

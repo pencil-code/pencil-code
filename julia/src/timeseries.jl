@@ -4,7 +4,7 @@
 # 
 # Date:   December 2013.
 # --------------------------------------------------------------------------
-#=doc
+#>doc
 # ## Read time series
 # 
 # Source: `julia/src/timeseries.jl`
@@ -86,7 +86,7 @@
 # | --------------- |------------------------------------------------|
 # | `datadir="xxx"` | Path to the data directory (default: "data").  |
 # 
-#=end
+#>end
 
 function read_ts(;datadir="data")
     # 

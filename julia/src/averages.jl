@@ -4,7 +4,7 @@
 # 
 # Date:   December 2013.
 # --------------------------------------------------------------------------
-#=doc
+#>doc
 # ## Read averages
 # 
 # Source: `julia/src/averages.jl`
@@ -92,7 +92,7 @@
 # 
 # Need to implement `read_yaver(var="rhopmz")` and `read_xyaver(it=10)`
 # 
-#=end
+#>end
 
 
 #################

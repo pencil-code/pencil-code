@@ -3,7 +3,7 @@
 # 
 # Date:   April 2014
 # --------------------------------------------------------------------------
-#=doc
+#>doc
 # ## Read simulation parameters
 # 
 # Source: `julia/src/param.jl`
@@ -13,7 +13,7 @@
 # A function to read the simulation parameters from `param.nml` and `param2.nml`
 # as a `Dict()`, with one key for each parameter.
 # 
-#=end
+#>end
 
 function read_param(;datadir="data")
     
