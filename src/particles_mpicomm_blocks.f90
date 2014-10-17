@@ -67,6 +67,8 @@ module Particles_mpicomm
 !
       intent (in) :: f, lstarting
 !
+      integer :: ibx, iby, ibz
+!
 !  Check consistency of brick partition.
 !
       if (mod(nbrickx,nprocx)/=0) then
