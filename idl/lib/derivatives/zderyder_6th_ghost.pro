@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-;;  Second derivative d^2 / dy dz
+;;  Second derivative d^2 / dz dy =^= zder (yder (f))
 ;;  - 6th-order
 ;;  - with ghost cells
 ;;
@@ -35,7 +35,7 @@ function zderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (ldegenerated[1] or ldegenerated[2] or (fmy eq 1) or (fmz eq 1)) then return, d
 ;
-;  Calculate d2f/dydz.
+;  Calculate d^2 / dz dy (f)
 ;
   fac = 1./60.^2
   if (lequidist[1]) then begin

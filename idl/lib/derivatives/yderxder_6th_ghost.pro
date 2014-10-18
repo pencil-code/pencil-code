@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-;;  Second derivative d^2 / dx dy
+;;  Second derivative d^2 / dy dx =^= yder (xder (f))
 ;;  - 6th-order
 ;;  - with ghost cells
 ;;
@@ -18,7 +18,7 @@ function yderxder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;AB: the following should not be correct
 ; if (coord_system ne 'cartesian') then $
-;     message, "xderyder_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
+;     message, "yderxder_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
 ;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
@@ -35,7 +35,7 @@ function yderxder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (ldegenerated[0] or ldegenerated[1] or (fmx eq 1) or (fmy eq 1)) then return, d
 ;
-;  Calculate d2f/dxdy.
+;  Calculate d^2 / dy dx (f)
 ;
   fac = 1./60.^2
   if (lequidist[0]) then begin

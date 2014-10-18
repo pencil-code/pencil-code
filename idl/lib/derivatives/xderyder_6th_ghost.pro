@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-;;  Second derivative d2f/dydx
+;;  Second derivative d^2 / dx dy =^= xder (yder (f))
 ;;  - 6th-order
 ;;  - with ghost cells
 ;;
