@@ -637,6 +637,32 @@ module Particles_map
 !***********************************************************************
     subroutine interpolate_fourth(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
+!  Interpolate using 4th order polynomials in x and z. The weight function
+!  is so complicated that a direct analytical solution gives little insight.
+!  Instead we derive the weight function through the following steps:
+!
+!    f_i = M_ij*C_j
+!
+!  Here f_i is the value of the quantity at the grid cells, M_ij is the
+!  interpolation matrix and C_j the interpolation parameters to be found.
+!  We order the grid cells from (-2,-2) to (+2,+2) in x and z, incrementing
+!  along x as the main direction. The coefficients are sorted as
+!
+!    C_{ 1- 5} = 1  , x    , x^2    , x^3     , x^4
+!    C_{ 6-10} = z  , x*z  , x^2*z  , x^3*z  , x^4*z
+!    C_{11-15} = z^2, x*z^2, x^2*z^2, x^3*z^2, x^4*z^2
+!    C_{16-20} = z^3, x*z^3, x^2*z^3, x^3*z^3, x^4*z^3
+!    C_{21-25} = z^4, x*z^4, x^2*z^4, x^3*z^4, x^4*z^4
+!
+!  The interpolated value is found through:
+!
+!    f = C_j*s_j = M^{-1}_ij*f_j*s_i = M^{-1}_ij*s_i*f_j = W_j*f_j
+!
+!  Here s is the separation vector s=(1,dx,dx^2,dx^3,dx^4,dz,dx*dz,...).
+!
+!  The weight function W = transpose(M^{-1}#s) can then be used directly for
+!  the back-reaction as well.
+!
 !  18-oct-14/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -646,10 +672,10 @@ module Particles_map
       integer, dimension (3) :: inear
       integer :: iblock, ipar
 !
-      real, dimension (25,25) :: invmat
-      real, dimension (25,ivar2-ivar1+1) :: cc
+      real, dimension (25,25) :: invmat, invmatt
       real, dimension (25,ivar2-ivar1+1) :: gg
-      real :: dxp, dzp
+      real, dimension (25) :: sepvec, weight
+      real :: dxp, dzp, dxp2, dzp2, dxp3, dzp3, dxp4, dzp4
       real, save :: dx1, dx2, dx3, dx4
       real, save :: dz1, dz2, dz3, dz4
       real, save :: dx1dz1, dx2dz1, dx3dz1, dx4dz1
@@ -671,7 +697,7 @@ module Particles_map
         call fatal_error('interpolate_quadratic','')
       endif
 !
-!  A few values that only need to be calculated once for equidistant grids.
+!  Precalculate values that only need to be calculated once.
 !
       if (lfirstcall) then
         dx1=1/dx; dx2=1/dx**2; dx3=1/dx**3; dx4=1/dx**4
@@ -680,6 +706,10 @@ module Particles_map
         dx1dz2=dx1*dz2; dx2dz2=dx2*dz2; dx3dz2=dx3*dz2; dx4dz1=dx4*dz2
         dx1dz3=dx1*dz3; dx2dz3=dx2*dz3; dx3dz3=dx3*dz3; dx4dz1=dx4*dz3
         dx1dz4=dx1*dz4; dx2dz4=dx2*dz4; dx3dz4=dx3*dz4; dx4dz1=dx4*dz4
+!
+!  The inverse of the interpolation matrix is input analytically. Note that
+!  zeros here denote zeros in the actual matrix, to avoid infinities.
+!
         invmat(1,:)=(/0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0/)
         invmat(2,:)=(/0,0,0,0,0,0,0,0,0,0,12,-1,0,1,-11,0,0,0,0,0,0,0,0,0,0/)
         invmat(3,:)=(/0,0,0,0,0,0,0,0,0,0,-24,1,0,1,-24,0,0,0,0,0,0,0,0,0,0/)
@@ -706,6 +736,7 @@ module Particles_map
         invmat(24,:)=(/-288,144,0,-144,288,72,-36,0,36,-72,-48,24,0,-24,47,72,-36,0,36,-72,-288,144,0,-144,288/)
         invmat(25,:)=(/576,-144,96,-144,576,-144,36,-24,36,-144,96,-24,16,-24,96,-144,36,-24,36,-144,576,-144,96,-144,576/)
         where (invmat/=0.0) invmat=1/invmat
+        invmatt=transpose(invmat)
       endif
 !
 !  Define function values at the grid points.
@@ -716,27 +747,56 @@ module Particles_map
         ipoint=ipoint+1
       enddo; enddo
 !
-!  Calculate the coefficients of the interpolation formula.
-!
-      do ivar=1,ivar2-ivar1+1
-        cc(:,ivar)=matmul(invmat,gg(:,ivar))
-      enddo
-!
-!  Calculate the value of the interpolation function at the point (dxp,dzp).
+!  Calculate the separation of the interpolation point from the central grid
+!  cell (and various powers of it).
 !
       dxp=xxp(1)-x(ix0)
       dzp=xxp(3)-z(iz0)
+      dxp2=dxp**2
+      dzp2=dzp**2
+      dxp3=dxp**3
+      dzp3=dzp**3
+      dxp4=dxp**4
+      dzp4=dzp**4
 !
-      gp = cc(1,:) + cc(2,:)*dxp + cc(3,:)*dxp**2 + &
-          cc(4,:)*dxp**3 + cc(5,:)*dxp**4 + &
-          cc(6,:)*dzp + cc(7,:)*dxp*dzp + cc(8,:)*dxp**2*dzp + &
-          cc(9,:)*dxp**3*dzp + cc(10,:)*dxp**4*dzp + &
-          cc(11,:)*dzp**2 + cc(12,:)*dxp*dzp**2 + cc(13,:)*dxp**2*dzp**2 + &
-          cc(14,:)*dxp**3*dzp**2 + cc(15,:)*dxp**4*dzp**2 + &
-          cc(16,:)*dzp**3 + cc(17,:)*dxp*dzp**3 + cc(18,:)*dxp**2*dzp**3 + &
-          cc(19,:)*dxp**3*dzp**3 + cc(20,:)*dxp**4*dzp**3 + &
-          cc(21,:)*dzp**4 + cc(22,:)*dxp*dzp**4 + cc(23,:)*dxp**2*dzp**4 + &
-          cc(24,:)*dxp**3*dzp**4 + cc(25,:)*dxp**4*dzp**4
+!  Calculate the elements of the separation vector (see discussion above).
+!
+      sepvec( 1)=1.0
+      sepvec( 2)=dxp*dx1
+      sepvec( 3)=dxp2*dx2
+      sepvec( 4)=dxp3*dx3
+      sepvec( 5)=dxp4*dx4
+      sepvec( 6)=dzp*dz1
+      sepvec( 7)=dxp*dzp*dx1dz1
+      sepvec( 8)=dxp2*dzp*dx2dz1
+      sepvec( 9)=dxp3*dzp*dx3dz1
+      sepvec(10)=dxp4*dzp*dx4dz1
+      sepvec(11)=dzp2*dz2
+      sepvec(12)=dxp*dzp2*dx1dz2
+      sepvec(13)=dxp2*dzp2*dx2dz2
+      sepvec(14)=dxp3*dzp2*dx3dz2
+      sepvec(15)=dxp4*dzp2*dx4dz2
+      sepvec(16)=dzp3*dz3
+      sepvec(17)=dxp*dzp3*dx1dz3
+      sepvec(18)=dxp2*dzp3*dx2dz3
+      sepvec(19)=dxp3*dzp3*dx3dz3
+      sepvec(20)=dxp4*dzp3*dx4dz3
+      sepvec(21)=dzp4*dz4
+      sepvec(22)=dxp*dzp4*dx1dz4
+      sepvec(23)=dxp2*dzp4*dx2dz4
+      sepvec(24)=dxp3*dzp4*dx3dz4
+      sepvec(25)=dxp4*dzp4*dx4dz4
+!
+!  Calculate the weight vector.
+!
+      weight=matmul(invmatt,sepvec)
+!
+!  Finally use the weight vector to calculate the interpolated value as a
+!  simple sum over the involved grid cells.
+!
+      do ivar=1,ivar2-ivar1+1
+        gp(ivar) = sum(weight*gg(:,ivar))
+      enddo
 !
       call keep_compiler_quiet(ipar,iblock)
 !
