@@ -487,14 +487,6 @@ program pc_reduce
     enddo
   enddo
 !
-  ! write additional data:
-  close (lun_output)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
-  t_sp = t
-  write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
-  if (lshear) write (lun_output) deltay
-  close (lun_output)
-!
   ! communicate ghost cells along the y direction:
   ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost) - Lxyz(2)
   ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  ) + Lxyz(2)
@@ -510,6 +502,14 @@ program pc_reduce
   rdx_1(nrx-nghost+1:nrx   ) = rdx_1(      nghost+1:2*nghost  )
   rdx_tilde(           1:nghost) = rdx_tilde(nrx-2*nghost+1:nrx-nghost)
   rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
+!
+  ! write additional data:
+  close (lun_output)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
+  t_sp = t
+  write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
+  if (lshear) write (lun_output) deltay
+  close (lun_output)
 !
   ! write global grid:
   open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
