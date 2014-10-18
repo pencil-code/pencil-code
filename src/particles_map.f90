@@ -635,6 +635,113 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
+    subroutine interpolate_fourth(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+!
+!  18-oct-14/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real, dimension (25,25) :: invmat
+      real, dimension (25,ivar2-ivar1+1) :: cc
+      real, dimension (25,ivar2-ivar1+1) :: gg
+      real :: dxp, dzp
+      real, save :: dx1, dx2, dx3, dx4
+      real, save :: dz1, dz2, dz3, dz4
+      real, save :: dx1dz1, dx2dz1, dx3dz1, dx4dz1
+      real, save :: dx1dz2, dx2dz2, dx3dz2, dx4dz2
+      real, save :: dx1dz3, dx2dz3, dx3dz3, dx4dz3
+      real, save :: dx1dz4, dx2dz4, dx3dz4, dx4dz4
+      integer :: ix0, iy0, iz0, ipoint, ivar
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1
+      intent(out) :: gp
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+!
+!  Not implemented in y-direction yet (but is easy to generalise).
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_fourth: not implemented in y'
+        call fatal_error('interpolate_quadratic','')
+      endif
+!
+!  A few values that only need to be calculated once for equidistant grids.
+!
+      if (lfirstcall) then
+        dx1=1/dx; dx2=1/dx**2; dx3=1/dx**3; dx4=1/dx**4
+        dz1=1/dz; dz2=1/dz**2; dz3=1/dz**3; dx4=1/dz**4
+        dx1dz1=dx1*dz1; dx2dz1=dx2*dz1; dx3dz1=dx3*dz1; dx4dz1=dx4*dz1
+        dx1dz2=dx1*dz2; dx2dz2=dx2*dz2; dx3dz2=dx3*dz2; dx4dz1=dx4*dz2
+        dx1dz3=dx1*dz3; dx2dz3=dx2*dz3; dx3dz3=dx3*dz3; dx4dz1=dx4*dz3
+        dx1dz4=dx1*dz4; dx2dz4=dx2*dz4; dx3dz4=dx3*dz4; dx4dz1=dx4*dz4
+        invmat(1,:)=(/0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0/)
+        invmat(2,:)=(/0,0,0,0,0,0,0,0,0,0,12,-1,0,1,-11,0,0,0,0,0,0,0,0,0,0/)
+        invmat(3,:)=(/0,0,0,0,0,0,0,0,0,0,-24,1,0,1,-24,0,0,0,0,0,0,0,0,0,0/)
+        invmat(4,:)=(/0,0,0,0,0,0,0,0,0,0,-12,6,0,-6,11,0,0,0,0,0,0,0,0,0,0/)
+        invmat(5,:)=(/0,0,0,0,0,0,0,0,0,0,24,-6,4,-6,24,0,0,0,0,0,0,0,0,0,0/)
+        invmat(6,:)=(/0,0,12,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,-11,0,0/)
+        invmat(7,:)=(/144,-18,0,18,-143,-18,2,0,-2,18,0,0,0,0,0,17,-2,0,2,-17,-144, 18,0,-17,143/)
+        invmat(8,:)=(/-287,18,-9,18,-287,36,-2,1,-2,36,0,0,0,0,0,-35,2,-1,2,-35,287, -18,9,-18,287/)
+        invmat(9,:)=(/-144,72,0,-72,144,18,-9,0,9,-18,0,0,0,0,0,-18,9,0,-9,18,144, -72,0,71,-143/)
+        invmat(10,:)=(/288,-72,48,-72,288,-36,9,-6,9,-36,0,0,0,0,0,36,-9,6,-9,36, -288,72,-47,72,-288/)
+        invmat(11,:)=(/0,0,-24,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,-24,0,0/)
+        invmat(12,:)=(/-287,36,0,-35,287,18,-2,0,2,-18,-9,1,0,-1,9,18,-2,0,2,-18, -287,36,0,-35,287/)
+        invmat(13,:)=(/575,-36,19,-36,575,-36,2,-1,2, -36,19,-1,0,-1,19,-36,2,-1,2,-36,575,-36,19,-36,575/)
+        invmat(14,:)=(/288,-144,0,143,-288,-18,9,0,-9,18,9,-4,0,4,-9,-18,9,0,-9,18,288, -144,0,143,-288/)
+        invmat(15,:)=(/-576,144,-96,144,-576,36,-9,6,-9, 36,-19,4,-3,4,-19,36,-9,6,-9,36,-576,144,-96,144,-576/)
+        invmat(16,:)=(/0,0,-12,0,0,0,0,6,0,0,0,0,0,0,0,0,0,-6,0,0,0,0,11,0,0/)
+        invmat(17,:)=(/-144,18,0,-18,144,72,-9,0,9,-72,0,0,0,0,0,-71,9,0,-9,71,144, -18,0,18,-143/)
+        invmat(18,:)=(/288,-18,9,-18,288,-144,9,-4,9,-144,0,0,0,0,0,143,-9,4,-9,143, -288,18,-9,18,-288/)
+        invmat(19,:)=(/144,-72,0,72,-144,-72,36,0,-36,72,0,0,0,0,0,72,-36,0,36,-72,-144, 72,0,-72,143/)
+        invmat(20,:)=(/-288,72,-48,72,-288,144,-36,24,-36,144,0,0,0,0,0,-144,36,-24,36,-144,288,-72,47,-72,288/)
+        invmat(21,:)=(/0,0,24,0,0,0,0,-6,0,0,0,0,4,0,0,0,0,-6,0,0,0,0,24,0,0/)
+        invmat(22,:)=(/288,-36,0,36,-288,-72,9,0,-9,72,48,-6,0,6,-47,-72,9,0,-9,72,288, -36,0,36,-288/)
+        invmat(23,:)=(/-576,36,-19,36,-576,144,-9,4,-9,144,-96,6,-3,6,-96,144,-9,4,-9,144,-576,36,-19,36,-576/)
+        invmat(24,:)=(/-288,144,0,-144,288,72,-36,0,36,-72,-48,24,0,-24,47,72,-36,0,36,-72,-288,144,0,-144,288/)
+        invmat(25,:)=(/576,-144,96,-144,576,-144,36,-24,36,-144,96,-24,16,-24,96,-144,36,-24,36,-144,576,-144,96,-144,576/)
+        where (invmat/=0.0) invmat=1/invmat
+      endif
+!
+!  Define function values at the grid points.
+!
+      ipoint=1
+      do iz=-2,+2; do ix=-2,+2
+        gg(ipoint,:)=f(ix0+ix,iy0,iz0+iz,ivar1:ivar2)
+        ipoint=ipoint+1
+      enddo; enddo
+!
+!  Calculate the coefficients of the interpolation formula.
+!
+      do ivar=1,ivar2-ivar1+1
+        cc(:,ivar)=matmul(invmat,gg(:,ivar))
+      enddo
+!
+!  Calculate the value of the interpolation function at the point (dxp,dzp).
+!
+      dxp=xxp(1)-x(ix0)
+      dzp=xxp(3)-z(iz0)
+!
+      gp = cc(1,:) + cc(2,:)*dxp + cc(3,:)*dxp**2 + &
+          cc(4,:)*dxp**3 + cc(5,:)*dxp**4 + &
+          cc(6,:)*dzp + cc(7,:)*dxp*dzp + cc(8,:)*dxp**2*dzp + &
+          cc(9,:)*dxp**3*dzp + cc(10,:)*dxp**4*dzp + &
+          cc(11,:)*dzp**2 + cc(12,:)*dxp*dzp**2 + cc(13,:)*dxp**2*dzp**2 + &
+          cc(14,:)*dxp**3*dzp**2 + cc(15,:)*dxp**4*dzp**2 + &
+          cc(16,:)*dzp**3 + cc(17,:)*dxp*dzp**3 + cc(18,:)*dxp**2*dzp**3 + &
+          cc(19,:)*dxp**3*dzp**3 + cc(20,:)*dxp**4*dzp**3 + &
+          cc(21,:)*dzp**4 + cc(22,:)*dxp*dzp**4 + cc(23,:)*dxp**2*dzp**4 + &
+          cc(24,:)*dxp**3*dzp**4 + cc(25,:)*dxp**4*dzp**4
+!
+      call keep_compiler_quiet(ipar,iblock)
+!
+    endsubroutine interpolate_fourth
+!***********************************************************************
     subroutine map_nearest_grid(fp,ineargrid,k1_opt,k2_opt)
 !
 !  Find index (ix0, iy0, iz0) of nearest grid point of all or some of the
