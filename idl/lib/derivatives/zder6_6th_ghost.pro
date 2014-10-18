@@ -11,9 +11,11 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common cdat_coords, coord_system
+  common pc_precision, zero, one
 ;
 ;  Default values.
 ;
+  default, one, 1.d0
   default, ghost, 0
   default, ignoredx, 0
 ;
@@ -36,7 +38,7 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
   if (ldegenerated[2] or (fmz eq 1)) then return, d
 ;
   if (ignoredx) then begin
-    fdz=1.
+    fdz = one
   endif else begin
     if (lequidist[2]) then begin
       fdz = dz_1[n1]^6

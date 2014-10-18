@@ -13,9 +13,11 @@ function xder3,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common cdat_coords, coord_system
+  common pc_precision, zero, one
 ;
 ;  Default values.
 ;
+  default, one, 1.d0
   default, ghost, 0
 ;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
@@ -38,7 +40,7 @@ function xder3,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else begin
     if (fmx ne mx) then $
         message, "xder3_6th_ghost: not implemented for subvolumes on a non-equidistant grid in x."
-    fdx = 1./240.
+    fdx = one/240.
   endelse
 ;
   if (lperi[1]) then begin

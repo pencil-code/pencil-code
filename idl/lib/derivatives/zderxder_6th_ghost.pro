@@ -11,9 +11,11 @@ function zderxder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common cdat_coords, coord_system
+  common pc_precision, zero, one
 ;
 ;  Default values.
 ;
+  default, one, 1.d0
   default, ghost, 0
 ;
 ;AB: the following should not be correct
@@ -37,7 +39,7 @@ function zderxder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Calculate d^2 / dz dx (f)
 ;
-  fac = 1./60.^2
+  fac = one/60.^2
   if (lequidist[0]) then begin
     if (fmx ne mx) then $
         message, "zderxder_6th_ghost: not implemented for x-subvolumes on a non-equidistant grid in x."
