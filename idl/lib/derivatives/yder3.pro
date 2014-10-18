@@ -5,4 +5,4 @@
 ;
 ; 12-Oct-2014/Bourdin.KIS: coded
 ;
-@xder3_6th_ghost.pro
+@yder3_6th_ghost.pro
