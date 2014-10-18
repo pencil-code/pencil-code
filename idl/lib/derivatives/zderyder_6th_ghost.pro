@@ -41,15 +41,22 @@ function zderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   fac = one/60.^2
   if (lequidist[1]) then begin
+    fac *= dy_1[m1]
+  end else begin
     if (fmy ne my) then $
         message, "zderyder_6th_ghost: not implemented for y-subvolumes on a non-equidistant grid in y."
-    fac *= dy_1[m1]
   endif
   if (lequidist[2]) then begin
+    fac *= dz_1[n1]
+  end else begin
     if (fmz ne mz) then $
         message, "zderyder_6th_ghost: not implemented for z-subvolumes on a non-equidistant grid in z."
-    fac *= dz_1[n1]
   endif
+;
+; Differentiation scheme:
+; d[l,m,n] = fac*( 45*(yder (f[l,m,n+1]) - yder (f[l,m,n-1]))
+;                 - 9*(yder (f[l,m,n+2]) - yder (f[l,m,n-2]))
+;                 +   (yder (f[l,m,n+3]) - yder (f[l,m,n-3])) )
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $
        (45.*fac)*( ( 45.*(f[l1:l2,m1+1:m2+1,n1+1:n2+1,*]-f[l1:l2,m1-1:m2-1,n1+1:n2+1,*])   $

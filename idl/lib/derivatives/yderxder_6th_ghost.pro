@@ -41,15 +41,22 @@ function yderxder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   fac = one/60.^2
   if (lequidist[0]) then begin
+    fac *= dx_1[l1]
+  end else begin
     if (fmx ne mx) then $
         message, "yderxder_6th_ghost: not implemented for x-subvolumes on a non-equidistant grid in x."
-    fac *= dx_1[l1]
   endif
   if (lequidist[1]) then begin
+    fac *= dy_1[m1]
+  end else begin
     if (fmy ne my) then $
         message, "yderxder_6th_ghost: not implemented for y-subvolumes on a non-equidistant grid in y."
-    fac *= dy_1[m1]
   endif
+;
+; Differentiation scheme:
+; d[l,m,n] = fac*( 45*(xder (f[l,m+1,n]) - xder (f[l,m-1,n]))
+;                 - 9*(xder (f[l,m+2,n]) - xder (f[l,m-2,n]))
+;                 +   (xder (f[l,m+3,n]) - xder (f[l,m-3,n])) )
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $
        (45.*fac)*( ( 45.*(f[l1+1:l2+1,m1+1:m2+1,n1:n2,*]-f[l1-1:l2-1,m1+1:m2+1,n1:n2,*])   $
