@@ -12,13 +12,11 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
   common cdat_coords, coord_system
 ;
-  tmp=yderxder(f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
+  d = yderxder(f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
   if (coord_system eq 'spherical') then begin
-    r1=spread(1.0/x,[1,2],[my,mz])
-    scr=yder(f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
-    tmp=tmp-scr*r1
+    d -= spread(1.0/x,[1,2],[my,mz]) * yder(f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t)
   endif
 ;
-  return, tmp
+  return, d
 ;
 end
