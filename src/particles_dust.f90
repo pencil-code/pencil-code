@@ -168,7 +168,7 @@ module Particles
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom
+      lreassign_strat_rhom, lparticlemesh_pqs_assignment
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -203,7 +203,7 @@ module Particles
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
-      l_shell, k_shell
+      l_shell, k_shell, lparticlemesh_pqs_assignment
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3042,7 +3042,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_par
+      real :: rhop_swarm_par, dxp, dyp, dzp
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
@@ -3235,69 +3235,136 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Triangular Shaped Cloud (TSC) scheme.
 !
                 elseif (lparticlemesh_tsc) then
+                  if (.not. lparticlemesh_pqs_assignment) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
 !  decreases with the distance from the particle centre.
 !
-                  if (nxgrid/=1) then
-                    ixx0=ix0-1; ixx1=ix0+1
-                  else
-                    ixx0=ix0  ; ixx1=ix0
-                  endif
-                  if (nygrid/=1) then
-                    iyy0=iy0-1; iyy1=iy0+1
-                  else
-                    iyy0=iy0  ; iyy1=iy0
-                  endif
-                  if (nzgrid/=1) then
-                    izz0=iz0-1; izz1=iz0+1
-                  else
-                    izz0=iz0  ; izz1=iz0
-                  endif
+                    if (nxgrid/=1) then
+                      ixx0=ix0-1; ixx1=ix0+1
+                    else
+                      ixx0=ix0  ; ixx1=ix0
+                    endif
+                    if (nygrid/=1) then
+                      iyy0=iy0-1; iyy1=iy0+1
+                    else
+                      iyy0=iy0  ; iyy1=iy0
+                    endif
+                    if (nzgrid/=1) then
+                      izz0=iz0-1; izz1=iz0+1
+                    else
+                      izz0=iz0  ; izz1=iz0
+                    endif
 !
 !  The nearest grid point is influenced differently than the left and right
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
 !
-                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                    if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                      weight_x=1.125-1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
-                                     0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-                    else
-                      if (nxgrid/=1) &
-                           weight_x=0.75-((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
-                    endif
-                    if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                      weight_y=1.125-1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
-                                     0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-                    else
-                      if (nygrid/=1) &
-                           weight_y=0.75-((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
-                    endif
-                    if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                      weight_z=1.125-1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
-                                     0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
-                    else
-                      if (nzgrid/=1) &
-                           weight_z=0.75-((fp(k,izp)-z(izz))*dz_1(izz))**2
-                    endif
+                    do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                      if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                        weight_x=1.125-1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                       0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                      else
+                        if (nxgrid/=1) &
+                             weight_x=0.75-((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                      endif
+                      if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                        weight_y=1.125-1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                       0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                      else
+                        if (nygrid/=1) &
+                             weight_y=0.75-((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                      endif
+                      if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                        weight_z=1.125-1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                       0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                      else
+                        if (nzgrid/=1) &
+                             weight_z=0.75-((fp(k,izp)-z(izz))*dz_1(izz))**2
+                      endif
 !
-                    weight=1.0
+                      weight=1.0
 !
-                    if (nxgrid/=1) weight=weight*weight_x
-                    if (nygrid/=1) weight=weight*weight_y
-                    if (nzgrid/=1) weight=weight*weight_z
+                      if (nxgrid/=1) weight=weight*weight_x
+                      if (nygrid/=1) weight=weight*weight_y
+                      if (nzgrid/=1) weight=weight*weight_z
 !  Save the calculation of rho1 when inside pencil.
-                    if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                    else
-                      rho1_point = p%rho1(ixx-nghost)
-                    endif
+                      if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                        rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                      else
+                        rho1_point = p%rho1(ixx-nghost)
+                      endif
 !  Add friction force to grid point.
-                    call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_swarm_par*rho1_point*dragforce*weight
-                  enddo; enddo; enddo
+                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
+                          rhop_swarm_par)
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           rhop_swarm_par*rho1_point*dragforce*weight
+                    enddo; enddo; enddo
+                  else
+!
+!  QPS assignment, one order higher than TSC. Experimental.
+!
+                    if (nxgrid/=1) then
+                      ixx0=ix0-2; ixx1=ix0+2
+                    else
+                      ixx0=ix0  ; ixx1=ix0
+                    endif
+                    if (nygrid/=1) then
+                      iyy0=iy0-2; iyy1=iy0+2
+                    else
+                      iyy0=iy0  ; iyy1=iy0
+                    endif
+                    if (nzgrid/=1) then
+                      izz0=iz0-2; izz1=iz0+2
+                    else
+                      izz0=iz0  ; izz1=iz0
+                    endif
+                    do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                      dxp=(x(ixx)-fp(k,ixp))*dx_1(ixx)
+                      dyp=(y(iyy)-fp(k,iyp))*dy_1(iyy)
+                      dzp=(z(izz)-fp(k,izp))*dz_1(izz)
+!
+                      if (abs(dxp)<=1.0) then
+                        weight_x=(2/3.0)+dxp**2*(abs(dxp)/2-1.0)
+                      elseif (abs(dxp)<=2.0) then
+                        weight_x=(1/6.0)*(2.0-abs(dxp))**3
+                      else
+                        weight_x=0.0
+                      endif
+!
+                      if (abs(dyp)<=1.0) then
+                        weight_y=(2/3.0)+dyp**2*(abs(dyp)/2-1.0)
+                      elseif (abs(dyp)<=2.0) then
+                        weight_y=(1/6.0)*(2.0-abs(dyp))**3
+                      else
+                        weight_y=0.0
+                      endif
+!
+                      if (abs(dzp)<=1.0) then
+                        weight_z=(2/3.0)+dzp**2*(abs(dzp)/2-1.0)
+                      elseif (abs(dzp)<=2.0) then
+                        weight_z=(1/6.0)*(2.0-abs(dzp))**3
+                      else
+                        weight_z=0.0
+                      endif
+!
+                      weight=1.0
+                      if (nxgrid/=1) weight=weight*weight_x
+                      if (nygrid/=1) weight=weight*weight_y
+                      if (nzgrid/=1) weight=weight*weight_z
+!
+                      if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                        rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                      else
+                        rho1_point = p%rho1(ixx-nghost)
+                      endif
+!
+                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
+                          rhop_swarm_par)
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                           rhop_swarm_par*rho1_point*dragforce*weight
+                    enddo; enddo; enddo
+                  endif
                 else
 !
 !  Nearest Grid Point (NGP) scheme.
