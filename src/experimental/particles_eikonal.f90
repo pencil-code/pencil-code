@@ -666,6 +666,7 @@ module Particles
       integer :: l, j, k, ix0, iy0, iz0, nsource, ipar1, ipar2, isource, k1
       integer :: ntheta
       logical :: lequidistant=.false.
+      character (len=7) :: data_format="(6f8.4)"
 !
       intent (out) :: f, fp, ineargrid
 !
@@ -1340,10 +1341,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('read_file')
           if (npar_loc /= 0) then
+            print*, 'init_particles: read file, data_format=',data_format
             print*, 'init_particles: read file, iproc=',iproc
             open (1,file='particles_initial.dat')
             do k=1,npar_loc
               read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+              !read(1,data_format) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
             enddo
             close(1)
             print*,'iproc,fp(:,1)=',iproc,fp(:,1)
