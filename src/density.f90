@@ -99,6 +99,7 @@ module Density
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
+  logical, save :: lsubtract_init_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -143,7 +144,8 @@ module Density
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
       lconserve_total_mass, total_mass, &
-      lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho
+      lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
+      lsubtract_init_stratification
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1397,7 +1399,7 @@ module Density
         lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot-zint)/cs2int)
       endif
       if (isoth.ne.0 .and. present(fac_cs)) then
-        cs2int = fac_cs*cs2int ! cs2 at layer interface (bottom)
+        cs2int = fac_cs**2*cs2int ! cs2 at layer interface (bottom)
       else
         cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
       endif
@@ -2074,6 +2076,10 @@ module Density
       if (ldiff_hyper3_aniso) then
             call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
             fdiff = fdiff + tmp
+            if (lsubtract_init_stratification) then
+              call del6fj(f,diffrho_hyper3_aniso,iglobal_lnrho0,tmp)
+              fdiff = fdiff - tmp
+            endif
 !  Must divide by dxyz_6 here, because it is multiplied on later.
             if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+ &
                  (diffrho_hyper3_aniso(1)*dx_1(l1:l2)**6 + &

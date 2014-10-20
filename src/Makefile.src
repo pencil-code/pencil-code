@@ -1500,12 +1500,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## NASA Pleiades system (pfe)
 ##
-#FC=ifort #(pfe?)
-#CC=icc #(pfe?)
-#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe?)
-#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe?)
-#FFLAGS_DOUBLE=-autodouble #(pfe?)
-#LD_MPI=-lmpi #(pfe?)
+#FC=mpiifort #(pfe|mfe)
+#CC=mpiicc #(pfe|mfe)
+#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe|mfe)
+#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe|mfe)
+#FFLAGS_DOUBLE=-autodouble #(pfe|mfe)
+#LD_MPI=-lmpi #(pfe|mfe)
 ##
 ## Toulouse's machines:
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)

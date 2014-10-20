@@ -85,14 +85,14 @@ module Special
 !!  namelist /special_init_pars/ dummy
 !
   real :: fring=0.0d0,r0=0.2,tilt=0.0,width=0.02,&
-          dIring=0.0,dposx=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
-  real :: posz=0.0,posy=0.0,alpha=1.25
-  real, save :: posx,Iring
+          dIring=0.0,dposx=0.0,dposz=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
+  real :: posy=0.0,alpha=1.25
+  real, save :: posx,posz,Iring
   integer :: nwid=1,nwid2=1,nlf=4
   logical :: lset_boundary_emf=.false.,lupin=.false.
   real, dimension (mx) :: x12,dx12
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
-           posx,dposx,posy,posz,tilt,dtilt,Ilimit,poslimit,&
+           posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf
 !
 ! Declare index of new variables in f array (if any).
@@ -102,7 +102,7 @@ module Special
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
-   integer :: idiag_posx=0,idiag_Iring=0
+   integer :: idiag_posx=0,idiag_Iring=0,idiag_posz=0
 !
   contains
 !***********************************************************************
@@ -341,6 +341,7 @@ module Special
 !
       if (lreset) then
         idiag_posx=0
+        idiag_posz=0
         idiag_Iring=0
       endif
 !
@@ -348,11 +349,14 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),&
             'posx',idiag_posx)
         call parse_name(iname,cname(iname),cform(iname),&
+            'posz',idiag_posz)
+        call parse_name(iname,cname(iname),cform(iname),&
             'Iring',idiag_Iring)
       enddo
 !  write column where which magnetic variable is stored
       if (lwr) then
         write(3,*) 'idiag_posx=',idiag_posx
+        write(3,*) 'idiag_posz=',idiag_posz
         write(3,*) 'idiag_Iring=',idiag_Iring
       endif
 !!
@@ -676,7 +680,7 @@ module Special
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
               prof,ymid,zmid,umax
-      real :: tmpx,tmpy,tmpz,posxold,Iringold
+      real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
       logical :: lring=.true.
       integer :: l,k,ig
 !
@@ -687,17 +691,23 @@ module Special
       zmid=0.5*(xyz0(3)+xyz1(3))
       if (lroot) then
         posxold=posx
+        poszold=posz
         Iringold=Iring
         if (posxold.gt.poslimit) dposx=0.0
+        if (poszold.gt.poslimit) dposz=0.0
         if (Iringold.gt.Ilimit) dIring=0.0
         if (lupin.and.(posxold.gt.1.0)) lring=.false.
         posx=posx+dposx*dt_
+        posz=posz+dposz*dt_
         Iring=Iring+dIring*dt_
         tilt=tilt+dtilt*dt_
       endif
       call mpibcast_double(posxold)
       call mpibcast_double(posx)
       call mpibcast_double(dposx)
+      call mpibcast_double(poszold)
+      call mpibcast_double(posz)
+      call mpibcast_double(dposz)
       call mpibcast_double(Iringold)
       call mpibcast_double(Iring)
       call mpibcast_double(dIring)
@@ -709,15 +719,49 @@ module Special
           call save_name(Iring,idiag_Iring)
       endif
 !
+      if (lfirst_proc_z.and.lcartesian_coords) then
+        n=n1
+        do m=m1,m2
+          call gij(f,iaa,aij,1)
+! bb
+          call curl_mn(aij,pbb,aa)
+          f(l1:l2,m,n,ibx  :ibz  )=pbb
+          yy0=y(m)
+          do l=l1,l2 
+            xx0=x(l)
+              do ig=0,nghost
+                zz0=z(n-ig)
+          ! Calculate D^(-1)*(xxx-disp)
+                zz1=zz0-posz
+                xx1=cos(tilt*pi/180.0)*(xx0-posx)+sin(tilt*pi/180.0)*(yy0-posy)
+                yy1=-sin(tilt*pi/180.0)*(xx0-posx)+cos(tilt*pi/180.0)*(yy0-posy)
+                if (dposx.ne.0.or.dtilt.ne.0) then
+                  dist=sqrt(xx0**2+yy0**2+zz0**2)
+                  distxy=sqrt(xx0**2+yy0**2)
+! Set up new ring
+                  if (lring) then
+                    call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+                  else
+                    call norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+                  endif
+            ! calculate D*tmpv
+                  bb(1)=cos(tilt*pi/180.0)*tmpv(1)-sin(tilt*pi/180.0)*tmpv(2)
+                  bb(2)=sin(tilt*pi/180.0)*tmpv(1)+cos(tilt*pi/180.0)*tmpv(2)
+                  bb(3)=tmpv(3)
+                endif
+
+              enddo
+          enddo
+        enddo
+      endif
+! 
       do n=n1,n2
         do m=m1,m2
 !
         if (lfirst_proc_x) then
           if (lcartesian_coords) then
-            xi=((x(l)**2+z(n)**2)/2.+y(m)**2)/r0**2
-            f(l1,m,n,iax) = fring*Iring*z(n)*exp(-2*xi)
-            f(l1,m,n,iay) = fring*r0*exp(-xi)
-            f(l1,m,n,iaz) = -fring*Iring*x(l)*exp(-2*xi)
+            call fatal_error('special_after_timestep',&
+            'Bipoles not coded for cartesian coordinates with lower boundary in x-dir')
           else if (lcylindrical_coords) then
             call fatal_error('special_after_timestep',&
             'Bipoles not coded for cylindrical coordinates')

@@ -79,6 +79,7 @@ module Energy
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
   real :: rescale_TTmeanxy=1.
+  real :: Pres_cutoff=impossible
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -116,6 +117,7 @@ module Energy
   logical, pointer :: lreduced_sound_speed
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
+  logical, save :: lsubtract_init_stratification=.false.
   logical :: lborder_heat_variable=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -176,7 +178,8 @@ module Energy
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
-      center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond
+      center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
+      lsubtract_init_stratification,Pres_cutoff
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -1549,7 +1552,7 @@ module Energy
                       * log(1 + beta1*(zbot-zint)/cs2int)/cp1
       endif
       if (isoth.ne.0 .and. present(fac_cs)) then
-        cs2int = fac_cs*cs2int ! cs2 at layer interface (bottom)
+        cs2int = fac_cs**2*cs2int ! cs2 at layer interface (bottom)
       else
         cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
       endif
@@ -2598,6 +2601,14 @@ module Energy
       endif
 !
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
+!
+! To be used to make the radiative cooling term propto exp(-P/P0), where P is the gas pressure
+!
+      if (Pres_cutoff/=impossible) then 
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_cs2)=.true.
+      endif
+        
       if (cool_newton/=0.0) lpenc_requested(i_TT)=.true.
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
@@ -3319,6 +3330,7 @@ module Energy
 !  Compute average sound speed cs2(z)
 !
       if (lcalc_cs2mz_mean) then
+        call get_cv1(cv1)
         fact=1./nxygrid
         cs2mz=0.
         if (ldensity_nolog) then
@@ -3714,6 +3726,10 @@ module Energy
 !
       call del6fj(f,chi_hyper3_aniso,iss,tmp)
       thdiff = tmp
+      if (lsubtract_init_stratification) then 
+        call del6fj(f,chi_hyper3_aniso,iglobal_ss0,tmp)
+        thdiff = thdiff-tmp
+      endif
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
@@ -5251,7 +5267,11 @@ module Energy
       if (z(n)>=z_cor) then
         xi=(z(n)-z_cor)/(ztop-z_cor)
         profile_cor=xi**2*(3-2*xi)
-        heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
+        if (lcalc_cs2mz_mean) then
+          heat=heat+profile_cor*(TT_cor-cs2mz(n)/gamma_m1*p%cp1)/(p%rho1*tau_cor*p%cp1)
+        else
+          heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
+        endif
       endif
 !
     endsubroutine get_heat_cool_corona
@@ -5338,7 +5358,11 @@ module Energy
         where (lnTT_SI >= intlnT_2(imax) )
           lnQ = lnQ + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax)
         endwhere
-        rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+        if (Pres_cutoff/=impossible) then
+          rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)*exp(-p%rho*p%cs2*gamma1/Pres_cutoff)
+        else
+          rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+        endif
       else
         rtv_cool(:)=0.
       endif
