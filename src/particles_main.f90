@@ -203,7 +203,7 @@ module Particles_main
       call initialize_particles_TT           (f,lstarting)
       call initialize_particles_mass         (f,lstarting)
       call initialize_particles_ads          (f,lstarting)
-      call initialize_particles_surf         (f,lstarting)
+      call initialize_particles_surf         (f,lstarting,fp)
       call initialize_particles_coag         (f,lstarting)
       call initialize_particles_collisions   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
@@ -758,7 +758,7 @@ module Particles_main
 !
 !  If reactive particles are enabled, needed quantities are calculated
 !
-     if (lparticles_chemistry .and. lparticles_adsorbed) then
+     if (lparticles_chemistry) then
         call calc_chemistry_pencils(f,fp)
      else
      endif

@@ -7,11 +7,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 8
-! MAUX CONTRIBUTION 0
-! NADSSPEC CONTRIBUTION 0
-! NSURFREACSPEC CONTRIBUTION 8
-!
 ! CPARAM logical, parameter :: lparticles_surfspec=.true.
 !
 !***************************************************************
@@ -104,7 +99,7 @@ module Particles_surfspec
 ! JONAS: commented for now
 !            pvarname(isurf+i-1)=solid_species(i)
 !         enddo
-         npvar=npvar+N_surface_species-1
+         npvar=npvar+N_surface_species
          isurf_end=isurf+N_surface_species-1
       else
          call fatal_error('register_particles_', &
@@ -263,7 +258,6 @@ module Particles_surfspec
 !
     endsubroutine write_particles_surf_run_pars
 !***********************************************************************
-!***********************************************************************
     subroutine init_particles_surf(f,fp)
 !
 !  Initial particle surface fractions
@@ -313,14 +307,9 @@ module Particles_surfspec
         endselect init
       enddo
 !
-!  calculate initial values that are used in evolving others
-!
-      call calc_rho_p_init(fp)
-      call calc_St_init(fp)
-!
     endsubroutine init_particles_surf
 !********************************************************************** 
-    subroutine initialize_particles_surf(f,lstarting)
+    subroutine initialize_particles_surf(f,lstarting,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -329,11 +318,18 @@ module Particles_surfspec
 !  JONAS: needs to be filled with life
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
       logical :: lstarting
 !
 !  
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
+!
+!  calculate initial values that are used in evolving others
+!
+      call calc_rho_p_init(fp)
+      call calc_St_init(fp)
+      call calc_mass_init(fp)
 !
     end subroutine initialize_particles_surf
 !**************************************************************

@@ -7,9 +7,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 8
-! NSURFREACSPEC CONTRIBUTION 0
-!
 ! CPARAM logical, parameter :: lparticles_chemistry=.true.
 !
 !***************************************************************
@@ -151,7 +148,8 @@ module Particles_chemistry
 !  Some physical constants
 !
   real :: mol_mass_carbon=12.0
-  real :: Sgc_init=3e5
+  !real :: Sgc_init=3e5 ! m^2/kg
+  real :: Sgc_init=3e4 ! cm^2/g NILS: Must set up a system for these dimensional parameters
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !
@@ -245,7 +243,7 @@ module Particles_chemistry
           lenhance=.true.
         endif
       enddo
-      if (lenhance) call sleep(4)
+      !if (lenhance) call sleep(4)
 !
 ! Define the Arrhenius coefficients. The term ER_k is the activation energy
 ! divided by the gas constant (R)
@@ -413,7 +411,7 @@ module Particles_chemistry
       St = 0.0
 !      
       do k=k1,k2
-         St(k)=(1-conversion(k))*St_init(k)* &
+         St(k)=fp(k,imp)*Sgc_init* &
               sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init(k)))
       enddo
 !
@@ -1162,8 +1160,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     integer :: k
 !
     do k=k1_imn(imn),k2_imn(imn)
-    conversion(k) = 4/3*pi_loc*rho_p(k)*fp(k,iap)*fp(k,iap)*fp(k,iap) &
-         / init_mass(k)
+      conversion(k) = fp(k,imp) / init_mass(k)
     enddo
 !
   end subroutine calc_conversion
@@ -1656,6 +1653,19 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_ads_enthalpy
 !*********************************************************************
+  subroutine calc_mass_init(fp)
+!
+!  21-oct-2014/nils: coded
+!
+    real, dimension(:,:) :: fp
+    integer :: k
+!
+    do k=1,mpar_loc
+      init_mass(k)=fp(k,imp)
+    enddo
+!
+  end subroutine calc_mass_init
+!*********************************************************************
   subroutine calc_St_init(fp)
 !
 !  3-oct-2014/jonas:coded
@@ -1732,22 +1742,22 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k2 = k2_imn(imn)
 !
     allocate(rho_p(k1:k2) ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for rho_p')
     allocate(St(k1:k2) ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for St')
     allocate(mod_surf_area(k1:k2) ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for St')
 !
     allocate(conversion(k1:k2) ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for conversion')
 !
     allocate(surface_species_enthalpy(k1:k2,N_surface_species) &
          ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for surface_species_enthalpy')
     allocate(surface_species_entropy(k1:k2,N_surface_species) &
          ,STAT=stat)
@@ -1769,27 +1779,27 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     allocate(effectiveness_factor_reaction(k1:k2,N_surface_reactions))
 !
     allocate(ndot(k1:k2,N_surface_species)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for ndot')
     allocate(ndot_total(k1:k2)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for ndot_total')
 !
     allocate(Rck(k1:k2,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for Rck')
     allocate(Rck_max(k1:k2,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for Rck_max')
 !
-          allocate(R_j_hat(k1:k2,N_adsorbed_species-1)   ,STAT=stat)
-      if (stat>0) call fatal_error('register_particles_ads',&
+    allocate(R_j_hat(k1:k2,N_adsorbed_species-1)   ,STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for R_j_hat')
       allocate(Cs(k1:k2,N_adsorbed_species)   ,STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
+      if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for Cs')
       allocate(RR_hat(k1:k2,N_surface_reactions)   ,STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
+      if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for RR_hat')
 
 !
@@ -1799,7 +1809,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  06-oct-14/jonas:coded
 !
-    if (lparticles_chemistry .and. lparticles_adsorbed) then
+    if (lparticles_chemistry) then
     deallocate(mod_surf_area)
     deallocate(surface_species_enthalpy)
     deallocate(surface_species_entropy)
@@ -1819,7 +1829,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(Cs)
     deallocate(rho_p)
     deallocate(St)
-    else
     endif
 !
   end subroutine cleanup_chemistry_pencils

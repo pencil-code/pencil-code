@@ -36,6 +36,7 @@
   public :: create_dngas
   public :: create_occupancy
   public :: create_ad_sol_lists
+  public :: calc_mass_init
 
   
   public :: cleanup_chemistry_pencils
