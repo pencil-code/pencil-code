@@ -115,9 +115,9 @@ module Special
       use FArrayManager
       if (lroot) call svn_id( &
            "$Id: nospecial.f90 19193 2012-06-30 12:55:46Z wdobler $")
-!
-      if (ldensity.and..not.ldensity_nolog) &
-      call farray_register_auxiliary('specaux',ispecaux)
+!!
+!      if (ldensity.and..not.ldensity_nolog) &
+!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call farray_register_pde('special',ispecial)
 !!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
 !
@@ -138,29 +138,29 @@ module Special
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
       logical :: lstarting
       integer :: i
-!
-! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
-!
-      dx12=0.0
-      if (.not.lstarting) then
-        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-!
-        x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
-        dx12(l1-2:l2+2) =x12(l1-1:l2+3)-x12(l1-2:l2+2)   
-        f(:,:,:,ispecaux)=0.0d0
-        do n=n1,n2
-          do m=m1,m2
-            call gij(f,iaa,aij,1)
-! bb
-            call curl_mn(aij,pbb,aa)
-            f(l1:l2,m,n,ibx  :ibz  )=pbb
-          enddo
-        enddo
-      else
+!!
+!! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!!
+!      dx12=0.0
+!      if (.not.lstarting) then
+!        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+!!
+!        x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
+!        dx12(l1-2:l2+2) =x12(l1-1:l2+3)-x12(l1-2:l2+2)   
+!        f(:,:,:,ispecaux)=0.0d0
+!        do n=n1,n2
+!          do m=m1,m2
+!            call gij(f,iaa,aij,1)
+!! bb
+!            call curl_mn(aij,pbb,aa)
+!            f(l1:l2,m,n,ibx  :ibz  )=pbb
+!          enddo
+!        enddo
+!      else
       call keep_compiler_quiet(f)
-!
-      endif
-!
+!!
+!      endif
+!!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f,lstarting)
@@ -429,6 +429,7 @@ module Special
       real, dimension (nx) :: fdiff
       type (pencil_case), intent(in) :: p
 !
+      if (ispecaux/=0) then
       if (headtt) print*,'special_calc_density: call div_diff_flux'
       if (ldensity_nolog) then
         call div_diff_flux(f,irho,p,fdiff)
@@ -452,6 +453,7 @@ module Special
         else
           f(l1:l2,m,n,ispecaux) = fdiff
         endif
+      endif
       endif
     
 !
@@ -665,8 +667,8 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-!      use Boundcond, only: update_ghosts 
       use Deriv, only: der
+      use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
       use Mpicomm, only: mpibcast_double,mpibcast_logical
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn
@@ -679,7 +681,7 @@ module Special
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
-              prof,ymid,zmid,umax
+              prof,ymid,zmid,umax,cs2,rho_corr,cp1
       real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
       logical :: lring=.true.
       integer :: l,k,ig
@@ -718,14 +720,11 @@ module Special
         if (idiag_Iring/=0) &
           call save_name(Iring,idiag_Iring)
       endif
+      call get_cp1(cp1)
 !
       if (lfirst_proc_z.and.lcartesian_coords) then
         n=n1
         do m=m1,m2
-          call gij(f,iaa,aij,1)
-! bb
-          call curl_mn(aij,pbb,aa)
-          f(l1:l2,m,n,ibx  :ibz  )=pbb
           yy0=y(m)
           do l=l1,l2 
             xx0=x(l)
@@ -749,124 +748,166 @@ module Special
                   bb(2)=sin(tilt*pi/180.0)*tmpv(1)+cos(tilt*pi/180.0)*tmpv(2)
                   bb(3)=tmpv(3)
                 endif
+                if (dposz.ne.0) then
+          ! Calculate D^(-1)*(xxx-disp)
+                  if (lring) then
+                    distyz=sqrt((sqrt(xx1**2+zz1**2)-r0)**2+yy1**2)
+                  else
+                    if (zz1.gt.0) then
+                      distyz=sqrt((sqrt(xx1**2+zz1**2)-r0)**2+yy1**2)
+                    else
+                      distyz=sqrt((sqrt(xx1**2+(zz0-xyz0(3))**2)-r0)**2+yy1**2)
+                    endif
+                  endif
+                  if (distyz.lt.nwid2*width) then
+                    vv(1)=0.0
+                    vv(2)=0.0
+                    vv(3)=dposz
+                    cs2=cs0**2*(exp(gamma*f(l1,m1,n1,iss)*cp1+gamma_m1*(f(l1,m1,n1,ilnrho)-alog(rho0))))
+                    rho_corr=1.-0.5*(bb(1)**2+bb(2)**2+bb(3)**2)*mu01*gamma/(exp(f(l1,m1,n1,ilnrho))*cs2)
+                    f(l,m,n,ilnrho)=f(l,m,n,ilnrho)+alog(rho_corr)
+!
+! make tube buoyant? Add density deficit at bottom boundary
+!
+                  else
+                    vv=0.0
+                  endif
+                  uu(1)=cos(tilt*pi/180.0)*vv(1)-sin(tilt*pi/180.0)*vv(2)
+                  uu(2)=sin(tilt*pi/180.0)*vv(1)+cos(tilt*pi/180.0)*vv(2)
+                  uu(3)=vv(3)
+!
+! Uniform translation velocity for induction equation at boundary
+!
+                  if (iuu.ne.0) then
+                    f(l,m,n1-ig,iux) = uu(1)
+                    f(l,m,n1-ig,iuy) = uu(2)
+                    f(l,m,n1-ig,iuz) = uu(3)  
+                  endif
+                  call cross(uu,bb,uxb)
+                  f(l,m,n1-ig,iax:iaz)=f(l,m,n1-ig,iax:iaz)+uxb(1:3)*dt_
+                  else
+                  if (iuu.ne.0) f(l,m,n1-ig,iux:iuz)=0.0
+                endif
 
               enddo
           enddo
         enddo
-      endif
+        if (lset_boundary_emf) then
+          do m=m1,m2
+            call bc_emf_z(f,df,dt_,'top',iax)
+            call bc_emf_z(f,df,dt_,'top',iay)
+            call bc_emf_z(f,df,dt_,'top',iaz)
+          enddo
+        endif
+      else
 ! 
-      do n=n1,n2
-        do m=m1,m2
-!
-        if (lfirst_proc_x) then
-          if (lcartesian_coords) then
-            call fatal_error('special_after_timestep',&
-            'Bipoles not coded for cartesian coordinates with lower boundary in x-dir')
-          else if (lcylindrical_coords) then
-            call fatal_error('special_after_timestep',&
-            'Bipoles not coded for cylindrical coordinates')
-          endif
+        if (lfirst_proc_x.and.lspherical_coords) then
+          do n=n1,n2
+            do m=m1,m2
 !
 !  Then set up the helical field
 !
-          if (lspherical_coords) then
-          call gij(f,iaa,aij,1)
+              call gij(f,iaa,aij,1)
 ! bb
-          call curl_mn(aij,pbb,aa)
-          f(l1:l2,m,n,ibx  :ibz  )=pbb
-          do ig=0,nghost
-              xx0=x(l1-ig)*sinth(m)*cos(z(n))
-              yy0=x(l1-ig)*sinth(m)*sin(z(n))
-              zz0=x(l1-ig)*costh(m)
+              call curl_mn(aij,pbb,aa)
+              f(l1:l2,m,n,ibx  :ibz  )=pbb
+              do ig=0,nghost
+                xx0=x(l1-ig)*sinth(m)*cos(z(n))
+                yy0=x(l1-ig)*sinth(m)*sin(z(n))
+                zz0=x(l1-ig)*costh(m)
           ! Calculate D^(-1)*(xxx-disp)
-              xx1=xx0-posx
-              yy1=cos(tilt*pi/180.0)*(yy0-posy)+sin(tilt*pi/180.0)*(zz0-posz)
-              zz1=-sin(tilt*pi/180.0)*(yy0-posy)+cos(tilt*pi/180.0)*(zz0-posz)
-            if (dposx.ne.0.or.dtilt.ne.0) then
-              dist=sqrt(xx0**2+yy0**2+zz0**2)
-              distxy=sqrt(xx0**2+yy0**2)
+                xx1=xx0-posx
+                yy1=cos(tilt*pi/180.0)*(yy0-posy)+sin(tilt*pi/180.0)*(zz0-posz)
+                zz1=-sin(tilt*pi/180.0)*(yy0-posy)+cos(tilt*pi/180.0)*(zz0-posz)
+                if (dposx.ne.0.or.dtilt.ne.0) then
+                  dist=sqrt(xx0**2+yy0**2+zz0**2)
+                  distxy=sqrt(xx0**2+yy0**2)
 ! Set up new ring
-              if (lring) then
-                call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
-              else
-                call norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
-              endif
+                  if (lring) then
+                    call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+                  else
+                    call norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
+                  endif
             ! calculate D*tmpv
-              tmpx=tmpv(1)
-              tmpy=cos(tilt*pi/180.0)*tmpv(2)-sin(tilt*pi/180.0)*tmpv(3)
-              tmpz=sin(tilt*pi/180.0)*tmpv(2)+cos(tilt*pi/180.0)*tmpv(3)
-              bb(1)=(xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              bb(2)= (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                  tmpx=tmpv(1)
+                  tmpy=cos(tilt*pi/180.0)*tmpv(2)-sin(tilt*pi/180.0)*tmpv(3)
+                  tmpz=sin(tilt*pi/180.0)*tmpv(2)+cos(tilt*pi/180.0)*tmpv(3)
+                  bb(1)=(xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+                  bb(2)= (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                       -distxy*tmpz/dist)
-              bb(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-            endif
-!
-            if (iuu.ne.0) then
-            if (dposx.ne.0) then
-          ! Calculate D^(-1)*(xxx-disp)
-              if (lring) then
-                distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
-              else
-                if (xx1.gt.0.0) then
-                  distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
-                else
-                  distyz=sqrt((sqrt((xx0-1.0d0)**2+yy1**2)-r0)**2+zz1**2)
+                  bb(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
                 endif
-              endif
-              if (distyz.lt.nwid2*width) then
-                vv(1)=dposx
-                vv(2)=0.0
-                vv(3)=0.0
-              else
-                vv=0.0
-              endif
-              tmpx=vv(1)
-              tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
-              tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
-              f(l1-ig,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              f(l1-ig,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+!
+                if (iuu.ne.0) then
+                  if (dposx.ne.0) then
+          ! Calculate D^(-1)*(xxx-disp)
+                    if (lring) then
+                      distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
+                    else
+                      if (xx1.gt.0.0) then
+                        distyz=sqrt((sqrt(xx1**2+yy1**2)-r0)**2+zz1**2)
+                      else
+                        distyz=sqrt((sqrt((xx0-1.0d0)**2+yy1**2)-r0)**2+zz1**2)
+                      endif
+                    endif
+                    if (distyz.lt.nwid2*width) then
+                      vv(1)=dposx
+                      vv(2)=0.0
+                      vv(3)=0.0
+                    else
+                      vv=0.0
+                    endif
+                    tmpx=vv(1)
+                    tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
+                    tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
+                    f(l1-ig,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+                    f(l1-ig,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                         -distxy*tmpz/dist)
-              f(l1-ig,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-            else if (dIring.eq.0.0.and.dposx.eq.0) then
-              f(l1-ig,m,n,iux:iuz)=0.0
-            endif
-            endif
+                    f(l1-ig,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+                  else if (dIring.eq.0.0.and.dposx.eq.0) then
+                      f(l1-ig,m,n,iux:iuz)=0.0
+                  endif
+                endif
 !
 ! Uniform translation velocity for induction equation at boundary
 !
-            if (dposx.ne.0) then
-              vv(1)=dposx
-              vv(2)=0.0
-              vv(3)=0.0
-              tmpx=vv(1)
-              tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
-              tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
-              uu(1) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              uu(2) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                if (dposx.ne.0) then
+                  vv(1)=dposx
+                  vv(2)=0.0
+                  vv(3)=0.0
+                  tmpx=vv(1)
+                  tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
+                  tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
+                  uu(1) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+                  uu(2) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                         -distxy*tmpz/dist)
-              uu(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-              call cross(uu,bb,uxb)
-              f(l1-ig,m,n,iax:iaz)=f(l1-ig,m,n,iax:iaz)+uxb(1:3)*dt_
-            else
-              uu=0.0
-            endif
+                  uu(3) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+                  call cross(uu,bb,uxb)
+                  f(l1-ig,m,n,iax:iaz)=f(l1-ig,m,n,iax:iaz)+uxb(1:3)*dt_
+                else
+                  uu=0.0
+                endif
+              enddo
 !
+            enddo
           enddo
-          endif
-        endif
-          if (lset_boundary_emf) then
-            call bc_emf_x(f,df,dt_,'top',iax)
-            call bc_emf_x(f,df,dt_,'top',iay)
-            call bc_emf_x(f,df,dt_,'top',iaz)
-          endif
-        enddo
-      enddo
 !
 !  Add slope limted diffusive flux to log density
 !
-      if (.not.ldensity_nolog) then
-        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+!          if (.not.ldensity_nolog) then
+!            rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+!            f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+!          endif
+        endif
+        if (lset_boundary_emf) then
+          do m=m1,m2
+            do n=n1,n2
+              call bc_emf_x(f,df,dt_,'top',iax)
+              call bc_emf_x(f,df,dt_,'top',iay)
+              call bc_emf_x(f,df,dt_,'top',iaz)
+            enddo
+          enddo
+        endif
       endif
 !
     endsubroutine  special_after_timestep
@@ -883,7 +924,7 @@ module Special
       use Mpicomm, only: stop_it
       use Sub, only: erfunc
 !
-      real, dimension (3) :: vv
+      real, dimension (3) :: vv,uu
       real :: xx1,yy1,zz1,phi,tmp,pomega
       real :: fring,Iring,r0,width,br,bphi
       integer :: nwid
@@ -891,9 +932,9 @@ module Special
 !
 !  magnetic ring, define r-R
 !
-      tmp = sqrt(xx1**2+yy1**2)-r0
-      pomega=sqrt(tmp**2+zz1**2)
-      phi = atan2(yy1,xx1)
+        tmp = sqrt(xx1**2+yy1**2)-r0
+        pomega=sqrt(tmp**2+zz1**2)
+        phi = atan2(yy1,xx1)
 !
 !  choice of different profile functions
 !
@@ -904,16 +945,31 @@ module Special
 !
       case ('gaussian')
             if (pomega.lt.nwid*width) then
-              br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
-              bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
-              vv(1) =  cos(phi)*br-sin(phi)*bphi
-              vv(2) =  sin(phi)*br+cos(phi)*bphi
-              vv(3) =  -Iring*fring*( & 
+              if (lcartesian_coords) then
+                br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
+                bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
+                uu(1) =  cos(phi)*br-sin(phi)*bphi
+                uu(2) =  sin(phi)*br+cos(phi)*bphi
+                uu(3) =  -Iring*fring*( & 
                        tmp/(tmp+r0))*exp(-(pomega/width)**2)
+!
+! Rotate about x axis by 90 deg, y-> z and z-> -y
+!
+                vv(1) =  uu(1)
+                vv(2) = -uu(3)
+                vv(3) =  uu(2)
+              else if (lspherical_coords) then
+                br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
+                bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
+                vv(1) =  cos(phi)*br-sin(phi)*bphi
+                vv(2) =  sin(phi)*br+cos(phi)*bphi
+                vv(3) =  -Iring*fring*( & 
+                       tmp/(tmp+r0))*exp(-(pomega/width)**2)
+              endif  
             else
-              vv(1)=0.0
-              vv(2)=0.0
-              vv(3)=0.0
+                vv(1)=0.0
+                vv(2)=0.0
+                vv(3)=0.0
             endif
       case default
         call stop_it('norm_ring: No such fluxtube profile')
@@ -1058,6 +1114,7 @@ module Special
     endsubroutine bc_nfc_x
 !***********************************************************************
     subroutine bc_emf_x(f,df,dt_,topbot,j)
+!
       character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
@@ -1079,6 +1136,31 @@ module Special
         print*, "bc_emf_x: ", topbot, " should be 'top'"
       endselect
     endsubroutine bc_emf_x
+!***********************************************************************
+    subroutine bc_emf_z(f,df,dt_,topbot,j)
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, intent(in) :: dt_
+      integer, intent (in) :: j
+      integer :: i
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      case ('top')               ! top boundary
+        if (llast_proc_z) then
+          do i=1,nghost
+            f(l1:l2,m,n2+i,j)=f(l1:l2,m,n2+i,j)+df(l1:l2,m,n2,j)*dt_ 
+          enddo
+        endif
+      
+      case default
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      endselect
+!
+    endsubroutine bc_emf_z
 !***********************************************************************
     subroutine bc_go_x(f,topbot,j,lforce_ghost)
 !
