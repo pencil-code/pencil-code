@@ -703,9 +703,9 @@ module Particles_map
         dx1=1/dx; dx2=1/dx**2; dx3=1/dx**3; dx4=1/dx**4
         dz1=1/dz; dz2=1/dz**2; dz3=1/dz**3; dx4=1/dz**4
         dx1dz1=dx1*dz1; dx2dz1=dx2*dz1; dx3dz1=dx3*dz1; dx4dz1=dx4*dz1
-        dx1dz2=dx1*dz2; dx2dz2=dx2*dz2; dx3dz2=dx3*dz2; dx4dz1=dx4*dz2
-        dx1dz3=dx1*dz3; dx2dz3=dx2*dz3; dx3dz3=dx3*dz3; dx4dz1=dx4*dz3
-        dx1dz4=dx1*dz4; dx2dz4=dx2*dz4; dx3dz4=dx3*dz4; dx4dz1=dx4*dz4
+        dx1dz2=dx1*dz2; dx2dz2=dx2*dz2; dx3dz2=dx3*dz2; dx4dz2=dx4*dz2
+        dx1dz3=dx1*dz3; dx2dz3=dx2*dz3; dx3dz3=dx3*dz3; dx4dz3=dx4*dz3
+        dx1dz4=dx1*dz4; dx2dz4=dx2*dz4; dx3dz4=dx3*dz4; dx4dz4=dx4*dz4
 !
 !  The inverse of the interpolation matrix is input analytically. Note that
 !  zeros here denote zeros in the actual matrix, to avoid infinities.
