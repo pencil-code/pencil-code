@@ -12,6 +12,7 @@ module Equ
   private
 !
   public :: pde, debug_imn_arrays, initialize_pencils
+  public :: impose_floors_ceilings
 !
   contains
 !***********************************************************************
@@ -172,10 +173,7 @@ module Equ
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-      call impose_density_floor(f)
-      call impose_velocity_ceiling(f)
-      call impose_energy_floor(f)
-      call impose_dustdensity_floor(f)
+      call impose_floors_ceilings(f)
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
@@ -1209,5 +1207,25 @@ module Equ
       if (lviscosity) call dynamical_viscosity(us)
 !
     endsubroutine set_dyndiff_coeff
+!***********************************************************************
+    subroutine impose_floors_ceilings(f)
+!
+!  Impose floors or ceilings for implemented fields.
+!
+!  20-oct-14/ccyang: modularized from pde.
+!
+      use Density, only: impose_density_floor
+      use Dustdensity, only: impose_dustdensity_floor
+      use Energy, only: impose_energy_floor
+      use Hydro, only: impose_velocity_ceiling
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call impose_density_floor(f)
+      call impose_velocity_ceiling(f)
+      call impose_energy_floor(f)
+      call impose_dustdensity_floor(f)
+!
+    endsubroutine impose_floors_ceilings
 !***********************************************************************
 endmodule Equ
