@@ -94,11 +94,6 @@ module Particles_surfspec
 !
       if (N_surface_species>1) then
          isurf = npvar+1
-!         do i=1,N_surface_species
-! JONAS: where do we save this
-! JONAS: commented for now
-!            pvarname(isurf+i-1)=solid_species(i)
-!         enddo
          npvar=npvar+N_surface_species
          isurf_end=isurf+N_surface_species-1
       else
@@ -149,7 +144,14 @@ module Particles_surfspec
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for constr')
 !
+    call create_ad_sol_lists(species,solid_species,'sol',ns)
     call sort_compounds(reactants,solid_species,n_surface_species,nr)
+!
+    if (N_surface_species>1) then
+      do i=1,N_surface_species
+        pvarname(isurf+i-1)=solid_species(i)
+      enddo
+    endif
 !
     inuH2O=find_species('H2O',solid_species,n_surface_species)
     inuCO2=find_species('CO2',solid_species,n_surface_species)
@@ -173,7 +175,7 @@ module Particles_surfspec
     if(inuCH2 > 0)     j_of_inu(inuCH2)=jCH2
     if(inuCH3 > 0)     j_of_inu(inuCH3)=jCH3
 
-    print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
+    !print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
 ! Set number of carbon atoms for each surface species
 !
@@ -187,8 +189,6 @@ module Particles_surfspec
          N_surface_species,nu_power)
     call create_stoc(part,solid_species,nu_prime,.false., &
          N_surface_species,nu_pr_power)
-
-    print*, 'do we get here?'
 !
 ! Define which gas phase reactants the given reaction depends on
 !

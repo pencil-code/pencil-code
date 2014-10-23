@@ -44,6 +44,7 @@ module Particles_chemistry
   public :: nr,ns,np
   public :: nu_power, nu_pr_power
   public :: mu_power, mu_pr_power
+  public :: species
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -77,6 +78,8 @@ module Particles_chemistry
   character(10), dimension(50) :: species_name,adsorbed_species_names
   character(10), dimension(40) :: reactants,products
   character(20) :: element, writeformat
+  character(10), dimension(40) :: species
+
 !
   integer :: N_species, N_reactions
   integer :: placeholder=1
@@ -115,7 +118,6 @@ module Particles_chemistry
 !             Particle dependent variables below here                 !
 !*********************************************************************!
 !
-  real, dimension(:,:), allocatable ::  St_array
   real, dimension(:), allocatable :: conversion
   real, dimension(:), allocatable :: init_mass,rho_p_init
   real, dimension(:,:), allocatable :: mdot_ck,RR_hat
@@ -171,8 +173,6 @@ module Particles_chemistry
   contains
 !***********************************************************************
   subroutine register_particles_chem()
-!
-    character(10), dimension(40) :: species
 !
 !  wrapper routine for particle dependent and independent chemistry 
 !  variables
@@ -268,9 +268,6 @@ module Particles_chemistry
     allocate(A_p_init(mpar_loc)   ,STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for A_p_init')
-    allocate(St_array(mpar_loc,N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for St_array')
     allocate(St_init(mpar_loc),STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for St_init')
@@ -757,6 +754,9 @@ integer function find_species(species,unique_species,nlist)
    end do
 !
    species_list(:nlist) = temp_list(:nlist)
+
+print*,'species_list=',species_list
+
 !
   end subroutine sort_compounds
 !**********************************************************************
@@ -1298,7 +1298,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        do l=1,N_surface_reactions
           do i=1,N_surface_species
              Rck(k,l)=Rck(k,l)+molar_mass_carbon*RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*ac(i)
-             ndot(k,i)=ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St_array(k,l)/ &
+             ndot(k,i)=ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St(k)/ &
                   (fp(k,iap)*fp(k,iap)*4.*pi_loc)
           enddo
        enddo
@@ -1322,7 +1322,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   do k=k1,k2
   do l=1,N_surface_reactions
-    mdot_ck(k,l)=-St_array(k,l)*Rck(k,l)
+    mdot_ck(k,l)=-St(k)*Rck(k,l)
   enddo
   enddo
 !
