@@ -719,6 +719,8 @@ module Special
           call save_name(posx,idiag_posx)
         if (idiag_Iring/=0) &
           call save_name(Iring,idiag_Iring)
+        if (idiag_posz/=0) &
+          call save_name(posz,idiag_posz)
       endif
       call get_cp1(cp1)
 !
@@ -734,21 +736,15 @@ module Special
                 zz1=zz0-posz
                 xx1=cos(tilt*pi/180.0)*(xx0-posx)+sin(tilt*pi/180.0)*(yy0-posy)
                 yy1=-sin(tilt*pi/180.0)*(xx0-posx)+cos(tilt*pi/180.0)*(yy0-posy)
-                if (dposx.ne.0.or.dtilt.ne.0) then
+                if (dposz.ne.0) then
                   dist=sqrt(xx0**2+yy0**2+zz0**2)
                   distxy=sqrt(xx0**2+yy0**2)
 ! Set up new ring
-                  if (lring) then
                     call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
-                  else
-                    call norm_upin(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
-                  endif
             ! calculate D*tmpv
                   bb(1)=cos(tilt*pi/180.0)*tmpv(1)-sin(tilt*pi/180.0)*tmpv(2)
                   bb(2)=sin(tilt*pi/180.0)*tmpv(1)+cos(tilt*pi/180.0)*tmpv(2)
                   bb(3)=tmpv(3)
-                endif
-                if (dposz.ne.0) then
           ! Calculate D^(-1)*(xxx-disp)
                   if (lring) then
                     distyz=sqrt((sqrt(xx1**2+zz1**2)-r0)**2+yy1**2)
@@ -765,7 +761,7 @@ module Special
                     vv(3)=dposz
                     cs2=cs0**2*(exp(gamma*f(l1,m1,n1,iss)*cp1+gamma_m1*(f(l1,m1,n1,ilnrho)-alog(rho0))))
                     rho_corr=1.-0.5*(bb(1)**2+bb(2)**2+bb(3)**2)*mu01*gamma/(exp(f(l1,m1,n1,ilnrho))*cs2)
-                    f(l,m,n,ilnrho)=f(l,m,n,ilnrho)+alog(rho_corr)
+                    f(l,m,n1-ig,ilnrho)=f(l1,m1,n1-ig,ilnrho)+alog(rho_corr)
 !
 ! make tube buoyant? Add density deficit at bottom boundary
 !
@@ -932,9 +928,15 @@ module Special
 !
 !  magnetic ring, define r-R
 !
+      if (lcartesian_coords) then
+        tmp = sqrt(xx1**2+zz1**2)-r0
+        pomega=sqrt(tmp**2+yy1**2)
+        phi = atan2(xx1,zz1)
+      else if (lspherical_coords) then
         tmp = sqrt(xx1**2+yy1**2)-r0
         pomega=sqrt(tmp**2+zz1**2)
         phi = atan2(yy1,xx1)
+      endif
 !
 !  choice of different profile functions
 !
@@ -946,7 +948,7 @@ module Special
       case ('gaussian')
             if (pomega.lt.nwid*width) then
               if (lcartesian_coords) then
-                br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
+                br=Iring*fring*yy1*exp(-(pomega/width)**2)/(tmp+r0)
                 bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
                 uu(1) =  cos(phi)*br-sin(phi)*bphi
                 uu(2) =  sin(phi)*br+cos(phi)*bphi
@@ -955,9 +957,10 @@ module Special
 !
 ! Rotate about x axis by 90 deg, y-> z and z-> -y
 !
-                vv(1) =  uu(1)
-                vv(2) = -uu(3)
-                vv(3) =  uu(2)
+                vv(1) =  sin(phi)*br+cos(phi)*bphi
+                vv(2) =  -Iring*fring*( & 
+                       tmp/(tmp+r0))*exp(-(pomega/width)**2)
+                vv(3) =  cos(phi)*br-sin(phi)*bphi
               else if (lspherical_coords) then
                 br=Iring*fring*zz1*exp(-(pomega/width)**2)/(tmp+r0)
                 bphi=width*fring/(tmp+r0)*exp(-(pomega/width)**2)
