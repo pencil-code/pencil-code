@@ -151,7 +151,7 @@ readerr:
 
 END
 ;******************************************************************************************
-FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, fmt=fmt
+FUNCTION read_firstpass, file, lint_shell, lint_z, lcomplex, extr, startpos, fmt=fmt, zpos=zpos
 
 common pars,  nx, ny, nz, nk, ncomp, nt, Lx, Ly, Lz
 common wavenrs, kxs, kys, kshell
@@ -296,7 +296,7 @@ if err ne 0 then return, 0
     globalmax=1e-30+fltarr(ncomp)
   endelse
 
-  nt=0L & time=0. & s0=1
+  nt=0L & time=0. & s0=1 & s0form=1 & nseg=0 
   
   while not eof(2) do begin
 
@@ -321,16 +321,26 @@ if err ne 0 then return, 0
           endif
         endelse
 
-      endif
-
-      point_lun, -2, startpos     ; save file position of first time stamp into startpos
       nz = abs(nz)
+      endif
 
     endif
 
+    if witheader then begin
+      on_ioerror, newheader
+      point_lun, -2, timepos
+    endif
     readf,2,time 
-   
-    if s0 then begin 
+    if witheader then begin
+      on_ioerror,  NULL
+      if s0 then begin
+        nseg +=1 
+        if nseg eq 1 then startpos = timepos else startpos = [startpos,timepos]
+        s0=0
+      endif
+    endif
+
+    if s0form then begin 
       if lcomplex then begin
 ;
 ;  derive format for reading from data line (only needed for complex data)
@@ -351,7 +361,7 @@ if err ne 0 then return, 0
       endif else $
         fmt=0
 
-      s0 = 0
+      s0form = 0
     endif
 
     for i=0,ncomp-1 do begin
@@ -364,6 +374,13 @@ if err ne 0 then return, 0
     endfor
 
     nt=nt+1L
+    continue
+newheader:
+    if eof(2) then exit $
+    else begin
+      s0=1
+      point_lun, 2, timepos
+    endelse
   
   endwhile
 
@@ -518,7 +535,7 @@ nk=nk0
 ;  end
 ;end
 
-nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1 )
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, lcomplex, global_ext1, startpos1, fmt=fmt1, zpos=zpos1 )
 
 if nt1 eq 0 then begin
   print, 'Error when reading '+datatopdir+'/'+file1+'!'
@@ -534,7 +551,7 @@ default,yrange,[10.0^(floor(alog10(float(global_ext1(0))))),10.0^ceil(alog10(flo
 if (file2 ne '') then begin
 
   nk = nk0
-  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2, fmt=fmt2 )
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, lcomplex, global_ext2, startpos2, fmt=fmt2, zpos=zpos2 )
  
   if nt2 eq 0 or nk ne nk1 then begin
 
@@ -560,7 +577,7 @@ if (file2 ne '') then begin
     spec2=1
     alloc_specs, spectrum2, lint_shell, lint_z, lcomplex, fullspec=spec2 
     openr, 2, datatopdir+'/'+file2
-    point_lun, 2, startpos2
+    point_lun, 2, startpos2(0)
 
   endelse
 
@@ -570,13 +587,9 @@ tt=fltarr(nt)
 lasti=nt-1
 spec1=1
 alloc_specs, spectrum1, lint_shell, lint_z, lcomplex, fullspec=spec1
-
-openr, 1, datatopdir+'/'+file1
-point_lun, 1, startpos1
-
 ;
 ;  Plotting the results for last time frame
-;;
+;
 ;  check whether we want png files (for movies)
 ;
 if lint_shell then begin
@@ -606,10 +619,15 @@ if lint_shell then begin
 
 endif
 
+  openr, 1, datatopdir+'/'+file1
+  point_lun, 1, startpos1(0) & iseg=0
+
   it=0L
   while not eof(1) do begin 
     
+    on_ioerror, newheader
     readf,1,time
+    on_ioerror, NULL
     tt(it)=time
 
     for ic=0,ncomp-1 do begin
@@ -730,10 +748,20 @@ endif
       itpng=itpng+1 ;(counter)
     endif
     ;
+    continue
+newheader:
+    if eof(1) then exit
+    iseg += 1
+    point_lun, 1, startpos1(iseg)
+
   endwhile
   
 ;stop,'AXEL1'
-  if arg_present(obj) then obj = {FILE: file1, TT: tt, SPEC1: spec1}
+  if arg_present(obj) then $
+    if n_elements(zpos1) gt 0 then $
+      obj = {FILE: file1, TT: tt, ZPOS: zpos1, SPEC1: reform(spec1)} $
+    else $
+      obj = {FILE: file1, TT: tt, SPEC1: reform(spec1)}
 ; MR: would prefer the name 'T' for the time as it is also use elsewhere
 return
 
