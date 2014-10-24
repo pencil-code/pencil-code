@@ -2659,6 +2659,8 @@ module Mpicomm
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
+      integer :: count_rate,time
+!
       mpiwtime = MPI_WTIME()
 !
     endfunction mpiwtime
@@ -6978,7 +6980,7 @@ module Mpicomm
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
       integer :: k,ipz, ipy, ipx, ic, ncompl, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
-                 irz, iry, irx, iza, ize, iya, iye, ixa, ixe, ixs, nsend, tag, unfilled
+                 irz, iry, irx, iza, ize, izs, iya, iye, iys, ixa, ixe, ixs, nsend, tag, unfilled
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)
       complex, allocatable :: rowbuf_cmplx(:)
@@ -7048,12 +7050,18 @@ module Mpicomm
           do irz=1,nz_max
             if ( zrangel(1,irz) == 0 ) exit
 !
-            iza = max(n1g,zrangel(1,irz))-n1g+1
+            izs=zrangel(3,irz)
+            if (zrangel(1,irz)>=n1g) then
+              iza = zrangel(1,irz)-n1g+1
+            else
+              iza = mod(izs-mod(n1g-zrange(1,irz),izs),izs)+1
+            endif
+
             ize = min(n2g,zrangel(2,irz))-n1g+1
 !
 ! loop over all z indices in range irz
 !
-            do iz = iza, ize, zrangel(3,irz)
+            do iz = iza, ize, izs
 !
 ! loop over all processor array beams in x direction in layer ipz
 !
@@ -7070,12 +7078,18 @@ module Mpicomm
                 do iry=1,nk_max
                   if ( kyrangel(1,iry) == 0 ) exit
 !
-                  iya = max(m1g,kyrangel(1,iry))-m1g+1
+                  iys=kyrangel(3,iry)
+                  if (kyrangel(1,iry)>=m1g) then
+                    iya = kyrangel(1,iry)-m1g+1
+                  else
+                    iya = mod(iys-mod(m1g-kyrangel(1,iry),iys),iys)+1
+                  endif
+
                   iye = min(m2g,kyrangel(2,iry))-m1g+1
 !
 ! loop over all ky indices in range iry
 !
-                  do iy = iya, iye, kyrangel(3,iry)
+                  do iy = iya, iye, iys
                      !!if (lroot) print*, 'iy=', iy
 !
 ! loop over all processors in beam
@@ -7096,9 +7110,14 @@ module Mpicomm
                       do irx=1,nk_max
                         if ( kxrangel(1,irx) == 0 ) exit
 !
-                        ixa = max(l1g,kxrangel(1,irx))-l1g+1
-                        ixe = min(l2g,kxrangel(2,irx))-l1g+1
                         ixs = kxrangel(3,irx)
+                        if (kxrangel(1,irx)>=l1g) then
+                          ixa = kxrangel(1,irx)-l1g+1
+                        else
+                          ixa = mod(ixs-mod(l1g-kxrangel(1,irx),ixs),ixs)+1
+                        endif
+
+                        ixe = min(l2g,kxrangel(2,irx))-l1g+1
 !
                         if (ixe>=ixa) then
 
