@@ -1990,7 +1990,8 @@ module Magnetic
 !
       if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
          ) lpenc_diagnos2d(i_jxb)=.true.
-      if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
+      if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 .or. &
+          idiag_Exmxy/=0 .or. idiag_Eymxy/=0 .or. idiag_Ezmxy/=0 &
          ) lpenc_diagnos2d(i_uxb)=.true.
 !
       if (idiag_StokesImxy/=0) lpenc_diagnos2d(i_StokesI)=.true.
