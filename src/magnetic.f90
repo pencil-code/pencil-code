@@ -1791,7 +1791,7 @@ module Magnetic
       if (lresi_eta_const .and. .not. lweyl_gauge .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
 !
       zdep: if (lresi_zdep) then
-        if (.not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
+        lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
       endif zdep
 !
@@ -3039,7 +3039,10 @@ module Magnetic
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_z(n)
         else exp_zdep
-          forall(j = 1:3) fres(:,j) = fres(:,j) + geta_z(n,j) * p%diva
+          ! Assuming geta_z(:,1) = geta_z(:,2) = 0
+          fres(:,3) = fres(:,3) + geta_z(n,3) * p%diva
+          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n,3)) * dz_1(n)
+          endif dt1_etaz
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
