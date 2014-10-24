@@ -271,10 +271,7 @@ module ImplicitDiffusion
       real, dimension(nzgrid) :: dc
       integer :: ll1, ll2, m0, n0
       integer :: iv, j, k
-!
-! Shear is not implemented.
-!
-      if (lshear) call fatal_error('integrate_diffusion_fft_xy', 'shear solution is not implemented yet. ')
+      real :: c
 !
 ! Get the diffusion coefficient.
 !
@@ -286,12 +283,17 @@ module ImplicitDiffusion
       ll2 = (ipx + 1) * nx
       m0 = ipy * ny
       n0 = ipz * nz
+      if (lshear) c = deltay / Lx
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0
         call fft_xy_parallel(a_re, a_im)
         yscan: do j = 1, ny
-          k2dt = dt * (kx_fft(ll1:ll2)**2 + ky_fft(m0+j)**2)
+          if (lshear) then
+            k2dt = dt * ((kx_fft(ll1:ll2) + c * ky_fft(m0+j))**2 + ky_fft(m0+j)**2)
+          else
+            k2dt = dt * (kx_fft(ll1:ll2)**2 + ky_fft(m0+j)**2)
+          endif
           zscan: do k = 1, nz
             decay = exp(-dc(n0+k) * k2dt)
             a_re(:,j,k) = decay * a_re(:,j,k)
