@@ -190,14 +190,11 @@ module ImplicitDiffusion
       integer, intent(in) :: ivar1, ivar2
 !
       real, dimension(nx,ny,nz) :: a_re, a_im
-      real, dimension(nx) :: decay
+      real, dimension(nx) :: decay, k2dt
       real, dimension(1) :: dc
+      integer :: ll1, ll2, m0, n0
       integer :: iv, j, k
-      real :: ky2, kz2
-!
-! Shear is not implemented.
-!
-      if (lshear) call fatal_error('integrate_diffusion_fft', 'shear solution is not implemented yet. ')
+      real :: ky2, kz2, c
 !
 ! Get the diffusion coefficient.
 !
@@ -205,15 +202,25 @@ module ImplicitDiffusion
 !
 ! Integrate.
 !
+      ll1 = ipx * nx + 1
+      ll2 = (ipx + 1) * nx
+      m0 = ipy * ny
+      n0 = ipz * nz
+      if (lshear) c = deltay / Lx
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0
         call fft_xyz_parallel(a_re, a_im)
         zscan: do k = 1, nz
-          kz2 = kz_fft(k+ipz*nz)**2
+          kz2 = kz_fft(n0+k)**2
           yscan: do j = 1, ny
-            ky2 = ky_fft(j+ipy*ny)**2
-            decay = exp(-dc(1) * dt * (kx_fft(ipx*nx+1:(ipx+1)*nx)**2 + ky2 + kz2))
+            ky2 = ky_fft(m0+j)**2
+            if (lshear) then
+              k2dt = dt * (ky2 + kz2 + (kx_fft(ll1:ll2) + c * ky_fft(m0+j))**2)
+            else
+              k2dt = dt * (ky2 + kz2 + kx_fft(ll1:ll2)**2)
+            endif
+            decay = exp(-dc(1) * k2dt)
             a_re(:,j,k) = decay * a_re(:,j,k)
             a_im(:,j,k) = decay * a_im(:,j,k)
           enddo yscan
