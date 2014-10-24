@@ -358,7 +358,7 @@ if err ne 0 then return, 0
       readf,2,spectrum1,format=fmt 
       ;readf,2,spectrum1y,format=fmt 
       ;readf,2,spectrum1z,format=fmt 
-;stop, 'AXEL'
+
       globalmax(i)=max(spectrum1) > globalmax(i)
       globalmin(i)=min(spectrum1) < globalmin(i)
     endfor
@@ -366,7 +366,7 @@ if err ne 0 then return, 0
     nt=nt+1L
   
   endwhile
-  
+
   close, 2
 
 ; end first reading
@@ -617,9 +617,6 @@ endif
         readf,1,spectrum1, format=fmt1 $
       else $
         readf,1,spectrum1
-;print,'AXEL'
-;stop
-print,it
     
       if lint_shell then $
         spec1(*,*,ic,it)=spectrum1 $
@@ -735,8 +732,8 @@ print,it
     ;
   endwhile
   
-print,'AXEL1'
-  if arg_present(obj) then obj = {filename, TT: tt, SPEC1: spec1}
+;stop,'AXEL1'
+  if arg_present(obj) then obj = {FILE: file1, TT: tt, SPEC1: spec1}
 ; MR: would prefer the name 'T' for the time as it is also use elsewhere
 return
 
