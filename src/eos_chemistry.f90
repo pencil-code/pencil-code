@@ -526,7 +526,14 @@ module EquationOfState
          endif
        endif
 !
-       if (lpencil(i_TT1)) p%TT1=1./p%TT
+       if (lpencil(i_TT1)) then
+         if (ltemperature_nolog) then
+           p%TT1=1./f(l1:l2,m,n,iTT)
+         else 
+           p%TT1=1./exp(f(l1:l2,m,n,ilnTT))
+         endif
+       endif
+
 !
         if (minval(p%TT)==0.) then
           call fatal_error('calc_pencils_eos','p%TT=0!')

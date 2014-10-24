@@ -4411,18 +4411,6 @@ module Chemistry
 !
       if (reac_rate_method == 'chemkin') then
 !
-!  Natalia:pencil_check
-!  the same problem as in calculation of p%H0_RT:
-!  if lpencil_check and full compiler settings then
-!  the problem appears for TT1_loc= p%TT1
-!  Does anybody know why it is so?
-!  While this problem is not resolved
-!  I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
-!  NILS: This is going to fail if nologtemperature=T. The real error
-!  NILS: should be found instead of making a quick fix.
-!  NILS: I am not able to reproduce the error natalia reported.
-!
-        !TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
         TT1_loc=p%TT1
 !
         if (lwrite_first)  open(file_id,file=input_file)
