@@ -3042,7 +3042,6 @@ module Magnetic
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n,3) * p%diva
           if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n,3)) * dz_1(n)
-          endif dt1_etaz
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
