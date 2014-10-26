@@ -182,14 +182,23 @@ CFLAGS=-O3 -DFUNDERSC=1
 ##
 ## Sisu - CrayXC30 - (Kajaani)
 ##
-#FC=ftn #(sisu*)
-#FC_SLOPPY = $(FC) #(sisu*)
-#F90=$(FC) #(sisu*)
-#CC=cc #(sisu*)
+## do first "module load intel" 
+##
+#FC=ifort #(sisu*)
+#FFLAGS=-O3 #(sisu*)
+#CC=icc #(sisu*)
+#CFLAGS=  #(sisu*)
+#LD_MPI=  #(sisu*)
+##
+### old
+##FC=ftn #(sisu*)
+##FC_SLOPPY = $(FC) #(sisu*)
+##F90=$(FC) #(sisu*)
+##CC=cc #(sisu*)
 ##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
-#FFLAGS=-O3 -ffree -e m  #(sisu*)
-#FFLAGS_DOUBLE=-s default64 #(sisu*)
-#CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
+##FFLAGS=-O3 -ffree -e m  #(sisu*)
+##FFLAGS_DOUBLE=-s default64 #(sisu*)
+##CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Hermit - CrayXE6 - (Stuttgart)
 ##
