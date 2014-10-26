@@ -1274,8 +1274,38 @@ module Magnetic
 !  share eta profile with test-field procedure
 !
       if (ltestfield) then
-        call put_shared_variable('eta_z',eta_z,ierr)
-        call put_shared_variable('geta_z',geta_z,ierr)
+        if (lresi_xdep) then
+          call put_shared_variable('eta_x',eta_x,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting eta_x as shared variable')
+          call put_shared_variable('geta_x',geta_x,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting geta_x as shared variable')
+        endif
+        if (lresi_ydep) then
+          call put_shared_variable('eta_y',eta_y,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting eta_y as shared variable')
+          call put_shared_variable('geta_y',geta_y,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting geta_y as shared variable')
+        endif
+        if (lresi_zdep) then
+          call put_shared_variable('eta_z',eta_z,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting eta_z as shared variable')
+          call put_shared_variable('geta_z',geta_z,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting geta_z as shared variable')
+        endif
+        if (lresi_xydep) then
+          call put_shared_variable('eta_xy',eta_xy,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting eta_xy as shared variable')
+          call put_shared_variable('geta_xy',geta_xy,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'problem when putting geta_xy as shared variable')
+        endif
       endif
 !
 !  Border profile backward compatibility. For a vector, if only the first
