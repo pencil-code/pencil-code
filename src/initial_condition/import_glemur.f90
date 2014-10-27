@@ -80,7 +80,6 @@ module InitialCondition
 !
 !  Created 2014-09-04 by Simon Candelaresi (Iomsn)
 !
-      use Mpicomm, only: stop_it
       use Poisson
       use Sub
       
@@ -116,6 +115,7 @@ module InitialCondition
       write(*,*) "nxyz = ", vtkX, vtkY, vtkZ
       nPoints = vtkX*vtkY*vtkZ
       write(*,*) 'nPoints = ', nPoints
+      write(*,*) 'dxyz = ', dx, dy, dz
 !
 ! allocate array
       allocate(bb(3,vtkX,vtkY,vtkZ))
@@ -132,7 +132,8 @@ module InitialCondition
       endif
 !
 ! read the magnetic field
-      f(:,:,:,iaz) = 1
+      f(:,:,:,iax:iay) = 0
+      f(:,:,:,iaz) = B_bkg
       pos = index(raw, "VECTORS bfield") + 21 + p64
       do n = 1, vtkZ
         do m = 1, vtkY
@@ -149,7 +150,10 @@ module InitialCondition
               bb(2,l,m,n) = real(bb64(2,l,m,n))
               bb(3,l,m,n) = real(bb64(3,l,m,n))
             endif
-            f(l+nghost,m+nghost,n+nghost,iax:iaz) = bb(:,l,m,n)
+            if ((l > nx+nx*ipx+nghost .or. m > ny+ny*ipy+nghost .or. n > nz+nz*ipz+nghost .or. &
+                l < 1+nx*ipx-nghost .or. m < 1+ny*ipy-nghost .or. n < 1+nz*ipz-nghost) .eqv. .false.) then
+                f(l+nghost-nx*ipx,m+nghost-ny*ipy,n+nghost-nz*ipz,iax:iaz) = bb(:,l,m,n)
+            endif
           enddo
         enddo
       enddo
@@ -171,21 +175,20 @@ module InitialCondition
       do j=1,3
         call inverse_laplacian(f,tmpJ(:,:,:,j))
       enddo
-!
+      
 !  Overwrite the f-array with the correct vector potential A
       do j=1,3
           ju=iaa-1+j
           f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
       enddo
 !
-!     Add a background field to the braid
+!     Add a background field
       do l=1,mx
         do m=1,my
           f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
         enddo
       enddo
-!      
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
