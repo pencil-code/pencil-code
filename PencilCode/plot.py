@@ -82,14 +82,16 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, logscale=False, **
     plt.show()
 
 #=======================================================================
-def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylog=False):
+def time_series(diagnostics, datadir='./data', trange=None, xlog=False, ylog=False):
     """Plots diagnostic variable(s) as a function of time.
+
+    Positional Arguments:
+        diagnostics
+            (A list of) diagnostic variable(s).
 
     Keyword Arguments:
         datadir
             Name of the data directory.
-        diagnostics
-            (A list of) diagnostic variable(s).
         trange
             A tuple of (tmin, tmax) for the time range to be shown; if
             None, all time is shown.
@@ -100,7 +102,7 @@ def time_series(datadir='./data', diagnostics='dt', trange=None, xlog=False, ylo
             A boolean value for turning on or off logarithmic scale in
             y axis.
     """
-    # Chao-Chin Yang, 2014-04-07
+    # Chao-Chin Yang, 2014-10-11
     from . import read
     import matplotlib.pyplot as plt
 
