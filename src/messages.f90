@@ -630,8 +630,9 @@ module Messages
 !
     lopen = mode(1:4)=='open'
     lread = mode(1:4)=='read'
+
     if (.not.lread .and. len_trim(mode)>4) then
-      lread = lread .or. mode(1:5)=='openr'
+      lread = lread .or. (mode(1:5)=='openr')
       lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
       lclose = mode(1:5)=='close'
     else
