@@ -7,6 +7,48 @@
 #
 # Chao-Chin Yang, 2013-10-21
 #=======================================================================
+def avgt1d(tmin=None, **kwarg):
+    """Finds the time average of the 1D averages.
+
+    Keyword Arguments:
+        tmin
+            Minimum time to be included in the average.  If None, the
+            whole time series is used.
+        **kwarg
+            Keyword arguments to be passed to read.avg1d().
+    """
+    # Chao-Chin Yang, 2014-10-27
+    from . import read
+    import numpy as np
+    from scipy import integrate
+    # Read the 1D averages.
+    t, avg1d = read.avg1d(**kwarg)
+    t, indices = np.unique(t, return_index=True)
+    avg1d = avg1d[indices,:]
+    # Check the time span.
+    tmax = t.max()
+    if tmin is None:
+        tmin = t.min()
+    if tmax <= tmin:
+        print("The minimum time has not been reached. ")
+        print("  tmin, tmax = ", tmin, tmax)
+        tmin = t.min()
+    indices = t >= tmin
+    dtinv = 1 / (tmax - tmin)
+    # Find the time average at each location for each variable.
+    var = avg1d.dtype.names
+    nvar = len(var)
+    nz = avg1d.shape[1]
+    avg = np.core.records.array(nvar * [np.zeros(nz,)], names=var)
+    sd = np.core.records.array(nvar * [np.zeros(nz,)], names=var)
+    for v in var:
+        for j in range(nz):
+            avg[v][j] = integrate.simps(avg1d[v][indices,j], t[indices])
+            sd[v][j] = integrate.simps(avg1d[v][indices,j]**2, t[indices])
+        avg[v] *= dtinv
+        sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
+    return avg, sd
+#=======================================================================
 def stratz(datadir='./data'):
     """Finds the vertical background stratification.
 
