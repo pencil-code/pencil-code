@@ -501,13 +501,13 @@ module Testfield_general
         if (lresitest_prof(iny).or.lresitest_prof(inz)) then
           call calc_diffusive_part_prof_0d(del2Atest,divatest,eta1d(mnprof),(/geta1d(mnprof)/),(/jgprof/),daatest)
         elseif (lresitest_prof(inx)) then
-          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta1d,geta1d,(/1/),daatest)
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta1d(l1:l2),geta1d(l1:l2),(/1/),daatest)
         elseif (lresitest_prof(inxy).or.lresitest_prof(inxz)) then
-          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta2d(:,mnprof),geta2d(:,mnprof,:),(/1,jgprof/),daatest)
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta2d(l1:l2,mnprof),geta2d(l1:l2,mnprof,:),(/1,jgprof/),daatest)
         elseif (lresitest_prof(inyz)) then 
           call calc_diffusive_part_prof_0d(del2Atest,divatest,eta2d(m,n),geta2d(m,n,:),(/2,3/),daatest)
         elseif (lresitest_prof(inxyz)) then 
-          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta3d(:,m,n),geta3d(:,m,n,:),(/1,2,3/),daatest)
+          call calc_diffusive_part_prof_1d(del2Atest,divatest,eta3d(l1:l2,m,n),geta3d(l1:l2,m,n,:),(/1,2,3/),daatest)
         endif
 !
       else
@@ -560,8 +560,7 @@ module Testfield_general
 !   6-sep-13/MR: coded
 !
       real, dimension(nx,3),intent(IN) :: del2Atest
-      real, dimension(nx),  intent(IN) :: divatest,eta
-      real, dimension(nx,*),intent(IN) :: geta
+      real, dimension(nx),  intent(IN) :: divatest,eta,geta
       integer, dimension(:),intent(IN) :: jg
       real, dimension(nx,3),intent(OUT):: daatest
 
@@ -572,7 +571,7 @@ module Testfield_general
       enddo
 
       do j=1,size(jg)
-        daatest(:,jg(j))=daatest(:,jg(j))+geta(:,jg(j))*divatest
+        daatest(:,jg(j))=daatest(:,jg(j))+geta*divatest
       enddo
 
     endsubroutine calc_diffusive_part_prof_1d
