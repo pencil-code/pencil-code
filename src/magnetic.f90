@@ -231,12 +231,9 @@ module Magnetic
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
-  real, dimension(mz) :: coskz,sinkz,eta_z
-  real, dimension(mz,3) :: geta_z
-  real, dimension(mx) :: eta_x
-  real, dimension(mx,3) :: geta_x
-  real, dimension(my) :: eta_y
-  real, dimension(my,3) :: geta_y
+  real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
+  real, dimension(mx) :: eta_x,geta_x
+  real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: va2max_beta
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
@@ -1259,7 +1256,7 @@ module Magnetic
 !
 !     if (lfirst_proc_xy) then
 !       do n=1,mz
-!         write (100+iproc,*) z(n), eta_z(n), geta_z(n,:)
+!         write (100+iproc,*) z(n), eta_z(n), geta_z(n)
 !       enddo
 !     endif
 !
@@ -3066,13 +3063,14 @@ module Magnetic
           if (lweyl_gauge) then
             fres = fres - eta_z(n) * mu0 * p%jj
           else
-            forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j) + geta_z(n,j) * p%diva
+            forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j)
+            fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_z(n)
         else exp_zdep
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
-          fres(:,3) = fres(:,3) + geta_z(n,3) * p%diva
-          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n,3)) * dz_1(n)
+          fres(:,3) = fres(:,3) + geta_z(n) * p%diva
+          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n)) * dz_1(n)
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
@@ -3117,16 +3115,18 @@ module Magnetic
 !
       if (lresi_xdep) then
         do j=1,3
-          fres(:,j)=fres(:,j)+eta_x(l1:l2)*p%del2a(:,j)+geta_x(l1:l2,j)*p%diva
+          fres(:,j)=fres(:,j)+eta_x(l1:l2)*p%del2a(:,j)
         enddo
+        fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
         etatotal=etatotal+eta_x(l1:l2)
       endif
 !
       if (lresi_ydep) then
         do j=1,3
-          fres(:,j)=fres(:,j)+eta_y(m)*p%del2a(:,j)+geta_y(m,j)*p%diva
+          fres(:,j)=fres(:,j)+eta_y(m)*p%del2a(:,j)
         enddo
+        fres(:,2)=fres(:,2)+geta_y(m)*p%diva
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_y(m)
         etatotal=etatotal+eta_y(m)
       endif
@@ -6725,7 +6725,7 @@ module Magnetic
       integer, intent(in) :: nz
       real, dimension(nz), intent(in) :: z
       real, dimension(nz), intent(out) :: eta_z
-      real, dimension(nz,3), intent(out), optional :: geta_z
+      real, dimension(nz), intent(out), optional :: geta_z
 !
       real, dimension(nz) :: zoh, z2
       real :: h
@@ -6745,9 +6745,7 @@ module Magnetic
 !
 ! its gradient:
           if (present(geta_z)) then
-            geta_z(:,1) = 0.
-            geta_z(:,2) = 0.
-            geta_z(:,3) = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
+            geta_z = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
           endif
 !
         case ('tanh')
@@ -6758,9 +6756,7 @@ module Magnetic
 !
 ! its gradient:
           if (present(geta_z)) then
-             geta_z(:,1) = 0.
-             geta_z(:,2) = 0.
-             geta_z(:,3) = -eta/(2.*eta_zwidth) * &
+             geta_z = -eta/(2.*eta_zwidth) * &
                ((tanh((z + eta_z0)/eta_zwidth))**2. &
                -(tanh((z - eta_z0)/eta_zwidth))**2.)
           endif
@@ -6776,9 +6772,7 @@ module Magnetic
 !
 ! its gradient:
           if (present(geta_z)) then
-            geta_z(:,1) = 0.
-            geta_z(:,2) = 0.
-            geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_zwidth)
+            geta_z = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_zwidth)
           endif
 !
         case ('cubic_step')
@@ -6790,9 +6784,7 @@ module Magnetic
 !
 ! its gradient:
           if (present(geta_z)) then
-            geta_z(:,1) = 0.
-            geta_z(:,2) = 0.
-            geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth)
+            geta_z = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth)
           endif
 !
 !  Two-step function
@@ -6809,9 +6801,7 @@ module Magnetic
 !  with the opposite sign, because we have used negative eta_zwidth.
 !
           if (present(geta_z)) then
-            geta_z(:,1) = 0.
-            geta_z(:,2) = 0.
-            geta_z(:,3) = eta*(eta_jump-two_step_factor)*( &
+            geta_z = eta*(eta_jump-two_step_factor)*( &
               der_step(z,eta_z0,-eta_zwidth)+der_step(z,eta_z1,eta_zwidth))
           endif
 !
@@ -6833,7 +6823,7 @@ module Magnetic
       integer, intent(in) :: ny
       real, dimension(ny), intent(in) :: y
       real, dimension(ny), intent(out) :: eta_y
-      real, dimension(ny,3), intent(out), optional :: geta_y
+      real, dimension(ny), intent(out), optional :: geta_y
 !
       select case (ydep_profile)
 !
@@ -6851,10 +6841,8 @@ module Magnetic
 !  with the opposite sign, because we have used negative eta_ywidth.
 !
           if (present(geta_y)) then
-            geta_y(:,1) = 0.
-            geta_y(:,2) = eta*(eta_jump-two_step_factor)*( &
+            geta_y = eta*(eta_jump-two_step_factor)*( &
               der_step(y,eta_y0,-eta_ywidth)+der_step(y,eta_y1,eta_ywidth))
-            geta_y(:,3) = 0.
           endif
 !
       endselect
@@ -6872,7 +6860,7 @@ module Magnetic
       use Sub, only: step, der_step
 !
       real, dimension(mx) :: eta_x,x2
-      real, dimension(mx,3) :: geta_x
+      real, dimension(mx) :: geta_x
       character (len=labellen) :: xdep_profile
       integer :: l
 !
@@ -6888,9 +6876,7 @@ module Magnetic
 !
 ! its gradient:
 !
-          geta_x(:,1) = eta_x*(-x-sign(1.,x)*sigma_ratio*exp(-x2)/(2.*sqrt(pi)))
-          geta_x(:,2) = 0.
-          geta_x(:,3) = 0.
+          geta_x = eta_x*(-x-sign(1.,x)*sigma_ratio*exp(-x2)/(2.*sqrt(pi)))
 !
 !  tanh profile
 !
@@ -6904,10 +6890,8 @@ module Magnetic
 !
 ! its gradient:
 !
-           geta_x(:,1) = -eta/(2.*eta_xwidth) * ((tanh((x + eta_x0)/eta_xwidth))**2. &
+           geta_x = -eta/(2.*eta_xwidth) * ((tanh((x + eta_x0)/eta_xwidth))**2. &
              - (tanh((x - eta_x0)/eta_xwidth))**2.)
-           geta_x(:,2) = 0.
-           geta_x(:,3) = 0.
 !
 !  linear profile
 !
@@ -6919,9 +6903,7 @@ module Magnetic
 !
 ! its gradient:
 !
-           geta_x(:,1) = eta/eta_xwidth
-           geta_x(:,2) = 0.
-           geta_x(:,3) = 0.
+           geta_x = eta/eta_xwidth
 !
 !  Single step function
 !  Note that eta_x increases with increasing x when eta_xwidth is negative (!)
@@ -6936,9 +6918,7 @@ module Magnetic
 !  its gradient:
 !  Note that geta_x points then only in the x direction.
 !
-           geta_x(:,1) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_xwidth)
-           geta_x(:,2) = 0.
-           geta_x(:,3) = 0.
+           geta_x = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_xwidth)
 !
         case ('RFP_1D')
 !
@@ -6946,9 +6926,7 @@ module Magnetic
 !
 ! its gradient:
 !
-           geta_x(:,1) = 2*eta*(1+9*(x/radRFP)**30)*270*(x/radRFP)**29/radRFP
-           geta_x(:,2) = 0.
-           geta_x(:,3) = 0.
+           geta_x = 2*eta*(1+9*(x/radRFP)**30)*270*(x/radRFP)**29/radRFP
 !
 !
 !  Two-step function
@@ -6976,10 +6954,8 @@ module Magnetic
 !  with the opposite sign, because we have used negative eta_xwidth.
 !  Note that geta_x points then only in the x direction.
 !
-           geta_x(:,1) = eta*(eta_jump-two_step_factor)*( &
+           geta_x = eta*(eta_jump-two_step_factor)*( &
              der_step(x,eta_x0,-eta_xwidth0)+der_step(x,eta_x1,eta_xwidth1))
-           geta_x(:,2) = 0.
-           geta_x(:,3) = 0.
 !
       endselect
 !
@@ -6987,9 +6963,9 @@ module Magnetic
 !
       if (lroot.and.ldebug) then
         print*
-        print*,'x, eta_x, geta_x(:,1)'
+        print*,'x, eta_x, geta_x'
         do l=l1,l2
-          write(*,'(1p,3e11.3)') x(l),eta_x(l),geta_x(l,1)
+          write(*,'(1p,3e11.3)') x(l),eta_x(l),geta_x(l)
         enddo
       endif
 !
