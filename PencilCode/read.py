@@ -7,6 +7,8 @@
 #
 # Chao-Chin Yang, 2013-05-06
 #=======================================================================
+hsize = 4    # Heading and trailing bytes in Fortran binary.
+#=======================================================================
 def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
     """Returns the time series of 1D averages.
 
@@ -235,6 +237,56 @@ def proc_dim(datadir='./data', proc=0):
                                            'double_precision', 'iprocx', 'iprocy', 'iprocz'])
     return Dimensions(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz, mvar=mvar, maux=maux, mglobal=mglobal,
                       double_precision=double_precision, iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
+#=======================================================================
+def proc_grid(datadir='./data', dim=None, proc=0):
+    """Returns the grid controlled by one process.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        dim
+            Dimensions supplied by proc_dim().  If None, proc_dim() will
+            be called.
+        proc
+            Process ID.
+    """
+    # Chao-Chin Yang, 2014-10-29
+    from collections import namedtuple
+    import numpy as np
+    from struct import unpack, calcsize
+    # Check the dimensions and precision.
+    if dim is None:
+        dim = proc_dim(datadir=datadir, proc=proc)
+    if dim.double_precision:
+        dtype = np.float64
+        fmt = 'd'
+    else:
+        dtype = np.float32
+        fmt = 'f'
+    nb = calcsize(fmt)
+    # Read grid.dat.
+    f = open(datadir.strip() + '/proc' + str(proc) + '/grid.dat', 'rb')
+    f.read(hsize)
+    t = unpack(fmt, f.read(nb))[0]
+    x = np.frombuffer(f.read(nb*dim.mx), dtype=dtype)
+    y = np.frombuffer(f.read(nb*dim.my), dtype=dtype)
+    z = np.frombuffer(f.read(nb*dim.mz), dtype=dtype)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    Lx, Ly, Lz = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    dx_1, dy_1, dz_1 = unpack(3*fmt, f.read(3*nb))
+    f.read(2*hsize)
+    dx_tilde, dy_tilde, dz_tilde = unpack(3*fmt, f.read(3*nb))
+    f.read(hsize)
+    f.close()
+    # Define and return a named tuple.
+    Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
+                               'dx_tilde', 'dy_tilde', 'dz_tilde'])
+    return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
+                dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
