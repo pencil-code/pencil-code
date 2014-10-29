@@ -398,8 +398,18 @@ module Particles_surfspec
 !  JONAS: implicit?/explicit?
 !  communicating with gas phase?
 !
-      dfp(k,isurf:isurf_end)=-1e-2
-   end do
+     if (lboundary_explicit) then
+       !SOLVE explicitly
+     else
+       if (linfinite_diffusion) then
+         do ichem=1,nsurfreac
+           dfp(k,isurf+ichem-1)=0.0
+           fp(k,isurf+ichem-1)=interp_species(k,jmap(isurf+ichem-1))
+         enddo
+       else
+         !SOLVE implicit
+       endif
+   enddo
 !
   endsubroutine dpsurf_dt_pencil
 !***********************************************************************
