@@ -4587,7 +4587,7 @@ module Initcond
 !  generate all 3 velocity components separately
 !  generate k^n spectrum with random phase (between -pi and pi)
 !
-        nexp1=.5*nfact*(initpower-initpower2)
+        nexp1=.25*nfact*(initpower-initpower2)
         nexp2=1./nfact
         kpeak21=1./kpeak**2
         r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
