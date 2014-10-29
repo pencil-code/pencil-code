@@ -214,32 +214,27 @@ def proc_dim(datadir='./data', proc=0):
             Process ID
     """
     # Chao-Chin Yang, 2013-10-23
-
+    from collections import namedtuple
     # Read dim.dat.
     f = open(datadir.strip() + '/proc' + str(proc) + '/dim.dat')
     a = f.read().rsplit()
     f.close()
-
     # Sanity Check
     if a[6] == '?':
         print('Warning: unknown data precision. ')
     if not a[7] == a[8] == a[9]:
         raise Exception('unequal number of ghost zones in every direction. ')
-
     # Extract the dimensions.
     mx, my, mz, mvar, maux, mglobal = (int(b) for b in a[0:6])
     double_precision = a[6] == 'D'
     nghost = int(a[7])
     nx, ny, nz = (int(b) - 2 * nghost for b in a[0:3])
     iprocx, iprocy, iprocz = (int(b) for b in a[10:13])
-
     # Define and return a named tuple.
-    from collections import namedtuple
     Dimensions = namedtuple('Dimensions', ['nx', 'ny', 'nz', 'nghost', 'mx', 'my', 'mz', 'mvar', 'maux', 'mglobal',
                                            'double_precision', 'iprocx', 'iprocy', 'iprocz'])
     return Dimensions(nx=nx, ny=ny, nz=nz, nghost=nghost, mx=mx, my=my, mz=mz, mvar=mvar, maux=maux, mglobal=mglobal,
                       double_precision=double_precision, iprocx=iprocx, iprocy=iprocy, iprocz=iprocz)
-
 #=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
