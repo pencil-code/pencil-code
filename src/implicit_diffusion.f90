@@ -353,34 +353,39 @@ module ImplicitDiffusion
       real, dimension(:), intent(out) :: a, b, c
       integer, intent(in), optional :: iz
 !
-      real, dimension(max(nxgrid,nygrid,nzgrid)) :: dc
+      real, dimension(:), allocatable :: dc
 !
 ! Find the coefficients.
 !
       dir: select case (direction)
 !
       case (1) dir
-        call get_diffus_coeff(nxgrid, dc(1:nxgrid), iz)
-        a(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid - 0.5 * dxtgrid)
-        b(1:nxgrid) = -dc(1:nxgrid) * dx1grid**2
-        c(1:nxgrid) = 0.5 * dc(1:nxgrid) * dx1grid * (dx1grid + 0.5 * dxtgrid)
+        allocate(dc(nxgrid))
+        call get_diffus_coeff(nxgrid, dc, iz)
+        a = 0.5 * dc * dx1grid * (dx1grid - 0.5 * dxtgrid)
+        b = -dc * dx1grid**2
+        c = 0.5 * dc * dx1grid * (dx1grid + 0.5 * dxtgrid)
 !
       case (2) dir
-        call get_diffus_coeff(nygrid, dc(1:nygrid), iz)
-        a(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid - 0.5 * dytgrid)
-        b(1:nygrid) = -dc(1:nygrid) * dy1grid**2
-        c(1:nygrid) = 0.5 * dc(1:nygrid) * dy1grid * (dy1grid + 0.5 * dytgrid)
+        allocate(dc(nygrid))
+        call get_diffus_coeff(nygrid, dc, iz)
+        a = 0.5 * dc * dy1grid * (dy1grid - 0.5 * dytgrid)
+        b = -dc * dy1grid**2
+        c = 0.5 * dc * dy1grid * (dy1grid + 0.5 * dytgrid)
 !
       case (3) dir
-        call get_diffus_coeff(nzgrid, dc(1:nzgrid))
-        a(1:nzgrid) = 0.5 * dc(1:nzgrid) * dz1grid * (dz1grid - 0.5 * dztgrid)
-        b(1:nzgrid) = -dc(1:nzgrid) * dz1grid**2
-        c(1:nzgrid) = 0.5 * dc(1:nzgrid) * dz1grid * (dz1grid + 0.5 * dztgrid)
+        allocate(dc(nzgrid))
+        call get_diffus_coeff(nzgrid, dc)
+        a = 0.5 * dc * dz1grid * (dz1grid - 0.5 * dztgrid)
+        b = -dc * dz1grid**2
+        c = 0.5 * dc * dz1grid * (dz1grid + 0.5 * dztgrid)
 !
       case default dir
         call fatal_error('set_up_equations', 'unknown direction')
 !
       endselect dir
+!
+      deallocate(dc)
 !
     endsubroutine set_diffusion_equations
 !***********************************************************************
@@ -498,6 +503,7 @@ module ImplicitDiffusion
       external :: get_diffus_coeff
 !
       integer, parameter :: nyt = ny / nprocz
+      real, dimension(nx,ny,nz) :: ff
       real, dimension(nx,nyt,nzgrid) :: ft
       real, dimension(0:nzgrid+1) :: penc
       real, dimension(nzgrid) :: a, b, c
@@ -516,7 +522,8 @@ module ImplicitDiffusion
               ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
           enddo yscan
-          call unmap_from_pencil_yz(ft, f(l1:l2,m1:m2,n1:n2,iv))
+          call unmap_from_pencil_yz(ft, ff)
+          f(l1:l2,m1:m2,n1:n2,iv) = ff
         enddo comp
       endif int_z
 !
