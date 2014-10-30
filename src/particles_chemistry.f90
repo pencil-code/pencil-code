@@ -684,7 +684,6 @@ integer function find_species(species,unique_species,nlist)
               if (forpower) then 
                  power(k,i) = part_power(j,i)
               else
-                 power(k,i) = 1.0
               end if
            else
            end if
