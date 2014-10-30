@@ -1870,6 +1870,8 @@ module Magnetic
         lpenc_requested(i_r_mn)=.true.
         lpenc_requested(i_evr)=.true.
       endif
+       if (lresi_eta_shock_profr) then
+        lpenc_requested(i_r_mn)=.true.
       if (lresi_eta_shock_perp) then
         lpenc_requested(i_shock_perp)=.true.
         if (.not.lweyl_gauge) then
