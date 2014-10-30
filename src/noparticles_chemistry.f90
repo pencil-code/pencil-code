@@ -129,12 +129,13 @@ integer function find_species()
 !
   end subroutine calc_St
 !***********************************************************************
-  subroutine calc_chemistry_pencils(f,fp)
+  subroutine calc_chemistry_pencils(f,fp,ineargrid)
 !
 !  06-oct-14/jonas:coded
 !
     real, dimension(mpar_loc,mpvar)  :: fp
     real, dimension(mx,my,mz,mfarray)  :: f
+    integer, dimension(:,:) :: ineargrid
 !
   call keep_compiler_quiet(f)
   call keep_compiler_quiet(fp)

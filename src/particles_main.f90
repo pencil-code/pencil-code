@@ -759,7 +759,7 @@ module Particles_main
 !  If reactive particles are enabled, needed quantities are calculated
 !
      if (lparticles_chemistry) then
-        call calc_chemistry_pencils(f,fp)
+        call calc_chemistry_pencils(f,fp,ineargrid)
      else
      endif
 !

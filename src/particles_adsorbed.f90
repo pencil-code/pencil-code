@@ -179,7 +179,7 @@ module Particles_adsorbed
     
     call create_stoc(part,adsorbed_species_names,mu,.true.,N_adsorbed_species,mu_power)
     call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
-        N_adsorbed_species,mu_pr_power)
+        N_adsorbed_species,dummy)
     call create_occupancy(adsorbed_species_names,site_occupancy)
 !
     deallocate(part)
