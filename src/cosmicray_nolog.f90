@@ -344,9 +344,9 @@ module Cosmicray
 !
       if (lfirst.and.ldt) then
         if (lvariable_tensor_diff)then
-          diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
+          diffus_cr=max(diffus_cr,cosmicray_diff,vKperp,vKpara)*dxyz_2
         else
-          diffus_cr=max(cosmicray_diff,Kperp,Kpara)*dxyz_2
+          diffus_cr=max(diffus_cr,cosmicray_diff,Kperp,Kpara)*dxyz_2
         endif
       endif
       if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)

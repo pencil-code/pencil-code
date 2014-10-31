@@ -203,6 +203,13 @@ module Cosmicrayflux
           - kperp*p%gecr                                    &
           - (kpara - kperp)*BuiBujgecr
 !
+!  For the timestep calculation, need maximum diffusion
+!
+      if (ldt .and. lfirst) then
+          diffus_cr=max(diffus_cr,kperp*tau,kpara*tau)*dxyz_2
+      endif
+!
+!
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
