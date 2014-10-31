@@ -25,13 +25,16 @@ module Cosmicrayflux
 !
   character (len=labellen) :: initfcr='zero'
   real :: amplfcr=0.,kpara=0.,kperp=0.
-  real :: tau=0.,tau1=0.
+  real :: tau=0.,tau1=0., bmin=1e-6
+  real, dimension (nx) :: vKperp,vKpara
+  real, dimension (nx) :: b_exp
+  logical :: lbb_dependent_perp_diff = .false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       tau, kpara, kperp
+       tau, kpara, kperp, lbb_dependent_perp_diff, bmin
 !
   namelist /cosmicrayflux_run_pars/ &
-       tau, kpara, kperp
+       tau, kpara, kperp, lbb_dependent_perp_diff, bmin
 !
   contains
 !***********************************************************************
@@ -157,6 +160,7 @@ module Cosmicrayflux
 !  Cosmicray Flux evolution
 !
 !  08-mar-05/snod: adapted from daa_dt
+!  31-oct-14/luiz:
 !
       use Sub
       use Slices
@@ -166,9 +170,9 @@ module Cosmicrayflux
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: BuiBujgecr, bunit
-      real, dimension (nx)   :: b2, b21
+      real, dimension (nx)   :: b2, b21, b_abs
       real, dimension (nx)   :: tmp
-      integer :: i,j
+      integer :: i,j,k
       type (pencil_case) :: p
 !
       intent(in)     :: f
@@ -198,15 +202,36 @@ module Cosmicrayflux
 !
 !  Cosmic Ray Flux equation.
 !
-      df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-          - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
-          - kperp*p%gecr                                    &
-          - (kpara - kperp)*BuiBujgecr
+      if (lbb_dependent_perp_diff) then
+!       Parallel diffusion (constant)
+        vKpara(:) = kpara
+!       Perpendicular diffusion (dependence on B field)
+!       Kperp = kperp0/[|B|/Bmin + exp(-B/Bmin)]
+        b_abs = sqrt(b2)
+        b_exp = b_abs/bmin + exp(-b_abs/bmin)
+        vKperp(:) = kperp/b_exp
+!
+        do i=1,3
+          df(l1:l2,m,n,ifcrx+i-i) = df(l1:l2,m,n,ifcrx+i-1) &
+              - tau1*f(l1:l2,m,n,ifcrx+i-1)                 &
+              - vKperp*p%gecr(:,i)                          &
+              - (vKpara - vKperp)*BuiBujgecr(:,i)
+        enddo
+      else
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
+            - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
+            - kperp*p%gecr                                    &
+            - (kpara - kperp)*BuiBujgecr
+      endif
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (ldt .and. lfirst) then
+      if (ldt) then
+        if (lbb_dependent_perp_diff)then
+          diffus_cr=max(diffus_cr,vKperp*tau,vKpara*tau)*dxyz_2
+        elseif (lfirst) then
           diffus_cr=max(diffus_cr,kperp*tau,kpara*tau)*dxyz_2
+        endif
       endif
 !
 !
