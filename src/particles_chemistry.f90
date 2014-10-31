@@ -47,7 +47,7 @@ module Particles_chemistry
   public :: iads, iads_end
   public :: isurf,isurf_end
   public :: R_j_hat
-  public :: j_of_inu
+  public :: jmap
   public :: solid_species
   public :: mass_trans_coeff_reactants
   public :: part
@@ -60,6 +60,9 @@ module Particles_chemistry
   public :: species
   public :: dummy
   public :: ladsorbed_species
+  public :: lboundary_explicit
+  public :: linfinite_diffusion
+  public :: gas_constant
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -78,7 +81,6 @@ module Particles_chemistry
   real, dimension(:), allocatable :: diff_coeff_reactants
   real, dimension(:,:), allocatable, save :: part_power
   real, dimension(2,2) :: dummy
-
 
 !
 !  JONAS: implement something to calculate molar_mass of 
@@ -108,7 +110,7 @@ module Particles_chemistry
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
   integer :: iter
   integer, dimension(:), allocatable :: dependent_reactant
-  integer, dimension(:), allocatable :: j_of_inu
+  integer, dimension(:), allocatable :: jmap
   real :: St_save, Sg_save
   real :: x_s_total, rho_part
   real :: effectiveness_factor_timeaver=1.
@@ -121,7 +123,6 @@ module Particles_chemistry
   real :: tortuosity=3.
   real :: Init_density_part=1.300 ! g/cm^3
   real :: structural_parameter=0.05
-  real :: pi_loc=3.14152
   real :: startup_time=1e-6
   real :: startup_quench
 !
@@ -132,6 +133,8 @@ module Particles_chemistry
   logical :: lpchem_debug = .false.
   logical :: ladsorbed_species=.false.
   logical :: lthiele=.false.
+  logical :: lboundary_explicit=.false.
+  logical :: linfinite_diffusion=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -166,6 +169,7 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: mass_trans_coeff_species
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species,Cg,A_p
+  real, dimension(:,:), allocatable :: x_surf
 
 !
 !  Some physical constants
@@ -190,7 +194,10 @@ module Particles_chemistry
        startup_time
 !
   namelist /particles_chem_run_pars/ &
-       chemplaceholder
+       chemplaceholder, &
+       lthiele, &
+       lboundary_explicit, &
+       linfinite_diffusion
 !
   contains
 !***********************************************************************
@@ -1050,41 +1057,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine read_mechanics_file
 !**********************************************************************
-  subroutine get_species_list(string,list)
-!
-    character(*) :: string
-    character(10), dimension(40) :: list
-!!$    character(10), dimension(40) :: species,reactants
-!!$    integer :: stat
-!!$!
-!!$    call get_pchem_info(species,'N_adsorbed_species',N_adsorbed_species,'quiet')
-!!$    call get_pchem_info(species,'N_surface_species',N_surface_species,'quiet')
-!!$
-!!$    call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
-!!$    call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
-!!$!
-!!$    allocate(solid_species(N_surface_species)   ,STAT=stat)
-!!$    if (stat>0) call fatal_error('register_indep_pchem',&
-!!$        'Could not allocate memory for solid_species')
-!!$!
-!!$    call create_ad_sol_lists(species,solid_species,'sol',ns)
-!!$    call sort_compounds(reactants,solid_species,N_surface_species,nr)
-!!$!
-!!$    if (trim(string)=='solid_species') &
-!!$         list(1:N_surface_species)=solid_species(:)
-!!$    if (trim(string)=='adsorbed_species_names') &
-!!$         list(1:N_adsorbed_species)=adsorbed_species_names(:N_adsorbed_species)
-!!$    if (trim(string)=='all') then
-!!$       list(1:N_surface_species)=solid_species(:)
-!!$       list(N_surface_species+1:N_surface_species+N_adsorbed_species)= &
-!!$            adsorbed_species_names(:N_adsorbed_species)
-!!$    else
-!!$    endif
-!!$!
-!!$    deallocate(solid_species)
-!!$!
-  end subroutine get_species_list
-!**********************************************************************
   subroutine create_dngas()
 !
 !  Find the mole production of the forward reaction. This will later
@@ -1302,7 +1274,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
           do i=1,N_surface_species
              Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*ac(i)
              ndot(k,i)=ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St(k)/ &
-                  (fp(k,iap)*fp(k,iap)*4.*pi_loc)
+                  (fp(k,iap)*fp(k,iap)*4.*pi)
           enddo
        enddo
     enddo
@@ -1419,7 +1391,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  Find particle volume
 !
-    volume(:)=4.*pi_loc*(fp(k1:k2,iap)**3)/3.
+    volume(:)=4.*pi*(fp(k1:k2,iap)**3)/3.
 !
 ! Find pore radius
 !
@@ -1432,7 +1404,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     do k=k1,k2
     do i=1,N_surface_reactants
-       tmp3(k)=8*gas_constant*fp(k,iTp)/(pi_loc*molar_mass(j_of_inu(i)))
+       tmp3(k)=8*gas_constant*fp(k,iTp)/(pi*molar_mass(jmap(i)))
        Knudsen(k)=2*pore_radius(k)*porosity*sqrt(tmp3(k))/(3*tortuosity)
        tmp1(i)=1./diff_coeff_reactants(i)
        tmp2(k)=1./Knudsen(k)
@@ -1706,11 +1678,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_St_init
 !*********************************************************************
-  subroutine calc_chemistry_pencils(f,fp,ineargrid)
+  subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
 !
     real, dimension(mpar_loc,mpvar) :: fp
     real, dimension(mx,my,mz,mfarray) :: f
     integer, dimension(mpar_loc,3) :: ineargrid
+    type (pencil_case) :: p
     integer :: stat
 !
 !  Routine to calcute quantities used for reactive particles
@@ -1733,13 +1706,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     call calc_K_k(f,fp)
     call calc_Cg(f,fp)
     call calc_A_p(fp)
-    call calc_mass_trans_coeff(f,fp,ineargrid)
+    call calc_mass_trans_coeff(f,fp,p,ineargrid)
     call calc_x_surf(f,fp,ineargrid)
     call calc_RR_hat(f,fp)
     call calc_ndot_mdot_R_j_hat(fp)
     call calc_R_c_hat()
 !
-  end subroutine calc_chemistry_pencils
+  end subroutine calc_pchemistry_pencils
 !***************************************************
   subroutine allocate_variable_pencils()
 !
@@ -1822,6 +1795,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       allocate(A_p(k1:k2), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for A_p')
+      allocate(x_surf(k1:k2,N_surface_species), STAT=stat)
+      if (stat>0) call fatal_error('allocate_variable_pencils',&
+           'Could not allocate memory for x_surf')
 !
   end subroutine allocate_variable_pencils
 !***************************************************
@@ -1852,7 +1828,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(K_k)
     deallocate(mass_trans_coeff_species)
     deallocate(Cg)
-    deallocate(A_p)    
+    deallocate(A_p)   
+    deallocate(x_surf)
     endif
 !
   end subroutine cleanup_chemistry_pencils
@@ -1911,7 +1888,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
       real, dimension(:,:) :: fp
 !
-      rho_p_init(:) = fp(:,imp) / (4.*pi_loc/3. * fp(:,iap)**3)
+      rho_p_init(:) = fp(:,imp) / (4.*pi/3. * fp(:,iap)**3)
 !
     end subroutine calc_rho_p_init
 !***********************************************************************
@@ -1926,7 +1903,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       k2 = k2_imn(imn)
 !
       do k=k1,k2
-         rho_p(k) = fp(k,imp) / (4./3. *pi_loc * fp(k,iap)**3)
+         rho_p(k) = fp(k,imp) / (4./3. *pi * fp(k,iap)**3)
       enddo
 !
     end subroutine calc_rho_p
@@ -2015,7 +1992,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        write(*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
     end do
 !        
-        write(*,'(A20," ",10I4)') 'j_of_inu=', j_of_inu
+        write(*,'(A20," ",10I4)') 'jmap=', jmap
         write(*,'(A20," ",10F4.0)') 'ac=',ac
         write(*,'(A20," ",10F4.0)') 'site_occupancy=',aac
         write(*,'(A20," ",30I4)') 'dependent_reactant=',dependent_reactant
@@ -2033,8 +2010,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     integer :: k,k1,k2,i,j,l
     integer :: N_iter = 20
     real :: int_k, gg_old,gg,ff,energy,dE,delta_E
-    real :: pi_ = 3.1415
-
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
@@ -2055,13 +2030,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
               'delta_E is too large!')
               endif
               ff=exp(-0.5*((energy-ER_K(l)*gas_constant)/sigma_k(l))**2)/&
-                   (sigma_k(l)*sqrt(2*pi_))
+                   (sigma_k(l)*sqrt(2*pi))
               gg_old=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
               int_k=0
               eff_kk: do j=2,N_iter
                  energy=(j-1)*2*delta_E/(N_iter-1)+ER_k(k)*gas_constant-delta_E
                  ff=exp(-0.5*((energy-ER_K(l)*gas_constant)/sigma_k(l))**2)/&
-                      (sigma_k(l)*sqrt(2*pi_))
+                      (sigma_k(l)*sqrt(2*pi))
                  gg=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
                  int_k=int_k+dE*(gg_old+0.5*(gg-gg_old))
                  gg_old=gg
@@ -2102,9 +2077,11 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !  allocation and calculation of factors used in determining the
 !  gas surface composition
 !
-!  particle surface
-!
-
+      do k=k1,k2
+         do i=1,N_surface_species
+            x_surf(k,i) = fp(k,isurf-1+i)
+         enddo
+      enddo
 !
   end subroutine calc_x_surf
 !*******************************************************************
@@ -2121,27 +2098,25 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
    do k=k1,k2
          Cg(k) = interp_pp(k)/(gas_constant*interp_TT(k))
-   end do
+   enddo
 !
   end subroutine calc_Cg
 !************************************************************************
-  subroutine calc_mass_trans_coeff(f,fp,ineargrid)
+  subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
+!
+!  diffusion coefficients of gas species at nearest grid point
 !
   real, dimension(:,:,:,:) :: f
   real, dimension(:,:) :: fp
+  type (pencil_case) :: p
   integer, dimension(:,:) :: ineargrid
   integer :: k,k1,k2,i
   integer :: ix0,iy0,iz0
   integer::spec_glob,spec_chem
   real, dimension(:,:), allocatable :: diff_coeff_species
-  logical :: found = .false.
-  character(62) :: errortext=''
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
-!
-!  mass_trans_coeff(i)=Cg*diff_coeff(i)/r_p
-!  diffusion coefficients of gas species at nearest grid point
 !
       allocate(diff_coeff_species(k1:k2,N_species))
 !
@@ -2149,25 +2124,17 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
          ix0 = ineargrid(k,1)
          iy0 = ineargrid(k,2)
          iz0 = ineargrid(k,3)
-         do i=1,N_species
-!  communication with chemistry.f90, j_of_inu-like
-            call find_species_index(solid_species(i),spec_glob,spec_chem,found)
-            if (.not. found) then
-               write(errortext,'(A4,A58)') solid_species(i), &
-                    'present in particles_chemistry, but not found in chemistry'
-               call fatal_error('particles_chemistry',errortext)
-            else
-            end if
-            diff_coeff_species(k,i) = interp_species(k,spec_chem)
-         end do
-      end do
+         do i=1,N_surface_species
+            diff_coeff_species(k,i) = p%Diff_penc_add(ix0,jmap(i))
+         enddo
+      enddo
 !
       do k=k1,k2
-         do i=1,N_species
-            mass_trans_coeff_species(k,i)=Cg(k)*diff_coeff_species(k,i)/ &
-                 fp(k,iap)
-         end do
-      end do
+         do i=1,N_surface_species
+          mass_trans_coeff_species(k,i)=Cg(k)*diff_coeff_species(k,i)/ &
+               fp(k,iap)
+         enddo
+      enddo
 !
       deallocate(diff_coeff_species)
 !
@@ -2175,10 +2142,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !*************************************************************************
   subroutine calc_A_p(fp)
 !
+!  particle surface
+!
     real, dimension(:,:) :: fp
     integer :: k1,k2
-!
-!  particle surface
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)

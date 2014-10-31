@@ -37,7 +37,7 @@ module Particles_nbody
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5, mspar_orig=1
-  integer :: iglobal_ggp=0, istar=1, iplanet=2, imass=0
+  integer :: iglobal_ggp=0, istar=1, iplanet=2, imass_nbody=0
   integer :: maxsink=10*nspar, icreate=100
   logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nspar) :: lfollow_particle=.false., laccretion=.false.
@@ -95,7 +95,7 @@ module Particles_nbody
 !  Set up mass as particle index. Plus seven, since the other 6 are
 !  used by positions and velocities.
 !
-      imass=npvar+1
+      imass_nbody=npvar+1
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -161,7 +161,7 @@ module Particles_nbody
         mspar=mspar_orig
       else
         !else read pmass from fsp
-        pmass(1:mspar)=fsp(1:mspar,imass)
+        pmass(1:mspar)=fsp(1:mspar,imass_nbody)
       endif
 !
 !  When first called, mspar was zero, so no diagnostic index was written to
@@ -216,8 +216,8 @@ module Particles_nbody
           pmass(istar)=1-epsi*(mspar-1)
         endif
       else
-        !read imass from the snapshot
-        pmass(1:mspar)=fsp(1:mspar,imass)
+        !read imass_nbody from the snapshot
+        pmass(1:mspar)=fsp(1:mspar,imass_nbody)
       endif
 !
       pmass1=1./max(pmass,tini)
@@ -1267,38 +1267,38 @@ module Particles_nbody
       ftmp=fsp(1:mspar,:)
 !
       if (lcartesian_coords) then
-        vcm(1) = sum(ftmp(:,imass)*ftmp(:,ivpx))
-        vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivpy))
-        vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
+        vcm(1) = sum(ftmp(:,imass_nbody)*ftmp(:,ivpx))
+        vcm(2) = sum(ftmp(:,imass_nbody)*ftmp(:,ivpy))
+        vcm(3) = sum(ftmp(:,imass_nbody)*ftmp(:,ivpz))
       else if (lcylindrical_coords) then
-        xcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
-        ycm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))))
+        xcm=sum(ftmp(:,imass_nbody)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
+        ycm=sum(ftmp(:,imass_nbody)*(ftmp(:,ixp)*sin(ftmp(:,iyp))))
         phicm=atan2(ycm,xcm)
 !
-        vxcm=sum(ftmp(:,imass)*(&
+        vxcm=sum(ftmp(:,imass_nbody)*(&
             ftmp(:,ivpx)*cos(ftmp(:,iyp))-ftmp(:,ivpy)*sin(ftmp(:,iyp))))
-        vycm=sum(ftmp(:,imass)*(&
+        vycm=sum(ftmp(:,imass_nbody)*(&
             ftmp(:,ivpx)*sin(ftmp(:,iyp))+ftmp(:,ivpy)*cos(ftmp(:,iyp))))
 !
         vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
         vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
-        vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
+        vcm(3) = sum(ftmp(:,imass_nbody)*ftmp(:,ivpz))
 !
       else if (lspherical_coords) then
-        vxcm=sum(ftmp(:,imass)*( &
+        vxcm=sum(ftmp(:,imass_nbody)*( &
               ftmp(:,ivpx)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))&
              +ftmp(:,ivpy)*cos(ftmp(:,iyp))*cos(ftmp(:,izp))&
              -ftmp(:,ivpz)*sin(ftmp(:,izp))                ))
-        vycm=sum(ftmp(:,imass)*( &
+        vycm=sum(ftmp(:,imass_nbody)*( &
               ftmp(:,ivpx)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))&
              +ftmp(:,ivpy)*cos(ftmp(:,iyp))*sin(ftmp(:,izp))&
              +ftmp(:,ivpz)*cos(ftmp(:,izp))                ))
-        vzcm=sum(ftmp(:,imass)*(&
+        vzcm=sum(ftmp(:,imass_nbody)*(&
              ftmp(:,ivpx)*cos(ftmp(:,iyp))-ftmp(:,ivpy)*sin(ftmp(:,iyp))))
 !
-        xcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))))
-        ycm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))))
-        zcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
+        xcm=sum(ftmp(:,imass_nbody)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))))
+        ycm=sum(ftmp(:,imass_nbody)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))))
+        zcm=sum(ftmp(:,imass_nbody)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
 !
         thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
         phicm=atan2(ycm,xcm)
@@ -1478,7 +1478,7 @@ module Particles_nbody
               lnbody(ks) = .true.
               fsp(ks,ixp:izp)   = fp(k,ixp:izp)
               fsp(ks,ivpx:ivpz) = fp(k,ivpx:ivpz)
-              fsp(ks,imass)      = pmass(ks)
+              fsp(ks,imass_nbody)      = pmass(ks)
 !
 !  Send it to root. As there will be just mspar calls to
 !  mpisend, the tag can be ipar itself
@@ -1542,7 +1542,7 @@ module Particles_nbody
               fsp(ks,ivpx:ivpz) = fp(k,ivpx:ivpz)
             endif
           enddo
-          fsp(ks,imass)    = pmass(ks)
+          fsp(ks,imass_nbody)    = pmass(ks)
         enddo
 !
       endif
@@ -2134,7 +2134,7 @@ module Particles_nbody
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'imass=', imass
+        write(3,*) 'imass_nbody=', imass_nbody
       endif
 !
 !  Reset everything in case of reset
@@ -2378,7 +2378,7 @@ module Particles_nbody
 !  the mass of the new particle is the
 !  collapsed mass m=[rho - rho_jeans]*dV
 !
-                  fcsp_loc(nc_loc,imass)   = (prho(i)-rho_jeans(i))*dvolume(i)
+                  fcsp_loc(nc_loc,imass_nbody)   = (prho(i)-rho_jeans(i))*dvolume(i)
 !
 !  and that amount was lost by the grid, so only rho_jeans remains
 !
@@ -2483,7 +2483,7 @@ module Particles_nbody
 !  the mass of the new particle is the
 !  collapsed mass M=m_particle*np
 !
-                    fcsp_loc(nc_loc,imass)    = mp_swarm*pnp(i)
+                    fcsp_loc(nc_loc,imass_nbody)    = mp_swarm*pnp(i)
 !
                   endif
                 endif
@@ -2555,7 +2555,7 @@ module Particles_nbody
             print*,'ks=',ks
             print*,'positions=',fsp(ks,ixp:izp)
             print*,'velocities=',fsp(ks,ivpx:ivpz)
-            print*,'mass=',fsp(ks,imass)
+            print*,'mass=',fsp(ks,imass_nbody)
             print*,'ipar_nbody=',ipar_nbody
             print*,''
           enddo
@@ -2626,7 +2626,7 @@ module Particles_nbody
 !  clusters. These new clusters are truly sinks. Now we have nf new
 !  particles.
 !
-        pmass(mspar+1:mspar+nf)=fleft(1:nf,imass)
+        pmass(mspar+1:mspar+nf)=fleft(1:nf,imass_nbody)
 !
 !  Allocate the new ipar_nbodies
 !
@@ -2966,7 +2966,7 @@ module Particles_nbody
 !
       do ic=1,nf
         k=cluster(ic)
-        mass=mass+fcsp(k,imass)
+        mass=mass+fcsp(k,imass_nbody)
         if (lcartesian_coords) then
           xxp(1)=fcsp(k,ixp) ; vvp(1)=fcsp(k,ivpx)
           xxp(2)=fcsp(k,iyp) ; vvp(2)=fcsp(k,ivpy)
@@ -2982,8 +2982,8 @@ module Particles_nbody
         else if (lspherical_coords) then
           call fatal_error("","")
         endif
-        position=position+fcsp(k,imass)*xxp
-        velocity=velocity+fcsp(k,imass)*vvp
+        position=position+fcsp(k,imass_nbody)*xxp
+        velocity=velocity+fcsp(k,imass_nbody)*vvp
       enddo
 !
       position=position/mass
@@ -3001,7 +3001,7 @@ module Particles_nbody
 !
       particle(ixp : izp)=position
       particle(ivpx:ivpz)=velocity
-      particle(imass)    =mass
+      particle(imass_nbody)    =mass
 !
     endsubroutine collapse_cluster
 !***********************************************************************

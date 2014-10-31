@@ -42,7 +42,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
      real :: init_ux=impossible,init_uy=impossible,init_uz=impossible
-     integer :: imass=1, spot_number=10
+     integer :: spot_number=10
      integer :: index_H2O=3
      integer :: index_N2=4, i_point=1
      integer :: Ndata=10, Nadd_points=0

@@ -107,16 +107,6 @@ integer function find_species()
 !
   end function count_max_elements
 !**********************************************************************
-  subroutine get_species_list(string,list)
-!
-    character(*) :: string
-    character(10) :: list
-!
-    call keep_compiler_quiet(string)
-    call keep_compiler_quiet(list)
-!
-  end subroutine get_species_list
-!**********************************************************************
   subroutine get_conversion()
 !
 !  19.09.2014/Jonas:coded
@@ -129,18 +119,21 @@ integer function find_species()
 !
   end subroutine calc_St
 !***********************************************************************
-  subroutine calc_chemistry_pencils(f,fp,ineargrid)
+  subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
 !
 !  06-oct-14/jonas:coded
 !
     real, dimension(mpar_loc,mpvar)  :: fp
     real, dimension(mx,my,mz,mfarray)  :: f
     integer, dimension(:,:) :: ineargrid
+    type (pencil_case) :: p
 !
   call keep_compiler_quiet(f)
   call keep_compiler_quiet(fp)
+  call keep_compiler_quiet(ineargrid)
+  call keep_compiler_quiet(p)
 !
-  end subroutine calc_chemistry_pencils
+  end subroutine calc_pchemistry_pencils
 !***********************************************************************
   subroutine calc_mod_surf_area()
 !

@@ -1547,7 +1547,7 @@ module EquationOfState
       real :: nne
       integer, dimension(7) :: iaa1,iaa2
 !
-      integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
+      integer :: iTemp1=2,iTemp2=3,iTemp3=4
 !
       ind_chem=0
 !
@@ -1658,7 +1658,7 @@ module EquationOfState
       character (len=intlen) :: ispec
       integer :: file_id=123,k
       integer, dimension(7) :: iaa1,iaa2
-      integer :: imass=1, iTemp1=2,iTemp3=4
+      integer :: iTemp1=2,iTemp3=4
 !
 !      Initialize some index pointers
 !

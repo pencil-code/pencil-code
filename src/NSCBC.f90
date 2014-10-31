@@ -390,7 +390,7 @@ include 'NSCBC.h'
       integer, dimension(33) :: stat
       integer lll,k,ngridpoints,imin,imax,jmin,jmax,i,ngrid
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
-      integer :: imass=1, iadd
+      integer :: iadd
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
       real, allocatable, dimension(:,:,:) :: &

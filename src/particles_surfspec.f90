@@ -20,6 +20,8 @@ module Particles_surfspec
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry
+  use Chemistry
+  use EquationOfState
 !
 !
   implicit none
@@ -36,11 +38,6 @@ module Particles_surfspec
   real, dimension(:), allocatable :: uscale,fscale,constr
   integer, dimension(:), allocatable :: dependent_reactant
   integer :: surf_save
-
-  
-!
-!  JONAS: implement j_of_inu to communicate with
-!  gas phase
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -122,9 +119,9 @@ module Particles_surfspec
     allocate(ac(N_surface_species)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for ac')
-    allocate(j_of_inu(N_surface_species)   ,STAT=stat)
+    allocate(jmap(N_surface_species)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for j_of_inu')
+        'Could not allocate memory for jmap')
     allocate(solid_species(N_surface_species)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for solid_species')
@@ -153,27 +150,8 @@ module Particles_surfspec
       enddo
     endif
 !
-    inuH2O=find_species('H2O',solid_species,n_surface_species)
-    inuCO2=find_species('CO2',solid_species,n_surface_species)
-    inuH2 =find_species('H2',solid_species,n_surface_species)
-    inuO2 =find_species('O2',solid_species,n_surface_species)
-    inuCO =find_species('CO',solid_species,n_surface_species)
-    inuCH =find_species('CH',solid_species,n_surface_species)
-    inuHCO=find_species('HCO',solid_species,n_surface_species)
-    inuCH2=find_species('CH2',solid_species,n_surface_species)
-    inuCH3=find_species('CH3',solid_species,n_surface_species)
+    call create_jmap()
 !
-    call find_homogeneous_indexes()
-!
-    if(inuH2O > 0)     j_of_inu(inuH2O)=jH2O
-    if(inuCO2 > 0)     j_of_inu(inuCO2)=jCO2
-    if(inuH2 > 0)      j_of_inu(inuH2) =jH2
-    if(inuO2 > 0)      j_of_inu(inuO2) =jO2
-    if(inuCO > 0)      j_of_inu(inuCO) =jCO
-    if(inuCH > 0)      j_of_inu(inuCH) =jCH
-    if(inuHCO > 0)     j_of_inu(inuHCO)=jHCO
-    if(inuCH2 > 0)     j_of_inu(inuCH2)=jCH2
-    if(inuCH3 > 0)     j_of_inu(inuCH3)=jCH3
 
     !print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
@@ -375,40 +353,42 @@ module Particles_surfspec
     real, dimension (mpar_loc,mpvar) :: fp, dfp
     type (pencil_case) :: p
     integer, dimension (mpar_loc,3) :: ineargrid
-    integer :: k,k1,k2
+    integer :: k,k1,k2,i,ix0,iy0,iz0
 
-    intent (in) :: f, fp, ineargrid
-    intent (inout) :: dfp, df
+    intent (in) :: f, ineargrid
+    intent (inout) :: dfp, df, fp
 !
-    call keep_compiler_quiet(f)
     call keep_compiler_quiet(df)
     call keep_compiler_quiet(p)
     call keep_compiler_quiet(ineargrid)
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
-!
-!  JONAS: equations.pdf eq. 37, look in 
-!  particles_mass for looping and such
-!
-!   print*,fp(k1:k2,isurf:isurf_end)
+!  
+!  set surface gas species composition
+!  (infinite diffusion, set as far field and convert from
+!  mass fractions to mole fractions)
 !
    do k=k1,k2
-!
-!  JONAS: implicit?/explicit?
-!  communicating with gas phase?
 !
      if (lboundary_explicit) then
        !SOLVE explicitly
      else
        if (linfinite_diffusion) then
-         do ichem=1,nsurfreac
-           dfp(k,isurf+ichem-1)=0.0
-           fp(k,isurf+ichem-1)=interp_species(k,jmap(isurf+ichem-1))
+          ix0 =ineargrid(k,1)
+          iy0 =ineargrid(k,2)
+          iz0 =ineargrid(k,3)
+         do i=1,N_surface_species
+           dfp(k,isurf+i-1) = 0.0
+           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
+                 species_constants(jmap(i),imass) * &
+                 (interp_rho(k)*gas_constant*interp_TT(k)/&
+                 interp_pp(k))
          enddo
        else
          !SOLVE implicit
        endif
+     endif
    enddo
 !
   endsubroutine dpsurf_dt_pencil
@@ -446,9 +426,13 @@ module Particles_surfspec
 !
     end subroutine rprint_particles_surf
 !***********************************************************************
-    subroutine find_homogeneous_indexes()
+    subroutine create_jmap()
 !
-!  07-oct-2014/jonas:coded
+!  07-oct-2014/jonas: coded
+!  29-oct-2014/jonas: moved parts of the code into routine, implemented 
+!                     error when gas phase species is in 
+!                     particles_chemistry, but not in chemistry
+!                      
 !
 !  find the indexes used in chemistry.f90 of species present 
 !  in the near field of the particle
@@ -456,80 +440,98 @@ module Particles_surfspec
       use EquationOfState
 !
       integer :: index_glob, index_chem
-      logical :: found_specie=.false.
+      logical :: found_species=.false.
 !
-      call find_species_index('H2',index_glob,index_chem,found_specie)
-      if (found_specie) then
+    inuH2O=find_species('H2O',solid_species,n_surface_species)
+    inuCO2=find_species('CO2',solid_species,n_surface_species)
+    inuH2 =find_species('H2',solid_species,n_surface_species)
+    inuO2 =find_species('O2',solid_species,n_surface_species)
+    inuCO =find_species('CO',solid_species,n_surface_species)
+    inuCH =find_species('CH',solid_species,n_surface_species)
+    inuHCO=find_species('HCO',solid_species,n_surface_species)
+    inuCH2=find_species('CH2',solid_species,n_surface_species)
+    inuCH3=find_species('CH3',solid_species,n_surface_species)
+!
+      call find_species_index('H2',index_glob,index_chem,found_species)
+      if (found_species) then
          jH2 = index_chem
       else    
-         if(inuH2 > 0) call fatal_error('find_homogeneous_indexes','no H2 found')
+         if(inuH2 > 0) call fatal_error('create_jmap','no H2 found')
       endif
 !!$!
-!!$      call find_species_index('H',index_glob,index_chem,found_specie)
-!!$      if (found_specie) then
+!!$      call find_species_index('H',index_glob,index_chem,found_species)
+!!$      if (found_species) then
 !!$         jH = index_chem
 !!$      else    
-!!$         if(inuH > 0) call fatal_error('find_homogeneous_indexes','no H found')
+!!$         if(inuH > 0) call fatal_error('create_jmap','no H found')
 !!$      endif
 !
-      call find_species_index('CO2',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CO2',index_glob,index_chem,found_species)
+      if (found_species) then
          jCO2 = index_chem
       else
-         if(inuCO2 > 0) call fatal_error('find_homogeneous_indexes','no CO2 found')
+         if(inuCO2 > 0) call fatal_error('create_jmap','no CO2 found')
       endif
 !
-      call find_species_index('CO',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CO',index_glob,index_chem,found_species)
+      if (found_species) then
          jCO = index_chem
       else
-         if(inuCO > 0) call fatal_error('find_homogeneous_indexes','no CO found')
+         if(inuCO > 0) call fatal_error('create_jmap','no CO found')
       endif
 !
-      call find_species_index('CH4',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CH4',index_glob,index_chem,found_species)
+      if (found_species) then
          jCH4 = index_chem
       else
-         if(inuCH4 > 0) call fatal_error('find_homogeneous_indexes','no CH4 found')
+         if(inuCH4 > 0) call fatal_error('create_jmap','no CH4 found')
       endif
 !
-      call find_species_index('H2O',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('H2O',index_glob,index_chem,found_species)
+      if (found_species) then
          jH2O = index_chem
       else
-         if(inuH2O > 0) call fatal_error('find_homogeneous_indexes','no H2O found')
+         if(inuH2O > 0) call fatal_error('create_jmap','no H2O found')
       endif
 !
-      call find_species_index('CH3',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CH3',index_glob,index_chem,found_species)
+      if (found_species) then
          jCH3 = index_chem
       else
-         if(inuCH3 > 0) call fatal_error('find_homogeneous_indexes','no CH3 found')
+         if(inuCH3 > 0) call fatal_error('create_jmap','no CH3 found')
       endif
 !
-      call find_species_index('CH',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CH',index_glob,index_chem,found_species)
+      if (found_species) then
          jCH = index_chem
       else
-         if(inuCH > 0) call fatal_error('find_homogeneous_indexes','no CH found')
+         if(inuCH > 0) call fatal_error('create_jmap','no CH found')
       endif
 !
-      call find_species_index('CH2',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('CH2',index_glob,index_chem,found_species)
+      if (found_species) then
          jCH2 = index_chem
       else
-         if(inuCH2 > 0) call fatal_error('find_homogeneous_indexes','no CH2 found')
+         if(inuCH2 > 0) call fatal_error('create_jmap','no CH2 found')
       endif
 !
-      call find_species_index('HCO',index_glob,index_chem,found_specie)
-      if (found_specie) then
+      call find_species_index('HCO',index_glob,index_chem,found_species)
+      if (found_species) then
          jHCO = index_chem
       else
-        if(inuHCO > 0)  call fatal_error('find_homogeneous_indexes','no CHO found')
+        if(inuHCO > 0)  call fatal_error('create_jmap','no HCO found')
       endif
 !
-!  JONAS: talk to nils, if not found, should i throw an error?
+    if(inuH2O > 0)     jmap(inuH2O)=jH2O
+    if(inuCO2 > 0)     jmap(inuCO2)=jCO2
+    if(inuH2 > 0)      jmap(inuH2) =jH2
+    if(inuO2 > 0)      jmap(inuO2) =jO2
+    if(inuCO > 0)      jmap(inuCO) =jCO
+    if(inuCH > 0)      jmap(inuCH) =jCH
+    if(inuHCO > 0)     jmap(inuHCO)=jHCO
+    if(inuCH2 > 0)     jmap(inuCH2)=jCH2
+    if(inuCH3 > 0)     jmap(inuCH3)=jCH3
 !
-    end subroutine find_homogeneous_indexes
+  end subroutine create_jmap
 !***********************************************************************
   end module Particles_surfspec

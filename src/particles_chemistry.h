@@ -6,7 +6,6 @@
   public :: get_conversion
   public :: get_R_c_hat
   public :: get_mod_surf_area
-  public :: get_species_list
   public :: get_pchem_info
   public :: get_reactants
   public :: get_part
@@ -16,7 +15,7 @@
 
   public :: find_species
 
-  public :: calc_chemistry_pencils
+  public :: calc_pchemistry_pencils
   public :: calc_entropy_of_reaction
   public :: calc_enthalpy_of_reaction
   public :: calc_RR_hat

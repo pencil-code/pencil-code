@@ -77,6 +77,7 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
   integer :: isothtop=0, ics
+  integer :: imass=0
 !
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.

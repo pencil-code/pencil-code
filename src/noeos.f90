@@ -43,6 +43,7 @@ module EquationOfState
   integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
+  integer :: imass=0
   integer :: ics
 !
   real, dimension (mz) :: profz_eos=1.0,dprofz_eos=0.0

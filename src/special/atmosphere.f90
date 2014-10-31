@@ -67,7 +67,7 @@ module Special
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
-  integer :: ind_H2O, ind_N2, imass=1! ind_cloud=0
+  integer :: ind_H2O, ind_N2, ! ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
   real :: dsize0_max=0.,dsize0_min=0.

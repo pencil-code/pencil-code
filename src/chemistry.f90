@@ -132,7 +132,7 @@ module Chemistry
      logical :: lcheminp=.false., lchem_cdtc=.false.
      logical :: lmobility=.false.
     ! real, dimension(nchemspec,18) :: species_constants
-     integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
+     integer :: iTemp1=2,iTemp2=3,iTemp3=4
      integer, dimension(7) :: iaa1,iaa2
      real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
      real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
