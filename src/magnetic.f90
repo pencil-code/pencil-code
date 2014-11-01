@@ -2416,6 +2416,7 @@ module Magnetic
           bext: if (lB_ext_in_comaux) then
             call get_bext(b_ext)
             forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
+            if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', b_ext
           endif bext
           f(l1:l2,m,n,ibx:ibz) = bb
         enddo mn_loop
@@ -2478,9 +2479,11 @@ module Magnetic
 !
 !  Add a uniform background field, optionally precessing. 
 !
+!
         addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux)) then
           call get_bext(B_ext)
           forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
+          if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
         endif addBext
 !
 !  Add a precessing dipole not in the bext field
@@ -7817,8 +7820,6 @@ module Magnetic
       real, dimension(3), intent(out) :: B_ext_out
 !
       real :: c, s
-!
-      if (headtt) print *, 'get_bext: B_ext = ', B_ext
 !
       addBext: if (any(B_ext /= 0.0)) then
 !
