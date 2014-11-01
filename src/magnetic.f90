@@ -1818,7 +1818,7 @@ module Magnetic
       if (lresi_eta_const .and. .not. lweyl_gauge .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
 !
       zdep: if (lresi_zdep) then
-        lpenc_requested(i_del2a) = .true.
+        if (.not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
       endif zdep
 !
