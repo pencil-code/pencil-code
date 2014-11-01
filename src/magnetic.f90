@@ -2452,7 +2452,7 @@ module Magnetic
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
       real, dimension(3) :: B_ext
-      real :: B2_ext,c,s
+      real :: c,s
       integer :: i,j,ix
 ! aa
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
@@ -2471,63 +2471,21 @@ module Magnetic
         endif
 !
 !  Save field before adding imposed field (for diagnostics).
+!  ##ccyang: Note that p%bb already contains B_ext if lbb_as_comaux 
+!      .and. lB_ext_in_comaux = .true., which needs to be fixed.
 !
-        p%bbb=p%bb
-        call get_bext(B_ext)
-        B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+        p%bbb = p%bb
 !
-!  Allow external field to precess about z-axis with frequency omega_Bz_ext.
+!  Add a uniform background field, optionally precessing. 
 !
-        if (B2_ext/=0.0) then
-          if (lbext_curvilinear.or.lcartesian_coords) then
-!
-!  luse_curvilinear_bext is default. The B_ext the user defines in
-!  magnetic_init_pars respects the coordinate system of preference
-!  which means that B_ext=(0.0,1.0,0.0) is an azimuthal field in cylindrical
-!  coordinates and a polar one in spherical.
-!
-            if (omega_Bz_ext==0.0) then
-              B_ext_tmp=B_ext
-            elseif (omega_Bz_ext/=0.0) then
-              c=cos(omega_Bz_ext*t)
-              s=sin(omega_Bz_ext*t)
-              B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
-              B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
-              B_ext_tmp(3)=B_ext(3)
-            endif
-          else if (lcylindrical_coords) then
-            if (omega_Bz_ext/=0.0) &
-                call fatal_error('calc_pencils_magnetic', &
-                'precession of the external field not '// &
-                'implemented for cylindrical coordinates')
-!
-!  Transform b_ext to other coordinate systems.
-!
-            B_ext_tmp(1)=  B_ext(1)*cos(y(m)) + B_ext(2)*sin(y(m))
-            B_ext_tmp(2)= -B_ext(1)*sin(y(m)) + B_ext(2)*cos(y(m))
-            B_ext_tmp(3)=  B_ext(3)
-          else if (lspherical_coords) then
-            if (omega_Bz_ext/=0.0) &
-                call fatal_error('calc_pencils_magnetic', &
-                'precession of the external field not '//&
-                'implemented for spherical coordinates')
-            B_ext_tmp(1)= B_ext(1)*sinth(m)*cos(z(n)) + B_ext(2)*sinth(m)*sin(z(n)) + B_ext(3)*costh(m)
-            B_ext_tmp(2)= B_ext(1)*costh(m)*cos(z(n)) + B_ext(2)*costh(m)*sin(z(n)) - B_ext(3)*sinth(m)
-            B_ext_tmp(3)=-B_ext(1)         *sin(z(n)) + B_ext(2)         *cos(z(n))
-          endif
-!
-!  Add the external field.
-!
-          if (B_ext_tmp(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
-          if (B_ext_tmp(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
-          if (B_ext_tmp(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
-          if (headtt) print*,'calc_pencils_magnetic: B_ext=',B_ext
-          if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
-        endif
+        addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux)) then
+          call get_bext(B_ext)
+          forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
+        endif addBext
 !
 !  Add a precessing dipole not in the bext field
 !
-        if (dipole_moment .ne. 0) then 
+        if (dipole_moment .ne. 0) then
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
           p%bb(:,1) = p%bb(:,1) + dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
           p%bb(:,2) = p%bb(:,2) + dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
@@ -7849,19 +7807,67 @@ module Magnetic
 !
 !  Get the external magnetic field at current time step.
 !
-!  11-jun-14/ccyang: coded
+!  lbext_curvilinear = .true. is default.  The B_ext the user defines in 
+!  magnetic_init_pars respects the coordinate system of preference which 
+!  means that B_ext=(0.0,1.0,0.0) is an azimuthal field in cylindrical 
+!  coordinates and a polar one in spherical.
+!
+!  01-nov-14/ccyang: coded
 !
       real, dimension(3), intent(out) :: B_ext_out
 !
-      bext: if (t_bext > 0.0 .and. t < t_bext) then
+      real :: c, s
+!
+      if (headtt) print *, 'get_bext: B_ext = ', B_ext
+!
+      addBext: if (any(B_ext /= 0.0)) then
+!
+        precess: if (omega_Bz_ext /= 0.0) then
+!
+!  Allow external field to precess about z-axis with frequency omega_Bz_ext.
+!
+          coord1: if (lcartesian_coords .or. lbext_curvilinear) then
+            c = cos(omega_Bz_ext * t)
+            s = sin(omega_Bz_ext * t)
+            B_ext_out(1) = B_ext(1) * c - B_ext(2) * s
+            B_ext_out(2) = B_ext(1) * s + B_ext(2) * c
+            B_ext_out(3) = B_ext(3)
+          else coord1
+            call fatal_error('get_bext', 'precession of the external field not implemented for curvilinear coordinates')
+          endif coord1
+        else precess
+!
+!  Or add uniform background field.
+!
+          coord2: if (lcartesian_coords .or. lbext_curvilinear) then
+            B_ext_out = B_ext
+          elseif (lcylindrical_coords) then coord2
+            B_ext_out(1) =  B_ext(1) * cos(y(m)) + B_ext(2) * sin(y(m))
+            B_ext_out(2) = -B_ext(1) * sin(y(m)) + B_ext(2) * cos(y(m))
+            B_ext_out(3) =  B_ext(3)
+          elseif (lspherical_coords) then coord2
+            B_ext_out(1) =  B_ext(1) * sinth(m) * cos(z(n)) + B_ext(2) * sinth(m) * sin(z(n)) + B_ext(3) * costh(m)
+            B_ext_out(2) =  B_ext(1) * costh(m) * cos(z(n)) + B_ext(2) * costh(m) * sin(z(n)) - B_ext(3) * sinth(m)
+            B_ext_out(3) = -B_ext(1)            * sin(z(n)) + B_ext(2)            * cos(z(n))
+          endif coord2
+        endif precess
+      else addBext
+!
+!  Or no background field.
+!
+        B_ext_out = 0.0
+!
+      endif addBext
+!
+!  Make the field gently increasing.
+!
+      gentle: if (t_bext > 0.0 .and. t < t_bext) then
         if (t <= t0_bext) then
           B_ext_out = B0_ext
         else
-          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext - B0_ext)
+          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext_out - B0_ext)
         endif
-      else bext
-        B_ext_out = B_ext
-      endif bext
+      endif gentle
 !
     endsubroutine get_bext
 !***********************************************************************
