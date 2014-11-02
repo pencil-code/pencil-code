@@ -640,7 +640,6 @@ module Mpicomm
     real, dimension(sendcnt) :: send_array
     real, dimension(recvcnt) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag
-    intent(out) :: recv_array
 
     if (ALWAYS_FALSE) print*, sendtag, recvtag
 
@@ -653,7 +652,6 @@ module Mpicomm
     real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: send_array
     real, dimension(recvcnt_arr(1),recvcnt_arr(2)) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    intent(out) :: recv_array
 
     if (ALWAYS_FALSE) print*, sendtag, recvtag
 
@@ -666,7 +664,6 @@ module Mpicomm
     real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3)) :: send_array
     real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3)) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    intent(out) :: recv_array
 
     if (ALWAYS_FALSE) print*, sendtag, recvtag
 
@@ -681,7 +678,6 @@ module Mpicomm
     real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3), &
       recvcnt_arr(4)) :: recv_array
     integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    intent(out) :: recv_array
 
     if (ALWAYS_FALSE) print*, sendtag, recvtag
 
