@@ -97,16 +97,13 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  after reading
-!  parameters, but before the time loop.
+!  Called after reading parameters, but before the time loop.
 !
 !  13-sep-10/bing: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
       real, dimension (mx) :: xtmp
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
@@ -123,7 +120,7 @@ module Special
 !
       inquire(IOLENGTH=lend) dummy
 !
-      if (.not.lstarting.and.tau_inv_newton/=0.) then
+      if (lrun .and. (tau_inv_newton/=0.)) then
         open(unit,file=trim(directory_snap)//filename, &
             form='unformatted',status='unknown',recl=lend*mx)
         read(unit) xtmp

@@ -219,7 +219,7 @@ module InitialCondition
       call set_consistent_gravity(GM,gtype,gprofile,lsuccess)
       if(lsuccess) then
         if (lroot) print*,'Gravity set consistently'
-        call initialize_gravity(f,lstarting=.true.)
+        call initialize_gravity(f)
       else
         call fatal_error('initial_condition/parker_wind:','gravity not set consistently')
       endif

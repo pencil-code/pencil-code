@@ -155,7 +155,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density(f,lstarting)
+    subroutine initialize_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -174,7 +174,6 @@ module Density
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       integer :: i,ierr
       logical :: lnothing
@@ -263,7 +262,7 @@ module Density
 !
 !  Possible to read initial stratification from file.
 !
-      if (.not. lstarting .and. lwrite_stratification) then
+      if (lrun .and. lwrite_stratification) then
         if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
         open(19,file=trim(directory_snap)//'/stratification.dat')
           if (ldensity_nolog) then

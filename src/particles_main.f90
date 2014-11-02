@@ -112,14 +112,13 @@ module Particles_main
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
-    subroutine particles_initialize_modules(f,lstarting)
+    subroutine particles_initialize_modules(f)
 !
 !  Initialize particle modules.
 !
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  TSC assignment/interpolation overwrites CIC in case they are both set.
 !
@@ -187,31 +186,30 @@ module Particles_main
 !
 !  Initialize individual modules.
 !
-      call initialize_particles_mpicomm      (f,lstarting)
-      call initialize_particles              (f,lstarting)
-      call initialize_particles_adaptation   (f,lstarting)
-      call initialize_particles_density      (f,lstarting)
-      call initialize_particles_nbody        (f,lstarting)
-      call initialize_particles_number       (f,lstarting)
-      call initialize_particles_potential    (f,lstarting)
-      call initialize_particles_radius       (f,lstarting)
-      call initialize_particles_selfgrav     (f,lstarting)
-      call initialize_particles_sink         (f,lstarting)
-      call initialize_particles_spin         (f,lstarting)
-      call initialize_particles_stalker      (f,lstarting)
-      call initialize_particles_viscosity    (f,lstarting)
-      call initialize_particles_TT           (f,lstarting)
-      call initialize_particles_mass         (f,lstarting)
-      call initialize_particles_ads          (f,lstarting)
-      call initialize_particles_surf         (f,lstarting,fp)
-      call initialize_particles_coag         (f,lstarting)
-      call initialize_particles_collisions   (f,lstarting)
-      call initialize_pars_diagnos_state     (f,lstarting)
-      call initialize_particles_diagnos_dv   (f,lstarting)
+      call initialize_particles_mpicomm      (f)
+      call initialize_particles              (f)
+      call initialize_particles_adaptation   (f)
+      call initialize_particles_density      (f)
+      call initialize_particles_nbody        (f)
+      call initialize_particles_number       (f)
+      call initialize_particles_potential    (f)
+      call initialize_particles_radius       (f)
+      call initialize_particles_selfgrav     (f)
+      call initialize_particles_sink         (f)
+      call initialize_particles_spin         (f)
+      call initialize_particles_stalker      (f)
+      call initialize_particles_viscosity    (f)
+      call initialize_particles_TT           (f)
+      call initialize_particles_mass         (f)
+      call initialize_particles_ads          (f)
+      call initialize_particles_surf         (f,fp)
+      call initialize_particles_coag         (f)
+      call initialize_particles_collisions   (f)
+      call initialize_pars_diagnos_state     (f)
+      call initialize_particles_diagnos_dv   (f)
 !
-      if (lparticles_blocks.and.(.not.lstarting)) then
-        if (lroot.and.lparticles_blocks) &
-            print*, 'particles_initialize_modules: reblocking particles'
+      if (lparticles_blocks .and. lrun) then
+        if (lroot) print*, 'particles_initialize_modules: reblocking particles'
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
         call sort_particles_iblock(fp,ineargrid,ipar)

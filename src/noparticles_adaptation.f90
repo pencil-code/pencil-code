@@ -29,15 +29,13 @@ module Particles_adaptation
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_adaptation(f,lstarting)
+    subroutine initialize_particles_adaptation(f)
 !
 !  03-apr-13/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_adaptation
 !***********************************************************************

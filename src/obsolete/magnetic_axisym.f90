@@ -305,7 +305,7 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f,lstarting)
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -318,7 +318,6 @@ module Magnetic
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: i,ierr
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -647,8 +646,6 @@ module Magnetic
       call put_shared_variable('lfrozen_bb_top',lfrozen_bb_top,ierr)
       if (ierr/=0) call fatal_error('initialize_magnetic',&
            'there was a problem when sharing lfrozen_bb_top')
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************

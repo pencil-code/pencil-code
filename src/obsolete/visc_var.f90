@@ -65,19 +65,16 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity(lstarting)
+    subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
-
+!
       use Cdata
-
-      logical, intent(in) :: lstarting
-
+!
       if (nu /= 0. .and. ((ivisc=='nu-const') .or. (ivisc=='nu-DJO'))) then
          lneed_sij=.true.
       endif
-
-      if (ALWAYS_FALSE) print*,lstarting
+!
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)

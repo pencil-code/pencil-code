@@ -86,7 +86,7 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro(f,lstarting)
+    subroutine initialize_hydro(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -96,7 +96,6 @@ module Hydro
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       if (kinflow=='KS') then
 !        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
@@ -136,7 +135,6 @@ module Hydro
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_hydro
 !***********************************************************************

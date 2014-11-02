@@ -612,7 +612,7 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro(f,lstarting)
+    subroutine initialize_hydro(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -629,7 +629,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      logical :: lstarting
       integer :: ierr,j
 !
 !  Block use of uninitalised p%fcont
@@ -899,7 +898,6 @@ module Hydro
       lcalc_uumeanz=lcalc_uumean                 ! for compatibility
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_hydro
 !***********************************************************************

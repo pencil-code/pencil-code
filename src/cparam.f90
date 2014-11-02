@@ -155,7 +155,7 @@ module Cparam
 !  Data structure used to gather slice information from the various modules.
 !
   type slice_data
-    character (LEN=30) :: name
+    character (LEN=labellen) :: name
     integer :: index
     logical :: ready
     real, pointer, dimension (:,:) :: xy

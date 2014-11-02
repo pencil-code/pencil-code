@@ -70,7 +70,7 @@ module Particles_number
 !
     endsubroutine register_particles_number
 !***********************************************************************
-    subroutine initialize_particles_number(f,lstarting)
+    subroutine initialize_particles_number(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -78,7 +78,6 @@ module Particles_number
 !  24-nov-05/anders: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       if (lfragmentation_par) then
         if (.not. allocated(kneighbour)) allocate(kneighbour(mpar_loc))
@@ -90,7 +89,6 @@ module Particles_number
            'implemented for Cartesian equidistant grids.')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_number
 !***********************************************************************

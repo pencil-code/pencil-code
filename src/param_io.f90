@@ -214,7 +214,7 @@ module Param_IO
 !
     endsubroutine get_snapdir
 !***********************************************************************
-    subroutine read_startpars(print,file,lierr)
+    subroutine read_startpars(print)
 !
 !  read input parameters (done by each processor)
 !
@@ -228,14 +228,10 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  31-oct-13/MR  : changed for use instead of rparam; shortened by use of read_pars
-!  18-dec-13/MR  : changed handling of ierr to avoid compiler trouble
-!  19-dec-13/MR  : changed ierr into logical lierr to avoid compiler trouble
-!                  adapted calls to read_pars
 !
       use Mpicomm, only: parallel_open, parallel_close
-      use General, only: loptest
 !
-      logical, optional, intent(IN) :: print,file,lierr
+      logical, optional, intent(IN) :: print
 !
       integer, parameter :: unit=1
       integer :: ierr
@@ -247,7 +243,7 @@ module Param_IO
 !
 !  Open namelist file and read through all items that *may* be present in the various modules.
 !
-      if (loptest(lierr)) then
+      if (lstart) then
         call parallel_open(unit,'start.in','formatted')
         read(unit,NML=init_pars,IOSTAT=ierr)
         if (ierr/=0) call sample_pars(ierr,'')
@@ -304,11 +300,13 @@ module Param_IO
 !
 !  Give online feedback if called with the PRINT optional argument.
 !
-      if (loptest(print)) call print_startpars()
+      if (present (print)) then
+        if (print) call print_startpars()
+      endif
 !
 !  Write parameters to log file.
 !
-      if (loptest(file)) call print_startpars(FILE=trim(datadir)//'/params.log')
+      if (lstart) call print_startpars(FILE=trim(datadir)//'/params.log')
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -405,8 +403,6 @@ module Param_IO
 !  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
 !  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
 !
-    use General, only: loptest
-!
     integer,          intent(IN):: unit
     interface
       subroutine reader(unit, iostat)
@@ -448,63 +444,62 @@ module Param_IO
       integer         , optional :: iostat
       character(len=*), optional :: label
 !
-      character(len=10):: partype
-      character(len=60):: msg
+      character(len=labellen):: partype
+      character(len=linelen):: msg
 
       if (lroot) then
 
-        if (lrun) then
-          partype='run_pars'
-        elseif (lstart) then
+        if (lstart) then
           partype='init_pars'
+        else
+          partype='run_pars'
         endif
 
         print*
         print*,'-----BEGIN sample namelist ------'
-        print*,'&'//partype//'               /'
-        partype = '_'//partype
+        print*,'&'//partype//'                /'
 !
         if (lstart) then
           if (lsignal           ) print*,'&signal_init_pars       /'
           if (linitial_condition) print*,'&initial_condition_pars /'
         endif
 
-        if (ltracers        ) print*,'&streamlines'//partype//'    /'     !! questionable wg. ltracers
-        if (leos            ) print*,'&eos'//partype//'            /'
+        if (ltracers        ) print*,'&streamlines_'//partype//'    /'     !! questionable wg. ltracers
+        if (leos            ) print*,'&eos_'//partype//'            /'
         if (lhydro .or.                     &
-            lhydro_kinematic) print*,'&hydro'//partype//'          /'
-        if (ldensity        ) print*,'&density'//partype//'        /'
-        if (lgrav           ) print*,'&grav'//partype//'           /'
-        if (lselfgravity    ) print*,'&selfgrav'//partype//'       /'
-        if (lpoisson        ) print*,'&poisson'//partype//'        /'
+            lhydro_kinematic) print*,'&hydro_'//partype//'          /'
+        if (ldensity        ) print*,'&density_'//partype//'        /'
+        if (lgrav           ) print*,'&grav_'//partype//'           /'
+        if (lselfgravity    ) print*,'&selfgrav_'//partype//'       /'
+        if (lpoisson        ) print*,'&poisson_'//partype//'        /'
         if (lentropy.or.                    &
-            ltemperature    ) print*,'&entropy'//partype//'        /'
-        if (lthermal_energy ) print*,'&energy'//partype//'         /'
-!        if (lconductivity   ) print*,'&conductivity'//partype//'   /'
-        if (ldetonate       ) print*,'&detonate'//partype//'       /'
-        if (lmagnetic       ) print*,'&magnetic'//partype//'       /'
-        if (lmagn_mf        ) print*,'&magn_mf'//partype//'        /'
-        if (llorenz_gauge   ) print*,'&lorenz_gauge'//partype//'   /'
-        if (ltestscalar     ) print*,'&testscalar'//partype//'     /'
-        if (ltestfield      ) print*,'&testfield'//partype//'      /'
-        if (ltestflow       ) print*,'&testflow'//partype//'       /'
-        if (lradiation      ) print*,'&radiation'//partype//'      /'
-        if (lpscalar        ) print*,'&pscalar'//partype//'        /'
-        if (lchiral         ) print*,'&chiral'//partype//'         /'
-        if (lchemistry      ) print*,'&chemistry'//partype//'      /'
-        if (ldustvelocity   ) print*,'&dustvelocity'//partype//'   /'
-        if (ldustdensity    ) print*,'&dustdensity'//partype//'    /'
-        if (lneutralvelocity) print*,'&neutralvelocity'//partype//'/'
-        if (lneutraldensity ) print*,'&neutraldensity'//partype//' /'
-        if (lcosmicray      ) print*,'&cosmicray'//partype//'      /'
-        if (lcosmicrayflux  ) print*,'&cosmicrayflux'//partype//'  /'
-        if (linterstellar   ) print*,'&interstellar'//partype//'   /'
-        if (lshear          ) print*,'&shear'//partype//'          /'
-        if (ltestperturb    ) print*,'&testperturb'//partype//'    /'
-        if (lspecial        ) print*,'&special'//partype//'        /'
-        if (lsolid_cells    ) print*,'&solid_cells'//partype//'    /'
-        if (lnscbc          ) print*,'&NSCBC'//partype//'          /'
-        if (lpolymer        ) print*,'&polymer'//partype//'        /'
+            ltemperature    ) print*,'&entropy_'//partype//'        /'
+        if (lthermal_energy ) print*,'&energy_'//partype//'         /'
+!        if (lconductivity   ) print*,'&conductivity_'//partype//'   /'
+        if (ldetonate       ) print*,'&detonate_'//partype//'       /'
+        if (lmagnetic       ) print*,'&magnetic_'//partype//'       /'
+        if (lmagn_mf        ) print*,'&magn_mf_'//partype//'        /'
+        if (llorenz_gauge   ) print*,'&lorenz_gauge_'//partype//'   /'
+        if (ltestscalar     ) print*,'&testscalar_'//partype//'     /'
+        if (ltestfield      ) print*,'&testfield_'//partype//'      /'
+        if (ltestflow       ) print*,'&testflow_'//partype//'       /'
+        if (lradiation      ) print*,'&radiation_'//partype//'      /'
+        if (lpscalar        ) print*,'&pscalar_'//partype//'        /'
+        if (lchiral         ) print*,'&chiral_'//partype//'         /'
+        if (lchemistry      ) print*,'&chemistry_'//partype//'      /'
+        if (ldustvelocity   ) print*,'&dustvelocity_'//partype//'   /'
+        if (ldustdensity    ) print*,'&dustdensity_'//partype//'    /'
+        if (lneutralvelocity) print*,'&neutralvelocity_'//partype//'/'
+        if (lneutraldensity ) print*,'&neutraldensity_'//partype//' /'
+        if (lcosmicray      ) print*,'&cosmicray_'//partype//'      /'
+        if (lcosmicrayflux  ) print*,'&cosmicrayflux_'//partype//'  /'
+        if (linterstellar   ) print*,'&interstellar_'//partype//'   /'
+        if (lshear          ) print*,'&shear_'//partype//'          /'
+        if (ltestperturb    ) print*,'&testperturb_'//partype//'    /'
+        if (lspecial        ) print*,'&special_'//partype//'        /'
+        if (lsolid_cells    ) print*,'&solid_cells_'//partype//'    /'
+        if (lnscbc          ) print*,'&NSCBC_'//partype//'          /'
+        if (lpolymer        ) print*,'&polymer_'//partype//'        /'
 !
         if (lrun) then
           if (lforcing      ) print*,'&forcing_run_pars         /'
@@ -523,9 +518,9 @@ module Param_IO
         if (present(label)) then
           msg = 'Found error in input namelist "'
           if (label=='') then
-            msg = trim(msg)//trim(partype(2:9))
+            msg = trim(msg)//'_'//trim(partype(2:9))
           else
-            msg = trim(msg)//trim(label)//trim(partype)
+            msg = trim(msg)//trim(label)//'_'//trim(partype)
           endif
           print*, trim(msg)//'"'
         endif
@@ -534,7 +529,7 @@ module Param_IO
                              print*,  '-- use sample above.'
       endif
 !
-      call fatal_error('sample'//partype,'')
+      call fatal_error('sample_'//partype,'')
 !
     endsubroutine sample_pars
 !***********************************************************************
@@ -555,7 +550,6 @@ module Param_IO
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
-      use General, only: loptest
 !
       integer :: ierr, unit=1
       logical, optional :: logging
@@ -625,7 +619,9 @@ module Param_IO
 !
 !  Write parameters to log file, if requested.
 !
-      if (loptest(logging)) call print_runpars()
+      if (present (logging)) then
+        if (logging) call print_runpars()
+      endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -642,12 +638,12 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_runpars')
 !
-      if ( any(downsampl>1) ) then
+      if (any(downsampl>1)) then
 !
 !  If downsampling, calculate local start indices and number of data in
 !  output for each direction; inner ghost zones are here disregarded
 !
-        ldownsampl  = .true.
+        ldownsampl = .true.
         if (dsnap_down<=0.) dsnap_down=dsnap
 !
         call get_downpars(1,nx,ipx,lfirst_proc_x,llast_proc_x)

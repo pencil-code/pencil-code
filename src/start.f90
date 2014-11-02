@@ -96,7 +96,7 @@ program start
   integer :: i, ifilter, stat
   logical :: lnoerase=.false.
 !
-  lstart=.true.
+  lstart = .true.
 !
 !  Get processor numbers and define whether we are root.
 !
@@ -164,7 +164,7 @@ program start
 !
 !  Read parameters from start.in.
 !
-  call read_startpars(FILE=.true.,LIERR=.true.)
+  call read_startpars()
 !
 !  Initialise MPI communication.
 !
@@ -349,8 +349,8 @@ program start
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
 !
-  call initialize_modules(f,lstarting=.true.)
-  call particles_initialize_modules(f,lstarting=.true.)
+  call initialize_modules(f)
+  call particles_initialize_modules(f)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
 !  alternatively: read existing snapshot and overwrite only some fields
@@ -378,7 +378,7 @@ program start
     if (lroot .and. init_loops/=1) &
         print '(A33,i3,A25)', 'start: -- performing loop number', i, &
         ' of initial conditions --'
-    call init_gg        (f)
+    call init_gg(f)
 !
 !  This is a temporary solution for calculating the correct initial
 !  condition for anelastic case where we need to set div(rho u)=0
@@ -389,31 +389,31 @@ program start
 ! calls to 'init' routines below.
 !
     if (lanelastic) then
-      call init_lnrho     (f)
-      call init_uu        (f)
+      call init_lnrho(f)
+      call init_uu(f)
     else
-      call init_uu        (f)
-      call init_lnrho     (f)
+      call init_uu(f)
+      call init_lnrho(f)
     endif
-    call init_energy    (f)
-    call init_aa        (f)
-    call init_lorenz_gauge (f)
-    call init_poly      (f)
-    call init_aatest    (f)
-    call init_uutest    (f)
-    call init_rad       (f)
-    call init_lncc      (f)
-    call init_chiral    (f)
-    call init_chemistry (f)
-    call init_uud       (f)
-    call init_nd        (f)
-    call init_uun       (f)
-    call init_lnrhon    (f)
-    call init_ecr       (f)
-    call init_fcr       (f)
-    call init_interstellar (f)
+    call init_energy(f)
+    call init_aa(f)
+    call init_lorenz_gauge(f)
+    call init_poly(f)
+    call init_aatest(f)
+    call init_uutest(f)
+    call init_rad(f)
+    call init_lncc(f)
+    call init_chiral(f)
+    call init_chemistry(f)
+    call init_uud(f)
+    call init_nd(f)
+    call init_uun(f)
+    call init_lnrhon(f)
+    call init_ecr(f)
+    call init_fcr(f)
+    call init_interstellar(f)
     call init_solid_cells(f)
-    call init_special   (f)
+    call init_special(f)
   enddo
 !
   if (lparticles) call particles_init(f)
@@ -526,7 +526,7 @@ program start
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.true.)
+  call finalize_modules(f)
 !
 !  Stop MPI.
 !

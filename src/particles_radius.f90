@@ -87,7 +87,7 @@ module Particles_radius
 !
     endsubroutine register_particles_radius
 !***********************************************************************
-    subroutine initialize_particles_radius(f,lstarting)
+    subroutine initialize_particles_radius(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -95,7 +95,6 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Calculate the number density of bodies within a superparticle.
 !
@@ -126,7 +125,6 @@ module Particles_radius
       if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************

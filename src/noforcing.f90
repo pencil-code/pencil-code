@@ -44,14 +44,10 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing(lstarting)
+    subroutine initialize_forcing()
 !
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
-!
-      logical :: lstarting
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_forcing
 !***********************************************************************

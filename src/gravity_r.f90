@@ -95,7 +95,7 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(f,lstarting)
+    subroutine initialize_gravity(f)
 !
 !  Set up cpot according to the value of ipotential, and initialize the
 !  global variable gg (gravity field).
@@ -112,7 +112,6 @@ module Gravity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
       real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,pot
-      logical :: lstarting
       logical :: lpade=.true. ! set to false for 1/r potential
       integer :: j
 !
@@ -126,8 +125,8 @@ module Gravity
       if (lnumerical_equilibrium) then
 !
         if (lroot) then
-          print*,'inititialize_gravity: numerical exact equilibrium - gravity'
-          print*,'                      will be calculated in density module'
+          print*,'initialize_gravity: numerical exact equilibrium'
+          print*,' - gravity will be calculated in density module'
         endif
 !
       else
@@ -158,15 +157,15 @@ module Gravity
             cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 !
           case ('M2-sgiant')       ! M super giant
-            if (lroot) print*, 'M super giant gravity potential'
+            if (lroot) print*, 'initialize_gravity: M super giant gravity potential'
             cpot(:,j) = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
 !
           case ('A7-star')       ! Ap star
-            if (lroot) print*, 'A star gravity potential'
+            if (lroot) print*, 'initialize_gravity: A star gravity potential'
             cpot(:,j) = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
 !
           case ('A0-star')       ! A0 star
-            if (lroot) print*, 'A0 star gravity potential'
+            if (lroot) print*, 'initialize_gravity: A0 star gravity potential'
             !cpot(:,j) = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
             cpot(:,j) = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
 !
@@ -323,8 +322,6 @@ module Gravity
         Omega_secondary = sqrt((g0+g1)/rp1**3)
       endif
 !
-      call keep_compiler_quiet(lstarting)
-!
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
@@ -338,6 +335,7 @@ module Gravity
       endif
 !
 99    return
+!
     endsubroutine read_gravity_init_pars
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
@@ -358,6 +356,7 @@ module Gravity
       endif
 !
 99    return
+!
     endsubroutine read_gravity_run_pars
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)

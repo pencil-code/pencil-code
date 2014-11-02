@@ -70,7 +70,7 @@ module Particles_mass
 !
     endsubroutine register_particles_mass
 !***********************************************************************
-    subroutine initialize_particles_mass(f,lstarting)
+    subroutine initialize_particles_mass(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -80,10 +80,8 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_mass
 !***********************************************************************

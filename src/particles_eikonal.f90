@@ -290,7 +290,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f,lstarting)
+    subroutine initialize_particles(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -301,7 +301,6 @@ module Particles
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       real :: rhom
       integer :: ierr, jspec
@@ -439,7 +438,7 @@ module Particles
 !
 !  Set minimum collisional time-scale so that time-step is not affected.
 !
-      if ((.not. lstarting) .and. ltau_coll_min_courant) then
+      if (lrun .and. ltau_coll_min_courant) then
         if (cs0==impossible) then
           tau_coll_min=impossible
         else
@@ -451,7 +450,7 @@ module Particles
 !
 !  Inverse of minimum collisional time-scale.
 !
-      if ((.not. lstarting) .and. tau_coll_min>0.0) tau_coll1_max=1/tau_coll_min
+      if (lrun .and. tau_coll_min>0.0) tau_coll1_max=1/tau_coll_min
 !
 !  Gas density is needed for back-reaction friction force.
 !

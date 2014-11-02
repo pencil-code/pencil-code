@@ -67,7 +67,7 @@ module Particles_density
 !
     endsubroutine register_particles_density
 !***********************************************************************
-    subroutine initialize_particles_density(f,lstarting)
+    subroutine initialize_particles_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -77,7 +77,6 @@ module Particles_density
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       if (lselfgravity) then
         call get_shared_variable('rhs_poisson_const',rhs_poisson_const)
@@ -88,7 +87,6 @@ module Particles_density
            'for Cartesian equidistant grids.')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_density
 !***********************************************************************

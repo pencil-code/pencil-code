@@ -55,19 +55,16 @@ module Particles_mpicomm
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_mpicomm(f,lstarting)
+    subroutine initialize_particles_mpicomm(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  31-oct-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
       integer :: iblock, ibrick
-!
-      intent (in) :: f, lstarting
 !
 !  Check consistency of brick partition.
 !
@@ -118,7 +115,7 @@ module Particles_mpicomm
 !
 !  Distribute particles evenly among processors to begin with.
 !
-      if (lstarting) call dist_particles_evenly_procs(ipar)
+      if (lstart) call dist_particles_evenly_procs(ipar)
 !
 !  Define x, y, and z arrays for bricks.
 !
@@ -140,7 +137,7 @@ module Particles_mpicomm
         dVol1zbrick(:,ibrick) = dVol1_z(n1+ibz*nzb-1:n1+(ibz+1)*nzb)
       enddo
 !
-      if (lstarting.or.(lreblock_particles_run)) then
+      if (lstart .or. lreblock_particles_run) then
 !
 !  Initially the blocks are set to be all the local processor's bricks.
 !
@@ -1390,15 +1387,15 @@ module Particles_mpicomm
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
             nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
-              if (.not. lstart) then
+              if (lrun) then
                 print '(a,i3,a,i3,a)', &
                     'migrate_particles_ptob: too many particles migrating '// &
                     'from proc ', iproc
                 print*, '  (npar_mig,nmig,npar_loc,k=', &
                     npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
-              if (lstart.or.lmigration_redo) then
-                if (.not. lstart) then
+              if (lstart .or. lmigration_redo) then
+                if (lrun) then
                   print*, '  Going to do one more migration iteration!'
                   print*, '  (this may be time consuming - '// &
                       'consider setting npar_mig'

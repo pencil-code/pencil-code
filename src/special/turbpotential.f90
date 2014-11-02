@@ -135,7 +135,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -148,7 +148,6 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mx) :: Omega2
       real :: aspect_ratio, amplitude
-      logical :: lstarting
 !
 !  Initialize the turbulent potential to zero. 
 !
@@ -200,7 +199,7 @@ module Special
 !
 !  Set the potential at start time, for debugging purposes.
 !
-      if (lstarting) call special_before_boundary(f,lstarting)
+      if (lstart) call special_before_boundary(f)
 !
       call keep_compiler_quiet(f)
 !
@@ -233,7 +232,7 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine special_before_boundary(f,lstarting)
+    subroutine special_before_boundary(f)
 !
 !  This subroutine calculates the full potential due to the turbulence.
 !
@@ -245,14 +244,6 @@ module Special
       real, dimension(mx) :: lambda, time_dependant_amplitude
       real ::  tmode_age
       integer :: k,icount
-      logical, optional :: lstarting
-      logical :: lstart
-!
-      if (present(lstarting)) then 
-        lstart = lstarting
-      else
-        lstart=.false.
-      endif
 !
 !  This main loop sets the modes.
 !
@@ -260,7 +251,7 @@ module Special
 !
 !  Generate or update the full list of modes. 
 !
-        call update_modes(lstart)
+        call update_modes()
 !
 !  Loop the grid **locally** to sum the contribution of each mode. 
 !
@@ -312,7 +303,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine update_modes(lstart)
+    subroutine update_modes()
 !
       use Mpicomm, only: mpibcast_logical,mpibcast_real,mpibcast_int
 !
@@ -322,7 +313,7 @@ module Special
       integer  :: h
 !
       real :: tmode_age
-      logical :: flag,lstart
+      logical :: flag
       integer :: k
 !
 !  For file inquiry

@@ -33,7 +33,7 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(f,lstarting)
+    subroutine initialize_interstellar(f)
 !
 !  Perform any post-parameter-read initialization eg. set derived
 !  parameters
@@ -41,10 +41,8 @@ module Interstellar
 !  24-nov-02/tony: coded - dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_interstellar
 !***********************************************************************

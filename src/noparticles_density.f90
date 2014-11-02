@@ -30,15 +30,13 @@ module Particles_density
 !
     endsubroutine register_particles_density
 !***********************************************************************
-    subroutine initialize_particles_density(f,lstarting)
+    subroutine initialize_particles_density(f)
 !
 !  22-nov-10/anders+michiel: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_density
 !***********************************************************************

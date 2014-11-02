@@ -159,7 +159,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -168,10 +168,9 @@ module Special
       use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      logical :: lstarting
       integer :: k,i
       real :: ddsize, Ntot_,BB0_
-      real, dimension (ndustspec) ::  lnds,dsize_
+      real, dimension (ndustspec) :: lnds,dsize_
 !
 !  Initialize any module variables which are parameter dependent
 !

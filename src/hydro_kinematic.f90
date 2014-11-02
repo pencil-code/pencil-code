@@ -138,7 +138,7 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro(f,lstarting)
+    subroutine initialize_hydro(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -152,7 +152,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: exp_kinflow1
-      logical :: lstarting
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -225,8 +224,6 @@ module Hydro
       endif
 !
       call calc_means_hydro(f)
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_hydro
 !***********************************************************************

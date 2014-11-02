@@ -42,7 +42,6 @@ module Energy
 !
   real :: radius_lnTT=0.1, widthlnTT=2*epsi
   real, dimension (ninit) :: ampl_lnTT=0.0
-
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
   real :: chi=impossible
@@ -252,7 +251,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -265,8 +264,6 @@ module Energy
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable
       use Mpicomm, only: stop_it
-!
-      logical :: lstarting
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
@@ -492,8 +489,6 @@ module Energy
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
 !
-      call keep_compiler_quiet(lstarting)
-!
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_energy(f)
@@ -582,6 +577,14 @@ module Energy
                 radius_lnTT, ampl_lnTT(j), center1_x, center1_y, center1_z
             call blob(ampl_lnTT(j),f,ilnTT,radius_lnTT, &
                 center1_x,center1_y,center1_z)
+!
+          case ('peak')
+            if (lroot) print*, 'init_lnTT: peak ', ampl_lnTT(j)
+            if (ltemperature_nolog) then
+              f((l2-l1)/2,4,4,iTT) = exp (ampl_lnTT(j))
+            else
+              f((l2-l1)/2,4,4,ilnTT) = ampl_lnTT(j)
+            endif
 !
           case ('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
@@ -787,13 +790,12 @@ module Energy
            idiag_Trms/=0 .or.idiag_uxTm/=0  .or.idiag_uyTm/=0 .or.idiag_uzTm/=0  .or. &
            idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 ) &
          lpenc_diagnos(i_TT)=.true.
-
+!
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
            idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_gTT)=.true.
-
+!
       if ( lhydro .or. lhydro_kinematic ) then
         if ( idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_uij)=.true.
-
         if ( idiag_Tugux_uxugTm/=0 .or. idiag_Tuguy_uyugTm/=0 .or. idiag_Tuguz_uzugTm/=0 ) then
           lpenc_requested(i_ugu)=.true.; lpenc_requested(i_ugTT)=.true.
         endif
@@ -1133,7 +1135,6 @@ module Energy
         if (idiag_ppm/=0)   call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
         if (idiag_uxTm/=0)  call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
@@ -1160,12 +1161,12 @@ module Energy
           call dot_mn(p%gTT(:,:),p%uij(:,2,:),tmp)
           call sum_mn_name(tmp,idiag_guygTm)
         endif
-
+!
         if (idiag_guzgTm/=0) then
           call dot_mn(p%gTT(:,:),p%uij(:,3,:),tmp)
           call sum_mn_name(tmp,idiag_guzgTm)
         endif
-
+!
         if (idiag_dtc/=0) then
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
@@ -1368,9 +1369,12 @@ module Energy
       integer :: i,n,iz
 !
       if (.not. ltemperature_nolog) &
-        call fatal_error('temperature_idealgas',  &
-                         'rad_equil not implemented for lnTT')
+          call fatal_error('temperature_idealgas', &
+                           'rad_equil not implemented for lnTT')
       if (lroot) print*,'init_energy: rad_equil for kappa-mechanism pb'
+!
+      if (nzgrid == 1) &
+          call fatal_error ('rad_equil', "not implemented for nzgrid=1")
 !
 !  Integrate from top to bottom: z(n2) --> z(n1).
 !

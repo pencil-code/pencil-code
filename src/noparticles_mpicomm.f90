@@ -37,19 +37,16 @@ module Particles_mpicomm
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_mpicomm(f,lstarting)
+    subroutine initialize_particles_mpicomm(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
-!
-      intent (in) :: f, lstarting
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
 !  Distribute particles evenly among processors to begin with.
 !
-      if (lstarting) call dist_particles_evenly_procs(ipar)
+      if (lstart) call dist_particles_evenly_procs(ipar)
 !
       call keep_compiler_quiet(f)
 !

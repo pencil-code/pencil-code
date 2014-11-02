@@ -162,10 +162,10 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing(lstarting)
+    subroutine initialize_forcing()
 !
 !  read seed field parameters
-!  nothing done from start.f90 (lstarting=.true.)
+!  nothing done from start.f90
 !
 !  25-sep-2014/MR: determine n_forcing_cont according to the actual selection
 !
@@ -176,9 +176,7 @@ module Forcing
       real :: zstar
       integer :: l,i
 !
-      logical :: lstarting
-!
-      if (lstarting) then
+      if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
       else
 !
@@ -590,7 +588,7 @@ module Forcing
 !
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
 
-      if (lstarting) return
+      if (lstart) return
       
       do i=1,n_forcing_cont_max
         if ( iforcing_cont(i)=='nothing' ) then

@@ -33,15 +33,13 @@ module Particles_diagnos_state
 !
     endsubroutine register_pars_diagnos_state
 !***********************************************************************
-    subroutine initialize_pars_diagnos_state(f,lstarting)
+    subroutine initialize_pars_diagnos_state(f)
 !
 !  Dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_pars_diagnos_state
 !***********************************************************************

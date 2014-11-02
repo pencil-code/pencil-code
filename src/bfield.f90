@@ -218,7 +218,7 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f, lstarting)
+    subroutine initialize_magnetic(f)
 !
 !  Conducts post-parameter-read initialization for Magnetic.
 !
@@ -228,12 +228,10 @@ module Magnetic
       use Shear, only: get_hyper3x_mesh
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
 !
       integer :: ierr
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
 !  Check the existence of external field.
 !

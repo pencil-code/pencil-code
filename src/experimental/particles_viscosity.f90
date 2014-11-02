@@ -61,7 +61,7 @@ module Particles_viscosity
 !
     endsubroutine register_particles_viscosity
 !***********************************************************************
-    subroutine initialize_particles_viscosity(f,lstarting)
+    subroutine initialize_particles_viscosity(f)
 !
 !  07-oct-08/anders: coded
 !
@@ -70,7 +70,6 @@ module Particles_viscosity
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       integer :: i, ierr
 !
@@ -108,14 +107,13 @@ module Particles_viscosity
 !  corresponds to the chosen viscosity type is not set.
 !
       if (lrun) then
-        if ( (lviscp_simplified.or.lviscp_rhop_nup_const.or.lviscp_nup_const) &
-            .and.nup==0.0) &
+        if ((lviscp_simplified .or. lviscp_rhop_nup_const .or. &
+            lviscp_nup_const) .and. (nup == 0.0)) &
             call warning('initialize_particles_viscosity', &
             'Viscosity coefficient nup is zero!')
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_viscosity
 !***********************************************************************

@@ -42,11 +42,7 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity(lstarting)
-!
-      logical, intent(in) :: lstarting
-!
-      call keep_compiler_quiet(lstarting)
+    subroutine initialize_viscosity()
 !
     endsubroutine initialize_viscosity
 !***********************************************************************

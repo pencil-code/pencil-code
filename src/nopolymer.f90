@@ -38,17 +38,15 @@ module Polymer
 !
     endsubroutine register_polymer
 !***********************************************************************
-    subroutine initialize_polymer(f,lstarting)
+    subroutine initialize_polymer(f)
 !
 !  Perform any post-parameter-read initialization.
 !
 !  14-aug-08/dhruba: initialize polymer field (dummy at present)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_polymer
 !***********************************************************************

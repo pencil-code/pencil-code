@@ -123,11 +123,9 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  after reading
-!  parameters, but before the time loop.
+!  Called after reading parameters, but before the time loop.
 !
 !  06-oct-03/tony: coded
 !
@@ -136,13 +134,12 @@ module Special
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
-      logical :: lstarting
       integer :: i
 !!
 !! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
 !!
 !      dx12=0.0
-!      if (.not.lstarting) then
+!      if (lrun) then
 !        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
 !!
 !        x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
@@ -163,18 +160,15 @@ module Special
 !!
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine finalize_special(f,lstarting)
+    subroutine finalize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  before exiting.
+!  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine finalize_special
 !***********************************************************************

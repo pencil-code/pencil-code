@@ -76,7 +76,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -89,7 +89,7 @@ module Energy
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
+!
       integer :: ierr
 !
 !  Tell the equation of state that we're here and what f variable we use.
@@ -140,7 +140,6 @@ module Energy
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_energy
 !***********************************************************************

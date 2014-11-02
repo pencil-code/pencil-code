@@ -34,17 +34,15 @@ module Particles_main
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
-    subroutine particles_initialize_modules(f,lstarting)
+    subroutine particles_initialize_modules(f)
 !
 !  Initialize particle modules.
 !
 !  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************

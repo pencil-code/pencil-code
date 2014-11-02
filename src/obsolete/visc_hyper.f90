@@ -90,14 +90,12 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity(lstarting)
+    subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
 !  24-nov-03/nils: adapted from visc_shock
 !
       use Cdata
-!
-      logical, intent(in) :: lstarting
 !
       if (headtt.and.lroot) print*,'viscosity: nu_hyper3=', nu_hyper3
 !

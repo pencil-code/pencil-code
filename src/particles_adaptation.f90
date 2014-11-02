@@ -40,7 +40,7 @@ module Particles_adaptation
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_adaptation(f,lstarting)
+    subroutine initialize_particles_adaptation(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -48,7 +48,6 @@ module Particles_adaptation
 !  03-apr-13/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
 !  Report fatal error if Particle_mass module not used.
 !
@@ -64,7 +63,6 @@ module Particles_adaptation
       call fatal_error_local_collect
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_adaptation
 !***********************************************************************

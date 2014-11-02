@@ -95,12 +95,11 @@ module Shock
 !
     endsubroutine register_shock
 !***********************************************************************
-    subroutine initialize_shock(f,lstarting)
+    subroutine initialize_shock(f)
 !
 !  20-nov-02/tony: coded
 !
        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-       logical, intent(in) :: lstarting
 !
 !  Initialize shock profile to zero
 !
@@ -144,7 +143,7 @@ module Shock
 !  velocity field. It can lead to subtle numerical errors near non-
 !  periodic boundaries if the shock viscosity is assumed periodic.
 !
-      if (.not. lstarting .and. .not. lforce_periodic_shockviscosity) then
+      if (lrun .and. .not. lforce_periodic_shockviscosity) then
         if (bcx(ishock)=='p' .and. .not. all(bcx(iux:iuz)=='p'   )) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'

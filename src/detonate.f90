@@ -63,7 +63,7 @@ module Detonate
 !
     endsubroutine register_detonate
 !***********************************************************************
-    subroutine initialize_detonate(f, lstarting)
+    subroutine initialize_detonate(f)
 !
 !  Initializes module specific variables for later use.
 !
@@ -74,7 +74,6 @@ module Detonate
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      logical, intent(in) :: lstarting
 !
       real, pointer :: tsg
       integer :: istat
@@ -89,7 +88,7 @@ module Detonate
 !
 !  If called by start.f90: nothing to do.
 !
-      if (lstarting) return
+      if (lstart) return
 !
 !  Calculate the conversion factor between density and energy for Jeans
 !  stability.

@@ -44,13 +44,11 @@ module Shock
 !
     endsubroutine register_shock
 !***********************************************************************
-    subroutine initialize_shock(f,lstarting)
+    subroutine initialize_shock(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_shock
 !***********************************************************************

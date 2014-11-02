@@ -219,7 +219,7 @@ module Testfield
 !
     endsubroutine register_testfield
 !***********************************************************************
-    subroutine initialize_testfield(f,lstarting)
+    subroutine initialize_testfield(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -231,7 +231,6 @@ module Testfield
       use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
       integer :: jtest, ierr
 !
 ! Stop the code if we are not in spherical coordinates
@@ -279,7 +278,7 @@ module Testfield
 !  calculate iE0; set ltestfield_linear in specific cases
 !
       ltestfield_linear=.false.
-      if (.not.lstarting) then
+      if (lrun) then
         select case (itestfield)
         case ('j0-P1'); iE0=0
         case ('SRSRC07'); iE0=0

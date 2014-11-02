@@ -30,7 +30,7 @@ module Particles_spin
 !
     endsubroutine register_particles_spin
 !***********************************************************************
-    subroutine initialize_particles_spin(f,lstarting)
+    subroutine initialize_particles_spin(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -38,10 +38,8 @@ module Particles_spin
 !  23-jul-08/kapelrud: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_spin
 !***********************************************************************

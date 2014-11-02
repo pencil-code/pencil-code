@@ -159,17 +159,15 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
-! Called by start.f90 with lstarting=.true. or by
-! run.f90 with lstarting=.false. and with lreloading indicating a RELOAD
+! Called with lreloading indicating a RELOAD
 !
 !  06-oct-03/tony: coded
 !
       use Mpicomm, only: parallel_file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 ! Consistency checks:
 !
@@ -213,7 +211,7 @@ module Special
           call fatal_error ('solar_corona/mag_driver', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
 !
-      if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
+      if ((.not. lreloading) .and. lrun) nano_seed = 0.
 !
       if (lpencil_check_at_work) return
 !
@@ -221,7 +219,7 @@ module Special
           call fatal_error ('solar_corona/mag_driver', &
               "Could not find file '"//trim (mag_times_dat)//"'.")
 !
-      if (lgranulation .and. (.not. lstarting)) then
+      if (lgranulation .and. lrun) then
         ! Define and initialize the processors that are computing the granulation
         lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
@@ -232,7 +230,6 @@ module Special
       call setup_profiles()
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -290,17 +287,15 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
-    subroutine finalize_special(f,lstarting)
+    subroutine finalize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  before exiting.
+!  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
-      if (lgranulation .and. (lroot .or. lgran_proc) .and. .not. lstarting) then
+      if (lgranulation .and. (lroot .or. lgran_proc) .and. lrun) then
         call free_points ()
         deallocate (Ux, Uy, w, vx, vy, avoid_gran)
       endif
@@ -309,8 +304,6 @@ module Special
       if (allocated (Uy_ext)) deallocate (Uy_ext)
 !
       call special_before_boundary (f, .true.)
-!
-      call keep_compiler_quiet (lstarting)
 !
     endsubroutine finalize_special
 !***********************************************************************

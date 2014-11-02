@@ -48,7 +48,7 @@ module Particles_collisions
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_collisions(f,lstarting)
+    subroutine initialize_particles_collisions(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -58,7 +58,6 @@ module Particles_collisions
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       select case (icoll)
       case ('random-angle'); lcollision_random_angle=.true.
@@ -128,7 +127,6 @@ module Particles_collisions
            'for Cartesian equidistant grids.')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************

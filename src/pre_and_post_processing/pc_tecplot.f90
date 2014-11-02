@@ -36,7 +36,7 @@ program pc_tecplot
   integer(kind=8) :: rec_len, num_rec
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
-  lrun=.true.
+  lstart = .true.
   lmpicomm = .false.
   root = 0
   lroot = .true.
@@ -74,7 +74,7 @@ program pc_tecplot
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call read_startpars(lstarting=(.not. lrun))
+  call read_startpars()
 !
 !  Read parameters and output parameter list.
 !
@@ -149,9 +149,7 @@ program pc_tecplot
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  lpencil_check_at_work = .true.
-  call initialize_modules(f, LSTARTING=.true.)
-  lpencil_check_at_work = .false.
+  call initialize_modules(f)
 !
 ! Loop over processors
 !

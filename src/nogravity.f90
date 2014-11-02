@@ -62,17 +62,15 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(f,lstarting)
+    subroutine initialize_gravity(f)
 !
 !  Set up some variables for gravity; do nothing in nograv
 !  16-jul-02/wolf: coded
 !  22-nov-02/tony: renamed from setup_grav
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_gravity
 !***********************************************************************

@@ -66,7 +66,7 @@ module Particles_diagnos_dv
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_diagnos_dv(f,lstarting)
+    subroutine initialize_particles_diagnos_dv(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -75,13 +75,12 @@ module Particles_diagnos_dv
       use Mpicomm, only: mpibcast_real, stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
       integer :: ierr
 !
 !  Set up collisional grid
 !
 
-      if (.not. lstarting) then
+      if (lrun) then
         if ((particle_gridsize/=0) .and. (col_radius/=0)) then
 ! calculate collisional grid parameters
           n_c(1)=ceiling(Lxyz_loc(1)/particle_gridsize)

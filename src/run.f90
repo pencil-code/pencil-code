@@ -109,7 +109,7 @@ program run
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
 !
-  lrun=.true.
+  lrun = .true.
 !
 !  Get processor numbers and define whether we are root.
 !
@@ -131,7 +131,7 @@ program run
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call read_startpars
+  call read_startpars()
 !
 !  Read parameters and output parameter list.
 !
@@ -376,7 +376,7 @@ program run
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  call initialize_modules(f,LSTARTING=.false.)
+  call initialize_modules(f)
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -398,7 +398,7 @@ program run
 !
   if (lparticles) then
     call particles_rprint_list(.false.)
-    call particles_initialize_modules(f,lstarting=.false.)
+    call particles_initialize_modules(f)
   endif
 !
 !  Write data to file for IDL.
@@ -526,10 +526,10 @@ program run
         if (lhydro_kinematic)    call hydro_clean_up()
         if (lsolid_cells)        call solid_cells_clean_up()
         call rprint_list(LRESET=.true.) !(Re-read output list)
-        call initialize_modules(f,LSTARTING=.false.)
+        call initialize_modules(f)
         if (lparticles) then
           call particles_rprint_list(.false.)
-          call particles_initialize_modules(f,lstarting=.false.)
+          call particles_initialize_modules(f)
         endif
         call choose_pencils()
         call wparam2()
@@ -825,7 +825,7 @@ program run
 !
 !  Give all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.false.)
+  call finalize_modules(f)
 !
 !  Write success file, if the requested simulation is complete.
 !

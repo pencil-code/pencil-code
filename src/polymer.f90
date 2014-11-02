@@ -80,7 +80,7 @@ module Polymer
 !
     endsubroutine register_polymer
 !***********************************************************************
-    subroutine initialize_polymer(f,lstarting)
+    subroutine initialize_polymer(f)
 !
 !  Perform any post-parameter-read initialization.
 !  At present does nothing.
@@ -88,10 +88,8 @@ module Polymer
 !  14-aug-08/dhruba: initialize polymer field
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
       if (tau_poly>tini) then
         tau_poly1=1./tau_poly
@@ -104,7 +102,7 @@ module Polymer
 ! The warning is given only by the root processor but not when we are running
 ! start.
 !
-      if ((lroot).and.lpolyback.and.(mu_poly==0.).and.(.not.lstart)) &
+      if (lroot .and. lpolyback .and. (mu_poly == 0.) .and. lrun) &
           call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
 !
     endsubroutine initialize_polymer

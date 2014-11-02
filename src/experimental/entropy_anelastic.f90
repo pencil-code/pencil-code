@@ -236,7 +236,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -253,7 +253,6 @@ module Energy
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
@@ -571,7 +570,6 @@ module Energy
            "there was a problem when putting lviscosity_heat")
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_energy
 !***********************************************************************

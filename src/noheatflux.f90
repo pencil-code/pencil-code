@@ -33,34 +33,27 @@ module Heatflux
 !
     endsubroutine register_heatflux
 !***********************************************************************
-    subroutine initialize_heatflux(f,lstarting)
+    subroutine initialize_heatflux(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  after reading
-!  parameters, but before the time loop.
+!  Called after reading parameters, but before the time loop.
 !
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_heatflux
 !***********************************************************************
-    subroutine finalize_heatflux(f,lstarting)
+    subroutine finalize_heatflux(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  before exiting.
+!  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine finalize_heatflux
 !***********************************************************************

@@ -117,7 +117,7 @@ module Entropy
 !                                       
     endsubroutine register_entropy
 !***********************************************************************
-    subroutine initialize_entropy(f,lstarting)
+    subroutine initialize_entropy(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -131,7 +131,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx)   :: hcond,dhcond
-      logical :: lstarting, lnothing
+      logical :: lnothing
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy','EOS=noeos but temperature_TT requires an EQUATION OF STATE for the fluid')
@@ -210,8 +210,6 @@ module Entropy
         if (hcond0 /= impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
         if (chi /= impossible) call warning('initialize_entropy', 'No heat conduction, but chi /= 0')
       endif
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_entropy
 !***********************************************************************

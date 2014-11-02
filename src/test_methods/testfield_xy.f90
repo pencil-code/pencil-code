@@ -80,7 +80,7 @@ module Testfield
   contains
 !
 !***********************************************************************
-    subroutine initialize_testfield(f,lstarting)
+    subroutine initialize_testfield(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -92,7 +92,6 @@ module Testfield
       use Hydro, only: lcalc_uumeanxy, calc_means_hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call initialize_testfield_general(f)
            
@@ -114,8 +113,6 @@ module Testfield
         write(1,'(a,2(f3.0))') 'ktestfield_x,y=', ktestfield_x, ktestfield_y
         close(1)
       endif
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_testfield
 !***********************************************************************

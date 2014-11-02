@@ -98,7 +98,7 @@ module Particles_surfspec
 !
   end subroutine write_particles_surf_run_pars
 !***********************************************************************
-  subroutine initialize_particles_surf(f,lstarting,fp)
+  subroutine initialize_particles_surf(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -108,11 +108,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
-      logical :: lstarting
 !
-!  
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
       call keep_compiler_quiet(fp)
 !
   end subroutine initialize_particles_surf

@@ -37,15 +37,13 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
-!  Called by run.f90 after reading parameters, but before the time loop.
+!  Called after reading parameters, but before the time loop.
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_energy
 !***********************************************************************

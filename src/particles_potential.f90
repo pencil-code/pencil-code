@@ -206,7 +206,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f,lstarting)
+    subroutine initialize_particles(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -217,7 +217,6 @@ module Particles
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       real :: rhom
       integer :: ierr, jspec

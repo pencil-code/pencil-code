@@ -37,22 +37,20 @@ module Particles_mpicomm
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_mpicomm(f,lstarting)
+    subroutine initialize_particles_mpicomm(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
-!
-      intent (in) :: f, lstarting
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
 !  Distribute particles evenly among processors to begin with.
 !  DM: for some initial conditions it may be better not to distribute
 !  particles evenly so the logical variable ldist_particles_evenly has been
 !  introduced. This variable is true by default.
 !
-      if (lstarting) call dist_particles_evenly_procs(ipar)
+      if (lstart) call dist_particles_evenly_procs(ipar)
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_mpicomm
@@ -443,14 +441,14 @@ module Particles_mpicomm
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
             nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
-              if (.not. lstart) then
+              if (lrun) then
                 print '(a,i3,a,i3,a)', &
                     'migrate_particles: too many particles migrating '// &
                     'from proc ', iproc, ' to proc ', iproc_rec
                 print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
               endif
               if (lstart.or.lmigration_redo) then
-                if (.not. lstart) then
+                if (lrun) then
                   print*, '                       Going to do one more '// &
                       'migration iteration!'
                   print*, '                       (this is time consuming - '//&

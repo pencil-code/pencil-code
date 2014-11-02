@@ -64,7 +64,7 @@ module Particles_coagulation
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_coag(f,lstarting)
+    subroutine initialize_particles_coag(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -75,7 +75,6 @@ module Particles_coagulation
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
 !  Fatal error if Particle_radius module not used.
 !
@@ -138,7 +137,6 @@ module Particles_coagulation
       end if
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_coag
 !***********************************************************************

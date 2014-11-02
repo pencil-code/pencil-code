@@ -25,15 +25,13 @@ module Particles_coagulation
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_coag(f,lstarting)
+    subroutine initialize_particles_coag(f)
 !
 !  24-nov-10/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_coag
 !***********************************************************************

@@ -129,7 +129,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -140,7 +140,6 @@ module Energy
       use EquationOfState, only : select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: ierr,i
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
@@ -239,7 +238,6 @@ module Energy
            'Use ENERGY=energy in src/Makefile.local')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_energy
 !***********************************************************************

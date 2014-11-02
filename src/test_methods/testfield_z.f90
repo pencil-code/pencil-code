@@ -192,7 +192,7 @@ module Testfield
   contains
 
 !***********************************************************************
-    subroutine initialize_testfield(f,lstarting)
+    subroutine initialize_testfield(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -208,7 +208,6 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
-      logical, intent(in) :: lstarting
       integer :: i, jtest, ierr, iaatest2, iostat
       character(LEN=640) :: fform
       real, dimension(nname) :: buffer
@@ -272,7 +271,7 @@ module Testfield
 !  calculate iE0; set ltestfield_linear in specific cases
 !
       ltestfield_linear=.false.
-      if (.not.lstarting) then
+      if (lrun) then
         select case (itestfield)
         case ('Beltrami'); iE0=1
         case ('B11-B22_lin'); iE0=0; ltestfield_linear=.true.

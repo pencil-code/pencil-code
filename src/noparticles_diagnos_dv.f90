@@ -27,15 +27,13 @@ module Particles_diagnos_dv
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_diagnos_dv(f,lstarting)
+    subroutine initialize_particles_diagnos_dv(f)
 !
 !  Dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_diagnos_dv
 !***********************************************************************

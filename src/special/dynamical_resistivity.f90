@@ -103,16 +103,16 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
       use General, only: itoa
+      use Mpicomm, only: parallel_file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting,exist
       real :: TT,rho,zeta,eta,teqm
       integer :: mtable,itable,irho,itemp,izet
       integer :: iitemp,iirho,iizet,stat
@@ -142,13 +142,9 @@ module Special
       tablefile=trim('./table/table.eta.a0p1um.d2gmr1em'//trim(sdust)//&
            '.mgeps1em4.within2.dat')
       print*,'reading table ',tablefile
-!
-      inquire(file=tablefile,exist=exist)
-      if (exist) then
-        open(19,file=tablefile)
-      else
-        call fatal_error('resistivity','no input file')
-      endif
+      if (.not. parallel_file_exists(tablefile)) &
+          call fatal_error('dynamical_resistivity','no input file')
+      open(19,file=tablefile)
 !
       mtable=52521
 !
@@ -167,7 +163,6 @@ module Special
       deltaz=abs(x(l1:l2)*cos(y(2))-x(l1:l2)*cos(y(1)))
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

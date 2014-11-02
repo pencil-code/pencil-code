@@ -63,7 +63,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density(f,lstarting)
+    subroutine initialize_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -73,7 +73,6 @@ module Density
       use EquationOfState, only: select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Boussinesq not implemented for entropy
 !
@@ -99,7 +98,6 @@ module Density
       dz_2=1./dz**2
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_density
 !***********************************************************************

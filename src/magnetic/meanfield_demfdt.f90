@@ -91,7 +91,7 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine register_magn_mf_demfdt
 !***********************************************************************
-    subroutine initialize_magn_mf_demfdt(f,lstarting)
+    subroutine initialize_magn_mf_demfdt(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -102,7 +102,6 @@ module Magnetic_meanfield_demfdt
       use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: i,ierr,l
 !
 !  Precalculate tau1_emf if tau_emf is given instead
@@ -114,7 +113,7 @@ module Magnetic_meanfield_demfdt
 !
 !  adopt eta_emf profiles by rescaling etat
 !
-      if (.not.lstarting) then
+      if (lrun) then
         call get_shared_variable('kf_x',kf_x,ierr)
         call get_shared_variable('kf_y',kf_y,ierr)
         call get_shared_variable('kf_z',kf_z,ierr)

@@ -64,21 +64,19 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f,lstarting)
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
       mu01=1./mu0
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************

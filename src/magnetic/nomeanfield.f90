@@ -32,15 +32,13 @@ module Magnetic_meanfield
 !
     endsubroutine register_magn_mf
 !***********************************************************************
-    subroutine initialize_magn_mf(f,lstarting)
+    subroutine initialize_magn_mf(f)
 !
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magn_mf
 !***********************************************************************

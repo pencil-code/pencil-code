@@ -104,7 +104,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -116,7 +116,6 @@ module Special
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: ierr
 !
 !  Initializing the pressures. Seeting mu=1 makes the polytrope a linear barotrope.
@@ -125,7 +124,7 @@ module Special
       const2=factor_photoelectric * cs20 * gamma1
       const3=factor_localiso
 !
-      if (.not.lstarting) then 
+      if (lrun) then 
         call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
         if (ierr/=0) call fatal_error('initialize_special','lpressuregradient_gas')
         if (lpressuregradient_gas) then 
@@ -211,20 +210,13 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine special_before_boundary(f,lstarting)
+    subroutine special_before_boundary(f)
 !
 !  This subroutine calculates the full potential due to the turbulence.
 !
 !  03-oct-12/wlad: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, optional :: lstarting
-!
-      if (present(lstarting)) then 
-        lstart = lstarting
-      else
-        lstart=.false.
-      endif
 !
       call keep_compiler_quiet(f)
 !

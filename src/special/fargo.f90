@@ -91,7 +91,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -100,12 +100,11 @@ module Special
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      logical :: lstarting
 !
 !  Make it possible to switch the algorithm off while still
 !  having this file compiled, for debug purposes.
 !
-      if ((.not.lstarting).and.(.not.lfargo_advection)) then
+      if (lrun .and. .not. lfargo_advection) then
         if (lroot) then
           print*,""
           print*,"Switch"
@@ -135,8 +134,8 @@ module Special
 !  Not implemented for the energy equation either
 !
       if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
-           call fatal_error("initialize_special","fargo advection not "//&
-           "implemented for the temperature equation")
+          call fatal_error("initialize_special","fargo advection not "//&
+          "implemented for the temperature equation")
 !
 !  Stuff that is only calculated once
 !
@@ -144,7 +143,6 @@ module Special
       nygrid1=1./nygrid
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

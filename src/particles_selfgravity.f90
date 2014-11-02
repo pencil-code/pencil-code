@@ -65,7 +65,7 @@ module Particles_selfgravity
 !
     endsubroutine register_particles_selfgrav
 !***********************************************************************
-    subroutine initialize_particles_selfgrav(f,lstarting)
+    subroutine initialize_particles_selfgrav(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -75,7 +75,6 @@ module Particles_selfgravity
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       integer :: ierr
 !
@@ -124,8 +123,6 @@ module Particles_selfgravity
         endif
         call fatal_error('initialize_particles_selfgrav','')
       endif
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_selfgrav
 !***********************************************************************

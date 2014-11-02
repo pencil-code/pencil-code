@@ -145,18 +145,16 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing(lstarting)
+    subroutine initialize_forcing()
 !
 !  read seed field parameters
-!  nothing done from start.f90 (lstarting=.true.)
+!  nothing needs to be done when called from start.f90
 !
       use Mpicomm, only: stop_it
       use Sub, only: inpui,step_scalar,erfunc
       real :: zstar
 !
-      logical :: lstarting
-!
-      if (lstarting) then
+      if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
       else
 !
@@ -182,7 +180,9 @@ module Forcing
           lwork_ff=.true.
           if (lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
         endif
-      endif
+      endif ! *** Possible bug here: above it says "not needed in start",
+            ! but from here on, the remaining code will be executed.
+            ! *** Possible fix: put a "return" before the else-block above. [PB]
 !
 !  vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.

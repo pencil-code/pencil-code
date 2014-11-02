@@ -72,7 +72,7 @@ module Particles_temperature
 !
     endsubroutine register_particles_TT
 !***********************************************************************
-    subroutine initialize_particles_TT(f,lstarting)
+    subroutine initialize_particles_TT(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -80,9 +80,6 @@ module Particles_temperature
 !  28-aug-14/jonas+nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
-!
-
 !
     end subroutine initialize_particles_TT
 !***********************************************************************

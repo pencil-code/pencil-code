@@ -84,7 +84,7 @@ module Particles_sink
 !
     endsubroutine register_particles_sink
 !***********************************************************************
-    subroutine initialize_particles_sink(f,lstarting)
+    subroutine initialize_particles_sink(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -94,7 +94,6 @@ module Particles_sink
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       if (lsink_radius_dx_unit) then
         sink_radius=sink_birth_radius*dx
@@ -114,7 +113,6 @@ module Particles_sink
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_sink
 !***********************************************************************

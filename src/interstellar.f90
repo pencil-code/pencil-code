@@ -429,7 +429,7 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(f,lstarting)
+    subroutine initialize_interstellar(f)
 !
 !  Perform any post-parameter-read initialization eg. set derived
 !  parameters
@@ -443,7 +443,6 @@ module Interstellar
       use EquationOfState, only: getmu
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       real :: mu
 !
@@ -838,7 +837,7 @@ module Interstellar
 !
       if (heating_select == 'thermal-hs') then
         call thermal_hs(f,zrho)
-        call heat_interstellar(f,heat_z,zrho,lstarting)
+        call heat_interstellar(f,heat_z,zrho)
       endif
 !
 !  Cooling cutoff in shocks
@@ -870,12 +869,12 @@ module Interstellar
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
           t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
 !
-      if (lroot.and.ip<14) then
+      if (lroot .and. (ip<14)) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
       endif
 !
-      if (lroot.and.lstarting) then
+      if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",4A)')  &
             '---it----------t--------itype-iproc----l-----m----n---', &
@@ -1434,7 +1433,7 @@ module Interstellar
 !
     endsubroutine thermal_hs
 !*****************************************************************************
-    subroutine heat_interstellar(f,zheat,zrho,lstarting)
+    subroutine heat_interstellar(f,zheat,zrho)
 !
 !  This routine calculates a vertical profile for uv-heating designed to
 !  satisfy an initial condition with heating and cooling balanced for an
@@ -1456,7 +1455,6 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(in) :: zrho
       real, dimension(mz), intent(out) :: zheat
-      logical, intent(in) :: lstarting
 !
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
@@ -1505,7 +1503,7 @@ module Interstellar
       if (lheatz_min) then
         where (zheat<1E-5*GammaUV) zheat=1E-5*GammaUV
       endif
-      if (lstarting) then
+      if (lstart) then
         do n=n1,n2
           f(:,:,n,icooling)=zheat(n)
           f(:,:,n,icooling2)=zheat(n)-lambda(n)*zrho(n)

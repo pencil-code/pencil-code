@@ -153,7 +153,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density(f,lstarting)
+    subroutine initialize_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -171,7 +171,6 @@ module Density
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: i,ierr
       logical :: lnothing
 !

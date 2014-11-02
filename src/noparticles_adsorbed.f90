@@ -31,7 +31,7 @@ module Particles_adsorbed
 !
     endsubroutine register_particles_ads
 !***********************************************************************
-    subroutine initialize_particles_ads(f,lstarting)
+    subroutine initialize_particles_ads(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -39,10 +39,8 @@ module Particles_adsorbed
 !  28-aug-14/jonas+nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_ads
 !***********************************************************************

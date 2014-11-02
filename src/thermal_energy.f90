@@ -165,7 +165,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -176,7 +176,6 @@ module Energy
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      logical, intent (in) :: lstarting
 !
       real, pointer :: tsg
 !
@@ -184,9 +183,6 @@ module Energy
       integer :: i, j, k
       real :: mu
       real :: c0, c1
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
       call select_eos_variable('eth',ieth)
 !
@@ -247,9 +243,11 @@ module Energy
       if (lstratz) call get_stratz(z, rho0z, dlneth0dz, eth0z)  ! dlnrho0dz = dlneth0dz
 !
       if (llocal_iso) &
-           call fatal_error('initialize_energy', &
-           'llocal_iso switches on the local isothermal approximation. ' // &
-           'Use ENERGY=noenergy in src/Makefile.local')
+          call fatal_error('initialize_energy', &
+          'llocal_iso switches on the local isothermal approximation. ' // &
+          'Use ENERGY=noenergy in src/Makefile.local')
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy
 !***********************************************************************

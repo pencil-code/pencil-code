@@ -140,7 +140,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density(f, lstarting)
+    subroutine initialize_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -151,7 +151,6 @@ module Density
       use SharedVariables, only: put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
 !
       integer :: ierr
 !
@@ -183,8 +182,6 @@ module Density
 !  Get the total mass.
 !
       if (lconserve_mass) mass0 = total_mass(f)
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_density
 !***********************************************************************

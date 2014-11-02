@@ -124,7 +124,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -134,7 +134,6 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       real :: rloop_int,rloop_ext,tmp,drc1
       integer :: ir
 !
@@ -160,7 +159,6 @@ module Special
       if (nzgrid==1) nd=2
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -173,9 +171,7 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      intent(inout) :: f
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !

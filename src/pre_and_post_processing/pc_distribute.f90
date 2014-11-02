@@ -30,7 +30,7 @@ program pc_distribute
   integer :: mvar_in, io_len, pz, pa, alloc_err, lun_global=87
   real :: t_sp   ! t in single precision for backwards compatibility
 !
-  lrun=.true.
+  lstart = .true.
   lmpicomm = .false.
   root = 0
   lroot = .true.
@@ -154,9 +154,7 @@ program pc_distribute
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  lpencil_check_at_work = .true.
-  call initialize_modules (f, LSTARTING=.true.)
-  lpencil_check_at_work = .false.
+  call initialize_modules (f)
 !
 ! Loop over processors
 !
@@ -262,7 +260,7 @@ program pc_distribute
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules (f, .true.)
+  call finalize_modules (f)
 !
 !  Free any allocated memory.
 !

@@ -32,7 +32,7 @@ program pc_collect
   integer(kind=8) :: rec_len, num_rec
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
-  lrun=.true.
+  lstart = .true.
   lmpicomm = .false.
   root = 0
   lroot = .true.
@@ -145,9 +145,7 @@ program pc_collect
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  lpencil_check_at_work = .true.
-  call initialize_modules(f, LSTARTING=.true.)
-  lpencil_check_at_work = .false.
+  call initialize_modules(f)
 !
 ! Loop over processors
 !
@@ -347,7 +345,7 @@ program pc_collect
 !
 !  Give all modules the possibility to exit properly.
 !
-  call finalize_modules (f, .true.)
+  call finalize_modules (f)
 !
 !  Free any allocated memory.
 !

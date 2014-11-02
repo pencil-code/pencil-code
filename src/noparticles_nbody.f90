@@ -31,7 +31,7 @@ module Particles_nbody
 !
     endsubroutine register_particles_nbody
 !***********************************************************************
-    subroutine initialize_particles_nbody(f,lstarting)
+    subroutine initialize_particles_nbody(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -39,10 +39,8 @@ module Particles_nbody
 !  14-jun-06/anders: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************

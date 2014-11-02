@@ -32,17 +32,15 @@ module Detonate
 !
     endsubroutine register_detonate
 !***********************************************************************
-    subroutine initialize_detonate(f, lstarting)
+    subroutine initialize_detonate(f)
 !
 !  Initializes module specific variables for later use.
 !
 !  13-feb-14/ccyang: dummy
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_detonate
 !***********************************************************************

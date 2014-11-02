@@ -344,7 +344,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy(f,lstarting)
+    subroutine initialize_energy(f)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -364,7 +364,6 @@ module Energy
       use Sub, only: blob
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
@@ -996,8 +995,6 @@ module Energy
            call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_energy
 !***********************************************************************

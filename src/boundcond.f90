@@ -6758,7 +6758,7 @@ module Boundcond
 !
     endsubroutine bcz_hydrostatic_temp
 !***********************************************************************
-    subroutine finalize_boundcond(f,lstarting)
+    subroutine finalize_boundcond(f)
 !
 !  Call finalization routines, i.e. freeing allocated memory.
 !
@@ -6767,11 +6767,8 @@ module Boundcond
       use General, only: keep_compiler_quiet
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call bc_aa_pot_field_extrapol(f,"all",.true.)
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine finalize_boundcond
 !***********************************************************************

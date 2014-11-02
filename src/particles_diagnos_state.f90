@@ -69,15 +69,13 @@ module Particles_diagnos_state
 !
     endsubroutine register_pars_diagnos_state
 !***********************************************************************
-    subroutine initialize_pars_diagnos_state(f,lstarting)
+    subroutine initialize_pars_diagnos_state(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       slow_vel_trigger2=slow_vel_trigger**2
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_pars_diagnos_state
 !***********************************************************************

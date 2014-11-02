@@ -593,7 +593,7 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f,lstarting)
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -607,7 +607,6 @@ module Magnetic
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: i,ierr
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -952,7 +951,7 @@ module Magnetic
 !
 !  Initialize individual modules.
 !
-      call initialize_magnetic_mf (f,lstarting)
+      call initialize_magnetic_mf (f)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
@@ -989,8 +988,6 @@ module Magnetic
         endif
         call init_aa(f)
       endif
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
 !***********************************************************************

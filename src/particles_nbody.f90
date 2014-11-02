@@ -129,7 +129,7 @@ module Particles_nbody
 !
     endsubroutine register_particles_nbody
 !***********************************************************************
-    subroutine initialize_particles_nbody(f,lstarting)
+    subroutine initialize_particles_nbody(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -140,7 +140,6 @@ module Particles_nbody
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       integer :: ierr,ks
 !
@@ -157,7 +156,7 @@ module Particles_nbody
 !  Just needs to do this starting, otherwise mspar will be overwritten after
 !  reading the snapshot
 !
-      if (lstarting) then
+      if (lstart) then
         mspar=mspar_orig
       else
         !else read pmass from fsp
@@ -208,7 +207,7 @@ module Particles_nbody
 !
 !  inverse mass
 !
-      if (lstarting) then
+      if (lstart) then
         if (lramp) then
           do ks=1,mspar
             if (ks/=istar) pmass(ks) = epsi
@@ -290,9 +289,8 @@ module Particles_nbody
 !
       if ((.not.linertial_frame).and.((.not.lcartesian_coords).or.mspar>2))  &
            call fatal_error('initialize_particles_nbody','Fixed star only for Cartesian and mspar=2')
-
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************

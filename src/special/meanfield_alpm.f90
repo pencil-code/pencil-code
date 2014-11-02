@@ -98,7 +98,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  Perform any necessary post-parameter read initialization
 !  Dummy routine
@@ -108,11 +108,9 @@ module Special
       use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      logical :: lstarting
       integer :: l,ierr
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
 !  read various profiles needed for mean-field treatment
 !

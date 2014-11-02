@@ -28,15 +28,13 @@ module Particles_viscosity
 !
     endsubroutine register_particles_viscosity
 !***********************************************************************
-    subroutine initialize_particles_viscosity(f,lstarting)
+    subroutine initialize_particles_viscosity(f)
 !
 !  07-oct-08/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_viscosity
 !***********************************************************************

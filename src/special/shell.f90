@@ -31,21 +31,20 @@ module Special
 !
 ! constants
 !
-   complex*16 :: zi=cmplx(0.,1.), zone=cmplx(1.,1.)
+  complex :: zi=cmplx(0.,1.), zone=cmplx(1.,1.)
 !
 ! run parameters
 !
   integer :: nshell=20                                        !number of shells
-  real*8  :: lambda=2.                                        !shell separation
-  real*8  :: visc=1e-7                                        !viscosity
-  real*8  :: f_amp=1.0                                        !forcing amplitude
-  real*8  :: deltG=1e-5                                       !internal time step
-  real*8  :: k_amp=1.                                         !k normalization
-  real*8  :: u_amp=1.                                         !u normalization
+  real    :: lambda=2.                                        !shell separation
+  real    :: visc=1e-7                                        !viscosity
+  real    :: f_amp=1.0                                        !forcing amplitude
+  real    :: deltG=1e-5                                       !internal time step
+  real    :: k_amp=1.                                         !k normalization
+  real    :: u_amp=1.                                         !u normalization
   real    :: nstability1=1e6,nstability2=1e6,nstability3=1e6  !timesteps during start
-  complex*16 :: zforce
+  complex :: zforce
   integer :: stability_output=100000
-  integer :: i_starting_local=0
 !
 ! output parameters
 !
@@ -64,12 +63,12 @@ module Special
 !
 ! aval,bval,cval= k_n*a_n, k_n*b_n/k, k_n*c_n/k^2 from Jensen 1999
 !
-  real*8, allocatable, dimension(:) :: aval, bval, cval       !evolution equation coefficients
-  real*8, allocatable, dimension(:) :: exfac, exrat           !evolution equation variables
-  real*8, allocatable, dimension(:) :: umod, umalt,eddy_time  !velocity magnitude and turnover times
+  real, allocatable, dimension(:) :: aval, bval, cval       !evolution equation coefficients
+  real, allocatable, dimension(:) :: exfac, exrat           !evolution equation variables
+  real, allocatable, dimension(:) :: umod, umalt,eddy_time  !velocity magnitude and turnover times
   real, allocatable, dimension(:) :: uav
-  real*8, allocatable, dimension(:) :: kval, ksquare          !k vectors
-  complex*16, allocatable, dimension(:) :: zu, zgprev         !fourier space velocities
+  real, allocatable, dimension(:) :: kval, ksquare          !k vectors
+  complex, allocatable, dimension(:) :: zu, zgprev         !fourier space velocities
 !
 ! real-space variables
 !
@@ -113,17 +112,15 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
-      Use Mpicomm, only: stop_it, mpifinalize
       use General
       use Sub, only: cross
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting, kdat_exists
       integer :: ns, ierr, nk,nk2, ik, count, cc_count
       character (len=fnlen) :: filename
       real :: kav, twopid
@@ -150,17 +147,17 @@ module Special
         exfac(ns) = dexp(-visc*ksquare(ns)*deltG)
         exrat(ns) = (1.0d0 - exfac(ns))/(visc*ksquare(ns))
 !
-        if (ns .ge. (nshell-1)) then
+        if (ns >= (nshell-1)) then
           aval(ns)=0.
         else
           aval(ns)=kval(ns)
         endif
-        if ((ns .eq. 1) .or. (ns .eq. nshell)) then
+        if ((ns == 1) .or. (ns == nshell)) then
           bval(ns)=0.
         else
           bval(ns)=-kval(ns-1)/2.
         endif
-        if (ns .le. 2) then
+        if (ns <= 2) then
           cval(ns)=0.
         else
           cval(ns)=-kval(ns-2)/2.
@@ -169,93 +166,86 @@ module Special
 !
       zforce= zone*f_amp
 !
-! set minshell2
+      if (minshell2 < 0) minshell2=minshell
 !
-      if (minshell2 .lt. 0) minshell2=minshell
+      if (l_needspecialuu) call initialize_k_vectors()
 !
-!  generate/allocate k/u vectors (if needed, and this is called by start)
+!  read goydata, bcast etc... (if not starting)
 !
-      if (l_needspecialuu) then
-        if ((maxshell .lt. 0) .or. (minshell .lt. 0)) then
-          print*, 'Set maxshell and minshell if you want l_needspecialuu'
-          call stop_it("")
-        else
+      call GOY_read_snapshot(trim(directory_snap)//'/goyvar.dat')
+      call calc_eddy_time()
+      call GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true., &
+          FLIST='goyvarN.list',snapnum=0)
+      call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
+!
+    endsubroutine initialize_special
+!***********************************************************************
+    subroutine initialize_k_vectors
+!
+!  generate/allocate k/u vectors
+!
+      Use Mpicomm, only: parallel_file_exists
+!
+      integer :: ns
+!
+      if ((maxshell < 0) .or. (minshell < 0)) &
+          call fatal_error ('initialize_k_vectors', 'Set maxshell and minshell if you want l_needspecialuu')
+!
+      if (allocated(kvec)) return
 !
 !  prep k/u vectors
 !
-          if (.not. allocated(kvec)) then
-            allocate(kvec(3,nshell,3),uvec(3,nshell,3), vec_split(nshell,3),uvec_split(3,nshell,3))
-            if (.not. l_quenched) allocate(vec_split0(nshell,3))
-            allocate(phase_time(nshell,3))
-          endif
-          if (i_starting_local .eq. 1) then; do ns=maxshell, minshell2
+      allocate(kvec(3,nshell,3),uvec(3,nshell,3), vec_split(nshell,3),uvec_split(3,nshell,3))
+      if (.not. l_quenched) allocate(vec_split0(nshell,3))
+      allocate(phase_time(nshell,3))
 !
-            call get_unit_vector(vec_split(ns,:))
+      do ns=maxshell, minshell2
 !
 !  read in possible vectors
 !
-            call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
-            inquire(FILE=filename, EXIST=kdat_exists)
-            if (.not. kdat_exists) then
-              print*, 'k.dat file ',filename,' does not exist, exiting'
-              call stop_it("")
-            else
-              open(9,file=filename,status='old')
-              read(9,*) nk,kav
-              if (nk>4000) then
-                print*,'too many kvectors (shell.f90)'
-                call mpifinalize
-              endif
-              read(9,*) (kkx(ik),ik=1,nk)
-              read(9,*) (kky(ik),ik=1,nk)
-              read(9,*) (kkz(ik),ik=1,nk)
-              close(9)
-            endif
+        call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
+        if (.not. parallel_file_exists (kdat_exists)) &
+            call fatal_error('initialize_k_vectors', 'k.dat file "'//trim(filename)//'" does not exist')
+!
+        call get_unit_vector(vec_split(ns,:))
+!
+        open(9,file=filename,status='old')
+        read(9,*) nk,kav
+        if (nk>4000) call fatal_error('initialize_k_vectors', 'too many kvectors (shell.f90)')
+        read(9,*) (kkx(ik),ik=1,nk)
+        read(9,*) (kky(ik),ik=1,nk)
+        read(9,*) (kkz(ik),ik=1,nk)
+        close(9)
 !
 !  choose k vectors, u vectors
 !  1st pair
 !
-            call random_number_wrapper(fran)
-            ik=nk*(.9999*fran(1))+1
-            kvec(1,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
-            call get_perp_vector(kvec(1, ns,:), uvec(1, ns,:))
+        call random_number_wrapper(fran)
+        ik=nk*(.9999*fran(1))+1
+        kvec(1,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
+        call get_perp_vector(kvec(1, ns,:), uvec(1, ns,:))
 !
 ! 2nd/3rd pairs
 !
-            do count=2,3
-              nk2=1
-              do
-                call random_number_wrapper(fran)
-                ik=nk*(.9999*fran(1))+1
-                kvec(count,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
-                if (abs(dot_product(uvec(count-1,ns,:),kvec(count,ns,:))) .gt. 0.86) exit
-                if (nk2 .gt. nk) then
-                  call get_perp_vector(kvec(count-1, ns,:), uvec(count-1, ns,:))
-                  nk2=0
-                endif
-                nk2=nk2+1
-              enddo
-              call cross(kvec(count-1,ns,:),kvec(count,ns,:), uvec(count,ns,:))
-              uvec(count,ns,:)=uvec(count,ns,:)/(sum(uvec(count,ns,:)**2))**(0.5)
-            enddo
-          enddo; endif
-        endif
+        do count=2,3
+          nk2=1
+          do
+            call random_number_wrapper(fran)
+            ik=nk*(.9999*fran(1))+1
+            kvec(count,ns,:)=(/kkx(ik),kky(ik),kkz(ik)/)
+            if (abs(dot_product(uvec(count-1,ns,:),kvec(count,ns,:))) > 0.86) exit
+            if (nk2 > nk) then
+              call get_perp_vector(kvec(count-1, ns,:), uvec(count-1, ns,:))
+              nk2=0
+            endif
+            nk2=nk2+1
+          enddo
+          call cross(kvec(count-1,ns,:),kvec(count,ns,:), uvec(count,ns,:))
+          uvec(count,ns,:)=uvec(count,ns,:)/(sum(uvec(count,ns,:)**2))**(0.5)
+        enddo
+      enddo
 !
-      endif
-!
-!  end l_needspecialuu section
-!
-!  read goydata, bcast etc... (if not starting)
-!
-      if (.not. lstarting) then
-        call GOY_read_snapshot(trim(directory_snap)//'/goyvar.dat')
-        call calc_eddy_time()
-        call GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true., &
-            FLIST='goyvarN.list',snapnum=0)
-        call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
-      endif
-!
-    endsubroutine initialize_special
+    endsubroutine initialize_k_vectors
 !***********************************************************************
     subroutine init_special(f)
 !
@@ -265,7 +255,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nshell) :: random_phase_uu_init
-      real*8, dimension(nshell) ::randomd
+      double precision, dimension(nshell) ::randomd
       integer :: ns, count=1
       logical :: count_out
       real :: noneoverthree=-1./3.
@@ -280,9 +270,7 @@ module Special
 !  set up initial velocity (k^-1/3 powerlaw); only on root
 !
       if (lroot) then
-        i_starting_local=1
-        call initialize_special(f,lstarting=.true.)
-        i_starting_local=2
+        call initialize_k_vectors()
         do ns=1,nshell
           umod(ns)=u_amp*kval(ns)**noneoverthree
           zu(ns)=dcmplx(umod(ns)*dcos(randomd(ns)), &
@@ -304,7 +292,7 @@ module Special
 ! stabilize velocities
 !
         count=0
-        do while (count .lt. nstability1)
+        do while (count < nstability1)
           call GOY_advance_timestep()
           count=count+1
         enddo
@@ -312,7 +300,7 @@ module Special
 ! start tracking the velocities to get eddy time estimates
 !
         count=0
-        do while (count .lt. nstability2)
+        do while (count < nstability2)
           call GOY_advance_timestep()
           if (mod(count, stability_output)==0) then
             if (l_altu) call calc_altu()
@@ -324,7 +312,7 @@ module Special
 ! more stabilization, with some data accumulation thrown in
 !
         count=0
-        do while (count .lt. nstability3)
+        do while (count < nstability3)
           call GOY_advance_timestep()
           if (.not. l_quenched) call update_vec(vec_split,sngl(deltG))
           if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
@@ -611,7 +599,7 @@ module Special
 !  Advance the shell model, with dt<deltm
 !  The physical system is advancing dt_
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real,stop_it
+      Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -622,19 +610,17 @@ module Special
 !
 !  Is the physical system advancing too slowly?
 !
-      if ((minshell .ne. -1) .and. (dt_ .gt. eddy_time(minshell))) then
-        print*, 'Shell turn-over times unresolved (dt_>turnover)'
-        print*, 'dt_=', dt_,' tturnover(minshell)=', eddy_time(minshell)
-        call stop_it("")
+      if ((minshell /= -1) .and. (dt_ > eddy_time(minshell))) then
+        print *, 'dt_=', dt_,' tturnover(minshell)=', eddy_time(minshell)
+        call fatal_error ('shell', 'Shell turn-over times unresolved (dt_>turnover)'
       endif
 !
 !  Number of advances to call
 !
       count=floor(dt_/deltG)
-      if (count .le. 5) then
-        print*, 'Shell timestepping too long (decrease deltaG)'
-        print*, 'dt_/deltaG=',count
-        call stop_it("")
+      if (count <= 5) then
+        print *, 'dt_/deltaG=',count
+        call fatal_error ('shell', 'Shell timestepping too long (decrease deltaG)')
       endif
 !
 !  Call advances
@@ -688,7 +674,7 @@ module Special
 !
 !  advances the shell model 1 internal timestep
 !
-      complex*16:: zt1,zt2,zt3,zgt
+      complex :: zt1,zt2,zt3,zgt
       integer :: ns
 !
 !!        SHELL 1
@@ -942,7 +928,7 @@ module Special
           write(UNIT=lun_input), t_goy, sf(1,:), phase(:)
         endif
         close(UNIT=lun_input)
-        if (nord .gt. 1) then
+        if (nord > 1) then
           do iord=2,nord
             call get_structure_filenames(filename,iord)
             open(UNIT=lun_input,FILE=trim(filename),&
@@ -1062,7 +1048,7 @@ module Special
         call get_unit_vector(a)
         vec2=a-dot_product(a,vec1)*vec1/sum(vec1**2)
         norm=sum(vec2**2)
-        if (norm.gt.0.01) exit
+        if (norm > 0.01) exit
       enddo
       vec2=vec2/(norm**(0.5))
 !
@@ -1081,7 +1067,7 @@ module Special
         call random_number_wrapper(vec1)
         vec1=vec1-0.5                        !generate random vector in unit cube
         norm=sum(vec1**2)
-        if ((norm.le.0.25).and.(norm.gt.0.01)) exit !if in half-unit sphere, keep
+        if ((norm <= 0.25).and.(norm > 0.01)) exit !if in half-unit sphere, keep
       enddo                                                  !otherwise try again
       vec1=vec1/(norm**(0.5)) !normalize
 !
@@ -1112,7 +1098,7 @@ module Special
 !
           uv=uv+a
           norm=sum(uv**2);
-          if (norm .gt. 0.01) exit
+          if (norm > 0.01) exit
         enddo
 !
         vec_array(ns,:)=uv/(norm**(0.5))
@@ -1162,7 +1148,7 @@ module Special
       uup=0
       if (present(shell1)) then; nstart=shell1; else; nstart=maxshell; endif
       if (present(shell2)) then; nend=shell2
-      else if (minshell2 .gt. 0) then
+      else if (minshell2 > 0) then
         nend=minshell2
       else
         nend=minshell
@@ -1189,16 +1175,12 @@ module Special
 !
 ! share largest meaningful turnover time with the world if they ask for it
 !
-      Use Mpicomm, only: stop_it
-!
       real :: t_largestturnover
 !
-      if (maxshell.eq. -1) then
-        print*, 'get_largest_turnover called without maxshell set'
-        call stop_it("")
-      else
-        t_largestturnover=maxval(eddy_time(maxshell:minshell))
-      endif
+      if (maxshell == -1) &
+          call fatal_error ('shell', 'get_largest_turnover called without maxshell set')
+!
+      t_largestturnover=maxval(eddy_time(maxshell:minshell))
 !
     endsubroutine get_largest_turnover
 !***********************************************************************

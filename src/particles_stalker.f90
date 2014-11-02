@@ -47,7 +47,7 @@ module Particles_stalker
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_stalker(f,lstarting)
+    subroutine initialize_particles_stalker(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -58,7 +58,6 @@ module Particles_stalker
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Stop if no particles are stalked.
 !
@@ -123,7 +122,7 @@ module Particles_stalker
 !
 !  Read time of next stalking from file.
 !
-      if (.not. lstarting) then
+      if (lrun) then
         open(1,file=trim(datadir)//'/tstalk.dat',form='formatted', &
             status='unknown')
           read(1,*) tstalk, nout

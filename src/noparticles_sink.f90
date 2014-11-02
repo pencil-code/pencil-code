@@ -26,15 +26,13 @@ module Particles_sink
 !
     endsubroutine register_particles_sink
 !***********************************************************************
-    subroutine initialize_particles_sink(f,lstarting)
+    subroutine initialize_particles_sink(f)
 !
 !  07-aug-12/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_sink
 !***********************************************************************

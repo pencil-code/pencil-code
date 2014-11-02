@@ -140,17 +140,14 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  after reading
-!  parameters, but before the time loop.
+!  Called by after reading parameters, but before the time loop.
 !
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Set constants.
 !
@@ -207,23 +204,20 @@ module Special
 !
 !  Some variables need be re-initialized in runtime before the time loop.
 !
-      if (.not.lstarting) call init_special(f,lstarting)
+      if (lrun) call init_special(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine finalize_special(f,lstarting)
+    subroutine finalize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  before exiting.
+!  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
 !  Deallocate the variables needed for the radiative temperature model.
 !
@@ -237,30 +231,20 @@ module Special
 !
     endsubroutine finalize_special
 !***********************************************************************
-    subroutine init_special(f,lstarting_in)
+    subroutine init_special(f)
 !
 !  Initialise special condition; called from start.f90.
 !
 !  06-oct-2003/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical, optional :: lstarting_in
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       integer :: j
-      logical :: lstarting
-!
-      intent(inout) :: f
-
-      if (present(lstarting_in)) then
-        lstarting=lstarting_in
-      else
-        lstarting=.true.
-      endif
 !
 !  Initialize the gas column density.
 !
-      if (lstarting) then
+      if (lstart) then
 !
         do j=1,ninit
 !

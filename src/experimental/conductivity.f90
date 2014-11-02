@@ -66,14 +66,13 @@ module Conductivity
 !
     endsubroutine register_conductivity
 !***********************************************************************
-    subroutine initialize_conductivity(f,lstarting)
+    subroutine initialize_conductivity(f)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  18-jun-13/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      logical, intent(in) :: lstarting
 !
       integer :: i
       logical :: lnothing
@@ -138,7 +137,6 @@ module Conductivity
            "alpha version, lnTT capability not yet implemented")
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_conductivity
 !***********************************************************************

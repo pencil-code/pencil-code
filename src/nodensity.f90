@@ -40,7 +40,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density(f,lstarting)
+    subroutine initialize_density(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -50,7 +50,6 @@ module Density
       use EquationOfState, only: select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
 !  Tell the equation of state that we're here and we don't have a
 !  variable => isochoric (constant density).
@@ -58,7 +57,6 @@ module Density
       call select_eos_variable('lnrho',-1)
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_density
 !***********************************************************************

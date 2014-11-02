@@ -30,7 +30,7 @@ module Particles_number
 !
     endsubroutine register_particles_number
 !***********************************************************************
-    subroutine initialize_particles_number(f,lstarting)
+    subroutine initialize_particles_number(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -38,10 +38,8 @@ module Particles_number
 !  25-nov-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_number
 !***********************************************************************

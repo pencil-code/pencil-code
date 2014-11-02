@@ -183,7 +183,7 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity(lstarting)
+    subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
 !
@@ -191,8 +191,6 @@ module Viscosity
       use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
-!
-      logical, intent(in) :: lstarting
 !
       integer :: i, ierr
 !
@@ -559,8 +557,6 @@ module Viscosity
       if (lroot.and.ip<14) then
         print*,'xmask_vis=',xmask_vis
       endif
-!
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_viscosity
 !***********************************************************************

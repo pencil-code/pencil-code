@@ -177,7 +177,7 @@ module Register
 !
     endsubroutine register_modules
 !***********************************************************************
-    subroutine initialize_modules(f,lstarting)
+    subroutine initialize_modules(f)
 !
 !  Call initialization routines, i.e. initialize physics and technical
 !  modules. This implies some preparation of auxiliary quantities, often
@@ -238,7 +238,6 @@ module Register
       use Grid,             only: initialize_grid
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: ivar
 !
 !  Defaults for some logicals; will later be set to true if needed.
@@ -372,20 +371,20 @@ module Register
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
       call initialize_eos()
-      call initialize_gravity(f,lstarting)
+      call initialize_gravity(f)
       call initialize_selfgravity(f)
       call initialize_poisson()
-      call initialize_density(f,lstarting)
-      call initialize_hydro(f,lstarting)
-      call initialize_forcing(lstarting)
-      call initialize_energy(f,lstarting)
-!      call initialize_conductivity(f,lstarting)
-      call initialize_detonate(f, lstarting)
-      call initialize_magnetic(f,lstarting)
+      call initialize_density(f)
+      call initialize_hydro(f)
+      call initialize_forcing()
+      call initialize_energy(f)
+!      call initialize_conductivity(f)
+      call initialize_detonate(f)
+      call initialize_magnetic(f)
       call initialize_lorenz_gauge(f)
-      call initialize_polymer(f,lstarting)
+      call initialize_polymer(f)
       call initialize_testscalar(f)
-      call initialize_testfield(f,lstarting)
+      call initialize_testfield(f)
       call initialize_testflow(f)
       call initialize_radiation()
       call initialize_pscalar(f)
@@ -397,20 +396,20 @@ module Register
       call initialize_neutralvelocity()
       call initialize_cosmicray(f)
       call initialize_cosmicrayflux(f)
-      call initialize_interstellar(f,lstarting)
+      call initialize_interstellar(f)
       call initialize_shear()
       call initialize_testperturb()
-      call initialize_shock(f,lstarting)
-      call initialize_viscosity(lstarting)
-      call initialize_special(f,lstarting)
+      call initialize_shock(f)
+      call initialize_viscosity()
+      call initialize_special(f)
       call initialize_border_profiles()
       call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
-      call initialize_heatflux(f,lstarting)
+      call initialize_heatflux(f)
 !
     endsubroutine initialize_modules
 !***********************************************************************
-    subroutine finalize_modules(f,lstarting)
+    subroutine finalize_modules(f)
 !
 !  Call finalization routines, i.e. freeing allocated memory.
 !
@@ -423,10 +422,9 @@ module Register
       use Deriv,            only: finalize_deriv
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical :: lstarting
 !
-      call finalize_special(f,lstarting)
-      call finalize_boundcond(f,lstarting)
+      call finalize_special(f)
+      call finalize_boundcond(f)
       call finalize_deriv()
 !
     endsubroutine finalize_modules

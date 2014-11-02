@@ -194,7 +194,7 @@ module Particles_adsorbed
 !
   end subroutine register_dep_ads
 !***********************************************************************
-    subroutine initialize_particles_ads(fp,lstarting)
+    subroutine initialize_particles_ads(fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -203,11 +203,8 @@ module Particles_adsorbed
 !  JONAS: do i need this?
 !
       real, dimension (mpar_loc,mpvar) :: fp
-      logical :: lstarting
 !
-!  
       call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(lstarting)
 !
     end subroutine initialize_particles_ads
 !***********************************************************************

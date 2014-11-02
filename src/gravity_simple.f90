@@ -147,7 +147,7 @@ module Gravity
 !
     endsubroutine register_gravity
 !***********************************************************************
-    subroutine initialize_gravity(f,lstarting)
+    subroutine initialize_gravity(f)
 !
 !  Calculate master pencils for gravity. These are put into gravity pencils
 !  in the subroutine calc_pencils_grav.
@@ -159,7 +159,6 @@ module Gravity
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, pointer :: cs20,mpoly,gamma
-      logical :: lstarting
 !
       real, dimension (mz) :: prof
       real :: ztop
@@ -167,7 +166,7 @@ module Gravity
 !
 !  Sanity check.
 !
-      if (.not. lstarting) then
+      if (lrun) then
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
             gravz_profile == 'zero') then

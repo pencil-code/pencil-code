@@ -100,7 +100,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  Perform any necessary post-parameter read initialization
 !  Dummy routine
@@ -110,7 +110,6 @@ module Special
       use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      logical :: lstarting
       integer :: ierr,l
 !
       call keep_compiler_quiet(f)
@@ -140,7 +139,7 @@ module Special
 !
 !  adopt eta_emf profiles by rescaling etat
 !
-      if (.not.lstarting) then
+      if (lrun) then
         call get_shared_variable('kf_x',kf_x,ierr)
         call get_shared_variable('kf_y',kf_y,ierr)
         call get_shared_variable('kf_z',kf_z,ierr)

@@ -822,7 +822,7 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f,lstarting)
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -841,7 +841,6 @@ module Magnetic
       use Forcing, only: n_forcing_cont
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
       integer :: i,j,ierr
       real :: J_ext2
 !
@@ -1348,7 +1347,7 @@ module Magnetic
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.
 !
-      if (lmagn_mf)  call initialize_magn_mf(f,lstarting)
+      if (lmagn_mf) call initialize_magn_mf(f)
 !
       call put_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,ierr)
       if (ierr/=0) call fatal_error('initialize_magnetic',&
@@ -1383,7 +1382,7 @@ module Magnetic
 !  Break if Galilean-invariant advection (fargo) is used without
 !  the advective gauge (only in run-time)
 !
-      if (.not.lstarting) then
+      if (lrun) then
         if (lfargo_advection.and..not.ladvective_gauge) &
              call fatal_error('initialize_magnetic',&
              'For fargo advection you need the advective gauge. '//&
@@ -1642,7 +1641,7 @@ module Magnetic
             f(l1:l2,m,n,iaz)=-.25*amplaaJ(j)*x2*(1.-.25*x2*RFPradJ12)
           enddo; enddo
 !
-       case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
+        case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
         case ('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
         case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
@@ -4623,7 +4622,7 @@ module Magnetic
           enddo
         enddo
         call finalize_aver(nprocxy,12,aamz)
-
+!
         if (lremove_meanaz) then
           do j=1,3
             f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
@@ -6907,7 +6906,6 @@ module Magnetic
 !
 !  Default to spread gradient over ~5 grid cells,
 !
-
            if (eta_xwidth0 == 0.) eta_xwidth0 = 5.*dx
            if (eta_xwidth1 == 0.) eta_xwidth1 = 5.*dx
 !

@@ -178,14 +178,13 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      logical :: lstarting
       real :: rr, r2, bdry_depth, inner_radius, proximity
       real, dimension(3) :: xxp, dr
       integer :: l
@@ -260,7 +259,6 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

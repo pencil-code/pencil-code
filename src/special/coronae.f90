@@ -164,22 +164,19 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  after reading
-!  parameters, but before the time loop.
+!  Called after reading parameters, but before the time loop.
 !
 !  13-sep-10/bing: coded
 !
       use EquationOfState, only: gamma,get_cp1
-      use Syscalls, only: file_exists
+      use Mpicomm, only: parallel_file_exists
       use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
@@ -224,7 +221,7 @@ module Special
 !
       inquire(IOLENGTH=lend) dummy
 !
-      if (.not.lstarting.and.tau_inv_newton /= 0.) then
+      if (lrun .and. (tau_inv_newton /= 0.)) then
 !
         inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
         if (exists) then
@@ -268,25 +265,23 @@ module Special
 !  Check if I have to load the data for ballegooijen-heating or rapazzo.
 !
       if (any(iheattype=='rappazzo') .or. any(iheattype=='balleg') .or. &
-           any(iheattype=='schrijver04')) then
+          any(iheattype=='schrijver04')) then
 !
-         allocate(ltemp(nxgrid,nygrid,nzgrid))
-         if (lroot) then
-            if (.not. file_exists ('looplength.dat')) call fatal_error ( &
-                    'heating', 'looplength file not found', .true.)
-         endif
-         inquire(IOLENGTH=lend) dummy
-         open(88,file='looplength.dat',recl=lend*nzgrid*nxgrid*nygrid,access='direct',form='unformatted')
-         !recl is nr of bytes of one record, now I hope that lend gives me the nr of bytes.
-         read(88,rec=1) ltemp
-         close (88)
-         Blength=ltemp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny ,ipz*nz+1:(ipz+1)*nz)
-         deallocate(ltemp)
-         print*,'Loaded loop length data for heattype: ',iheattype
+        if (.not. parallel_file_exists ('looplength.dat')) &
+            call fatal_error('heating', 'looplength file not found')
+        allocate(ltemp(nxgrid,nygrid,nzgrid))
+        inquire(IOLENGTH=lend) dummy
+        open(88,file='looplength.dat',recl=lend*nzgrid*nxgrid*nygrid,access='direct',form='unformatted')
+        !recl is nr of bytes of one record, now I hope that lend gives me the nr of bytes.
+        read(88,rec=1) ltemp
+        close (88)
+        Blength=ltemp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny ,ipz*nz+1:(ipz+1)*nz)
+        deallocate(ltemp)
+        print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
 !
-      if (.not.lstarting.and.lgranulation.and.ipz == 0) then
+      if (lrun .and. lgranulation .and. (ipz == 0)) then
         if (lhydro) then
           call set_driver_params()
         else
@@ -4370,20 +4365,17 @@ module Special
 !
    endsubroutine update_aa
 !***********************************************************************
-    subroutine finalize_special(f,lstarting)
+    subroutine finalize_special(f)
 !
-!  Called by start.f90 together with lstarting=.true.   and then
-!  called by run.f90   together with lstarting=.false.  before exiting.
+!  Called right before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
 !
       close (77+iproc)
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine finalize_special
 !***********************************************************************

@@ -164,7 +164,7 @@ module Magnetic_meanfield
 !
     endsubroutine register_magn_mf
 !***********************************************************************
-    subroutine initialize_magn_mf(f,lstarting)
+    subroutine initialize_magn_mf(f)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -177,7 +177,6 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
 !      character (len=linelen) :: dummy
-      logical :: lstarting
       integer :: ierr
 !
 !  check for alpha profile
@@ -429,7 +428,7 @@ module Magnetic_meanfield
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
-      if (.not.lstarting) then
+      if (lrun) then
         call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
         if (ierr/=0) &
             call fatal_error("initialize_special: ", "cannot get lweyl_gauge")
@@ -453,7 +452,7 @@ module Magnetic_meanfield
         call put_shared_variable('etat_z',etat_z,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
             'there was a problem when sharing etat_xyz')
-        call initialize_magn_mf_demfdt(f,lstarting)
+        call initialize_magn_mf_demfdt(f)
       endif
 !
 !  Get B_ext2 from magnetic module.
