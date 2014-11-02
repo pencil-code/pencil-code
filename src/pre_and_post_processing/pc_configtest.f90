@@ -17,13 +17,13 @@ program pc_configtest
   use Register
   use Snapshot
   use Sub
-  use Syscalls, only: sizeof_real
+  use Syscalls, only: sizeof_real, file_exists
 !
   implicit none
 !
   real, dimension (mx,my,mz,mfarray) :: f
 !
-  lrun=.true.
+  lstart = .true.
   lmpicomm = .false.
   root = 0
   lroot = .true.
@@ -51,11 +51,17 @@ program pc_configtest
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
+  write (*,*) '>>> TESTING START.IN <<<'
   call read_startpars()
 !
 !  Read parameters and output parameter list.
 !
+  write (*,*) '>>> TESTING RUN.IN <<<'
+  lstart = .false.
+  lrun = .true.
   call read_runpars()
+  lrun = .false.
+  lstart = .true.
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in read_startpars
@@ -108,8 +114,8 @@ program pc_configtest
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  call initialize_modules(f, lstarting=.false.)
-  call particles_initialize_modules(f, lstarting=.false.)
+  call initialize_modules(f)
+  call particles_initialize_modules(f)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -137,41 +143,43 @@ program pc_configtest
 !
 !  Read coordinates.
 !
-  if ((ip<=6) .and. lroot) print*, 'reading grid coordinates'
-  call rgrid ('grid.dat')
+  if (lrun) then
+    if ((ip<=6) .and. lroot) print*, 'reading grid coordinates'
+    call rgrid ('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for
 ! backward compatibility.
 !
-  if (all(lequidist)) then
-    Lxyz_loc(1) = Lxyz(1) / nprocx
-    Lxyz_loc(2) = Lxyz(2) / nprocy
-    Lxyz_loc(3) = Lxyz(3) / nprocz
-    xyz0_loc(1) = xyz0(1) + ipx*Lxyz_loc(1)
-    xyz0_loc(2) = xyz0(2) + ipy*Lxyz_loc(2)
-    xyz0_loc(3) = xyz0(3) + ipz*Lxyz_loc(3)
-    xyz1_loc(1) = xyz0_loc(1) + Lxyz_loc(1)
-    xyz1_loc(2) = xyz0_loc(2) + Lxyz_loc(2)
-    xyz1_loc(3) = xyz0_loc(3) + Lxyz_loc(3)
-  else
-    xyz0_loc(1) = x(l1)
-    xyz0_loc(2) = y(m1)
-    xyz0_loc(3) = z(n1)
-    xyz1_loc(1) = x(l2)
-    xyz1_loc(2) = y(m2)
-    xyz1_loc(3) = z(n2)
-    Lxyz_loc(1) = xyz1_loc(1) - xyz0_loc(1)
-    Lxyz_loc(2) = xyz1_loc(2) - xyz0_loc(3)
-    Lxyz_loc(3) = xyz1_loc(3) - xyz0_loc(3)
-  endif
+    if (all(lequidist)) then
+      Lxyz_loc(1) = Lxyz(1) / nprocx
+      Lxyz_loc(2) = Lxyz(2) / nprocy
+      Lxyz_loc(3) = Lxyz(3) / nprocz
+      xyz0_loc(1) = xyz0(1) + ipx*Lxyz_loc(1)
+      xyz0_loc(2) = xyz0(2) + ipy*Lxyz_loc(2)
+      xyz0_loc(3) = xyz0(3) + ipz*Lxyz_loc(3)
+      xyz1_loc(1) = xyz0_loc(1) + Lxyz_loc(1)
+      xyz1_loc(2) = xyz0_loc(2) + Lxyz_loc(2)
+      xyz1_loc(3) = xyz0_loc(3) + Lxyz_loc(3)
+    else
+      xyz0_loc(1) = x(l1)
+      xyz0_loc(2) = y(m1)
+      xyz0_loc(3) = z(n1)
+      xyz1_loc(1) = x(l2)
+      xyz1_loc(2) = y(m2)
+      xyz1_loc(3) = z(n2)
+      Lxyz_loc(1) = xyz1_loc(1) - xyz0_loc(1)
+      Lxyz_loc(2) = xyz1_loc(2) - xyz0_loc(3)
+      Lxyz_loc(3) = xyz1_loc(3) - xyz0_loc(3)
+    endif
 !
 !  Need to re-initialize the local grid for each processor.
 !
-  call initialize_grid()
+    call initialize_grid()
+  endif
 !
 !  Give all modules the possibility to exit properly.
 !
-  call finalize_modules (f, .false.)
+  call finalize_modules (f)
 !
 !  Free any allocated memory.
 !
