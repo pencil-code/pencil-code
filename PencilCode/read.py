@@ -116,12 +116,14 @@ def dimensions(datadir='./data'):
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 
 #=======================================================================
-def grid(datadir='./data'):
+def grid(datadir='./data', trim=False):
     """Returns the coordinates and their derivatives of the grid.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        trim
+            Whether or not to trim the ghost cells.
     """
     # Chao-Chin Yang, 2014-11-02
     from collections import namedtuple
@@ -178,6 +180,17 @@ def grid(datadir='./data'):
         Lz = assign1(Lz, grid.Lz, 'Lz', proc)
         dz_1 = assign(n1, n2, dz_1, grid.dz_1, 'dz_1', proc)
         dz_tilde = assign(n1, n2, dz_tilde, grid.dz_tilde, 'dz_tilde', proc)
+    # Trim the ghost cells if requested.
+    if trim:
+        x = x[dim.nghost:-dim.nghost]
+        y = y[dim.nghost:-dim.nghost]
+        z = z[dim.nghost:-dim.nghost]
+        dx_1 = dx_1[dim.nghost:-dim.nghost]
+        dy_1 = dy_1[dim.nghost:-dim.nghost]
+        dz_1 = dz_1[dim.nghost:-dim.nghost]
+        dx_tilde = dx_tilde[dim.nghost:-dim.nghost]
+        dy_tilde = dy_tilde[dim.nghost:-dim.nghost]
+        dz_tilde = dz_tilde[dim.nghost:-dim.nghost]
     # Define and return a named tuple.
     Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
                                'dx_tilde', 'dy_tilde', 'dz_tilde'])
