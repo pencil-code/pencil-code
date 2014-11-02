@@ -65,7 +65,7 @@ semiauto-conf:
 	$(MAKE) -s cleanall
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
-# Compile (only on request) tools for collecting, downscaling, and distributing data cubes
+# Compile tools for collecting, downscaling, and distributing data cubes
 tools: default
 
 pc_collect:
