@@ -179,6 +179,8 @@ module Particles_surfspec
 !
     call create_dngas()
 !
+    deallocate(part)
+!
     end subroutine register_indep_psurfspec
 !***********************************************************************
     subroutine register_dep_psurfspec()
@@ -456,6 +458,13 @@ module Particles_surfspec
          jH2 = index_chem
       else    
          if(inuH2 > 0) call fatal_error('create_jmap','no H2 found')
+      endif
+!
+      call find_species_index('O2',index_glob,index_chem,found_species)
+      if (found_species) then
+         jO2 = index_chem
+      else    
+         if(inuO2 > 0) call fatal_error('create_jmap','no O2 found')
       endif
 !!$!
 !!$      call find_species_index('H',index_glob,index_chem,found_species)

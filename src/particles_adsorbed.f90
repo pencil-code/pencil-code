@@ -7,9 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 5
 ! MAUX CONTRIBUTION 0
-! NADSSPEC CONTRIBUTION 5
 !
 ! CPARAM logical, parameter :: lparticles_adsorbed=.true.
 !
@@ -176,13 +174,11 @@ module Particles_adsorbed
     aac=0
     if (imuadsCO>0) aac(imuadsCO)=1
 !
-    
-    call create_stoc(part,adsorbed_species_names,mu,.true.,N_adsorbed_species,mu_power)
+    call create_stoc(part,adsorbed_species_names,mu,.true.,&
+        N_adsorbed_species,mu_power)
     call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
         N_adsorbed_species,dummy)
-    call create_occupancy(adsorbed_species_names,site_occupancy)
-!
-    deallocate(part)
+    call create_occupancy(adsorbed_species_names,site_occupancy)   
 !
     end subroutine register_indep_ads
 !***********************************************************************
@@ -348,7 +344,6 @@ subroutine pencil_criteria_par_ads()
 !
 !  Deallocate arrays
 !
-      deallocate(mod_surf_area)
       deallocate(R_c_hat)
 !
     endsubroutine dpads_dt_pencil

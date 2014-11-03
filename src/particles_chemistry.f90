@@ -76,7 +76,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: reaction_order
   real, dimension(:), allocatable :: effectiveness_factor_old
   real, dimension(:), allocatable :: B_k, ER_k, ac, RR_method
-  real, dimension(:), allocatable :: sigma_k,rho_p
+  real, dimension(:), allocatable :: sigma_k
   real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(:,:), allocatable :: mu, mu_prime
   real, dimension(:,:), allocatable :: nu, nu_prime
@@ -122,13 +122,13 @@ module Particles_chemistry
   real :: eta_int=0.,delta_rho_surface=0.
   real :: St_first, A_p_first, rho_p_first
   real :: diffusivity = 0.0
-  real :: total_carbon_sites=1.08e-7
+  real :: total_carbon_sites=1.08e-7 ! [kmol/m^2]
   real :: chemplaceholder=0.0
-  real :: porosity=2.
   real :: tortuosity=3.
   real :: Init_density_part=1.300 ! g/cm^3
-  real :: structural_parameter=0.05
-  real :: startup_time=1e-6
+  real :: true_density_carbon=1.800 ! g/cm^3
+  real :: structural_parameter=8. ! [-]
+  real :: startup_time=0.
   real :: startup_quench
 !
 !  JONAS: implement something to calculate molar_mass of 
@@ -149,7 +149,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: init_mass,rho_p_init
   real, dimension(:,:), allocatable :: mdot_ck,RR_hat
   real, dimension(:,:), allocatable :: qk_reac
-  real, dimension(:), allocatable :: St
+  real, dimension(:), allocatable :: St,rho_p,porosity
   real, dimension(:), allocatable :: A_p_init
   real, dimension(:), allocatable :: R_c_hat
   real, dimension(:,:), allocatable :: heating_k,entropy_k
@@ -191,11 +191,11 @@ module Particles_chemistry
        reaction_enhancement, &
        total_carbon_sites, &
        diffusivity,&
-       porosity,&
        tortuosity,&
        structural_parameter, &
        Sgc_init, &
        lpchem_debug, &
+       true_density_carbon, &
        startup_time
 !
   namelist /particles_chem_run_pars/ &
@@ -1100,16 +1100,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_entropy_of_reaction
 !**********************************************************************
-  subroutine get_reverse_K_k(l,rate,fp,p,ineargrid)
+  subroutine get_reverse_K_k(l,fp)
 !
     integer :: l,k,k1,k2
-    integer :: ix0
     real, dimension(:), allocatable :: k_p,k_c
-    real, dimension(:), allocatable :: denominator, exponent
+    real, dimension(:), allocatable :: denominator, exponent_
     real, dimension(:,:) :: fp
-    real, dimension(:,:) :: rate
-    type (pencil_case) :: p
-    integer, dimension(:,:) :: ineargrid
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
@@ -1117,21 +1113,20 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     allocate(k_p(k1:k2))
     allocate(k_c(k1:k2))
     allocate(denominator(k1:k2))
-    allocate(exponent(k1:k2))
+    allocate(exponent_(k1:k2))
 !
     do k=k1,k2
-       ix0 = ineargrid(k,1)
        denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-       exponent(k) = denominator(k)/(gas_constant*fp(k,iTp))
-       k_p(k) = exp(-exponent(k))
+       exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
+       k_p(k) = exp(-exponent_(k))
        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/interp_pp(k))**(dngas(l-1)))
-       rate(k,l) = (rate(k,l-1) / k_c(k))
+       K_k(k,l) = (K_k(k,l-1) / k_c(k))
     enddo
 !
     deallocate(k_p)
     deallocate(k_c)
     deallocate(denominator)
-    deallocate(exponent)
+    deallocate(exponent_)
 !
   end subroutine get_reverse_K_k
 !**********************************************************************
@@ -1403,7 +1398,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 ! Find pore radius
 !
     r_f=2.
-    pore_radius(:)=2*r_f*porosity*volume(:)/St(k1:k2)
+    pore_radius(:)=2*r_f*porosity(:)*volume(:)/St(k1:k2)
 !
 !  Find effective diffusion coefficient (based on bulk and Knudsen diffusion)
 !
@@ -1412,7 +1407,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do k=k1,k2
     do i=1,N_surface_reactants
        tmp3(k)=8*gas_constant*fp(k,iTp)/(pi*molar_mass(jmap(i)))
-       Knudsen(k)=2*pore_radius(k)*porosity*sqrt(tmp3(k))/(3*tortuosity)
+       Knudsen(k)=2*pore_radius(k)*porosity(k)*sqrt(tmp3(k))/(3*tortuosity)
        tmp1(i)=1./diff_coeff_reactants(i)
        tmp2(k)=1./Knudsen(k)
        D_eff(k,i)=1./(tmp1(i)+tmp2(k))
@@ -1711,7 +1706,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     call calc_K_k(f,fp,p,ineargrid)
     call calc_Cg(p,ineargrid)
-    call calc_Cs(fp)
+    if (N_adsorbed_species>1) call calc_Cs(fp)
     call calc_A_p(fp)
     call calc_mass_trans_coeff(f,fp,p,ineargrid)
     call calc_x_surf(f,fp,ineargrid)
@@ -1733,12 +1728,15 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     allocate(rho_p(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for rho_p')
+    allocate(porosity(k1:k2) ,STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
+        'Could not allocate memory for porosity')
     allocate(St(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for St')
     allocate(mod_surf_area(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
-        'Could not allocate memory for St')
+        'Could not allocate memory for mod_surf_area')
 !
     allocate(conversion(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
@@ -1818,7 +1816,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  06-oct-14/jonas:coded
 !
-    if (lparticles_chemistry) then
     deallocate(mod_surf_area)
     deallocate(surface_species_enthalpy)
     deallocate(surface_species_entropy)
@@ -1837,13 +1834,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(R_j_hat)
     deallocate(Cs)
     deallocate(rho_p)
+    deallocate(porosity)
     deallocate(St)
     deallocate(K_k)
     deallocate(mass_trans_coeff_species)
     deallocate(Cg)
     deallocate(A_p)   
     deallocate(x_surf)
-    endif
 !
   end subroutine cleanup_chemistry_pencils
 !***************************************************
@@ -1917,6 +1914,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
       do k=k1,k2
          rho_p(k) = fp(k,imp) / (4./3. *pi * fp(k,iap)**3)
+         porosity(k)=1-rho_p(k)/true_density_carbon
       enddo
 !
     end subroutine calc_rho_p
@@ -2059,7 +2057,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
               K_k(k,l)=int_k
            endif
               if (reaction_direction(l) == 'rev') then
-                 call get_reverse_K_k(l,K_k,fp,p,ineargrid)
+                 call get_reverse_K_k(l,fp)
               else
               end if
         enddo
@@ -2142,7 +2140,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
          iy0 = ineargrid(k,2)
          iz0 = ineargrid(k,3)
          do i=1,N_surface_species
-            diff_coeff_species(k,i) = p%Diff_penc_add(ix0,jmap(i))
+            diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
          enddo
       enddo
 !
