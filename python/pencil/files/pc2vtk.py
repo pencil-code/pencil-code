@@ -87,9 +87,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     dimy = len(grid.y)
     dimz = len(grid.z)
     dim = dimx * dimy * dimz
-    dx = (np.max(grid.x) - np.min(grid.x))/(dimx)
-    dy = (np.max(grid.y) - np.min(grid.y))/(dimy)
-    dz = (np.max(grid.z) - np.min(grid.z))/(dimz)
+    dx = (np.max(grid.x) - np.min(grid.x))/(dimx-1)
+    dy = (np.max(grid.y) - np.min(grid.y))/(dimy-1)
+    dz = (np.max(grid.z) - np.min(grid.z))/(dimz-1)
     
     fd = open(destination + '.vtk', 'wb')
     fd.write('# vtk DataFile Version 2.0\n')
@@ -388,9 +388,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         dimy = len(grid.y)
         dimz = len(grid.z)
         dim = dimx * dimy * dimz
-        dx = (np.max(grid.x) - np.min(grid.x))/(dimx)
-        dy = (np.max(grid.y) - np.min(grid.y))/(dimy)
-        dz = (np.max(grid.z) - np.min(grid.z))/(dimz)
+        dx = (np.max(grid.x) - np.min(grid.x))/(dimx-1)
+        dy = (np.max(grid.y) - np.min(grid.y))/(dimy-1)
+        dz = (np.max(grid.z) - np.min(grid.z))/(dimz-1)
         
         #fd = open(destination + "{0:1.0f}".format(var.t*1e5) + '.vtk', 'wb')
         fd = open(destination + str(i) + '.vtk', 'wb')
