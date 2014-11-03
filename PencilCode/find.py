@@ -59,21 +59,20 @@ def stratz(datadir='./data'):
         datadir
             Name of the data directory.
     """
-    # Chao-Chin Yang, 2014-10-08
+    # Chao-Chin Yang, 2014-11-03
     from . import read
     import numpy as np
     # Read the dimensions and the parameters.
     dim = read.dimensions(datadir=datadir)
     par = read.parameters(datadir=datadir)
-    # Construct the z coordinates.
-    z = par.xyz0[2] + par.lxyz[2] / dim.nzgrid * (np.arange(dim.nzgrid) + 0.5)
+    grid = read.grid(datadir=datadir)
     # Find the density stratification.
     if par.gztype in {'zero', 'none'}:
         rho = par.rho0 * np.ones(dim.nzgrid,)
     elif par.gztype == 'linear':
         h = par.cs0 / par.gz_coeff
-        rho = par.rho0 * np.exp(-0.5 * (z / h)**2)
-    return z, rho
+        rho = par.rho0 * np.exp(-0.5 * (grid.z / h)**2)
+    return grid.z, rho
 #=======================================================================
 def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     """Finds the time average of each given diagnostic variable.
