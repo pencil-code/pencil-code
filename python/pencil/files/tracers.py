@@ -151,13 +151,13 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
 
 # keep this for the time being
-def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
+def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
     """
     Reads the fixed points files.
 
     call signature::
     
-      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/')
+      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
     
     Reads from the fixed points files. Returns the fixed points positions.
     
@@ -168,6 +168,10 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
         
       *fileName*:
         Name of the fixed points file.
+        
+      *hm*:
+        Header multiplication factor in case Fortran's binary data writes extra large
+        header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
     """
     
 
@@ -195,15 +199,15 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
     # read the data from all cores
     for i in range(n_proc):
         fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
-        tmp = fixed_file.read(4)
+        tmp = fixed_file.read(4*hm)
         
         data.append(data_struct())
         eof = 0
         if tmp == '':
             eof = 1
         while (eof == 0):
-            data[i].t.append(struct.unpack("<ff", fixed_file.read(8))[0])
-            n_fixed_core = int(struct.unpack("<fff", fixed_file.read(12))[1])
+            data[i].t.append(struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0])
+            n_fixed_core = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+hm/2])
             n_fixed += n_fixed_core
             data[-1].fidx.append(n_fixed_core)
 
@@ -211,14 +215,14 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
             y = list(np.zeros(n_fixed_core))
             q = list(np.zeros(n_fixed_core))
             for j in range(n_fixed_core):
-                x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
+                x[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[-1]
                 y[j] = struct.unpack("<f", fixed_file.read(4))[0]
-                q[j] = struct.unpack("<ff", fixed_file.read(8))[0]
+                q[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0]
             data[i].x.append(x)
             data[i].y.append(y)
             data[i].q.append(q)
  
-            tmp = fixed_file.read(4)
+            tmp = fixed_file.read(4*hm)
             if tmp == '':
                 eof = 1
 
