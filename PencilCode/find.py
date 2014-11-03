@@ -49,7 +49,7 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
-def stratz(datadir='./data'):
+def stratz(datadir='./data', trim=False):
     """Finds the vertical background stratification.
 
     Returned Values:
@@ -58,6 +58,8 @@ def stratz(datadir='./data'):
     Keyword Arguments:
         datadir
             Name of the data directory.
+        trim
+            Whether or not to trim ghost cells.
     """
     # Chao-Chin Yang, 2014-11-03
     from . import read
@@ -65,14 +67,16 @@ def stratz(datadir='./data'):
     # Read the dimensions and the parameters.
     dim = read.dimensions(datadir=datadir)
     par = read.parameters(datadir=datadir)
-    grid = read.grid(datadir=datadir)
+    z = read.grid(datadir=datadir).z
+    if trim:
+        z = z[dim.nghost:-dim.nghost]
     # Find the density stratification.
     if par.gztype in {'zero', 'none'}:
         rho = par.rho0 * np.ones(dim.nzgrid,)
     elif par.gztype == 'linear':
         h = par.cs0 / par.gz_coeff
-        rho = par.rho0 * np.exp(-0.5 * (grid.z / h)**2)
-    return grid.z, rho
+        rho = par.rho0 * np.exp(-0.5 * (z / h)**2)
+    return z, rho
 #=======================================================================
 def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     """Finds the time average of each given diagnostic variable.
