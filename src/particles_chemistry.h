@@ -5,11 +5,11 @@
   public :: get_St
   public :: get_conversion
   public :: get_R_c_hat
-  public :: get_mod_surf_area
+!  public :: get_mod_surf_area
   public :: get_pchem_info
   public :: get_reactants
   public :: get_part
-  public :: get_total_carbon_sites
+!  public :: get_total_carbon_sites
   public :: get_RR_hat
   public :: get_ac
 

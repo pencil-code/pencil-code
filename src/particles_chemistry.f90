@@ -28,6 +28,7 @@ module Particles_chemistry
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
+  use Particles_mpicomm
   use Particles_sub
   use Particles_radius
   use Particles_map
@@ -63,6 +64,10 @@ module Particles_chemistry
   public :: lboundary_explicit
   public :: linfinite_diffusion
   public :: gas_constant
+  public :: total_carbon_sites
+  public :: R_c_hat
+  public :: mod_surf_area
+  public :: K_k
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -285,9 +290,6 @@ module Particles_chemistry
 !
     integer :: stat
 !
-    allocate(k_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for k_k')
     allocate(A_p_init(mpar_loc)   ,STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for A_p_init')
@@ -1019,7 +1021,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     writeformat = '(  A10,A3)'
     write(writeformat(2:3),'(I2)') n_max_elements
     open(20, file=inputfile,iostat=stat)
-    open(29, file='mech_outputfile.dat',iostat=stat)
 !
     if(stat==0) then
        if(talk=='verbose') write(*,*) 'Opened mechanics file'
@@ -1043,13 +1044,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        call remove_save_powers(target_list)
 !
        if(talk=='verbose') then
+          open(29, file='mech_outputfile.dat',iostat=stat)
           do i=1,N_surface_reactions
              write(*,writeformat) target_list(:,i),reaction_direction(i)
              write(29,writeformat) target_list(:,i),reaction_direction(i)
           enddo
+          close(29)
        else
        end if
-       close(29)
 510 format (A150)
     else
        write(*,*) 'Could not open mechanics file'
@@ -1098,13 +1100,16 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_entropy_of_reaction
 !**********************************************************************
-  subroutine get_reverse_K_k(l,K_k,fp)
+  subroutine get_reverse_K_k(l,rate,fp,p,ineargrid)
 !
     integer :: l,k,k1,k2
+    integer :: ix0
     real, dimension(:), allocatable :: k_p,k_c
     real, dimension(:), allocatable :: denominator, exponent
     real, dimension(:,:) :: fp
-    real, dimension(:,:) :: K_k
+    real, dimension(:,:) :: rate
+    type (pencil_case) :: p
+    integer, dimension(:,:) :: ineargrid
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
@@ -1115,11 +1120,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     allocate(exponent(k1:k2))
 !
     do k=k1,k2
+       ix0 = ineargrid(k,1)
        denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
        exponent(k) = denominator(k)/(gas_constant*fp(k,iTp))
        k_p(k) = exp(-exponent(k))
        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/interp_pp(k))**(dngas(l-1)))
-       K_k(k,l) = (K_k(k,l-1) / k_c(k))
+       rate(k,l) = (rate(k,l-1) / k_c(k))
     enddo
 !
     deallocate(k_p)
@@ -1158,14 +1164,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine get_R_c_hat
 !***********************************************************************
-  subroutine get_mod_surf_area(var,start,end)
-!
-    real, dimension(:) :: var
-    integer :: start, end
-!
-    var = mod_surf_area(start:end)
-!
-  end subroutine get_mod_surf_area
+!!$  subroutine get_mod_surf_area(var,start,end)
+!!$!
+!!$    real, dimension(:) :: var
+!!$    integer :: start, end
+!!$!
+!!$    var = mod_surf_area(start:end)
+!!$!
+!!$  end subroutine get_mod_surf_area
 !***********************************************************************
   subroutine get_conversion(var,start,end)
 !
@@ -1230,6 +1236,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        adsorbed: if (ladsorbed_species) then
        do i=1,N_adsorbed_species
 !  where is Cs?
+!  Cs is fp(k,iads-1+i)*total_carbon_sites
           if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(Cs(k,i))**mu(i,j)
        enddo
        else adsorbed
@@ -1336,13 +1343,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine get_reactants
 !**********************************************************************
-  subroutine get_total_carbon_sites(var)
-!
-    real :: var
-!
-    var = total_carbon_sites
-!
-  end subroutine get_total_carbon_sites
+!!$  subroutine get_total_carbon_sites(var)
+!!$!
+!!$    real :: var
+!!$!
+!!$    var = total_carbon_sites
+!!$!
+!!$  end subroutine get_total_carbon_sites
 !**********************************************************************
   subroutine calc_effectiveness_factor(var,fp)
 !
@@ -1684,7 +1691,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     real, dimension(mx,my,mz,mfarray) :: f
     integer, dimension(mpar_loc,3) :: ineargrid
     type (pencil_case) :: p
-    integer :: stat
 !
 !  Routine to calcute quantities used for reactive particles
 !
@@ -1703,8 +1709,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     call calc_enthalpy_of_reaction()
     call calc_entropy_of_reaction()
 !
-    call calc_K_k(f,fp)
-    call calc_Cg(f,fp)
+    call calc_K_k(f,fp,p,ineargrid)
+    call calc_Cg(p,ineargrid)
+    call calc_Cs(fp)
     call calc_A_p(fp)
     call calc_mass_trans_coeff(f,fp,p,ineargrid)
     call calc_x_surf(f,fp,ineargrid)
@@ -1713,10 +1720,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     call calc_R_c_hat()
 !
   end subroutine calc_pchemistry_pencils
-!***************************************************
+!********************************************************************
   subroutine allocate_variable_pencils()
 !
-!
+!  allocate variables used in the pencil variable calculation
 !
     integer :: k1,k2,stat
 !
@@ -1745,20 +1752,26 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
          ,STAT=stat)
     allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species) &
          ,STAT=stat)    
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
          'Could not allocate memory for adsorbed_species_entropy')
     allocate(adsorbed_species_enthalpy(k1:k2,N_adsorbed_species) &
          ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
          'Could not allocate memory for adsorbed_species_enthalpy')
 !
     allocate(thiele(k1:k2,N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for thiele')
 !
-    allocate(effectiveness_factor(k1:k2))
-    allocate(effectiveness_factor_species(k1:k2,N_surface_reactants))
-    allocate(effectiveness_factor_reaction(k1:k2,N_surface_reactions))
+    allocate(effectiveness_factor(k1:k2),STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
+        'Could not allocate memory for thiele')
+    allocate(effectiveness_factor_species(k1:k2,N_surface_reactants),STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
+        'Could not allocate memory for effectiveness_factor_species')
+    allocate(effectiveness_factor_reaction(k1:k2,N_surface_reactions),STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
+        'Could not allocate memory for effectiveness_factor_reaction')
 !
     allocate(ndot(k1:k2,N_surface_species)   ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
@@ -2000,13 +2013,15 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine print_debug_info
 !*******************************************************************
-  subroutine calc_K_k(f,fp)
+  subroutine calc_K_k(f,fp,p,ineargrid)
 !
 !  27-10-2014/jonas:coded
 !  calculation of K_k from the Arrhenius factors
 !
     real, dimension(:,:,:,:) :: f
     real, dimension(:,:) :: fp
+    type (pencil_case) :: p
+    integer, dimension(:,:) :: ineargrid
     integer :: k,k1,k2,i,j,l
     integer :: N_iter = 20
     real :: int_k, gg_old,gg,ff,energy,dE,delta_E
@@ -2044,7 +2059,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
               K_k(k,l)=int_k
            endif
               if (reaction_direction(l) == 'rev') then
-                 call get_reverse_K_k(l,K_k,fp)
+                 call get_reverse_K_k(l,K_k,fp,p,ineargrid)
               else
               end if
         enddo
@@ -2085,18 +2100,20 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_x_surf
 !*******************************************************************
-  subroutine calc_Cg(f,fp)
+  subroutine calc_Cg(p,ineargrid)
 !
 !  Gas concentration in the cell of the particle
 !
-   real, dimension(:,:,:,:) :: f
-   real, dimension(:,:) :: fp
    integer :: k,k1,k2
+   integer :: ix0
+   type (pencil_case) :: p
+   integer, dimension(:,:) :: ineargrid
 !
    k1 = k1_imn(imn)
    k2 = k2_imn(imn)
 !
    do k=k1,k2
+      ix0=ineargrid(k,1)
          Cg(k) = interp_pp(k)/(gas_constant*interp_TT(k))
    enddo
 !
@@ -2153,5 +2170,26 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     A_p(k1:k2) = 4 * pi * fp(k1:k2,iap) * fp(k1:k2,iap)    
 !
   end subroutine calc_A_p
+!*************************************************************************
+  subroutine calc_Cs(fp)
+!
+!  calculate site concentration
+!
+    real, dimension(:,:) :: fp
+    integer :: k,k1,k2,i
+!
+    k1 = k1_imn(imn)
+    k2 = k2_imn(imn)
+!
+    do k=k1,k2
+       do i=1,N_adsorbed_species-1
+          Cs(k,i) = fp(k,iads+i-1)
+       enddo
+       Cs(k,N_adsorbed_species) = 1 - sum(Cs(k,1:N_adsorbed_species-1))
+    enddo
+!
+    Cs = Cs * total_carbon_sites
+!
+  end subroutine calc_Cs
 !*************************************************************************
   end module Particles_chemistry

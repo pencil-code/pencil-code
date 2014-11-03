@@ -68,7 +68,7 @@ module EquationOfState
   real :: width_eos_prof=0.2
   real :: sigmaSBt=1.0
   integer :: isothtop=0
-  integer :: imass=0
+  integer :: imass=1
   integer :: isothmid=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.

@@ -303,9 +303,7 @@ subroutine pencil_criteria_par_ads()
       real, dimension (mx,my,my,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (:), allocatable :: mod_surf_area,R_c_hat
       type (pencil_case) :: p
-      real :: total_carbon_sites
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: n_ads,stat,k1,k2,k
 !
@@ -322,24 +320,23 @@ subroutine pencil_criteria_par_ads()
 !
 !  Allocate some arrays for use in dfp
 !
-      allocate(mod_surf_area(k1:k2),STAT=stat)
-      if (stat>0) call fatal_error('dpads_dt_pencil',&
-           'Could not allocate memory for mod_surf_area')
-      allocate(R_c_hat(k1:k2),STAT=stat)
-      if (stat>0) call fatal_error('dpads_dt_pencil',&
-           'Could not allocate memory for R_c_hat')
+!!$      allocate(mod_surf_area(k1:k2),STAT=stat)
+!!$      if (stat>0) call fatal_error('dpads_dt_pencil',&
+!!$           'Could not allocate memory for mod_surf_area')
+!!$      allocate(R_c_hat(k1:k2),STAT=stat)
+!!$      if (stat>0) call fatal_error('dpads_dt_pencil',&
+!!$           'Could not allocate memory for R_c_hat')
 !
 !  Fill these arrays with values from particles_chemistry
 !
-      call get_mod_surf_area(mod_surf_area,k1,k2)
-      call get_R_c_hat(R_c_hat,k1,k2)
-      call get_total_carbon_sites(total_carbon_sites)
+!!$      call get_mod_surf_area(mod_surf_area,k1,k2)
+!!$      call get_R_c_hat(R_c_hat,k1,k2)
 !
       n_ads = iads_end - iads +1
 !
       if (lexperimental_adsorbed) then
          do k=k1,k2
-            dfp(k,iads:iads_end)=dpads
+            dfp(k,iads:iads_end)=0.0
          enddo
       else
          do k=k1,k2

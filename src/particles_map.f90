@@ -1819,8 +1819,8 @@ module Particles_map
 !  Pressure:
 !
       if (interp%lpp) then
-        call fatal_error('interpolate_quantities',&
-            'Check that interpolation of pressure is properly implemented!')
+!!$        call fatal_error('interpolate_quantities',&
+!!$            'Check that interpolation of pressure is properly implemented!')
         allocate(interp_pp(k1:k2))
         if (.not.allocated(interp_pp)) then
           print*,'interpolate_quantities: unable to allocate '// &

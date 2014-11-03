@@ -560,6 +560,7 @@ module Particles
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
           .or. lthermophoretic_forces
       interp%lnu=lchemistry
+      interp%lpp=lparticles_chemistry
 !
 !  Determine interpolation policies:
 !   Make sure that interpolation of uu is chosen in a backwards compatible

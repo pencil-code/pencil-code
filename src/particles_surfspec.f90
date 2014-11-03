@@ -150,9 +150,11 @@ module Particles_surfspec
       enddo
     endif
 !
+!  create binding between gas phase and near field gas species
+!  chemistry and particles_chemistry module
+!
     call create_jmap()
 !
-
     !print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
 ! Set number of carbon atoms for each surface species

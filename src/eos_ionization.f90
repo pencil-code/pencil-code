@@ -73,7 +73,7 @@ module EquationOfState
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=0
-  integer :: imass=0
+  integer :: imass=1
   real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
 !
   character (len=labellen) :: ieos_profile='nothing'
