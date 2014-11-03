@@ -122,11 +122,11 @@ module Particles_adsorbed
 !
          do while (i<=(N_adsorbed_species-1))
             if (adsorbed_species_names(i)/='Cf') then
-            pvarname(iads+j-1) = adsorbed_species_names(i)
-            i = i+1
-            j = j+1
+              pvarname(iads+j-1) = adsorbed_species_names(i)
+              i = i+1
+              j = j+1
             else
-            i = i+1
+              i = i+1
             end if 
          enddo
 !
