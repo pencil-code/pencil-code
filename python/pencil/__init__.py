@@ -19,8 +19,10 @@ from pencil.files.power import *
 from pencil.files.animate_interactive import *
 from pencil.files.pc2vtk import *
 from pencil.files.post_processing import *
+from pencil.files.streamlines import *
 from pencil.files.tracers import *
 from pencil.files.kf import *
 from pencil.files.get_format import *
 from pencil.math.derivatives import *
 from pencil.math.vector_multiplication import *
+#from pencil.files.multi_slices import *
