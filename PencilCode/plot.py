@@ -7,25 +7,30 @@
 #
 # Chao-Chin Yang, 2013-10-22
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, logscale=False, **kwargs):
+def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=1024, **kwargs):
     """Plots the space-time diagram of a 1D average.
+
+    Positional Arguments:
+        name
+            Name of the average to be plotted.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        logscale
+            Take logarithm or not.
         plane
             Plane of the average.
         tsize
             Number of regular time intervals.
-        var
-            Name of the variable; if None, first variable is used.
-        logscale
-            Take logarithm or not.
         **kwargs
             Sent to matplotlib.pyplot.imshow.
     """
-    # Chao-Chin Yang, 2014-05-05
-
+    # Chao-Chin Yang, 2014-11-04
+    from . import read
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
     # Check the plane of the average.
     if plane == 'xy':
         xlabel = '$z$'
@@ -38,41 +43,29 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, logscale=False, **
         xdir = 0
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
-
     # Read the data.
     print("Reading 1D averages...")
-    from . import read
     time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
     par = read.parameters(datadir=datadir)
     xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
-
-    # Default variable name.
-    if var is None:
-        var = avg.dtype.names[0]
-
     # Set colorbar label.
     if logscale:
-        cblabel = r'$\log(\tt{' + var + '})$'
+        cblabel = r'$\log(\tt{' + name + '})$'
     else:
-        cblabel = var
-
+        cblabel = name
     # Interpolate the time series.
-    print("Interpolating", var, "...")
-    import numpy as np
-    from scipy.interpolate import interp1d
+    print("Interpolating", name, "...")
     tmin, tmax = np.min(time), np.max(time)
     ns = avg.shape[1]
     t = np.linspace(tmin, tmax, tsize)
     a = np.empty((tsize, ns))
     for j in range(ns):
         if logscale:
-            a[:,j] = interp1d(time, np.log10(avg[var][:,j]))(t)
+            a[:,j] = interp1d(time, np.log10(avg[name][:,j]))(t)
         else:
-            a[:,j] = interp1d(time, avg[var][:,j])(t)
-
+            a[:,j] = interp1d(time, avg[name][:,j])(t)
     # Plot the space-time diagram.
     print("Plotting...")
-    import matplotlib.pyplot as plt
     img = plt.imshow(a, origin='bottom', extent=[xmin,xmax,tmin,tmax], aspect='auto', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
@@ -80,7 +73,6 @@ def avg1d(datadir='./data', plane='xy', tsize=1024, var=None, logscale=False, **
     cb = plt.colorbar(img)
     cb.set_label(cblabel)
     plt.show()
-
 #=======================================================================
 def time_series(diagnostics, datadir='./data', trange=None, xlog=False, ylog=False):
     """Plots diagnostic variable(s) as a function of time.
