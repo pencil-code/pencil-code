@@ -46,6 +46,7 @@ module EquationOfState
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: icp, icv, ics, igamma, inabad
+  integer :: imass = 1
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
