@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2013-10-22
 #=======================================================================
-def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=1024, **kwargs):
+def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None, **kwargs):
     """Plots the space-time diagram of a 1D average.
 
     Positional Arguments:
@@ -22,7 +22,8 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=1024, **kwar
         plane
             Plane of the average.
         tsize
-            Number of regular time intervals.
+            Number of regular time intervals; if None, it is
+            automatically determined.
         **kwargs
             Sent to matplotlib.pyplot.imshow.
     """
@@ -56,6 +57,9 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=1024, **kwar
     # Interpolate the time series.
     print("Interpolating", name, "...")
     tmin, tmax = np.min(time), np.max(time)
+    if tsize is None:
+        dt = (time[1:] - time[:-1]).min()
+        tsize = (tmax - tmin) / dt + 1
     ns = avg.shape[1]
     t = np.linspace(tmin, tmax, tsize)
     a = np.empty((tsize, ns))
