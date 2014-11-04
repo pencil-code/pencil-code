@@ -112,7 +112,7 @@ def loadData(field, extension):
     
     # check if data has already been loaded
     if (field+extension in data.loaded) == False:
-        data.slices[field+extension], data.t = pc.read_slices(field = field, extension = extension, proc = 0)
+        data.slices[field+extension], data.t = pc.read_slices(datadir = 'data', field = field, extension = extension, proc = -1)
         data.dim[field+extension] = pc.read_dim() # system dimensions
         data.param[field+extension] = pc.read_param(quiet=True) # system parameters
         data.loaded.add(field+extension)
