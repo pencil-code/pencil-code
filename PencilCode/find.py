@@ -49,6 +49,29 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
+def sigma0(datadir='./data'):
+    """Returns the background gas column density inside the
+    computational domain.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+    """
+    # Chao-Chin Yang, 2014-11-04
+    from . import read
+    from math import pi, sqrt, erf
+    # Read the parameters.
+    par = read.parameters(datadir=datadir)
+    # Find the column density.
+    if par.gztype in {'zero', 'none'}:
+        s = par.rho0 * par.Lxyz[2]
+    elif par.gztype == 'linear':
+        h = par.cs0 / par.gz_coeff
+        z0 = par.xyz0[2] / (sqrt(2) * h)
+        z1 = par.xyz1[2] / (sqrt(2) * h)
+        s = sqrt(0.5 * pi) * h * par.rho0 * (erf(z1) - erf(z0))
+    return s
+#=======================================================================
 def stratz(datadir='./data', trim=False):
     """Finds the vertical background stratification.
 
