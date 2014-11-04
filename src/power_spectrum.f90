@@ -200,7 +200,7 @@ module power_spectrum
 !***********************************************************************
     subroutine power(f,sp)
 !
-!  Calculate power spectra (on shperical shells) of the variable
+!  Calculate power spectra (on spherical shells) of the variable
 !  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
