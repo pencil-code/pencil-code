@@ -96,15 +96,9 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     else:
         n_times = int(np.round(os.path.getsize(dataDir+fileName)/(4*(7*dim.nx*dim.ny*trace_sub**2))))
 
-    #print "trace_sub = ", trace_sub
-    #print "n_times = ", n_times
-    #print "7*dim.nx*dim.ny*trace_sub**2 = ", 7*dim.nx*dim.ny*trace_sub**2
-    
     # prepare the output arrays
     tracers = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 7))
     mapping = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 3))
-    print "tracers.shape = ", tracers.shape
-    print "mapping.shape = ", mapping.shape
 
     # temporary arrays for one core
     if (post):
@@ -114,8 +108,6 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         tracers_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 7))
         mapping_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 3))
 
-    print "tracers_core.shape = ", tracers_core.shape
-    
     # set the upper z-limit to the domain boundary
     if zlim == []:
         zlim = grid.z[-dim.nghostz-1]
@@ -131,8 +123,6 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
             dim_core = pc.read_dim(datadir = dataDir, proc = i)
         stride = int(np.round(dim_core.nx*dim_core.ny*trace_sub**2))
         llen = head_size + 7*stride
-        print 'stride = ', stride
-        print 'llen = ', llen
 
         if (post):
             tracer_file = open(dataDir+fileName, 'rb')
@@ -153,13 +143,6 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
             data.zf = tmp[off+4*stride+j*llen : off+5*stride+j*llen]
             data.l  = tmp[off+5*stride+j*llen : off+6*stride+j*llen]
             data.q  = tmp[off+6*stride+j*llen : off+7*stride+j*llen]
-            print "len(data.xi) = ", len(data.xi)
-            print "len(data.yi) = ", len(data.yi)
-            print "len(data.xf) = ", len(data.xf)
-            print "len(data.yf) = ", len(data.yf)
-            print "len(data.zf) = ", len(data.zf)
-            print "len(data.l) = ", len(data.l)
-            print "len(data.q) = ", len(data.q)
 
             # Squeeze the data into 2d array. This make the visualization much faster.
             for l in range(len(data.xi)):
