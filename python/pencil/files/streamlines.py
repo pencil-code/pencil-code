@@ -13,7 +13,7 @@ from vtk.util import numpy_support as VN
 import struct
 
 
-def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e2, lMax = 500, tol = 2e-3,
+def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                 interpolation = 'mean', sub = 1, intQ = [''], varfile = 'VAR0',
                 integration = 'simple', datadir = 'data/', destination = 'tracersPost.dat'):
     """
