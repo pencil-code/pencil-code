@@ -561,6 +561,7 @@ module Particles
           .or. lthermophoretic_forces
       interp%lnu=lchemistry
       interp%lpp=lparticles_chemistry
+      interp%lspecies=lparticles_surfspec
 !
 !  Determine interpolation policies:
 !   Make sure that interpolation of uu is chosen in a backwards compatible
