@@ -1673,10 +1673,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !   deallocate(f_RPM)
 !
 !
-!!$    if(lpchem_debug) then
-!!$       call print_debug_info()
-!!$    else
-!!$    endif
+    if(lpchem_debug) then
+       call print_debug_info()
+    else
+    endif
 !
   end subroutine calc_St_init
 !*********************************************************************
@@ -2002,12 +2002,16 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do k=1,N_surface_reactions
        write(*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
     end do
+    do k=1,N_surface_reactions
+       write(*,'(A12,I4,E12.5)') 'sigma',k,sigma_k(k)
+    end do
+    do k=1,N_surface_reactions
+       write(*,'(A12,I4,I4)') 'dep',k,dependent_reactant(k)
+    end do
 !        
         write(*,'(A20," ",10I4)') 'jmap=', jmap
         write(*,'(A20," ",10F4.0)') 'ac=',ac
         write(*,'(A20," ",10F4.0)') 'site_occupancy=',aac
-        write(*,'(A20," ",30I4)') 'dependent_reactant=',dependent_reactant
-        write(*,'(A20," ",10E12.5)') 'sigma_k=',sigma_k
 !
   end subroutine print_debug_info
 !*******************************************************************

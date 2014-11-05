@@ -87,7 +87,7 @@ module Particles_adsorbed
 !  the adsorbed species surface and gas phase surface concentrations
 !
       if (nadsspec/=(N_adsorbed_species-1) .and. &
-           N_adsorbed_species>0) then
+           N_adsorbed_species>1) then
          print*,'N_adsorbed_species: ',N_adsorbed_species-1
          print*,'nadsspec: ',nadsspec
          call fatal_error('register_particles_ads', &
@@ -95,21 +95,22 @@ module Particles_adsorbed
          else
       endif
 !
-!      call get_species_list('adsorbed_species_names',adsorbed_species_names)
-!      call get_reactants(reactants)
+
+      if (N_adsorbed_species>1) then
+      call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
       call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
+      endif
 !
 !  Set some indeces (this is hard-coded for now)
 !    
-      if (nadsspec>0) then
+      if (N_adsorbed_species>1) then
          imuadsO =find_species('C(O)',adsorbed_species_names,N_adsorbed_species)
          imuadsO2=find_species('C2(O2)',adsorbed_species_names,N_adsorbed_species)
          imuadsOH=find_species('C(OH)',adsorbed_species_names,N_adsorbed_species)
          imuadsH =find_species('C(H)',adsorbed_species_names,N_adsorbed_species)
          imuadsCO=find_species('C(CO)',adsorbed_species_names,N_adsorbed_species)
          imufree =find_species('Cf',adsorbed_species_names,N_adsorbed_species)
-      else
-      end if
+      endif
 !
 !  Indices of adsorbed species mole fraction
 !
@@ -152,7 +153,7 @@ module Particles_adsorbed
 !
       print*,'Number of adsorbed species: ', N_adsorbed_species
 !
-    if(Nadsspec>0) then
+    if (N_adsorbed_species>1) then
        allocate(mu(N_adsorbed_species,N_surface_reactions),STAT=stat)
        if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for mu')
@@ -166,13 +167,15 @@ module Particles_adsorbed
        if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for site_occupancy')
     else
-    end if
+    endif
 !
 ! Define the aac array which gives the amount of carbon in the
 ! adsorbed species.
 !
-    aac=0
-    if (imuadsCO>0) aac(imuadsCO)=1
+    if (N_adsorbed_species > 1) then
+       aac=0
+       if (imuadsCO>0) aac(imuadsCO)=1
+    endif
 !
     call create_stoc(part,adsorbed_species_names,mu,.true.,&
         N_adsorbed_species,mu_power)
@@ -306,45 +309,23 @@ subroutine pencil_criteria_par_ads()
       intent (inout) :: dfp
       intent (in) :: fp
 !
-      k1=k1_imn(imn)
-      k2=k2_imn(imn)
+      if (N_adsorbed_species > 1) then
+         n_ads = iads_end - iads +1
+         k1=k1_imn(imn)
+         k2=k2_imn(imn)
 !
-!  JONAS incosistency, should i implement another get()?
-!   or read it from memory
-!
-!      call _R_j_hat(R_j_hat)
-!
-!  Allocate some arrays for use in dfp
-!
-!!$      allocate(mod_surf_area(k1:k2),STAT=stat)
-!!$      if (stat>0) call fatal_error('dpads_dt_pencil',&
-!!$           'Could not allocate memory for mod_surf_area')
-!!$      allocate(R_c_hat(k1:k2),STAT=stat)
-!!$      if (stat>0) call fatal_error('dpads_dt_pencil',&
-!!$           'Could not allocate memory for R_c_hat')
-!
-!  Fill these arrays with values from particles_chemistry
-!
-!!$      call get_mod_surf_area(mod_surf_area,k1,k2)
-!!$      call get_R_c_hat(R_c_hat,k1,k2)
-!
-      n_ads = iads_end - iads +1
-!
-      if (lexperimental_adsorbed) then
-         do k=k1,k2
-            dfp(k,iads:iads_end)=0.0
-         enddo
-      else
-         do k=k1,k2
-            dfp(k,iads:iads_end)=R_j_hat(k,1:n_ads)/ &
-                 total_carbon_sites + mod_surf_area(k)* &
-                 R_c_hat(k)*fp(k,iads:iads_end)
-         enddo
+         if (lexperimental_adsorbed) then
+            do k=k1,k2
+               dfp(k,iads:iads_end)=0.0
+            enddo
+         else
+            do k=k1,k2
+               dfp(k,iads:iads_end)=R_j_hat(k,1:n_ads)/ &
+                    total_carbon_sites + mod_surf_area(k)* &
+                    R_c_hat(k)*fp(k,iads:iads_end)
+            enddo
+         endif
       endif
-!
-!  Deallocate arrays
-!
-      deallocate(R_c_hat)
 !
     endsubroutine dpads_dt_pencil
 !***********************************************************************
