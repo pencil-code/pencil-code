@@ -379,20 +379,13 @@ module Particles_surfspec
           ix0 =ineargrid(k,1)
           iy0 =ineargrid(k,2)
           iz0 =ineargrid(k,3)
-
-print*,'interp_species=',interp_species
-
          do i=1,N_surface_species
            dfp(k,isurf+i-1) = 0.0
-           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
+           fp(k,isurf+i-1) =fp(k,isurf+i-1) + interp_species(k,jmap(i)) / &
                  species_constants(jmap(i),imass) * &
-                 (interp_rho(k)*gas_constant*interp_TT(k)/&
+                 (interp_rho(k)*R_cgs*interp_TT(k)/&
                  interp_pp(k))
-
-print*,'fp(k,isurf-1+i)=',fp(k,isurf-1+i)
-
          enddo
-stop
        else
          !SOLVE implicit
        endif

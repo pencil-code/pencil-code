@@ -1209,8 +1209,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  JONAS: needs to be filled with life
 !  solid_reac L:30
-!  needed: local pressure UNITS!!!!
-!  needed: Cg, Cs, thiele
 !
     real, dimension(mpar_loc,mpvar) :: fp
     real, dimension(mx,my,mz,mfarray) :: f
@@ -1234,6 +1232,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         endif adsorbed
       enddo
     enddo
+    print*,RR_hat(k1,:)
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -2115,7 +2114,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
    do k=k1,k2
       ix0=ineargrid(k,1)
-         Cg(k) = interp_pp(k)/(gas_constant*interp_TT(k))
+         Cg(k) = interp_pp(k)/(R_cgs*interp_TT(k))
    enddo
 !
   end subroutine calc_Cg

@@ -320,7 +320,7 @@ subroutine pencil_criteria_par_ads()
             enddo
          else
             do k=k1,k2
-               dfp(k,iads:iads_end)=R_j_hat(k,1:n_ads)/ &
+               dfp(k,iads:iads_end)= dfp(k,iads:iads_end) + R_j_hat(k,1:n_ads)/ &
                     total_carbon_sites + mod_surf_area(k)* &
                     R_c_hat(k)*fp(k,iads:iads_end)
             enddo
