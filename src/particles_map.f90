@@ -1849,9 +1849,6 @@ module Particles_map
 !  Species:
 !
       if (interp%lspecies) then
-
-        call fatal_error('interpolate_quantities',&
-            'Interpolation of species not properly implemented yet!')
         allocate(interp_species(k1:k2,nchemspec))
         if (.not.allocated(interp_species)) then
           print*,'interpolate_quantities: unable to allocate '// &
