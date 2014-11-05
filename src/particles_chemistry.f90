@@ -60,7 +60,6 @@ module Particles_chemistry
   public :: mu_power
   public :: species
   public :: dummy
-  public :: ladsorbed_species
   public :: lboundary_explicit
   public :: linfinite_diffusion
   public :: gas_constant
@@ -136,7 +135,6 @@ module Particles_chemistry
 !
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
-  logical :: ladsorbed_species=.false.
   logical :: lthiele=.false.
   logical :: lboundary_explicit=.false.
   logical :: linfinite_diffusion=.false.
@@ -1223,20 +1221,18 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     do k=k1,k2
 !
-    do j=1,N_surface_reactions
-    surface: do i=1,N_surface_reactants
+      do j=1,N_surface_reactions
+        RR_hat(k,j)=K_k(k,j)*reaction_enhancement(j)
+        surface: do i=1,N_surface_reactants
           if (nu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*&
-                 (Cg(k)*fp(k,isurf-1+i))**nu(i,j)/mol_mass_carbon
-    enddo surface
-       adsorbed: if (ladsorbed_species) then
-       do i=1,N_adsorbed_species
-!  where is Cs?
-!  Cs is fp(k,iads-1+i)*total_carbon_sites
-          if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(Cs(k,i))**mu(i,j)
-       enddo
-       else adsorbed
-       endif adsorbed
-    enddo
+              (Cg(k)*fp(k,isurf-1+i))**nu(i,j)/mol_mass_carbon
+        enddo surface
+        adsorbed: if (N_adsorbed_species>1) then
+          do i=1,N_adsorbed_species
+            if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(Cs(k,i))**mu(i,j)
+          enddo
+        endif adsorbed
+      enddo
     enddo
 !
 !  Adapt the reaction rate according to the internal gradients, 
@@ -1274,7 +1270,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do k=k1,k2
        do l=1,N_surface_reactions
           do i=1,N_surface_species
-             Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*ac(i)
+             Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)&
+                 *(nu_prime(i,l)-nu(i,l))*ac(i)
              ndot(k,i)=ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St(k)/ &
                   (fp(k,iap)*fp(k,iap)*4.*pi)
           enddo
@@ -1289,7 +1286,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do l=1,N_surface_reactions
       do j=1,N_adsorbed_species-1
         R_j_hat(k,j)=R_j_hat(k,j)+(mu_prime(j,l)-mu(j,l))*RR_hat(k,l)
-        Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)*(mu_prime(j,l)-mu(j,l))*aac(j)
+        Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)&
+            *(mu_prime(j,l)-mu(j,l))*aac(j)
       enddo
     enddo
     enddo
@@ -2035,16 +2033,17 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     particles: do k=k1,k2
         do l=1,N_surface_reactions
-           if (sigma_k(k)==0) then
+           if (sigma_k(l)==0) then
               K_k(k,l)=B_k(l)*exp(-ER_k(l)/fp(k,iTp))
            else
               delta_E=sigma_k(l)*6
               dE=2*delta_E/(N_iter-1)
               energy=ER_k(l)*gas_constant-delta_E
               if (energy<0) then
-          print*,'k,delta_E,sigma_k(k),ER_k(k)=',l,delta_E,sigma_k(l),ER_k(l)
-          call fatal_error('get_reaction_rates_solid',&
-              'delta_E is too large!')
+                print*,'k,delta_E,sigma_k(k),ER_k(k)=',&
+                    l,delta_E,sigma_k(l),ER_k(l)
+                call fatal_error('get_reaction_rates_solid',&
+                    'delta_E is too large!')
               endif
               ff=exp(-0.5*((energy-ER_K(l)*gas_constant)/sigma_k(l))**2)/&
                    (sigma_k(l)*sqrt(2*pi))
