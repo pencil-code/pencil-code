@@ -95,7 +95,6 @@ module EquationOfState
   real :: mpoly=impossible, mpoly0=impossible
   real :: mpoly1=impossible, mpoly2=impossible
   integer :: isothtop=0
- ! integer :: imass=0
   real, dimension (3) :: beta_glnrho_global=impossible
   real, dimension (3) :: beta_glnrho_scaled=impossible
 ! Allocatable 3D-array for cp
