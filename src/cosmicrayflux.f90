@@ -224,13 +224,13 @@ module Cosmicrayflux
             - (kpara - kperp)*BuiBujgecr
       endif
 !
-!  For the timestep calculation, need maximum diffusion
+!  For the timestep calculation, needs maximum diffusion
 !
       if (ldt) then
         if (lbb_dependent_perp_diff)then
-          diffus_cr=max(diffus_cr,vKperp*tau,vKpara*tau)*dxyz_2
+          diffus_cr=max(diffus_cr,maxval(vKperp)*tau*dxyz_2,maxval(vKpara)*tau*dxyz_2)
         elseif (lfirst) then
-          diffus_cr=max(diffus_cr,kperp*tau,kpara*tau)*dxyz_2
+          diffus_cr=max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
         endif
       endif
 !
