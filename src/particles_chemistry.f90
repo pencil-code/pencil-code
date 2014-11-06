@@ -538,7 +538,7 @@ integer function find_species(species,unique_species,nlist)
     character(10) :: el_B_k,el_ER_k,el_sigma
     real :: B_k_single,ER_k_single,sigma_single
     logical :: done
-    integer :: i,k,stat
+    integer :: i,k,stat,stat1,stat2
 !
     B_k = 0.0
     ER_k = 0.0
@@ -550,30 +550,54 @@ integer function find_species(species,unique_species,nlist)
           ER_k(i) = 1.
           sigma_k(i) = 1e1
        else
+!!$          k=3
+!!$          print*,part(:,i)
+!!$          do while (k < size(part,1)-2)
+!!$             read(part(k,i),*,iostat=stat) B_k_single
+!!$             read(part(k+1,i),*,iostat=stat1) ER_k_single
+!!$             read(part(k+2,i),*,iostat=stat2) sigma_single
+!!$             if (stat==0 .and. stat1==0 .and. stat2==0) then
+!!$                B_k(i) = B_k_single
+!!$                ER_k(i) = ER_k_single
+!!$                sigma_k(i) = sigma_single
+!!$                k=size(part,1)
+!!$             else
+!!$                k=k+1
+!!$             endif
+!!$          enddo
+!!$          if (B_k(i)==0.0) call fatal_error('create_arh_param','error in line')
+!!$       endif
+!!$    enddo
+                
        done = .false.
        do k=1, size(part,1)-2
           el_B_k = part(k,i)
           el_ER_k = part(k+1,i)
           el_sigma = part(k+2,i)
              read(el_B_k,*,iostat=stat) B_k_single
+             !print*,B_k_single
              if (stat == 0 .and. (done .eqv. .false.)) then
                 B_k(i) = B_k_single
                 done = .true.
                 read(el_ER_k,*,iostat=stat) ER_k_single
+               ! print*,ER_k_single
                 if (stat == 0) then
                    ER_k(i) = ER_k_single
                 else
                 end if
                 read(el_sigma,*,iostat=stat) sigma_single
+                !print*,sigma_single
                 if (stat == 0) then
                    sigma_k(i) = sigma_single
                 else
                 end if
              else
              end if
-       end do
+          enddo
        end if
-    end do
+    enddo
+
+
 !
     ER_k = ER_k/gas_constant
 !
@@ -594,8 +618,8 @@ integer function find_species(species,unique_species,nlist)
              dependent_reactant(k) = i
           else
           end if
-       end do
-    end do
+       enddo
+    enddo
 !
   end subroutine create_dependency
 !**********************************************************************
@@ -611,7 +635,7 @@ integer function find_species(species,unique_species,nlist)
           site_occupancy(i) = 2
        else
        end if
-    end do
+    enddo
 !
   end subroutine create_occupancy
 !**********************************************************************
@@ -665,9 +689,9 @@ integer function find_species(species,unique_species,nlist)
               end if
            else
            end if
-        end do
-      end do
-   end do
+        enddo
+      enddo
+   enddo
 !   targ(:,:) = int(targ(:,:))
 !
   end subroutine create_stoc
@@ -697,7 +721,7 @@ integer function find_species(species,unique_species,nlist)
           end if
         else
         end if
-    end do
+    enddo
 !
   end subroutine get_ac
 !**********************************************************************
@@ -726,7 +750,7 @@ integer function find_species(species,unique_species,nlist)
             is_reactant = .true.
          else
          end if
-      end do
+      enddo
 !
       if (.not. is_reactant) then
          temp_list(nlist-end) = species_list(i)
@@ -735,7 +759,7 @@ integer function find_species(species,unique_species,nlist)
          temp_list(1+front) = species_list(i)
          front = front + 1
       end if
-   end do
+   enddo
 !
    do i=1,nlist-1
       if (temp_list(i) == 'Cf') then
@@ -744,7 +768,7 @@ integer function find_species(species,unique_species,nlist)
          temp_list(i)=temp
       else
       end if
-   end do
+   enddo
 !
    species_list(:nlist) = temp_list(:nlist)
 
@@ -783,7 +807,7 @@ print*,'species_list=',species_list
           end if
        else
        end if
-    end do
+    enddo
 !
   end subroutine create_ad_sol_lists
 !**********************************************************************
@@ -809,7 +833,7 @@ print*,'species_list=',species_list
           else
           end if
        end if
-    end do
+    enddo
    end subroutine count_species_type
 !**********************************************************************
   subroutine count_species(part,species,reactants,products)
@@ -876,8 +900,8 @@ print*,'species_list=',species_list
 !
           else
           end if
-       end do
-    end do
+       enddo
+    enddo
 !
 !creating the lists
 !
@@ -916,7 +940,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
           numerical = 0
        else
        end if
-    end do
+    enddo
 !
     lhs = trim(string(:marker-1))
     sign = trim(string(marker:marker+1))
@@ -950,7 +974,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        else
        i=i+1
        endif
-    end do
+    enddo
     string = trim(string)
     i=1
     do while (i <len(string))
@@ -958,7 +982,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
            string(i:i)/=spc) then
            j=1
           do while (string(i+j:i+j)/='+'.and.&
-                 string(i+j:i+j)/=spc)
+                 string(i+j:i+j)/=spc .and. &
+                 string(i+j:i+j)/=tab)
              j=j+1
           enddo
           formatting = adjustl(string(i:i+j))
@@ -970,9 +995,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        endif
    enddo
    if (i==len(string)) then
-      target_list(k-1:,ireaction) = '0.0'
+      target_list(k:,ireaction) = '0.0'
    else
    end if
+   print*, target_list(:,ireaction)
 !
    direction(ireaction) = flag
 !
@@ -1007,7 +1033,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
           end if
           else
           end if
-       end do
+       enddo
 500 if(talk=='verbose') print*,'Done parsing mechanics file'
        close(20)
        call remove_save_powers(target_list)
@@ -1188,11 +1214,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-
-write(*,'(A10,12E12.4)') 'k_k=',k_k
-print*,'Cg=',Cg
-print*,'Cs=',Cs
-
     do k=k1,k2
 !
       do j=1,N_surface_reactions
@@ -1219,10 +1240,6 @@ print*,'Cs=',Cs
          RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
        enddo
     endif
-
-write(*,'(A10,12E12.4)') 'RR_hat=',RR_hat
-
-
 !
   end subroutine calc_RR_hat
 !********************************************************************
@@ -1938,15 +1955,15 @@ write(*,'(A10,12E12.4)') 'RR_hat=',RR_hat
 !
     do k=1,N_surface_reactions
        write(*,writeformat) 'nu=',k,nu(:,k)
-    end do
+    enddo
 
     do k=1,N_surface_reactions
        write(*,writeformat) 'nu_power=',k,nu_power(:,k)
-    end do
+    enddo
 !
     do k=1,N_surface_reactions
        write(*,writeformat) 'nu_prime=',k,nu_prime(:,k)
-    end do
+    enddo
 !
     write(writeformat(13:14),'(I2)') N_adsorbed_species
 !
@@ -1954,15 +1971,15 @@ write(*,'(A10,12E12.4)') 'RR_hat=',RR_hat
     print*, adsorbed_species_names
     do k=1,N_surface_reactions
        write(*,writeformat) 'mu=',k,mu(:,k)
-    end do 
+    enddo 
 !
     do k=1,N_surface_reactions
        write(*,writeformat) 'mu_power=',k,mu_power(:,k)
-    end do
+    enddo
  !
     do k=1,N_surface_reactions
        write(*,writeformat) 'mu_prime=',k,mu_prime(:,k)
-    end do
+    enddo
 !
     do k=1,N_surface_reactions
        write(*,'(A12,I4,2E12.5)') 'ER_k, B_k=',k,B_k(k),ER_k(k)/ &
@@ -1970,13 +1987,13 @@ write(*,'(A10,12E12.4)') 'RR_hat=',RR_hat
     enddo
     do k=1,N_surface_reactions
        write(*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
-    end do
+    enddo
     do k=1,N_surface_reactions
        write(*,'(A12,I4,E12.5)') 'sigma',k,sigma_k(k)
-    end do
+    enddo
     do k=1,N_surface_reactions
        write(*,'(A12,I4,I4)') 'dep',k,dependent_reactant(k)
-    end do
+    enddo
 !        
         write(*,'(A20," ",10I4)') 'jmap=', jmap
         write(*,'(A20," ",10F4.0)') 'ac=',ac
