@@ -74,7 +74,7 @@ module Particles_chemistry
 !
   real, dimension(:), allocatable :: reaction_order
   real, dimension(:), allocatable :: effectiveness_factor_old
-  real, dimension(:), allocatable :: B_k, ER_k, ac, RR_method
+  real, dimension(:), allocatable :: B_k, ER_k, ac
   real, dimension(:), allocatable :: sigma_k
   real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(:,:), allocatable :: mu, mu_prime
@@ -121,7 +121,7 @@ module Particles_chemistry
   real :: eta_int=0.,delta_rho_surface=0.
   real :: St_first, A_p_first, rho_p_first
   real :: diffusivity = 0.0
-  real :: total_carbon_sites=1.08e-7 ! [kmol/m^2]
+  real :: total_carbon_sites=1.08e-6 ! [mol/cm^2]
   real :: chemplaceholder=0.0
   real :: tortuosity=3.
   real :: Init_density_part=1.300 ! g/cm^3
@@ -183,7 +183,7 @@ module Particles_chemistry
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !
-  real :: gas_constant=8314.0 ![J/kmol/K]
+  real :: gas_constant=8.314 ![J/mol/K]
 !
   namelist /particles_chem_init_pars/ &
        reaction_enhancement, &
@@ -240,9 +240,6 @@ module Particles_chemistry
     allocate(sigma_k(N_surface_reactions)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_pchem',&
         'Could not allocate memory for sigma_k')
-    allocate(RR_method(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for RR_method')
     allocate(reaction_order(N_surface_reactions)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for reaction_order')
@@ -275,12 +272,6 @@ module Particles_chemistry
 ! divided by the gas constant (R)
 !
     call create_arh_param(part,B_k,ER_k,sigma_k)
-!
-! Define which method to use for calculating RR (and also St)
-!  1: the method of Qiao
-!  2: the method of Mithcell
-!
-    call set_RR(part,RR_method)
 !
   end subroutine register_indep_pchem
 !***********************************************************************
@@ -538,26 +529,6 @@ integer function find_species(species,unique_species,nlist)
 !
   end function find_species
 !**********************************************************************
-  subroutine set_RR(part,RR_method)
-!
-    integer :: i,j,stat,RR
-    real, dimension(:) :: RR_method
-    character(10), dimension(:,:) :: part
-    character(10) :: element
-!
-    do i=1,size(part,2)
-       do j=1,size(part,1)
-          element = part(j,i)
-          if (element(:2) == 'RR') then
-             read(element(2:),'(I1.1)',iostat=stat) RR
-             RR_method = RR
-          else
-          end if
-       end do
-    end do
-!
-  end subroutine set_RR
-!**********************************************************************
   subroutine create_arh_param(part,B_k,ER_k,sigma_k)
 !
 !takes the first numerical in part and writes it to b_k
@@ -604,7 +575,7 @@ integer function find_species(species,unique_species,nlist)
        end if
     end do
 !
-    ER_k = ER_k*1e6/gas_constant
+    ER_k = ER_k/gas_constant
 !
   end subroutine create_arh_param
 !**********************************************************************
@@ -1217,6 +1188,11 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
+
+write(*,'(A10,12E12.4)') 'k_k=',k_k
+print*,'Cg=',Cg
+print*,'Cs=',Cs
+
     do k=k1,k2
 !
       do j=1,N_surface_reactions
@@ -1232,21 +1208,21 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         endif adsorbed
       enddo
     enddo
-    print*,RR_hat(k1,:)
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
 !  equation 56 ff.
 !
     if (lthiele) then
-       call calc_effectiveness_factor(effectiveness_factor,fp)
+       call calc_effectiveness_factor(fp)
        do j=1,N_surface_reactions
-       RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor(:)
+         RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
        enddo
-    else
     endif
-!
-!    RR_hat = 1.0
+
+write(*,'(A10,12E12.4)') 'RR_hat=',RR_hat
+
+
 !
   end subroutine calc_RR_hat
 !********************************************************************
@@ -1343,18 +1319,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !!$!
 !!$  end subroutine get_total_carbon_sites
 !**********************************************************************
-  subroutine calc_effectiveness_factor(var,fp)
+  subroutine calc_effectiveness_factor(fp)
 !
 !  01-Oct-2014/Jonas: coded
 !  taken from solid_reac L. 149 and equations.pdf eq 35ff
 !
-    real, dimension(:) :: var
     real, dimension(:,:) :: fp
 !
-!    var = 0.0
-!
     real, dimension(:,:), allocatable :: R_i_hat,D_eff
-    real, dimension(:,:), allocatable :: effectiveness_factor_species
     real, dimension(:), allocatable :: Knudsen, pore_radius
     real, dimension(:), allocatable :: tmp1,tmp2,tmp3
     real, dimension(:), allocatable ::  phi,sum_eta_i_R_i_hat_max
@@ -1498,19 +1470,19 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-!  Unit: J/kmolK
+!  Unit: J/(mol*K)
 !
     do k=k1,k2
-       if (inuH2O>0) surface_species_enthalpy(k,inuH2O)=-242.18e6-(5.47e3*fp(k,iTp))
+       if (inuH2O>0) surface_species_enthalpy(k,inuH2O)=-242.18e3-(5.47*fp(k,iTp))
        if (inuO2>0)  surface_species_enthalpy(k,inuO2) = 0.
-       if (inuCO2>0) surface_species_enthalpy(k,inuCO2)=-392.52e6-(2.109e3*fp(k,iTp))
+       if (inuCO2>0) surface_species_enthalpy(k,inuCO2)=-392.52e3-(2.109*fp(k,iTp))
        if (inuH2>0)  surface_species_enthalpy(k,inuH2 )= 0.
-       if (inuCO>0)  surface_species_enthalpy(k,inuCO )=-105.95e6-6.143e3*fp(k,iTp)
-       if (inuCH>0)  surface_species_enthalpy(k,inuCH )= 594.13e6
-       if (inuHCO>0) surface_species_enthalpy(k,inuHCO)=  45.31e6-(5.94e3*fp(k,iTp))
-       if (inuCH2>0) surface_species_enthalpy(k,inuCH2)= 387.93e6-(5.8e3*fp(k,iTp))
-       if (inuCH4>0) surface_species_enthalpy(k,inuCH4)= -75e6
-       if (inuCH3>0) surface_species_enthalpy(k,inuCH3)= 144.65e6-(6.79e3*fp(k,iTp))
+       if (inuCO>0)  surface_species_enthalpy(k,inuCO )=-105.95e3-6.143*fp(k,iTp)
+       if (inuCH>0)  surface_species_enthalpy(k,inuCH )= 594.13e3
+       if (inuHCO>0) surface_species_enthalpy(k,inuHCO)=  45.31e3-(5.94*fp(k,iTp))
+       if (inuCH2>0) surface_species_enthalpy(k,inuCH2)= 387.93e3-(5.8*fp(k,iTp))
+       if (inuCH4>0) surface_species_enthalpy(k,inuCH4)= -75e3
+       if (inuCH3>0) surface_species_enthalpy(k,inuCH3)= 144.65e3-(6.79*fp(k,iTp))
     enddo
 !
     end subroutine calc_surf_enthalpy
@@ -1523,30 +1495,30 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-! JONAS: units are in j/(kmol*K)
+! JONAS: units are in j/(mol*K)
 !
     do k=k1,k2
     if (inuH2O>0) surface_species_entropy(k,inuH2O)= & 
-         189.00e3+(0.0425e3*fp(k,iTp))
+         189.00+(0.0425*fp(k,iTp))
     if (inuO2>0)  surface_species_entropy(k,inuO2) = &
-         222.55e3+(0.0219e3*fp(k,iTp))
+         222.55+(0.0219*fp(k,iTp))
     if (inuCO2>0) surface_species_entropy(k,inuCO2)= &
-         212.19e3+(0.0556e3*fp(k,iTp))
+         212.19+(0.0556*fp(k,iTp))
     if (inuH2>0)  surface_species_entropy(k,inuH2 )= &
-         133.80e3+(0.0319e3*fp(k,iTp))
+         133.80+(0.0319*fp(k,iTp))
     if (inuCO>0)  surface_species_entropy(k,inuCO )= &
-         199.35e3+(0.0342e3*fp(k,iTp))
+         199.35+(0.0342*fp(k,iTp))
 !
 !  taken from chemistry  webbook (1bar)
 !
-    if (inuCH>0)  surface_species_entropy(k,inuCH )=183.00e3
-    if (inuHCO>0) surface_species_entropy(k,inuHCO)=223.114e3+(0.0491e3*fp(k,iTp))
-    if (inuCH2>0) surface_species_entropy(k,inuCH2)=193.297e3+(0.0467e3*fp(k,iTp))
+    if (inuCH>0)  surface_species_entropy(k,inuCH )=183.00
+    if (inuHCO>0) surface_species_entropy(k,inuHCO)=223.114+(0.0491*fp(k,iTp))
+    if (inuCH2>0) surface_species_entropy(k,inuCH2)=193.297+(0.0467*fp(k,iTp))
 !
 !  taken from chemistry webbook (1bar)
 !
-    if (inuCH4>0) surface_species_entropy(k,inuCH4)= 189.00e3
-    if (inuCH3>0) surface_species_entropy(k,inuCH3)= 190.18e3+(0.0601e3*fp(k,iTp))
+    if (inuCH4>0) surface_species_entropy(k,inuCH4)= 189.00
+    if (inuCH3>0) surface_species_entropy(k,inuCH3)= 190.18+(0.0601*fp(k,iTp))
 !
     enddo
 !
@@ -1560,13 +1532,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-!  Unit: J/kmolK
+!  Unit: J/(mol*K)
 !
     adsloop: do k=k1,k2
 !
     if (imuadsO>0)    then
        adsorbed_species_entropy(k,imuadsO) = &
-    (164.19e3+(0.0218e3*fp(k,iTp)))*0.72 - (3.3*gas_constant)
+    (164.19+(0.0218*fp(k,iTp)))*0.72 - (3.3*gas_constant)
     else
     end if
 !
@@ -1579,12 +1551,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     end if
     if (imuadsOH>0)   then
        adsorbed_species_entropy(k,imuadsOH) = &
-         ((0.0319e3*fp(k,iTp)) + 186.88e3) * 0.7 - (3.3*gas_constant)
+         ((0.0319*fp(k,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
     else
     end if
     if (imuadsH>0)    then 
        adsorbed_species_entropy(k,imuadsH) = &
-           (117.49e3+(0.0217e3*fp(k,iTp)))*0.54 - (3.3*gas_constant)
+           (117.49+(0.0217*fp(k,iTp)))*0.54 - (3.3*gas_constant)
     else
     end if
     if (imuadsCO>0)   then
@@ -1614,15 +1586,15 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k2 = k2_imn(imn)
 !
     if (imuadsO>0)    adsorbed_species_enthalpy(k1:k2,imuadsO) = &
-         -148.14e6 + (0.0024e6*(fp(k1:k2,iTp)-273.15))
+         -148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15))
     if (imuadsO2>0)   adsorbed_species_enthalpy(k1:k2,imuadsO2)= &
-         2 *  (-148.14e6 + (0.0024e6*(fp(k1:k2,iTp)-273.15)))
+         2 *  (-148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15)))
     if (imuadsOH>0)   adsorbed_species_enthalpy(k1:k2,imuadsOH)= &
-         -148e6
+         -148e3
     if (imuadsH>0)    adsorbed_species_enthalpy(k1:k2,imuadsH) = &
-         -19.5e6
+         -19.5e3
     if (imuadsCO>0)   adsorbed_species_enthalpy(k1:k2,imuadsCO)= &
-         -199.94e6 - (0.0167e6*(fp(k1:k2,iTp)-273.15))
+         -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
     if (imufree>0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
 !
   end subroutine calc_ads_enthalpy
@@ -1994,7 +1966,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     do k=1,N_surface_reactions
        write(*,'(A12,I4,2E12.5)') 'ER_k, B_k=',k,B_k(k),ER_k(k)/ &
-               (1e6/gas_constant)
+               (gas_constant)
     enddo
     do k=1,N_surface_reactions
        write(*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
@@ -2049,7 +2021,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
               gg_old=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
               int_k=0
               eff_kk: do j=2,N_iter
-                 energy=(j-1)*2*delta_E/(N_iter-1)+ER_k(k)*gas_constant-delta_E
+                 energy=(j-1)*2*delta_E/(N_iter-1)+ER_k(l)*gas_constant-delta_E
                  ff=exp(-0.5*((energy-ER_K(l)*gas_constant)/sigma_k(l))**2)/&
                       (sigma_k(l)*sqrt(2*pi))
                  gg=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
