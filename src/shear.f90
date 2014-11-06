@@ -503,8 +503,10 @@ module Shear
             posdef = lposdef_advection .and. lposdef(ivar)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
             notlast: if (.not. llast) then
-              call isendrcv_bdry_x(df, ivar, ivar)
-              call shift_ghostzones_nonfft(df, ivar, ivar, dt_shear, ldf=.true.)
+              dfgcx: if (u0_advec(1) /= 0.0) then
+                call isendrcv_bdry_x(df, ivar, ivar)
+                call shift_ghostzones_nonfft(df, ivar, ivar, dt_shear, ldf=.true.)
+              endif dfgcx
               call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
             endif notlast
           case default method
@@ -626,27 +628,29 @@ module Shear
 !  Interpolation in x: assuming the correct boundary conditions have been applied.
 !
         call remap_to_pencil_xy(a(:,:,n1:n2,ic), b)
-        scan_xz: do k = 1, nz
-          scan_xy: do j = nghost + 1, nghost + nypx
-            xmethod: select case (method)
-            case ('spline') xmethod
-              call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
-            case ('poly') xmethod
-              call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
-                                            istatus=istat, message=message)
-              error = istat /= 0
-            case default xmethod
-              call fatal_error('sheared_advection_nonfft', 'unknown method')
-            endselect xmethod
-            if (error) call warning('sheared_advection_nonfft', 'error in x interpolation; ' // trim(message))
-            b(nghost+1:nghost+nxgrid,j,k) = px
-          enddo scan_xy
-        enddo scan_xz
+        xdir: if (nxgrid > 1 .and. u0_advec(1) /= 0.0) then
+          scan_xz: do k = 1, nz
+            scan_xy: do j = nghost + 1, nghost + nypx
+              xmethod: select case (method)
+              case ('spline') xmethod
+                call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
+              case ('poly') xmethod
+                call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
+                                              istatus=istat, message=message)
+                error = istat /= 0
+              case default xmethod
+                call fatal_error('sheared_advection_nonfft', 'unknown method')
+              endselect xmethod
+              if (error) call warning('sheared_advection_nonfft', 'error in x interpolation; ' // trim(message))
+              b(nghost+1:nghost+nxgrid,j,k) = px
+            enddo scan_xy
+          enddo scan_xz
+        endif xdir
 !
 !  Interpolation in y: assuming periodic boundary conditions
 !
         b1 = b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:)
-        ydir: if (nygrid > 1) then
+        ydir: if (nygrid > 1 .and. (Sshear /= 0.0 .or. u0_advec(2) /= 0.0)) then
           call transp_pencil_xy(b1, bt)
           scan_yz: do k = 1, nz
             scan_yx: do j = 1, nxpy
