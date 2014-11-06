@@ -297,7 +297,6 @@ module Particles_surfspec
 !  parameters.
 !
 !  29-sep-14/jonas coded
-!  JONAS: needs to be filled with life
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
