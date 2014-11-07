@@ -304,10 +304,10 @@ module Particles_surfspec
       call keep_compiler_quiet(f)
 !
 !  calculate initial values that are used in evolving others
+!NILS og JONAS: Both these should be put in auxiallary slots in the fp array!
 !
       call calc_rho_p_init(fp)
       call calc_St_init(fp)
-      call calc_mass_init(fp)
 !
     end subroutine initialize_particles_surf
 !**************************************************************

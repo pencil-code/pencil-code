@@ -40,6 +40,7 @@ module Particles_mass
       lpart_mass_backreac,dmpdt
 !
   integer :: idiag_mpm=0
+  integer :: idiag_convm=0
 !
   contains
 !***********************************************************************
@@ -70,7 +71,7 @@ module Particles_mass
 !
     endsubroutine register_particles_mass
 !***********************************************************************
-    subroutine initialize_particles_mass(f)
+    subroutine initialize_particles_mass(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -80,8 +81,11 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
 !
       call keep_compiler_quiet(f)
+!
+          init_mass=fp(1,imp)
 !
     endsubroutine initialize_particles_mass
 !***********************************************************************
@@ -113,7 +117,8 @@ module Particles_mass
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
-          fp(1:mpar_loc,imp)=mass_const
+          init_mass=mass_const
+          fp(1:mpar_loc,imp)=init_mass
 !
         case ('rhopmat')
           if (lroot) then
@@ -121,6 +126,7 @@ module Particles_mass
             print*, 'init_particles_mass: mass_const=', mass_const
           endif          
           fp(1:mpar_loc,imp)=4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
+! NILS og JONAS: Must make auxiallary slot in fp array for initial_mass!!!!
 !
         case default
           if (lroot) &
@@ -157,7 +163,9 @@ module Particles_mass
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_mpm/=0)  call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
+        if (idiag_mpm/=0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
+        if (idiag_convm/=0) call sum_par_name(1.-fp(1:mpar_loc,imp)&
+            /init_mass,idiag_convm)
       endif
 !
       call keep_compiler_quiet(f)
@@ -197,8 +205,8 @@ module Particles_mass
 !
 !  Get total surface area and molar reaction rate of carbon
 !
-          call get_St(St,k1_imn(imn),k2_imn(imn))
-          call get_R_c_hat(Rc_hat,k1_imn(imn),k2_imn(imn))
+      call get_St(St,k1_imn(imn),k2_imn(imn))
+      call get_R_c_hat(Rc_hat,k1_imn(imn),k2_imn(imn))
 !
 !  Loop over all particles in current pencil.
 !
@@ -348,12 +356,13 @@ module Particles_mass
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_mpm=0;
+        idiag_mpm=0; idiag_convm=0
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_mass: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
+        call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
       enddo
 !
     endsubroutine rprint_particles_mass

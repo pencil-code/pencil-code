@@ -342,10 +342,4 @@ integer function find_species()
 !
     end subroutine calc_rho_p
 !***********************************************************************
- subroutine calc_mass_init()
-!
-!  21-oct-14/nils: coded
-!
- end subroutine calc_mass_init
-!***********************************************************************
   end module Particles_chemistry

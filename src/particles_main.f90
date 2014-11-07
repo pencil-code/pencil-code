@@ -200,7 +200,7 @@ module Particles_main
       call initialize_particles_stalker      (f)
       call initialize_particles_viscosity    (f)
       call initialize_particles_TT           (f)
-      call initialize_particles_mass         (f)
+      call initialize_particles_mass         (f,fp)
       call initialize_particles_ads          (f)
       call initialize_particles_surf         (f,fp)
       call initialize_particles_coag         (f)

@@ -66,7 +66,7 @@ module Particles_chemistry
   public :: total_carbon_sites
   public :: R_c_hat
   public :: mod_surf_area
-  public :: K_k
+  public :: K_k, init_mass
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -121,7 +121,7 @@ module Particles_chemistry
   real :: eta_int=0.,delta_rho_surface=0.
   real :: St_first, A_p_first, rho_p_first
   real :: diffusivity = 0.0
-  real :: total_carbon_sites=1.08e-6 ! [mol/cm^2]
+  real :: total_carbon_sites=1.08e-8 ! [mol/cm^2]
   real :: chemplaceholder=0.0
   real :: tortuosity=3.
   real :: Init_density_part=1.300 ! g/cm^3
@@ -129,6 +129,7 @@ module Particles_chemistry
   real :: structural_parameter=8. ! [-]
   real :: startup_time=0.
   real :: startup_quench
+  real :: init_mass
 !
 !  JONAS: implement something to calculate molar_mass of 
 !  gas phase species
@@ -144,7 +145,7 @@ module Particles_chemistry
 !*********************************************************************!
 !
   real, dimension(:), allocatable :: conversion
-  real, dimension(:), allocatable :: init_mass,rho_p_init
+  real, dimension(:), allocatable :: rho_p_init
   real, dimension(:,:), allocatable :: mdot_ck,RR_hat
   real, dimension(:,:), allocatable :: qk_reac
   real, dimension(:), allocatable :: St,rho_p,porosity
@@ -285,9 +286,6 @@ module Particles_chemistry
     allocate(St_init(mpar_loc),STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for St_init')
-    allocate(init_mass(mpar_loc),STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for init_mass')
     allocate(rho_p_init(mpar_loc),STAT=stat)
     if (stat>0) call fatal_error('register_dep_pchem',&
         'Could not allocate memory for rho_p_init')
@@ -1131,7 +1129,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     integer :: k
 !
     do k=k1_imn(imn),k2_imn(imn)
-      conversion(k) = fp(k,imp) / init_mass(k)
+      conversion(k) = fp(k,imp) / init_mass
     enddo
 !
   end subroutine calc_conversion
@@ -1209,10 +1207,24 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     real, dimension(mpar_loc,mpvar) :: fp
     real, dimension(mx,my,mz,mfarray) :: f
+    real :: pre_Cg, pre_Cs, pre_RR_hat
     integer :: i,j,k,k1,k2
 
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
+!
+!  The heterogeneous kinetics in the mechanism file is always given in SI units. 
+!  Here we intorduce correction factors if cgs units are used.
+!
+    if (unit_system=='cgs') then
+      pre_Cg=1e6
+      pre_Cs=1e4
+      pre_RR_hat=1e-4
+    else
+      pre_Cg=1.
+      pre_Cs=1.  
+      pre_RR_hat=1.
+    endif
 !
     do k=k1,k2
 !
@@ -1220,15 +1232,20 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         RR_hat(k,j)=K_k(k,j)*reaction_enhancement(j)
         surface: do i=1,N_surface_reactants
           if (nu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*&
-              (Cg(k)*fp(k,isurf-1+i))**nu(i,j)/mol_mass_carbon
+              (pre_Cg*Cg(k)*fp(k,isurf-1+i))**nu(i,j)
         enddo surface
         adsorbed: if (N_adsorbed_species>1) then
           do i=1,N_adsorbed_species
-            if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(Cs(k,i))**mu(i,j)
+            if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
           enddo
         endif adsorbed
       enddo
     enddo
+!
+!  Make sure RR_hat is given in the right unit system (above it is always
+!  in SI units).
+!
+    RR_hat=pre_RR_hat*RR_hat
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -1615,19 +1632,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     if (imufree>0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
 !
   end subroutine calc_ads_enthalpy
-!*********************************************************************
-  subroutine calc_mass_init(fp)
-!
-!  21-oct-2014/nils: coded
-!
-    real, dimension(:,:) :: fp
-    integer :: k
-!
-    do k=1,mpar_loc
-      init_mass(k)=fp(k,imp)
-    enddo
-!
-  end subroutine calc_mass_init
 !*********************************************************************
   subroutine calc_St_init(fp)
 !
