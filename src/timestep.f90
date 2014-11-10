@@ -21,7 +21,7 @@ module Timestep
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
-      use Boundcond, only: update_ghosts
+      use Boundcond, only: update_ghosts, zero_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
       use Interstellar, only: calc_snr_damp_int
@@ -128,6 +128,7 @@ module Timestep
 !
         advec: if (lshear) then
           call impose_floors_ceilings(f)
+          call zero_ghosts(f)
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
           call advance_shear(f, df, dt_beta_ts(itsub)*ds)
         endif advec
