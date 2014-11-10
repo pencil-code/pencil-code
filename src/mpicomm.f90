@@ -547,8 +547,8 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !  11-aug-07/axel: communication in the x-direction added
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
 !
@@ -639,8 +639,8 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
 !
