@@ -1831,7 +1831,7 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscosity(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !

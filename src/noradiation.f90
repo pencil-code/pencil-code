@@ -51,7 +51,7 @@ module Radiation
 !
 !  24-mar-03/axel+tobi: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !

@@ -158,16 +158,16 @@ module Snapshot
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
 !
-      character (len=*) :: chsnap, flist
-      integer :: msnap
-      real, dimension (mx,my,mz,msnap) :: a
-      logical :: enum,enum_,noghost
-      optional :: enum, flist, noghost
+      integer, intent(in) :: msnap
+      real, dimension(mx,my,mz,msnap), intent(inout) :: a
+      character(len=*), intent(in) :: chsnap
+      character(len=*), intent(in), optional :: flist
+      logical, intent(in), optional :: enum, noghost
 !
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: lsnap
+      logical :: enum_, lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 !
