@@ -51,6 +51,7 @@ module Particles_chemistry
   public :: jmap
   public :: solid_species
   public :: mass_trans_coeff_reactants
+  public :: mass_trans_coeff_species
   public :: part
   public :: diff_coeff_reactants
   public :: adsorbed_species_names
@@ -68,6 +69,10 @@ module Particles_chemistry
   public :: mod_surf_area
   public :: K_k, init_mass
   public :: mdot_ck
+  public :: ndot_total
+  public :: ndot
+  public :: porosity
+  public :: Cg
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -170,7 +175,7 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: ndot,K_k
   real, dimension(:,:), allocatable :: R_j_hat
   real, dimension(:,:), allocatable :: Cs
-  real, dimension(:), allocatable :: mass_trans_coeff_reactants
+  real, dimension(:,:), allocatable :: mass_trans_coeff_reactants
   real, dimension(:,:), allocatable :: mass_trans_coeff_species
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species,Cg,A_p
@@ -1225,7 +1230,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       pre_Cs=1.  
       pre_RR_hat=1.
     endif
-!
+!  
     do k=k1,k2
 !
       do j=1,N_surface_reactions
@@ -1241,6 +1246,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         endif adsorbed
       enddo
     enddo
+    print*,'RR_hattwo'
+    write(*,'(12E12.4)') RR_hat(k1,:)
+    print*, 'isurf2' 
+    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
+    print*, 'iads1' 
+    write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).
@@ -1790,6 +1801,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       allocate(mass_trans_coeff_species(k1:k2,N_species), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for mass_trans_coeff_species')
+    allocate(mass_trans_coeff_reactants(k1:k2,N_surface_reactants)   ,STAT=stat)
+    if (stat>0) call fatal_error('register_indep_psurfchem',&
+        'Could not allocate memory for mass_trans_coeff_reactants')
       allocate(Cg(k1:k2), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for Cg')
@@ -1828,6 +1842,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(St)
     deallocate(K_k)
     deallocate(mass_trans_coeff_species)
+    deallocate(mass_trans_coeff_reactants)
     deallocate(Cg)
     deallocate(A_p)   
     deallocate(x_surf)

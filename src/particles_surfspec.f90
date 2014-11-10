@@ -76,7 +76,7 @@ module Particles_surfspec
 !************************************************************************
   subroutine register_indep_psurfspec()
 !
-      integer :: i,k,stat
+      integer :: i,k,stat,k1,k2
 !
       if (nsurfreacspec/=N_surface_species) then
          print*,'N_surface_species: ', N_surface_species
@@ -125,9 +125,6 @@ module Particles_surfspec
     allocate(solid_species(N_surface_species)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for solid_species')
-    allocate(mass_trans_coeff_reactants(N_surface_reactants)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for mass_trans_coeff_reactants')
     allocate(diff_coeff_reactants(N_surface_reactants)   ,STAT=stat)
     if (stat>0) call fatal_error('register_indep_psurfchem',&
         'Could not allocate memory for diff_coeff_reactants')
@@ -308,6 +305,13 @@ module Particles_surfspec
 !
       call calc_rho_p_init(fp)
       call calc_St_init(fp)
+!      
+
+!!$           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
+!!$                 species_constants(jmap(i),imass) * &
+!!$                 (interp_rho(k)*R_cgs*interp_TT(k)/&
+!!$                 interp_pp(k))
+
 !
     end subroutine initialize_particles_surf
 !**************************************************************
@@ -351,6 +355,7 @@ module Particles_surfspec
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (mx,my,mz,mvar) :: df
     real, dimension (mpar_loc,mpvar) :: fp, dfp
+    real, dimension (:,:), allocatable :: term
     type (pencil_case) :: p
     integer, dimension (mpar_loc,3) :: ineargrid
     integer :: k,k1,k2,i,ix0,iy0,iz0
@@ -365,6 +370,10 @@ module Particles_surfspec
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !  
+    allocate(term(k1:k2,1:N_surface_reactants))
+!
+    call calc_mass_trans_reactants()
+!
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
 !  mass fractions to mole fractions)
@@ -378,18 +387,37 @@ module Particles_surfspec
           ix0 =ineargrid(k,1)
           iy0 =ineargrid(k,2)
           iz0 =ineargrid(k,3)
-         do i=1,N_surface_species
-           dfp(k,isurf+i-1) = 0.0
-           fp(k,isurf+i-1) =fp(k,isurf+i-1) + interp_species(k,jmap(i)) / &
-                 species_constants(jmap(i),imass) * &
-                 (interp_rho(k)*R_cgs*interp_TT(k)/&
-                 interp_pp(k))
+         do i=1,N_surface_reactants
+            if(lfirst) then
+               fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
+                    species_constants(jmap(i),imass) * &
+                    (interp_rho(k)*R_cgs*interp_TT(k)/&
+                    interp_pp(k))
+            endif
+            term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*ndot_total(k)+&
+                 mass_trans_coeff_reactants(k,i)*&
+                 (interp_species(k,jmap(i))-fp(k,isurf+i-1))
+!
+!  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
+!
+            dfp(k,isurf+i-1)=3*term(k,i)/&
+                 (porosity(k)*Cg(k)*fp(k,iap))
+!
+!  JONAS: what was implemented was infinite diffusion, but without created species
+!
+!!$           dfp(k,isurf+i-1) = 0.0
+!!$           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
+!!$                 species_constants(jmap(i),imass) * &
+!!$                 (interp_rho(k)*R_cgs*interp_TT(k)/&
+!!$                 interp_pp(k))
          enddo
        else
          !SOLVE implicit
        endif
      endif
    enddo
+!
+   deallocate(term)
 !
   endsubroutine dpsurf_dt_pencil
 !***********************************************************************
@@ -465,13 +493,6 @@ module Particles_surfspec
       else    
          if(inuO2 > 0) call fatal_error('create_jmap','no O2 found')
       endif
-!!$!
-!!$      call find_species_index('H',index_glob,index_chem,found_species)
-!!$      if (found_species) then
-!!$         jH = index_chem
-!!$      else    
-!!$         if(inuH > 0) call fatal_error('create_jmap','no H found')
-!!$      endif
 !
       call find_species_index('CO2',index_glob,index_chem,found_species)
       if (found_species) then
@@ -540,5 +561,22 @@ module Particles_surfspec
     if(inuCH3 > 0)     jmap(inuCH3)=jCH3
 !
   end subroutine create_jmap
+!***********************************************************************
+  subroutine calc_mass_trans_reactants()
+!
+!  restrict mass trans coefficients to surface reactants only
+!
+    integer :: k,i,k1,k2
+!
+    k1 = k1_imn(imn)
+    k2 = k2_imn(imn)
+!
+    do k=k1,k2
+       do i=1, N_surface_reactants
+          mass_trans_coeff_reactants(k,i)=mass_trans_coeff_species(k,i)
+       enddo
+    enddo
+!
+  end subroutine calc_mass_trans_reactants
 !***********************************************************************
   end module Particles_surfspec
