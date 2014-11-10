@@ -67,6 +67,7 @@ module Particles_chemistry
   public :: R_c_hat
   public :: mod_surf_area
   public :: K_k, init_mass
+  public :: mdot_ck
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -368,7 +369,6 @@ module Particles_chemistry
 !***********************************************************************
     subroutine calc_R_c_hat()
 ! 
-!
 !  JONAS talk to nils how to implement things from equ.f90
 !  JONAS implement right sequence so that mdot_ck is always calculated
 !  first
@@ -1080,7 +1080,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
             +nu_prime(i,l)*surface_species_entropy(k,i)&
             -nu(i,l)*surface_species_entropy(k,i)
       enddo
-      if (N_adsorbed_species > 0) then
+      if (N_adsorbed_species > 1) then
       do j=1,N_adsorbed_species
         entropy_k(k,l)=entropy_k(k,l)&
             +mu_prime(j,l)*adsorbed_species_entropy(k,j)&
@@ -1233,7 +1233,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         surface: do i=1,N_surface_reactants
           if (nu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*&
               (pre_Cg*Cg(k)*fp(k,isurf-1+i))**nu(i,j)
-        enddo surface
+        enddo surface 
         adsorbed: if (N_adsorbed_species>1) then
           do i=1,N_adsorbed_species
             if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
@@ -1271,10 +1271,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     integer :: n,i,j,k,l,k1,k2
 !
 
-    ndot=0    
+    ndot=0.    
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
-    Rck=0
+    Rck=0.
 !
     do k=k1,k2
        do l=1,N_surface_reactions
@@ -1290,24 +1290,24 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 ! Find molar reaction rate of adsorbed surface species
 !
   if (N_adsorbed_species>1) then
-    R_j_hat=0
+    R_j_hat=0.
     do k=k1,k2
-    do l=1,N_surface_reactions
-      do j=1,N_adsorbed_species-1
-        R_j_hat(k,j)=R_j_hat(k,j)+(mu_prime(j,l)-mu(j,l))*RR_hat(k,l)
-        Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)&
-            *(mu_prime(j,l)-mu(j,l))*aac(j)
-      enddo
+       do l=1,N_surface_reactions
+          do j=1,N_adsorbed_species-1
+             R_j_hat(k,j)=R_j_hat(k,j)+(mu_prime(j,l)-mu(j,l))*RR_hat(k,l)
+             Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)&
+                  *(mu_prime(j,l)-mu(j,l))*aac(j)
+          enddo
+       enddo
     enddo
-    enddo
-  endif
+ endif
 !
 ! Find mdot_ck
 !
   do k=k1,k2
-  do l=1,N_surface_reactions
-    mdot_ck(k,l)=-St(k)*Rck(k,l)
-  enddo
+     do l=1,N_surface_reactions
+        mdot_ck(k,l)=-St(k)*Rck(k,l)
+     enddo
   enddo
 !
 ! Find the sum of all molar fluxes at the surface
@@ -1595,7 +1595,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     end if
     if (imuadsCO>0)   then
        adsorbed_species_entropy(k,imuadsCO) = &
-            surface_species_entropy(k,inuCO)* &
+           (199.35+(0.0342*fp(k,iTp))) * &
             0.6*(1+(1.44e-4*fp(k,iTp))) - (3.3*gas_constant)
     else
     end if
