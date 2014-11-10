@@ -398,7 +398,7 @@ module Density
       if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
       if (lperi(3)) then
-        call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+        call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,ipp))
       else
         if (iorder_z==2) then
           call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,ipp))

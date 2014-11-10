@@ -434,7 +434,7 @@ module InitialCondition
 !
 !     Use the Poisson solver to solve \nabla^2 A = -J for A
       do j=1,3
-        call inverse_laplacian(f,tmpJ(:,:,:,j))
+        call inverse_laplacian(tmpJ(:,:,:,j))
       enddo
 !
 !     Overwrite the f-array with the correct vector potential A

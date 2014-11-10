@@ -1104,7 +1104,7 @@ module Density
 !  get pressure from inverting the Laplacian
 !
       if (lperi(3)) then
-        call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+        call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,ipp))
 !  refresh the ghost zones: periodic pressure
         call initiate_isendrcv_bdry(f,ipp)
         call finalize_isendrcv_bdry(f,ipp)

@@ -1215,8 +1215,7 @@ module InitialCondition
 !
       selfpotential(l1:l2,m1:m2,n1:n2)=&
            rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      call inverse_laplacian(f,&
-           selfpotential(l1:l2,m1:m2,n1:n2))
+      call inverse_laplacian(selfpotential(l1:l2,m1:m2,n1:n2))
 !
       f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
       call update_ghosts(f)
