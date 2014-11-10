@@ -82,19 +82,14 @@ module Poisson
 !
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(f,phi)
+    subroutine inverse_laplacian(phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
 !
 !  17-jul-2007/wolf: coded wrapper
 !
-      use General, only: keep_compiler_quiet
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny,nz) :: phi
-!
-      intent(inout) :: phi
+      real, dimension(nx,ny,nz), intent(inout) :: phi
 !
       if (lcylindrical_coords) then
         if (lroot) print*,'You are using cylindrical coordinates. '//&
@@ -130,8 +125,6 @@ module Poisson
       else
         call inverse_laplacian_fft(phi)
       endif
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************

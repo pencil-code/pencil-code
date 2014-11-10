@@ -317,7 +317,7 @@ module Selfgravity
       use Particles_main, only: particles_calc_selfpotential
       use Poisson
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
@@ -377,7 +377,7 @@ module Selfgravity
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-        call inverse_laplacian(f,rhs_poisson)
+        call inverse_laplacian(rhs_poisson)
 !
 !  Put potential into f array.
 !
