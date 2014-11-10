@@ -1836,6 +1836,16 @@ module Hydro
         lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_ekin)=.true.
       endif
+      if (idiag_uxmxy/=0 .or. idiag_uymxy/=0 .or. idiag_uzmxy/=0 .or. &
+          idiag_ux2mxy/=0 .or. idiag_uy2mxy/=0 .or. idiag_uz2mxy/=0 .or. &
+          idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or.  &
+          idiag_ruxuymxy/=0 .or. idiag_ruxuzmxy/=0 .or. &
+          idiag_ruyuzmxy/=0) then
+        lpenc_diagnos2d(i_uu)=.true.
+      endif
+      if (idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or. &
+          idiag_ruxuymxy/=0 .or. idiag_ruxuzmxy/=0 .or. idiag_ruyuzmxy/=0) &
+        lpenc_diagnos2d(i_rho)=.true.
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
       if (idiag_uguxmxy/=0 .or. idiag_uguymxy/=0 .or. idiag_uguzmxy/=0) &
