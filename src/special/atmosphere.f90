@@ -78,7 +78,7 @@ module Special
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
-  real :: lnTT1, lnTT2, Ntot_ratio
+  real :: lnTT1, lnTT2, Ntot_ratio=1.
 
 
 ! Keep some over used pencils
@@ -511,40 +511,67 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: l_sz
       real, dimension (mx) :: func_x
-      integer :: j,  sz_l_x,sz_r_x,ll1,ll2
+      integer :: i, j,  sz_l_x,sz_r_x,ll1,ll2, ll1_, ll2_
       real :: dt1, lnTT_ref
       real :: del
       logical :: lzone=.false., lzone_left, lzone_right, lnoACTOS=.true.
+!
+
+!        df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
+!              - p%ccondens
+       
+        if (.not. lACTOS) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+               + 2.5e6/1005.*p%ccondens*p%TT1
+        endif
 !
        dt1=1./(3.*dt)
        del=0.1
 !
 !
+
          lzone_left=.false.
          lzone_right=.false.
 !
-!         sz_r_x=l1+nxgrid-int(del*nxgrid)
-!         sz_l_x=int(del*nxgrid)+l1
+         if (lACTOS) then
 !
-         if ((lbuffer_zone_T) .and. (lACTOS)) then
-         do j=1,2
-         if (j==1) then
-           if (x(l2)==xyz0(1)+Lxyz(1)) then
-!             sz_r_x=3+nxgrid-int(del*nxgrid)
-             ll1=l2-int(del*nxgrid);   ll2=l2
-             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-              -(f(ll1:ll2,m,n,ilnTT)-f(ll1,m,n,ilnTT))*dt1
+           if (lbuffer_zone_T) then
+            lzone=.false.
+            if ((y(m1)==xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
+              if (y(m)>y(int(del*nygrid))) then
+                lzone=.true.
+              endif
+            elseif ((y(m1)>xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
+              if (y(m)<y(nygrid-int(del*nygrid))) then
+                lzone=.true.
+              endif
+            elseif ((y(m1)>xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
+               lzone=.true.
+            elseif ((y(m1)==xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
+              if ((y(m)<y(nygrid-int(del*nygrid))) .and. &
+              (y(m)>y(int(del*nygrid)))) then
+                lzone=.true.
+              endif           
+            endif 
+! 
+             if (lzone) then
+               df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+                 + 2.5e6/1005.*p%ccondens*p%TT1
+ !              do i=1,ndustspec
+ !               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
+ !                     + p%dndr(:,i)
+ !              enddo
+
+             endif
+           else
+             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+              + 2.5e6/1005.*p%ccondens*p%TT1
+ !            do i=1,ndustspec
+ !              df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
+ !                     + p%dndr(:,i)
+ !            enddo
            endif
-         elseif (j==2) then
-           if (x(l1)==xyz0(1)) then
-!             sz_l_x=int(del*nxgrid)+3
-             ll1=l1;   ll2=l1+int(del*nxgrid)
-               df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-                 -(f(ll1:ll2,m,n,ilnTT)-f(ll2,m,n,ilnTT))*dt1
-           endif
-         endif
-        enddo
-        
+!        
         elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
          sz_r_x=l1+nxgrid-int(del*nxgrid)
          sz_l_x=int(del*nxgrid)+l1
@@ -827,9 +854,9 @@ module Special
       real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
       integer :: k,i,i1,i2,i3
 !
+      do i3=n1,n2
       do i1=l1,l2
       do i2=m1,m2
-      do i3=n1,n2
 !
         if (ldcore) then
 !
@@ -872,8 +899,9 @@ module Special
               f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)
             enddo
           endif
-        endif
 !
+       endif
+
       enddo
       enddo
       enddo
@@ -1512,7 +1540,12 @@ subroutine bc_satur_x(f,bc)
 ! 
                enddo
                  init_distr(:,k)=init_distr2(k)
+
+print*,k,'   ',init_distr2(k)
                enddo
+
+
+
 !              
               if (llarge_part) then
                 do k=1,ndustspec
