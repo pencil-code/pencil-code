@@ -218,7 +218,7 @@ module Particles_mass
 !
 !  Calculate the change in particle mass
 !
-          dmass=-St(k)*Rc_hat(k)*mol_mass_carbon
+           dmass = sum(mdot_ck(k,:))         
 !
         else
           dmass=-dmpdt
