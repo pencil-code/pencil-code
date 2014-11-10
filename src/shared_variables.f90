@@ -1111,9 +1111,9 @@ module SharedVariables
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_1d","shared "//trim(name))
       call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_1d","shared g"//trim(name))
       !!do n=n1,n2
       !!  print*,ipz,z(n),prof(n),gprof(n)
       !!enddo
@@ -1135,9 +1135,9 @@ module SharedVariables
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_2d","shared "//trim(name))
       call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_2d","shared g"//trim(name))
 
     endsubroutine fetch_profile_2d
 !***********************************************************************
@@ -1156,9 +1156,9 @@ module SharedVariables
       integer :: ierr
 
       call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared "//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_3d","shared "//trim(name))
       call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("initialize_testfield","shared g"//trim(name))
+      if (ierr/=0) call fatal_error("fetch_profile_3d","shared g"//trim(name))
 
     endsubroutine fetch_profile_3d
 !***********************************************************************
