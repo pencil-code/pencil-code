@@ -820,6 +820,7 @@ module Dustvelocity
       if (lviscd_nud_const) lpenc_requested(i_graddivud)=.true.
       if (lviscd_hyper3_rhod_nud_const) lpenc_requested(i_rhod)=.true.
       if (beta_dPdr_dust/=0.) lpenc_requested(i_cs2)=.true.
+      if (lstokes_highspeed_corr) lpenc_requested(i_rho)=.true.
 !
       lpenc_diagnos(i_uud)=.true.
       if (maxval(idiag_divud2m)/=0) lpenc_diagnos(i_divud)=.true.
