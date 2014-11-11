@@ -69,6 +69,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
   logical :: lviscd_hyper3_polar=.false.
+  logical :: lstokes_highspeed_corr=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
@@ -83,14 +84,16 @@ module Dustvelocity
       dust_chemistry, dust_geometry, tausd, gravx_dust, &
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
       lvshear_dust_global_eps, cdtd, &
-      ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0
+      ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0,&
+      lstokes_highspeed_corr
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
-      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
+      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
+      lstokes_highspeed_corr
 !
   integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -1403,7 +1406,7 @@ module Dustvelocity
       use Sub, only: dot2
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
+      real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
       real :: stokes_prefactor
       integer :: k
 !
@@ -1418,6 +1421,13 @@ module Dustvelocity
 !DHRUBA
       case ('stokes_varmass')
         tausd1(:,k) = betad(k)
+!  Added correction term that account also for larger particle Reynolds
+!  numbers (see e.g. Haugen and Kragset 2010)
+        if (lstokes_highspeed_corr) then
+          call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
+          Rep=2*ad(k)*rho*sqrt(deltaud2)/mu_ext
+          tausd1(:,k) = tausd1(:,k)*(1+0.15*Rep**0.687)
+        endif
 !        stokes_prefactor=6*pi*mucube_by_four_third_pi_grain_density
 !        stokes_prefactor=6*pi*mucube_graind
 !        tausd1(:,k) = stokes_prefactor*p%md(:,k)**(-2./3.)
