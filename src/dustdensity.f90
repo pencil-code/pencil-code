@@ -2105,7 +2105,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: TT1
 !
-      real :: deltavd,deltavd_drift,deltavd_therm,deltavd_turbu,deltavd_drift2
+      real :: deltavd,deltavd_drift=0,deltavd_therm=0
+      real :: deltavd_turbu=0,deltavd_drift2=0
       real :: ust,tl01,teta1
       integer :: i,j,l
 !
