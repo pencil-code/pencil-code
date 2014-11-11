@@ -109,10 +109,11 @@ module Dustdensity
       diffnd_anisotropic
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
-  integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
+  integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
   integer :: idiag_rmom0=0, idiag_rmom1=0, idiag_rmom2=0, idiag_rmom3=0
   integer :: idiag_rmom4=0, idiag_rmom5=0, idiag_rmom6=0, idiag_rmom7=0, idiag_rmom8=0
+  integer, dimension(ndustspec) :: idiag_mdm=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
@@ -1760,6 +1761,7 @@ module Dustdensity
 !
       if (ldiagnos) then
         do k=1,ndustspec
+          if (idiag_mdm(k)/=0) call sum_mn_name(p%md(:,k),idiag_mdm(k))
           if (idiag_ndm(k)/=0) call sum_mn_name(p%nd(:,k),idiag_ndm(k))
           if (idiag_nd2m(k)/=0) call sum_mn_name(p%nd(:,k)**2,idiag_nd2m(k))
           if (idiag_ndmin(k)/=0) &
@@ -1857,7 +1859,7 @@ module Dustdensity
         enddo
         endif
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
-        if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
+        if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
 !  compute moments, assume lmdvar=.true.
 !
@@ -1952,12 +1954,16 @@ module Dustdensity
           do k=1,ndustspec
             i_targ = k
             if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
-              do j=k+1,ndustspec+1
+              !do j=k+1,ndustspec+1
+!AXEL: this writes out of bounds
+              do j=k+1,ndustspec
                 i_targ = j
                 if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
               enddo
             elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
-              do j=k-1,0,-1
+              !do j=k-1,0,-1
+!AXEL: this writes out of bounds
+              do j=k-1,1,-1
                 i_targ = j
                 if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
               enddo
@@ -2319,11 +2325,12 @@ module Dustdensity
 !  Reset everything in case of reset.
 !
       if (lreset) then
+        idiag_mdm=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
         idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
-        idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
+        idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdmtot=0
         idiag_ndmz=0
         idiag_rmom0=0; idiag_rmom1=0; idiag_rmom2=0; idiag_rmom3=0
         idiag_rmom4=0; idiag_rmom5=0; idiag_rmom6=0; idiag_rmom7=0; idiag_rmom8=0
@@ -2339,6 +2346,8 @@ module Dustdensity
 !
         if (lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
         do iname=1,nname
+          call parse_name(iname,cname(iname),cform(iname), &
+              'mdm'//trim(sdust),idiag_mdm(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'ndm'//trim(sdust),idiag_ndm(k))
           call parse_name(iname,cname(iname),cform(iname), &
@@ -2401,7 +2410,7 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'ssrm',idiag_ssrm)
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
-        call parse_name(iname,cname(iname),cform(iname),'mdm',idiag_mdm)
+        call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
         call parse_name(iname,cname(iname),cform(iname),'rmom0',idiag_rmom0)
         call parse_name(iname,cname(iname),cform(iname),'rmom1',idiag_rmom1)
         call parse_name(iname,cname(iname),cform(iname),'rmom2',idiag_rmom2)
