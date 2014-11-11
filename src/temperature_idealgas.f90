@@ -578,14 +578,6 @@ module Energy
             call blob(ampl_lnTT(j),f,ilnTT,radius_lnTT, &
                 center1_x,center1_y,center1_z)
 !
-          case ('peak')
-            if (lroot) print*, 'init_lnTT: peak ', ampl_lnTT(j)
-            if (ltemperature_nolog) then
-              f((l2-l1)/2,4,4,iTT) = exp (ampl_lnTT(j))
-            else
-              f((l2-l1)/2,4,4,ilnTT) = ampl_lnTT(j)
-            endif
-!
           case ('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
