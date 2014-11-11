@@ -24,6 +24,7 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
+  use Particles_chemistry, only: get_q_reac
 !
   implicit none
 !
@@ -177,12 +178,13 @@ subroutine pencil_criteria_par_TT()
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
+      real, dimension(:), allocatable :: q_reac
       real :: volume_cell
       real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0,iy0,iz0
       real :: rho1_point, weight
       integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
-      integer :: ixx,iyy,izz
+      integer :: ixx,iyy,izz,k1,k2
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: dfp, df
@@ -193,15 +195,19 @@ subroutine pencil_criteria_par_TT()
       call keep_compiler_quiet(ineargrid)
 !
       feed_back=0.
+      k1=k1_imn(imn)
+      k2=k2_imn(imn)
+!
+!  Allocate storage for variable transfer and call particles_chemistry
+!  for reactive heating of the particle if lreactive_heating is false,
+!  q_reac is set to zero in particles_chemistry
+!
+      allocate(q_reac(k1:k2))
+      call get_q_reac(q_reac)
 !
 !  Loop over all particles in current pencil.
 !
-          do k=k1_imn(imn),k2_imn(imn)
-!
-!  Set reactive and radiative heat to zero for now
-!
-            Qreac=0.
-            Qrad=0.
+          do k=k1,k2
 !
 !  For a quiecent fluid the Nusselt number is equal to 2. This must be
 !  changed when there is a relative velocity between the partciles and
@@ -231,7 +237,7 @@ subroutine pencil_criteria_par_TT()
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-            dfp(k,iTp)=dfp(k,iTp)+(Qreac-Qc+Qrad)/(pmass*cp_part)
+            dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(pmass*cp_part)
 !
 !  Calculate feed back from the particles to the gas phase
 !
@@ -279,6 +285,8 @@ subroutine pencil_criteria_par_TT()
                 enddo; enddo; enddo
               endif
             enddo
+!
+            deallocate(q_reac)
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************

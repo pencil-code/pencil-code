@@ -308,22 +308,16 @@ subroutine pencil_criteria_par_ads()
       intent (inout) :: dfp
       intent (in) :: fp
 !
-      if (N_adsorbed_species > 1) then
-         n_ads = iads_end - iads +1
          k1=k1_imn(imn)
          k2=k2_imn(imn)
+         n_ads = iads_end - iads +1
 !
-         if (lexperimental_adsorbed) then
-            do k=k1,k2
-               dfp(k,iads:iads_end)=0.0
-            enddo
-         else
-            do k=k1,k2
-               dfp(k,iads:iads_end)= R_j_hat(k,1:n_ads)/ &
-                    total_carbon_sites + mod_surf_area(k)* &
-                    R_c_hat(k)*fp(k,iads:iads_end)
-            enddo
-         endif
+      if (N_adsorbed_species > 1) then
+         do k=k1,k2
+            dfp(k,iads:iads_end)= R_j_hat(k,1:n_ads)/ &
+                 total_carbon_sites + mod_surf_area(k)* &
+                 R_c_hat(k)*fp(k,iads:iads_end)
+         enddo
       endif
 !
     endsubroutine dpads_dt_pencil

@@ -396,7 +396,10 @@ module Particles_surfspec
             endif
             term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*ndot_total(k)+&
                  mass_trans_coeff_reactants(k,i)*&
-                 (interp_species(k,jmap(i))-fp(k,isurf+i-1))
+                 (interp_species(k,jmap(i))/ &
+                    species_constants(jmap(i),imass) * &
+                    (interp_rho(k)*R_cgs*interp_TT(k)/&
+                    interp_pp(k)) -fp(k,isurf+i-1))
 !
 !  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
@@ -416,6 +419,17 @@ module Particles_surfspec
        endif
      endif
    enddo
+   print*,'x_infty'
+   do i=1,N_surface_reactants
+      print*,interp_species(k1,jmap(i))/ &
+                    species_constants(jmap(i),imass) * &
+                    (interp_rho(k1)*R_cgs*interp_TT(k1)/&
+                    interp_pp(k1))
+   enddo
+   print*,'term'
+   print*,term(k1,:)
+   print*,'ndot'
+   print*,ndot(k1,:)
 !
    deallocate(term)
 !

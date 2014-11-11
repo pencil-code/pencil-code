@@ -73,6 +73,7 @@ module Particles_chemistry
   public :: ndot
   public :: porosity
   public :: Cg
+  public :: lreactive_heating
  !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -145,6 +146,7 @@ module Particles_chemistry
   logical :: lthiele=.false.
   logical :: lboundary_explicit=.false.
   logical :: linfinite_diffusion=.false.
+  logical :: lreactive_heating=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -180,6 +182,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species,Cg,A_p
   real, dimension(:,:), allocatable :: x_surf
+  real, dimension(:), allocatable :: q_reac
 
 !
 !  Some physical constants
@@ -207,7 +210,8 @@ module Particles_chemistry
        chemplaceholder, &
        lthiele, &
        lboundary_explicit, &
-       linfinite_diffusion
+       linfinite_diffusion, &
+       lreactive_heating
 !
   contains
 !***********************************************************************
@@ -1246,12 +1250,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         endif adsorbed
       enddo
     enddo
-    print*,'RR_hattwo'
-    write(*,'(12E12.4)') RR_hat(k1,:)
-    print*, 'isurf2' 
-    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
-    print*, 'iads1' 
+!!$    print*,'RR_hattwo'
+!!$    write(*,'(12E12.4)') RR_hat(k1,:)
+    print*, 'Cs' 
     write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
+    print*, 'Cg*xsurf' 
+    write(*,'(3E12.4)')Cg(k1)*fp(1,isurf:isurf_end)
+    print*, 'xsurf' 
+    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).
@@ -1515,7 +1521,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-!  Unit: J/(mol*K)
+!  Unit: J/(mol)
 !
     do k=k1,k2
        if (inuH2O>0) surface_species_enthalpy(k,inuH2O)=-242.18e3-(5.47*fp(k,iTp))
@@ -1625,7 +1631,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     integer :: k,k1,k2
 !
 !  JONAS: values are from nist and solid_phase.f90 of the stanford
-!  code Units: J/kmol
+!  code Units: J/mol
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
@@ -1712,6 +1718,13 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     call calc_mass_trans_coeff(f,fp,p,ineargrid)
     call calc_x_surf(f,fp,ineargrid)
     call calc_RR_hat(f,fp)
+!
+    if (lreactive_heating) then
+       call calc_q_reac()
+    else
+       q_reac=0.0
+    endif
+!
     call calc_ndot_mdot_R_j_hat(fp)
     call calc_R_c_hat()
 !
@@ -1729,6 +1742,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     allocate(rho_p(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for rho_p')
+    allocate(q_reac(k1:k2) ,STAT=stat)
+    if (stat>0) call fatal_error('allocate_variable_pencils',&
+        'Could not allocate memory for q_reac')
     allocate(porosity(k1:k2) ,STAT=stat)
     if (stat>0) call fatal_error('allocate_variable_pencils',&
         'Could not allocate memory for porosity')
@@ -1846,6 +1862,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(Cg)
     deallocate(A_p)   
     deallocate(x_surf)
+    deallocate(q_reac)
 !
   end subroutine cleanup_chemistry_pencils
 !***************************************************
@@ -2200,4 +2217,37 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine calc_Cs
 !*************************************************************************
+  subroutine calc_q_reac()
+!
+!  calculate the reactive heating of the particle
+!
+        integer :: k,k1,k2,i
+        real, dimension(:,:), allocatable :: qk_reac
+!
+    k1 = k1_imn(imn)
+    k2 = k2_imn(imn)
+!
+    allocate(qk_reac(k1:k2,N_surface_reactions))
+    do k=k1,k2
+       qk_reac(k,:) = RR_hat(k,:)*St(k)*(-heating_k(k,:))
+       q_reac(k) = sum(qk_reac(k,:))
+    enddo
+!
+!  JONAS: UNITS!!!!! qreac is in Joule, which is 10^7ergs
+!
+    if (allocated(q_reac)) deallocate(q_reac)
+!
+  end subroutine calc_q_reac
+!*************************************************************************
+  subroutine get_q_reac(var)
+!
+!  transport routine to particles_temperature module
+!
+!
+  real, dimension(:) :: var
+!
+  var = q_reac
+!
+  end subroutine get_q_reac
+!************************************************************************
   end module Particles_chemistry

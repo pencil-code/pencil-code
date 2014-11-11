@@ -12,6 +12,7 @@
 !  public :: get_total_carbon_sites
   public :: get_RR_hat
   public :: get_ac
+  public :: get_q_reac
 
   public :: find_species
 

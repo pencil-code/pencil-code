@@ -342,4 +342,14 @@ integer function find_species()
 !
     end subroutine calc_rho_p
 !***********************************************************************
+  subroutine get_q_reac(var)
+!
+!  11-nov-2014/jonas: coded
+!
+    real, dimension(:) :: var
+!
+    call keep_compiler_quiet(var)
+!
+  end subroutine get_q_reac
+!***********************************************************************
   end module Particles_chemistry
