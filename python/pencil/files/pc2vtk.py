@@ -10,7 +10,7 @@ import struct
 
 # Convert var files into vtk format
 def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = [],
+           variables = ['rho','uu','bb'], magic = [], b_ext = False,
            destination = 'work', quiet = True):
     """
     Convert data from PencilCode format to vtk.
@@ -41,8 +41,14 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *magic*: [ 'vort' , 'bb' ]
         Additional variables which should be written.
        
+      *b_ext*:
+        Add the external magnetic field.
+        
       *destination*:
         Destination file.
+        
+      *quiet*:
+        Keep quiet when reading the var files.
     """
 
     # this should correct for the case the user type only one variable
@@ -83,6 +89,14 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                     
     grid = pc.read_grid(datadir = datadir, proc = proc, trim = True, quiet = True)
     
+    params = pc.read_param(param2 = True, quiet = True)
+    B_ext = np.array(params.b_ext)    
+    # add external magnetic field
+    if (b_ext == True):
+        var.bb[0,...] += B_ext[0]
+        var.bb[1,...] += B_ext[1]
+        var.bb[2,...] += B_ext[2]
+       
     dimx = len(grid.x)
     dimy = len(grid.y)
     dimz = len(grid.z)
@@ -302,7 +316,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
 # Convert var files into vtk format and make video
 def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = [],
+           variables = ['rho','uu','bb'], magic = [], b_ext = False,
            destination = 'animation', quiet = True):
     """
     Convert data from PencilCode format to vtk.
@@ -336,8 +350,14 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *magic*: [ 'vort' , 'bb' ]
         Additional variables which should be written.
        
+      *b_ext*:
+        Add the external magnetic field.
+        
       *destination*:
-        Destination files without '.vtk' extension.        
+        Destination files without '.vtk' extension. 
+        
+      *quiet*:
+        Keep quiet when reading the var files.
     """
 
     # this should correct for the case the user type only one variable
@@ -384,6 +404,14 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                         
         grid = pc.read_grid(datadir = datadir, proc = proc, trim = True, quiet = True)
         
+        params = pc.read_param(param2 = True, quiet = True)
+        B_ext = np.array(params.b_ext)    
+        # add external magnetic field
+        if (b_ext == True):
+            var.bb[0,...] += B_ext[0]
+            var.bb[1,...] += B_ext[1]
+            var.bb[2,...] += B_ext[2]
+            
         dimx = len(grid.x)
         dimy = len(grid.y)
         dimz = len(grid.z)
