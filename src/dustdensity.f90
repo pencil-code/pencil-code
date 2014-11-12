@@ -40,7 +40,7 @@ module Dustdensity
 !
   include 'dustdensity.h'
 !
-  integer, parameter :: ndiffd_max=4, mmom=60
+  integer, parameter :: ndiffd_max=4, mmom=61
 !  integer, parameter :: ndustspec0=10 !8
 !  real, dimension(mx,my,mz,ndustspec,ndustspec0), SAVE :: nd_full
   real, dimension(nx,ndustspec,ndustspec0), SAVE :: dndr_full, ppsf_full
@@ -2425,7 +2425,8 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
         do k=1,mmom
-          call parse_name(iname,cname(iname),cform(iname),'rmom',idiag_rmom(k))
+          sdust=itoa(k)
+          call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))
         enddo
       enddo
 !
