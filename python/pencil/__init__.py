@@ -19,7 +19,10 @@ from pencil.files.power import *
 from pencil.files.animate_interactive import *
 from pencil.files.pc2vtk import *
 from pencil.files.post_processing import *
-from pencil.files.streamlines import *
+try:
+    from pencil.files.streamlines import *
+except ImportError:
+    print "streamlines not loaded (vtk pb?)"
 from pencil.files.tracers import *
 from pencil.files.kf import *
 from pencil.files.get_format import *
