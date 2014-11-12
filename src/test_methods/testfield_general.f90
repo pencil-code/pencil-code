@@ -567,9 +567,9 @@ module Testfield_general
       integer :: j
 
       do j=1,3
-        daatest(:,j)=etatest*eta*del2Atest(:,j)
+        daatest(:,j)=eta*del2Atest(:,j)
       enddo
-
+      
       do j=1,size(jg)
         daatest(:,jg(j))=daatest(:,jg(j))+geta*divatest
       enddo
