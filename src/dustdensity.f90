@@ -65,7 +65,7 @@ module Dustdensity
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  BB0, Ntot
-  real :: nd_reuni,init_x1, init_x2
+  real :: nd_reuni,init_x1, init_x2, a0
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -85,6 +85,7 @@ module Dustdensity
   logical :: latm_chemistry=.false., lsubstep=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
+  logical :: reinitialize_nd=.false.
   integer :: iadvec_ddensity=0
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
 !
@@ -98,7 +99,7 @@ module Dustdensity
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
-      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep
+      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, &
@@ -106,7 +107,7 @@ module Dustdensity
       ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, deltavd_const, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
-      diffnd_anisotropic
+      diffnd_anisotropic,reinitialize_nd
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
@@ -250,7 +251,16 @@ module Dustdensity
           'Dust growth only works with pscalar')
       endif
 !
-!  Reinitializing dustdensity.
+!  Reinitialize dustdensity
+!
+      if (reinitialize_nd) then
+        f(:,:,:,ind)=0.
+        call init_nd(f)
+      endif
+!
+!  Reinitializing dustdensity 
+!  NILS: This could probably be removed since one now can use the
+!  NILS: reinitialization instead.
 !
       if (lresetuniform_dustdensity) then
         if (lroot) print*, &
@@ -541,6 +551,16 @@ module Dustdensity
           endif
           do k=2,ndustspec
             f(:,:,:,ind(k))=f(:,:,:,ind(k))+amplnd_rel(k)*f(:,:,:,ind(1))
+          enddo
+        case ('gaussian')
+          if (headtt) then
+            print*, 'init_nd: Gaussian distribution in particle radius'
+            print*, 'init_nd: amplnd   =',amplnd
+            print*, 'init_nd: a0, sigmad=',a0, sigmad
+          endif
+          do k=1,ndustspec
+            f(:,:,:,ind(k))=f(:,:,:,ind(k))&
+                +amplnd*exp(-(ad(k)-a0)**2/sigmad**2)
           enddo
         case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
