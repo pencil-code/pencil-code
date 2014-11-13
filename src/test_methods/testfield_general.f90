@@ -534,12 +534,12 @@ module Testfield_general
 !
 !   6-sep-13/MR: coded
 !
-      real, dimension(nx,3),intent(IN) :: del2Atest
-      real, dimension(nx),  intent(IN) :: divatest
-      real,                 intent(IN) :: eta
-      real, dimension(*),   intent(IN) :: geta
-      integer, dimension(:),intent(IN) :: jg                        
-      real, dimension(nx,3),intent(OUT):: daatest
+      real, dimension(nx,3),    intent(IN) :: del2Atest
+      real, dimension(nx),      intent(IN) :: divatest
+      real,                     intent(IN) :: eta
+      integer, dimension(:),    intent(IN) :: jg                        
+      real, dimension(size(jg)),intent(IN) :: geta
+      real, dimension(nx,3),    intent(OUT):: daatest
 !
       integer :: j
 
