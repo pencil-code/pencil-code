@@ -1252,12 +1252,10 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     enddo
 !!$    print*,'RR_hattwo'
 !!$    write(*,'(12E12.4)') RR_hat(k1,:)
-    print*, 'Cs' 
-    write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
-    print*, 'Cg*xsurf' 
-    write(*,'(3E12.4)')Cg(k1)*fp(1,isurf:isurf_end)
-    print*, 'xsurf' 
-    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
+!!$    print*, 'Cs' 
+!!$    write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
+!!$    print*, 'xsurf' 
+!!$    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).

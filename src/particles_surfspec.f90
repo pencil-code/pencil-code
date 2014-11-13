@@ -38,6 +38,7 @@ module Particles_surfspec
   real, dimension(:), allocatable :: uscale,fscale,constr
   integer, dimension(:), allocatable :: dependent_reactant
   integer :: surf_save
+  logical :: lspecies_transfer=.true.
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -54,7 +55,8 @@ module Particles_surfspec
        init_surf_gas_frac
 !
   namelist /particles_surf_run_pars/ &
-       surfplaceholder
+       surfplaceholder, &
+       lspecies_transfer
 !
   contains
 !***********************************************************************
@@ -359,6 +361,13 @@ module Particles_surfspec
     type (pencil_case) :: p
     integer, dimension (mpar_loc,3) :: ineargrid
     integer :: k,k1,k2,i,ix0,iy0,iz0
+    real :: weight, volume_cell,rho1_point
+    real :: mean_molar_mass, dmass
+    integer :: ix1,iy1,iz1
+    integer :: ixx,iyy,izz
+    integer :: ixx0,iyy0,izz0
+    integer :: ixx1,iyy1,izz1
+    integer :: index1,index2
 
     intent (in) :: f, ineargrid
     intent (inout) :: dfp, df, fp
@@ -378,9 +387,12 @@ module Particles_surfspec
 !  (infinite diffusion, set as far field and convert from
 !  mass fractions to mole fractions)
 !
-   do k=k1,k2
+    particle: do k=k1,k2
 !
-     if (lboundary_explicit) then
+       mean_molar_mass = (interp_rho(k)*R_cgs*interp_TT(k)/&
+                    interp_pp(k))
+!
+     surface: if (lboundary_explicit) then
        !SOLVE explicitly
      else
        if (linfinite_diffusion) then
@@ -391,15 +403,13 @@ module Particles_surfspec
             if(lfirst) then
                fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
                     species_constants(jmap(i),imass) * &
-                    (interp_rho(k)*R_cgs*interp_TT(k)/&
-                    interp_pp(k))
+                    mean_molar_mass
             endif
             term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*ndot_total(k)+&
                  mass_trans_coeff_reactants(k,i)*&
                  (interp_species(k,jmap(i))/ &
                     species_constants(jmap(i),imass) * &
-                    (interp_rho(k)*R_cgs*interp_TT(k)/&
-                    interp_pp(k)) -fp(k,isurf+i-1))
+                    mean_molar_mass -fp(k,isurf+i-1))
 !
 !  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
@@ -417,8 +427,39 @@ module Particles_surfspec
        else
          !SOLVE implicit
        endif
-     endif
-   enddo
+     endif surface
+!
+!  the following block is thoroughly commented in particles_temperature
+!  find values for transfer of variables from particle to fluid
+     transfer: if (lspecies_transfer) then
+        call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+             fp,k,ix0,iy0,iz0)
+        cell: do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+           call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+           call find_grid_volume(ixx,iyy,izz,volume_cell)
+           if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+              rho1_point =1.0 / get_gas_density(f,ixx,iyy,izz)
+           else
+              rho1_point = p%rho1(ixx-nghost)
+           endif
+!
+!  negative dmass means particle is losing mass
+!
+           dmass = sum(mdot_ck(k,:))
+!
+           do i=1,N_surface_species
+              index1 = jmap(i)
+              index2= ichemspec(index1)
+              df(ixx,iyy,izz,index2)=&
+                   df(ixx,iyy,izz,index2)+&
+                   (ndot(k,i)*species_constants(index1,imass)+&
+                   dmass*interp_species(k,index1))*&                   
+                   rho1_point*weight/volume_cell
+           enddo
+
+        enddo; enddo; enddo cell
+     endif transfer
+  enddo particle
    print*,'x_infty'
    do i=1,N_surface_reactants
       print*,interp_species(k1,jmap(i))/ &
@@ -426,10 +467,10 @@ module Particles_surfspec
                     (interp_rho(k1)*R_cgs*interp_TT(k1)/&
                     interp_pp(k1))
    enddo
-   print*,'term'
-   print*,term(k1,:)
-   print*,'ndot'
-   print*,ndot(k1,:)
+!!$   print*,'term'
+!!$   print*,term(k1,:)
+!!$   print*,'ndot'
+!!$   print*,ndot(k1,:)
 !
    deallocate(term)
 !
@@ -592,5 +633,24 @@ module Particles_surfspec
     enddo
 !
   end subroutine calc_mass_trans_reactants
+!***********************************************************************
+    real function get_gas_density(f, ix, iy, iz) result(rho)
+!
+!  Reads the gas density at location (ix, iy, iz).
+!
+!  20-may-13/ccyang: coded.
+!  NILS: This should be made a general routine in order to avoid the
+!  NILS: current code dublication with particles_dust.f90
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix, iy, iz
+!
+      linear: if (ldensity_nolog) then
+        rho = f(ix, iy, iz, irho)
+      else linear
+        rho = exp(f(ix, iy, iz, ilnrho))
+      endif linear
+!
+    endfunction get_gas_density
 !***********************************************************************
   end module Particles_surfspec
