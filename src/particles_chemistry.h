@@ -13,6 +13,7 @@
   public :: get_RR_hat
   public :: get_ac
   public :: get_q_reac
+  public :: get_nusselt
 
   public :: find_species
 

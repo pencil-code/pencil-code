@@ -460,13 +460,14 @@ module Particles_surfspec
         enddo; enddo; enddo cell
      endif transfer
   enddo particle
-   print*,'x_infty'
-   do i=1,N_surface_reactants
-      print*,interp_species(k1,jmap(i))/ &
-                    species_constants(jmap(i),imass) * &
-                    (interp_rho(k1)*R_cgs*interp_TT(k1)/&
-                    interp_pp(k1))
-   enddo
+!
+!!$   print*,'x_infty'
+!!$   do i=1,N_surface_reactants
+!!$      print*,interp_species(k1,jmap(i))/ &
+!!$                    species_constants(jmap(i),imass) * &
+!!$                    (interp_rho(k1)*R_cgs*interp_TT(k1)/&
+!!$                    interp_pp(k1))
+!!$   enddo
 !!$   print*,'term'
 !!$   print*,term(k1,:)
 !!$   print*,'ndot'

@@ -24,7 +24,7 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Particles_chemistry, only: get_q_reac
+  use Particles_chemistry, only: get_q_reac, get_Nusselt
 !
   implicit none
 !
@@ -178,9 +178,9 @@ subroutine pencil_criteria_par_TT()
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
-      real, dimension(:), allocatable :: q_reac
+      real, dimension(:), allocatable :: q_reac,Nusselt
       real :: volume_cell
-      real :: pmass, Qc, Qreac, Qrad, Nusselt, Ap, heat_trans_coef, cond
+      real :: pmass, Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0,iy0,iz0
       real :: rho1_point, weight
       integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
@@ -204,6 +204,8 @@ subroutine pencil_criteria_par_TT()
 !
       allocate(q_reac(k1:k2))
       call get_q_reac(q_reac)
+      allocate(Nusselt(k1:k2))
+      call get_Nusselt(Nusselt)
 !
 !  Loop over all particles in current pencil.
 !
@@ -213,7 +215,7 @@ subroutine pencil_criteria_par_TT()
 !  changed when there is a relative velocity between the partciles and
 !  the fluid.
 !
-            Nusselt=2.
+!            Nusselt=2.
 !
 !  Calculate convective and conductive heat
 !
@@ -223,7 +225,7 @@ subroutine pencil_criteria_par_TT()
             inx0=ix0-nghost;
             cond=p%tcond(inx0)
             Ap=4.*pi*fp(k,iap)**2
-            heat_trans_coef=Nusselt*cond/(2*fp(k,iap))
+            heat_trans_coef=Nusselt(k)*cond/(2*fp(k,iap))
             Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Find the mass of the particle
@@ -287,6 +289,8 @@ subroutine pencil_criteria_par_TT()
             enddo
 !
             deallocate(q_reac)
+            deallocate(Nusselt)
+
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
@@ -389,7 +393,7 @@ subroutine pencil_criteria_par_TT()
 !
     endfunction get_gas_density
 !***********************************************************************
-subroutine particles_TT_prepencil_calc(f)
+    subroutine particles_TT_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded
 !

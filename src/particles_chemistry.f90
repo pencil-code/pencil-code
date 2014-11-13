@@ -183,6 +183,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: diff_coeffs_species,Cg,A_p
   real, dimension(:,:), allocatable :: x_surf
   real, dimension(:), allocatable :: q_reac
+  real, dimension(:), allocatable :: Nu_p
 
 !
 !  Some physical constants
@@ -1719,6 +1720,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     if (lreactive_heating) then
        call calc_q_reac()
+       call calc_Nusselt()
     else
        q_reac=0.0
     endif
@@ -1827,6 +1829,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       allocate(x_surf(k1:k2,N_surface_species), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
            'Could not allocate memory for x_surf')
+     allocate(Nu_p(k1:k2), STAT=stat)
+      if (stat>0) call fatal_error('allocate_variable_pencils',&
+           'Could not allocate memory for Nu_p')
 !
   end subroutine allocate_variable_pencils
 !***************************************************
@@ -1861,6 +1866,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     deallocate(A_p)   
     deallocate(x_surf)
     deallocate(q_reac)
+    deallocate(Nu_p)
 !
   end subroutine cleanup_chemistry_pencils
 !***************************************************
@@ -2248,4 +2254,50 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine get_q_reac
 !************************************************************************
+    subroutine calc_Nusselt()
+!
+!
+!
+      integer :: k,k1,k2
+      real :: Pr_g, Sc_g,rep
+!
+      k1=k1_imn(imn)
+      k2=k2_imn(imn)
+!
+!  JONAS: access to some chemistry variables as well to particles_dust for rep(k) 
+!  for Pr and Sc is needed, these are only placeholders!!!
+!
+         Pr_g = 0.7 
+         Sc_g = 0.65
+         rep = 0.0002
+!
+      do k=k1,k2
+!  case from the paper "Dimensionless heat-mass transfer coefficients 
+!  for forced convection around a sphere: a general low 
+!  Reynolds number correlation
+         if (rep<3.5) then
+            Nu_p(k) = 0.5+0.5*(1+2*rep*Pr_g)**(1./3.)
+!  First case in "The effect of particle packing on the Nusselt 
+!  number in a cluster of particles
+         else if (rep>=3.5 .and. rep<=7.6e4 .and. &
+              Pr_g>=0.7 .and. Pr_g<=380.) then
+            Nu_p(k)=2.0+(0.4*rep**0.5+0.06*rep**0.67)*&
+                 Pr_g**0.4
+         else
+            Nu_p=2.0
+         endif
+      enddo
+!
+    end subroutine calc_Nusselt
+!***********************************************************************
+    subroutine get_Nusselt(var)
+!
+!
+!
+      real, dimension(:) :: var
+!
+      var = Nu_p
+!
+    end subroutine get_Nusselt
+!**********************************************************************
   end module Particles_chemistry

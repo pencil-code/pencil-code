@@ -352,4 +352,14 @@ integer function find_species()
 !
   end subroutine get_q_reac
 !***********************************************************************
+  subroutine get_Nusselt(var)
+!
+!  11-nov-2014/jonas: coded
+!
+    real, dimension(:) :: var
+!
+    call keep_compiler_quiet(var)
+!
+  end subroutine get_Nusselt
+!***********************************************************************
   end module Particles_chemistry
