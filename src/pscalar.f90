@@ -35,6 +35,7 @@ module Pscalar
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
   logical :: ldustdrift=.false.
+  logical :: reinitialize_lncc=.false.
 !
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
@@ -44,7 +45,8 @@ module Pscalar
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
 !
   namelist /pscalar_run_pars/ &
-      pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc
+      pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc, &
+      reinitialize_lncc
 !
   integer :: idiag_rhoccm=0     ! DIAG_DOC: $\left<\varrho c\right>$
   integer :: idiag_ccmax=0      ! DIAG_DOC: $\max(c)$
@@ -125,7 +127,12 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+!  Re-initialize scalar
+!
+      if (reinitialize_lncc) then
+        f(:,:,:,ilncc)=0.
+        call init_lncc(f)
+      endif
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
