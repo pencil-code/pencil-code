@@ -65,7 +65,7 @@ module Dustdensity
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  BB0, Ntot
-  real :: nd_reuni,init_x1, init_x2, a0
+  real :: nd_reuni,init_x1, init_x2, a0, a1
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -99,7 +99,7 @@ module Dustdensity
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
-      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0
+      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, &
@@ -463,7 +463,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
-      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del
+      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del, fac
       real, pointer :: rhs_poisson_const
       integer :: j, k, l, i, ierr
       logical :: lnothing
@@ -555,11 +555,21 @@ module Dustdensity
           if (headtt) then
             print*, 'init_nd: Gaussian distribution in particle radius'
             print*, 'init_nd: amplnd   =',amplnd
-            print*, 'init_nd: a0, sigmad=',a0, sigmad
+            print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
           endif
           do k=1,ndustspec
-            f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                +amplnd*exp(-(ad(k)-a0)**2/sigmad**2)
+            if (a1 == 0) then
+              f(:,:,:,ind(k))=f(:,:,:,ind(k))&
+                  +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2)
+            else
+              if (a1>ad(k)) then
+                fac=(ad(k)/a0-1.)**2/(ad(k)/a0-a1/a0)**2
+                f(:,:,:,ind(k))=f(:,:,:,ind(k))&
+                    +amplnd*exp(-0.5*fac/(sigmad/a0)**2)
+              else
+                f(:,:,:,ind(k))=0.
+              endif
+            endif
           enddo
         case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
