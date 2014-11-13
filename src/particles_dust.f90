@@ -74,6 +74,7 @@ module Particles
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
   real :: fake_particle_radius=0.0
+  real :: pscalar_sink_rate=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -103,6 +104,7 @@ module Particles
   logical :: lcalc_uup=.false.
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
+  logical :: lpscalar_sink=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -203,7 +205,8 @@ module Particles
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
-      l_shell, k_shell, lparticlemesh_pqs_assignment
+      l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
+      lpscalar_sink
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3043,7 +3046,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_par, dxp, dyp, dzp
+      real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
@@ -3196,7 +3199,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-              if (ldragforce_gas_par) then
+              if (ldragforce_gas_par .or. (lpscalar_sink .and. lpscalar)) then
 !
 !  Cloud In Cell (CIC) scheme.
 !
@@ -3231,6 +3234,11 @@ k_loop:   do while (.not. (k>npar_loc))
                     call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
                     df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                          rhop_swarm_par*rho1_point*dragforce*weight
+                    if (lpscalar_sink .and. lpscalar) then
+                      call find_grid_volume(ixx,iyy,izz,volume_cell)
+                      df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                          weight*pscalar_sink_rate/volume_cell
+                    endif
                   enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -3300,6 +3308,11 @@ k_loop:   do while (.not. (k>npar_loc))
                           rhop_swarm_par)
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                            rhop_swarm_par*rho1_point*dragforce*weight
+                      if (lpscalar_sink .and. lpscalar) then
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                            weight*pscalar_sink_rate/volume_cell
+                      endif
                     enddo; enddo; enddo
                   else
 !
@@ -3364,6 +3377,11 @@ k_loop:   do while (.not. (k>npar_loc))
                           rhop_swarm_par)
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                            rhop_swarm_par*rho1_point*dragforce*weight
+                      if (lpscalar_sink .and. lpscalar) then
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                            weight*pscalar_sink_rate/volume_cell
+                      endif
                     enddo; enddo; enddo
                   endif
                 else
@@ -3374,6 +3392,11 @@ k_loop:   do while (.not. (k>npar_loc))
                   call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
                   df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                        rhop_swarm_par*p%rho1(l-nghost)*dragforce
+                  if (lpscalar_sink .and. lpscalar) then
+                    call find_grid_volume(l,m,n,volume_cell)
+                    df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                        pscalar_sink_rate/volume_cell
+                  endif
                 endif
               endif
 !
