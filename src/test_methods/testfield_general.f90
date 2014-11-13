@@ -199,9 +199,9 @@ module Testfield_general
 !  
 !  for x and y or x and z dependent profiles: index for second component of geta is 2 or 3, respectively.
 !
-        if (lresitest_prof(inxy)) then
+        if (lresitest_prof(inxy).or.lresitest_prof(iny)) then
           jgprof=2
-        elseif (lresitest_prof(inxz)) then
+        elseif (lresitest_prof(inxz).or.lresitest_prof(inz)) then
           jgprof=3
         endif
 !
@@ -543,12 +543,11 @@ module Testfield_general
 !
       integer :: j
 
-      daatest=(eta*etatest)*del2Atest
+      daatest=eta*del2Atest
 
       do j=1,size(jg)
-        daatest(:,jg(j))=daatest(:,jg(j))+geta(jg(j))*divatest
+        daatest(:,jg(j))=daatest(:,jg(j))+geta(j)*divatest
       enddo
-
     endsubroutine calc_diffusive_part_prof_0d
 !***********************************************************************
     subroutine calc_diffusive_part_prof_1d(del2Atest,divatest,eta,geta,jg,daatest)
@@ -560,7 +559,8 @@ module Testfield_general
 !   6-sep-13/MR: coded
 !
       real, dimension(nx,3),intent(IN) :: del2Atest
-      real, dimension(nx),  intent(IN) :: divatest,eta,geta
+      real, dimension(nx),  intent(IN) :: eta,divatest
+      real, dimension(nx,*),intent(IN) :: geta
       integer, dimension(:),intent(IN) :: jg
       real, dimension(nx,3),intent(OUT):: daatest
 
@@ -571,7 +571,7 @@ module Testfield_general
       enddo
       
       do j=1,size(jg)
-        daatest(:,jg(j))=daatest(:,jg(j))+geta*divatest
+        daatest(:,jg(j))=daatest(:,jg(j))+geta(:,j)*divatest
       enddo
 
     endsubroutine calc_diffusive_part_prof_1d
