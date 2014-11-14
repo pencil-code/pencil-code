@@ -14,6 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos !,dsdr
+! PENCILS PROVIDED initss; initlnrho
 !
 !***************************************************************
 module Energy
@@ -117,8 +118,8 @@ module Energy
   logical, pointer :: lreduced_sound_speed
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
-  logical, save :: lsubtract_init_stratification=.false.
   logical :: lborder_heat_variable=.false.
+  logical :: lchromospheric_cooling=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -179,7 +180,7 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
-      lsubtract_init_stratification,Pres_cutoff
+      Pres_cutoff,lchromospheric_cooling
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2606,7 +2607,11 @@ module Energy
         lpenc_requested(i_cs2)=.true.
       endif
         
-      if (cool_newton/=0.0) lpenc_requested(i_TT)=.true.
+      if (cool_newton/=0.0) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_cp)=.true.
+      endif
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -2716,6 +2721,12 @@ module Energy
         lpenc_requested(i_pp)=.true.
       endif
 !
+! Store initial startification as pencils if f-array space allocated
+!
+      if (iglobal_lnrho0/=0) lpenc_requested(i_initlnrho)=.true.
+      if (iglobal_ss0/=0) lpenc_requested(i_initss)=.true.
+
+!
     endsubroutine pencil_criteria_energy
 !***********************************************************************
     subroutine pencil_interdep_energy(lpencil_in)
@@ -2813,6 +2824,12 @@ module Energy
 !  transprhos
       if (lpencil(i_transprhos)) &
           call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1)
+!
+! initlnrho
+      if (lpencil(i_initlnrho)) p%initlnrho=f(l1:l2,m,n,iglobal_lnrho0)
+!
+! initss
+      if (lpencil(i_initss)) p%initss=f(l1:l2,m,n,iglobal_ss0)
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -3723,10 +3740,6 @@ module Energy
 !
       call del6fj(f,chi_hyper3_aniso,iss,tmp)
       thdiff = tmp
-      if (lsubtract_init_stratification) then 
-        call del6fj(f,chi_hyper3_aniso,iglobal_ss0,tmp)
-        thdiff = thdiff-tmp
-      endif
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
@@ -4617,6 +4630,8 @@ module Energy
       use Diagnostics, only: sum_mn_name
       use Gravity, only: z2
       use Debug_IO, only: output_pencil
+      use EquationOfState, only: cs0, get_cp1, lnrho0, &
+                                 gamma,gamma_m1
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4624,6 +4639,7 @@ module Energy
 !
       real, dimension (nx) :: heat, TT_drive
       real :: profile_buffer
+      real :: xi,cp1,Rgas
 !
       intent(in) :: p
       intent(inout) :: Hmax,df
@@ -4686,7 +4702,20 @@ module Energy
 !  Add spatially uniform cooling in Ds/Dt equation.
 !
       if (cool_uniform/=0.0) heat=heat-cool_uniform*p%rho*p%cp*p%TT
-      if (cool_newton/=0.0) heat=heat-cool_newton*p%TT**4
+      if (cool_newton/=0.0) then
+        if (lchromospheric_cooling) then
+          call get_cp1(cp1)
+          Rgas=(1.0-gamma1)/cp1
+          xi=(z(n)-z_cor)/(xyz1(3)-z_cor)
+          profile_buffer=xi**2*(3-2*xi)
+          TT_drive=(cs0**2*(exp(gamma*cp1*p%initss+&
+                   gamma_m1*(p%initlnrho-lnrho0))))/(gamma*Rgas)
+          if (z(n).gt.-1.0) &
+          heat=heat-cool_newton*p%cp*p%rho*profile_buffer*(p%TT-TT_drive)
+        else
+          heat=heat-cool_newton*p%TT**4
+        endif
+      endif
 !
 !  Add cooling with constant time-scale to TTref_cool.
 !
@@ -5339,7 +5368,11 @@ module Energy
         where (lnTT_SI >= intlnT_1(imax) )
           lnQ = lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
         endwhere
-        rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+        if (Pres_cutoff/=impossible) then
+          rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)*exp(-p%rho*p%cs2*gamma1/Pres_cutoff)
+        else
+          rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+        endif
       elseif (cool_RTV < 0) then
 !
 !  Second set of parameters

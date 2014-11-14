@@ -725,7 +725,7 @@ module Special
           do l=l1,l2 
             xx0=x(l)
               do ig=0,nghost
-                zz0=z(n-ig)
+                zz0=z(n1-ig)
           ! Calculate D^(-1)*(xxx-disp)
                 zz1=zz0-posz
                 xx1=cos(tilt*pi/180.0)*(xx0-posx)+sin(tilt*pi/180.0)*(yy0-posy)
@@ -755,6 +755,7 @@ module Special
                     vv(3)=dposz
                     cs2=cs0**2*(exp(gamma*f(l1,m1,n1,iss)*cp1+gamma_m1*(f(l1,m1,n1,ilnrho)-alog(rho0))))
                     rho_corr=1.-0.5*(bb(1)**2+bb(2)**2+bb(3)**2)*mu01*gamma/(exp(f(l1,m1,n1,ilnrho))*cs2)
+                    rho_corr=1.0
                     f(l,m,n1-ig,ilnrho)=f(l1,m1,n1-ig,ilnrho)+alog(rho_corr)
 !
 ! make tube buoyant? Add density deficit at bottom boundary
@@ -768,15 +769,16 @@ module Special
 !
 ! Uniform translation velocity for induction equation at boundary
 !
-                  if (iuu.ne.0) then
-                    f(l,m,n1-ig,iux) = uu(1)
-                    f(l,m,n1-ig,iuy) = uu(2)
-                    f(l,m,n1-ig,iuz) = uu(3)  
+                    
+                  if (iuu.ne.0.and.distyz.lt.nwid2*width) then
+                      f(l,m,n1-ig,iux) = uu(1)  
+                      f(l,m,n1-ig,iuy) = uu(2)  
+                      f(l,m,n1-ig,iuz) = uu(3)  
                   endif
                   call cross(uu,bb,uxb)
                   f(l,m,n1-ig,iax:iaz)=f(l,m,n1-ig,iax:iaz)+uxb(1:3)*dt_
-                  else
-                  if (iuu.ne.0) f(l,m,n1-ig,iux:iuz)=0.0
+!                else
+!                  if (iuu.ne.0) call set_hydrostatic_velocity(f,dt_,l,m,ig)
                 endif
 
               enddo
@@ -948,7 +950,7 @@ module Special
                 uu(2) =  sin(phi)*br+cos(phi)*bphi
                 uu(3) =  -Iring*fring*( & 
                        tmp/(tmp+r0))*exp(-(pomega/width)**2)
-!
+! Not
 ! Rotate about x axis by 90 deg, y-> z and z-> -y
 !
                 vv(1) =  sin(phi)*br+cos(phi)*bphi
@@ -1158,6 +1160,81 @@ module Special
       endselect
 !
     endsubroutine bc_emf_z
+!***********************************************************************
+    subroutine set_hydrostatic_velocity(f,dt_,l,m,ig)
+!
+! vz=(-dP/dz/rho-gravz)*dt_
+!
+      use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
+      use Gravity, only: gravz
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, intent(in) :: dt_
+      integer, intent(in) :: l,m,ig
+      real :: Pres_p1,Pres_m1,cp1
+!
+!
+      call get_cp1(cp1)
+!
+!        Pres_p1=cs0**2*(exp(gamma*f(l,m,n1-ig+1,iss)*cp1+gamma*&
+!                   (f(l,m,n1-ig+1,ilnrho)-alog(rho0))))/gamma
+!        Pres_m1=cs0**2*(exp(gamma*f(l,m,n1-ig-1,iss)*cp1+gamma*&
+!                   (f(l,m,n1-ig-1,ilnrho)-alog(rho0))))/gamma
+!        f(l,m,n1-ig,iuz)=((Pres_m1-Pres_p1)*dz_1(n1-ig)/exp(f(l,m,n1-ig,ilnrho))+gravz)*dt_
+        if (f(l,m,n1,iuz) < 0) then 
+          call bc_sym_z(f,l,m,iux,ig,+1,'bot')
+          call bc_sym_z(f,l,m,iuy,ig,+1,'bot')
+!          call bc_sym_z(f,l,m,iuz,ig,+1,'bot')
+        else
+          call bc_sym_z(f,l,m,iux,ig,-1,'bot')
+          call bc_sym_z(f,l,m,iuy,ig,-1,'bot')
+!          call bc_sym_z(f,l,m,iuz,ig,+1,'bot')
+        endif
+!
+    endsubroutine set_hydrostatic_velocity
+!***********************************************************************
+    subroutine bc_sym_z(f,l,m,j,i,sgn,topbot,rel)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!  10-apr-05/axel: added val argument
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: sgn,i,j,l,m
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        if (relative) then
+          f(l,m,n1-i,j)=2*f(l,m,n1,j)+sgn*f(l,m,n1+i,j)
+        else
+          f(l,m,n1-i,j)=              sgn*f(l,m,n1+i,j)
+          if (sgn<0) f(l,m,n1,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+!
+      case ('top')               ! top boundary
+        if (relative) then
+          f(l,m,n2+i,j)=2*f(l,m,n2,j)+sgn*f(l,m,n2-i,j)
+        else
+          f(l,m,n2+i,j)=              sgn*f(l,m,n2-i,j)
+          if (sgn<0) f(l,m,n2,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+!
+      case default
+        print*, "bc_sym_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_sym_z
 !***********************************************************************
     subroutine bc_go_x(f,topbot,j,lforce_ghost)
 !

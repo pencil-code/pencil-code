@@ -99,7 +99,7 @@ module Density
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
-  logical, save :: lsubtract_init_stratification=.false.
+  logical :: lsubtract_init_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
