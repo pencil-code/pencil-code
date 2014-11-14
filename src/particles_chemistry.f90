@@ -87,7 +87,7 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: mu, mu_prime
   real, dimension(:,:), allocatable :: nu, nu_prime
   real, dimension(:,:), allocatable :: nu_power, mu_power
-  real, dimension(:), allocatable :: aac
+  real, dimension(:), allocatable :: aac, T_k
   real, dimension(:), allocatable :: dngas
   real, dimension(:), allocatable :: diff_coeff_reactants
   real, dimension(:,:), allocatable, save :: part_power
@@ -340,20 +340,19 @@ module Particles_chemistry
 !
       if (.not. allocated(part)) then
          allocate(part(N_max_elements,N_surface_reactions))
-      else
-      end if
+      endif
       if (.not. allocated(part_power)) then
          allocate(part_power(N_max_elements,N_surface_reactions))
-      else
       end if
-      if (.not. allocated(reaction_direction)) then
+      if(.not. allocated(reaction_direction)) then
          allocate(reaction_direction(N_surface_reactions))
-      else
       end if
-      if (.not. allocated(flags)) then
+      if(.not. allocated(flags)) then
          allocate(flags(N_surface_reactions),STAT=stat)
-      else
       end if
+      if(.not. allocated(T_k)) then
+         allocate(T_k(N_surface_reactions)   ,STAT=stat)
+      endif
 !      if (stat>0) call fatal_error('register_indep_pchem',&
 !           'Could not allocate memory for flags')
 !
@@ -1044,6 +1043,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        enddo
 500 if(talk=='verbose') print*,'Done parsing mechanics file'
        close(20)
+!
+       call remove_save_T_k(target_list)
        call remove_save_powers(target_list)
 !
        if(talk=='verbose') then
@@ -1236,9 +1237,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       pre_RR_hat=1.
     endif
 !  
-    do k=k1,k2
-!
-      do j=1,N_surface_reactions
+    particle: do k=k1,k2
+      reactions: do j=1,N_surface_reactions
         RR_hat(k,j)=K_k(k,j)*reaction_enhancement(j)
         surface: do i=1,N_surface_reactants
           if (nu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*&
@@ -1249,8 +1249,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
             if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
           enddo
         endif adsorbed
-      enddo
-    enddo
+        RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
+      enddo reactions
+    enddo particle
 !!$    print*,'RR_hattwo'
 !!$    write(*,'(12E12.4)') RR_hat(k1,:)
 !!$    print*, 'Cs' 
@@ -2300,4 +2301,35 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     end subroutine get_Nusselt
 !**********************************************************************
+  subroutine remove_save_T_k(target_list)
+!
+    character(10), dimension(:,:) :: target_list
+    character(10) :: el_T_k
+    real :: T_k_single
+    integer :: i,k,stat
+!
+    T_k=0.0
+    do i=1,size(target_list,2)
+       do k=1,size(target_list,1)
+          if (target_list(size(target_list,1),i) == 'rev') then
+          else
+             el_T_k = target_list(k,i)
+             if (el_T_k(1:2) == 'T^') then
+                read(el_T_k(3:),*,iostat=stat) T_k_single
+                if (stat == 0) then 
+                   T_k(i) = T_k_single
+                   target_list(k:size(target_list,1)-2,i) = &
+                        target_list(k+1:size(target_list,1)-1,i)
+                   target_list(size(target_list,1)-1,i) = '0.0'
+                else
+                   call fatal_error('create_arh_param', &
+                     'T^ was given, but exponent could not be read!')
+                endif
+             endif
+          endif
+       enddo
+    enddo
+!
+  end subroutine remove_save_T_k
+!********************************************************************
   end module Particles_chemistry
