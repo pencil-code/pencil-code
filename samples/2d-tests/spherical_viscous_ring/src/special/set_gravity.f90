@@ -94,7 +94,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -111,7 +111,6 @@ module Special
       real, dimension (mx,my,mz) :: potential
       real, dimension (mx) :: rr_sph,rr_cyl,z_mn
       real, dimension (nx,3) :: grav
-      logical :: lstarting
 !
 !  Use the slot of density for the potential. Reset 
 !  the density after using it. 
@@ -147,7 +146,6 @@ module Special
       print*,"Max global gg = ",maxval(gravity)
       print*,"Sum global gg = ",sum(gravity) 
 !
-      call keep_compiler_quiet(lstarting)
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
