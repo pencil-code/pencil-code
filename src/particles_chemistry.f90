@@ -344,13 +344,13 @@ module Particles_chemistry
       if (.not. allocated(part_power)) then
          allocate(part_power(N_max_elements,N_surface_reactions))
       end if
-      if(.not. allocated(reaction_direction)) then
+      if (.not. allocated(reaction_direction)) then
          allocate(reaction_direction(N_surface_reactions))
       end if
-      if(.not. allocated(flags)) then
+      if (.not. allocated(flags)) then
          allocate(flags(N_surface_reactions),STAT=stat)
       end if
-      if(.not. allocated(T_k)) then
+      if (.not. allocated(T_k)) then
          allocate(T_k(N_surface_reactions)   ,STAT=stat)
       endif
 !      if (stat>0) call fatal_error('register_indep_pchem',&
@@ -1237,21 +1237,21 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       pre_RR_hat=1.
     endif
 !  
-    particle: do k=k1,k2
-      reactions: do j=1,N_surface_reactions
+    do k=k1,k2
+      do j=1,N_surface_reactions
         RR_hat(k,j)=K_k(k,j)*reaction_enhancement(j)
-        surface: do i=1,N_surface_reactants
+        do i=1,N_surface_reactants
           if (nu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*&
               (pre_Cg*Cg(k)*fp(k,isurf-1+i))**nu(i,j)
-        enddo surface 
-        adsorbed: if (N_adsorbed_species>1) then
+        enddo
+        if (N_adsorbed_species>1) then
           do i=1,N_adsorbed_species
-            if(mu(i,j)> 0) RR_hat(k,j)=RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
+            if (mu(i,j) > 0) RR_hat(k,j)=RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
           enddo
-        endif adsorbed
+        endif
         RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
-      enddo reactions
-    enddo particle
+      enddo
+    enddo
 !!$    print*,'RR_hattwo'
 !!$    write(*,'(12E12.4)') RR_hat(k1,:)
 !!$    print*, 'Cs' 
