@@ -41,6 +41,7 @@ sub scan_file {
 	$state{'indent'} = 0;
 	$state{'indent_str'} = "";
 	$state{'nesting'} = "";
+	$state{'last_nesting'} = "";
 	$state{'continuation'} = 0;
 	$state{'multiline_if'} = 0;
 	$state{'multiline_where'} = 0;
