@@ -374,24 +374,6 @@ subroutine pencil_criteria_par_TT()
 !
     endsubroutine rprint_particles_TT
 !***********************************************************************
-    real function get_gas_density(f, ix, iy, iz) result(rho)
-!
-!  Reads the gas density at location (ix, iy, iz).
-!
-!  20-may-13/ccyang: coded.
-!  NILS: This should be made a general routine in order to avoid the
-!  NILS: current code dublication with particles_dust.f90
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix, iy, iz
-!
-      linear: if (ldensity_nolog) then
-        rho = f(ix, iy, iz, irho)
-      else linear
-        rho = exp(f(ix, iy, iz, ilnrho))
-      endif linear
-!
-    endfunction get_gas_density
 !***********************************************************************
     subroutine particles_TT_prepencil_calc(f)
 !

@@ -1252,6 +1252,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
       enddo
     enddo
+
+
+!
 !!$    print*,'RR_hattwo'
 !!$    write(*,'(12E12.4)') RR_hat(k1,:)
 !!$    print*, 'Cs' 
@@ -1263,6 +1266,11 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !  in SI units).
 !
     RR_hat=pre_RR_hat*RR_hat
+
+  write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
+  print*, 'Cg',Cg(k1)
+  print*,'fp_surf',fp(k1,isurf:isurf_end)
+  print*,'Cs',Cs(k1,:)
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -2143,7 +2151,6 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
    k2 = k2_imn(imn)
 !
    do k=k1,k2
-      ix0=ineargrid(k,1)
          Cg(k) = interp_pp(k)/(R_cgs*interp_TT(k))
    enddo
 !

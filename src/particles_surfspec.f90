@@ -401,15 +401,18 @@ module Particles_surfspec
           iz0 =ineargrid(k,3)
          do i=1,N_surface_reactants
             if(lfirst) then
-               fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
-                    species_constants(jmap(i),imass) * &
-                    mean_molar_mass
+               fp(k,isurf+i-1) = interp_species(k,jmap(i)) 
+!!$/ &
+!!$                    species_constants(jmap(i),imass) * &
+!!$                    mean_molar_mass
             endif
             term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*ndot_total(k)+&
                  mass_trans_coeff_reactants(k,i)*&
-                 (interp_species(k,jmap(i))/ &
-                    species_constants(jmap(i),imass) * &
-                    mean_molar_mass -fp(k,isurf+i-1))
+                 (interp_species(k,jmap(i)) &
+!!$/ &
+!!$                    species_constants(jmap(i),imass) * &
+!!$                    mean_molar_mass 
+                 -fp(k,isurf+i-1))
 !
 !  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
@@ -634,24 +637,5 @@ module Particles_surfspec
     enddo
 !
   end subroutine calc_mass_trans_reactants
-!***********************************************************************
-    real function get_gas_density(f, ix, iy, iz) result(rho)
-!
-!  Reads the gas density at location (ix, iy, iz).
-!
-!  20-may-13/ccyang: coded.
-!  NILS: This should be made a general routine in order to avoid the
-!  NILS: current code dublication with particles_dust.f90
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix, iy, iz
-!
-      linear: if (ldensity_nolog) then
-        rho = f(ix, iy, iz, irho)
-      else linear
-        rho = exp(f(ix, iy, iz, ilnrho))
-      endif linear
-!
-    endfunction get_gas_density
 !***********************************************************************
   end module Particles_surfspec

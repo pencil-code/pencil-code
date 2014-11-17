@@ -21,7 +21,7 @@ module Particles_sub
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
-  public :: find_interpolation_indeces
+  public :: find_interpolation_indeces, get_gas_density
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1171,5 +1171,22 @@ module Particles_sub
       endif
 !
     end subroutine find_interpolation_indeces
+!***********************************************************************
+    real function get_gas_density(f, ix, iy, iz) result(rho)
+!
+!  Reads the gas density at location (ix, iy, iz).
+!
+!  20-may-13/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix, iy, iz
+!
+      linear: if (ldensity_nolog) then
+        rho = f(ix, iy, iz, irho)
+      else linear
+        rho = exp(f(ix, iy, iz, ilnrho))
+      endif linear
+!
+    endfunction get_gas_density
 !***********************************************************************
 endmodule Particles_sub

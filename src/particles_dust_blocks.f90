@@ -1173,7 +1173,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ib=inearblock(k)
-              eps = fb(ix0,iy0,iz0,irhop,ib) / get_gas_density(fb,ix0,iy0,iz0,ib)
+              eps = fb(ix0,iy0,iz0,irhop,ib) / get_gas_density_strat(fb,ix0,iy0,iz0,ib)
             endif
 !
             fp(k,ivpx) = fp(k,ivpx) + &
@@ -2080,7 +2080,7 @@ k_loop:   do while (.not. (k>npar_loc))
                           ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib) )
                       if (nzgrid/=1) weight=weight* &
                           ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib) )
-                      rho1_point = 1.0 / get_gas_density(fb,ixx,iyy,izz,ib)
+                      rho1_point = 1.0 / get_gas_density_strat(fb,ixx,iyy,izz,ib)
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
@@ -2143,7 +2143,7 @@ k_loop:   do while (.not. (k>npar_loc))
                       if (nxgrid/=1) weight=weight*weight_x
                       if (nygrid/=1) weight=weight*weight_y
                       if (nzgrid/=1) weight=weight*weight_z
-                      rho1_point = 1.0 / get_gas_density(fb,ixx,iyy,izz,ib)
+                      rho1_point = 1.0 / get_gas_density_strat(fb,ixx,iyy,izz,ib)
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
@@ -2154,7 +2154,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Nearest Grid Point (NGP) scheme.
 !
-                    rho1_point = 1.0 / get_gas_density(fb,ix0,iy0,iz0,ib)
+                    rho1_point = 1.0 / get_gas_density_strat(fb,ix0,iy0,iz0,ib)
                     !WL: Why is this l being defined?
                     l=ineargrid(k,1)
                     call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,ib, &
@@ -2175,7 +2175,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   dt1_drag_dust(ix0,iy0,iz0)= &
                        max(dt1_drag_dust(ix0,iy0,iz0),tausp1_par)
                   if (ldragforce_gas_par) then
-                    rho1_point = 1.0 / get_gas_density(fb,ix0,iy0,iz0,ib)
+                    rho1_point = 1.0 / get_gas_density_strat(fb,ix0,iy0,iz0,ib)
                     if (fb(ix0,iy0,iz0,inp,ib)/=0.0) &
                         dt1_drag_gas(ix0,iy0,iz0)=dt1_drag_gas(ix0,iy0,iz0)+ &
                         rhop_swarm_par*rho1_point*tausp1_par
@@ -2379,7 +2379,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  when the gas follows the dust.
 !
         if (epsp_friction_increase/=0.0) then
-          epsp = fb(ix0,iy0,iz0,irhop,iblock) / get_gas_density(fb,ix0,iy0,iz0,iblock)
+          epsp = fb(ix0,iy0,iz0,irhop,iblock) / get_gas_density_strat(fb,ix0,iy0,iz0,iblock)
           if (epsp>epsp_friction_increase) &
               tausp1_par=tausp1_par/(epsp/epsp_friction_increase)
         endif
@@ -2636,7 +2636,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine rprint_particles
 !***********************************************************************
-    real function get_gas_density(fb, ix, iy, iz, ib) result(rho)
+    real function get_gas_density_strat(fb, ix, iy, iz, ib) result(rho)
 !
 !  Reads the gas density at one location in a block.
 !
@@ -2658,7 +2658,7 @@ k_loop:   do while (.not. (k>npar_loc))
         rho = exp(fb(ix, iy, iz, ilnrho, ib))
       endif stratz
 !
-    endfunction get_gas_density
+    endfunction get_gas_density_strat
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !

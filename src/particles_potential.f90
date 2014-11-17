@@ -2356,23 +2356,6 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(f)
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
-    real function get_gas_density(f, ix, iy, iz) result(rho)
-!
-!  Reads the gas density at location (ix, iy, iz).
-!
-!  20-may-13/ccyang: coded.
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: ix, iy, iz
-!
-      linear: if (ldensity_nolog) then
-        rho = f(ix, iy, iz, irho)
-      else linear
-        rho = exp(f(ix, iy, iz, ilnrho))
-      endif linear
-!
-    endfunction get_gas_density
-!***********************************************************************
     subroutine list_particles_near_boundary(fp)
 !
 !  Makes a list of properties of the particles close to processor boundaries.
