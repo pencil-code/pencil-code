@@ -11,8 +11,11 @@ use strict;
 my $indentation_str = "  ";
 my $continuation_str = "    ";
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
+
+# options (might become command-line arguments later)
 my $picky = 1; # enable with "= 1", if you like punishment
 my $auto_correct = 0; # enable with "= 1", if you like to overwrite your files with garbage! ;-)
+my $verbose = 0; # "= 1" gives debug output
 
 # check filename
 my $filename = $ARGV[0];
@@ -147,7 +150,7 @@ sub scan_file {
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
 		if (!/^${start_spaces}\S/s) {
 			if (($state{'continuation'} <= $continuation) || (($state{'continuation'} >= $continuation*2) && (!/^${start_spaces}${continuation_str}\S/s))) {
-				# print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n";
+				if ($verbose) { print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"; }
 				warning ("wrong indentation level");
 				s/^ */${start_spaces}/s;
 			}
@@ -184,7 +187,7 @@ sub scan_file {
 		if ($type && (lc ($closing) ne lc ($type))) {
 			$empty =~ s/[^\n]+//gs;
 			$pos += length ($empty) + 1;
-			fatal ("misplaced 'end".$closing."' => better use the pure 'end'-statement");
+			fatal ("misplaced 'end".$closing."' after empty 'else".$type."'-block => better use the pure 'end'-statement");
 		}
 		warning ("remove empty 'else".$type."'-block");
 		s/\n *else${type}(?:\n\![^\n]*)*(\n *end *${closing}(?: |\n))/${1}/is;
@@ -204,18 +207,23 @@ sub cut_strings {
 		my $pre = $1;
 		my $type = $2;
 		my $post = $3;
+		if ($pre =~ /\!/s) { return ($line); }
 		while ($post =~ /^(.*?)${type}(.*)$/s) {
 			my $string = $1;
 			my $rest = $2;
 			$string =~ s/\/\///gs;
 			if ($string !~ s/\/$//s) {
-				$line = $pre."<type><type>".$rest;
+				my $type_str = "";
+				if ($type eq '\'') { $type_str = "apostroph"; }
+				if ($type eq '"') { $type_str = "quote"; }
+				$line = $pre."<type-".$type_str."><type-".$type_str.">".$rest;
 				last;
 			}
 			$post = $string.$rest;
 		}
 	}
-	$line =~ s/<type><type>/""/gis;
+	$line =~ s/<type-quote>/"/gis;
+	$line =~ s/<type-apostroph>/'/gis;
 	return ($line);
 }
 
@@ -262,6 +270,7 @@ sub perish {
 
 sub add_nesting {
 	my ($nesting) = @_;
+	if ($verbose >= 2) { warn ("[$pos] ADD: ".$nesting."\n"); }
 	$state{'nesting'} .= $nesting.'|';
 	$state{'last_nesting'} = $nesting;
 	$state{'indent'} += $indentation;
@@ -269,6 +278,7 @@ sub add_nesting {
 }
 
 sub remove_nesting {
+	if ($verbose >= 2) { warn ("[$pos] REMOVE\n"); }
 	$state{'indent'} -= $indentation;
 	$state{'indent_str'} =~ s/${indentation_str}$//s or fatal ("internal error while reducing the indentation string");
 	$state{'last_nesting'} = "";
@@ -277,10 +287,9 @@ sub remove_nesting {
 
 sub check_new_nesting {
 	my ($line) = @_;
-	$line =~ s/\s*\!.*$//s;
 	if ($state{'multiline_if'}) {
 		$state{'multiline_if'} = 0;
-		if ($line =~ /\sthen$/is) { add_nesting ("if"); }
+		if ($line =~ / then$/is) { add_nesting ("if"); }
 		if ($line =~ /\&$/s) { $state{'multiline_if'} = 1; }
 		return;
 	}
@@ -297,18 +306,21 @@ sub check_new_nesting {
 	}
 	for (my $index = 0; $index < $num_trigger_indent; $index++) {
 		my $trigger = $trigger_indent[$index];
-		if ($line =~ /^\s*${trigger}[^a-z0-9_'" ]/is) {
+		if ($line =~ /^ *${trigger}[^a-z0-9_'" ]/is) {
 			warning ("space after '".$trigger."'-statement required");
-			$line =~ s/^(\s*${trigger})/${1} /s;
-			$lines[$pos] =~ s/^(\s*${trigger})/${1} /s;
+			$line =~ s/^( *${trigger})/${1} /s;
+			$lines[$pos] =~ s/^( *${trigger})/${1} /s;
 		}
-		if (($line =~ /^\s*${trigger}\s/is) || (($trigger eq "contains") && (/^\s*${trigger}$/is))) {
+		if ($trigger eq "function" && ($line =~ s/^( *)((?:integer|real|logical|long|double).*?) +function /${1}function /is)) {
+			picky_warning ("data type '".$2."' belongs inside the 'function' block");
+		}
+		if (($line =~ /^ *${trigger} /is) || (($trigger eq "contains") && (/^\ s*${trigger}$/is))) {
 			if ($line =~ /\;/s) { fatal ("put each indentation-sensitive command in a separate line"); }
-			if (($trigger eq "module") && ($line =~ /^\s*module\s+procedure\s/is)) { next; }
+			if (($trigger eq "module") && ($line =~ /^ *module +procedure /is)) { next; }
 			if ($trigger eq "contains") { $trigger = ""; }
-			if (($trigger eq "type") && ($line =~ /\s::\s/is)) { next; }
+			if (($trigger eq "type") && ($line =~ /::/is)) { next; }
 			if (($trigger eq "if") && ($line =~ /\&$/s)) { $state{'multiline_if'} = 1; return; }
-			if (($trigger eq "if") && ($line !~ /\sthen\s*$/is)) { next; }
+			if (($trigger eq "if") && ($line !~ / then *$/is)) { next; }
 			if (($trigger eq "where") && ($line =~ /\&$/s)) { $state{'multiline_where'} = 1; return; }
 			if (($trigger eq "where") && ($line !~ /\)$/is)) { next; }
 			add_nesting ($trigger);
@@ -319,39 +331,41 @@ sub check_new_nesting {
 
 sub check_closed_nesting {
 	my ($line) = @_;
-	$line =~ s/\s*\!.*$//s;
 	my $trigger = "";
-	if ($line =~ /^\s*end\s?(\S+)(?:\s+\S+)?$/is) {
+	if ($line =~ /^ *end ?(\S+)(?: +\S+)?$/is) {
 		$trigger = $1;
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}(\|+)$/${1}${2}/is) {
+			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TRIGGER:".$trigger."\n"); }
 			fatal ("misplaced 'end".$trigger."' => better use the pure 'end'-statement");
 		}
 	}
-	elsif ($line =~ /^\s*end(?:\s+\S+)?$/is) {
-		if ($state{'nesting'} !~ s/(^|\|)[^\s\|]+(\|+)$/${1}${2}/s) { 
+	elsif ($line =~ /^ *end(?: +\S+)?$/is) {
+		if ($state{'nesting'} !~ s/(^|\|)[^ \|]+(\|+)$/${1}${2}/s) { 
 			fatal ("internal error while removing nesting");
 		}
 	}
-	elsif ($line =~ /^\s*else(.*?)$/is) {
+	elsif ($line =~ /^ *else(.*?)$/is) {
 		my $else = $1;
 		my $type = $state{'last_nesting'};
-		if ($else =~ /^\s+${type}/s) {
+		if ($else =~ /^ +${type}/s) {
 			warning ("better use 'else".$type."' instead of 'else ".$type."'");
-			$else =~ s/^\s+//is;
-			$line =~ s/^(\s*else)\s+${type}/${1}${type}/is;
-			$lines[$pos] = $line;
+			$else =~ s/^ +//is;
+			$line =~ s/^( *else) +${type}/${1}${type}/is;
+			$lines[$pos] = s/^( *else) +${type}/${1}${type}/is;
 		}
 		if ($else =~ /^${type}[^a-z0-9_ ]/is) {
 			warning ("space after 'else".$type."'-statement required");
 			$else =~ s/^${type}/${type} /is;
-			$line =~ s/^(\s*else${type})/${1} /s;
-			$lines[$pos] = $line;
+			$line =~ s/^( *else${type})/${1} /s;
+			$lines[$pos] = s/^( *else${type})/${1} /s;
 		}
-		if (($type eq "if") && ($else !~ /^$/s) && ($else !~ /\sthen/is)) {
+		if (($type eq "if") && ($else !~ /^$/s) && ($else !~ /\&$/s) && ($else !~ / then/is)) {
+			# TODO: handle multi-line else-blocks correctly, currentyl just ignored
 			fatal ("must place 'then' after 'elseif'");
 		}
-		elsif (($else =~ /^${type}\s/is) || (($type eq "if") && ($else =~ /^$/is)) || (($type eq "where") && ($else =~ /^${type}$/is))) {
+		elsif (($else =~ /^${type} /is) || (($type eq "if") && ($else =~ /^$/is)) || (($type eq "where") && ($else =~ /^${type}$/is))) {
 			if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
+				if ($verbose) { warn ("NESTING:".$state{'nesting'}." TYPE:".$type."\n"); }
 				fatal ("misplaced 'else".$trigger."'");
 			}
 			$state{'else_branch'} = $type;
@@ -361,16 +375,17 @@ sub check_closed_nesting {
 			return;
 		}
 	}
-	elsif ($line =~ /^\s*case([^a-z0-9_].*?)$/is && ($state{'last_nesting'} eq "select")) {
+	elsif ($line =~ /^ *case([^a-z0-9_].*?)$/is && ($state{'last_nesting'} eq "select")) {
 		my $case = $1;
 		my $type = $state{'last_nesting'};
-		if ($case !~ /^\s/s) {
+		if ($case !~ /^ /s) {
 			warning ("space after 'case'-statement required");
 			$case = " ".$case;
-			$line =~ s/^(\s*case)/${1} /is;
-			$lines[$pos] = $line;
+			$line =~ s/^( *case)/${1} /is;
+			$lines[$pos] = s/^( *case)/${1} /is;
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
+			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TYPE:".$type."\n"); }
 			fatal ("misplaced 'case'");
 		}
 		$state{'else_branch'} = $type;
