@@ -3635,8 +3635,10 @@ module Special
       do i=1,nxgrid
         do j=1,nygrid
           if (BB2(i,j) > BB2_limit) then
-            il=max(1,i-itmp); ir=min(nxgrid,i+itmp)
-            jl=max(1,j-jtmp); jr=min(nygrid,j+jtmp)
+            il=max(1,i-itmp)
+            ir=min(nxgrid,i+itmp)
+            jl=max(1,j-jtmp)
+            jr=min(nygrid,j+jtmp)
 !
             do ii=il,ir
               do jj=jl,jr
