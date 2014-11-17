@@ -63,37 +63,37 @@ sub scan_file {
 
 		# white-spaces
 		if (/\r$/s) {
-			warning ("convert to 'unix EOL'-format\n");
+			warning ("convert to 'unix EOL'-format");
 			s/\r$//s;
 		}
 		if (/\r/s) {
-			warning ("unallowed 'carriage-return' character\n");
+			warning ("unallowed 'carriage-return' character");
 			s/\r//gs;
 		}
 		if (/\f/s) {
-			warning ("unallowed 'form-feed' character\n");
+			warning ("unallowed 'form-feed' character");
 			s/\f//gs;
 		}
 		if (/\t/s) {
-			warning ("unallowed 'tabulator' character\n");
+			warning ("unallowed 'tabulator' character");
 			s/\t/${indentation_str}/gs;
 		}
 		if (/\s+$/s) {
-			warning ("remove 'spaces' at end of line\n");
+			warning ("remove 'spaces' at end of line");
 			s/\s*$//s;
 		}
 
 		# comments
 		if (/^$/) {
-			warning ("empty lines should have a '!' in front\n");
-			$lines[$pos] = "!";
+			warning ("empty lines should have a '!' in front");
+			$_ = "!";
 			next;
 		}
 		if (/^(\s+)\!/s) {
 			my $spaces = $1;
 			my $num_spaces = length ($spaces);
 			if (($num_spaces != $state{'indent'}) && ($num_spaces <= $state{'indent'}*2)) {
-				warning ("comments start either at the beginning of a line or at the correct indentaion level\n");
+				warning ("comments start either at the beginning of a line or at the correct indentaion level");
 				if (($num_spaces > $state{'indent'}*4/3) && ($num_spaces >= 4)) {
 					$spaces = $state{'indent_str'};
 				}
@@ -108,7 +108,7 @@ sub scan_file {
 		# indentation
 		check_closed_nesting ($_);
 		if ($state{'indent'} < 0) {
-			fatal ("(L: ".$pos.") surplus 'end', indentation became negative\n");
+			fatal ("surplus 'end'\n=> indentation became negative");
 		}
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
@@ -116,7 +116,7 @@ sub scan_file {
 			if (($state{'continuation'} > 0) && (/^${start_spaces}\s/s)) { ; }
 			elsif (($state{'continuation'} <= $continuation) || (($state{'continuation'} >= $continuation*2) && (!/^${start_spaces}${continuation_str}\S/s))) {
 				# print "NESTING:".$state{'nesting'}." LEVEL:".$state{'indent'}."\n";
-				warning ("wrong indentation level\n");
+				warning ("wrong indentation level");
 				s/^\s*/${start_spaces}/s;
 			}
 		}
@@ -124,7 +124,7 @@ sub scan_file {
 
 		# multiple commands per line
 		if (/\;/s) {
-			warning ("possible multi-command line\n=> put one command per line, at least for indentation-sensitive statements\n");
+			warning ("possible multi-command line\n=> better put one command per line");
 		}
 
 		# continuation
@@ -146,7 +146,7 @@ sub scan_file {
 		my $pre = $1;
 		$pre =~ s/[^\n]+//gs;
 		$pos = length ($pre);
-		warning ("remove empty else-block\n");
+		warning ("remove empty else-block");
 		s/\n\s*else(\n\s*end(?:\s*if)?(?:\s|\n))/${1}/is;
 	}
 
@@ -161,7 +161,7 @@ sub scan_file {
 sub warning {
 	my ($message) = @_;
 	$num_warnings++;
-	warn ("(L: ".$pos.") ".$message);
+	warn ("(L: ".$pos.") ".$message."\n");
 }
 
 sub print_warnings {
@@ -171,9 +171,9 @@ sub print_warnings {
 sub fatal {
 	my ($message) = @_;
 	$num_fatals++;
-	warn ($message);
+	warn ("(L: ".$pos.") FATAL: ".$message."\n");
 	print_warnings;
-	warn ("\nAnd at least one FATAL ERROR!\n");
+	warn ("\n".$num_fatals." FATAL errors!\n");
 	exit (1);
 }
 
@@ -187,7 +187,7 @@ sub add_nesting {
 
 sub remove_nesting {
 	$state{'indent'} -= $indentation;
-	$state{'indent_str'} =~ s/${indentation_str}$//s or fatal ("(L: ".$pos.") internal error while reducing the indentation string\n");
+	$state{'indent_str'} =~ s/${indentation_str}$//s or fatal ("internal error while reducing the indentation string");
 	$state{'last_nesting'} = "";
 	if ($state{'nesting'} =~ /([^\|]+)\|$/s) { $state{'last_nesting'} = $1; }
 }
@@ -195,6 +195,7 @@ sub remove_nesting {
 sub check_new_nesting {
 	my ($line) = @_;
 	$_ = $line;
+	s/\s*\!.*$//s;
 	if ($state{'multiline_if'}) {
 		$state{'multiline_if'} = 0;
 		if (/\sthen$/is) { add_nesting ("if"); }
@@ -214,12 +215,13 @@ sub check_new_nesting {
 	}
 	for (my $index = 0; $index < $num_trigger_indent; $index++) {
 		my $trigger = $trigger_indent[$index];
-		if (/(^| )${trigger}[^a-z0-9_'" ]/is) {
-			warning ("space after '".$trigger."'-statement required\n");
+		if (/^\s*${trigger}[^a-z0-9_'" ]/is) {
+			warning ("space after '".$trigger."'-statement required");
 			s/^(\s*${trigger})/${1} /s;
-			$lines[$pos] = $_;
+			$lines[$pos] =~ s/^(\s*${trigger})/${1} /s;
 		}
 		if ((/^\s*${trigger}\s/is) || (($trigger eq "contains") && (/^\s*${trigger}$/is))) {
+			if (/\;/s) { fatal ("put each indentation-sensitive command in a separate line"); }
 			if (($trigger eq "module") && (/^\s*module\s+procedure\s/is)) { next; }
 			if ($trigger eq "contains") { $trigger = ""; }
 			if (($trigger eq "type") && (/\s::\s/is)) { next; }
@@ -236,39 +238,40 @@ sub check_new_nesting {
 sub check_closed_nesting {
 	my ($line) = @_;
 	$_ = $line;
+	s/\s*\!.*$//s;
 	my $trigger = "";
 	if (/^\s*end\s?(\S+)(?:\s+\S+)?$/is) {
 		$trigger = $1;
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}(\|+)$/${1}${2}/is) {
-			fatal ("(L: ".$pos.") misplaced 'end".$trigger."'\n=> better use the pure 'end'-statement\n");
+			fatal ("misplaced 'end".$trigger."'\n=> better use the pure 'end'-statement");
 		}
 	}
 	elsif (/^\s*end(?:\s+\S+)?$/is) {
 		if ($state{'nesting'} !~ s/(^|\|)[^\s\|]+(\|+)$/${1}${2}/s) { 
-			fatal ("(L: ".$pos.") internal error while removing nesting\n");
+			fatal ("internal error while removing nesting");
 		}
 	}
 	elsif (/^\s*else(.*?)$/is) {
 		my $else = $1;
 		my $type = $state{'last_nesting'};
 		if ($else =~ /^\s+${type}/s) {
-			warning ("better use 'else".$type."' instead of 'else ".$type."'\n");
+			warning ("better use 'else".$type."' instead of 'else ".$type."'");
 			$else =~ s/^\s+//is;
 			s/else\s+${type}/else${type}/is;
-			$lines[$pos] = $_;
+			$lines[$pos] =~ s/^(\s*else)\s+${type}/${1}${type}/is;
 		}
 		if ($else =~ /^${type}[^a-z0-9_ ]/is) {
-			warning ("space after 'else".$type."'-statement required\n");
+			warning ("space after 'else".$type."'-statement required");
 			$else =~ s/^${type}/${type} /is;
 			s/^(\s*else${type})/${1} /s;
-			$lines[$pos] = $_;
+			$lines[$pos] =~ s/^(\s*else${type})/${1} /s;
 		}
 		if (($type eq "if") && ($else !~ /^$/s) && ($else !~ /\sthen/is)) {
-			fatal ("(L: ".$pos.") must place 'then' after 'elseif'\n");
+			fatal ("must place 'then' after 'elseif'");
 		}
 		elsif (($else =~ /^${type}\s/is) || (($type eq "if") && ($else =~ /^$/is)) || (($type eq "where") && ($else =~ /^${type}$/is))) {
 			if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
-				fatal ("(L: ".$pos.") misplaced 'else".$trigger."'\n");
+				fatal ("misplaced 'else".$trigger."'");
 			}
 			$state{'else_branch'} = $type;
 		}
@@ -280,14 +283,14 @@ sub check_closed_nesting {
 	elsif (/^\s*case([^a-z0-9_].*?)$/is && ($state{'last_nesting'} eq "select")) {
 		my $case = $1;
 		my $type = $state{'last_nesting'};
-		if ($case !~ /^\s/is) {
-			warning ("space after 'case'-statement required\n");
+		if ($case !~ /^\s/s) {
+			warning ("space after 'case'-statement required");
 			$case = " ".$case;
-			s/^(\s*case)/${1} /s;
-			$lines[$pos] = $_;
+			s/^(\s*case)/${1} /is;
+			$lines[$pos] =~ s/^(\s*case)/${1} /is;
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
-			fatal ("(L: ".$pos.") misplaced 'case'\n");
+			fatal ("misplaced 'case'");
 		}
 		$state{'else_branch'} = $type;
 	}
