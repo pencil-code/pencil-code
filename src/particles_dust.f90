@@ -3232,8 +3232,10 @@ k_loop:   do while (.not. (k>npar_loc))
                     endif
 !  Add friction force to grid point.
                     call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
-                    df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_swarm_par*rho1_point*dragforce*weight
+                    if (lhydro) then
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                          rhop_swarm_par*rho1_point*dragforce*weight
+                    endif
                     if (lpscalar_sink .and. lpscalar) then
                       call find_grid_volume(ixx,iyy,izz,volume_cell)
                       df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
@@ -3304,10 +3306,12 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point = p%rho1(ixx-nghost)
                       endif
 !  Add friction force to grid point.
-                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                          rhop_swarm_par)
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           rhop_swarm_par*rho1_point*dragforce*weight
+                      if (lhydro) then
+                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
+                            rhop_swarm_par)
+                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                            rhop_swarm_par*rho1_point*dragforce*weight
+                      endif
                       if (lpscalar_sink .and. lpscalar) then
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
                         df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
@@ -3373,10 +3377,12 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point = p%rho1(ixx-nghost)
                       endif
 !
-                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                          rhop_swarm_par)
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                           rhop_swarm_par*rho1_point*dragforce*weight
+                      if (lhydro) then
+                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
+                            rhop_swarm_par)
+                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                            rhop_swarm_par*rho1_point*dragforce*weight
+                      endif
                       if (lpscalar_sink .and. lpscalar) then
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
                         df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
@@ -3389,9 +3395,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Nearest Grid Point (NGP) scheme.
 !
                   l=ineargrid(k,1)
-                  call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
-                  df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                       rhop_swarm_par*p%rho1(l-nghost)*dragforce
+                  if (lhydro) then
+                    call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
+                    df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                        rhop_swarm_par*p%rho1(l-nghost)*dragforce
+                  endif
                   if (lpscalar_sink .and. lpscalar) then
                     call find_grid_volume(l,m,n,volume_cell)
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
