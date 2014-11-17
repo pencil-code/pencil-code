@@ -213,7 +213,7 @@ sub print_warning {
 }
 
 sub print_num_warnings {
-	if ($num_warnings > 0) { warn ("\n".$num_warnings." WARNINGS should be fixed.\n"); }
+	if ($num_warnings > 0) { warn ("\n".$num_warnings." STYLE BREAKS should be fixed.\n"); }
 }
 
 sub accumulative_fatal {
@@ -231,7 +231,7 @@ sub fatal {
 
 sub perish {
 	print_num_warnings;
-	warn ($num_fatals." FATAL errors!\n");
+	warn ($num_fatals." of them were FATAL errors!\n");
 	exit (1);
 }
 
