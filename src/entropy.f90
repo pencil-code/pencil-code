@@ -2826,10 +2826,12 @@ module Energy
           call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1)
 !
 ! initlnrho
-      if (lpencil(i_initlnrho)) p%initlnrho=f(l1:l2,m,n,iglobal_lnrho0)
+      if (lpencil(i_initlnrho).and.iglobal_lnrho0/=0) &
+          p%initlnrho=f(l1:l2,m,n,iglobal_lnrho0)
 !
 ! initss
-      if (lpencil(i_initss)) p%initss=f(l1:l2,m,n,iglobal_ss0)
+      if (lpencil(i_initss).and.iglobal_ss0/=0) &
+          p%initss=f(l1:l2,m,n,iglobal_ss0)
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
