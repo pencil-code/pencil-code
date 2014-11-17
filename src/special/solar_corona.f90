@@ -723,9 +723,9 @@ module Special
       if (ierr /= 0) return
 !
       if (Kgpara /= 0.0) then
-          call warning('calc_heatcond_grad', &
-              'Please use K_spitzer instead of Kgpara')
-          K_spitzer = Kgpara
+        call warning('calc_heatcond_grad', &
+            'Please use K_spitzer instead of Kgpara')
+        K_spitzer = Kgpara
       endif
 !
       if (Kgpara2/=0.0) then
@@ -2160,9 +2160,9 @@ module Special
 !
       tmpv(:,:)=0.
       do i=1,3
-         do j=1,3
-            tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
-         enddo
+        do j=1,3
+          tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+        enddo
       enddo
       call dot(tmpv,p%glnTT,tmp)
 !
@@ -2957,7 +2957,7 @@ module Special
         enddo
         first_call = .false.
       endif
- !
+!
       ! Initialize velocity field
       Ux = 0.0
       Uy = 0.0
@@ -3716,32 +3716,32 @@ module Special
       real :: vrms,vtot
 !
 ! Putting sum of velocities back into vx,vy
-        vx=Ux
-        vy=Uy
+      vx=Ux
+      vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-        if (nvor > 0.0) then
-          call helmholtz(wscr,wscr2)
-          vx=(vx+nvor*wscr )
-          vy=(vy+nvor*wscr2)
-        endif
+      if (nvor > 0.0) then
+        call helmholtz(wscr,wscr2)
+        vx=(vx+nvor*wscr )
+        vy=(vy+nvor*wscr2)
+      endif
 !
 ! Normalize to given total rms-velocity
-        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+      vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
 !
-        if (unit_system == 'SI') then
-          vtot=3.*1e3/unit_velocity
-        elseif (unit_system == 'cgs') then
-          vtot=3.*1e5/unit_velocity
-        else
-          vtot=0.
-          call fatal_error('solar_corona','define a valid unit system')
-        endif
+      if (unit_system == 'SI') then
+        vtot=3.*1e3/unit_velocity
+      elseif (unit_system == 'cgs') then
+        vtot=3.*1e5/unit_velocity
+      else
+        vtot=0.
+        call fatal_error('solar_corona','define a valid unit system')
+      endif
 !
 ! Reinserting rotationally enhanced velocity field
 !
-        Ux=vx*vtot/vrms
-        Uy=vy*vtot/vrms
+      Ux=vx*vtot/vrms
+      Uy=vy*vtot/vrms
 !
     endsubroutine enhance_vorticity
 !***********************************************************************
