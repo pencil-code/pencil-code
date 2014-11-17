@@ -71,22 +71,22 @@ module Special
 !
 ! input parameters
   namelist /special_init_pars/ &
-       linit_uu,linit_lnrho,linit_lnTT,prof_type
+      linit_uu,linit_lnrho,linit_lnTT,prof_type
 !
 ! run parameters
   namelist /special_run_pars/ &
-       tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
-       K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
-       b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
-       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
-       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
-       iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
-       nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
-       lnc_density_depend, lnc_intrin_energy_depend, &
-       init_time_fade_start, init_time_hcond_fade_start, &
-       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
-       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
+      tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
+      K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
+      chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
+      b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
+      lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
+      lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
+      iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
+      nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
+      lnc_density_depend, lnc_intrin_energy_depend, &
+      init_time_fade_start, init_time_hcond_fade_start, &
+      swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
+      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
@@ -101,12 +101,12 @@ module Special
                                ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
 ! video slices
-    real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-    real, target, dimension (nx,nz) :: rtv_xz
-    real, target, dimension (ny,nz) :: rtv_yz
-    real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
-    real, target, dimension (nx,nz) :: logQ_xz
-    real, target, dimension (ny,nz) :: logQ_yz
+  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (nx,nz) :: rtv_xz
+  real, target, dimension (ny,nz) :: rtv_yz
+  real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
+  real, target, dimension (nx,nz) :: logQ_xz
+  real, target, dimension (ny,nz) :: logQ_yz
 !
   ! Granule midpoint:
   type point
@@ -129,20 +129,20 @@ module Special
   end type gran_list_start
   type (gran_list_start), dimension(max_gran_levels) :: gran_list
 !
-    integer :: xrange,yrange,pow
-    real :: ampl,dxdy2,ig,granr,pd,life_t,avoid
-    real, dimension(:,:), allocatable :: w,vx,vy
-    real, dimension(:,:), allocatable :: Ux,Uy
-    real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
-    real, dimension(:,:), allocatable :: BB2
-    integer, dimension(:,:), allocatable :: avoid_gran
-    real, save :: tsnap_uu=0.,thresh
-    integer, save :: isnap
-    integer, save, dimension(mseed) :: points_rstate
-    real, dimension(nx,ny), save :: Ux_local,Uy_local
+  integer :: xrange,yrange,pow
+  real :: ampl,dxdy2,ig,granr,pd,life_t,avoid
+  real, dimension(:,:), allocatable :: w,vx,vy
+  real, dimension(:,:), allocatable :: Ux,Uy
+  real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
+  real, dimension(:,:), allocatable :: BB2
+  integer, dimension(:,:), allocatable :: avoid_gran
+  real, save :: tsnap_uu=0.,thresh
+  integer, save :: isnap
+  integer, save, dimension(mseed) :: points_rstate
+  real, dimension(nx,ny), save :: Ux_local,Uy_local
 !
-    integer, save, dimension(mseed) :: nano_seed
-    integer :: alloc_err
+  integer, save, dimension(mseed) :: nano_seed
+  integer :: alloc_err
 !
   contains
 !
@@ -155,7 +155,7 @@ module Special
 !  6-oct-03/tony: coded
 !
       if (lroot) call svn_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
