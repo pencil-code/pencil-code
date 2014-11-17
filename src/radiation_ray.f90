@@ -908,12 +908,12 @@ module Radiation
 !  30-jul-05/tobi: coded
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
-      use Mpicomm, only: radboundary_zx_sendrecv
+      use Mpicomm, only: radboundary_yz_sendrecv,radboundary_zx_sendrecv
 !
       real, dimension (my,mz) :: emtau_yz,Qrad_yz
       real, dimension (mx,mz) :: emtau_zx,Qrad_zx
       real, dimension (mx,my) :: emtau_xy,Qrad_xy
-      real, dimension (my,mz) :: Qrecv_yz !,Qsend_yz CHECK why this is not used!
+      real, dimension (my,mz) :: Qrecv_yz,Qsend_yz
       real, dimension (mx,mz) :: Qrecv_zx,Qsend_zx
       real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
       logical :: all_yz,all_zx
@@ -990,16 +990,30 @@ module Radiation
 !  the yz- and zx-boundaries are determined.
 !
       if ((lrad/=0.and..not.all_yz).or.(mrad/=0.and..not.all_zx)) then; do
+!
+!  x-direction.
+!
         if (lrad/=0.and..not.all_yz) then
           forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
-            Qbc_yz(m,n)%val = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
+            Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
+          endforall
+!
+          if (nprocx>1) then
+            call radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
+          else
+            Qrecv_yz=Qsend_yz
+          endif
+!
+          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+            Qbc_yz(m,n)%val = Qrecv_yz(m,n)
             Qbc_yz(m,n)%set = Qpt_yz(m,n)%set
           endforall
 !
           all_yz=all(Qbc_yz(mm1:mm2,nn1:nn2)%set)
-!
           if (all_yz.and.all_zx) exit
         endif
+!
+!  y-direction.
 !
         if (mrad/=0.and..not.all_zx) then
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
@@ -1018,9 +1032,9 @@ module Radiation
           endforall
 !
           all_zx=all(Qbc_zx(ll1:ll2,nn1:nn2)%set)
-!
           if (all_yz.and.all_zx) exit
         endif
+!
       enddo; endif
 !
 !  Copy all heating rates at the upstream boundaries to Qrad0 which is used in

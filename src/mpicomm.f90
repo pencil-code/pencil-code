@@ -1172,6 +1172,34 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
+    subroutine radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
+!
+!  receive intensities from isource and send intensities to idest
+!
+!  17-nov-14/axel: adapted from radboundary_zx_sendrecv
+!
+      integer, intent(in) :: lrad,idir
+      real, dimension(my,mz) :: Qsend_yz,Qrecv_yz
+      integer :: idest,isource
+      integer, dimension(MPI_STATUS_SIZE) :: isendrecv_yz
+!
+!  Identifier
+!
+      if (lroot.and.ip<5) print*,'radboundary_yz_sendrecv: ENTER'
+!
+!  destination and source id
+!
+      if (lrad>0) then; idest=xuneigh; isource=xlneigh; endif
+      if (lrad<0) then; idest=xlneigh; isource=xuneigh; endif
+!
+!  actual MPI call
+!
+      call MPI_SENDRECV(Qsend_yz,my*mz,MPI_REAL,idest,Qtag_yz+idir, &
+                        Qrecv_yz,my*mz,MPI_REAL,isource,Qtag_yz+idir, &
+                        MPI_COMM_WORLD,isendrecv_yz,mpierr)
+!
+    endsubroutine radboundary_yz_sendrecv
+!***********************************************************************
     subroutine radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
 !
 !  receive intensities from isource and send intensities to idest

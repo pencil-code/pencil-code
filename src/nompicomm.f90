@@ -438,6 +438,15 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
+    subroutine radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
+!
+      integer :: lrad,idir
+      real, dimension(my,mz) :: Qsend_yz,Qrecv_yz
+!
+      if (ALWAYS_FALSE) print*,lrad,idir,Qsend_yz(1,1),Qrecv_yz(1,1)
+!
+    endsubroutine radboundary_yz_sendrecv
+!***********************************************************************
     subroutine radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
 !
       integer :: mrad,idir
