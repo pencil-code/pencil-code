@@ -99,7 +99,7 @@ module Radiation
   integer :: llstart, llstop, ll1, ll2, lsign
   integer :: mmstart, mmstop, mm1, mm2, msign
   integer :: nnstart, nnstop, nn1, nn2, nsign
-  integer :: ipzstart, ipzstop, ipystart, ipystop
+  integer :: ipzstart, ipzstop, ipystart, ipystop, ipxstart, ipxstop
   integer :: nIsurf=1
   integer :: nlnTT_table=1
 !
@@ -418,7 +418,8 @@ module Radiation
 !  Thus, we multiply by the number of dimensions (=radx+rady+radz)
 !  and divide by 3. This has been verified in 1-D with 2 rays,
 !  in 2-D with 4 (xy periodic) or 8 (xz semi-periodic) rays,
-!  as well as in 3-D with 14 or 22 rays.
+!  as well as in 3-D with 14 or 22 rays; for details, see appendix
+!  of Barekat & Brandenburg (2014, Astron. Astrophys. 571, A68).
 !
       case ('corrected')
         correction_factor=(radx+rady+radz)/3.
@@ -669,6 +670,8 @@ module Radiation
 !
 !  Determine start and stop processors.
 !
+      if (lrad>0) then; ipxstart=0; ipxstop=nprocx-1; endif
+      if (lrad<0) then; ipxstart=nprocx-1; ipxstop=0; endif
       if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
       if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
@@ -905,14 +908,13 @@ module Radiation
 !  30-jul-05/tobi: coded
 !
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
-      use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_zx_sendrecv
 !
       real, dimension (my,mz) :: emtau_yz,Qrad_yz
       real, dimension (mx,mz) :: emtau_zx,Qrad_zx
       real, dimension (mx,my) :: emtau_xy,Qrad_xy
       real, dimension (my,mz) :: Qrecv_yz !,Qsend_yz CHECK why this is not used!
-      real, dimension (mx,mz) :: Qsend_zx,Qrecv_zx
+      real, dimension (mx,mz) :: Qrecv_zx,Qsend_zx
       real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
       logical :: all_yz,all_zx
 !
@@ -961,7 +963,6 @@ module Radiation
           emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
            Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
         endif
-!
       else
         all_yz=.true.
       endif
@@ -1055,40 +1056,79 @@ module Radiation
 !***********************************************************************
     subroutine Qperiodic
 !
-!  DOCUMENT ME!
+!  This routine deals with communication for horizontal rays.
 !
-      use Mpicomm, only: radboundary_zx_periodic_ray
+      use Mpicomm, only: radboundary_yz_periodic_ray,radboundary_zx_periodic_ray
       use Debug_IO, only: output
 !
-      real, dimension(ny,nz) :: Qrad_yz,tau_yz,emtau1_yz
-      real, dimension(nx,nz) :: Qrad_zx,tau_zx !,emtau1_zx
+      real, dimension(ny,nz) :: Qrad_yz,tau_yz
+      real, dimension(nx,nz) :: Qrad_zx,tau_zx
+      real, dimension(ny,nz) :: Qrad_tot_yz,tau_tot_yz,emtau1_tot_yz
       real, dimension(nx,nz) :: Qrad_tot_zx,tau_tot_zx,emtau1_tot_zx
+      real, dimension(ny,nz,0:nprocx-1) :: Qrad_yz_all,tau_yz_all
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
+      integer :: ipxstart,ipxstop,ipl
       integer :: ipystart,ipystop,ipm
 !
 !  x-direction
 !
       if (lrad/=0) then
 !
-!  Intrinsic heating rate and optical depth at the downstream boundary.
+!  Intrinsic heating rate and optical depth at the downstream boundary of
+!  each processor.
 !
         Qrad_yz=Qrad(llstop,m1:m2,n1:n2)
         tau_yz=tau(llstop,m1:m2,n1:n2)
 !
+!  Gather intrinsic heating rates and optical depths from all processors
+!  into one rank-3 array available on each processor.
+!
+        call radboundary_yz_periodic_ray(Qrad_yz,tau_yz,Qrad_yz_all,tau_yz_all)
+!
+!  Find out in which direction we want to loop over processors.
+!
+        if (lrad>0) then; ipxstart=0; ipxstop=nprocx-1; endif
+        if (lrad<0) then; ipxstart=nprocx-1; ipxstop=0; endif
+!
+!  We need the sum of all intrinsic optical depths and the attenuated sum of
+!  all intrinsic heating rates. The latter needs to be summed in the
+!  downstream direction starting at the current processor. Set both to zero
+!  initially.
+!
+        Qrad_tot_yz=0.0
+        tau_tot_yz=0.0
+!
+!  Do the sum from this processor to the last one in the downstream direction.
+!
+        do ipl=ipx,ipxstop,lsign
+          Qrad_tot_yz=Qrad_tot_yz*exp(-tau_yz_all(:,:,ipl))+Qrad_yz_all(:,:,ipl)
+          tau_tot_yz=tau_tot_yz+tau_yz_all(:,:,ipl)
+        enddo
+!
+!  Do the sum from the first processor in the upstream direction to the one
+!  before this one.
+!
+        do ipl=ipxstart,ipx-lsign,lsign
+          Qrad_tot_yz=Qrad_tot_yz*exp(-tau_yz_all(:,:,ipl))+Qrad_yz_all(:,:,ipl)
+          tau_tot_yz=tau_tot_yz+tau_yz_all(:,:,ipl)
+        enddo
+!
+!  To calculate the boundary heating rate we need to compute an exponential
+!  term involving the total optical depths across all processors.
 !  Try to avoid time consuming exponentials and loss of precision.
 !
-        where (tau_yz>dtau_thresh_max)
-          emtau1_yz=1.0
-        elsewhere (tau_yz<dtau_thresh_min)
-          emtau1_yz=tau_yz*(1-0.5*tau_yz*(1-tau_yz/3))
+        where (tau_tot_yz>dtau_thresh_max)
+          emtau1_tot_yz=1.0
+        elsewhere (tau_tot_yz<dtau_thresh_min)
+          emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-tau_tot_yz/3))
         elsewhere
-          emtau1_yz=1-exp(-tau_yz)
+          emtau1_tot_yz=1-exp(-tau_tot_yz)
         endwhere
 !
 !  The requirement of periodicity gives the following heating rate at the
-!  upstream boundary.
+!  upstream boundary of this processor.
 !
-        Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_yz/emtau1_yz
+        Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_tot_yz/emtau1_tot_yz
       endif
 !
 !  y-direction
@@ -1119,8 +1159,7 @@ module Radiation
         Qrad_tot_zx=0.0
         tau_tot_zx=0.0
 !
-!  Do the sum from the this processor to the last one in the downstream
-!  direction.
+!  Do the sum from this processor to the last one in the downstream direction.
 !
         do ipm=ipy,ipystop,msign
           Qrad_tot_zx=Qrad_tot_zx*exp(-tau_zx_all(:,:,ipm))+Qrad_zx_all(:,:,ipm)

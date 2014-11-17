@@ -327,10 +327,7 @@ module Mpicomm
 !  the values for those have to differ by a number greater than maxdir=190
 !  in order to have unique tags for each boundary and each direction
 !
-  integer, parameter :: Qtag_zx=300,Qtag_xy=350
-  integer, parameter :: tautag_zx=400,tautag_xy=450
-  integer, parameter :: Qtag_peri_zx=1000,Qtag_peri_xy=2000
-  integer, parameter :: tautag_peri_zx=3000,tautag_peri_xy=4000
+  integer, parameter :: Qtag_yz=250, Qtag_zx=300, Qtag_xy=350
 !
 !  Communicators
 !
@@ -1202,6 +1199,31 @@ module Mpicomm
                         MPI_COMM_WORLD,isendrecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_sendrecv
+!***********************************************************************
+    subroutine radboundary_yz_periodic_ray(Qrad_yz,tau_yz, &
+                                           Qrad_yz_all,tau_yz_all)
+!
+!  Gather all intrinsic optical depths and heating rates into one rank-3 array
+!  that is available on each processor.
+!
+!  17-nov-14/axel: adapted from radboundary_zx_periodic_ray
+!
+      real, dimension(ny,nz), intent(in) :: Qrad_yz,tau_yz
+      real, dimension(ny,nz,0:nprocx-1), intent(out) :: Qrad_yz_all,tau_yz_all
+!
+!  Identifier
+!
+      if (lroot.and.ip<5) print*,'radboundary_yz_periodic_ray: ENTER'
+!
+!  actual MPI calls
+!
+      call MPI_ALLGATHER(tau_yz,ny*nz,MPI_REAL,tau_yz_all,ny*nz,MPI_REAL, &
+          MPI_COMM_XBEAM,mpierr)
+!
+      call MPI_ALLGATHER(Qrad_yz,ny*nz,MPI_REAL,Qrad_yz_all,ny*nz,MPI_REAL, &
+          MPI_COMM_XBEAM,mpierr)
+!
+    endsubroutine radboundary_yz_periodic_ray
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)

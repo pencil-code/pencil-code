@@ -63,7 +63,7 @@
   public :: radboundary_xy_recv, radboundary_xy_send
   public :: radboundary_zx_recv, radboundary_zx_send
   public :: radboundary_zx_sendrecv
-  public :: radboundary_zx_periodic_ray
+  public :: radboundary_yz_periodic_ray, radboundary_zx_periodic_ray
 
 ! Variables
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision

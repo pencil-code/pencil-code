@@ -447,6 +447,21 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
+    subroutine radboundary_yz_periodic_ray(Qrad_yz,tau_yz, &
+                                           Qrad_yz_all,tau_yz_all)
+!
+!  Trivial counterpart of radboundary_yz_periodic_ray() from mpicomm.f90
+!
+!  17-nov-14/axel: adapted from radboundary_zx_periodic_ray
+!
+      real, dimension(ny,nz), intent(in) :: Qrad_yz,tau_yz
+      real, dimension(ny,nz,0:nprocx-1) :: Qrad_yz_all,tau_yz_all
+!
+      Qrad_yz_all(:,:,ipx)=Qrad_yz
+      tau_yz_all(:,:,ipx)=tau_yz
+!
+    endsubroutine radboundary_yz_periodic_ray
+!***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)
 !
