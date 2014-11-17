@@ -108,7 +108,7 @@ sub scan_file {
 		# indentation
 		check_closed_nesting ($_);
 		if ($state{'indent'} < 0) {
-			fatal ("surplus 'end'\n=> indentation became negative");
+			fatal ("surplus 'end' => indentation became negative");
 		}
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
@@ -124,7 +124,7 @@ sub scan_file {
 
 		# multiple commands per line
 		if (/\;/s) {
-			warning ("possible multi-command line\n=> better put one command per line");
+			warning ("possible multi-command line => better put one command per line");
 		}
 
 		# continuation
@@ -243,7 +243,7 @@ sub check_closed_nesting {
 	if (/^\s*end\s?(\S+)(?:\s+\S+)?$/is) {
 		$trigger = $1;
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}(\|+)$/${1}${2}/is) {
-			fatal ("misplaced 'end".$trigger."'\n=> better use the pure 'end'-statement");
+			fatal ("misplaced 'end".$trigger."' => better use the pure 'end'-statement");
 		}
 	}
 	elsif (/^\s*end(?:\s+\S+)?$/is) {
