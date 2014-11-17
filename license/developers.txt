@@ -32,7 +32,7 @@ Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8
 André Kapelrud        kapelrud/stud.ntnu.no,         ,
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277
 Maarit Korpi          maarit.korpi/helsinki.fi,      ,                     +35 850 4155 396
-Jonas Kruger,         jonas.kruger@ntnu.no,          jnskrueger,           +47 7359 3734,     +47 908 78 865
+Jonas Kruger,         jonas.kruger/ntnu.no,          jnskrueger,           +47 7359 3734,     +47 908 78 865
 Petri Käpylä          petri.kapyla/helsinki.fi,      ,                     +35 89 191 22952,  +35 840 533 4117 
 Michiel Lambrechts    michiel.lambrechts/gmail.com   ,                                     ,  +46 73 613 71 11
 Wladimir Lyra         wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81
