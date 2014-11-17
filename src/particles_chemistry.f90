@@ -236,31 +236,31 @@ module Particles_chemistry
 !
       allocate(dngas(N_surface_reactions),STAT=stat)
       if (stat>0) call fatal_error('register_indep_psurfchem',&
-           'Could not allocate memory for dngas')
+          'Could not allocate memory for dngas')
       allocate(omega_pg_dbl(N_species),STAT=stat)
       if (stat>0) call fatal_error('register_indep_pchem',&
-           'Could not allocate memory for omega_pg_dbl')
+          'Could not allocate memory for omega_pg_dbl')
       allocate(B_k(N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_indep_pchem',&
-           'Could not allocate memory for B_k')
+          'Could not allocate memory for B_k')
       allocate(Er_k(N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_indep_pchem',&
-           'Could not allocate memory for Er_k')
+          'Could not allocate memory for Er_k')
       allocate(sigma_k(N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_indep_pchem',&
-           'Could not allocate memory for sigma_k')
+          'Could not allocate memory for sigma_k')
       allocate(reaction_order(N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_indep_psurfchem',&
-           'Could not allocate memory for reaction_order')
+          'Could not allocate memory for reaction_order')
       allocate(effectiveness_factor_old(N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_indep_pchem',&
-           'Could not allocate memory for effectiveness_factor_old')
+          'Could not allocate memory for effectiveness_factor_old')
       allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
       if (stat>0) call fatal_error('register_indep_chem',&
-           'Could not allocate memory for nu_power')
+          'Could not allocate memory for nu_power')
       allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
       if (stat>0) call fatal_error('register_indep_chem',&
-           'Could not allocate memory for mu_power')
+          'Could not allocate memory for mu_power')
 !
       effectiveness_factor_old=1.
 !
@@ -268,12 +268,12 @@ module Particles_chemistry
 !
       lenhance=.false.
       do i=1,N_surface_reactions
-         if (reaction_enhancement(i) .ne. 1) then
-            print*,'**************** WARNING! ****************************'
-            write(*,'(A5,I2,A25,F10.2)') &
-                 'Reac ',i,' is enhanced by a factor ',reaction_enhancement(i)
-            lenhance=.true.
-         endif
+        if (reaction_enhancement(i) .ne. 1) then
+          print*,'**************** WARNING! ****************************'
+          write(*,'(A5,I2,A25,F10.2)') &
+              'Reac ',i,' is enhanced by a factor ',reaction_enhancement(i)
+          lenhance=.true.
+        endif
       enddo
       !if (lenhance) call sleep(4)
 !
@@ -290,31 +290,28 @@ module Particles_chemistry
 !
       allocate(A_p_init(mpar_loc)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for A_p_init')
+          'Could not allocate memory for A_p_init')
       allocate(St_init(mpar_loc),STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for St_init')
+          'Could not allocate memory for St_init')
       allocate(rho_p_init(mpar_loc),STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for rho_p_init')
+          'Could not allocate memory for rho_p_init')
       allocate(mdot_ck(mpar_loc,N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for mdot_ck')
-!!$    allocate(f_RPM(mpar_loc)   ,STAT=stat)
-!!$    if (stat>0) call fatal_error('register_dep_pchem',&
-!!$        'Could not allocate memory for f_RPM')
+          'Could not allocate memory for mdot_ck')
       allocate(qk_reac(mpar_loc,N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for qk_reac')
+          'Could not allocate memory for qk_reac')
       allocate(R_c_hat(mpar_loc)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for R_c_hat')
+          'Could not allocate memory for R_c_hat')
       allocate(heating_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for heating_k')
+          'Could not allocate memory for heating_k')
       allocate(entropy_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
-           'Could not allocate memory for heating_k')
+          'Could not allocate memory for heating_k')
 !
     end subroutine register_dep_pchem
 !***********************************************************************
@@ -336,19 +333,19 @@ module Particles_chemistry
 !  Allocate some arrays
 !
       if (.not. allocated(part)) then
-         allocate(part(N_max_elements,N_surface_reactions))
+        allocate(part(N_max_elements,N_surface_reactions))
       endif
       if (.not. allocated(part_power)) then
-         allocate(part_power(N_max_elements,N_surface_reactions))
-      end if
+        allocate(part_power(N_max_elements,N_surface_reactions))
+      endif
       if (.not. allocated(reaction_direction)) then
-         allocate(reaction_direction(N_surface_reactions))
-      end if
+        allocate(reaction_direction(N_surface_reactions))
+      endif
       if (.not. allocated(flags)) then
-         allocate(flags(N_surface_reactions),STAT=stat)
-      end if
+        allocate(flags(N_surface_reactions),STAT=stat)
+      endif
       if (.not. allocated(T_k)) then
-         allocate(T_k(N_surface_reactions)   ,STAT=stat)
+        allocate(T_k(N_surface_reactions)   ,STAT=stat)
       endif
 !      if (stat>0) call fatal_error('register_indep_pchem',&
 !           'Could not allocate memory for flags')
@@ -400,11 +397,11 @@ module Particles_chemistry
 !  biomass combustion and gasification.
 !
       do k=k1,k2
-         mod_all(k) = St_init(k)*St_init(k)*structural_parameter* &
-              (1-conversion(k)) * (1-conversion(k)) / &
-              (2*St(k)**2)
-         Sgc(k) = St(k)/ rho_p(k)
-         mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
+        mod_all(k) = St_init(k)*St_init(k)*structural_parameter* &
+            (1-conversion(k)) * (1-conversion(k)) / &
+            (2*St(k)**2)
+        Sgc(k) = St(k)/ rho_p(k)
+        mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
       enddo
 !
       deallocate(mod_all)
@@ -426,111 +423,11 @@ module Particles_chemistry
       St = 0.0
 !
       do k=k1,k2
-         St(k)=fp(k,imp)*Sgc_init* &
-              sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init(k)))
+        St(k)=fp(k,imp)*Sgc_init* &
+            sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init(k)))
       enddo
 !
     end subroutine calc_St
-!***********************************************************************
-    integer function count_max_elements(inputfile)
-!
-      character(*) :: inputfile
-      integer :: stat,i,k,j,maxelement
-      character(150) :: line
-      character :: tab = char(9)
-      character :: spc = char(32)
-!
-      open(30, file=inputfile,iostat=stat)
-      if (stat==0) then
-         maxelement=1
-         do
-            read(30,'(A150)', end=530) line
-            if (line(:1)/='!') then
-               i=1
-               k=0
-               do while (i <len(line))
-                  if (line(i:i)/='+'.and. &
-                       line(i:i)/=spc.and.line(i:i)/=tab) then
-                     j=1
-                     do while (line(i+j:i+j)/='+'.and.&
-                          line(i+j:i+j)/=spc.and.line(i+j:i+j)/=tab)
-                        j=j+1
-                     enddo
-                     k=k+1
-                     i=i+j
-                  else
-                     i=i+1
-                  endif
-                  if (k>maxelement) then
-                     maxelement=k
-                  else
-                  endif
-               enddo
-            else
-            endif
-         enddo
-530      close(30)
-         count_max_elements=maxelement
-      else
-         maxelement=0
-         write(*,*) 'Problem with the single elements of the mechanics.in file'
-      endif
-!
-    end function count_max_elements
-!**************************************************
-    integer function count_reactions(inputfile)
-!
-!  this function counts the uncommented lines in the mechanics.in
-!
-      integer :: stat,reactions
-      character(150) :: line
-      character(*) :: inputfile
-!
-      open(20, file=inputfile,iostat=stat)
-      if (stat==0) then
-!       write(*,*) 'Counting reactions'
-         reactions = 0
-         do
-            read(20,fmt =610, end=520) line
-            if (line(:1)/='!') then
-               reactions = reactions + 1
-               if (index(line,'<>') > 0) then
-                  reactions = reactions + 1
-               else
-               end if
-            else
-            end if
-         end do
-520      close(20)
-         count_reactions=reactions
-610      format(A150)
-      else
-         count_reactions=0
-         write(*,*) 'Could not open mechanics file'
-      endif
-!
-    end function count_reactions
-!***********************************************************************
-    integer function find_species(species,unique_species,nlist)
-!
-!  function to replace the imu/inuX variables
-!
-      implicit none
-!
-      integer :: i,nlist
-      character(len=*) :: species
-      character(len=*), dimension(:) :: unique_species
-!
-      find_species = 0
-!
-      do i=1,nlist
-         if (trim(species) == trim(unique_species(i))) then
-            find_species = i
-         else
-         endif
-      enddo
-!
-    end function find_species
 !**********************************************************************
     subroutine create_arh_param(part,B_k,ER_k,sigma_k)
 !
@@ -548,34 +445,31 @@ module Particles_chemistry
     sigma_k = 0.0
 !
     do i=1, size(part,2)
-       if (part(size(part,1),i) == 'rev') then
-          B_k(i) = 1e1
-          ER_k(i) = 1.
-          sigma_k(i) = 1e1
-       else
-          done = .false.
-          do k=1, size(part,1)-2
-             el_B_k = part(k,i)
-             el_ER_k = part(k+1,i)
-             el_sigma = part(k+2,i)
-             read(el_B_k,*,iostat=stat) B_k_single
-             if (stat == 0 .and. (done .eqv. .false.)) then
-                B_k(i) = B_k_single
-                done = .true.
-                read(el_ER_k,*,iostat=stat) ER_k_single
-                if (stat == 0) then
-                   ER_k(i) = ER_k_single
-                else
-                end if
-                read(el_sigma,*,iostat=stat) sigma_single
-                if (stat == 0) then
-                   sigma_k(i) = sigma_single
-                else
-                end if
-             else
-             end if
-          enddo
-       end if
+      if (part(size(part,1),i) == 'rev') then
+        B_k(i) = 1e1
+        ER_k(i) = 1.
+        sigma_k(i) = 1e1
+      else
+        done = .false.
+        do k=1, size(part,1)-2
+          el_B_k = part(k,i)
+          el_ER_k = part(k+1,i)
+          el_sigma = part(k+2,i)
+          read(el_B_k,*,iostat=stat) B_k_single
+          if (stat == 0 .and. (done .eqv. .false.)) then
+            B_k(i) = B_k_single
+            done = .true.
+            read(el_ER_k,*,iostat=stat) ER_k_single
+            if (stat == 0) then
+              ER_k(i) = ER_k_single
+            endif
+            read(el_sigma,*,iostat=stat) sigma_single
+            if (stat == 0) then
+              sigma_k(i) = sigma_single
+            endif
+          endif
+        enddo
+      endif
     enddo
 !
     ER_k = ER_k/gas_constant
@@ -592,12 +486,11 @@ module Particles_chemistry
     dependent_reactant = 0
 !
     do i=1,n_surface_reactants
-       do k=1,n_surface_reactions
-          if (nu(i,k) > 0) then
-             dependent_reactant(k) = i
-          else
-          end if
-       enddo
+      do k=1,n_surface_reactions
+        if (nu(i,k) > 0) then
+          dependent_reactant(k) = i
+        endif
+      enddo
     enddo
 !
   end subroutine create_dependency
@@ -610,67 +503,63 @@ module Particles_chemistry
 !
     site_occupancy = 1
     do i=1, size(site_occupancy,1)
-       if  (index(adsorbed_species_names(i), '(O2)') > 0) then
-          site_occupancy(i) = 2
-       else
-       end if
+      if  (index(adsorbed_species_names(i), '(O2)') > 0) then
+        site_occupancy(i) = 2
+      endif
     enddo
 !
   end subroutine create_occupancy
 !**********************************************************************
   subroutine create_stoc(part,list,targ,lhs,nlist,power)
 !
-  integer :: i,j,k,stat,nlist
-  real :: multi
-  character(10), dimension(:,:) :: part
-  character(10), dimension(:) :: list
-  character(10) :: element
-  real, dimension(:,:) :: targ,power
-  logical :: lhs,fwd,forpower
+    integer :: i,j,k,stat,nlist
+    real :: multi
+    character(10), dimension(:,:) :: part
+    character(10), dimension(:) :: list
+    character(10) :: element
+    real, dimension(:,:) :: targ,power
+    logical :: lhs,fwd,forpower
 !
 !  list where the stochiometry is saved in
 !
-  if (lhs) then
-     forpower=.true.
-  else
-     forpower=.false.
-  endif
-  power = 0.0
-  targ = 0
-  do i=1,size(part,2)
-     fwd = lhs
-     do j=1,size(part,1)
+    if (lhs) then
+      forpower=.true.
+    else
+      forpower=.false.
+    endif
+    power = 0.0
+    targ = 0
+    do i=1,size(part,2)
+      fwd = lhs
+      do j=1,size(part,1)
         do k=1,nlist
-           if (part(j,i) == '->' .or. &
-                part(j,i) == '<>') then
-              fwd =  .not. lhs
-           else
-           end if
-           element = part(j,i)
+          if (part(j,i) == '->' .or. &
+              part(j,i) == '<>') then
+            fwd =  .not. lhs
+          endif
+          element = part(j,i)
 !
 !  check if character is numeric
 !
-           read(element(:1),*,iostat=stat) multi
-           if (stat==0) then
-              element = element(2:)
-           else
-              multi = 1.0
-           end if
+          read(element(:1),*,iostat=stat) multi
+          if (stat==0) then
+            element = element(2:)
+          else
+            multi = 1.0
+          endif
 !
 !  if string is numeric, change stochiometric factor accordingly
 !
-           if (element==list(k) .and. &
-                fwd .eqv. .true.) then
-              targ(k,i) =real(multi)
-              if (forpower) then
-                 power(k,i) = part_power(j,i)
-              else
-              end if
-           else
-           end if
+          if (element==list(k) .and. &
+              fwd .eqv. .true.) then
+            targ(k,i) =real(multi)
+            if (forpower) then
+              power(k,i) = part_power(j,i)
+            endif
+          endif
         enddo
       enddo
-   enddo
+    enddo
 !   targ(:,:) = int(targ(:,:))
 !
   end subroutine create_stoc
@@ -687,19 +576,17 @@ module Particles_chemistry
     ac = 0
 !
     do i = 1,nlist
-       if (scan(list(i),'C') > 0) then
-          c_place = scan(list(i),'C')
-          species_in_q = list(i)
-          read(species_in_q(c_place+1:c_place+1),120,iostat=stat) nc
-120 format (I1.1)
-          numeric = (stat == 0)
-          if (numeric) then
+      if (scan(list(i),'C') > 0) then
+        c_place = scan(list(i),'C')
+        species_in_q = list(i)
+        read(species_in_q(c_place+1:c_place+1),'(I1.1)',iostat=stat) nc
+        numeric = (stat == 0)
+        if (numeric) then
           ac(i) = nc
-          else
-          ac(i) = 1
-          endif
         else
+          ac(i) = 1
         endif
+      endif
     enddo
 !
   end subroutine get_ac
@@ -723,30 +610,28 @@ module Particles_chemistry
    front = 0
 !
    do i=1,nlist
-      is_reactant = .false.
-      do j=1,n_big
-         if (species_list(i) == lhslist(j)) then
-            is_reactant = .true.
-         else
-         end if
-      enddo
+     is_reactant = .false.
+     do j=1,n_big
+       if (species_list(i) == lhslist(j)) then
+         is_reactant = .true.
+       endif
+     enddo
 !
-      if (.not. is_reactant) then
-         temp_list(nlist-ende) = species_list(i)
-         ende = ende + 1
-      else
-         temp_list(1+front) = species_list(i)
-         front = front + 1
-      end if
+     if (.not. is_reactant) then
+       temp_list(nlist-ende) = species_list(i)
+       ende = ende + 1
+     else
+       temp_list(1+front) = species_list(i)
+       front = front + 1
+     endif
    enddo
 !
    do i=1,nlist-1
-      if (temp_list(i) == 'Cf') then
-         temp = temp_list(nlist)
-         temp_list(nlist) = 'Cf'
-         temp_list(i)=temp
-      else
-      end if
+     if (temp_list(i) == 'Cf') then
+       temp = temp_list(nlist)
+       temp_list(nlist) = 'Cf'
+       temp_list(i)=temp
+     endif
    enddo
 !
    species_list(:nlist) = temp_list(:nlist)
@@ -764,27 +649,23 @@ module Particles_chemistry
   integer :: place
   place = 1
 !
-    do i = 1,nlist
-       if (ad_sol == 'ad') then
-          if (scan(list(i),'()') > 0 .or.&
-               list(i) == 'Cf') then
-             target_list(place) = list(i)
-             place = place + 1
-          else
-          end if
-       else
-       end if
-       if (ad_sol == 'sol') then
-          if (scan(list(i),'()') == 0 .and.&
-               list(i)/='Cb' .and.&
-               list(i)/='Cf') then
-             target_list(place) = list(i)
-             place = place + 1
-          else
-          end if
-       else
-       end if
-    enddo
+  do i = 1,nlist
+    if (ad_sol == 'ad') then
+      if (scan(list(i),'()') > 0 .or.&
+          list(i) == 'Cf') then
+        target_list(place) = list(i)
+        place = place + 1
+      endif
+    endif
+    if (ad_sol == 'sol') then
+      if (scan(list(i),'()') == 0 .and.&
+          list(i)/='Cb' .and.&
+          list(i)/='Cf') then
+        target_list(place) = list(i)
+        place = place + 1
+      endif
+    endif
+  enddo
 !
   end subroutine create_ad_sol_lists
 !**********************************************************************
@@ -799,18 +680,18 @@ module Particles_chemistry
     n_ad = 0
     n_sol = 0
     do i = 1,nlist
-       parenthes = 0
-       parenthes = scan(list(i),'()')
-       if (parenthes > 0 .or. &
-            list(i) == 'Cf') then
-          n_ad = n_ad + 1
-       else
-          if (list(i)/='Cb') then
-             n_sol = n_sol + 1
-          else
-          end if
-       end if
+      parenthes = 0
+      parenthes = scan(list(i),'()')
+      if (parenthes > 0 .or. &
+          list(i) == 'Cf') then
+        n_ad = n_ad + 1
+      else
+        if (list(i)/='Cb') then
+          n_sol = n_sol + 1
+        endif
+      endif
     enddo
+!
    end subroutine count_species_type
 !**********************************************************************
   subroutine count_species(part,species,reactants,products)
@@ -841,7 +722,7 @@ module Particles_chemistry
                element == '<>') then
              lhs = .false.
           else
-          end if
+          endif
 !
 !  if element can be read as real, disregard
 !
@@ -860,23 +741,23 @@ module Particles_chemistry
           temp(place) = element
           place = place+1
           else
-          end if
+          endif
 !
           if ((.not. any(temp_reac .eq. element)) .and. lhs) then
           temp_reac(place_reac) = element
           place_reac = place_reac+1
           else
-          end if
+          endif
 !
           if ((.not. any(temp_prod .eq. element)) .and. &
                (lhs .eqv. .false.)) then
           temp_prod(place_prod) = element
           place_prod = place_prod+1
           else
-          end if
+          endif
 !
           else
-          end if
+          endif
        enddo
     enddo
 !
@@ -911,12 +792,12 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        if (real_number < 10) then
           numerical = 1
        else
-       end if
+       endif
        if (i > len(string)-10) then
           print*,'no numericals found after sign!'
           numerical = 0
        else
-       end if
+       endif
     enddo
 !
     lhs = trim(string(:marker-1))
@@ -974,8 +855,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
    if (i==len(string)) then
       target_list(k:,ireaction) = '0.0'
    else
-   end if
-   print*, target_list(:,ireaction)
+   endif
+!   print*, target_list(:,ireaction)
 !
    direction(ireaction) = flag
 !
@@ -995,41 +876,40 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     open(20, file=inputfile,iostat=stat)
 !
     if (stat==0) then
-       if (talk=='verbose') write(*,*) 'Opened mechanics file'
-       ireaction = 1
-       do
-          read(20,fmt =510, end=500) string
+      if (talk=='verbose') write(*,*) 'Opened mechanics file'
+      ireaction = 1
+      do while (stat==0)
+        read(20,fmt='(A150)', iostat=stat) string
+        if (stat==0) then
           if ( (string(:1)) /='!') then
-             flags(ireaction) = 'fwd'
-          call parse(string,ireaction,target_list,'fwd',reaction_direction)
-          ireaction = ireaction + 1
-          if (index(string,'<>') > 0) then
-            call flip_and_parse(string,ireaction,target_list,reaction_direction)
+            flags(ireaction) = 'fwd'
+            call parse(string,ireaction,target_list,'fwd',reaction_direction)
             ireaction = ireaction + 1
-          else
-          end if
-          else
-          end if
-       enddo
-500 if (talk=='verbose') print*,'Done parsing mechanics file'
-       close(20)
+            if (index(string,'<>') > 0) then
+              call flip_and_parse(string,ireaction,target_list,reaction_direction)
+              ireaction = ireaction + 1
+            endif
+          endif
+        endif
+      enddo
+      if (talk=='verbose') print*,'Done parsing mechanics file'
+      close(20)
 !
-       call remove_save_T_k(target_list)
-       call remove_save_powers(target_list)
+      call remove_save_T_k(target_list)
+      call remove_save_powers(target_list)
 !
        if(talk=='verbose') then
-          open(29, file='mech_outputfile.dat',iostat=stat)
-          do i=1,N_surface_reactions
-             write(*,writeformat) target_list(:,i),reaction_direction(i)
-             write(29,writeformat) target_list(:,i),reaction_direction(i)
-          enddo
-          close(29)
+         open(29, file='mech_outputfile.dat',iostat=stat)
+         do i=1,N_surface_reactions
+           write(*,writeformat) target_list(:,i),reaction_direction(i)
+           write(29,writeformat) target_list(:,i),reaction_direction(i)
+         enddo
+         close(29)
        else
-       end if
-510 format (A150)
-    else
+       endif
+     else
        write(*,*) 'Could not open mechanics file'
-    endif
+     endif
 !
   end subroutine read_mechanics_file
 !**********************************************************************
@@ -1068,7 +948,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
             -mu(j,l)*adsorbed_species_entropy(k,j)
       enddo
       else
-      end if
+      endif
     enddo
     enddo
 !
@@ -1173,7 +1053,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
             -mu(j,l)*adsorbed_species_enthalpy(k,j)
       enddo
       else
-      end if
+      endif
     enddo
     enddo
 !
@@ -1234,10 +1114,11 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     RR_hat=pre_RR_hat*RR_hat
 !
-    write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
-    print*, 'Cg',Cg(k1)
-    print*,'fp_surf',fp(k1,isurf:isurf_end)
-    print*,'Cs',Cs(k1,:)
+!    write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
+!    write(*,'(A13,12E10.3)') 'KK',K_k(k1,:)
+!    print*, 'Cg',Cg(k1)
+!    print*,'fp_surf',fp(k1,isurf:isurf_end)
+!    print*,'Cs',Cs(k1,:)
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -1565,7 +1446,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        adsorbed_species_entropy(k,imuadsO) = &
     (164.19+(0.0218*fp(k,iTp)))*0.72 - (3.3*gas_constant)
     else
-    end if
+    endif
 !
 !  this is guessed
 !
@@ -1573,23 +1454,23 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
        adsorbed_species_entropy(k,imuadsO2) =  &
             2*adsorbed_species_entropy(k,imuadsO)
     else
-    end if
+    endif
     if (imuadsOH>0)   then
        adsorbed_species_entropy(k,imuadsOH) = &
          ((0.0319*fp(k,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
     else
-    end if
+    endif
     if (imuadsH>0)    then 
        adsorbed_species_entropy(k,imuadsH) = &
            (117.49+(0.0217*fp(k,iTp)))*0.54 - (3.3*gas_constant)
     else
-    end if
+    endif
     if (imuadsCO>0)   then
        adsorbed_species_entropy(k,imuadsCO) = &
            (199.35+(0.0342*fp(k,iTp))) * &
             0.6*(1+(1.44e-4*fp(k,iTp))) - (3.3*gas_constant)
     else
-    end if
+    endif
 !
 !  taken from nist
 !
@@ -2064,7 +1945,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
            endif
               if (reaction_direction(l) == 'rev') then
                  call get_reverse_K_k(l,fp)
-              end if
+              endif
         enddo
     enddo
 !
@@ -2079,7 +1960,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !    
   end subroutine calc_K_k
 !*******************************************************************
-  subroutine calc_x_surf(f,fp,ineargrid)
+  Subroutine calc_x_surf(f,fp,ineargrid)
 !
 !  Routine to calculate the gas composition in the particle
 !  near field
@@ -2304,4 +2185,101 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
   end subroutine remove_save_T_k
 !********************************************************************
+    integer function count_max_elements(inputfile)
+!
+      character(*) :: inputfile
+      integer :: stat,i,k,j,maxelement
+      character(150) :: line
+      character :: tab = char(9)
+      character :: spc = char(32)
+!
+      open(30, file=inputfile,iostat=stat)
+      if (stat==0) then
+        maxelement=1
+        do while (stat==0)
+          read(30,'(A150)', iostat=stat) line
+          if (stat==0) then
+            if (line(:1)/='!') then
+              i=1
+              k=0
+              do while (i <len(line))
+                if (line(i:i)/='+'.and. &
+                    line(i:i)/=spc.and.line(i:i)/=tab) then
+                  j=1
+                  do while (line(i+j:i+j)/='+'.and.&
+                      line(i+j:i+j)/=spc.and.line(i+j:i+j)/=tab)
+                    j=j+1
+                  enddo
+                  k=k+1
+                  i=i+j
+                else
+                  i=i+1
+                endif
+                if (k>maxelement) then
+                  maxelement=k
+                endif
+              enddo
+            endif
+          endif
+        enddo
+        close(30)
+        count_max_elements=maxelement
+      else
+        maxelement=0
+        write(*,*) 'Problem with the single elements of the mechanics.in file'
+      endif
+!
+    end function count_max_elements
+!**************************************************
+    integer function count_reactions(inputfile)
+!
+!  this function counts the uncommented lines in the mechanics.in
+!
+      integer :: stat,reactions
+      character(150) :: line
+      character(*) :: inputfile
+!
+      open(20, file=inputfile,iostat=stat)
+      if (stat==0) then
+        reactions = 0
+        do while (stat==0)
+          read(20,fmt ='(A150)', iostat=stat) line
+          if(stat==0) then
+            if (line(:1)/='!') then
+              reactions = reactions + 1
+              if (index(line,'<>') > 0) then
+                reactions = reactions + 1
+              endif
+            endif
+          endif
+        enddo
+        close(20)
+        count_reactions=reactions
+      else
+        count_reactions=0
+        write(*,*) 'Could not open mechanics file'
+      endif
+!
+    end function count_reactions
+!***********************************************************************
+    integer function find_species(species,unique_species,nlist)
+!
+!  function to replace the imu/inuX variables
+!
+      implicit none
+!
+      integer :: i,nlist
+      character(len=*) :: species
+      character(len=*), dimension(:) :: unique_species
+!
+      find_species = 0
+!
+      do i=1,nlist
+        if (trim(species) == trim(unique_species(i))) then
+          find_species = i
+        endif
+      enddo
+!
+    end function find_species
+!**********************************************************************
   end module Particles_chemistry
