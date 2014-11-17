@@ -433,558 +433,547 @@ module Particles_chemistry
 !
 !takes the first numerical in part and writes it to b_k
 !
-    character(10), dimension(:,:) :: part
-    real, dimension(:) :: B_k,ER_k,sigma_k
-    character(10) :: el_B_k,el_ER_k,el_sigma
-    real :: B_k_single,ER_k_single,sigma_single
-    logical :: done
-    integer :: i,k,stat,stat1,stat2
+      character(10), dimension(:,:) :: part
+      real, dimension(:) :: B_k,ER_k,sigma_k
+      character(10) :: el_B_k,el_ER_k,el_sigma
+      real :: B_k_single,ER_k_single,sigma_single
+      logical :: done
+      integer :: i,k,stat,stat1,stat2
 !
-    B_k = 0.0
-    ER_k = 0.0
-    sigma_k = 0.0
+      B_k = 0.0
+      ER_k = 0.0
+      sigma_k = 0.0
 !
-    do i=1, size(part,2)
-      if (part(size(part,1),i) == 'rev') then
-        B_k(i) = 1e1
-        ER_k(i) = 1.
-        sigma_k(i) = 1e1
-      else
-        done = .false.
-        do k=1, size(part,1)-2
-          el_B_k = part(k,i)
-          el_ER_k = part(k+1,i)
-          el_sigma = part(k+2,i)
-          read(el_B_k,*,iostat=stat) B_k_single
-          if (stat == 0 .and. (done .eqv. .false.)) then
-            B_k(i) = B_k_single
-            done = .true.
-            read(el_ER_k,*,iostat=stat) ER_k_single
-            if (stat == 0) then
-              ER_k(i) = ER_k_single
+      do i=1, size(part,2)
+        if (part(size(part,1),i) == 'rev') then
+          B_k(i) = 1e1
+          ER_k(i) = 1.
+          sigma_k(i) = 1e1
+        else
+          done = .false.
+          do k=1, size(part,1)-2
+            el_B_k = part(k,i)
+            el_ER_k = part(k+1,i)
+            el_sigma = part(k+2,i)
+            read(el_B_k,*,iostat=stat) B_k_single
+            if (stat == 0 .and. (done .eqv. .false.)) then
+              B_k(i) = B_k_single
+              done = .true.
+              read(el_ER_k,*,iostat=stat) ER_k_single
+              if (stat == 0) then
+                ER_k(i) = ER_k_single
+              endif
+              read(el_sigma,*,iostat=stat) sigma_single
+              if (stat == 0) then
+                sigma_k(i) = sigma_single
+              endif
             endif
-            read(el_sigma,*,iostat=stat) sigma_single
-            if (stat == 0) then
-              sigma_k(i) = sigma_single
-            endif
-          endif
-        enddo
-      endif
-    enddo
-!
-    ER_k = ER_k/gas_constant
-!
-  end subroutine create_arh_param
-!**********************************************************************
-  subroutine create_dependency(nu,dependent_reactant,&
-     n_surface_reactions,n_surface_reactants)
-!
-    integer :: i,k,n_surface_reactions,n_surface_reactants
-    real, dimension(:,:) :: nu
-    integer, dimension(:) :: dependent_reactant
-!
-    dependent_reactant = 0
-!
-    do i=1,n_surface_reactants
-      do k=1,n_surface_reactions
-        if (nu(i,k) > 0) then
-          dependent_reactant(k) = i
+          enddo
         endif
       enddo
-    enddo
 !
-  end subroutine create_dependency
+      ER_k = ER_k/gas_constant
+!
+    end subroutine create_arh_param
 !**********************************************************************
-  subroutine create_occupancy(adsorbed_species_names,site_occupancy)
+    subroutine create_dependency(nu,dependent_reactant,n_surface_reactions,n_surface_reactants)
 !
-    integer :: i
-    character(10), dimension(:) :: adsorbed_species_names
-    real, dimension(:) :: site_occupancy
+      integer :: i,k,n_surface_reactions,n_surface_reactants
+      real, dimension(:,:) :: nu
+      integer, dimension(:) :: dependent_reactant
 !
-    site_occupancy = 1
-    do i=1, size(site_occupancy,1)
-      if  (index(adsorbed_species_names(i), '(O2)') > 0) then
-        site_occupancy(i) = 2
-      endif
-    enddo
+      dependent_reactant = 0
 !
-  end subroutine create_occupancy
+      do i=1,n_surface_reactants
+        do k=1,n_surface_reactions
+          if (nu(i,k) > 0) then
+            dependent_reactant(k) = i
+          endif
+        enddo
+      enddo
+!
+    end subroutine create_dependency
 !**********************************************************************
-  subroutine create_stoc(part,list,targ,lhs,nlist,power)
+    subroutine create_occupancy(adsorbed_species_names,site_occupancy)
 !
-    integer :: i,j,k,stat,nlist
-    real :: multi
-    character(10), dimension(:,:) :: part
-    character(10), dimension(:) :: list
-    character(10) :: element
-    real, dimension(:,:) :: targ,power
-    logical :: lhs,fwd,forpower
+      integer :: i
+      character(10), dimension(:) :: adsorbed_species_names
+      real, dimension(:) :: site_occupancy
+!
+      site_occupancy = 1
+      do i=1, size(site_occupancy,1)
+        if  (index(adsorbed_species_names(i), '(O2)') > 0) then
+          site_occupancy(i) = 2
+        endif
+      enddo
+!
+    end subroutine create_occupancy
+!**********************************************************************
+    subroutine create_stoc(part,list,targ,lhs,nlist,power)
+!
+      integer :: i,j,k,stat,nlist
+      real :: multi
+      character(10), dimension(:,:) :: part
+      character(10), dimension(:) :: list
+      character(10) :: element
+      real, dimension(:,:) :: targ,power
+      logical :: lhs,fwd,forpower
 !
 !  list where the stochiometry is saved in
 !
-    if (lhs) then
-      forpower=.true.
-    else
-      forpower=.false.
-    endif
-    power = 0.0
-    targ = 0
-    do i=1,size(part,2)
-      fwd = lhs
-      do j=1,size(part,1)
-        do k=1,nlist
-          if (part(j,i) == '->' .or. &
-              part(j,i) == '<>') then
-            fwd =  .not. lhs
-          endif
-          element = part(j,i)
+      if (lhs) then
+        forpower=.true.
+      else
+        forpower=.false.
+      endif
+      power = 0.0
+      targ = 0
+      do i=1,size(part,2)
+        fwd = lhs
+        do j=1,size(part,1)
+          do k=1,nlist
+            if (part(j,i) == '->' .or. &
+                part(j,i) == '<>') then
+              fwd =  .not. lhs
+            endif
+            element = part(j,i)
 !
 !  check if character is numeric
 !
-          read(element(:1),*,iostat=stat) multi
-          if (stat==0) then
-            element = element(2:)
-          else
-            multi = 1.0
-          endif
+            read(element(:1),*,iostat=stat) multi
+            if (stat==0) then
+              element = element(2:)
+            else
+              multi = 1.0
+            endif
 !
 !  if string is numeric, change stochiometric factor accordingly
 !
-          if (element==list(k) .and. &
-              fwd .eqv. .true.) then
-            targ(k,i) =real(multi)
-            if (forpower) then
-              power(k,i) = part_power(j,i)
+            if (element==list(k) .and. &
+                fwd .eqv. .true.) then
+              targ(k,i) =real(multi)
+              if (forpower) then
+                power(k,i) = part_power(j,i)
+              endif
             endif
-          endif
+          enddo
         enddo
       enddo
-    enddo
 !   targ(:,:) = int(targ(:,:))
 !
-  end subroutine create_stoc
+    end subroutine create_stoc
 !**********************************************************************
-  subroutine get_ac(ac,list,nlist)
+    subroutine get_ac(ac,list,nlist)
 !
 !  gets how many c atoms are on the surface species
 !
-    integer :: i,c_place,stat,nc,nlist
-    character(len=10) :: species_in_q
-    logical :: numeric
-    real, dimension(:) :: ac
-    character(10), dimension(:) :: list
-    ac = 0
+      integer :: i,c_place,stat,nc,nlist
+      character(len=10) :: species_in_q
+      logical :: numeric
+      real, dimension(:) :: ac
+      character(10), dimension(:) :: list
+      ac = 0
 !
-    do i = 1,nlist
-      if (scan(list(i),'C') > 0) then
-        c_place = scan(list(i),'C')
-        species_in_q = list(i)
-        read(species_in_q(c_place+1:c_place+1),'(I1.1)',iostat=stat) nc
-        numeric = (stat == 0)
-        if (numeric) then
-          ac(i) = nc
-        else
-          ac(i) = 1
+      do i = 1,nlist
+        if (scan(list(i),'C') > 0) then
+          c_place = scan(list(i),'C')
+          species_in_q = list(i)
+          read(species_in_q(c_place+1:c_place+1),'(I1.1)',iostat=stat) nc
+          numeric = (stat == 0)
+          if (numeric) then
+            ac(i) = nc
+          else
+            ac(i) = 1
+          endif
         endif
-      endif
-    enddo
+      enddo
 !
-  end subroutine get_ac
+    end subroutine get_ac
 !**********************************************************************
- subroutine sort_compounds(lhslist,species_list,nlist,n_big)
+    subroutine sort_compounds(lhslist,species_list,nlist,n_big)
 !
 !  this file reads in the order of the
 !  compounds as prescribed
 !
-   integer :: nlist,i,n_big,j
-   character(10), dimension(:) :: lhslist
-   integer :: front, ende
-   character(10), dimension(:) :: species_list
-   character(10), dimension(:), allocatable :: temp_list
-   character(10) :: temp
-   logical :: is_reactant
+      integer :: nlist,i,n_big,j
+      character(10), dimension(:) :: lhslist
+      integer :: front, ende
+      character(10), dimension(:) :: species_list
+      character(10), dimension(:), allocatable :: temp_list
+      character(10) :: temp
+      logical :: is_reactant
 !
-   allocate(temp_list(nlist))
+      allocate(temp_list(nlist))
 !
-   ende = 0
-   front = 0
+      ende = 0
+      front = 0
 !
-   do i=1,nlist
-     is_reactant = .false.
-     do j=1,n_big
-       if (species_list(i) == lhslist(j)) then
-         is_reactant = .true.
-       endif
-     enddo
+      do i=1,nlist
+        is_reactant = .false.
+        do j=1,n_big
+          if (species_list(i) == lhslist(j)) then
+            is_reactant = .true.
+          endif
+        enddo
 !
-     if (.not. is_reactant) then
-       temp_list(nlist-ende) = species_list(i)
-       ende = ende + 1
-     else
-       temp_list(1+front) = species_list(i)
-       front = front + 1
-     endif
-   enddo
+        if (.not. is_reactant) then
+          temp_list(nlist-ende) = species_list(i)
+          ende = ende + 1
+        else
+          temp_list(1+front) = species_list(i)
+          front = front + 1
+        endif
+      enddo
 !
-   do i=1,nlist-1
-     if (temp_list(i) == 'Cf') then
-       temp = temp_list(nlist)
-       temp_list(nlist) = 'Cf'
-       temp_list(i)=temp
-     endif
-   enddo
+      do i=1,nlist-1
+        if (temp_list(i) == 'Cf') then
+          temp = temp_list(nlist)
+          temp_list(nlist) = 'Cf'
+          temp_list(i)=temp
+        endif
+      enddo
 !
-   species_list(:nlist) = temp_list(:nlist)
-   print*,'species_list=',species_list
+      species_list(:nlist) = temp_list(:nlist)
+      print*,'species_list=',species_list
 !
-  end subroutine sort_compounds
+    end subroutine sort_compounds
 !**********************************************************************
-  subroutine create_ad_sol_lists(list,target_list,ad_sol,nlist)
+    subroutine create_ad_sol_lists(list,target_list,ad_sol,nlist)
 !
 !  create lists of adsorbed and solid species
 !
-  character(10), dimension(:) :: list,target_list
-  character(*) :: ad_sol
-  integer :: i ,nlist
-  integer :: place
-  place = 1
+      character(10), dimension(:) :: list,target_list
+      character(*) :: ad_sol
+      integer :: i ,nlist
+      integer :: place
+      place = 1
 !
-  do i = 1,nlist
-    if (ad_sol == 'ad') then
-      if (scan(list(i),'()') > 0 .or.&
-          list(i) == 'Cf') then
-        target_list(place) = list(i)
-        place = place + 1
-      endif
-    endif
-    if (ad_sol == 'sol') then
-      if (scan(list(i),'()') == 0 .and.&
-          list(i)/='Cb' .and.&
-          list(i)/='Cf') then
-        target_list(place) = list(i)
-        place = place + 1
-      endif
-    endif
-  enddo
+      do i = 1,nlist
+        if (ad_sol == 'ad') then
+          if (scan(list(i),'()') > 0 .or.&
+              list(i) == 'Cf') then
+            target_list(place) = list(i)
+            place = place + 1
+          endif
+        endif
+        if (ad_sol == 'sol') then
+          if (scan(list(i),'()') == 0 .and.&
+              list(i)/='Cb' .and.&
+              list(i)/='Cf') then
+            target_list(place) = list(i)
+            place = place + 1
+          endif
+        endif
+      enddo
 !
-  end subroutine create_ad_sol_lists
+    end subroutine create_ad_sol_lists
 !**********************************************************************
-  subroutine count_species_type(list,n_ad,n_sol,nlist)
+    subroutine count_species_type(list,n_ad,n_sol,nlist)
 !
-    integer :: i,parenthes,nlist
-    integer :: n_ad, n_sol
-    character(10), dimension(:) :: list
+      integer :: i,parenthes,nlist
+      integer :: n_ad, n_sol
+      character(10), dimension(:) :: list
 !
 !  count adsorbed and surface species
 !
-    n_ad = 0
-    n_sol = 0
-    do i = 1,nlist
-      parenthes = 0
-      parenthes = scan(list(i),'()')
-      if (parenthes > 0 .or. &
-          list(i) == 'Cf') then
-        n_ad = n_ad + 1
-      else
-        if (list(i)/='Cb') then
-          n_sol = n_sol + 1
+      n_ad = 0
+      n_sol = 0
+      do i = 1,nlist
+        parenthes = 0
+        parenthes = scan(list(i),'()')
+        if (parenthes > 0 .or. &
+            list(i) == 'Cf') then
+          n_ad = n_ad + 1
+        else
+          if (list(i)/='Cb') then
+            n_sol = n_sol + 1
+          endif
         endif
-      endif
-    enddo
+      enddo
 !
-   end subroutine count_species_type
+    end subroutine count_species_type
 !**********************************************************************
-  subroutine count_species(part,species,reactants,products)
+    subroutine count_species(part,species,reactants,products)
 !
-    character(10), dimension(:,:) :: part
-    character(10) :: element
-    real :: numeric
-    integer :: i,j,jmax,stat,place,number
-    integer :: place_reac, place_prod
-    logical :: lhs
-    character(10), dimension(40) :: species,reactants,products
-    character(10), dimension(40) :: temp,temp_reac,temp_prod
+      character(10), dimension(:,:) :: part
+      character(10) :: element
+      real :: numeric
+      integer :: i,j,jmax,stat,place,number
+      integer :: place_reac, place_prod
+      logical :: lhs
+      character(10), dimension(40) :: species,reactants,products
+      character(10), dimension(40) :: temp,temp_reac,temp_prod
 !
-    temp = 'nothing'
-    jmax = size(part,1)
-    place = 1
-    place_reac = 1
-    place_prod = 1
+      temp = 'nothing'
+      jmax = size(part,1)
+      place = 1
+      place_reac = 1
+      place_prod = 1
 !
-    do i=1,n_surface_reactions
-       lhs = .true.
-       do j=1,jmax
+      do i=1,n_surface_reactions
+        lhs = .true.
+        do j=1,jmax
           element = part(j,i)
 !
 !  switch when the reaction arrow is read
 !
           if (element == '->' .or. &
-               element == '<>') then
-             lhs = .false.
-          else
+              element == '<>') then
+            lhs = .false.
           endif
 !
 !  if element can be read as real, disregard
 !
           read(element,*,iostat=stat) numeric
           if (stat /= 0 .and. &
-               element /= '->' .and. &
-               element /= '<>' .and. &
-               element(:2) /= 'RR') then
-             read(element(:1),*,iostat=stat) number
-             if (stat==0)  element = element(2:)
+              element /= '->' .and. &
+              element /= '<>' .and. &
+              element(:2) /= 'RR') then
+            read(element(:1),*,iostat=stat) number
+            if (stat==0)  element = element(2:)
 !
 !  appending the components to the list
 !  of global, reactand and product uniques
 !
-          if (.not. any(temp .eq. element)) then
-          temp(place) = element
-          place = place+1
-          else
-          endif
+            if (.not. any(temp .eq. element)) then
+              temp(place) = element
+              place = place+1
+            endif
 !
-          if ((.not. any(temp_reac .eq. element)) .and. lhs) then
-          temp_reac(place_reac) = element
-          place_reac = place_reac+1
-          else
-          endif
+            if ((.not. any(temp_reac .eq. element)) .and. lhs) then
+              temp_reac(place_reac) = element
+              place_reac = place_reac+1
+            endif
 !
-          if ((.not. any(temp_prod .eq. element)) .and. &
-               (lhs .eqv. .false.)) then
-          temp_prod(place_prod) = element
-          place_prod = place_prod+1
-          else
-          endif
+            if ((.not. any(temp_prod .eq. element)) .and. &
+                (lhs .eqv. .false.)) then
+              temp_prod(place_prod) = element
+              place_prod = place_prod+1
+            endif
 !
-          else
           endif
-       enddo
-    enddo
+        enddo
+      enddo
 !
 !creating the lists
 !
-    species(:place-1)=temp(:place-1)
-    reactants(:place_reac-1)=temp_reac(:place_reac-1)
-    products(:place_prod-1)=temp_prod(:place_prod-1)
-    ns = place-1
-    nr = place_reac-1
-    np = place_prod-1
+      species(:place-1)=temp(:place-1)
+      reactants(:place_reac-1)=temp_reac(:place_reac-1)
+      products(:place_prod-1)=temp_prod(:place_prod-1)
+      ns = place-1
+      nr = place_reac-1
+      np = place_prod-1
 !
-  end subroutine count_species
+    end subroutine count_species
 !**********************************************************************
-subroutine flip_and_parse(string,ireaction,target_list,direction)
+    subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
-    character(150) :: string,flipped_string
-    character(50) :: lhs,sign,rhs,ende
-    character(3), dimension(:) :: direction
-    integer :: ireaction
-    integer :: i,numerical,marker
-    real :: real_number
-    character(10), dimension(:,:) :: target_list
+      character(150) :: string,flipped_string
+      character(50) :: lhs,sign,rhs,ende
+      character(3), dimension(:) :: direction
+      integer :: ireaction
+      integer :: i,numerical,marker
+      real :: real_number
+      character(10), dimension(:,:) :: target_list
 !
-    marker = index(string,'<>')
-    numerical = 1
-    i = marker
+      marker = index(string,'<>')
+      numerical = 1
+      i = marker
 !
-    do while (numerical  /= 0 )
-       i = i + 1
-       read(string(i:i+7),*,iostat=numerical) real_number
-       if (real_number < 10) then
+      do while (numerical  /= 0 )
+        i = i + 1
+        read(string(i:i+7),*,iostat=numerical) real_number
+        if (real_number < 10) then
           numerical = 1
-       else
-       endif
-       if (i > len(string)-10) then
+        endif
+        if (i > len(string)-10) then
           print*,'no numericals found after sign!'
           numerical = 0
-       else
-       endif
-    enddo
+        endif
+      enddo
 !
-    lhs = trim(string(:marker-1))
-    sign = trim(string(marker:marker+1))
-    rhs = trim(string(marker+2:i))
-    ende = trim(string(i:))
+      lhs = trim(string(:marker-1))
+      sign = trim(string(marker:marker+1))
+      rhs = trim(string(marker+2:i))
+      ende = trim(string(i:))
 !
-    flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(ende)
-    flags(ireaction) = 'rev'
-    call parse(flipped_string,ireaction,target_list,'rev',direction)
+      flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(ende)
+      flags(ireaction) = 'rev'
+      call parse(flipped_string,ireaction,target_list,'rev',direction)
 !
-  end subroutine flip_and_parse
+    end subroutine flip_and_parse
 !**********************************************************************
-  subroutine parse(string,ireaction,target_list,flag,direction)
+    subroutine parse(string,ireaction,target_list,flag,direction)
 !
-    character(150) :: string
-    character :: tab = char(9)
-    character :: spc = char(32)
-    character(3) :: flag
-    character(3), dimension(:) :: direction
-    integer :: i,j,k,ireaction
-    character(10) :: formatting
-    character(10), dimension(:,:) :: target_list
+      character(150) :: string
+      character :: tab = char(9)
+      character :: spc = char(32)
+      character(3) :: flag
+      character(3), dimension(:) :: direction
+      integer :: i,j,k,ireaction
+      character(10) :: formatting
+      character(10), dimension(:,:) :: target_list
 !
-    i=1
-    k=1
-    j=1
+      i=1
+      k=1
+      j=1
 !
-    do while (i<=len(string))
-       if (string(i:i)==tab) then
+      do while (i<=len(string))
+        if (string(i:i)==tab) then
           string(i:i) = spc
-       else
-       i=i+1
-       endif
-    enddo
-    string = trim(string)
-    i=1
-    do while (i <len(string))
-       if (string(i:i)/='+'.and. &
-           string(i:i)/=spc) then
-           j=1
-          do while (string(i+j:i+j)/='+'.and.&
-                 string(i+j:i+j)/=spc .and. &
-                 string(i+j:i+j)/=tab)
-             j=j+1
+        else
+          i=i+1
+        endif
+      enddo
+      string = trim(string)
+      i=1
+      do while (i <len(string))
+        if (string(i:i)/='+'.and. &
+            string(i:i)/=spc) then
+          j=1
+          do while (string(i+j:i+j)/='+'.and.string(i+j:i+j)/=spc .and. string(i+j:i+j)/=tab)
+            j=j+1
           enddo
           formatting = adjustl(string(i:i+j))
           target_list(k,ireaction)=formatting
           k=k+1
           i=i+j
-       else
-       i=i+1
-       endif
-   enddo
-   if (i==len(string)) then
-      target_list(k:,ireaction) = '0.0'
-   else
-   endif
-!   print*, target_list(:,ireaction)
-!
-   direction(ireaction) = flag
-!
-  end subroutine parse
-!**********************************************************************
-  subroutine read_mechanics_file(inputfile,target_list,n_max_elements,&
-    reaction_direction,talk)
-!
-    integer :: stat,ireaction,i,n_max_elements
-    character(150) :: string
-    character(*) :: inputfile,talk
-    character(3), dimension(:) :: reaction_direction
-    character(10), dimension(:,:) :: target_list
-!
-    writeformat = '(  A10,A3)'
-    write(writeformat(2:3),'(I2)') n_max_elements
-    open(20, file=inputfile,iostat=stat)
-!
-    if (stat==0) then
-      if (talk=='verbose') write(*,*) 'Opened mechanics file'
-      ireaction = 1
-      do while (stat==0)
-        read(20,fmt='(A150)', iostat=stat) string
-        if (stat==0) then
-          if ( (string(:1)) /='!') then
-            flags(ireaction) = 'fwd'
-            call parse(string,ireaction,target_list,'fwd',reaction_direction)
-            ireaction = ireaction + 1
-            if (index(string,'<>') > 0) then
-              call flip_and_parse(string,ireaction,target_list,reaction_direction)
-              ireaction = ireaction + 1
-            endif
-          endif
+        else
+          i=i+1
         endif
       enddo
-      if (talk=='verbose') print*,'Done parsing mechanics file'
-      close(20)
+      if (i==len(string)) then
+        target_list(k:,ireaction) = '0.0'
+      endif
+!   print*, target_list(:,ireaction)
 !
-      call remove_save_T_k(target_list)
-      call remove_save_powers(target_list)
+      direction(ireaction) = flag
 !
-       if(talk=='verbose') then
-         open(29, file='mech_outputfile.dat',iostat=stat)
-         do i=1,N_surface_reactions
-           write(*,writeformat) target_list(:,i),reaction_direction(i)
-           write(29,writeformat) target_list(:,i),reaction_direction(i)
-         enddo
-         close(29)
-       else
-       endif
-     else
-       write(*,*) 'Could not open mechanics file'
-     endif
-!
-  end subroutine read_mechanics_file
+    end subroutine parse
 !**********************************************************************
-  subroutine create_dngas()
+    subroutine read_mechanics_file(inputfile,target_list,n_max_elements,reaction_direction,talk)
+!
+      integer :: stat,ireaction,i,n_max_elements
+      character(150) :: string
+      character(*) :: inputfile,talk
+      character(3), dimension(:) :: reaction_direction
+      character(10), dimension(:,:) :: target_list
+!
+      writeformat = '(  A10,A3)'
+      write(writeformat(2:3),'(I2)') n_max_elements
+      open(20, file=inputfile,iostat=stat)
+!
+      if (stat==0) then
+        if (talk=='verbose') then
+          write(*,*) 'Opened mechanics file'
+        endif
+        ireaction = 1
+        do while (stat==0)
+          read(20,fmt='(A150)', iostat=stat) string
+          if (stat==0) then
+            if ((string(:1)) /='!') then
+              flags(ireaction) = 'fwd'
+              call parse(string,ireaction,target_list,'fwd',reaction_direction)
+              ireaction = ireaction + 1
+              if (index(string,'<>') > 0) then
+                call flip_and_parse(string,ireaction,target_list,reaction_direction)
+                ireaction = ireaction + 1
+              endif
+            endif
+          endif
+        enddo
+        if (talk=='verbose') print*,'Done parsing mechanics file'
+        close(20)
+!
+        call remove_save_T_k(target_list)
+        call remove_save_powers(target_list)
+!
+        if (talk=='verbose') then
+          open(29, file='mech_outputfile.dat',iostat=stat)
+          do i=1,N_surface_reactions
+            write(*,writeformat) target_list(:,i),reaction_direction(i)
+            write(29,writeformat) target_list(:,i),reaction_direction(i)
+          enddo
+          close(29)
+        else
+        endif
+      else
+        write(*,*) 'Could not open mechanics file'
+      endif
+!
+    end subroutine read_mechanics_file
+!**********************************************************************
+    subroutine create_dngas()
 !
 !  Find the mole production of the forward reaction. This will later
 !  be used for the calculation of the reverse reaction rate.
 !
-    integer :: k
+      integer :: k
 !
-    do k=1,N_surface_reactions
-       dngas(k) = sum(nu_prime(:,k)) - sum(nu(:,k))
-    enddo
+      do k=1,N_surface_reactions
+        dngas(k) = sum(nu_prime(:,k)) - sum(nu(:,k))
+      enddo
 !
-  end subroutine create_dngas
+    end subroutine create_dngas
 !**********************************************************************
- subroutine calc_entropy_of_reaction()
+    subroutine calc_entropy_of_reaction()
 
-   integer :: i,j,l,k,k1,k2
+      integer :: i,j,l,k,k1,k2
 !
-    entropy_k=0
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
+      entropy_k=0
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
 !
-    do k=k1,k2
-    do l=1,N_surface_reactions
-      do i=1,N_surface_species
-        entropy_k(k,l)=entropy_k(k,l)&
-            +nu_prime(i,l)*surface_species_entropy(k,i)&
-            -nu(i,l)*surface_species_entropy(k,i)
+      do k=k1,k2
+        do l=1,N_surface_reactions
+          do i=1,N_surface_species
+            entropy_k(k,l)=entropy_k(k,l)&
+                +nu_prime(i,l)*surface_species_entropy(k,i)&
+                -nu(i,l)*surface_species_entropy(k,i)
+          enddo
+          if (N_adsorbed_species > 1) then
+            do j=1,N_adsorbed_species
+              entropy_k(k,l)=entropy_k(k,l)&
+                  +mu_prime(j,l)*adsorbed_species_entropy(k,j)&
+                  -mu(j,l)*adsorbed_species_entropy(k,j)
+            enddo
+          endif
+        enddo
       enddo
-      if (N_adsorbed_species > 1) then
-      do j=1,N_adsorbed_species
-        entropy_k(k,l)=entropy_k(k,l)&
-            +mu_prime(j,l)*adsorbed_species_entropy(k,j)&
-            -mu(j,l)*adsorbed_species_entropy(k,j)
-      enddo
-      else
-      endif
-    enddo
-    enddo
 !
-  end subroutine calc_entropy_of_reaction
+    end subroutine calc_entropy_of_reaction
 !**********************************************************************
-  subroutine get_reverse_K_k(l,fp)
+    subroutine get_reverse_K_k(l,fp)
 !
-    integer :: l,k,k1,k2
-    real, dimension(:), allocatable :: k_p,k_c
-    real, dimension(:), allocatable :: denominator, exponent_
-    real, dimension(:,:) :: fp
+      integer :: l,k,k1,k2
+      real, dimension(:), allocatable :: k_p,k_c
+      real, dimension(:), allocatable :: denominator, exponent_
+      real, dimension(:,:) :: fp
 !
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
 !    
-    allocate(k_p(k1:k2))
-    allocate(k_c(k1:k2))
-    allocate(denominator(k1:k2))
-    allocate(exponent_(k1:k2))
+      allocate(k_p(k1:k2))
+      allocate(k_c(k1:k2))
+      allocate(denominator(k1:k2))
+      allocate(exponent_(k1:k2))
 !
-    do k=k1,k2
-       denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-       exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
-       k_p(k) = exp(-exponent_(k))
-       k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/interp_pp(k))**(dngas(l-1)))
-       K_k(k,l) = (K_k(k,l-1) / k_c(k))
-    enddo
+      do k=k1,k2
+        denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
+        exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
+        k_p(k) = exp(-exponent_(k))
+        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/interp_pp(k))**(dngas(l-1)))
+        K_k(k,l) = (K_k(k,l-1) / k_c(k))
+      enddo
 !
-    deallocate(k_p)
-    deallocate(k_c)
-    deallocate(denominator)
-    deallocate(exponent_)
+      deallocate(k_p)
+      deallocate(k_c)
+      deallocate(denominator)
+      deallocate(exponent_)
 !
-  end subroutine get_reverse_K_k
+    end subroutine get_reverse_K_k
 !**********************************************************************
-  subroutine calc_conversion(fp)
+    subroutine calc_conversion(fp)
 !
     real, dimension(:,:) :: fp
     integer :: k
