@@ -26,12 +26,13 @@ Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5
 Fred A. Gent,         f.gent/sheffield.ac.uk,        fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432 
 Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98  
-Nils E.L. Haugen      Nils.E.Haugen/sintef.no,       ,                     +47 73 55 06 75,   +47 986 086 83 or +47 7287 8737 (home)
+Nils E.L. Haugen      Nils.E.Haugen/sintef.no,       ,                     +47 73 55 06 75,   +47 986 086 83
 Tobias Heinemann      tobias.heinemann/gmail.com,    ,                     +1 609 734 8298
 Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713
 André Kapelrud        kapelrud/stud.ntnu.no,         ,
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277
 Maarit Korpi          maarit.korpi/helsinki.fi,      ,                     +35 850 4155 396
+Jonas Kruger,         jonas.kruger@ntnu.no,          jnskrueger,           +47 7359 3734,     +47 908 78 865
 Petri Käpylä          petri.kapyla/helsinki.fi,      ,                     +35 89 191 22952,  +35 840 533 4117 
 Michiel Lambrechts    michiel.lambrechts/gmail.com   ,                                     ,  +46 73 613 71 11
 Wladimir Lyra         wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81
