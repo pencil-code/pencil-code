@@ -10,8 +10,9 @@ use strict;
 # settings
 my $indentation_str = "  ";
 my $continuation_str = "    ";
-my $auto_correct = 0; # enable with "= 1", if you like to overwrite your files with garbage! ;-)
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
+my $picky = 1; # enable with "= 1", if you like punishment
+my $auto_correct = 0; # enable with "= 1", if you like to overwrite your files with garbage! ;-)
 
 # check filename
 my $filename = $ARGV[0];
@@ -30,7 +31,7 @@ my $continuation = length ($continuation_str);
 my $num_trigger_indent = @trigger_indent;
 scan_file ($filename);
 
-print_warnings ();
+print_num_warnings ();
 exit (0);
 
 
@@ -46,6 +47,7 @@ sub scan_file {
 	$state{'multiline_if'} = 0;
 	$state{'multiline_where'} = 0;
 	$state{'else_branch'} = "";
+	$state{'eol_comment'} = 0;
 
 	# read file
 	my $num_lines = 0;
@@ -82,6 +84,10 @@ sub scan_file {
 			warning ("remove 'spaces' at end of line");
 			s/\s*$//s;
 		}
+		if (/ +,/s) {
+			warning ("remove 'spaces' before a comma");
+			s/ +,/,/s;
+		}
 
 		# comments
 		if (/^$/) {
@@ -89,7 +95,7 @@ sub scan_file {
 			$_ = "!";
 			next;
 		}
-		if (/^(\s+)\!/s) {
+		if (/^( +)\!/s) {
 			my $spaces = $1;
 			my $num_spaces = length ($spaces);
 			if (($num_spaces != $state{'indent'}) && ($num_spaces <= $state{'indent'}*2)) {
@@ -100,10 +106,20 @@ sub scan_file {
 				else {
 					$spaces = "";
 				}
-				s/^\s+\!/${spaces}\!/s;
+				s/^ +\!/${spaces}\!/s;
 			}
 		}
-		if (/^\s*\!/s) { next; }
+		if (/^ *\!/s) { next; }
+
+		# jumping around
+		if (/, *end *=/s) {
+			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
+		}
+
+		# format strings
+		if (/, *fmt *= *(\d+)/s) {
+			accumulative_fatal ("'fmt=".$1."' is forbidden => better move the format string directly there");
+		}
 
 		# indentation
 		check_closed_nesting ($_);
@@ -113,11 +129,14 @@ sub scan_file {
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
 		if (!/^${start_spaces}\S/s) {
-			if (($state{'continuation'} > 0) && (/^${start_spaces}\s/s)) { ; }
+			if ($state{'eol_comment'} && ($state{'continuation'} > 0) && (/^${start_spaces} +\!/s)) {
+				# multi-line comment block with extra indentation
+				warning ("multi-line comment blocks start either at the beginning of a line or at the correct indentaion level");
+			}
 			elsif (($state{'continuation'} <= $continuation) || (($state{'continuation'} >= $continuation*2) && (!/^${start_spaces}${continuation_str}\S/s))) {
-				# print "NESTING:".$state{'nesting'}." LEVEL:".$state{'indent'}."\n";
+				# print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n";
 				warning ("wrong indentation level");
-				s/^\s*/${start_spaces}/s;
+				s/^ */${start_spaces}/s;
 			}
 		}
 		check_new_nesting ($_);
@@ -135,6 +154,15 @@ sub scan_file {
 			$state{'continuation'} = 0;
 		}
 
+		# comment at end of line
+		if (/^ *\S+.*?\!/s) {
+			picky_warning ("comments start either at the beginning of a line or at the correct indentaion level");
+			$state{'eol_comment'} = 1;
+		}
+		else {
+			$state{'eol_comment'} = 0;
+		}
+
 		# store auto-corrected line
 		$lines[$pos] = $_;
 	}
@@ -142,12 +170,20 @@ sub scan_file {
 	$_ = join ("\n", @lines)."\n";
 
 	# empty else-blocks
-	while (/(^.*?\n)\s*else\n\s*end(?:\s*if)?(?:\s|\n)/is) {
+	while (/(^.*?\n) *else(|where)(\n\![^\n]*)*\n *end *(|if|where)(?: |\n)/is) {
 		my $pre = $1;
+		my $type = $2;
+		my $empty = $3;
+		my $closing = $4;
 		$pre =~ s/[^\n]+//gs;
 		$pos = length ($pre);
-		warning ("remove empty else-block");
-		s/\n\s*else(\n\s*end(?:\s*if)?(?:\s|\n))/${1}/is;
+		if ($type && (lc ($closing) ne lc ($type))) {
+			$empty =~ s/[^\n]+//gs;
+			$pos += length ($empty) + 1;
+			fatal ("misplaced 'end".$closing."' => better use the pure 'end'-statement");
+		}
+		warning ("remove empty 'else".$type."'-block");
+		s/\n *else${type}(?:\n\![^\n]*)*(\n *end *${closing}(?: |\n))/${1}/is;
 	}
 
 	if ($auto_correct) {
@@ -158,22 +194,44 @@ sub scan_file {
 	}
 }
 
-sub warning {
+sub picky_warning {
 	my ($message) = @_;
-	$num_warnings++;
-	warn ("(L: ".$pos.") ".$message."\n");
+	if (!$picky) { return; }
+	warning ("picky: ".$message);
 }
 
-sub print_warnings {
+sub warning {
+	my ($message) = @_;
+	print_warning ($message);
+	if ($num_fatals > 0) { perish (); }
+}
+
+sub print_warning {
+	my ($message) = @_;
+	$num_warnings++;
+	warn ("[".$pos."] ".$message."\n");
+}
+
+sub print_num_warnings {
 	if ($num_warnings > 0) { warn ("\n".$num_warnings." WARNINGS should be fixed.\n"); }
+}
+
+sub accumulative_fatal {
+	my ($message) = @_;
+	$num_fatals++;
+	print_warning ("FATAL: ".$message);
 }
 
 sub fatal {
 	my ($message) = @_;
 	$num_fatals++;
-	warn ("(L: ".$pos.") FATAL: ".$message."\n");
-	print_warnings;
-	warn ("\n".$num_fatals." FATAL errors!\n");
+	warning ("FATAL: ".$message);
+	perish ();
+}
+
+sub perish {
+	print_num_warnings;
+	warn ($num_fatals." FATAL errors!\n");
 	exit (1);
 }
 
