@@ -2294,9 +2294,10 @@ module Special
       call dot(p%glnTT,p%glnrho,glnT_glnrho)
 !
       do i=1,3
-        tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
-                    p%glnTT(:,2)*p%hlnTT(:,2,i) + &
-                    p%glnTT(:,3)*p%hlnTT(:,3,i)
+        tmpv(:,i) = &
+            p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+            p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+            p%glnTT(:,3)*p%hlnTT(:,3,i)
       enddo
       call dot(p%glnTT,tmpv,tmp)
 !
