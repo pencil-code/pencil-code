@@ -14,7 +14,7 @@
 !  The assumptions and equations implemented in this routine are
 !  deduced partially from following papers:
 !  8th US Combustion Meeting – Paper # 070CO-0312
-!  Transient simulations of char gasification     by 
+!  Transient simulations of char gasification     by
 !  Nils Erland L. Haugen
 !  Reginald E. Mitchell
 !  Matt Tilghman
@@ -74,7 +74,7 @@ module Particles_chemistry
   public :: porosity
   public :: Cg
   public :: lreactive_heating
- !
+!
 !***************************************************************!
 !  Particle independent variables below here                    !
 !***************************************************************!
@@ -92,9 +92,8 @@ module Particles_chemistry
   real, dimension(:), allocatable :: diff_coeff_reactants
   real, dimension(:,:), allocatable, save :: part_power
   real, dimension(2,2) :: dummy
-
 !
-!  JONAS: implement something to calculate molar_mass of 
+!  JONAS: implement something to calculate molar_mass of
 !  gas phase species
 !
   real, dimension(nchemspec) :: molar_mass=1.0
@@ -107,7 +106,6 @@ module Particles_chemistry
   character(10), dimension(40) :: reactants,products
   character(20) :: element, writeformat
   character(10), dimension(40) :: species
-
 !
   integer :: N_species, N_reactions
   integer :: placeholder=1
@@ -138,7 +136,7 @@ module Particles_chemistry
   real :: startup_quench
   real :: init_mass
 !
-!  JONAS: implement something to calculate molar_mass of 
+!  JONAS: implement something to calculate molar_mass of
 !  gas phase species
 !
   logical :: first_pchem=.true.
@@ -184,7 +182,6 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: x_surf
   real, dimension(:), allocatable :: q_reac
   real, dimension(:), allocatable :: Nu_p
-
 !
 !  Some physical constants
 !
@@ -216,110 +213,110 @@ module Particles_chemistry
 !
   contains
 !***********************************************************************
-  subroutine register_particles_chem()
+    subroutine register_particles_chem()
 !
-!  wrapper routine for particle dependent and independent chemistry 
+!  wrapper routine for particle dependent and independent chemistry
 !  variables
 !
-          if (lroot) call svn_id( &
-          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
-
-    call get_pchem_info(species,'N_species',N_species,'quiet')
-    print*, 'Number of species in mechanics file: ', N_species
-    print*, 'Species found: ', species(:N_species)
-    call register_indep_pchem()    
-    call register_dep_pchem()
+      if (lroot) call svn_id( &
+           "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
-  end subroutine register_particles_chem
+      call get_pchem_info(species,'N_species',N_species,'quiet')
+      print*, 'Number of species in mechanics file: ', N_species
+      print*, 'Species found: ', species(:N_species)
+      call register_indep_pchem()
+      call register_dep_pchem()
+!
+    end subroutine register_particles_chem
 !***********************************************************************
-  subroutine register_indep_pchem()
+    subroutine register_indep_pchem()
 !
-    integer :: stat, i
-    logical :: lenhance
+      integer :: stat, i
+      logical :: lenhance
 !
-    allocate(dngas(N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-         'Could not allocate memory for dngas')
-    allocate(omega_pg_dbl(N_species),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for omega_pg_dbl')
-   allocate(B_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for B_k')
-    allocate(Er_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for Er_k')
-    allocate(sigma_k(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for sigma_k')
-    allocate(reaction_order(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_psurfchem',&
-        'Could not allocate memory for reaction_order')
-    allocate(effectiveness_factor_old(N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_indep_pchem',&
-        'Could not allocate memory for effectiveness_factor_old')
-   allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_chem',&
-        'Could not allocate memory for nu_power')
-    allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
-    if (stat>0) call fatal_error('register_indep_chem',&
-        'Could not allocate memory for mu_power')
+      allocate(dngas(N_surface_reactions),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_psurfchem',&
+           'Could not allocate memory for dngas')
+      allocate(omega_pg_dbl(N_species),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+           'Could not allocate memory for omega_pg_dbl')
+      allocate(B_k(N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+           'Could not allocate memory for B_k')
+      allocate(Er_k(N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+           'Could not allocate memory for Er_k')
+      allocate(sigma_k(N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+           'Could not allocate memory for sigma_k')
+      allocate(reaction_order(N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_indep_psurfchem',&
+           'Could not allocate memory for reaction_order')
+      allocate(effectiveness_factor_old(N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+           'Could not allocate memory for effectiveness_factor_old')
+      allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_chem',&
+           'Could not allocate memory for nu_power')
+      allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_chem',&
+           'Could not allocate memory for mu_power')
 !
-    effectiveness_factor_old=1.
+      effectiveness_factor_old=1.
 !
 ! Check if any of the reactions are enhanced
 !
       lenhance=.false.
       do i=1,N_surface_reactions
-        if (reaction_enhancement(i) .ne. 1) then
-          print*,'**************** WARNING! ****************************'
-          write(*,'(A5,I2,A25,F10.2)') &
-              'Reac ',i,' is enhanced by a factor ',reaction_enhancement(i)
-          lenhance=.true.
-        endif
+         if (reaction_enhancement(i) .ne. 1) then
+            print*,'**************** WARNING! ****************************'
+            write(*,'(A5,I2,A25,F10.2)') &
+                 'Reac ',i,' is enhanced by a factor ',reaction_enhancement(i)
+            lenhance=.true.
+         endif
       enddo
       !if (lenhance) call sleep(4)
 !
 ! Define the Arrhenius coefficients. The term ER_k is the activation energy
 ! divided by the gas constant (R)
 !
-    call create_arh_param(part,B_k,ER_k,sigma_k)
+      call create_arh_param(part,B_k,ER_k,sigma_k)
 !
-  end subroutine register_indep_pchem
+    end subroutine register_indep_pchem
 !***********************************************************************
-  subroutine register_dep_pchem()
+    subroutine register_dep_pchem()
 !
-    integer :: stat
+      integer :: stat
 !
-    allocate(A_p_init(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for A_p_init')
-    allocate(St_init(mpar_loc),STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for St_init')
-    allocate(rho_p_init(mpar_loc),STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for rho_p_init')
-    allocate(mdot_ck(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for mdot_ck')
+      allocate(A_p_init(mpar_loc)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for A_p_init')
+      allocate(St_init(mpar_loc),STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for St_init')
+      allocate(rho_p_init(mpar_loc),STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for rho_p_init')
+      allocate(mdot_ck(mpar_loc,N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for mdot_ck')
 !!$    allocate(f_RPM(mpar_loc)   ,STAT=stat)
 !!$    if (stat>0) call fatal_error('register_dep_pchem',&
 !!$        'Could not allocate memory for f_RPM')
-    allocate(qk_reac(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-         'Could not allocate memory for qk_reac')
-    allocate(R_c_hat(mpar_loc)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-         'Could not allocate memory for R_c_hat')
-    allocate(heating_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for heating_k')
-    allocate(entropy_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
-    if (stat>0) call fatal_error('register_dep_pchem',&
-        'Could not allocate memory for heating_k')
+      allocate(qk_reac(mpar_loc,N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for qk_reac')
+      allocate(R_c_hat(mpar_loc)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for R_c_hat')
+      allocate(heating_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for heating_k')
+      allocate(entropy_k(mpar_loc,N_surface_reactions)   ,STAT=stat)
+      if (stat>0) call fatal_error('register_dep_pchem',&
+           'Could not allocate memory for heating_k')
 !
-  end subroutine register_dep_pchem
+    end subroutine register_dep_pchem
 !***********************************************************************
     subroutine get_pchem_info(species,string,variable,talk)
 !
@@ -377,7 +374,7 @@ module Particles_chemistry
     end subroutine get_pchem_info
 !***********************************************************************
     subroutine calc_R_c_hat()
-! 
+!
 !  JONAS talk to nils how to implement things from equ.f90
 !  JONAS implement right sequence so that mdot_ck is always calculated
 !  first
@@ -393,25 +390,25 @@ module Particles_chemistry
       real, dimension(:,:) :: fp
       integer :: k,k1,k2
 !
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
 !
-    allocate(mod_all(k1:k2))
-    allocate(Sgc(k1:k2))
+      allocate(mod_all(k1:k2))
+      allocate(Sgc(k1:k2))
 !
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
 !  biomass combustion and gasification.
 !
-    do k=k1,k2
-       mod_all(k) = St_init(k)*St_init(k)*structural_parameter* &
-            (1-conversion(k)) * (1-conversion(k)) / &
-            (2*St(k)**2)
-       Sgc(k) = St(k)/ rho_p(k)      
-       mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
-    enddo
+      do k=k1,k2
+         mod_all(k) = St_init(k)*St_init(k)*structural_parameter* &
+              (1-conversion(k)) * (1-conversion(k)) / &
+              (2*St(k)**2)
+         Sgc(k) = St(k)/ rho_p(k)
+         mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
+      enddo
 !
-    deallocate(mod_all)
-    deallocate(Sgc)
+      deallocate(mod_all)
+      deallocate(Sgc)
 !
     end subroutine calc_mod_surf_area
 !***********************************************************************
@@ -420,123 +417,122 @@ module Particles_chemistry
       real, dimension(:,:) :: fp
       integer :: k,k1,k2
 !
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
 !
 !  Evolution of the total surface area according to 8th US combustion
 !  meeting, coal and biomass combustion and gasification eq. 19
 !
       St = 0.0
-!      
+!
       do k=k1,k2
          St(k)=fp(k,imp)*Sgc_init* &
               sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init(k)))
       enddo
 !
-   end subroutine calc_St
+    end subroutine calc_St
 !***********************************************************************
-integer function count_max_elements(inputfile)
+    integer function count_max_elements(inputfile)
 !
-  character(*) :: inputfile
-  integer :: stat,i,k,j,maxelement
-  character(150) :: line
-  character :: tab = char(9)
-  character :: spc = char(32)
+      character(*) :: inputfile
+      integer :: stat,i,k,j,maxelement
+      character(150) :: line
+      character :: tab = char(9)
+      character :: spc = char(32)
 !
- open(30, file=inputfile,iostat=stat)
-    if(stat==0) then
-          maxelement=1
-!       write(*,*) 'Counting elements'
-       do
-          read(30,'(A150)', end=530) line
-          if (line(:1)/='!') then
-          i=1
-          k=0
-          do while (i <len(line))
-             if (line(i:i)/='+'.and. &
-                  line(i:i)/=spc.and.line(i:i)/=tab) then
-                j=1
-                do while (line(i+j:i+j)/='+'.and.&
-                 line(i+j:i+j)/=spc.and.line(i+j:i+j)/=tab)
-                   j=j+1
-                enddo
-                k=k+1
-                i=i+j
-             else
-                i=i+1
-             endif
-          if (k>maxelement) then
-             maxelement=k
-          else
-          end if
-          enddo
-          else
-          end if
-       end do
-530 close(30)
-      count_max_elements=maxelement
-    else
-       maxelement=0
-       write(*,*) 'Problem with the single elements of the mechanics.in file'
-    endif
+      open(30, file=inputfile,iostat=stat)
+      if (stat==0) then
+         maxelement=1
+         do
+            read(30,'(A150)', end=530) line
+            if (line(:1)/='!') then
+               i=1
+               k=0
+               do while (i <len(line))
+                  if (line(i:i)/='+'.and. &
+                       line(i:i)/=spc.and.line(i:i)/=tab) then
+                     j=1
+                     do while (line(i+j:i+j)/='+'.and.&
+                          line(i+j:i+j)/=spc.and.line(i+j:i+j)/=tab)
+                        j=j+1
+                     enddo
+                     k=k+1
+                     i=i+j
+                  else
+                     i=i+1
+                  endif
+                  if (k>maxelement) then
+                     maxelement=k
+                  else
+                  endif
+               enddo
+            else
+            endif
+         enddo
+530      close(30)
+         count_max_elements=maxelement
+      else
+         maxelement=0
+         write(*,*) 'Problem with the single elements of the mechanics.in file'
+      endif
 !
-end function count_max_elements
+    end function count_max_elements
 !**************************************************
-  integer function count_reactions(inputfile)
+    integer function count_reactions(inputfile)
 !
 !  this function counts the uncommented lines in the mechanics.in
 !
-    integer :: stat,reactions
-    character(150) :: line
-    character(*) :: inputfile
+      integer :: stat,reactions
+      character(150) :: line
+      character(*) :: inputfile
 !
- open(20, file=inputfile,iostat=stat)
-    if(stat==0) then
+      open(20, file=inputfile,iostat=stat)
+      if (stat==0) then
 !       write(*,*) 'Counting reactions'
-       reactions = 0
-       do
-          read(20,fmt =610, end=520) line
-          if (line(:1)/='!') then
-             reactions = reactions + 1
-             if (index(line,'<>') > 0) then
-                reactions = reactions + 1
-             else
-             end if
-          else
-          end if
-       end do
-520    close(20)
-       count_reactions=reactions
-610 format(A150)
-    else
-       count_reactions=0
-       write(*,*) 'Could not open mechanics file'
-    endif
+         reactions = 0
+         do
+            read(20,fmt =610, end=520) line
+            if (line(:1)/='!') then
+               reactions = reactions + 1
+               if (index(line,'<>') > 0) then
+                  reactions = reactions + 1
+               else
+               end if
+            else
+            end if
+         end do
+520      close(20)
+         count_reactions=reactions
+610      format(A150)
+      else
+         count_reactions=0
+         write(*,*) 'Could not open mechanics file'
+      endif
 !
-  end function count_reactions
+    end function count_reactions
 !***********************************************************************
-integer function find_species(species,unique_species,nlist)
+    integer function find_species(species,unique_species,nlist)
 !
 !  function to replace the imu/inuX variables
 !
-   implicit none
+      implicit none
 !
-    integer :: i,nlist
-    character(len=*) :: species
-    character(len=*), dimension(:) :: unique_species
+      integer :: i,nlist
+      character(len=*) :: species
+      character(len=*), dimension(:) :: unique_species
 !
-    find_species = 0
+      find_species = 0
 !
-    do i=1,nlist
-       if (trim(species) == trim(unique_species(i))) then
-          find_species = i
-       else
-       end if
-    end do
+      do i=1,nlist
+         if (trim(species) == trim(unique_species(i))) then
+            find_species = i
+         else
+         endif
+      enddo
 !
-  end function find_species
+    end function find_species
 !**********************************************************************
-  subroutine create_arh_param(part,B_k,ER_k,sigma_k)
+    subroutine create_arh_param(part,B_k,ER_k,sigma_k)
 !
 !takes the first numerical in part and writes it to b_k
 !
@@ -557,43 +553,21 @@ integer function find_species(species,unique_species,nlist)
           ER_k(i) = 1.
           sigma_k(i) = 1e1
        else
-!!$          k=3
-!!$          print*,part(:,i)
-!!$          do while (k < size(part,1)-2)
-!!$             read(part(k,i),*,iostat=stat) B_k_single
-!!$             read(part(k+1,i),*,iostat=stat1) ER_k_single
-!!$             read(part(k+2,i),*,iostat=stat2) sigma_single
-!!$             if (stat==0 .and. stat1==0 .and. stat2==0) then
-!!$                B_k(i) = B_k_single
-!!$                ER_k(i) = ER_k_single
-!!$                sigma_k(i) = sigma_single
-!!$                k=size(part,1)
-!!$             else
-!!$                k=k+1
-!!$             endif
-!!$          enddo
-!!$          if (B_k(i)==0.0) call fatal_error('create_arh_param','error in line')
-!!$       endif
-!!$    enddo
-                
-       done = .false.
-       do k=1, size(part,1)-2
-          el_B_k = part(k,i)
-          el_ER_k = part(k+1,i)
-          el_sigma = part(k+2,i)
+          done = .false.
+          do k=1, size(part,1)-2
+             el_B_k = part(k,i)
+             el_ER_k = part(k+1,i)
+             el_sigma = part(k+2,i)
              read(el_B_k,*,iostat=stat) B_k_single
-             !print*,B_k_single
              if (stat == 0 .and. (done .eqv. .false.)) then
                 B_k(i) = B_k_single
                 done = .true.
                 read(el_ER_k,*,iostat=stat) ER_k_single
-               ! print*,ER_k_single
                 if (stat == 0) then
                    ER_k(i) = ER_k_single
                 else
                 end if
                 read(el_sigma,*,iostat=stat) sigma_single
-                !print*,sigma_single
                 if (stat == 0) then
                    sigma_k(i) = sigma_single
                 else
@@ -603,8 +577,6 @@ integer function find_species(species,unique_species,nlist)
           enddo
        end if
     enddo
-
-
 !
     ER_k = ER_k/gas_constant
 !
@@ -658,8 +630,8 @@ integer function find_species(species,unique_species,nlist)
 !
 !  list where the stochiometry is saved in
 !
-  if (lhs) then 
-     forpower=.true. 
+  if (lhs) then
+     forpower=.true.
   else
      forpower=.false.
   endif
@@ -690,7 +662,7 @@ integer function find_species(species,unique_species,nlist)
            if (element==list(k) .and. &
                 fwd .eqv. .true.) then
               targ(k,i) =real(multi)
-              if (forpower) then 
+              if (forpower) then
                  power(k,i) = part_power(j,i)
               else
               end if
@@ -725,9 +697,9 @@ integer function find_species(species,unique_species,nlist)
           ac(i) = nc
           else
           ac(i) = 1
-          end if
+          endif
         else
-        end if
+        endif
     enddo
 !
   end subroutine get_ac
@@ -739,7 +711,7 @@ integer function find_species(species,unique_species,nlist)
 !
    integer :: nlist,i,n_big,j
    character(10), dimension(:) :: lhslist
-   integer :: front, end
+   integer :: front, ende
    character(10), dimension(:) :: species_list
    character(10), dimension(:), allocatable :: temp_list
    character(10) :: temp
@@ -747,7 +719,7 @@ integer function find_species(species,unique_species,nlist)
 !
    allocate(temp_list(nlist))
 !
-   end = 0
+   ende = 0
    front = 0
 !
    do i=1,nlist
@@ -760,8 +732,8 @@ integer function find_species(species,unique_species,nlist)
       enddo
 !
       if (.not. is_reactant) then
-         temp_list(nlist-end) = species_list(i)
-         end = end + 1
+         temp_list(nlist-ende) = species_list(i)
+         ende = ende + 1
       else
          temp_list(1+front) = species_list(i)
          front = front + 1
@@ -778,9 +750,7 @@ integer function find_species(species,unique_species,nlist)
    enddo
 !
    species_list(:nlist) = temp_list(:nlist)
-
-print*,'species_list=',species_list
-
+   print*,'species_list=',species_list
 !
   end subroutine sort_compounds
 !**********************************************************************
@@ -859,7 +829,7 @@ print*,'species_list=',species_list
     place = 1
     place_reac = 1
     place_prod = 1
-
+!
     do i=1,n_surface_reactions
        lhs = .true.
        do j=1,jmax
@@ -924,7 +894,7 @@ print*,'species_list=',species_list
 subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     character(150) :: string,flipped_string
-    character(50) :: lhs,sign,rhs,end
+    character(50) :: lhs,sign,rhs,ende
     character(3), dimension(:) :: direction
     integer :: ireaction
     integer :: i,numerical,marker
@@ -952,9 +922,9 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     lhs = trim(string(:marker-1))
     sign = trim(string(marker:marker+1))
     rhs = trim(string(marker+2:i))
-    end = trim(string(i:))
+    ende = trim(string(i:))
 !
-    flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(end)
+    flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(ende)
     flags(ireaction) = 'rev'
     call parse(flipped_string,ireaction,target_list,'rev',direction)
 !
@@ -1024,8 +994,8 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     write(writeformat(2:3),'(I2)') n_max_elements
     open(20, file=inputfile,iostat=stat)
 !
-    if(stat==0) then
-       if(talk=='verbose') write(*,*) 'Opened mechanics file'
+    if (stat==0) then
+       if (talk=='verbose') write(*,*) 'Opened mechanics file'
        ireaction = 1
        do
           read(20,fmt =510, end=500) string
@@ -1041,7 +1011,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
           else
           end if
        enddo
-500 if(talk=='verbose') print*,'Done parsing mechanics file'
+500 if (talk=='verbose') print*,'Done parsing mechanics file'
        close(20)
 !
        call remove_save_T_k(target_list)
@@ -1220,11 +1190,11 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     real, dimension(mx,my,mz,mfarray) :: f
     real :: pre_Cg, pre_Cs, pre_RR_hat
     integer :: i,j,k,k1,k2
-
+!
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 !
-!  The heterogeneous kinetics in the mechanism file is always given in SI units. 
+!  The heterogeneous kinetics in the mechanism file is always given in SI units.
 !  Here we intorduce correction factors if cgs units are used.
 !
     if (unit_system=='cgs') then
@@ -1233,7 +1203,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
       pre_RR_hat=1e-4
     else
       pre_Cg=1.
-      pre_Cs=1.  
+      pre_Cs=1.
       pre_RR_hat=1.
     endif
 !  
@@ -1252,25 +1222,22 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
         RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
       enddo
     enddo
-
-
-!
 !!$    print*,'RR_hattwo'
 !!$    write(*,'(12E12.4)') RR_hat(k1,:)
-!!$    print*, 'Cs' 
+!!$    print*, 'Cs'
 !!$    write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
-!!$    print*, 'xsurf' 
+!!$    print*, 'xsurf'
 !!$    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).
 !
     RR_hat=pre_RR_hat*RR_hat
-
-  write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
-  print*, 'Cg',Cg(k1)
-  print*,'fp_surf',fp(k1,isurf:isurf_end)
-  print*,'Cs',Cs(k1,:)
+!
+    write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
+    print*, 'Cg',Cg(k1)
+    print*,'fp_surf',fp(k1,isurf:isurf_end)
+    print*,'Cs',Cs(k1,:)
 !
 !  Adapt the reaction rate according to the internal gradients, 
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -1287,15 +1254,14 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !********************************************************************
   subroutine calc_ndot_mdot_R_j_hat(fp)
 !
-!  taken from solid_reac L. 108 ff 
+!  taken from solid_reac L. 108 ff
 !
-! Then find the carbon consumption rate and molar flux of each gaseous 
+! Then find the carbon consumption rate and molar flux of each gaseous
 ! species at the particle surface
 !
     real, dimension(:,:) :: fp
     integer :: n,i,j,k,l,k1,k2
 !
-
     ndot=0.    
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
@@ -1462,7 +1428,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     enddo
 !
 !  The mean effectiveness factor can be found from the above by using R_i_max
-!  (all particles, all reactants) 
+!  (all particles, all reactants)
 !
     sum_R_i_hat_max=0.0
 !             
@@ -1593,7 +1559,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  Unit: J/(mol*K)
 !
-    adsloop: do k=k1,k2
+    do k=k1,k2
 !
     if (imuadsO>0)    then
        adsorbed_species_entropy(k,imuadsO) = &
@@ -1629,7 +1595,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
     if (imufree>0)    adsorbed_species_entropy(k,imufree) = 0
 !
-    enddo adsloop
+    enddo
 !
   end subroutine calc_ads_entropy
 !*********************************************************************
@@ -2005,7 +1971,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do k=1,N_surface_reactions
        write(*,writeformat) 'nu=',k,nu(:,k)
     enddo
-
+!
     do k=1,N_surface_reactions
        write(*,writeformat) 'nu_power=',k,nu_power(:,k)
     enddo
@@ -2025,7 +1991,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
     do k=1,N_surface_reactions
        write(*,writeformat) 'mu_power=',k,mu_power(:,k)
     enddo
- !
+!
     do k=1,N_surface_reactions
        write(*,writeformat) 'mu_prime=',k,mu_prime(:,k)
     enddo
@@ -2068,7 +2034,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
 !
 !  Calculation of the 'plain' K_k (reaction rate)
 !
-    particles: do k=k1,k2
+    do k=k1,k2
         do l=1,N_surface_reactions
            if (sigma_k(l)==0) then
               K_k(k,l)=B_k(l)*exp(-ER_k(l)/fp(k,iTp))
@@ -2086,22 +2052,21 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
                    (sigma_k(l)*sqrt(2*pi))
               gg_old=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
               int_k=0
-              eff_kk: do j=2,N_iter
+              do j=2,N_iter
                  energy=(j-1)*2*delta_E/(N_iter-1)+ER_k(l)*gas_constant-delta_E
                  ff=exp(-0.5*((energy-ER_K(l)*gas_constant)/sigma_k(l))**2)/&
                       (sigma_k(l)*sqrt(2*pi))
                  gg=ff*B_k(l)*exp(-energy/(gas_constant*fp(k,iTp)))
                  int_k=int_k+dE*(gg_old+0.5*(gg-gg_old))
                  gg_old=gg
-              enddo eff_kk
+              enddo
               K_k(k,l)=int_k
            endif
               if (reaction_direction(l) == 'rev') then
                  call get_reverse_K_k(l,fp)
-              else
               end if
         enddo
-    enddo particles
+    enddo
 !
 !  Application of the startup-quenching to facilitate convergence on
 !  startup
@@ -2287,7 +2252,7 @@ subroutine flip_and_parse(string,ireaction,target_list,direction)
             Nu_p(k) = 0.5+0.5*(1+2*rep*Pr_g)**(1./3.)
 !  First case in "The effect of particle packing on the Nusselt 
 !  number in a cluster of particles
-         else if (rep>=3.5 .and. rep<=7.6e4 .and. &
+         elseif (rep>=3.5 .and. rep<=7.6e4 .and. &
               Pr_g>=0.7 .and. Pr_g<=380.) then
             Nu_p(k)=2.0+(0.4*rep**0.5+0.06*rep**0.67)*&
                  Pr_g**0.4

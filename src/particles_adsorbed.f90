@@ -60,20 +60,20 @@ module Particles_adsorbed
 !
   contains
 !***********************************************************************
-  subroutine register_particles_ads()
+    subroutine register_particles_ads()
 !
 !  this is a wrapper function for registering particle number
 !  in- and independent variables
 !
-          if (lroot) call svn_id( &
-          "$Id: particles_adsorbed.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
+      if (lroot) call svn_id( &
+           "$Id: particles_adsorbed.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
-    call register_indep_ads()
-    call register_dep_ads()
- !   
-  end subroutine register_particles_ads 
+      call register_indep_ads()
+      call register_dep_ads()
+!
+    end subroutine register_particles_ads
 !***********************************************************************
-  subroutine register_indep_ads()
+    subroutine register_indep_ads()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -86,23 +86,20 @@ module Particles_adsorbed
 !  check if enough storage was reserved in fp and dfp to store
 !  the adsorbed species surface and gas phase surface concentrations
 !
-      if (nadsspec/=(N_adsorbed_species-1) .and. &
-           N_adsorbed_species>1) then
+      if (nadsspec/=(N_adsorbed_species-1) .and. N_adsorbed_species>1) then
          print*,'N_adsorbed_species: ',N_adsorbed_species-1
          print*,'nadsspec: ',nadsspec
          call fatal_error('register_particles_ads', &
               'wrong size of storage for adsorbed species allocated.')
-         else
       endif
 !
-
       if (N_adsorbed_species>1) then
-      call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
-      call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
+         call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
+         call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
       endif
 !
 !  Set some indeces (this is hard-coded for now)
-!    
+!
       if (N_adsorbed_species>1) then
          imuadsO =find_species('C(O)',adsorbed_species_names,N_adsorbed_species)
          imuadsO2=find_species('C2(O2)',adsorbed_species_names,N_adsorbed_species)
@@ -128,7 +125,7 @@ module Particles_adsorbed
               j = j+1
             else
               i = i+1
-            end if 
+            endif
          enddo
 !
 !  Increase of npvar according to N_adsorbed_species
@@ -166,7 +163,6 @@ module Particles_adsorbed
        allocate(site_occupancy(N_adsorbed_species)   ,STAT=stat)
        if (stat>0) call fatal_error('register_indep_ads',&
         'Could not allocate memory for site_occupancy')
-    else
     endif
 !
 ! Define the aac array which gives the amount of carbon in the
@@ -181,7 +177,7 @@ module Particles_adsorbed
         N_adsorbed_species,mu_power)
     call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
         N_adsorbed_species,dummy)
-    call create_occupancy(adsorbed_species_names,site_occupancy)   
+    call create_occupancy(adsorbed_species_names,site_occupancy)
 !
     end subroutine register_indep_ads
 !***********************************************************************
@@ -237,13 +233,11 @@ module Particles_adsorbed
 !
           if (sum_ads > 1.) then
              print*, 'sum of init_surf_ads_frac > 1, normalizing...'
-             init_surf_ads_frac(1:N_adsorbed_species) = & 
+             init_surf_ads_frac(1:N_adsorbed_species) = &
                   init_surf_ads_frac(1:N_adsorbed_species) / sum_ads
-          else
           endif
 !
           do i=1,mpar_loc
-
              fp(i,iads:iads_end)= init_surf_ads_frac(1:(iads_end-iads+1))
           enddo
         case default
@@ -278,16 +272,14 @@ subroutine pencil_criteria_par_ads()
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
- !     call keep_compiler_quiet(fp)
+!     call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
       if (ldiagnos) then
          if (idiag_ads /= 0) then
             call sum_par_name(fp(1:mpar_loc,iads),idiag_ads)
-         else
          endif
-      else
       endif
 !
     endsubroutine dpads_dt
@@ -390,7 +382,7 @@ subroutine pencil_criteria_par_ads()
       if (lwr) write(3,*) 'iads=', iads
 !
       if (lreset) then
-         idiag_ads=0;
+         idiag_ads=0
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
@@ -416,10 +408,10 @@ subroutine pencil_criteria_par_ads()
       integer :: j,k,stat
       real, dimension(:,:), allocatable :: RR_hat
 !
-!  Calculation of R_j_hat according to eq.50 in 8th US combustion 
+!  Calculation of R_j_hat according to eq.50 in 8th US combustion
 !  meeting, coal and  biomass combustion and gasification.
 !
-!  JONAS: RR_hat still to be calculated, get() from chemistry 
+!  JONAS: RR_hat still to be calculated, get() from chemistry
 !
       allocate(RR_hat(k1_imn(imn):k2_imn(imn), &
            N_surface_reactions),STAT=stat)

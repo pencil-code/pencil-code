@@ -60,21 +60,19 @@ module Particles_surfspec
 !
   contains
 !***********************************************************************
-  subroutine register_particles_surfspec()
+    subroutine register_particles_surfspec()
 !!
 !  This is a wrapper routine for particle dependent and particle
 !  independent variables
 !  JONAS: Back to standalone via mpar_loc=1?
 !
-          if (lroot) call svn_id( &
-          "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
+      if (lroot) call svn_id( &
+           "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
-    call register_indep_psurfspec()
-    call register_dep_psurfspec()
+      call register_indep_psurfspec()
+      call register_dep_psurfspec()
 !
-
-!!$!
-  end subroutine register_particles_surfspec
+    end subroutine register_particles_surfspec
 !************************************************************************
   subroutine register_indep_psurfspec()
 !
@@ -85,7 +83,6 @@ module Particles_surfspec
          print*,'NSURFREACSPEC :', nsurfreacspec
          call fatal_error('register_particles_surf', &
               'wrong size of storage for surface species allocated')
-         else
       endif
 !
 !  Increase of npvar according to N_surface_species, which is
@@ -154,7 +151,7 @@ module Particles_surfspec
 !
     call create_jmap()
 !
-    !print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
+!  print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
 ! Set number of carbon atoms for each surface species
 !
@@ -250,7 +247,7 @@ module Particles_surfspec
       real :: sum_surf_spec
       integer :: j,i
 !
-      intent (in) :: f 
+      intent (in) :: f
       intent (out) :: fp
 !
       call keep_compiler_quiet(f)
@@ -260,10 +257,10 @@ module Particles_surfspec
 !
 !  Writing the initial surface species fractions
 !
-       init: select case (init_surf(j))
-        case ('nothing') init
+       select case (init_surf(j))
+        case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles_surf,gas phase: nothing'
-        case ('constant') init
+        case ('constant')
           if (lroot) print*, 'init_particles_surf: Initial Surface Fractions'
 !
 !  This ensures that we don't have unphysical values as init
@@ -273,23 +270,22 @@ module Particles_surfspec
              print*, 'Sum of all surface fractions >1, normalizing...'
              init_surf_gas_frac(1:N_surface_species) = &
                   init_surf_gas_frac(1:N_surface_species) / sum_surf_spec
-          else
           endif
 !
           do i=1,mpar_loc
              fp(i,isurf:isurf_end)=fp(i,isurf:isurf_end) + &
                  init_surf_gas_frac(1:N_surface_species)
           enddo
-          case default init
+          case default
           if (lroot) &
               print*, 'init_particles_ads: No such such value for init_surf: ', &
               trim(init_surf(j))
           call fatal_error('init_particles_surf','')
-        endselect init
+       endselect
       enddo
 !
     endsubroutine init_particles_surf
-!********************************************************************** 
+!**********************************************************************
     subroutine initialize_particles_surf(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -307,13 +303,11 @@ module Particles_surfspec
 !
       call calc_rho_p_init(fp)
       call calc_St_init(fp)
-!      
-
+!
 !!$           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
 !!$                 species_constants(jmap(i),imass) * &
 !!$                 (interp_rho(k)*R_cgs*interp_TT(k)/&
 !!$                 interp_pp(k))
-
 !
     end subroutine initialize_particles_surf
 !**************************************************************
@@ -329,7 +323,7 @@ module Particles_surfspec
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-!  JONAS: equations.tex eq 37   
+!  JONAS: equations.tex eq 37
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -340,9 +334,7 @@ module Particles_surfspec
       if (ldiagnos) then
          if (idiag_surf_save/=0) then
             call sum_par_name(fp(1:mpar_loc,isurf),idiag_surf_save)
-         else
          endif
-      else
       endif
 !
     endsubroutine dpsurf_dt
@@ -368,7 +360,7 @@ module Particles_surfspec
     integer :: ixx0,iyy0,izz0
     integer :: ixx1,iyy1,izz1
     integer :: index1,index2
-
+!
     intent (in) :: f, ineargrid
     intent (inout) :: dfp, df, fp
 !
@@ -378,7 +370,7 @@ module Particles_surfspec
 !
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
-!  
+!
     allocate(term(k1:k2,1:N_surface_reactants))
 !
     call calc_mass_trans_reactants()
@@ -387,21 +379,21 @@ module Particles_surfspec
 !  (infinite diffusion, set as far field and convert from
 !  mass fractions to mole fractions)
 !
-    particle: do k=k1,k2
+    do k=k1,k2
 !
        mean_molar_mass = (interp_rho(k)*R_cgs*interp_TT(k)/&
                     interp_pp(k))
 !
-     surface: if (lboundary_explicit) then
-       !SOLVE explicitly
+     if (lboundary_explicit) then
+!SOLVE explicitly
      else
        if (linfinite_diffusion) then
           ix0 =ineargrid(k,1)
           iy0 =ineargrid(k,2)
           iz0 =ineargrid(k,3)
          do i=1,N_surface_reactants
-            if(lfirst) then
-               fp(k,isurf+i-1) = interp_species(k,jmap(i)) 
+            if (lfirst) then
+               fp(k,isurf+i-1) = interp_species(k,jmap(i))
 !!$/ &
 !!$                    species_constants(jmap(i),imass) * &
 !!$                    mean_molar_mass
@@ -411,7 +403,7 @@ module Particles_surfspec
                  (interp_species(k,jmap(i)) &
 !!$/ &
 !!$                    species_constants(jmap(i),imass) * &
-!!$                    mean_molar_mass 
+!!$                    mean_molar_mass
                  -fp(k,isurf+i-1))
 !
 !  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
@@ -428,41 +420,44 @@ module Particles_surfspec
 !!$                 interp_pp(k))
          enddo
        else
-         !SOLVE implicit
+!SOLVE implicit
        endif
-     endif surface
+     endif
 !
 !  the following block is thoroughly commented in particles_temperature
 !  find values for transfer of variables from particle to fluid
-     transfer: if (lspecies_transfer) then
+     if (lspecies_transfer) then
         call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
              fp,k,ix0,iy0,iz0)
-        cell: do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-           call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-           call find_grid_volume(ixx,iyy,izz,volume_cell)
-           if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-              rho1_point =1.0 / get_gas_density(f,ixx,iyy,izz)
-           else
-              rho1_point = p%rho1(ixx-nghost)
-           endif
+        do izz=izz0,izz1
+           do iyy=iyy0,iyy1
+              do ixx=ixx0,ixx1
+                 call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                 call find_grid_volume(ixx,iyy,izz,volume_cell)
+                 if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                    rho1_point =1.0 / get_gas_density(f,ixx,iyy,izz)
+                 else
+                    rho1_point = p%rho1(ixx-nghost)
+                 endif
 !
 !  negative dmass means particle is losing mass
 !
-           dmass = sum(mdot_ck(k,:))
+                 dmass = sum(mdot_ck(k,:))
 !
-           do i=1,N_surface_species
-              index1 = jmap(i)
-              index2= ichemspec(index1)
-              df(ixx,iyy,izz,index2)=&
-                   df(ixx,iyy,izz,index2)+&
-                   (ndot(k,i)*species_constants(index1,imass)+&
-                   dmass*interp_species(k,index1))*&                   
-                   rho1_point*weight/volume_cell
+                 do i=1,N_surface_species
+                    index1 = jmap(i)
+                    index2= ichemspec(index1)
+                    df(ixx,iyy,izz,index2)=&
+                         df(ixx,iyy,izz,index2)+&
+                         (ndot(k,i)*species_constants(index1,imass)+&
+                         dmass*interp_species(k,index1))*&
+                         rho1_point*weight/volume_cell
+                 enddo
+              enddo
            enddo
-
-        enddo; enddo; enddo cell
-     endif transfer
-  enddo particle
+        enddo
+     endif
+  enddo
 !
 !!$   print*,'x_infty'
 !!$   do i=1,N_surface_reactants
@@ -516,12 +511,11 @@ module Particles_surfspec
     subroutine create_jmap()
 !
 !  07-oct-2014/jonas: coded
-!  29-oct-2014/jonas: moved parts of the code into routine, implemented 
-!                     error when gas phase species is in 
+!  29-oct-2014/jonas: moved parts of the code into routine, implemented
+!                     error when gas phase species is in
 !                     particles_chemistry, but not in chemistry
-!                      
 !
-!  find the indexes used in chemistry.f90 of species present 
+!  find the indexes used in chemistry.f90 of species present
 !  in the near field of the particle
 !
       use EquationOfState
@@ -542,82 +536,82 @@ module Particles_surfspec
       call find_species_index('H2',index_glob,index_chem,found_species)
       if (found_species) then
          jH2 = index_chem
-      else    
-         if(inuH2 > 0) call fatal_error('create_jmap','no H2 found')
+      else
+         if (inuH2 > 0) call fatal_error('create_jmap','no H2 found')
       endif
 !
       call find_species_index('O2',index_glob,index_chem,found_species)
       if (found_species) then
          jO2 = index_chem
-      else    
-         if(inuO2 > 0) call fatal_error('create_jmap','no O2 found')
+      else
+         if (inuO2 > 0) call fatal_error('create_jmap','no O2 found')
       endif
 !
       call find_species_index('CO2',index_glob,index_chem,found_species)
       if (found_species) then
          jCO2 = index_chem
       else
-         if(inuCO2 > 0) call fatal_error('create_jmap','no CO2 found')
+         if (inuCO2 > 0) call fatal_error('create_jmap','no CO2 found')
       endif
 !
       call find_species_index('CO',index_glob,index_chem,found_species)
       if (found_species) then
          jCO = index_chem
       else
-         if(inuCO > 0) call fatal_error('create_jmap','no CO found')
+         if (inuCO > 0) call fatal_error('create_jmap','no CO found')
       endif
 !
       call find_species_index('CH4',index_glob,index_chem,found_species)
       if (found_species) then
          jCH4 = index_chem
       else
-         if(inuCH4 > 0) call fatal_error('create_jmap','no CH4 found')
+         if (inuCH4 > 0) call fatal_error('create_jmap','no CH4 found')
       endif
 !
       call find_species_index('H2O',index_glob,index_chem,found_species)
       if (found_species) then
          jH2O = index_chem
       else
-         if(inuH2O > 0) call fatal_error('create_jmap','no H2O found')
+         if (inuH2O > 0) call fatal_error('create_jmap','no H2O found')
       endif
 !
       call find_species_index('CH3',index_glob,index_chem,found_species)
       if (found_species) then
          jCH3 = index_chem
       else
-         if(inuCH3 > 0) call fatal_error('create_jmap','no CH3 found')
+         if (inuCH3 > 0) call fatal_error('create_jmap','no CH3 found')
       endif
 !
       call find_species_index('CH',index_glob,index_chem,found_species)
       if (found_species) then
          jCH = index_chem
       else
-         if(inuCH > 0) call fatal_error('create_jmap','no CH found')
+         if (inuCH > 0) call fatal_error('create_jmap','no CH found')
       endif
 !
       call find_species_index('CH2',index_glob,index_chem,found_species)
       if (found_species) then
          jCH2 = index_chem
       else
-         if(inuCH2 > 0) call fatal_error('create_jmap','no CH2 found')
+         if (inuCH2 > 0) call fatal_error('create_jmap','no CH2 found')
       endif
 !
       call find_species_index('HCO',index_glob,index_chem,found_species)
       if (found_species) then
          jHCO = index_chem
       else
-        if(inuHCO > 0)  call fatal_error('create_jmap','no HCO found')
+        if (inuHCO > 0)  call fatal_error('create_jmap','no HCO found')
       endif
 !
-    if(inuH2O > 0)     jmap(inuH2O)=jH2O
-    if(inuCO2 > 0)     jmap(inuCO2)=jCO2
-    if(inuH2 > 0)      jmap(inuH2) =jH2
-    if(inuO2 > 0)      jmap(inuO2) =jO2
-    if(inuCO > 0)      jmap(inuCO) =jCO
-    if(inuCH > 0)      jmap(inuCH) =jCH
-    if(inuHCO > 0)     jmap(inuHCO)=jHCO
-    if(inuCH2 > 0)     jmap(inuCH2)=jCH2
-    if(inuCH3 > 0)     jmap(inuCH3)=jCH3
+    if (inuH2O > 0)     jmap(inuH2O)=jH2O
+    if (inuCO2 > 0)     jmap(inuCO2)=jCO2
+    if (inuH2 > 0)      jmap(inuH2) =jH2
+    if (inuO2 > 0)      jmap(inuO2) =jO2
+    if (inuCO > 0)      jmap(inuCO) =jCO
+    if (inuCH > 0)      jmap(inuCH) =jCH
+    if (inuHCO > 0)     jmap(inuHCO)=jHCO
+    if (inuCH2 > 0)     jmap(inuCH2)=jCH2
+    if (inuCH3 > 0)     jmap(inuCH3)=jCH3
 !
   end subroutine create_jmap
 !***********************************************************************
