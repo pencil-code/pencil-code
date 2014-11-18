@@ -250,29 +250,6 @@ program start
 !
   if (lav_smallx) call init_xaver
 !
-!  Size of box at local processor. The if-statement is for
-!  backward compatibility.
-!
-  if (all(lequidist)) then
-    Lxyz_loc(1)=Lxyz(1)/nprocx
-    Lxyz_loc(2)=Lxyz(2)/nprocy
-    Lxyz_loc(3)=Lxyz(3)/nprocz
-    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
-    xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
-    xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-    xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
-    xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
-    xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
-  else
-    xyz0_loc(1)=x(l1) ; xyz1_loc(1)=x(l2)
-    xyz0_loc(2)=y(m1) ; xyz1_loc(2)=y(m2)
-    xyz0_loc(3)=z(n1) ; xyz1_loc(3)=z(n2)
-!
-    Lxyz_loc(1)=xyz1_loc(1) - xyz0_loc(1)
-    Lxyz_loc(2)=xyz1_loc(2) - xyz0_loc(3)
-    Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
-  endif
-!
 !  Check consistency.
 !
   if (.not.lperi(1).and.nxgrid<2) &
@@ -300,6 +277,36 @@ program start
 !  Generate grid.
 !
   call construct_grid(x,y,z,dx,dy,dz)
+!
+!  Size of box at local processor. The if-statement is for
+!  backward compatibility.
+!
+  if (lequidist(1)) then
+    Lxyz_loc(1)=Lxyz(1)/nprocx
+    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
+    xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
+  else
+    xyz0_loc(1)=x(l1) ; xyz1_loc(1)=x(l2)
+    Lxyz_loc(1)=xyz1_loc(1) - xyz0_loc(1)
+  endif
+!
+  if (lequidist(2)) then
+    Lxyz_loc(2)=Lxyz(2)/nprocy
+    xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
+    xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
+  else
+    xyz0_loc(2)=y(m1) ; xyz1_loc(2)=y(m2)
+    Lxyz_loc(2)=xyz1_loc(2) - xyz0_loc(3)
+  endif
+!
+  if (lequidist(3)) then 
+    Lxyz_loc(3)=Lxyz(3)/nprocz
+    xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
+    xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+  else
+    xyz0_loc(3)=z(n1) ; xyz1_loc(3)=z(n2)
+    Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
+  endif
 !
 !  Write grid.dat file.
 !
