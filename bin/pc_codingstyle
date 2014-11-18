@@ -1,7 +1,19 @@
 #!/usr/bin/perl
-# Fortran coding style tester for the Pencil Code style.
-# Checks currently only very basic things, like the indentation.
+# Fortran95 coding style tester for the Pencil Code style.
+# Currently, only basic checks are performed, e.g. indentation.
 # Feel free to add more tests carefully.
+#
+# More general information about good Fortran95 coding style:
+# https://code.google.com/p/pencil-code/wiki/CodingStyle
+#
+# Command-line arguments:
+# -a: automatic correction, where possible
+# -b: backups original, if changes are applied
+# -q: quiet
+# -l: loose checking
+# -v: verbose ouput
+# -d: debug ouput
+#
 # 17.11.2015, Bourdin.KIS: coded.
 # $Id$
 
@@ -12,35 +24,56 @@ my $indentation_str = "  ";
 my $continuation_str = "    ";
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
 
-# options (might become command-line arguments later)
-my $picky = 1; # enable with "= 1", if you like punishment
-my $auto_correct = 0; # enable with "= 1", if you like to overwrite your files with garbage! ;-)
-my $verbose = 0; # "= 1" gives debug output, "= 2" even more
-
-# check filename
-my $filename = $ARGV[0];
-if (!$filename) { die ("Usage: ".$0." filename\n"); }
-if (!-e $filename) { die ("No such file or directory (".$filename.")\n"); }
-if (!-f $filename) { die ("Not a file (".$filename.")\n"); }
+# command line arguments
+my $picky = 1;
+my $auto_correct = 0;
+my $quiet = 0;
+my $backup = 0;
+my $verbose = 0;
+while ($ARGV[0] =~ /^-/) {
+	my $argument = shift ();
+	if (lc ($argument) eq "-l") { $picky = 0; }
+	elsif (lc ($argument) eq "-v") { if ($verbose < 1) { $verbose = 1; } }
+	elsif (lc ($argument) eq "-d") { $verbose = 2; }
+	elsif (lc ($argument) eq "-q") { $quiet = 1; }
+	elsif (lc ($argument) eq "-a") { $auto_correct = 1; }
+	elsif (lc ($argument) eq "-b") { $backup = 1; }
+	else {
+		usage ("Option \"".$argument."\" unkown ...");
+	}
+}
+my $num_files = @ARGV;
+if ($num_files == 0) { usage (""); }
 
 # initialize globals and scan file
 my %state = ();
-my @lines = [];
+my @lines = [""];
 my $pos = 0;
 my $num_warnings = 0;
+my $num_fixed = 0;
 my $num_fatals = 0;
 my $indentation = length ($indentation_str);
 my $continuation = length ($continuation_str);
 my $num_trigger_indent = @trigger_indent;
-scan_file ($filename);
 
-print_num_warnings ();
-exit (0);
+# process filenames
+my $num_file = 0;
+my $exit_code = 0;
+my $filename = "";
+while ($filename = shift ()) {
+	if ($num_file > 0) { print ("========================================================================\n"); }
+	$num_file++;
+	if (!$quiet && ($num_files > 0)) { print ('File "'.$filename.'":'."\n"); }
+	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
+	if (!-f $filename) { die ('Not a file: "'.$filename.'"'."\n"); }
+	scan_file ($filename);
+	print ('File "'.$filename.'":'."\n");
+	print_num_warnings ();
+}
+exit ($exit_code);
 
 
 sub scan_file {
-	my ($file) = @_;
-
 	# reset state
 	$state{'indent'} = 0;
 	$state{'indent_str'} = "";
@@ -54,7 +87,8 @@ sub scan_file {
 
 	# read file
 	my $num_lines = 0;
-	open (FILE, "< ".$file);
+	@lines = [""];
+	open (FILE, "< ".$filename);
 	while (defined (my $line = <FILE>)) {
 		$num_lines++;
 		$line =~ s/\n$//s;
@@ -104,10 +138,10 @@ sub scan_file {
 			if ($num_spaces != $state{'indent'}) {
 				if (($state{'eol_comment'} > 0) && ($num_spaces > $state{'indent'})) {
 					# multi-line comment block with extra indentation
-					warning ("no extra indentation for multi-line comment blocks");
+					fixme_warning ("no extra indentation for multi-line comment blocks");
 				}
 				else {
-					warning ("comments start either at the beginning of a line or at the correct indentaion level");
+					warning ("comments start either at the beginning of a line or at the correct indentation level");
 					if (($num_spaces > $state{'indent'}*4/3) && ($num_spaces >= 4)) {
 						$spaces = $state{'indent_str'};
 					}
@@ -118,13 +152,13 @@ sub scan_file {
 				}
 			}
 		}
+		$lines[$pos] = $_;
 		if (/^ *\!/s) {
-			$lines[$pos] = $_;
 			next;
 		}
 		if ($no_strings =~ /\S *\!/s) {
 			# comment at end of line
-			picky_warning ("comments start either at the beginning of a line or at the correct indentaion level");
+			picky_fixme_warning ("comments start either at the beginning of a line or at the correct indentation level");
 			$state{'eol_comment'} = 1;
 		}
 		else {
@@ -142,9 +176,10 @@ sub scan_file {
 		}
 
 		# indentation
-		check_closed_nesting ($_);
+		if (check_closed_nesting ($_)) { return; }
 		if ($state{'indent'} < 0) {
 			fatal ("surplus 'end' => indentation became negative");
+			return;
 		}
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
@@ -153,13 +188,14 @@ sub scan_file {
 				if ($verbose) { print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"; }
 				warning ("wrong indentation level");
 				s/^ */${start_spaces}/s;
+				$lines[$pos] =~ s/^ */${start_spaces}/s;
 			}
 		}
-		check_new_nesting ($_);
+		if (check_new_nesting ($_)) { return; }
 
 		# multiple commands per line
 		if (/\;/s) {
-			warning ("possible multi-command line => better put one command per line");
+			fixme_warning ("possible multi-command line => better put one command per line");
 		}
 
 		# continuation
@@ -169,12 +205,10 @@ sub scan_file {
 		else {
 			$state{'continuation'} = 0;
 		}
-
-		# store auto-corrected line
-		$lines[$pos] = $_;
 	}
 
-	$_ = join ("\n", @lines)."\n";
+	# file-global checks
+	$_ = join ("\n", @lines);
 
 	# empty else-blocks
 	while (/(^.*?\n) *else(|where)(\n\![^\n]*)*\n *end *(|if|where)(?: |\n)/is) {
@@ -188,17 +222,20 @@ sub scan_file {
 			$empty =~ s/[^\n]+//gs;
 			$pos += length ($empty) + 1;
 			fatal ("misplaced 'end".$closing."' after empty 'else".$type."'-block => better use the pure 'end'-statement");
+			return;
 		}
 		warning ("remove empty 'else".$type."'-block");
 		s/\n *else${type}(?:\n\![^\n]*)*(\n *end *${closing}(?: |\n))/${1}/is;
 	}
 
-	if ($auto_correct) {
-		# write auto-corrected file
-		open (FILE, "> ".$file);
-		print FILE $_;
-		close (FILE);
-	}
+	# split into lines again
+	@lines = split (/\n/s, $_);
+}
+
+sub usage {
+	my ($message) = @_;
+	if ($message) { warn ($message."\n"); }
+	warn ("Usage: ".$0." [-a] [-b] [-l] [-v] [-d] [-q] filename\n");
 }
 
 sub cut_strings {
@@ -227,14 +264,30 @@ sub cut_strings {
 	return ($line);
 }
 
+sub picky_fixme_warning {
+	my ($message) = @_;
+	if (!$picky) { return; }
+	fixme_warning ("picky: ".$message);
+}
+
 sub picky_warning {
 	my ($message) = @_;
 	if (!$picky) { return; }
 	warning ("picky: ".$message);
 }
 
+sub fixme_warning {
+	my ($message) = @_;
+	print_warning ($message);
+	if ($num_fatals > 0) { perish (); }
+}
+
 sub warning {
 	my ($message) = @_;
+	if ($auto_correct) {
+		$message = "fixed: ".$message;
+	}
+	$num_fixed++;
 	print_warning ($message);
 	if ($num_fatals > 0) { perish (); }
 }
@@ -242,11 +295,58 @@ sub warning {
 sub print_warning {
 	my ($message) = @_;
 	$num_warnings++;
-	warn ("[".$pos."] ".$message."\n");
+	if (!$quiet) { warn ("[".$pos."] ".$message."\n"); }
+}
+
+sub write_file {
+	if ($backup) {
+		# create backup of unchanged file
+		my $suffix = ".bak";
+		my $backup_file = $filename.$suffix;
+		my $counter = 0;
+		while (-e $backup_file) {
+			$counter++;
+			$backup_file = $filename.$suffix.".".$counter
+		}
+		system ('mv "'.$filename.'" "'.$backup_file.'"');
+	}
+
+	# write auto-corrected file
+	shift (@lines);
+	$_ = join ("\n", @lines)."\n";
+	open (FILE, "> ".$filename);
+	print FILE $_;
+	close (FILE);
 }
 
 sub print_num_warnings {
-	if ($num_warnings > 0) { warn ("\n".$num_warnings." STYLE BREAKS should be fixed.\n"); }
+	if ($auto_correct) {
+		my $num_unfixed = ($num_warnings - $num_fixed);
+		if ($num_fixed > 0) {
+			write_file;
+			warn ("=> ".$num_fixed." STYLE BREAKS were fixed.\n");
+		}
+		if ($num_unfixed > 0) {
+			warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
+		}
+		if ($num_fatals > 0) {
+			warn ($num_fatals." FATAL errors still remain!\n");
+		}
+	}
+	else {
+		if ($num_warnings > 0) {
+			warn ("=> ".$num_warnings." STYLE BREAKS should be fixed.\n");
+		}
+		if ($num_fixed > 0) {
+			warn ($num_fixed." of them can be fixed automatically!\n");
+		}
+		if ($num_fatals > 0) {
+			warn ($num_fatals." FATAL errors still remain!\n");
+		}
+	}
+	$num_warnings = 0;
+	$num_fixed = 0;
+	$num_fatals = 0;
 }
 
 sub accumulative_fatal {
@@ -258,14 +358,12 @@ sub accumulative_fatal {
 sub fatal {
 	my ($message) = @_;
 	$num_fatals++;
-	warning ("FATAL: ".$message);
+	fixme_warning ("FATAL: ".$message);
 	perish ();
 }
 
 sub perish {
-	print_num_warnings;
-	warn ($num_fatals." of them were FATAL errors!\n");
-	exit (1);
+	$exit_code = 1;
 }
 
 sub add_nesting {
@@ -280,9 +378,13 @@ sub add_nesting {
 sub remove_nesting {
 	if ($verbose >= 2) { warn ("[$pos] REMOVE: ".$state{'last_nesting'}."\n"); }
 	$state{'indent'} -= $indentation;
-	$state{'indent_str'} =~ s/${indentation_str}$//s or fatal ("internal error while reducing the indentation string");
+	if ($state{'indent_str'} !~ s/${indentation_str}$//s) {
+		fatal ("internal error while reducing the indentation string");
+		return (1);
+	}
 	$state{'last_nesting'} = "";
 	if ($state{'nesting'} =~ /([^\|]+)\|$/s) { $state{'last_nesting'} = $1; }
+	return (0);
 }
 
 sub check_new_nesting {
@@ -291,47 +393,56 @@ sub check_new_nesting {
 		$state{'multiline_if'} = 0;
 		if ($line =~ / then$/is) { add_nesting ("if"); }
 		if ($line =~ /\&$/s) { $state{'multiline_if'} = 1; }
-		return;
+		return (0);
 	}
 	if ($state{'multiline_where'}) {
 		$state{'multiline_where'} = 0;
 		if ($line =~ /\)$/is) { add_nesting ("where"); }
 		if ($line =~ /\&$/s) { $state{'multiline_where'} = 1; }
-		return;
+		return (0);
 	}
 	if ($state{'else_branch'}) {
 		add_nesting ($state{'else_branch'});
 		$state{'else_branch'} = "";
-		return;
+		return (0);
 	}
 	for (my $index = 0; $index < $num_trigger_indent; $index++) {
 		my $trigger = $trigger_indent[$index];
 		if ($trigger eq "contains") {
 			if ($line =~ /^( *)contains$/is) {
 				add_nesting ("");
-				return;
+				return (0);
 			}
 		}
 		if ($line =~ /^ *${trigger}[^a-z0-9_'" ]/is) {
 			warning ("space after '".$trigger."'-statement required");
-			$line =~ s/^( *${trigger})/${1} /s;
-			$lines[$pos] =~ s/^( *${trigger})/${1} /s;
+			$line =~ s/^( *${trigger})/${1} /is;
+			$lines[$pos] =~ s/^( *${trigger})/${1} /is;
 		}
 		if ($trigger eq "function") {
 			if ($line =~ s/^( *)((?:integer|real|logical|long|double).*?) +function /${1}function /is) {
-				picky_warning ("data type '".$2."' belongs inside the 'function' block");
+				picky_fixme_warning ("data type '".$2."' belongs inside the 'function' block");
 			}
 		}
 		if ($line =~ /^ *${trigger} /is) {
-			if ($line =~ /\;/s) { fatal ("put each indentation-sensitive command in a separate line"); }
+			if ($line =~ /\;/s) {
+				fatal ("put each indentation-sensitive command in a separate line");
+				return (1);
+			}
 			if (($trigger eq "module") && ($line =~ /^ *module +procedure /is)) { next; }
 			if (($trigger eq "type") && ($line =~ /::/is)) { next; }
-			if (($trigger eq "if") && ($line =~ /\&$/s)) { $state{'multiline_if'} = 1; return; }
+			if (($trigger eq "if") && ($line =~ /\&$/s)) {
+				$state{'multiline_if'} = 1;
+				return (0);
+			}
 			if (($trigger eq "if") && ($line !~ / then *$/is)) { next; }
-			if (($trigger eq "where") && ($line =~ /\&$/s)) { $state{'multiline_where'} = 1; return; }
+			if (($trigger eq "where") && ($line =~ /\&$/s)) {
+				$state{'multiline_where'} = 1;
+				return (0);
+			}
 			if (($trigger eq "where") && ($line !~ /\)$/is)) { next; }
 			add_nesting ($trigger);
-			return;
+			return (0);
 		}
 	}
 }
@@ -344,11 +455,13 @@ sub check_closed_nesting {
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}(\|+)$/${1}${2}/is) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TRIGGER:".$trigger."\n"); }
 			fatal ("misplaced 'end".$trigger."' => better use the pure 'end'-statement");
+			return (1);
 		}
 	}
 	elsif ($line =~ /^ *end(?: +\S+)?$/is) {
 		if ($state{'nesting'} !~ s/(^|\|)[^ \|]+(\|+)$/${1}${2}/s) { 
 			fatal ("internal error while removing nesting");
+			return (1);
 		}
 	}
 	elsif ($line =~ /^ *else(.*?)$/is) {
@@ -358,28 +471,30 @@ sub check_closed_nesting {
 			warning ("better use 'else".$type."' instead of 'else ".$type."'");
 			$else =~ s/^ +//is;
 			$line =~ s/^( *else) +${type}/${1}${type}/is;
-			$lines[$pos] = s/^( *else) +${type}/${1}${type}/is;
+			$lines[$pos] =~ s/^( *else) +${type}/${1}${type}/is;
 		}
 		if ($else =~ /^${type}[^a-z0-9_ ]/is) {
 			warning ("space after 'else".$type."'-statement required");
 			$else =~ s/^${type}/${type} /is;
-			$line =~ s/^( *else${type})/${1} /s;
-			$lines[$pos] = s/^( *else${type})/${1} /s;
+			$line =~ s/^( *else${type})/${1} /is;
+			$lines[$pos] =~ s/^( *else${type})/${1} /is;
 		}
 		if (($type eq "if") && ($else !~ /^$/s) && ($else !~ /\&$/s) && ($else !~ / then/is)) {
 			# TODO: handle multi-line else-blocks correctly, currentyl just ignored
 			fatal ("must place 'then' after 'elseif'");
+			return (1);
 		}
 		elsif (($else =~ /^${type} /is) || (($type eq "if") && ($else =~ /^$/is)) || (($type eq "where") && ($else =~ /^${type}$/is))) {
 			if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
 				if ($verbose) { warn ("NESTING:".$state{'nesting'}." TYPE:".$type."\n"); }
 				fatal ("misplaced 'else".$trigger."'");
+				return (1);
 			}
 			$state{'else_branch'} = $type;
 		}
 		else {
 			# unrecognized "else...", might be something like "elset = 1"
-			return;
+			return (0);
 		}
 	}
 	elsif ($line =~ /^ *case([^a-z0-9_].*?)$/is && ($state{'last_nesting'} eq "select")) {
@@ -389,19 +504,24 @@ sub check_closed_nesting {
 			warning ("space after 'case'-statement required");
 			$case = " ".$case;
 			$line =~ s/^( *case)/${1} /is;
-			$lines[$pos] = s/^( *case)/${1} /is;
+			$lines[$pos] =~ s/^( *case)/${1} /is;
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TYPE:".$type."\n"); }
 			fatal ("misplaced 'case'");
+			return (1);
 		}
 		$state{'else_branch'} = $type;
 	}
 	else {
 		# no end, nor else
-		return;
+		return (0);
 	}
-	if (($trigger eq "module") && ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s)) { remove_nesting; }
-	if ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s) { remove_nesting; }
+	if (($trigger eq "module") && ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s)) {
+		my $result = remove_nesting;
+		if ($result) { return (1); }
+	}
+	if ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s) { return (remove_nesting); }
+	return (0);
 }
 
