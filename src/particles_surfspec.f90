@@ -33,7 +33,7 @@ module Particles_surfspec
 !*********************************************************************!
 !
   character (len=labellen), dimension (ninit) :: init_surf='nothing'
-  real, dimension(10) :: init_surf_gas_frac
+  real, dimension(10) :: init_surf_mol_frac
   real :: surfplaceholder=0.0
   real, dimension(:), allocatable :: uscale,fscale,constr
   integer, dimension(:), allocatable :: dependent_reactant
@@ -52,7 +52,7 @@ module Particles_surfspec
 !
   namelist /particles_surf_init_pars/ &
       init_surf, &
-      init_surf_gas_frac
+      init_surf_mol_frac
 !
   namelist /particles_surf_run_pars/ &
       surfplaceholder, &
@@ -245,7 +245,7 @@ module Particles_surfspec
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       real :: sum_surf_spec
-      integer :: j,i
+      integer :: i,j,k
 !
       intent (in) :: f
       intent (out) :: fp
@@ -265,16 +265,16 @@ module Particles_surfspec
 !
 !  This ensures that we don't have unphysical values as init
 !
-          sum_surf_spec = sum(init_surf_gas_frac(1:N_surface_species))
+          sum_surf_spec = sum(init_surf_mol_frac(1:N_surface_species))
           if (sum_surf_spec > 1) then
             print*, 'Sum of all surface fractions >1, normalizing...'
-            init_surf_gas_frac(1:N_surface_species) = &
-                init_surf_gas_frac(1:N_surface_species) / sum_surf_spec
+            init_surf_mol_frac(1:N_surface_species) = &
+                init_surf_mol_frac(1:N_surface_species) / sum_surf_spec
           endif
 !
-          do i=1,mpar_loc
-            fp(i,isurf:isurf_end)=fp(i,isurf:isurf_end) + &
-                init_surf_gas_frac(1:N_surface_species)
+          do k=1,mpar_loc
+            fp(k,isurf:isurf_end)=fp(k,isurf:isurf_end) + &
+                init_surf_mol_frac(1:N_surface_species)
           enddo
         case default
           if (lroot) &
@@ -388,28 +388,22 @@ module Particles_surfspec
 !SOLVE explicitly
         else
           if (linfinite_diffusion) then
-            ix0 =ineargrid(k,1)
-            iy0 =ineargrid(k,2)
-            iz0 =ineargrid(k,3)
             do i=1,N_surface_reactants
-              if (lfirst) then
-                fp(k,isurf+i-1) = interp_species(k,jmap(i))
-!!$/ &
-!!$                    species_constants(jmap(i),imass) * &
-!!$                    mean_molar_mass
-              endif
+              fp(k,isurf+i-1)=interp_species(k,jmap(i)) / &
+                  species_constants(jmap(i),imass) * mean_molar_mass
+              dfp(k,isurf+i-1)=0.
+            enddo
+          else
+            do i=1,N_surface_reactants
               term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*ndot_total(k)+&
                   mass_trans_coeff_reactants(k,i)*&
-                  (interp_species(k,jmap(i)) &
-!!$/ &
-!!$                    species_constants(jmap(i),imass) * &
-!!$                    mean_molar_mass
-                  -fp(k,isurf+i-1))
+                  (interp_species(k,jmap(i)) / &
+                  species_constants(jmap(i),imass) * &
+                  mean_molar_mass-fp(k,isurf+i-1))
 !
 !  the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
-              dfp(k,isurf+i-1)=3*term(k,i)/&
-                  (porosity(k)*Cg(k)*fp(k,iap))
+              dfp(k,isurf+i-1)=3*term(k,i)/(porosity(k)*Cg(k)*fp(k,iap))
 !
 !  JONAS: what was implemented was infinite diffusion, but without created species
 !
@@ -421,6 +415,9 @@ module Particles_surfspec
 !  the following block is thoroughly commented in particles_temperature
 !  find values for transfer of variables from particle to fluid
         if (lspecies_transfer) then
+          ix0 =ineargrid(k,1)
+          iy0 =ineargrid(k,2)
+          iz0 =ineargrid(k,3)
           call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
               fp,k,ix0,iy0,iz0)
           do izz=izz0,izz1
