@@ -152,8 +152,14 @@ sub scan_file {
 				}
 			}
 		}
+		if (/^ *\!\!+ */s) {
+			# double commenting
+			picky_warning ("comments start with only one exclamation mark");
+			s/^( *\!)\!+ */${1} /s;
+		}
 		$lines[$pos] = $_;
 		if (/^ *\!/s) {
+			# this line contains only a comment
 			next;
 		}
 		if ($no_strings =~ /\S *\!/s) {
@@ -238,6 +244,12 @@ sub usage {
 	warn ("Usage: ".$0." [-a] [-b] [-l] [-v] [-d] [-q] filename\n");
 }
 
+sub cut_comment {
+	my ($line) = cut_strings (@_);
+	$line =~ s/ *\!.*$//s;
+	return ($line);
+}
+
 sub cut_strings {
 	my ($line) = @_;
 	my $old_line = "";
@@ -246,15 +258,17 @@ sub cut_strings {
 		my $type = $2;
 		my $post = $3;
 		if ($pre =~ /\!/s) { return ($line); }
+		my $fill = "";
 		while ($post =~ /^(.*?)${type}(.*)$/s) {
 			my $string = $1;
 			my $rest = $2;
+			if (!$fill) { $fill = '_' x length ($string); }
 			$string =~ s/\\\\//gs;
 			if ($string !~ s/\\$//s) {
 				my $type_str = "";
 				if ($type eq '\'') { $type_str = "apostroph"; }
 				if ($type eq '"') { $type_str = "quote"; }
-				$line = $pre."<type-".$type_str."><type-".$type_str.">".$rest;
+				$line = $pre."<type-".$type_str.">".$fill."<type-".$type_str.">".$rest;
 				last;
 			}
 			$post = $string.$rest;
@@ -391,7 +405,7 @@ sub remove_nesting {
 }
 
 sub check_new_nesting {
-	my ($line) = @_;
+	my ($line) = cut_comment (@_);
 	if ($state{'multiline_if'}) {
 		$state{'multiline_if'} = 0;
 		if ($line =~ / then$/is) { add_nesting ("if"); }
@@ -468,7 +482,7 @@ sub check_closed_nesting {
 		}
 	}
 	elsif ($line =~ /^ *else(.*?)$/is) {
-		my $else = $1;
+		my $else = cut_comment ($1);
 		my $type = $state{'last_nesting'};
 		if ($else =~ /^ +${type}/s) {
 			warning ("better use 'else".$type."' instead of 'else ".$type."'");
