@@ -53,7 +53,7 @@ module Particles_temperature
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
+          "$Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
 !
 !  Indices for particle position.
 !
@@ -124,7 +124,7 @@ module Particles_temperature
 !
     endsubroutine init_particles_TT
 !***********************************************************************
-subroutine pencil_criteria_par_TT()
+    subroutine pencil_criteria_par_TT()
 !
 !  All pencils that the Particles_temperature module depends on are specified here
 !
@@ -209,7 +209,7 @@ subroutine pencil_criteria_par_TT()
 !
 !  Loop over all particles in current pencil.
 !
-          do k=k1,k2
+      do k=k1,k2
 !
 !  For a quiecent fluid the Nusselt number is equal to 2. This must be
 !  changed when there is a relative velocity between the partciles and
@@ -219,78 +219,81 @@ subroutine pencil_criteria_par_TT()
 !
 !  Calculate convective and conductive heat
 !
-            ix0=ineargrid(k,1)
-            iy0=ineargrid(k,2)
-            iz0=ineargrid(k,3)
-            inx0=ix0-nghost;
-            cond=p%tcond(inx0)
-            Ap=4.*pi*fp(k,iap)**2
-            heat_trans_coef=Nusselt(k)*cond/(2*fp(k,iap))
-            Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+        ix0=ineargrid(k,1)
+        iy0=ineargrid(k,2)
+        iz0=ineargrid(k,3)
+        inx0=ix0-nghost
+        cond=p%tcond(inx0)
+        Ap=4.*pi*fp(k,iap)**2
+        heat_trans_coef=Nusselt(k)*cond/(2*fp(k,iap))
+        Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Find the mass of the particle
 !
-            if (lparticles_density) then
-              call fatal_error('dpTT_dt','Variable mass not implemented yet!')
-            else
-              pmass=4.*pi*fp(k,iap)**3*rhopmat/3.
-            endif
+        if (lparticles_density) then
+          call fatal_error('dpTT_dt','Variable mass not implemented yet!')
+        else
+          pmass=4.*pi*fp(k,iap)**3*rhopmat/3.
+        endif
 !
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-            dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(pmass*cp_part)
+        dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(pmass*cp_part)
 !
 !  Calculate feed back from the particles to the gas phase
 !
-            if (lpart_temp_backreac) then
+        if (lpart_temp_backreac) then
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
-                  fp,k,ix0,iy0,iz0)
+          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+              fp,k,ix0,iy0,iz0)
 !
 !  Loop over all neighbouring points
 !
-                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+          do izz=izz0,izz1
+            do iyy=iyy0,iyy1
+              do ixx=ixx0,ixx1
 !
 !  Find the relative weight of the current grid point
 !
-                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
 !  Find the volume of the grid cell of interest
 !
-                  call find_grid_volume(ixx,iyy,izz,volume_cell)
+                call find_grid_volume(ixx,iyy,izz,volume_cell)
 !
 !  Find the gas phase density
 !
-                  if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                  else
-                    rho1_point = p%rho1(ixx-nghost)
-                  endif
+                if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                  rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                else
+                  rho1_point = p%rho1(ixx-nghost)
+                endif
 !
 !  Add the source to the df-array
 !  NILS: The values of cv and Tg are currently found from the nearest grid
 !  NILS: point also for CIC and TSC. This should be fixed!
 !
-                  if (ltemperature_nolog) then
-                    df(ixx,iyy,izz,iTT)=df(ixx,iyy,izz,iTT)&
-                        +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
-                  else
-                    df(ixx,iyy,izz,ilnTT)=df(ixx,iyy,izz,ilnTT)&
-                        +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
-                  endif
-                enddo; enddo; enddo
-              endif
+                if (ltemperature_nolog) then
+                  df(ixx,iyy,izz,iTT)=df(ixx,iyy,izz,iTT)&
+                      +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
+                else
+                  df(ixx,iyy,izz,ilnTT)=df(ixx,iyy,izz,ilnTT)&
+                      +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                endif
+              enddo
             enddo
+          enddo
+        endif
+      enddo
 !
-            deallocate(q_reac)
-            deallocate(Nusselt)
-
+      deallocate(q_reac)
+      deallocate(Nusselt)
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
@@ -305,7 +308,7 @@ subroutine pencil_criteria_par_TT()
         read(unit,NML=particles_TT_init_pars,ERR=99)
       endif
 !
-99    return
+      99    return
 !
     endsubroutine read_particles_TT_init_pars
 !***********************************************************************
@@ -328,7 +331,7 @@ subroutine pencil_criteria_par_TT()
         read(unit,NML=particles_TT_run_pars,ERR=99)
       endif
 !
-99    return
+      99    return
 !
     endsubroutine read_particles_TT_run_pars
 !***********************************************************************
@@ -363,7 +366,8 @@ subroutine pencil_criteria_par_TT()
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_Tpm=0; idiag_etpm=0;
+        idiag_Tpm=0
+        idiag_etpm=0
       endif
 !
       if (lroot .and. ip<14) print*,'rprint_particles_TT: run through parse list'
@@ -385,4 +389,4 @@ subroutine pencil_criteria_par_TT()
 !
     endsubroutine particles_TT_prepencil_calc
 !***********************************************************************
-  end module Particles_temperature
+end module Particles_temperature
