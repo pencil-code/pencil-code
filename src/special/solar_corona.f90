@@ -28,7 +28,8 @@ module Special
     module procedure add_interpolated_4D
   endinterface
 !
-  integer, parameter :: max_gran_levels=3 ! must be <= 9
+  ! maximum number of granulation levels, technical maximum is 9
+  integer, parameter :: max_gran_levels=3
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.,Kc=0.
@@ -62,18 +63,17 @@ module Special
   real, dimension (mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
-! file location settings
+  ! file location settings
   character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
   character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
   character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
   character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
   character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
-! input parameters
-  namelist /special_init_pars/ &
-      linit_uu,linit_lnrho,linit_lnTT,prof_type
+  ! input parameters
+  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
 !
-! run parameters
+  ! run parameters
   namelist /special_run_pars/ &
       tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
       K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
@@ -100,7 +100,7 @@ module Special
   integer :: idiag_mag_flux=0  ! DIAG_DOC: Total vertical magnetic flux at
                                ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
-! video slices
+  ! video slices
   real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (nx,nz) :: rtv_xz
   real, target, dimension (ny,nz) :: rtv_yz
@@ -118,7 +118,7 @@ module Special
     real :: t_amp_max, t_life
     type (point), pointer :: next
     type (point), pointer :: previous
-  end type point
+  endtype point
 !
   type (point), pointer :: first => null()
   type (point), pointer :: current => null()
@@ -126,7 +126,7 @@ module Special
   ! List of start pointers for each granulation level:
   type gran_list_start
     type (point), pointer :: first
-  end type gran_list_start
+  endtype gran_list_start
   type (gran_list_start), dimension(max_gran_levels) :: gran_list
 !
   integer :: xrange,yrange,pow
@@ -2595,8 +2595,8 @@ module Special
         case ('exp2')
           ! A second exponential function
           ! For Sven et al. 2010 set:
-          ! heat_par_exp= (1e3 , 0.2 )
-          ! heat_par_exp2= (1e-4 , 10.)
+          ! heat_par_exp= (1e3, 0.2 )
+          ! heat_par_exp2= (1e-4, 10.)
           !
           heatinput=heatinput + &
               heat_par_exp2(1)*exp(-z_Mm/heat_par_exp2(2))/heat_unit
@@ -2620,7 +2620,7 @@ module Special
         case ('nanof')
           ! simulate nanoflare heating =)
           ! height dependend amplitude und duration
-          ! idea: call random numbers , make condition when to flare, when
+          ! idea: call random numbers, make condition when to flare, when
           ! flare get position
           ! then over time release a flare in shape of gaussian. Also
           ! distribution is gaussian around a point.
@@ -2656,8 +2656,8 @@ module Special
           !
           if (nano_start /= 0.) then
             ! if nano_start is not 0. then there is a nanoflare!
-            ! 2nd assumption , nanoflare takes 60 seconds =)
-            nano_flare_energy=10.d17 !joules
+            ! 2nd assumption, nanoflare takes 60 seconds =)
+            nano_flare_energy=10.d17 ! joules
             nano_sigma_z=0.5
             nano_sigma_t=2.5
 !
@@ -2670,10 +2670,10 @@ module Special
             heatinput=heatinput + heat_nano/heat_unit
 !
             if (nano_time <= 0.) nano_start=0.
-          end if
+          endif
           !
-          !SAVE NANO_SEED
-          !RESTORE GLOBAL SEED
+          ! SAVE NANO_SEED
+          ! RESTORE GLOBAL SEED
           call random_seed_wrapper(GET=nano_seed)
           call random_seed_wrapper(PUT=global_rstate)
 !
@@ -3042,8 +3042,7 @@ module Special
       endif
 !
       ! On exit, save final granule snapshot
-      if (itsub == 3) &
-          lstop = file_exists('STOP')
+      if (itsub == 3) lstop = file_exists('STOP')
       if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
           (mod(it,isave) == 0)) call write_points (level)
 !
@@ -3392,7 +3391,7 @@ module Special
               vx(i,j)=vx(i,j)+vv*xdist/dist
               vy(i,j)=vy(i,j)+vv*ydist/dist
               w(i,j) =max(w(i,j),wtmp)
-            end if
+            endif
           endif
           if (w(i,j) > ampl/(granr*(1+ig))) avoid_gran(i,j)=1
         enddo
@@ -3494,7 +3493,7 @@ module Special
           current => current%next
         endif
 !
-      end do
+      enddo
 !
     endsubroutine update_points
 !***********************************************************************
