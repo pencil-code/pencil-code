@@ -23,6 +23,7 @@ use strict;
 my $indentation_str = "  ";
 my $continuation_str = "    ";
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
+my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
 
 # command line arguments
 my $picky = 1;
@@ -437,7 +438,7 @@ sub check_new_nesting {
 	for (my $index = 0; $index < $num_trigger_indent; $index++) {
 		my $trigger = $trigger_indent[$index];
 		if ($trigger eq "contains") {
-			if ($line =~ /^( *)contains$/is) {
+			if ($line =~ /^ *contains$/is) {
 				add_nesting ("");
 				return (0);
 			}
@@ -477,9 +478,14 @@ sub check_new_nesting {
 
 sub check_closed_nesting {
 	my ($line) = @_;
+	my $trigger_list = join ("|", @trigger_unindent);
 	my $trigger = "";
-	if ($line =~ /^ *end ?(\S+)(?: +\S+)?$/is) {
+	if ($line =~ /^ *end *(${trigger_list})(?: +\S+)?$/is) {
 		$trigger = $1;
+		if ($line =~ s/^( *end) +${trigger}/${1}${trigger}/is) {
+			warning ("either use 'end".$trigger."' or a pure 'end'-statement");
+			$lines[$pos] =~ s/^( *end) +${trigger}/${1}${trigger}/is;
+		}
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}(\|+)$/${1}${2}/is) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TRIGGER:".$trigger."\n"); }
 			fatal ("misplaced 'end".$trigger."' => better use the pure 'end'-statement");
