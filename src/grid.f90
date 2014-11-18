@@ -92,8 +92,12 @@ module Grid
 !
 !  Abbreviations
 !
-      x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
-      Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
+      x0 = xyz0(1)
+      y0 = xyz0(2)
+      z0 = xyz0(3)
+      Lx = Lxyz(1)
+      Ly = Lxyz(2)
+      Lz = Lxyz(3)
 !
 !  minimal wavenumbers
 !
