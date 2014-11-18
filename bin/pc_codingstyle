@@ -175,10 +175,21 @@ sub scan_file {
 		if (/, *end *=/s) {
 			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
+		if (/, *err *=/s) {
+			accumulative_fatal ("'err=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
+		}
 
 		# format strings
 		if (/, *fmt *= *(\d+)/s) {
 			accumulative_fatal ("'fmt=".$1."' is forbidden => better move the format string directly there");
+		}
+
+		# absolutely forbidden
+		if (/(?:^| )goto /s) {
+			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else'");
+		}
+		if (/(?:^| )entry /s) {
+			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
 		}
 
 		# indentation
