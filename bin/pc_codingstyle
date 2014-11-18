@@ -22,8 +22,11 @@ use strict;
 # settings
 my $indentation_str = "  ";
 my $continuation_str = "    ";
+my $max_line_length = 131;
+my $preferred_line_length = 80;
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
 my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
+my @data_types = ("integer", "real", "logical", "character", "double precision");
 
 # command line arguments
 my $picky = 1;
@@ -54,7 +57,6 @@ my $num_warnings = 0;
 my $num_fixed = 0;
 my $num_fatals = 0;
 my $indentation = length ($indentation_str);
-my $continuation = length ($continuation_str);
 my $num_trigger_indent = @trigger_indent;
 
 # process filenames
@@ -85,6 +87,7 @@ sub scan_file {
 	$state{'multiline_where'} = 0;
 	$state{'else_branch'} = "";
 	$state{'eol_comment'} = 0;
+	$state{'complete_line'} = "";
 
 	# read file
 	my $num_lines = 0;
@@ -202,7 +205,7 @@ sub scan_file {
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
 		if (!/^${start_spaces}\S/s) {
-			if (($state{'continuation'} <= $continuation) || (($state{'continuation'} >= $continuation*2) && (!/^${start_spaces}${continuation_str}\S/s))) {
+			if (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && (!/^${start_spaces}${continuation_str}\S/s))) {
 				if ($verbose) { print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"; }
 				warning ("wrong indentation level");
 				s/^ */${start_spaces}/s;
@@ -217,16 +220,37 @@ sub scan_file {
 		}
 
 		# continuation
+		$state{'complete_line'} .= $lines[$pos];
+		$state{'complete_line'} =~ s/ *\&$//s;
+		$state{'complete_line'} =~ s/(\S) {2,}/${1} /gs;
 		if (/\&$/s) {
-			$state{'continuation'} += $continuation;
+			$state{'continuation'}++;
 		}
 		else {
+			if ($state{'continuation'} > 0) {
+				# end of continuation
+				if (/[^&]$/s && (length ($state{'complete_line'}) <= $preferred_line_length)) {
+					# unneeded breaking
+					warning ("unneeded continuation-line break");
+					for (my $remove = 1; $remove <= $state{'continuation'}; $remove++) {
+						$lines[$pos-$remove] = "<remove-me>";
+					}
+					$lines[$pos] = $state{'complete_line'};
+				}
+			}
 			$state{'continuation'} = 0;
+			$state{'complete_line'} = "";
+		}
+
+		# line length
+		if (length ($lines[$pos]) > $max_line_length) {
+			fatal ("line longer than ".$max_line_length." characters");
 		}
 	}
 
 	# file-global checks
 	$_ = join ("\n", @lines);
+	s/(?:\n<remove-me>)+//gs;
 
 	# empty else-blocks
 	while (/(^.*?\n) *else(|where)(\n\![^\n]*)*\n *end *(|if|where)(?: |\n)/is) {
@@ -449,7 +473,11 @@ sub check_new_nesting {
 			$lines[$pos] =~ s/^( *${trigger})/${1} /is;
 		}
 		if ($trigger eq "function") {
-			if ($line =~ s/^( *)((?:integer|real|logical|long|double).*?) +function /${1}function /is) {
+			my $type_list = join ("|", @data_types);
+			$type_list =~ s/ / \+/gs;
+			my $character_brackets = '(?: *\\([^\\(\\)]+\\))?';
+			$type_list =~ s/character(\||$)/character${character_brackets}${1}/s;
+			if ($line =~ s/^( *)($type_list) +function /${1}function /is) {
 				picky_fixme_warning ("data type '".$2."' belongs inside the 'function' block");
 			}
 		}
