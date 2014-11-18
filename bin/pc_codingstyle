@@ -240,6 +240,7 @@ sub usage {
 
 sub cut_strings {
 	my ($line) = @_;
+	my $old_line = "";
 	while ($line =~ /^(.*?)(['"])(.*)$/s) {
 		my $pre = $1;
 		my $type = $2;
@@ -258,6 +259,8 @@ sub cut_strings {
 			}
 			$post = $string.$rest;
 		}
+		if ($old_line eq $line) { last; }
+		$old_line = $line;
 	}
 	$line =~ s/<type-quote>/"/gis;
 	$line =~ s/<type-apostroph>/'/gis;
