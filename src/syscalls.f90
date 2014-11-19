@@ -15,11 +15,11 @@ module Syscalls
   external sizeof_real_c
 !
   interface is_nan
-     module procedure is_nan_0D
-     module procedure is_nan_1D
-     module procedure is_nan_2D
-     module procedure is_nan_3D
-     module procedure is_nan_4D
+    module procedure is_nan_0D
+    module procedure is_nan_1D
+    module procedure is_nan_2D
+    module procedure is_nan_3D
+    module procedure is_nan_4D
   endinterface
 !
   contains
@@ -84,7 +84,7 @@ module Syscalls
       integer :: file_size
       character(len=*) :: file
 !
-      file_size=-1
+      file_size = -1
       call file_size_c(trim(file)//char(0), file_size)
 !
     endfunction file_size
@@ -135,21 +135,21 @@ module Syscalls
       character :: ch
       logical :: lcount
 !
-      count_lines=-1
+      count_lines = -1
       if (.not. file_exists(file)) return
 !
       open(unit, FILE=file, STATUS='old', IOSTAT=ierr)
       if (ierr/=0) return
-      count_lines=0
+      count_lines = 0
       do while (ierr==0)
         read(unit,'(a)',iostat=ierr) ch
         if (ierr==0) then
           if (present(comchars)) then
             lcount = ((ch .IN. comchars) == 0)
           else
-            lcount=.true.
+            lcount = .true.
           endif
-          if (lcount) count_lines=count_lines+1
+          if (lcount) count_lines = count_lines+1
         endif
       enddo
       close(unit)
