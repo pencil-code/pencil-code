@@ -1005,17 +1005,21 @@ module Particles
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
           k=1
-          k_loop:   do while (.not. (k>npar_loc))
-          do l=l1,l2; do m=m1,m2; do n=n1,n2
-              if (nxgrid/=1) call random_number_wrapper(px)
-              if (nygrid/=1) call random_number_wrapper(py)
-              if (nzgrid/=1) call random_number_wrapper(pz)
-              fp(k,ixp)=x(l)+(px-0.5)*dx
-              fp(k,iyp)=y(m)+(py-0.5)*dy
-              fp(k,izp)=z(n)+(pz-0.5)*dz
-              k=k+1
-              if (k>npar_loc) exit k_loop
-            enddo; enddo; enddo
+          k_loop: do while (.not. (k>npar_loc))
+          do l=l1,l2
+            do m=m1,m2
+              do n=n1,n2
+                if (nxgrid/=1) call random_number_wrapper(px)
+                if (nygrid/=1) call random_number_wrapper(py)
+                if (nzgrid/=1) call random_number_wrapper(pz)
+                fp(k,ixp)=x(l)+(px-0.5)*dx
+                fp(k,iyp)=y(m)+(py-0.5)*dy
+                fp(k,izp)=z(n)+(pz-0.5)*dz
+                k=k+1
+                if (k>npar_loc) exit k_loop
+              enddo
+            enddo
+          enddo
           enddo k_loop
 !
         case ('equidistant')
@@ -2789,8 +2793,8 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
@@ -2970,8 +2974,8 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -3041,8 +3045,8 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
@@ -3604,8 +3608,8 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -3624,8 +3628,8 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -3647,8 +3651,8 @@ module Particles
       use Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
@@ -3841,8 +3845,8 @@ module Particles
 !  25-sep-08/anders: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -4292,8 +4296,8 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -4586,8 +4590,8 @@ module Particles
 !  26-feb-07/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
