@@ -28,6 +28,8 @@ my $preferred_line_length = 80;
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
 my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
 my @data_types = ("integer", "real", "logical", "character", "double precision");
+my @require_separator = (".and.", ".or.", ".not.", ".true.", ".false.", ".eqv.", ".neqv.");
+my %replace = (".gt." => " > ", ".lt." => " < ", ".ge." => " >= ", ".le." => " <= ", ".eq." => " == ", ".ne." => " /= ");
 
 # command line arguments
 my $picky = 1;
@@ -66,14 +68,20 @@ my $num_file = 0;
 my $exit_code = 0;
 my $filename = "";
 while ($filename = shift ()) {
-	if ($num_file > 0) { print ("========================================================================\n"); }
+	if ($num_file > 0) {
+		print ("========================================================================\n");
+	}
 	$num_file++;
-	if (!$quiet && ($num_files > 0)) { print ('File "'.$filename.'":'."\n"); }
+	if (!$quiet && ($num_files > 1)) {
+		print ('File "'.$filename.'":'."\n");
+	}
 	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
 	if (!-f $filename) { die ('Not a file: "'.$filename.'"'."\n"); }
 	scan_file ($filename);
-	print ('File "'.$filename.'":'."\n");
-	if ($auto_correct && ($num_fatals == 0)) { write_file ($filename); }
+	print STDERR ('File "'.$filename.'":'."\n");
+	if ($auto_correct && ($num_fatals == 0)) {
+		write_file ($filename);
+	}
 	print_num_warnings ();
 }
 exit ($exit_code);
@@ -86,7 +94,7 @@ sub usage {
 }
 
 sub scan_file {
-	# reset state
+	# reset global state
 	$state{'indent'} = 0;
 	$state{'indent_str'} = "";
 	$state{'nesting'} = "";
@@ -97,10 +105,6 @@ sub scan_file {
 	$state{'else_branch'} = "";
 	$state{'eol_comment'} = 0;
 	$state{'complete_line'} = "";
-	$state{'fixed_multiple_commands'} = 0;
-	$state{'num_warnings'} = 0;
-	$state{'num_fixed'} = 0;
-	$state{'num_fatals'} = 0;
 
 	# read file
 	my $num_lines = 0;
@@ -127,6 +131,13 @@ sub scan_file {
 	# parse and check file
 	for ($pos = 1; $pos <= $num_lines; $pos++) {
 		$_ = $lines[$pos];
+
+		# reset per-line state
+		$state{'fixed_multiple_commands'} = 0;
+		$state{'fixed_require_separator'} = 0;
+		$state{'num_warnings'} = 0;
+		$state{'num_fixed'} = 0;
+		$state{'num_fatals'} = 0;
 
 		# white-spaces
 		if (/\r$/s) {
@@ -199,6 +210,39 @@ sub scan_file {
 			$state{'eol_comment'} = 0;
 		}
 
+		# replace
+		while (my ($search, $replace) = each (%replace)) {
+			my $pattern = $search;
+			$pattern =~ s/\./\\\./gs;
+			if (/${pattern}/is) {
+				warning ("replace '".$search."' by '".$replace."'");
+				s/${pattern}/${replace}/gis;
+				$lines[$pos] =~ s/${pattern}/${replace}/gis;
+			}
+		}
+
+		# require separator
+		foreach my $item (@require_separator) {
+			my $pattern = $item;
+			$pattern =~ s/\./\\\./gs;
+			while (/[^ \(\)=,]${pattern}/is) {
+				if ($state{'fixed_require_separator'} == 0) {
+					warning ("separator is required before and after '".$item."'");
+				}
+				s/([^ \(\)=,])${pattern}/${1} ${item}/is;
+				$lines[$pos] =~ s/([^ \(\)=,])${pattern}/${1} ${item}/is;
+				$state{'fixed_require_separator'}++;
+			}
+			while (/${pattern}[^ \(\)=,]/is) {
+				if ($state{'fixed_require_separator'} == 0) {
+					warning ("separator is required before and after '".$item."'");
+				}
+				s/${pattern}([^ \(\)=,])/${item} ${1}/is;
+				$lines[$pos] =~ s/${pattern}([^ \(\)=,])/${item} ${1}/is;
+				$state{'fixed_require_separator'}++;
+			}
+		}
+
 		# jumping around
 		if (/, *end *=/is) {
 			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
@@ -214,10 +258,12 @@ sub scan_file {
 
 		# absolutely forbidden
 		if (/(?:^| )goto /is) {
-			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else'");
+			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else' or 'do-while-repeat'");
+			return;
 		}
 		if (/(?:^| )entry /is) {
 			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
+			return;
 		}
 
 		# indentation
@@ -232,7 +278,7 @@ sub scan_file {
 			if (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && (!/^${start_spaces}${continuation_str}\S/s))) {
 				if ($verbose) { print "NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"; }
 				if (!/^ *<auto-indent>/s) {
-					warning ("indentation level");
+					warning ("wrong indentation level");
 				}
 				s/^ *(?:<auto-indent> *)?/${start_spaces}/s;
 				$lines[$pos] =~ s/^ *(?:<auto-indent> *)?/${start_spaces}/s;
@@ -274,8 +320,16 @@ sub scan_file {
 
 		# line length
 		if (length ($lines[$pos]) > $max_line_length) {
-			fatal ("line longer than ".$max_line_length." characters");
+			accumulative_fatal ("line longer than ".$max_line_length." characters");
 		}
+	}
+
+	# test for open indentation
+	if ($state{'nesting'} ne "") {
+		$pos = $num_lines;
+		my $last_nesting = "";
+		if ($state{'nesting'} =~ /([^\|]+)\|+$/s) { $last_nesting = $1; }
+		accumulative_fatal ("indentation is still open at EOF => missing 'end".$last_nesting."'-statement");
 	}
 
 	# file-global checks
@@ -411,14 +465,15 @@ sub write_file {
 }
 
 sub print_num_warnings {
+	print STDERR ("=> ");
 	if ($auto_correct) {
 		my $num_unfixed = ($num_warnings - $num_fixed);
 		if ($num_fixed > 0) {
 			if ($num_fatals > 0) {
-				warn ("=> ".$num_fixed." STYLE BREAKS can be fixed automatically, once all FATAL ERRORS are solved.\n");
+				warn ($num_fixed." STYLE BREAKS can be fixed automatically, once all FATAL ERRORS are solved.\n");
 			}
 			else {
-				warn ("=> ".$num_fixed." STYLE BREAKS were fixed.\n");
+				warn ($num_fixed." STYLE BREAKS were fixed.\n");
 			}
 		}
 		if ($num_unfixed > 0) {
@@ -430,7 +485,7 @@ sub print_num_warnings {
 	}
 	else {
 		if ($num_warnings > 0) {
-			warn ("=> ".$num_warnings." STYLE BREAKS should be fixed.\n");
+			warn ($num_warnings." STYLE BREAKS should be fixed.\n");
 		}
 		if ($num_fixed > 0) {
 			warn ($num_fixed." of them can be fixed automatically!\n");
@@ -439,6 +494,7 @@ sub print_num_warnings {
 			warn ($num_fatals." FATAL ERRORS still remain!\n");
 		}
 	}
+	if (($num_warnings == 0) && ($num_fixed == 0) && ($num_fatals == 0)) { warn ("everything OK, congratulations!\n"); }
 	$num_warnings = 0;
 	$num_fixed = 0;
 	$num_fatals = 0;
@@ -486,6 +542,11 @@ sub remove_nesting {
 
 sub check_new_nesting {
 	my ($line) = cut_comment (@_);
+	if ($line =~ /\)then(?: |$)/is) {
+		warning ("space is required before 'then'");
+		$line =~ s/\)then( |$)/\) then${1}/is;
+		$lines[$pos] =~ s/\)then( |$)/\) then${1}/is;
+	}
 	if ($state{'multiline_if'}) {
 		$state{'multiline_if'} = 0;
 		if ($line =~ / then$/is) { add_nesting ("if"); }
