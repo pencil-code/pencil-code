@@ -22,7 +22,7 @@ use strict;
 # settings
 my $indentation_str = "  ";
 my $continuation_str = "    ";
-my $tab_to_spaces_str = "    ";
+my $tab_to_spaces_str = "        ";
 my $max_line_length = 131;
 my $preferred_line_length = 80;
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
