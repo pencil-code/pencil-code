@@ -23,37 +23,37 @@ module Particles_surfspec
 !
   contains
 !***********************************************************************
-  subroutine register_particles_surfspec()
+    subroutine register_particles_surfspec()
 !
 !  09.09.14/jonas : coded
 !
-  end subroutine register_particles_surfspec
+    end subroutine register_particles_surfspec
 !***********************************************************************
-  subroutine register_dep_psurfchem()
+    subroutine register_dep_psurfchem()
 !
 !  19.09.2014/Jonas:coded
 !
-  end subroutine register_dep_psurfchem
+    end subroutine register_dep_psurfchem
 !***********************************************************************
-  subroutine register_indep_psurfchem()
+    subroutine register_indep_psurfchem()
 !
 !  19.09.2014/Jonas:coded
 !
-  end subroutine register_indep_psurfchem
+    end subroutine register_indep_psurfchem
 !**********************************************************************
-  subroutine init_particles_surf(f,fp)
-
-    real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension (mpar_loc,mparray) :: fp
+    subroutine init_particles_surf(f,fp)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
 !
 !  19.09.2014/Jonas:coded
 !
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
-  end subroutine init_particles_surf
+    end subroutine init_particles_surf
 !***********************************************************************
-  subroutine read_particles_surf_run_pars(unit,iostat)
+    subroutine read_particles_surf_run_pars(unit,iostat)
 !
 !  19.09.2014/Jonas:coded
 !
@@ -64,9 +64,9 @@ module Particles_surfspec
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-  end subroutine read_particles_surf_run_pars
+    end subroutine read_particles_surf_run_pars
 !***********************************************************************
-  subroutine read_particles_surf_init_pars(unit,iostat)
+    subroutine read_particles_surf_init_pars(unit,iostat)
 !
 !  19.09.2014/Jonas:coded
 !
@@ -76,9 +76,9 @@ module Particles_surfspec
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-  end subroutine read_particles_surf_init_pars
+    end subroutine read_particles_surf_init_pars
 !***********************************************************************
-  subroutine write_particles_surf_init_pars(unit)
+    subroutine write_particles_surf_init_pars(unit)
 !
 !  19.09.2014/Jonas:coded
 !
@@ -86,9 +86,9 @@ module Particles_surfspec
 !
       call keep_compiler_quiet(unit)
 !
-  end subroutine write_particles_surf_init_pars
+    end subroutine write_particles_surf_init_pars
 !***********************************************************************
-  subroutine write_particles_surf_run_pars(unit)
+    subroutine write_particles_surf_run_pars(unit)
 !
 !  19.09.2014/Jonas:coded
 !
@@ -96,9 +96,9 @@ module Particles_surfspec
 !
       call keep_compiler_quiet(unit)
 !
-  end subroutine write_particles_surf_run_pars
+    end subroutine write_particles_surf_run_pars
 !***********************************************************************
-  subroutine initialize_particles_surf(f,fp)
+    subroutine initialize_particles_surf(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -112,9 +112,9 @@ module Particles_surfspec
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
-  end subroutine initialize_particles_surf
+    end subroutine initialize_particles_surf
 !**************************************************************
-  subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
+    subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of particle near field composition
 !
@@ -122,8 +122,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -142,8 +142,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
