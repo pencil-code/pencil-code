@@ -200,23 +200,23 @@ sub scan_file {
 		}
 
 		# jumping around
-		if (/, *end *=/s) {
+		if (/, *end *=/is) {
 			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
-		if (/, *err *=/s) {
+		if (/, *err *=/is) {
 			accumulative_fatal ("'err=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
 
 		# format strings
-		if (/, *fmt *= *(\d+)/s) {
+		if (/, *fmt *= *(\d+)/is) {
 			accumulative_fatal ("'fmt=".$1."' is forbidden => better move the format string directly there");
 		}
 
 		# absolutely forbidden
-		if (/(?:^| )goto /s) {
+		if (/(?:^| )goto /is) {
 			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else'");
 		}
-		if (/(?:^| )entry /s) {
+		if (/(?:^| )entry /is) {
 			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
 		}
 
