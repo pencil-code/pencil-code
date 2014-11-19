@@ -249,7 +249,7 @@ module Particles
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id$")
+          "$Id$")
 !
 !  Indices for particle position.
 !
@@ -352,7 +352,7 @@ module Particles
           if (any(tausp_species==0.0)) then
             if (lroot) print*, &
                 'initialize_particles: drag force must have tausp_species/=0.0!'
-                call fatal_error('initialize_particles','')
+            call fatal_error('initialize_particles','')
           endif
 !
 !  Inverse friction time is needed for drag force.
@@ -497,8 +497,8 @@ module Particles
       if (ldraglaw_epstein_transonic         .and.&
           ldraglaw_eps_stk_transonic) then
         print*,'both epstein and epstein-stokes transonic '//&
-               'drag laws are switched on. You cannot have '//&
-               'both. Stop and choose only one.'
+            'drag laws are switched on. You cannot have '//&
+            'both. Stop and choose only one.'
         call fatal_error('initialize_particles','')
       endif
 !
@@ -552,7 +552,7 @@ module Particles
         interp%luu=.false.
       else
         interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or. &
-          lparticles_spin
+            lparticles_spin
       endif
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
@@ -573,7 +573,7 @@ module Particles
       if (.not.lenforce_policy) then
         if (lparticlemesh_cic) then
           interp_pol_uu='cic'
-        else if (lparticlemesh_tsc) then
+        elseif (lparticlemesh_tsc) then
           interp_pol_uu='tsc'
         endif
       endif
@@ -589,7 +589,7 @@ module Particles
         interp%pol_uu=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_uu: '//trim(interp_pol_uu))
+            'interp_pol_uu: '//trim(interp_pol_uu))
       endselect
 !
       select case (interp_pol_oo)
@@ -601,7 +601,7 @@ module Particles
         interp%pol_oo=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_oo: '//trim(interp_pol_oo))
+            'interp_pol_oo: '//trim(interp_pol_oo))
       endselect
 !
       select case (interp_pol_TT)
@@ -613,21 +613,21 @@ module Particles
         interp%pol_TT=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_TT: '//trim(interp_pol_TT))
+            'interp_pol_TT: '//trim(interp_pol_TT))
       endselect
 !
       select case (interp_pol_gradTT)
       case ('tsc')
         call fatal_error('initialize_particles','Not implemented gradTT'// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
       case ('cic')
         call fatal_error('initialize_particles','Not implemented gradTT'// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
       case ('ngp')
         interp%pol_gradTT=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
       endselect
 !
       select case (interp_pol_rho)
@@ -639,35 +639,35 @@ module Particles
         interp%pol_rho=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_rho: '//trim(interp_pol_rho))
+            'interp_pol_rho: '//trim(interp_pol_rho))
       endselect
 !
       select case (interp_pol_pp)
       case ('tsc')
         call fatal_error('initialize_particles','Not implemented pp'// &
-          'interp_pol_pp: '//trim(interp_pol_pp))
+            'interp_pol_pp: '//trim(interp_pol_pp))
       case ('cic')
         call fatal_error('initialize_particles','Not implemented pp'// &
-          'interp_pol_pp: '//trim(interp_pol_pp))
+            'interp_pol_pp: '//trim(interp_pol_pp))
       case ('ngp')
         interp%pol_pp=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_pp: '//trim(interp_pol_pp))
+            'interp_pol_pp: '//trim(interp_pol_pp))
       endselect
 !
       select case (interp_pol_nu)
       case ('tsc')
         call fatal_error('initialize_particles','Not implemented nu'// &
-          'interp_pol_nu: '//trim(interp_pol_nu))
+            'interp_pol_nu: '//trim(interp_pol_nu))
       case ('cic')
         call fatal_error('initialize_particles','Not implemented nu'// &
-          'interp_pol_nu: '//trim(interp_pol_nu))
+            'interp_pol_nu: '//trim(interp_pol_nu))
       case ('ngp')
         interp%pol_nu=ngp
       case default
         call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_nu: '//trim(interp_pol_nu))
+            'interp_pol_nu: '//trim(interp_pol_nu))
       endselect
 !
       if (l_shell) then
@@ -682,10 +682,10 @@ module Particles
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
-          write (1,*) 'np_swarm=', np_swarm
-          write (1,*) 'mpmat=', mpmat
-          write (1,*) 'mp_swarm=', mp_swarm
-          write (1,*) 'rhop_swarm=', rhop_swarm
+        write (1,*) 'np_swarm=', np_swarm
+        write (1,*) 'mpmat=', mpmat
+        write (1,*) 'mp_swarm=', mp_swarm
+        write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
 !
@@ -703,7 +703,7 @@ module Particles
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp,&
-                                  initial_condition_vvp
+          initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -823,16 +823,16 @@ module Particles
               'in a sphere around (0,0,0) with radius=',rad_sphere
           if (rad_sphere==0) then
             call fatal_error('init_particles','random-sphere '// &
-                  'radius needs to be larger than zero')
+                'radius needs to be larger than zero')
           endif
           if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
-               rad_sphere+pos_sphere(1)>xyz1(1) .or. &
+              rad_sphere+pos_sphere(1)>xyz1(1) .or. &
               -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
-               rad_sphere+pos_sphere(2)>xyz1(2) .or. &
+              rad_sphere+pos_sphere(2)>xyz1(2) .or. &
               -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
-               rad_sphere+pos_sphere(3)>xyz1(3)) then
+              rad_sphere+pos_sphere(3)>xyz1(3)) then
             call fatal_error('init_particles','random-sphere '// &
-                 'sphere needs to fit in the box')
+                'sphere needs to fit in the box')
           endif
           if (lcartesian_coords) then
             do k=1,npar_loc
@@ -852,7 +852,7 @@ module Particles
             enddo
           else
             call fatal_error('init_particles','random-sphere '// &
-                 'only implemented for cartesian coordinates')
+                'only implemented for cartesian coordinates')
           endif
 !
         case ('random-ellipsoid')
@@ -864,13 +864,13 @@ module Particles
                 'all semi-principal axes need to be larger than zero')
           endif
           if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
-               a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
+              a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
               -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
-               b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
+              b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
               -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
-               c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
+              c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
             call fatal_error('init_particles','random-ellipsoid '// &
-                 'ellipsoid needs to fit in the box')
+                'ellipsoid needs to fit in the box')
           endif
           if (lcartesian_coords) then
             a_ell2=a_ellipsoid**2
@@ -893,7 +893,7 @@ module Particles
             enddo
           else
             call fatal_error('init_particles','random-ellipsoid '// &
-                 'only implemented for cartesian coordinates')
+                'only implemented for cartesian coordinates')
           endif
 !
         case ('random-line-x')
@@ -934,7 +934,7 @@ module Particles
 !
         case ('random-box')
           if (lroot) print*, 'init_particles: Random particle positions '// &
-               'within a box'
+              'within a box'
           do k=1,npar_loc
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
@@ -953,16 +953,16 @@ module Particles
             endif
           enddo
 !
-       case ('random-cylindrical','random-cyl')
+        case ('random-cylindrical','random-cyl')
 !
           if (lroot) print*, 'init_particles: Random particle '//&
-               'cylindrical positions with power-law pdlaw=',pdlaw
+              'cylindrical positions with power-law pdlaw=',pdlaw
 !
           do k=1,npar_loc
 !
 ! Start the particles obeying a power law pdlaw
 !
-            tmp=2.!2-pdlaw         
+            tmp=2.!2-pdlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
@@ -974,27 +974,27 @@ module Particles
               phi = 2*pi*phi
               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
-              if (nzgrid/=1) then 
+              if (nzgrid/=1) then
                 call random_number_wrapper(fp(k,izp))
                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
               endif
             elseif (lcylindrical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
-              if (nygrid/=1) then 
+              if (nygrid/=1) then
                 call random_number_wrapper(phi)
                 fp(k,iyp) = xyz0_par(2)+phi*Lxyz_par(2)
               endif
-              if (nzgrid/=1) then 
+              if (nzgrid/=1) then
                 call random_number_wrapper(fp(k,izp))
                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
               endif
             elseif (lspherical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
-              if (nygrid/=1) then 
+              if (nygrid/=1) then
                 call random_number_wrapper(tht)
                 fp(k,iyp) = xyz0_par(2)+tht*Lxyz_par(2)
               endif
-              if (nzgrid/=1) then 
+              if (nzgrid/=1) then
                 call random_number_wrapper(phi)
                 fp(k,izp) = xyz0_par(3)+phi*Lxyz_par(3)
               endif
@@ -1005,8 +1005,8 @@ module Particles
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
           k=1
-k_loop:   do while (.not. (k>npar_loc))
-            do l=l1,l2; do m=m1,m2; do n=n1,n2
+          k_loop:   do while (.not. (k>npar_loc))
+          do l=l1,l2; do m=m1,m2; do n=n1,n2
               if (nxgrid/=1) call random_number_wrapper(px)
               if (nygrid/=1) call random_number_wrapper(py)
               if (nzgrid/=1) call random_number_wrapper(pz)
@@ -2402,8 +2402,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
@@ -2496,8 +2496,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: Omega2
