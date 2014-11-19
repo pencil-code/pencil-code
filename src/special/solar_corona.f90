@@ -400,7 +400,7 @@ module Special
           if (.not. file_exists (stratification_dat)) call fatal_error ( &
               'setup_profiles', 'Stratification file not found', .true.)
           open (unit,file=stratification_dat)
-          do i=1, nzgrid
+          do i = 1, nzgrid
             read (unit,*,iostat=ierr) var_z, var_lnrho, var_lnTT
             if (ierr /= 0) call fatal_error ('setup_profiles', &
                 'Error reading stratification file: "'//trim(stratification_dat)//'"', .true.)
@@ -574,118 +574,118 @@ module Special
       integer :: i
 !
       if (cool_RTV/=0.0) then
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_cp1) = .true.
       endif
 !
       if ((tdown > 0.0) .or. (tdownr > 0.0)) then
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_lnTT) = .true.
       endif
 !
       if (swamp_diffrho > 0.0) then
         if (ldensity_nolog) then
-          lpenc_requested(i_del2rho)=.true.
+          lpenc_requested(i_del2rho) = .true.
         else
-          lpenc_requested(i_del2lnrho)=.true.
+          lpenc_requested(i_del2lnrho) = .true.
         endif
       endif
 !
       if (swamp_chi > 0.0) then
         if (ltemperature) then
           if (ltemperature_nolog) then
-            lpenc_requested(i_del2TT)=.true.
+            lpenc_requested(i_del2TT) = .true.
           else
-            lpenc_requested(i_del2lnTT)=.true.
+            lpenc_requested(i_del2lnTT) = .true.
           endif
         elseif (lentropy) then
-          lpenc_requested(i_del2ss)=.true.
+          lpenc_requested(i_del2ss) = .true.
         endif
       endif
 !
       if (swamp_eta > 0.0) then
-        lpenc_requested(i_del2a)=.true.
-        lpenc_requested(i_diva)=.true.
-        lpenc_requested(i_uxb)=.true.
+        lpenc_requested(i_del2a) = .true.
+        lpenc_requested(i_diva) = .true.
+        lpenc_requested(i_uxb) = .true.
       endif
 !
       if (hcond1/=0.0) then
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_bij)=.true.
-        lpenc_requested(i_bunit)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_b2) = .true.
+        lpenc_requested(i_bij) = .true.
+        lpenc_requested(i_bunit) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_hlnTT) = .true.
+        lpenc_requested(i_del2lnTT) = .true.
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_glnrho) = .true.
       endif
 !
       if (hcond2/=0.0) then
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_bij)=.true.
-        lpenc_requested(i_bunit)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_b2) = .true.
+        lpenc_requested(i_bij) = .true.
+        lpenc_requested(i_bunit) = .true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_hlnTT) = .true.
+        lpenc_requested(i_glnrho) = .true.
       endif
 !
       if (hcond3/=0.0) then
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_hlnTT) = .true.
+        lpenc_requested(i_del2lnTT) = .true.
+        lpenc_requested(i_glnrho) = .true.
       endif
 !
       if (K_iso/=0.0) then
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_glnrho) = .true.
+        lpenc_requested(i_TT) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_hlnTT) = .true.
+        lpenc_requested(i_del2lnTT) = .true.
       endif
 !
       if (K_spitzer/=0.0) then
-        lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_bij)=.true.
-        lpenc_requested(i_bunit)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_b2) = .true.
+        lpenc_requested(i_bij) = .true.
+        lpenc_requested(i_bunit) = .true.
+        lpenc_requested(i_TT) = .true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_hlnTT) = .true.
+        lpenc_requested(i_rho1) = .true.
+        lpenc_requested(i_glnrho) = .true.
+        lpenc_requested(i_rho1) = .true.
       endif
 !
       if (Ksat /= 0.) then
-        lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_TT) = .true.
+        lpenc_requested(i_glnTT) = .true.
+        lpenc_requested(i_glnrho) = .true.
       endif
 !
       if (Kc /= 0.) then
-        lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_lnrho)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_glnrho) = .true.
+        lpenc_requested(i_glnTT) = .true.
       endif
 !
       if (idiag_dtchi2/=0.0) then
-        lpenc_diagnos(i_rho1)=.true.
-        lpenc_diagnos(i_cv1) =.true.
-        lpenc_diagnos(i_cs2)=.true.
+        lpenc_diagnos(i_rho1) = .true.
+        lpenc_diagnos(i_cv1) = .true.
+        lpenc_diagnos(i_cs2) = .true.
       endif
 !
-      do i=1,3
+      do i = 1,3
         select case(iheattype(i))
         case ('sven')
-          lpenc_diagnos(i_cp1)=.true.
-          lpenc_diagnos(i_TT1)=.true.
-          lpenc_diagnos(i_rho1)=.true.
+          lpenc_diagnos(i_cp1) = .true.
+          lpenc_diagnos(i_TT1) = .true.
+          lpenc_diagnos(i_rho1) = .true.
         endselect
       enddo
 !
@@ -769,23 +769,23 @@ module Special
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      if (present(lwrite)) lwr = lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtvel=0.
-        idiag_dtchi2=0.
-        idiag_dtnewt=0.
-        idiag_dtradloss=0.
-        idiag_dtspitzer=0.
-        idiag_mag_flux=0.
+        idiag_dtvel = 0.
+        idiag_dtchi2 = 0.
+        idiag_dtnewt = 0.
+        idiag_dtradloss = 0.
+        idiag_dtspitzer = 0.
+        idiag_mag_flux = 0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      do iname=1,nname
+      do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtvel',idiag_dtvel)
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
@@ -824,19 +824,19 @@ module Special
         slices%yz =>rtv_yz
         slices%xz =>rtv_xz
         slices%xy =>rtv_xy
-        slices%xy2=>rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3=>rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
-        slices%ready=.true.
+        slices%xy2 =>rtv_xy2
+        if (lwrite_slice_xy3) slices%xy3 =>rtv_xy3
+        if (lwrite_slice_xy4) slices%xy4 =>rtv_xy4
+        slices%ready = .true.
 !
       case ('logQ')
         slices%yz =>logQ_yz
         slices%xz =>logQ_xz
         slices%xy =>logQ_xy
-        slices%xy2=>logQ_xy2
-        if (lwrite_slice_xy3) slices%xy3=>logQ_xy3
-        if (lwrite_slice_xy4) slices%xy4=>logQ_xy4
-        slices%ready=.true.
+        slices%xy2 =>logQ_xy2
+        if (lwrite_slice_xy3) slices%xy3 =>logQ_xy3
+        if (lwrite_slice_xy4) slices%xy4 =>logQ_xy4
+        slices%ready = .true.
 !
       endselect
 !
@@ -930,7 +930,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper3
+        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3
       endif
 !
       if (chi_hyper2/=0.0) then
@@ -939,7 +939,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper2
+        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper2
       endif
 !
       if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
@@ -947,21 +947,21 @@ module Special
         b_abs_inv = 1./max(tini,sqrt(p%b2))
 !
         ! calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
-        do i=1,3
-          hhh(:,i)=0.
-          do j=1,3
-            tmp(:)=0.
-            do k=1,3
-              tmp(:)=tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
+        do i = 1,3
+          hhh(:,i) = 0.
+          do j = 1,3
+            tmp(:) = 0.
+            do k = 1,3
+              tmp(:) = tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
             enddo
-            hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
+            hhh(:,i) = hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
           enddo
         enddo
         call multsv(b_abs_inv,hhh,tmpv)
         ! calculate abs(h) limiting
         call dot2(tmpv,tmp,PRECISE_SQRT=.true.)
         ! limit the length of h
-        quenchfactor=1./max(1.,3.*tmp*dxmax)
+        quenchfactor = 1./max(1.,3.*tmp*dxmax)
         call multsv(quenchfactor,tmpv,hhh)
         call dot(hhh,p%glnTT,glnTT_H)
 !
@@ -1497,7 +1497,7 @@ module Special
         inquire (iolength=rec_len) unit_magnetic
         rec_len = rec_len * bnx * bny
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
-        do py=1, nprocxy-1
+        do py = 1, nprocxy-1
           partner = py + ipz*nprocxy
           read (unit, rec=py+(frame-1)*nprocxy+1) Bz
           call mpisend_real (Bz, (/ bnx, bny /), partner, Bz_tag)
@@ -2078,10 +2078,10 @@ module Special
       ! chi_spitzer = kappa / (rho * cp) ; kappa = K_spitzer * T^2.5
       chi_spitzer = Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
-      tmpv(:,:)=0.
-      do i=1,3
-        do j=1,3
-          tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+      tmpv(:,:) = 0.
+      do i = 1,3
+        do j = 1,3
+          tmpv(:,i) = tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
         enddo
       enddo
 !
@@ -2092,9 +2092,9 @@ module Special
       if (Ksat /= 0.) then
         chi_sat = sqrt(p%TT)*glnTT_abs_inv * p%cp1 * Ksat * 7.28e7*unit_temperature**1.5/unit_velocity**3
         where (chi_spitzer > chi_sat)
-          gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)*glnTT_abs_inv
-          gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)*glnTT_abs_inv
-          gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)*glnTT_abs_inv
+          gKp(:,1) = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)*glnTT_abs_inv
+          gKp(:,2) = p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)*glnTT_abs_inv
+          gKp(:,3) = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)*glnTT_abs_inv
           chi_spitzer =  chi_sat
         endwhere
       endif
@@ -2158,10 +2158,10 @@ module Special
 !
       call dot(p%glnrho,p%glnTT,glnrho_glnTT)
 !
-      tmpv(:,:)=0.
-      do i=1,3
-        do j=1,3
-          tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+      tmpv(:,:) = 0.
+      do i = 1,3
+        do j = 1,3
+          tmpv(:,i) = tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
         enddo
       enddo
       call dot(tmpv,p%glnTT,tmp)
@@ -2248,7 +2248,7 @@ module Special
 !
       call multsv(glnTT2,p%glnTT + p%glnrho,gflux)
 !
-      do i=1,3
+      do i = 1,3
         tmpv(:,i) = 2. * ( &
             p%glnTT(:,1)*p%hlnTT(:,i,1) + &
             p%glnTT(:,2)*p%hlnTT(:,i,2) + &
@@ -2293,7 +2293,7 @@ module Special
 !
       call dot(p%glnTT,p%glnrho,glnT_glnrho)
 !
-      do i=1,3
+      do i = 1,3
         tmpv(:,i) = &
             p%glnTT(:,1)*p%hlnTT(:,1,i) + &
             p%glnTT(:,2)*p%hlnTT(:,2,i) + &
@@ -2334,7 +2334,7 @@ module Special
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
       real :: unit_lnQ
 !
-      unit_lnQ=3*alog(real(unit_velocity))+&
+      unit_lnQ = 3*alog(real(unit_velocity))+&
           5*alog(real(unit_length))+alog(real(unit_density))
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
@@ -2352,16 +2352,16 @@ module Special
       rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
 !     for adjusting by setting cool_RTV in run.in
 !
-      rtv_cool=rtv_cool &
+      rtv_cool = rtv_cool &
           *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
-      if (m==iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
-      if (n==iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-      if (n==iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
-      if (n==iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
-      if (n==iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
+      rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)
+      if (m==iy_loc)  rtv_xz(:,n-n1+1) = rtv_cool
+      if (n==iz_loc)  rtv_xy(:,m-m1+1) = rtv_cool
+      if (n==iz2_loc) rtv_xy2(:,m-m1+1) = rtv_cool
+      if (n==iz3_loc) rtv_xy3(:,m-m1+1) = rtv_cool
+      if (n==iz4_loc) rtv_xy4(:,m-m1+1) = rtv_cool
 !
 !     add to temperature equation
 !
@@ -2372,21 +2372,21 @@ module Special
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
       endif
 !
-      if (lfirst.and.ldt) then
+      if (lfirst .and. ldt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
-        if (ldiagnos.and.idiag_dtradloss/=0) then
-          itype_name(idiag_dtradloss)=ilabel_max_dt
+        if (ldiagnos .and. idiag_dtradloss/=0) then
+          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
         endif
-        dt1_max=max(dt1_max,tmp)
+        dt1_max = max(dt1_max,tmp)
       endif
 !
-      logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
-      if (m==iy_loc)  logQ_xz(:,n-n1+1)= lnQ*0.43429448
-      if (n==iz_loc)  logQ_xy(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz2_loc) logQ_xy2(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz3_loc) logQ_xy3(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz4_loc) logQ_xy4(:,m-m1+1)= lnQ*0.43429448
+      logQ_yz(m-m1+1,n-n1+1) = lnQ(ix_loc-l1+1)*0.43429448
+      if (m==iy_loc)  logQ_xz(:,n-n1+1) = lnQ*0.43429448
+      if (n==iz_loc)  logQ_xy(:,m-m1+1) = lnQ*0.43429448
+      if (n==iz2_loc) logQ_xy2(:,m-m1+1) = lnQ*0.43429448
+      if (n==iz3_loc) logQ_xy3(:,m-m1+1) = lnQ*0.43429448
+      if (n==iz4_loc) logQ_xy4(:,m-m1+1) = lnQ*0.43429448
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -2568,14 +2568,14 @@ module Special
       type (pencil_case) :: p
       integer :: i
 !
-      heat_unit= unit_density*unit_velocity**3/unit_length
+      heat_unit = unit_density*unit_velocity**3/unit_length
       x_Mm = x(l1:l2)*unit_length*1e-6
       z_Mm = z(n)*unit_length*1e-6
 !
       heatinput = 0.
       heat_flux = 0.
 !
-      do i=1,3
+      do i = 1,3
         if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
@@ -2584,10 +2584,10 @@ module Special
           ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
           !
-          heatinput=heatinput + &
+          heatinput = heatinput + &
               heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))/heat_unit
 !
-          heat_flux=heat_flux +  heat_par_exp(1)*heat_par_exp(2)*1e6* &
+          heat_flux = heat_flux +  heat_par_exp(1)*heat_par_exp(2)*1e6* &
               (1.-exp(-lz*unit_length*1e-6/heat_par_exp(2)))
 !
           if (headtt) print*,'Flux of exp heating: ',heat_flux
@@ -2598,10 +2598,10 @@ module Special
           ! heat_par_exp= (1e3, 0.2 )
           ! heat_par_exp2= (1e-4, 10.)
           !
-          heatinput=heatinput + &
+          heatinput = heatinput + &
               heat_par_exp2(1)*exp(-z_Mm/heat_par_exp2(2))/heat_unit
 !
-          heat_flux=heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
+          heat_flux = heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
               (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
 !
           if (headtt) print*,'Flux for exp2 heating: ', &
@@ -2613,7 +2613,7 @@ module Special
           ! heat_par_gauss(2) is Width (sigma)
           ! heat_par_gauss(3) is the amplitude (Flux)
           !
-          heatinput=heatinput + &
+          heatinput = heatinput + &
               heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
               (2*heat_par_gauss(2)**2)))/heat_unit
 !
@@ -2643,33 +2643,33 @@ module Special
             if (nano_start > 0.95 ) then
               ! 5% chance for a nanoflare to occur, then get the location.
               call normal_deviate(nano_pos_z)
-              nano_pos_z=nano_pos_z*lz
+              nano_pos_z = nano_pos_z*lz
               call random_number_wrapper(nano_pos_y)
               call random_number_wrapper(nano_pos_x)
-              nano_time=60.
+              nano_time = 60.
             else
               ! else no nanoflare, reset nano_start to 0. for the next
               ! timestep
-              nano_start=0.
+              nano_start = 0.
             endif
           endif
           !
           if (nano_start /= 0.) then
             ! if nano_start is not 0. then there is a nanoflare!
             ! 2nd assumption, nanoflare takes 60 seconds =)
-            nano_flare_energy=10.d17 ! joules
-            nano_sigma_z=0.5
-            nano_sigma_t=2.5
+            nano_flare_energy = 10.d17 ! joules
+            nano_sigma_z = 0.5
+            nano_sigma_t = 2.5
 !
-            nano_amplitude=nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
+            nano_amplitude = nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
 !
-            heat_nano=nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
+            heat_nano = nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
                 exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
-            nano_time=nano_time-dt*unit_time
+            nano_time = nano_time-dt*unit_time
 !
-            heatinput=heatinput + heat_nano/heat_unit
+            heatinput = heatinput + heat_nano/heat_unit
 !
-            if (nano_time <= 0.) nano_start=0.
+            if (nano_time <= 0.) nano_start = 0.
           endif
           !
           ! SAVE NANO_SEED
@@ -2688,12 +2688,12 @@ module Special
           ! one small point heating event (gaussian to prevent too strong gradients)
           ! one point in time, one point in space!
           if (t*unit_time > 150. .AND. t*unit_time < 1000.) then
-            event_pos(1)=7.5
-            event_pos(2)=15.
-            heat_event=10.*exp(-((250.-t*unit_time))**2/(2*(20.*unit_time)**2))* &
+            event_pos(1) = 7.5
+            event_pos(2) = 15.
+            heat_event = 10.*exp(-((250.-t*unit_time))**2/(2*(20.*unit_time)**2))* &
                 exp(-((x_Mm-event_pos(1))**2/ (2*0.2**2))) * &
                 exp(-((z_Mm-event_pos(2))**2/ (2*0.2**2)))
-            heatinput=heatinput + heat_event/heat_unit
+            heatinput = heatinput + heat_event/heat_unit
           endif
 !
         case ('event1D')
@@ -2702,10 +2702,10 @@ module Special
           if (t*unit_time > 300. .AND. t*unit_time < 10000.) then
             if (t*unit_time > 300. .AND. t*unit_time < 301.) &
                 print*,'EVENTTTT!!!!!'
-            event_pos(1)=10.
-            heat_event1D=10.*exp(-((400.-t))**2/( 2*50.**2))* &
+            event_pos(1) = 10.
+            heat_event1D = 10.*exp(-((400.-t))**2/( 2*50.**2))* &
                 exp(-((x_Mm-event_pos(1))**2/ (2*0.2**2)))
-            heatinput=heatinput + heat_event1D/heat_unit
+            heatinput = heatinput + heat_event1D/heat_unit
           endif
 !
         case default
@@ -2722,12 +2722,12 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
+      if (lfirst .and. ldt) then
+        if (ldiagnos .and. idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
-        dt1_max=max(dt1_max,rhs/cdts)
+        dt1_max = max(dt1_max,rhs/cdts)
       endif
 !
     endsubroutine calc_artif_heating
@@ -2741,54 +2741,54 @@ module Special
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
 !
 ! Gives intergranular area / (granular+intergranular area)
-      ig=0.3
+      ig = 0.3
 !
 ! Gives average radius of granule + intergranular lane
 ! (no smaller than 6 grid points across)
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system == 'SI') then
-        granr=max(real(0.8*1.e6/unit_length),3*dx,3*dy)
+        granr = max(real(0.8*1.e6/unit_length),3*dx,3*dy)
       elseif  (unit_system == 'cgs') then
-        granr=max(real(0.8*1.e8/unit_length),3*dx,3*dy)
+        granr = max(real(0.8*1.e8/unit_length),3*dx,3*dy)
       endif
 !
 ! Fractional difference in granule power
-      pd=0.15
+      pd = 0.15
 !
 ! Gives exponential power of evolvement. Higher power faster growth/decay.
-      pow=2
+      pow = 2
 !
 ! Fractional distance, where after emergence, no granule can emerge
 ! whithin this radius.(In order to not 'overproduce' granules).
 ! This limit is unset when granule reaches t_0.
-      avoid=0.8
+      avoid = 0.8
 !
 ! Lifetime of granule
 ! Now also resolution dependent(5 min for granular scale)
 !
-      life_t=(60.*5./unit_time)
+      life_t = (60.*5./unit_time)
       !*(granr/(0.8*1e8/u_l))**2
       !  removed since the life time was about 20 min !
 !
-      dxdy2=dx**2+dy**2
+      dxdy2 = dx**2+dy**2
 !
 ! Typical central velocity of granule(1.5e5 cm/s=1.5km/s)
 ! Has to be multiplied by the smallest distance, since velocity=ampl/dist
 ! should now also be dependant on smallest granluar scale resolvable.
 !
       if (unit_system == 'SI') then
-        ampl=sqrt(dxdy2)/granr*0.28e4/unit_velocity
+        ampl = sqrt(dxdy2)/granr*0.28e4/unit_velocity
       elseif (unit_system == 'cgs') then
-        ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
+        ampl = sqrt(dxdy2)/granr*0.28e6/unit_velocity
       endif
 !
 ! fraction of current amplitude to maximum amplitude to the beginning
 ! and when the granule disapears
-      thresh=0.78
+      thresh = 0.78
 !
-      xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
-      yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
+      xrange = min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
+      yrange = min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
       if (lfirst_proc_xy) then
         print*,'| solar_corona: settings for granules'
@@ -2800,16 +2800,16 @@ module Special
       endif
 !
 ! Don't reset if RELOAD is used
-      if (.not.lreloading) then
+      if (.not. lreloading) then
 !
-        points_rstate(:)=0.
+        points_rstate(:) = 0.
 !
         isnap = ceiling (t/dsnap)
         tsnap_uu = (isnap+1) * dsnap
 !
       endif
 !
-      alloc_err=0
+      alloc_err = 0
       if (.not. allocated (Ux)) allocate(Ux(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = abs(alloc_err)
       if (.not. allocated (Uy)) allocate(Uy(nxgrid,nygrid),stat=alloc_err)
@@ -3000,10 +3000,10 @@ module Special
       ! Initialize avoid_gran array to avoid granules at occupied places
       call fill_avoid_gran
 !
-      if (.not.associated(first)) then
+      if (.not. associated(first)) then
         ! List is empty => try to read an old snapshot file
         call read_points (level)
-        if (.not.associated(first)) then
+        if (.not. associated(first)) then
           ! No snapshot available => initialize driver and draw granules
           call init_gran_driver
           call write_points (level, 0)
@@ -3268,10 +3268,10 @@ module Special
 ! Set randomly some points t0 to the past so they already decay
 !
         call random_number_wrapper(rand)
-        current%t_amp_max=t+(rand*2-1)*current%t_life* &
+        current%t_amp_max = t+(rand*2-1)*current%t_life* &
             (-alog(thresh*ampl/current%amp_max))**(1./pow)
 !
-        current%amp=current%amp_max*exp(-((t-current%t_amp_max)/current%t_life)**pow)
+        current%amp = current%amp_max*exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
 ! Update arrays with new data
 !
@@ -3296,12 +3296,12 @@ module Special
       real, dimension(nxgrid,nygrid) :: fdx_r,fdy_r,fdx_i,fdy_i
       real :: k20
 !
-      fvx_r=vx
-      fvx_i=0.
+      fvx_r = vx
+      fvx_i = 0.
       call fourier_transform_other(fvx_r,fvx_i)
 !
-      fvy_r=vy
-      fvy_i=0.
+      fvy_r = vy
+      fvy_i = 0.
       call fourier_transform_other(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
@@ -3341,9 +3341,9 @@ module Special
       fdy_i = fdy_i*filter
 !
       call fourier_transform_other(fdx_r,fdx_i,linv=.true.)
-      vx=fdx_r
+      vx = fdx_r
       call fourier_transform_other(fdy_r,fdy_i,linv=.true.)
-      vy=fdy_r
+      vy = fdy_r
 !
       call fourier_transform_other(frx_r,frx_i,linv=.true.)
       call fourier_transform_other(fry_r,fry_i,linv=.true.)
@@ -3362,38 +3362,38 @@ module Special
 !
 ! Update weight and velocity for new granule
 !
-      do jj=int(current%pos_y)-yrange,int(current%pos_y)+yrange
+      do jj = int(current%pos_y)-yrange,int(current%pos_y)+yrange
         j = 1+mod(jj-1+nygrid,nygrid)
-        do ii=int(current%pos_x)-xrange,int(current%pos_x)+xrange
+        do ii = int(current%pos_x)-xrange,int(current%pos_x)+xrange
           i = 1+mod(ii-1+nxgrid,nxgrid)
-          xdist=dx*(ii-current%pos_x)
-          ydist=dy*(jj-current%pos_y)
-          dist2=max(xdist**2+ydist**2,dxdy2)
-          dist=sqrt(dist2)
+          xdist = dx*(ii-current%pos_x)
+          ydist = dy*(jj-current%pos_y)
+          dist2 = max(xdist**2+ydist**2,dxdy2)
+          dist = sqrt(dist2)
 !
-          if (dist < avoid*granr .and. t < current%t_amp_max) avoid_gran(i,j)=1
+          if (dist < avoid*granr .and. t < current%t_amp_max) avoid_gran(i,j) = 1
 !
-          wtmp=current%amp/dist
+          wtmp = current%amp/dist
 !
           dist0 = 0.53*granr
           tmp = (dist/dist0)**2
 !
-          vv=exp(1.)*current%amp*tmp*exp(-tmp)
+          vv = exp(1.)*current%amp*tmp*exp(-tmp)
 !
           if (wtmp > w(i,j)*(1-ig)) then
             if (wtmp > w(i,j)*(1+ig)) then
               ! granular area
-              vx(i,j)=vv*xdist/dist
-              vy(i,j)=vv*ydist/dist
-              w(i,j) =wtmp
+              vx(i,j) = vv*xdist/dist
+              vy(i,j) = vv*ydist/dist
+              w(i,j) = wtmp
             else
               ! intergranular area
-              vx(i,j)=vx(i,j)+vv*xdist/dist
-              vy(i,j)=vy(i,j)+vv*ydist/dist
-              w(i,j) =max(w(i,j),wtmp)
+              vx(i,j) = vx(i,j)+vv*xdist/dist
+              vy(i,j) = vy(i,j)+vv*ydist/dist
+              w(i,j) = max(w(i,j),wtmp)
             endif
           endif
-          if (w(i,j) > ampl/(granr*(1+ig))) avoid_gran(i,j)=1
+          if (w(i,j) > ampl/(granr*(1+ig))) avoid_gran(i,j) = 1
         enddo
       enddo
 !
@@ -3460,15 +3460,15 @@ module Special
       current%pos_y = free_y
 !
       call random_number_wrapper(rand)
-      current%amp_max=ampl*(1+(2*rand-1)*pd)
+      current%amp_max = ampl*(1+(2*rand-1)*pd)
 !
       call random_number_wrapper(rand)
-      current%t_life=life_t*(1+(2*rand-1)/10.)
+      current%t_life = life_t*(1+(2*rand-1)/10.)
 !
-      current%t_amp_max=t+current%t_life* &
+      current%t_amp_max = t+current%t_life* &
           (-alog(thresh*ampl/current%amp_max))**(1./pow)
 !
-      current%amp=current%amp_max* &
+      current%amp = current%amp_max* &
           exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
     endsubroutine find_free_place
@@ -3483,7 +3483,7 @@ module Special
       do while (associated (current))
 !
 ! update amplitude
-        current%amp=current%amp_max* &
+        current%amp = current%amp_max* &
             exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
 ! remove point if amplitude is less than threshold
@@ -3552,34 +3552,40 @@ module Special
         bbz = 0
         if (nxgrid /= 1) then
           fac = (1./60)*spread(dx_1(l1:l2),2,ny)
-          bby = bby-fac*(45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+          bby = bby - fac * &
+              ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
               -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
-              +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
-          bbz = bbz+fac*(45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+              +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)) )
+          bbz = bbz + fac * &
+              ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
               -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
-              +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
+              +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)) )
         else
           if (ip <= 5) print*, 'set_BB2: Degenerate case in x-direction'
         endif
         if (nygrid /= 1) then
           fac = (1./60)*spread(dy_1(m1:m2),1,nx)
-          bbx = bbx+fac*(45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+          bbx = bbx + fac * &
+              ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
               -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
-              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
-          bbz = bbz-fac*(45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)) )
+          bbz = bbz - fac * &
+              ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
               -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
-              +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
+              +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)) )
         else
           if (ip <= 5) print*, 'set_BB2: Degenerate case in y-direction'
         endif
         if (nzgrid /= 1) then
           fac = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-          bbx = bbx-fac*(45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+          bbx = bbx - fac * &
+              ( 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
               -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
-          bby = bby+fac*(45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)) )
+          bby = bby + fac * &
+              ( 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
               -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
+              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)) )
         else
           if (ip <= 5) print*, 'set_BB2: Degenerate case in z-direction'
         endif
@@ -3632,17 +3638,17 @@ module Special
       endif
 !
       BB2_limit = (Bavoid/unit_magnetic)**2
-      do i=1,nxgrid
-        do j=1,nygrid
+      do i = 1,nxgrid
+        do j = 1,nygrid
           if (BB2(i,j) > BB2_limit) then
-            il=max(1,i-itmp)
-            ir=min(nxgrid,i+itmp)
-            jl=max(1,j-jtmp)
-            jr=min(nygrid,j+jtmp)
+            il = max(1,i-itmp)
+            ir = min(nxgrid,i+itmp)
+            jl = max(1,j-jtmp)
+            jr = min(nygrid,j+jtmp)
 !
-            do ii=il,ir
-              do jj=jl,jr
-                if ((ii-i)**2+(jj-j)**2 < itmp**2+jtmp**2) avoid_gran(ii,jj)=1
+            do ii = il,ir
+              do jj = jl,jr
+                if ((ii-i)**2+(jj-j)**2 < itmp**2+jtmp**2) avoid_gran(ii,jj) = 1
               enddo
             enddo
           endif
@@ -3656,7 +3662,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (n==n2.and.llast_proc_z) &
+      if (n==n2 .and. llast_proc_z) &
           df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
@@ -3675,8 +3681,8 @@ module Special
       real :: local_flux,local_mass
       real :: total_flux,total_mass
 !
-      local_flux=sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
-      local_mass=sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
+      local_flux = sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
+      local_mass = sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
 !
       call sum_xy (local_flux, total_flux)
       call sum_xy (local_mass, total_mass)
@@ -3718,32 +3724,32 @@ module Special
       real :: vrms,vtot
 !
 ! Putting sum of velocities back into vx,vy
-      vx=Ux
-      vy=Uy
+      vx = Ux
+      vy = Uy
 !
 ! Calculating and enhancing rotational part by factor 5
       if (nvor > 0.0) then
         call helmholtz(wscr,wscr2)
-        vx=(vx+nvor*wscr )
-        vy=(vy+nvor*wscr2)
+        vx = (vx+nvor*wscr )
+        vy = (vy+nvor*wscr2)
       endif
 !
 ! Normalize to given total rms-velocity
-      vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+      vrms = sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
 !
       if (unit_system == 'SI') then
-        vtot=3.*1e3/unit_velocity
+        vtot = 3.*1e3/unit_velocity
       elseif (unit_system == 'cgs') then
-        vtot=3.*1e5/unit_velocity
+        vtot = 3.*1e5/unit_velocity
       else
-        vtot=0.
+        vtot = 0.
         call fatal_error('solar_corona','define a valid unit system')
       endif
 !
 ! Reinserting rotationally enhanced velocity field
 !
-      Ux=vx*vtot/vrms
-      Uy=vy*vtot/vrms
+      Ux = vx*vtot/vrms
+      Uy = vy*vtot/vrms
 !
     endsubroutine enhance_vorticity
 !***********************************************************************
