@@ -229,7 +229,7 @@ sub scan_file {
 			my $clear_line = cut_brackets ($_);
 			$clear_line =~ s/ *::.*$//s;
 			my $exclude = "";
-			if ($item eq "=") { $exclude = "<>\\/\\="; }
+			if ($item eq "=") { $exclude = "<>\\/="; }
 			while ($clear_line =~ s/^(.*?[^ ${exclude}])(${item})/${1} ${2}/is) {
 				my $pre = length ($1);
 				if ($state{'fixed_equals_require_space'} == 0) {
