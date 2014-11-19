@@ -1148,7 +1148,7 @@ module Particles_chemistry
             Rck(k,l)=Rck(k,l)+mol_mass_carbon*RR_hat(k,l)&
                 *(nu_prime(i,l)-nu(i,l))*ac(i)
             ndot(k,i)=ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St(k)/ &
-                (fp(k,iap)*fp(k,iap)*4.*pi)
+                (fp(k,iap)**2*4.*pi)
           enddo
         enddo
       enddo
@@ -1181,6 +1181,15 @@ module Particles_chemistry
       do k=k1,k2
         ndot_total(k)=sum(ndot(k,:))
       enddo
+        print*,'ndot_total'
+        print*,ndot_total(k1)
+        print*,'ndot'
+        print*,ndot(k1,:)
+        print*,'St'
+        print*,St(k1)
+        print*,'AP'
+        print*,fp(k1,iap)*fp(k1,iap)*4.*pi
+      
 !
     end subroutine calc_ndot_mdot_R_j_hat
 !**********************************************************************

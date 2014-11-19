@@ -751,8 +751,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -910,8 +910,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(mspar) :: sq_hills
@@ -1003,8 +1003,8 @@ module Particles_nbody
 !************************************************************
     subroutine loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
 !
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
@@ -1025,8 +1025,8 @@ module Particles_nbody
 !
 !  07-mar-08/wlad:coded
 !
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer :: k
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1112,8 +1112,8 @@ module Particles_nbody
 !
 !  23-jun-14/wlad: coded
 !
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer :: k
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1867,8 +1867,8 @@ module Particles_nbody
 !
 ! 14-feb-14/wlad: coded
 !
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
 !
       real, dimension (npar_loc) :: rad,phi,tht,xp,yp,zp
       real, dimension (npar_loc) :: vrad,vtht,vphi,vx,vy,vz
@@ -1943,8 +1943,8 @@ module Particles_nbody
 !
 !  14-feb-14:wlad/coded
 !
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
 !
       real, dimension (npar_loc), intent(in) :: vx,vy,vz
       real, dimension (npar_loc), intent(inout) :: xp,yp,zp
@@ -2253,8 +2253,8 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(maxsink,mspvar) :: fcsp,fcsp_loc
@@ -2584,8 +2584,8 @@ module Particles_nbody
 !  25-sep-08/anders: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)

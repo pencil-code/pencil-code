@@ -251,8 +251,8 @@ module Particles_sink
       use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(1) :: rhop_interp
@@ -372,8 +372,8 @@ module Particles_sink
           mpibcast_int, mpibcast_real, mpireduce_sum
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       integer, dimension(0:ncpus-1) :: npar_sink_proc
@@ -983,8 +983,8 @@ module Particles_sink
 !  07-aug-12/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
