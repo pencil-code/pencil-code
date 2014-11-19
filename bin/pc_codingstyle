@@ -29,7 +29,7 @@ my @trigger_indent = ("program", "module", "contains", "interface", "type", "sub
 my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
 my @data_types = ("integer", "real", "logical", "character", "double precision");
 my @require_separator = (".and.", ".or.", ".not.", ".true.", ".false.", ".eqv.", ".neqv.");
-my @require_spaces = ("=");
+my %require_spaces = ("=" => "<>\\/=", ">" => "=", "<" => "=", ">=" => "", "<=" => "", "==" => "=", "/=" => "=");
 my %replace = (".gt." => " > ", ".lt." => " < ", ".ge." => " >= ", ".le." => " <= ", ".eq." => " == ", ".ne." => " /= ");
 
 # command line arguments
@@ -225,11 +225,13 @@ sub scan_file {
 		}
 
 		# require spaces
-		foreach my $item (@require_spaces) {
-			my $clear_line = cut_brackets ($_);
+		while (my ($item, $exclude) = each (%require_spaces)) {
+			if (!$exclude) { $exclude = $item; }
+			my $clear_line = cut_comment ($_);
 			$clear_line =~ s/ *::.*$//s;
-			my $exclude = "";
-			if ($item eq "=") { $exclude = "<>\\/="; }
+			if ($item eq "=") {
+				$clear_line = cut_brackets ($clear_line);
+			}
 			while ($clear_line =~ s/^(.*?[^ ${exclude}])(${item})/${1} ${2}/is) {
 				my $pre = length ($1);
 				if ($state{'fixed_equals_require_space'} == 0) {
