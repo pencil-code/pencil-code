@@ -243,7 +243,7 @@ module Particles_surfspec
 !  01-sep-14/jonas: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real :: sum_surf_spec
       integer :: i,j,k
 !
@@ -294,7 +294,7 @@ module Particles_surfspec
 !  29-sep-14/jonas coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
 !
@@ -320,7 +320,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  JONAS: equations.tex eq 37
@@ -348,7 +349,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       real, dimension (:,:), allocatable :: term
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid

@@ -29,7 +29,7 @@ module Particles_stirring
 !
 !  30-dec-10/anders+michiel: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(fp)

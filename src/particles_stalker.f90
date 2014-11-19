@@ -149,7 +149,7 @@ module Particles_stalker
 !  13-nov-07/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       real :: t_sp
 !
@@ -393,7 +393,7 @@ module Particles_stalker
 !  13-nov-07/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (npar_stalk) :: k_stalk
       integer :: npar_stalk_loc
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -443,7 +443,7 @@ module Particles_stalker
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (npar_stalk) :: k_stalk
       integer :: npar_stalk_loc
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -482,7 +482,7 @@ module Particles_stalker
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (npar_stalk) :: k_stalk
       integer :: npar_stalk_loc
       integer, dimension (mpar_loc,3) :: ineargrid

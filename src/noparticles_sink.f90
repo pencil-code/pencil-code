@@ -41,7 +41,7 @@ module Particles_sink
 !  07-aug-12/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -54,7 +54,7 @@ module Particles_sink
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -69,7 +69,8 @@ module Particles_sink
 !  07-aug-12/anders: dummy
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -84,7 +85,8 @@ module Particles_sink
 !  07-aug-12/anders: dummy
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)

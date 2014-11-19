@@ -47,7 +47,7 @@ module Particles_diagnos_state
 !
 !  Dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(fp)
 !
@@ -57,7 +57,7 @@ module Particles_diagnos_state
 !
 !  Dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: npar_loc_old
 !
       call keep_compiler_quiet(fp)
@@ -95,7 +95,7 @@ module Particles_diagnos_state
 !***********************************************************************
     subroutine persistence_check(fp, k, uup)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k
       real, dimension(3) :: uup
 !

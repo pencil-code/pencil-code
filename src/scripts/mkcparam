@@ -85,6 +85,7 @@ my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*(-?[0-9]+)\s*$';
 my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mpaux_decl    = '^\s*!\s*MPAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
@@ -100,7 +101,7 @@ use Getopt::Long;
 my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
-my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar) = (0) x 20;
+my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
 my $nadsspec = 0;
@@ -152,6 +153,7 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $mscratch_decl, \$mscratch );
     extract_decl ($line, $maux_com_decl, \$maux_com );
     extract_decl ($line, $mpvar_decl   , \$mpvar    );
+    extract_decl ($line, $mpaux_decl   , \$mpaux    );
     extract_decl ($line, $pscalar_decl , \$npscalar );
     extract_decl ($line, $nadsspec_decl, \$nadsspec );
     extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
@@ -290,6 +292,7 @@ integer, parameter :: maux_com=${\($maux_com+0)}
 integer, parameter :: mglobal=${\($mglobal+0)}
 integer, parameter :: mscratch=${\($mscratch+0)}
 integer, parameter :: mpvar=${\($mpvar+0)}
+integer, parameter :: mpaux=${\($mpaux+0)}
 integer, parameter :: ndustspec=${\($ndustspec+0)}
 integer, parameter :: nchemspec=${\($nchemspec+0)}
 integer, parameter :: npscalar=${\($npscalar+0)}

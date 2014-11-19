@@ -38,7 +38,8 @@ module Particles_main
 !
   include 'particles_main.h'
 !
-  real, dimension (mpar_loc,mpvar) :: fp, dfp
+  real, dimension (mpar_loc,mparray) :: fp
+  real, dimension (mpar_loc,mpvar) :: dfp
   integer, dimension (mpar_loc,3) :: ineargrid
 !
   contains
@@ -72,7 +73,7 @@ module Particles_main
 !
       if (lroot) then
         open(3,file=trim(datadir)//'/pvarname.dat',status='replace')
-        do ipvar=1,mpvar
+        do ipvar=1,mparray
           write(3,"(i4,2x,a)") ipvar, pvarname(ipvar)
         enddo
         close(3)
@@ -375,7 +376,7 @@ module Particles_main
       character (len=*) :: filename
 !
       open(1,file=filename)
-        write(1,'(3i9)') npar, mpvar, npar_stalk
+        write(1,'(4i9)') npar, mpvar, npar_stalk, mpaux
       close(1)
 !
     endsubroutine particles_write_pdim
@@ -430,7 +431,7 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (.not.(lparticles_nbody.and.(lcylindrical_coords.or.lspherical_coords))) then
-        fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
+        fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
       else
         call advance_particles_in_cartesian(fp,dfp)
       endif
@@ -1466,7 +1467,7 @@ module Particles_main
 !
       character (len=*) :: snapbase, flist
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       logical :: enum, lsnap, nobound
       real :: dsnap_par_minor, dsnap_par
       integer, dimension (mpar_loc) :: ipar

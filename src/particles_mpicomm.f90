@@ -232,12 +232,13 @@ module Particles_mpicomm
       use Mpicomm
       use Diagnostics, only: max_name
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mpcom) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
 !
-      real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
+      real, dimension (npar_mig,mpcom) :: fp_mig
+      real, dimension (npar_mig,mpvar) :: dfp_mig
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -560,7 +561,7 @@ module Particles_mpicomm
         do i=0,ncpus-1
           if (iproc/=i .and. nmig_enter(i)/=0) then
             call mpirecv_real(fp(npar_loc+1:npar_loc+nmig_enter(i),:), &
-                (/nmig_enter(i),mpvar/),i,itag_fp)
+                (/nmig_enter(i),mpcom/),i,itag_fp)
             call mpirecv_int(ipar(npar_loc+1:npar_loc+nmig_enter(i)), &
                 nmig_enter(i),i,itag_ipar)
             if (present(dfp)) &
@@ -631,7 +632,7 @@ module Particles_mpicomm
             do j=0,ncpus-1
               if (iproc/=j .and. nmig_leave(j)/=0) then
                 call mpisend_real(fp_mig(ileave_low(j):ileave_high(j),:), &
-                    (/nmig_leave(j),mpvar/),j,itag_fp)
+                    (/nmig_leave(j),mpcom/),j,itag_fp)
                 call mpisend_int(ipar_mig(ileave_low(j):ileave_high(j)), &
                     nmig_leave(j),j,itag_ipar)
                 if (present(dfp)) &
@@ -676,7 +677,7 @@ module Particles_mpicomm
 !  16-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mpcom) :: fp
       integer, dimension (mpar_loc) :: ipar
 !
       call keep_compiler_quiet(f)

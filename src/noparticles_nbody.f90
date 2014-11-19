@@ -52,7 +52,7 @@ module Particles_nbody
 ! 28-aug-06/wlad: dummy
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -102,7 +102,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -133,7 +134,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -147,7 +149,8 @@ module Particles_nbody
     subroutine remove_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -160,7 +163,8 @@ module Particles_nbody
     subroutine create_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -224,7 +228,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine bcast_nbodyarray(fp)
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(fp)
 !
@@ -232,7 +236,8 @@ module Particles_nbody
 !************************************************************************
     subroutine advance_particles_in_cartesian(fp,dfp)
 !
-      real, dimension(mpar_loc,mpvar) :: fp,dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
 !
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)

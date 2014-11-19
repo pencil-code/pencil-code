@@ -50,7 +50,7 @@ module Particles_spin
 !  21-jul-08/kapelrud: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       intent(inout) :: f
 !
@@ -88,7 +88,8 @@ module Particles_spin
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -112,7 +113,8 @@ module Particles_spin
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -184,7 +186,7 @@ module Particles_spin
 !
 !  22-jul-08/kapelrud: dummy coded
 !
-      real,dimension(mpvar) :: fp
+      real,dimension(mparray) :: fp
       integer :: k
       real,dimension(3) :: liftforce
       real :: rep

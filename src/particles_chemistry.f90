@@ -1053,7 +1053,7 @@ module Particles_chemistry
 !  JONAS: needs to be filled with life
 !  solid_reac L:30
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat
       integer :: i,j,k,k1,k2
@@ -1357,7 +1357,7 @@ module Particles_chemistry
 !**********************************************************************
     subroutine calc_surf_enthalpy(fp)
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k,k1,k2
 !
       k1 = k1_imn(imn)
@@ -1419,7 +1419,7 @@ module Particles_chemistry
 !*********************************************************************
     subroutine calc_ads_entropy(fp)
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k,k1,k2
 !
       k1 = k1_imn(imn)
@@ -1525,7 +1525,7 @@ module Particles_chemistry
 !*********************************************************************
     subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p

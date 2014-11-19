@@ -39,7 +39,7 @@ module Particles_coagulation
 !
 !  30-nov-10/anders: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(fp)
@@ -51,7 +51,7 @@ module Particles_coagulation
 !
 !  24-nov-10/anders: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(fp)
@@ -63,7 +63,7 @@ module Particles_coagulation
 !
 !  24-nov-10/anders: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(fp)

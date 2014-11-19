@@ -99,7 +99,7 @@ module Particles_number
 !  24-nov-05/anders: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       integer :: j
 !
@@ -164,7 +164,8 @@ module Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -338,7 +339,8 @@ module Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output

@@ -364,7 +364,7 @@ module Particles_nbody
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(mspar) :: kep_vel,sma
       real, dimension(mspar,3) :: position,velocity
       real :: tmp,parc
@@ -751,7 +751,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -909,7 +910,8 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(mspar) :: sq_hills
@@ -1001,7 +1003,8 @@ module Particles_nbody
 !************************************************************
     subroutine loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
 !
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
@@ -1022,7 +1025,8 @@ module Particles_nbody
 !
 !  07-mar-08/wlad:coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer :: k
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1108,7 +1112,8 @@ module Particles_nbody
 !
 !  23-jun-14/wlad: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer :: k
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1452,7 +1457,7 @@ module Particles_nbody
 !
       use Mpicomm
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       logical, dimension(mspar) :: lnbody
       integer :: ks,k,tagsend,j,tagrecv
 !
@@ -1862,7 +1867,8 @@ module Particles_nbody
 !
 ! 14-feb-14/wlad: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
 !
       real, dimension (npar_loc) :: rad,phi,tht,xp,yp,zp
       real, dimension (npar_loc) :: vrad,vtht,vphi,vx,vy,vz
@@ -1937,7 +1943,8 @@ module Particles_nbody
 !
 !  14-feb-14:wlad/coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
 !
       real, dimension (npar_loc), intent(in) :: vx,vy,vz
       real, dimension (npar_loc), intent(inout) :: xp,yp,zp
@@ -1976,7 +1983,7 @@ module Particles_nbody
 !
 !  14-feb-14:wlad/coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real, dimension (npar_loc), intent(in) :: ax,ay,az
       real, dimension (npar_loc), intent(inout) :: vx,vy,vz
@@ -2246,7 +2253,8 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(maxsink,mspvar) :: fcsp,fcsp_loc
@@ -2576,7 +2584,8 @@ module Particles_nbody
 !  25-sep-08/anders: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -2595,11 +2604,13 @@ module Particles_nbody
 !
       use Mpicomm
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(maxsink,mspvar) :: fcsp
       real, dimension(nspar,mspvar) :: fleft
 !
       integer :: nc,nf,kc,j
+!
+! NILS: Should fcsp_mig have dimensionality mparray?????
 !
       real, dimension(0:ncpus-1,nspar,mpvar) :: fcsp_mig
       integer, dimension(0:ncpus-1) :: nsmig
@@ -2707,7 +2718,7 @@ module Particles_nbody
             else
 !  The particle is at the root processor, so create it here
               npar_loc=npar_loc+1
-              fp(npar_loc,:)=fleft(kc,1:mpvar)
+              fp(npar_loc,1:mpvar)=fleft(kc,1:mpvar)
               ipar(npar_loc)=npar_tot+1
             endif
           enddo !loop over particles
@@ -2729,7 +2740,7 @@ module Particles_nbody
           call mpirecv_int(nsmig(iproc), 1, root, 111)
           ns=nsmig(iproc)
           if (ns/=0) then
-            call mpirecv_real(fp(npar_loc+1:npar_loc+ns,:),(/ns,mpvar/),root,222)
+            call mpirecv_real(fp(npar_loc+1:npar_loc+ns,1:mpvar),(/ns,mpvar/),root,222)
 !  update the relevant quantities
             do kc=1,ns
               npar_loc=npar_loc+1
@@ -2744,7 +2755,7 @@ module Particles_nbody
 !
         do kc=1,nf
           npar_loc=npar_loc+1
-          fp(npar_loc,:)=fleft(kc,1:mpvar)
+          fp(npar_loc,1:mpvar)=fleft(kc,1:mpvar)
           ipar(npar_loc)=npar_tot+1
         enddo
 !

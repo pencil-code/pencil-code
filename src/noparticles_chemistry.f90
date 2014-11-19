@@ -64,7 +64,7 @@ module Particles_chemistry
 !  09.09.14/jonas : coded
 !
       real, dimension(mpar_loc), intent(out) :: var
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: irhopswarm,iap
 !
       call keep_compiler_quiet(var)
@@ -123,7 +123,7 @@ integer function find_species()
 !
 !  06-oct-14/jonas:coded
 !
-    real, dimension(mpar_loc,mpvar)  :: fp
+    real, dimension (mpar_loc,mparray) :: fp
     real, dimension(mx,my,mz,mfarray)  :: f
     integer, dimension(:,:) :: ineargrid
     type (pencil_case) :: p

@@ -67,7 +67,7 @@ module Particles_diagnos_dv
 !***********************************************************************
     subroutine collisions(fp)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(fp)
 !
@@ -76,7 +76,7 @@ module Particles_diagnos_dv
     subroutine repeated_init(fp,init_repeat)
 !
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: init_repeat
 !
       call keep_compiler_quiet(fp)

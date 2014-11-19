@@ -42,7 +42,7 @@ module Particles_stirring
 !
       use General
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: theta, phi, prob, r

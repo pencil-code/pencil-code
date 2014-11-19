@@ -24,6 +24,8 @@ module Cparam
 !
   integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
   integer, parameter :: mcom=mvar+maux_com
+  integer, parameter :: mparray=mpvar+mpaux
+  integer, parameter :: mpcom=mpvar+mpaux
 !
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz

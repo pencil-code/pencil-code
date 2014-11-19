@@ -76,14 +76,14 @@ module Particles_adaptation
       use Particles_kmeans, only: ppcvq
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mpar_loc,mpvar), intent(inout) :: fp
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
       real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
       integer, dimension(mpar_loc), intent(inout) :: ipar
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
 !
-      real, dimension(max(maxval(npar_imn),1),mpvar) :: fp1
-      real, dimension(npar_target,mpvar) :: fp2
-      real, dimension(mpvar,npar_target) :: fp3
+      real, dimension(max(maxval(npar_imn),1),mparray) :: fp1
+      real, dimension(npar_target,mparray) :: fp2
+      real, dimension(mparray,npar_target) :: fp3
       integer, dimension(nx) :: np, k1_l, k2_l
       integer :: npar_new
       integer :: k, ix, iy, iz
@@ -178,8 +178,8 @@ module Particles_adaptation
 !
       integer, intent(in) :: ix, iy, iz
       integer, intent(in) :: npar_old, npar_new
-      real, dimension(npar_old,mpvar), intent(in) :: fp_old
-      real, dimension(npar_new,mpvar), intent(out) :: fp_new
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      real, dimension(npar_new,mparray), intent(out) :: fp_new
 !
       integer, dimension(3) :: ipx, ipv
       real :: mx, dmx, mv, dmv, mtot
@@ -210,8 +210,8 @@ module Particles_adaptation
 !
       integer, intent(in) :: ix, iy, iz
       integer, intent(in) :: npar_old, npar_new
-      real, dimension(npar_old,mpvar), intent(in) :: fp_old
-      real, dimension(npar_new,mpvar), intent(out) :: fp_new
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      real, dimension(npar_new,mparray), intent(out) :: fp_new
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(3) :: vp_new

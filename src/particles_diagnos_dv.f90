@@ -186,7 +186,7 @@ module Particles_diagnos_dv
       use particles_map, only : shepherd_neighbour_pencil3d
       use mpicomm, only : mpireduce_sum, mpibcast_real
 !
-      real, dimension(mpar_loc, mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       integer, dimension(mpar_loc) :: kneighbour_c  !neighbour array (collisions)
       integer :: xtraverse, ytraverse, ztraverse, k1, k2, band
@@ -250,7 +250,7 @@ module Particles_diagnos_dv
 !***********************************************************************
     subroutine calc_distance2(fp, k1, k2, distance2)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k1, k2
       real :: distance2
 !
@@ -263,7 +263,7 @@ module Particles_diagnos_dv
       use Special, only: special_calc_particles
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k1, k2,ierr
       real :: colv, compv
       real, dimension(3) :: uug1, uug2, relu1, relu2
@@ -346,7 +346,7 @@ module Particles_diagnos_dv
 !
 !  adds the pair to the appropriate bin
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k1, k2, band, velband, compband
       integer :: ispecies1, ispecies2, icoltype, minspecies, maxspecies
       real :: colv, compv
@@ -383,7 +383,7 @@ module Particles_diagnos_dv
 ! set to largest turn-over time of the dynamically trustworthy ks.
 ! can cause complilation errors (see call to calc_gas_velocity_shell_call)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real :: t_nextcol
       integer :: ierr
       logical, save :: first_inc=.true.
@@ -412,7 +412,7 @@ module Particles_diagnos_dv
 !
       use General, only: random_number_wrapper
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: init_repeat, count, k
 !
       do count=1,init_repeat
@@ -438,7 +438,7 @@ module Particles_diagnos_dv
 !
 ! adapted from particles_map
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid_c
 ! particle position on collisional grid
       real, dimension(3) :: dx_c !collision grid dx

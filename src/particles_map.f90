@@ -810,7 +810,7 @@ module Particles_map
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidistant grids
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, optional :: k1_opt, k2_opt
 !
@@ -956,13 +956,14 @@ module Particles_map
 !
       use General, only: safe_character_assign
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      real, dimension (mpvar) :: fp_tmp, dfp_tmp
+      real, dimension (mparray) :: fp_tmp
+      real, dimension (mpvar) :: dfp_tmp
       integer, dimension (3) :: ineargrid_tmp
       integer, dimension (ny*nz) :: kk
       integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
@@ -1134,12 +1135,13 @@ module Particles_map
 !
       use General, only: random_number_wrapper
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
-      real, dimension (mpvar) :: fp_swap, dfp_swap
+      real, dimension (mparray) :: fp_swap
+      real, dimension (mpvar) :: dfp_swap
       real :: r
       integer, dimension (3) :: ineargrid_swap
       integer :: ipar_swap, imn, k, kswap
@@ -1181,7 +1183,7 @@ module Particles_map
       use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       logical, optional :: lmapsink_opt
 !
@@ -1429,7 +1431,7 @@ module Particles_map
       use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(nx) :: rhop_swarm_mn
@@ -1628,7 +1630,7 @@ module Particles_map
 !
 !  24-oct-05/anders: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (nx) :: kshepherd
       integer, dimension (:) :: kneighbour
@@ -1657,7 +1659,7 @@ module Particles_map
 !
 !  17-nov-09/anders: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (nxb,nyb,nzb) :: kshepherdb
       integer, dimension (:) :: kneighbour
@@ -1715,7 +1717,7 @@ module Particles_map
       use Particles_cdata
 !
       real,dimension(mx,my,mz,mfarray) :: f
-      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer,dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
 !
@@ -1886,7 +1888,7 @@ module Particles_map
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i1,i2
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:) :: vec
       integer :: policy
@@ -1904,7 +1906,7 @@ module Particles_map
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i1,i2
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:,:) :: vec
       integer :: policy
@@ -1926,7 +1928,7 @@ module Particles_map
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i1,i2
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: uvec2,policy
       real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec
@@ -1965,7 +1967,7 @@ module Particles_map
 !
 !  16-nov-09/anders: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -2024,7 +2026,7 @@ module Particles_map
 !  On collisional grid
 !  Adapted from particles_map
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid_c
       integer, dimension (:,:,:) :: kshepherd_c
       integer, dimension (mpar_loc) :: kneighbour_c

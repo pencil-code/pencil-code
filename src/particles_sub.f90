@@ -40,7 +40,7 @@ module Particles_sub
 !
       use Mpicomm, only: mpireduce_max_scl_int
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
 !
@@ -85,7 +85,7 @@ module Particles_sub
 !  29-dec-04/anders: adapted from output
 !
       character(len=*) :: filename
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc) :: ipar
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -125,7 +125,7 @@ module Particles_sub
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
@@ -733,7 +733,7 @@ module Particles_sub
 !***********************************************************************
     subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       integer :: k
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -827,7 +827,7 @@ module Particles_sub
 !
       use Mpicomm, only: mpireduce_sum
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real, dimension (nbin_ap_dist) :: log_ap_loc
       real, dimension (nbin_ap_dist) :: log_ap_loc_low, log_ap_loc_high
@@ -913,7 +913,7 @@ module Particles_sub
 !  29-apr-11/wlad: coded
 !
       real, intent(in)  :: mp_swarm_tmp
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
       integer, intent(in) :: k
       integer, dimension (3), intent(in) :: ineark
       real, intent(out) :: rhop_swarm_tmp
@@ -944,7 +944,7 @@ module Particles_sub
 !  29-apr-11/wlad: coded
 !
       real, intent(in)  :: mp_swarm_tmp
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
       integer, intent(in) :: k, il, im, in
       real, intent(out) :: rhop_swarm_tmp
 !
@@ -973,7 +973,7 @@ module Particles_sub
       use Particles_mpicomm, only: dVol1xb, dVol1yb, dVol1zb
 !
       real, intent(in) :: mp_swarm_tmp
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
       integer, intent(in) :: k, il, im, in, ib
       real, intent(out) :: rhop_swarm_tmp
 !
@@ -1000,7 +1000,7 @@ module Particles_sub
 !  29-apr-11/wlad: coded
 !
       real, intent(in) :: mp_swarm_tmp
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
       integer, intent(in) :: k, im, in
       real, dimension(nx), intent(out) :: rhop_swarm_tmp
 !
@@ -1053,7 +1053,7 @@ module Particles_sub
       real :: weight
       real :: weight_x, weight_y, weight_z
       integer, intent(in) :: k,ixx,iyy,izz,ix0,iy0,iz0
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
 !
       if (lparticlemesh_cic) then
 !
@@ -1121,7 +1121,7 @@ module Particles_sub
 !
       integer, intent(in)  :: k,ix0,iy0,iz0
       integer, intent(out) :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
-      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
 !
 !  Cloud In Cell (CIC) scheme.
 !
@@ -1181,11 +1181,11 @@ module Particles_sub
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix, iy, iz
 !
-      linear: if (ldensity_nolog) then
+      if (ldensity_nolog) then
         rho = f(ix, iy, iz, irho)
-      else linear
+      else
         rho = exp(f(ix, iy, iz, ilnrho))
-      endif linear
+      endif
 !
     endfunction get_gas_density
 !***********************************************************************

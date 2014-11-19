@@ -116,7 +116,7 @@ module Particles_mpicomm
 !
 !  11-oct-09/anders: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
@@ -137,7 +137,7 @@ module Particles_mpicomm
 !  16-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
 !
       call keep_compiler_quiet(f)

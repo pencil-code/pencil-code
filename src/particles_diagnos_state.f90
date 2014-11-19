@@ -81,7 +81,7 @@ module Particles_diagnos_state
 !***********************************************************************
     subroutine init_particles_diagnos_state(fp)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       integer :: k
 !
@@ -99,7 +99,7 @@ module Particles_diagnos_state
 !
 ! Allow for the insertion of particles
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: npar_loc_old
 !
       integer :: k
@@ -182,7 +182,7 @@ module Particles_diagnos_state
 !***********************************************************************
     subroutine persistence_check(fp, k, uup)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real :: r_new
       integer :: k
       real, dimension(3) :: uup
@@ -237,7 +237,7 @@ module Particles_diagnos_state
 !***********************************************************************
     subroutine evaluate_state(fp, k, uup, l_swap, r_new)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real :: r_new
       integer :: k
       real, dimension(3) :: uup
@@ -270,7 +270,7 @@ module Particles_diagnos_state
 !
       use General, only: safe_character_assign, itoa
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real :: r_new
       integer :: k
       logical :: l_close                   !do we close the output file?

@@ -147,7 +147,7 @@ module Particles_coagulation
 !  30-nov-10/anders: coded
 !  15-nov-12/KWJ: modified
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
@@ -263,7 +263,7 @@ module Particles_coagulation
       use Diagnostics
       use General, only: random_number_wrapper
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
@@ -507,7 +507,7 @@ module Particles_coagulation
 !
 !  24-nov-10/anders: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call fatal_error('particles_coagulation_blocks','not implemented yet')
@@ -530,7 +530,7 @@ module Particles_coagulation
 !
 !  24-nov-10/anders: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: j, k
       real :: deltavjk
       real, dimension (3) :: xpj, xpk, vpj, vpk
@@ -676,7 +676,8 @@ module Particles_coagulation
 !
       use General, only: random_number_wrapper
       ! Get all variables
-      real, dimension (npar,mpvar) :: fp
+!NILS: Shouldn't npar be mpar_loc?
+      real, dimension (npar,mparray) :: fp
 !
       real :: r, kernel, dt1_coag_par
       integer :: j, l
@@ -753,7 +754,8 @@ module Particles_coagulation
 !
       use General, only: random_number_wrapper
       ! Get all variables
-      real, dimension (npar,mpvar) :: fp
+!NILS: Shouldn't npar be mpar_loc?
+      real, dimension (npar,mparray) :: fp
 !
       real :: r, r_i_old, kernel
       integer :: i, j, k, l

@@ -653,7 +653,7 @@ module Particles
       use Particles_diagnos_dv, only: repeated_init
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
@@ -1618,7 +1618,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  14-oct-12/dhruba: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       intent (inout) :: fp,ineargrid
@@ -1643,7 +1643,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_diagnos_state, only: insert_particles_diagnos_state
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       logical :: linsertmore=.true.
       real :: xx0, yy0,r2
@@ -1797,7 +1797,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use EquationOfState, only: beta_glnrho_global
       use General, only: random_number_wrapper
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: eta_glnrho, v_Kepler, ampluug, dxp, dzp
@@ -1912,7 +1912,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: eta_glnrho, v_Kepler, kx, kz
@@ -2020,7 +2020,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
       use General, only: random_number_wrapper
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer, parameter :: nz_inc=10
@@ -2189,7 +2189,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: eps
@@ -2367,7 +2367,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
@@ -2415,7 +2416,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: Omega2
@@ -2699,7 +2701,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -2757,7 +2760,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
@@ -3145,7 +3149,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -3164,7 +3169,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -3181,7 +3187,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate the friction time.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
       real :: tausp1_par, tmp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -3361,7 +3367,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use EquationOfState, only: rho0,cs0
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(3) :: uup,duu
       type (pencil_case) :: p
       real :: tausp1_par,tmp,tmp1
@@ -3616,7 +3622,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -3906,7 +3913,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Special, only: special_calc_particles
 !
-      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(3) :: uup
       integer :: k1
 !
@@ -3926,7 +3933,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  08-04-08/wlad: coded
 !
-      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       real,dimension(nx,3) :: vvpm,dvp2m
       integer :: inx0,k,l
@@ -3990,7 +3997,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Viscosity, only: getnu
 !
-      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real,dimension(k1_imn(imn):k2_imn(imn)) :: rep,nu
       character (len=labellen) :: ivis=''
       intent(in) :: fp
@@ -4038,7 +4045,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Particles_radius
 !
-      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real,dimension(k1_imn(imn):k2_imn(imn)) :: stocunn
 !
       real :: dia
@@ -4066,7 +4073,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Viscosity, only: getnu
       use Particles_radius
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: k
       real :: rep, stocunn, tausp1_par
       character (len=labellen) :: ivis=''
@@ -4130,7 +4137,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: normal_deviate
       use Viscosity, only: getnu
 !
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension(3), intent(out) :: force
       character (len=labellen) :: ivis=''
       integer, dimension(3) :: ineark
@@ -4191,7 +4198,8 @@ k_loop:   do while (.not. (k>npar_loc))
     subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -4204,7 +4212,8 @@ k_loop:   do while (.not. (k>npar_loc))
     subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -4504,7 +4513,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !AXEL use Magnetic, only: get_bext
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: ix0,iy0,iz0,ix1,iy1,iz1,k
       real, dimension (2,2,2) :: box_omega

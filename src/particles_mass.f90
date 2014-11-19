@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MPAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_mass=.true.
 !
 !! PENCILS PROVIDED TTp
@@ -69,6 +69,22 @@ module Particles_mass
         call fatal_error('register_particles_mass: npvar > mpvar','')
       endif
 !
+!  Index for particle mass.
+!
+      impinit=mpvar+npaux+1
+      pvarname(impinit)='impinit'
+!
+!  Increase npvar accordingly.
+!
+      npaux=npaux+1
+!
+!  Check that the fp and dfp arrays are big enough.
+!
+      if (npaux > mpaux) then
+        if (lroot) write(0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
+        call fatal_error('register_particles_mass: npaux > mpaux','')
+      endif
+
     endsubroutine register_particles_mass
 !***********************************************************************
     subroutine initialize_particles_mass(f,fp)
@@ -81,7 +97,7 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
 !
@@ -96,7 +112,7 @@ module Particles_mass
 !  23-sep-14/Nils: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: rhom
       integer :: j, k
@@ -157,7 +173,8 @@ module Particles_mass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output
@@ -184,7 +201,8 @@ module Particles_mass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: volume_pencil

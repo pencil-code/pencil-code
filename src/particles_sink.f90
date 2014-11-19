@@ -125,7 +125,7 @@ module Particles_sink
       use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: r
       integer :: j, k
@@ -225,7 +225,7 @@ module Particles_sink
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       if (lselfgravity .and. t>=tstart_selfgrav) then
@@ -251,7 +251,8 @@ module Particles_sink
       use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(1) :: rhop_interp
@@ -371,12 +372,12 @@ module Particles_sink
           mpibcast_int, mpibcast_real, mpireduce_sum
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       integer, dimension(0:ncpus-1) :: npar_sink_proc
       integer, dimension(27) :: iproc_recv_list, iproc_send_list
-      integer, dimension(2*mpvar) :: ireq_array
       integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq, krmv
       integer :: nproc_comm, iproc_comm
       integer :: npar_sink_loc, npar_sink
@@ -463,7 +464,7 @@ module Particles_sink
         if (.not.lroot) then
           if (npar_sink_loc/=0) then
             call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
-                (/npar_sink_loc,mpvar/),0,itag_fpar+iproc)
+                (/npar_sink_loc,mparray/),0,itag_fpar+iproc)
           endif
         else
           npar_sink=npar_sink_loc
@@ -471,7 +472,7 @@ module Particles_sink
             if (npar_sink_proc(iproc_recv)/=0) then
               call mpirecv_real(fp(npar_loc+npar_sink+1: &
                   npar_loc+npar_sink+npar_sink_proc(iproc_recv),:), &
-                  (/npar_sink_proc(iproc_recv),mpvar/),iproc_recv, &
+                  (/npar_sink_proc(iproc_recv),mparray/),iproc_recv, &
                   itag_fpar+iproc_recv)
               npar_sink=npar_sink+npar_sink_proc(iproc_recv)
             endif
@@ -519,7 +520,7 @@ module Particles_sink
 !  Send sink particle information to processors.
 !
         call mpibcast_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
-            (/npar_sink,mpvar/))
+            (/npar_sink,mparray/))
         call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), &
             npar_sink)
         call mpibcast_real(dfp(npar_loc+1:npar_loc+npar_sink,iaps), &
@@ -621,7 +622,7 @@ module Particles_sink
             if (npar_sink_proc(iproc_send)/=0) &
                 call mpisend_real(fp(npar_loc+1+npar_sink: &
                 npar_loc+npar_sink+npar_sink_proc(iproc_send),:), &
-                (/npar_sink_proc(iproc_send),mpvar/),iproc_send, &
+                (/npar_sink_proc(iproc_send),mparray/),iproc_send, &
                 itag_fpar+iproc_send)
             npar_sink=npar_sink+npar_sink_proc(iproc_send)
           enddo
@@ -629,7 +630,7 @@ module Particles_sink
           if (npar_sink_loc/=0) &
               call mpirecv_real(fp(npar_loc+npar_sink+1: &
               npar_loc+npar_sink+npar_sink_loc,:), &
-              (/npar_sink_loc,mpvar/),0,itag_fpar+iproc)
+              (/npar_sink_loc,mparray/),0,itag_fpar+iproc)
         endif
 !
 !  Send updated particle index.
@@ -882,12 +883,12 @@ module Particles_sink
               if (i==iproc) then
                 if (npar_sink_loc/=0) &
                     call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
-                    (/npar_sink_loc,mpvar/),iproc_send,itag_fpar+iproc)
+                    (/npar_sink_loc,mparray/),iproc_send,itag_fpar+iproc)
               elseif (i==iproc_recv) then
                 if (npar_sink/=0) &
                     call mpirecv_real(fp(npar_loc+npar_sink_loc+1: &
                     npar_loc+npar_sink_loc+npar_sink,:), &
-                    (/npar_sink,mpvar/),iproc_recv,itag_fpar+iproc_recv)
+                    (/npar_sink,mparray/),iproc_recv,itag_fpar+iproc_recv)
               endif
             enddo
             j1=npar_loc+npar_sink_loc+npar_sink
@@ -910,11 +911,11 @@ module Particles_sink
                 if (npar_sink/=0) &
                     call mpisend_real(fp(npar_loc+npar_sink_loc+1: &
                     npar_loc+npar_sink_loc+npar_sink,:), &
-                    (/npar_sink,mpvar/),iproc_recv,itag_fpar+iproc)
+                    (/npar_sink,mparray/),iproc_recv,itag_fpar+iproc)
               elseif (i==iproc_send) then
                 if (npar_sink_loc/=0) &
                     call mpirecv_real(fp(npar_loc+1: &
-                    npar_loc+npar_sink_loc,:),(/npar_sink_loc,mpvar/), &
+                    npar_loc+npar_sink_loc,:),(/npar_sink_loc,mparray/), &
                     iproc_send,itag_fpar+iproc_send)
               endif
             enddo
@@ -982,7 +983,8 @@ module Particles_sink
 !  07-aug-12/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
@@ -1234,7 +1236,7 @@ module Particles_sink
 !  07-aug-12/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
       real :: xk, yk, zk
       integer :: j, k

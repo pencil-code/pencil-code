@@ -194,7 +194,7 @@ module Particles_adsorbed
 !  29-aug-14/jonas coded
 !  JONAS: do i need this?
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(fp)
 !
@@ -207,7 +207,7 @@ module Particles_adsorbed
 !  01-sep-14/jonas: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       integer :: j,i
 !
       intent (out) :: f, fp
@@ -264,7 +264,8 @@ module Particles_adsorbed
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -289,7 +290,8 @@ module Particles_adsorbed
 !
       real, dimension (mx,my,my,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      	real, dimension (mpar_loc,mparray) :: fp
+	real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: n_ads,stat,k1,k2,k

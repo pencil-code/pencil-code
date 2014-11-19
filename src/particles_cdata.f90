@@ -31,9 +31,9 @@ module Particles_cdata
   integer, dimension (nspar) :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
-  integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
+  integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0, npaux=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0
-  integer :: iTp=0, imp=0, iCOp=0
+  integer :: iTp=0, imp=0, iCOp=0, impinit=0
   integer :: ivpx_cart,ivpy_cart,ivpz_cart
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
@@ -62,7 +62,7 @@ module Particles_cdata
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
-  character (len=10), dimension(mpvar) :: pvarname
+  character (len=10), dimension(mparray) :: pvarname
 !
   type quant_interp_penc
 !
