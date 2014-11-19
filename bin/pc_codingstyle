@@ -220,11 +220,6 @@ sub scan_file {
 			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
 		}
 
-		# construct complete line
-		$state{'complete_line'} .= $lines[$pos];
-		$state{'complete_line'} =~ s/ *\&$//s;
-		$state{'complete_line'} =~ s/(\S) {2,}/${1} /gs;
-
 		# indentation
 		if (check_closed_nesting ($_)) { return; }
 		if ($state{'indent'} < 0) {
@@ -246,11 +241,16 @@ sub scan_file {
 		if (check_new_nesting ($_)) { return; }
 
 		# multiple commands per line
-		if (/\;$/s && ($state{'fixed_multiple_commands'} <= 0)) {
+		if (/<remove-MCL>$/s && ($state{'fixed_multiple_commands'} <= 0)) {
 			picky_warning ("possible multi-command line => better put one command per line");
-			s/ *\;$//s;
-			$lines[$pos] =~ s/ *\;$//s;
+			s/ *<remove-MCL>$//s;
+			$lines[$pos] =~ s/ *<remove-MCL>$//s;
 		}
+
+		# construct complete line
+		$state{'complete_line'} .= $lines[$pos];
+		$state{'complete_line'} =~ s/ *\&$//s;
+		$state{'complete_line'} =~ s/(\S) {2,}/${1} /gs;
 
 		# continuation
 		if (/\&$/s) {
@@ -495,7 +495,7 @@ sub check_new_nesting {
 	if ($state{'multiline_where'}) {
 		if ($line !~ /\&$/s) {
 			$state{'multiline_where'} = 0;
-			my $clean_line = cut_brackets ($state{'complete_line'});
+			my $clean_line = cut_brackets ($state{'complete_line'}.$line);
 			if ($clean_line !~ /\(_+\) *\S/s) { add_nesting ("where"); }
 		}
 		return (0);
