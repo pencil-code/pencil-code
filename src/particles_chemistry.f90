@@ -67,13 +67,13 @@ module Particles_chemistry
   public :: total_carbon_sites
   public :: R_c_hat
   public :: mod_surf_area
-  public :: K_k, init_mass
+  public :: K_k
   public :: mdot_ck
   public :: ndot_total
   public :: ndot
   public :: porosity
   public :: Cg
-  public :: lreactive_heating
+  public :: lreactive_heating, Rck_max
 !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -120,11 +120,10 @@ module Particles_chemistry
   integer :: iter
   integer, dimension(:), allocatable :: dependent_reactant
   integer, dimension(:), allocatable :: jmap
-  real :: St_save, Sg_save
   real :: x_s_total, rho_part
   real :: effectiveness_factor_timeaver=1.
   real :: eta_int=0.,delta_rho_surface=0.
-  real :: St_first, A_p_first, rho_p_first
+  real :: A_p_first, rho_p_first
   real :: diffusivity = 0.0
   real :: total_carbon_sites=1.08e-8 ! [mol/cm^2]
   real :: chemplaceholder=0.0
@@ -134,7 +133,6 @@ module Particles_chemistry
   real :: structural_parameter=8. ! [-]
   real :: startup_time=0.
   real :: startup_quench
-  real :: init_mass
 !
 !  JONAS: implement something to calculate molar_mass of
 !  gas phase species
@@ -151,14 +149,12 @@ module Particles_chemistry
 !*********************************************************************!
 !
   real, dimension(:), allocatable :: conversion
-  real, dimension(:), allocatable :: rho_p_init
   real, dimension(:,:), allocatable :: mdot_ck,RR_hat
   real, dimension(:,:), allocatable :: qk_reac
   real, dimension(:), allocatable :: St,rho_p,porosity
   real, dimension(:), allocatable :: A_p_init
   real, dimension(:), allocatable :: R_c_hat
   real, dimension(:,:), allocatable :: heating_k,entropy_k
-  real, dimension(:), allocatable :: St_init
   real, dimension(:), allocatable :: mod_surf_area
   real, dimension(:), allocatable :: Particle_temperature
   real, dimension(:), allocatable :: effectiveness_factor
@@ -291,12 +287,6 @@ module Particles_chemistry
       allocate(A_p_init(mpar_loc),STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
           'Could not allocate memory for A_p_init')
-      allocate(St_init(mpar_loc),STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
-          'Could not allocate memory for St_init')
-      allocate(rho_p_init(mpar_loc),STAT=stat)
-      if (stat>0) call fatal_error('register_dep_pchem',&
-          'Could not allocate memory for rho_p_init')
       allocate(mdot_ck(mpar_loc,N_surface_reactions),STAT=stat)
       if (stat>0) call fatal_error('register_dep_pchem',&
           'Could not allocate memory for mdot_ck')
@@ -397,7 +387,7 @@ module Particles_chemistry
 !  biomass combustion and gasification.
 !
       do k=k1,k2
-        mod_all(k) = St_init(k)*St_init(k)*structural_parameter* &
+        mod_all(k) = (Sgc_init*fp(k,impinit))**2*structural_parameter* &
             (1-conversion(k)) * (1-conversion(k)) / &
             (2*St(k)**2)
         Sgc(k) = St(k)/ rho_p(k)
@@ -412,6 +402,7 @@ module Particles_chemistry
     subroutine calc_St(fp)
 !
       real, dimension(:,:) :: fp
+      real :: rho_p_init
       integer :: k,k1,k2
 !
       k1 = k1_imn(imn)
@@ -423,8 +414,9 @@ module Particles_chemistry
       St = 0.0
 !
       do k=k1,k2
+        rho_p_init=fp(k,impinit)/(4.*pi/3.*fp(k,iapinit)**3)
         St(k)=fp(k,imp)*Sgc_init* &
-            sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init(k)))
+            sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init))
       enddo
 !
     end subroutine calc_St
@@ -978,7 +970,7 @@ module Particles_chemistry
       integer :: k
 !
       do k=k1_imn(imn),k2_imn(imn)
-        conversion(k) = fp(k,imp) / init_mass
+        conversion(k) = fp(k,imp) / fp(k,impinit)
       enddo
 !
     end subroutine calc_conversion
@@ -1056,7 +1048,7 @@ module Particles_chemistry
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat
-      integer :: i,j,k,k1,k2
+      integer :: i,j,k,k1,k2,l
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
@@ -1089,23 +1081,38 @@ module Particles_chemistry
           RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
         enddo
       enddo
-!!$    print*,'RR_hattwo'
-!!$    write(*,'(12E12.4)') RR_hat(k1,:)
-!!$    print*, 'Cs'
-!!$    write(*,'(4E12.4)')Cs(1,1:N_adsorbed_species)
-!!$    print*, 'xsurf'
-!!$    write(*,'(3E12.4)')fp(1,isurf:isurf_end)
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).
 !
       RR_hat=pre_RR_hat*RR_hat
 !
-!    write(*,'(A13,12E10.3)') 'RR_hat',RR_hat(k1,:)
-!    write(*,'(A13,12E10.3)') 'KK',K_k(k1,:)
-!    print*, 'Cg',Cg(k1)
-!    print*,'fp_surf',fp(k1,isurf:isurf_end)
-!    print*,'Cs',Cs(k1,:)
+! Find the maximum possible carbon consumption rate (i.e. the rate 
+! experienced in the case where the effectiveness factor is unity).
+!
+      Rck_max=0.
+      do k=k1,k2
+        do l=1,N_surface_reactions
+          do i=1,N_surface_species
+            Rck_max(k,l)=Rck_max(k,l)+mol_mass_carbon*RR_hat(k,l)&
+                *(nu_prime(i,l)-nu(i,l))*ac(i)
+          enddo
+        enddo
+      enddo
+!
+! Find molar reaction rate of adsorbed surface species
+!
+      if (N_adsorbed_species>1) then
+        R_j_hat=0.
+        do k=k1,k2
+          do l=1,N_surface_reactions
+            do j=1,N_adsorbed_species-1
+              Rck_max(k,l)=Rck_max(k,l)+mol_mass_carbon*RR_hat(k,l)&
+                  *(mu_prime(j,l)-mu(j,l))*aac(j)
+            enddo
+          enddo
+        enddo
+      endif
 !
 !  Adapt the reaction rate according to the internal gradients,
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
@@ -1487,42 +1494,6 @@ module Particles_chemistry
 !
     end subroutine calc_ads_enthalpy
 !*********************************************************************
-    subroutine calc_St_init(fp)
-!
-!  3-oct-2014/jonas:coded
-!  this subroutine calculates the initial total surface area
-!
-      real, dimension(:,:) :: fp
-      integer :: k
-!    real :: rel_part_dens
-!
-!    k1=k1_imn(imn)
-!    k2=k2_imn(imn)
-!
-!    allocate(f_RPM(k1:k2))
-!
-!  JONAS: there was a complicated formula in the code. i leave it
-!  just commented out for now.
-!
-      do k=1,mpar_loc
-!
-!  "easy" way:
-        St_init(k) = Sgc_init * fp(k,imp)
-!
-!!$      rel_part_dens = rho_p_init(k) / Init_density_part
-!!$      f_RPM(k) = sqrt(1-structural_parameter*log(rel_part_dens))
-!!$      St_init(k) = 4* fp(k,iap)**2 *pi_loc * f_RPM(k)
-      enddo
-!
-!   deallocate(f_RPM)
-!
-!
-      if (lpchem_debug) then
-        call print_debug_info()
-      endif
-!
-    end subroutine calc_St_init
-!*********************************************************************
     subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -1749,18 +1720,6 @@ module Particles_chemistry
       write(unit,NML=particles_chem_run_pars)
 !
     endsubroutine write_particles_chem_run_pars
-!***********************************************************************
-    subroutine calc_rho_p_init(fp)
-!
-!  07-oct-14/jonas:coded
-!
-!  now in g/cm^3!!!!
-!
-      real, dimension(:,:) :: fp
-!
-      rho_p_init(:) = fp(:,imp) / (4.*pi/3. * fp(:,iap)**3)
-!
-    end subroutine calc_rho_p_init
 !***********************************************************************
     subroutine calc_rho_p(fp)
 !

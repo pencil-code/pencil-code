@@ -7,8 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 1
-! MPAUX CONTRIBUTION 1
+! MPVAR CONTRIBUTION 2
+! MPAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles_mass=.true.
 !
 !! PENCILS PROVIDED TTp
@@ -57,9 +57,12 @@ module Particles_mass
 !
       imp=npvar+1
       pvarname(npvar+1)='imp'
+      npvar=npvar+1
 !
-!  Increase npvar accordingly.
+!  Index for density at the outer shell.
 !
+      irhosurf=npvar+1
+      pvarname(npvar+1)='irhosurf'
       npvar=npvar+1
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -69,13 +72,16 @@ module Particles_mass
         call fatal_error('register_particles_mass: npvar > mpvar','')
       endif
 !
-!  Index for particle mass.
+!  Index for initial value of particle mass.
 !
       impinit=mpvar+npaux+1
       pvarname(impinit)='impinit'
+      npaux=npaux+1
 !
-!  Increase npvar accordingly.
+!  Index for particle mass.
 !
+      iapinit=impinit+1
+      pvarname(iapinit)='iapinit'
       npaux=npaux+1
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -84,10 +90,10 @@ module Particles_mass
         if (lroot) write(0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
         call fatal_error('register_particles_mass: npaux > mpaux','')
       endif
-
+!
     endsubroutine register_particles_mass
 !***********************************************************************
-    subroutine initialize_particles_mass(f,fp)
+    subroutine initialize_particles_mass(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -97,11 +103,8 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
-!
-          init_mass=fp(1,imp)
 !
     endsubroutine initialize_particles_mass
 !***********************************************************************
@@ -133,14 +136,14 @@ module Particles_mass
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
-          init_mass=mass_const
-          fp(1:mpar_loc,imp)=init_mass
+          fp(1:mpar_loc,imp)    =mass_const
+!
 !
         case ('rhopmat')
           if (lroot) then
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
-          endif          
+          endif
           fp(1:mpar_loc,imp)=4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
 ! NILS og JONAS: Must make auxiallary slot in fp array for initial_mass!!!!
 !
@@ -151,6 +154,10 @@ module Particles_mass
           call fatal_error('init_particles_mass','')
 !
         endselect
+!
+!  Set the initial mass
+!
+        fp(1:mpar_loc,impinit)=fp(1:mpar_loc,imp)
 !
       enddo
 !
@@ -173,8 +180,8 @@ module Particles_mass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output
@@ -182,7 +189,7 @@ module Particles_mass
       if (ldiagnos) then
         if (idiag_mpm/=0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
         if (idiag_convm/=0) call sum_par_name(1.-fp(1:mpar_loc,imp)&
-            /init_mass,idiag_convm)
+            /fp(1:mpar_loc,impinit),idiag_convm)
       endif
 !
       call keep_compiler_quiet(f)
@@ -201,12 +208,12 @@ module Particles_mass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: volume_pencil
-      real :: volume_cell, rho1_point, weight,dmass
+      real :: volume_cell, rho1_point, weight,dmass, Vp
       real, dimension (mpar_loc) :: St, Rc_hat
       integer :: k, ix0,iy0,iz0
       integer :: izz,izz0,izz1,iyy,iyy0,iyy1,ixx,ixx0,ixx1
@@ -236,7 +243,7 @@ module Particles_mass
 !
 !  Calculate the change in particle mass
 !
-           dmass = sum(mdot_ck(k,:))         
+          dmass = sum(mdot_ck(k,:))
 !
         else
           dmass=-dmpdt
@@ -245,6 +252,13 @@ module Particles_mass
 !  Add the change in particle mass to the dfp array
 !
         dfp(k,imp)=dfp(k,imp)+dmass
+!
+!  Evolve the density at the outer particle shell. This is used to
+!  determine how evolve the particle radius (it should not start to
+!  decrease before the outer shell is entirly consumed).
+!
+        Vp=4*pi*fp(k,iap)**3/3.
+        dfp(k,irhosurf)=dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
 !
 !  Calculate feed back from the particles to the gas phase
 !

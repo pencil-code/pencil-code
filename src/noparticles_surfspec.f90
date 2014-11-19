@@ -98,7 +98,7 @@ module Particles_surfspec
 !
     end subroutine write_particles_surf_run_pars
 !***********************************************************************
-    subroutine initialize_particles_surf(f,fp)
+    subroutine initialize_particles_surf(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -107,10 +107,8 @@ module Particles_surfspec
 !  JONAS: needs to be filled with life
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
 !
     end subroutine initialize_particles_surf
 !**************************************************************

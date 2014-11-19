@@ -201,9 +201,9 @@ module Particles_main
       call initialize_particles_stalker      (f)
       call initialize_particles_viscosity    (f)
       call initialize_particles_TT           (f)
-      call initialize_particles_mass         (f,fp)
+      call initialize_particles_mass         (f)
       call initialize_particles_ads          (f)
-      call initialize_particles_surf         (f,fp)
+      call initialize_particles_surf         (f)
       call initialize_particles_coag         (f)
       call initialize_particles_collisions   (f)
       call initialize_pars_diagnos_state     (f)
@@ -347,9 +347,9 @@ module Particles_main
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles(chsnap,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,flist)
+        call wsnap_particles(chsnap,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,mparray,flist)
       else
-        call wsnap_particles(chsnap,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar)
+        call wsnap_particles(chsnap,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,mparray)
       endif
 !
     endsubroutine particles_write_snapshot
@@ -363,7 +363,7 @@ module Particles_main
       character (len=*) :: chsnap
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call wsnap_particles(chsnap,f,dfp,.false.,.false.,0.0,0.0,ipar,nobound=.true.)
+      call wsnap_particles(chsnap,f,dfp,.false.,.false.,0.0,0.0,ipar,mpvar,nobound=.true.)
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
@@ -1451,7 +1451,7 @@ module Particles_main
 !
     endsubroutine particles_wparam2
 !***********************************************************************
-    subroutine wsnap_particles(snapbase,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,flist,nobound)
+    subroutine wsnap_particles(snapbase,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,varsize,flist,nobound)
 !
 !  Write particle snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used e.g. for pvar.dat)
@@ -1465,9 +1465,10 @@ module Particles_main
       use Particles_mpicomm, only: output_blocks
       use Sub
 !
+      integer :: varsize
       character (len=*) :: snapbase, flist
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,varsize) :: fp
       logical :: enum, lsnap, nobound
       real :: dsnap_par_minor, dsnap_par
       integer, dimension (mpar_loc) :: ipar

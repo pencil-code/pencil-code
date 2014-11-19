@@ -190,6 +190,20 @@ module Particles_surfspec
 !
     end subroutine register_dep_psurfspec
 !***********************************************************************
+    subroutine initialize_particles_surf(f)
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  29-sep-14/jonas coded
+!  JONAS: needs to be filled with life
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine initialize_particles_surf
+!***********************************************************************
     subroutine read_particles_surf_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
@@ -285,31 +299,6 @@ module Particles_surfspec
       enddo
 !
     endsubroutine init_particles_surf
-!**********************************************************************
-    subroutine initialize_particles_surf(f,fp)
-!
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
-!
-!  29-sep-14/jonas coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-!
-      call keep_compiler_quiet(f)
-!
-!  calculate initial values that are used in evolving others
-!NILS og JONAS: Both these should be put in auxiallary slots in the fp array!
-!
-      call calc_rho_p_init(fp)
-      call calc_St_init(fp)
-!
-!!$           fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
-!!$                 species_constants(jmap(i),imass) * &
-!!$                 (interp_rho(k)*R_cgs*interp_TT(k)/&
-!!$                 interp_pp(k))
-!
-    end subroutine initialize_particles_surf
 !**************************************************************
     subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
 !
@@ -320,8 +309,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  JONAS: equations.tex eq 37
@@ -349,8 +338,8 @@ module Particles_surfspec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      	real, dimension (mpar_loc,mparray) :: fp
-	real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
       real, dimension (:,:), allocatable :: term
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
