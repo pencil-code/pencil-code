@@ -719,10 +719,10 @@ sub check_closed_nesting {
 		return (0);
 	}
 	if (($trigger eq "module") && ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s)) {
-		my $result = remove_nesting;
+		my $result = remove_nesting ();
 		if ($result) { return (1); }
 	}
-	if ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s) { return (remove_nesting); }
+	if ($state{'nesting'} =~ s/(^|\|)\|$/${1}/s) { return (remove_nesting ()); }
 	return (0);
 }
 
