@@ -182,7 +182,7 @@ module Particles_chemistry
 !
   real :: mol_mass_carbon=12.0
   !real :: Sgc_init=3e5 ! m^2/kg
-  real :: Sgc_init=3e4 ! cm^2/g NILS: Must set up a system for these dimensional parameters
+  real :: Sgc_init=3e6 ! cm^2/g NILS: Must set up a system for these dimensional parameters
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !
@@ -1187,15 +1187,6 @@ module Particles_chemistry
       do k=k1,k2
         ndot_total(k)=sum(ndot(k,:))
       enddo
-        print*,'ndot_total'
-        print*,ndot_total(k1)
-        print*,'ndot'
-        print*,ndot(k1,:)
-        print*,'St'
-        print*,St(k1)
-        print*,'AP'
-        print*,fp(k1,iap)*fp(k1,iap)*4.*pi
-      
 !
     end subroutine calc_ndot_mdot_R_j_hat
 !**********************************************************************
@@ -1225,14 +1216,6 @@ module Particles_chemistry
       var = reactants
 !
     end subroutine get_reactants
-!**********************************************************************
-!!$  subroutine get_total_carbon_sites(var)
-!!$!
-!!$    real :: var
-!!$!
-!!$    var = total_carbon_sites
-!!$!
-!!$  end subroutine get_total_carbon_sites
 !**********************************************************************
     subroutine calc_effectiveness_factor(fp)
 !
