@@ -42,13 +42,13 @@ module Syscalls
 !
       integer :: unit=1
 !
-      inquire(file=file, exist=file_exists)
+      inquire (file=file, exist=file_exists)
 !
       if (file_exists .and. present(delete)) then
         if (delete) then
           if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
-          open(unit,FILE=file)
-          close(unit,STATUS='DELETE')
+          open (unit,FILE=file)
+          close (unit,STATUS='DELETE')
         endif
       endif
 !
@@ -65,8 +65,8 @@ module Syscalls
 !
       integer :: unit=1
 !
-      open(unit,FILE=file)
-      close(unit)
+      open (unit,FILE=file)
+      close (unit)
 !
     endsubroutine touch_file
 !***********************************************************************
@@ -138,12 +138,12 @@ module Syscalls
       count_lines = -1
       if (.not. file_exists(file)) return
 !
-      open(unit, FILE=file, STATUS='old', IOSTAT=ierr)
-      if (ierr/=0) return
+      open (unit, FILE=file, STATUS='old', IOSTAT=ierr)
+      if (ierr /= 0) return
       count_lines = 0
-      do while (ierr==0)
-        read(unit,'(a)',iostat=ierr) ch
-        if (ierr==0) then
+      do while (ierr == 0)
+        read (unit,'(a)',iostat=ierr) ch
+        if (ierr == 0) then
           if (present(comchars)) then
             lcount = ((ch .IN. comchars) == 0)
           else
@@ -152,7 +152,7 @@ module Syscalls
           if (lcount) count_lines = count_lines+1
         endif
       enddo
-      close(unit)
+      close (unit)
 !
     endfunction count_lines
 !***********************************************************************

@@ -390,7 +390,7 @@ module Special
       lread_prof_lnrho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnrho') > 0)
       lread_prof_lnTT  = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
 !
-      if (prof_type=='lnrho_lnTT') then
+      if (prof_type == 'lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('setup_profiles', &
             'Could not allocate memory for stratification variables', .true.)
@@ -408,7 +408,7 @@ module Special
             prof_lnTT(i) = var_lnTT
             prof_lnrho(i) = var_lnrho
           enddo
-          close(unit)
+          close (unit)
         endif
 !
         call mpibcast_real (prof_z, nzgrid)
@@ -573,7 +573,7 @@ module Special
 !
       integer :: i
 !
-      if (cool_RTV/=0.0) then
+      if (cool_RTV /= 0.0) then
         lpenc_requested(i_lnrho) = .true.
         lpenc_requested(i_lnTT) = .true.
         lpenc_requested(i_cp1) = .true.
@@ -610,7 +610,7 @@ module Special
         lpenc_requested(i_uxb) = .true.
       endif
 !
-      if (hcond1/=0.0) then
+      if (hcond1 /= 0.0) then
         lpenc_requested(i_b2) = .true.
         lpenc_requested(i_bij) = .true.
         lpenc_requested(i_bunit) = .true.
@@ -622,7 +622,7 @@ module Special
         lpenc_requested(i_glnrho) = .true.
       endif
 !
-      if (hcond2/=0.0) then
+      if (hcond2 /= 0.0) then
         lpenc_requested(i_b2) = .true.
         lpenc_requested(i_bij) = .true.
         lpenc_requested(i_bunit) = .true.
@@ -631,14 +631,14 @@ module Special
         lpenc_requested(i_glnrho) = .true.
       endif
 !
-      if (hcond3/=0.0) then
+      if (hcond3 /= 0.0) then
         lpenc_requested(i_glnTT) = .true.
         lpenc_requested(i_hlnTT) = .true.
         lpenc_requested(i_del2lnTT) = .true.
         lpenc_requested(i_glnrho) = .true.
       endif
 !
-      if (K_iso/=0.0) then
+      if (K_iso /= 0.0) then
         lpenc_requested(i_glnrho) = .true.
         lpenc_requested(i_TT) = .true.
         lpenc_requested(i_lnTT) = .true.
@@ -647,7 +647,7 @@ module Special
         lpenc_requested(i_del2lnTT) = .true.
       endif
 !
-      if (K_spitzer/=0.0) then
+      if (K_spitzer /= 0.0) then
         lpenc_requested(i_cp1) = .true.
         lpenc_requested(i_b2) = .true.
         lpenc_requested(i_bij) = .true.
@@ -674,7 +674,7 @@ module Special
         lpenc_requested(i_glnTT) = .true.
       endif
 !
-      if (idiag_dtchi2/=0.0) then
+      if (idiag_dtchi2 /= 0.0) then
         lpenc_diagnos(i_rho1) = .true.
         lpenc_diagnos(i_cv1) = .true.
         lpenc_diagnos(i_cs2) = .true.
@@ -707,7 +707,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_init_pars)
+      write (unit,NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -728,8 +728,8 @@ module Special
         K_spitzer = Kgpara
       endif
 !
-      if (Kgpara2/=0.0) then
-        if (K_iso/=0.0) then
+      if (Kgpara2 /= 0.0) then
+        if (K_iso /= 0.0) then
           call fatal_error('calc_heatcond_grad', &
               'Use only K_iso instead of Kgpara2')
         else
@@ -752,7 +752,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write (unit,NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -797,12 +797,12 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtvel=',idiag_dtvel
-        write(3,*) 'i_dtchi2=',idiag_dtchi2
-        write(3,*) 'i_dtnewt=',idiag_dtnewt
-        write(3,*) 'i_dtradloss=',idiag_dtradloss
-        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
-        write(3,*) 'i_mag_flux=',idiag_mag_flux
+        write (3,*) 'i_dtvel=',idiag_dtvel
+        write (3,*) 'i_dtchi2=',idiag_dtchi2
+        write (3,*) 'i_dtnewt=',idiag_dtnewt
+        write (3,*) 'i_dtradloss=',idiag_dtradloss
+        write (3,*) 'i_dtspitzer=',idiag_dtspitzer
+        write (3,*) 'i_mag_flux=',idiag_mag_flux
       endif
 !
     endsubroutine rprint_special
@@ -876,7 +876,7 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
 !
-      if (diffrho_hyper3/=0.0) then
+      if (diffrho_hyper3 /= 0.0) then
         if (.not. ldensity_nolog) then
           call del6(f,ilnrho,fdiff,IGNOREDX=.true.)
         else
@@ -924,7 +924,7 @@ module Special
       real, dimension (nx,3) :: hhh, tmpv
       integer :: i, j, k
 !
-      if (chi_hyper3/=0.0) then
+      if (chi_hyper3 /= 0.0) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*hc
 !
@@ -933,7 +933,7 @@ module Special
         if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3
       endif
 !
-      if (chi_hyper2/=0.0) then
+      if (chi_hyper2 /= 0.0) then
         call del4(f,ilnTT,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper2*hc
 !
@@ -981,14 +981,14 @@ module Special
         endif
       endif
 !
-      if (K_spitzer/=0.0) call calc_heatcond_tensor(df,p,K_spitzer,2.5)
-      if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
-      if (hcond2/=0.0) call calc_heatcond_glnTT(df,p)
-      if (hcond3/=0.0) call calc_heatcond_glnTT_iso(df,p)
-      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
+      if (K_spitzer /= 0.0) call calc_heatcond_tensor(df,p,K_spitzer,2.5)
+      if (hcond1 /= 0.0) call calc_heatcond_constchi(df,p)
+      if (hcond2 /= 0.0) call calc_heatcond_glnTT(df,p)
+      if (hcond3 /= 0.0) call calc_heatcond_glnTT_iso(df,p)
+      if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
       if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
-      if (K_iso/=0.0) call calc_heatcond_grad(df,p)
-      if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
+      if (K_iso /= 0.0) call calc_heatcond_grad(df,p)
+      if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
@@ -2132,7 +2132,7 @@ module Special
       if (lfirst .and. ldt) then
         fdiff = gamma*chi_spitzer * abs(cos_B_glnTT) * dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtspitzer/=0)) then
+        if (ldiagnos .and. (idiag_dtspitzer /= 0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
@@ -2177,7 +2177,7 @@ module Special
       if (lfirst .and. ldt) then
         fdiff = gamma*K_iso * p%TT * glnTT_abs * dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtchi2/=0)) then
+        if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -2218,7 +2218,7 @@ module Special
         advec_cs2 = max(advec_cs2,chi*maxval(dxyz_2))
         fdiff = gamma*chi * dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtchi2/=0)) then
+        if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -2265,7 +2265,7 @@ module Special
       if (lfirst .and. ldt) then
         fdiff = gamma*chi * glnTT2 * dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtchi2/=0)) then
+        if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -2309,7 +2309,7 @@ module Special
       if (lfirst .and. ldt) then
         fdiff = gamma*chi * glnTT2*dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtchi2/=0)) then
+        if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -2357,11 +2357,11 @@ module Special
 !
 ! slices
       rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)
-      if (m==iy_loc)  rtv_xz(:,n-n1+1) = rtv_cool
-      if (n==iz_loc)  rtv_xy(:,m-m1+1) = rtv_cool
-      if (n==iz2_loc) rtv_xy2(:,m-m1+1) = rtv_cool
-      if (n==iz3_loc) rtv_xy3(:,m-m1+1) = rtv_cool
-      if (n==iz4_loc) rtv_xy4(:,m-m1+1) = rtv_cool
+      if (m == iy_loc)  rtv_xz(:,n-n1+1) = rtv_cool
+      if (n == iz_loc)  rtv_xy(:,m-m1+1) = rtv_cool
+      if (n == iz2_loc) rtv_xy2(:,m-m1+1) = rtv_cool
+      if (n == iz3_loc) rtv_xy3(:,m-m1+1) = rtv_cool
+      if (n == iz4_loc) rtv_xy4(:,m-m1+1) = rtv_cool
 !
 !     add to temperature equation
 !
@@ -2374,7 +2374,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
-        if (ldiagnos .and. idiag_dtradloss/=0) then
+        if (ldiagnos .and. idiag_dtradloss /= 0) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
         endif
@@ -2382,11 +2382,11 @@ module Special
       endif
 !
       logQ_yz(m-m1+1,n-n1+1) = lnQ(ix_loc-l1+1)*0.43429448
-      if (m==iy_loc)  logQ_xz(:,n-n1+1) = lnQ*0.43429448
-      if (n==iz_loc)  logQ_xy(:,m-m1+1) = lnQ*0.43429448
-      if (n==iz2_loc) logQ_xy2(:,m-m1+1) = lnQ*0.43429448
-      if (n==iz3_loc) logQ_xy3(:,m-m1+1) = lnQ*0.43429448
-      if (n==iz4_loc) logQ_xy4(:,m-m1+1) = lnQ*0.43429448
+      if (m == iy_loc)  logQ_xz(:,n-n1+1) = lnQ*0.43429448
+      if (n == iz_loc)  logQ_xy(:,m-m1+1) = lnQ*0.43429448
+      if (n == iz2_loc) logQ_xy2(:,m-m1+1) = lnQ*0.43429448
+      if (n == iz3_loc) logQ_xy3(:,m-m1+1) = lnQ*0.43429448
+      if (n == iz4_loc) logQ_xy4(:,m-m1+1) = lnQ*0.43429448
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -2687,7 +2687,7 @@ module Special
         case ('event')
           ! one small point heating event (gaussian to prevent too strong gradients)
           ! one point in time, one point in space!
-          if (t*unit_time > 150. .AND. t*unit_time < 1000.) then
+          if (t*unit_time > 150. .and. t*unit_time < 1000.) then
             event_pos(1) = 7.5
             event_pos(2) = 15.
             heat_event = 10.*exp(-((250.-t*unit_time))**2/(2*(20.*unit_time)**2))* &
@@ -2699,8 +2699,8 @@ module Special
         case ('event1D')
           ! one small point heating event (gaussian to prevent too strong gradients)
           ! one point in time, one point in space!
-          if (t*unit_time > 300. .AND. t*unit_time < 10000.) then
-            if (t*unit_time > 300. .AND. t*unit_time < 301.) &
+          if (t*unit_time > 300. .and. t*unit_time < 10000.) then
+            if (t*unit_time > 300. .and. t*unit_time < 301.) &
                 print*,'EVENTTTT!!!!!'
             event_pos(1) = 10.
             heat_event1D = 10.*exp(-((400.-t))**2/( 2*50.**2))* &
@@ -2723,7 +2723,7 @@ module Special
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
       if (lfirst .and. ldt) then
-        if (ldiagnos .and. idiag_dtnewt/=0) then
+        if (ldiagnos .and. idiag_dtnewt /= 0) then
           itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
@@ -3043,7 +3043,7 @@ module Special
 !
       ! On exit, save final granule snapshot
       if (itsub == 3) lstop = file_exists('STOP')
-      if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
+      if (lstop .or. (t >= tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
           (mod(it,isave) == 0)) call write_points (level)
 !
     endsubroutine compute_gran_level
@@ -3626,12 +3626,12 @@ module Special
       avoid_gran = 0
       if (Bavoid <= 0.) return
 !
-      if (nxgrid==1) then
+      if (nxgrid == 1) then
         itmp = 0
       else
         itmp = nint(granr*(1-ig)/dx)
       endif
-      if (nygrid==1) then
+      if (nygrid == 1) then
         jtmp = 0
       else
         jtmp = nint(granr*(1-ig)/dy)
@@ -3662,7 +3662,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (n==n2 .and. llast_proc_z) &
+      if (n == n2 .and. llast_proc_z) &
           df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
@@ -3707,11 +3707,11 @@ module Special
         current%pos_x =  current%pos_x + Ux_ext(xpos,ypos)*dt_gran
         current%pos_y =  current%pos_y + Uy_ext(xpos,ypos)*dt_gran
 !
-        if (current%pos_x<0.5) current%pos_x = current%pos_x + nxgrid
-        if (current%pos_y<0.5) current%pos_y = current%pos_y + nygrid
+        if (current%pos_x < 0.5) current%pos_x = current%pos_x + nxgrid
+        if (current%pos_y < 0.5) current%pos_y = current%pos_y + nygrid
 !
-        if (current%pos_x>nxgrid+0.5) current%pos_x = current%pos_x - nxgrid
-        if (current%pos_y>nygrid+0.5) current%pos_y = current%pos_y - nygrid
+        if (current%pos_x > nxgrid+0.5) current%pos_x = current%pos_x - nxgrid
+        if (current%pos_y > nygrid+0.5) current%pos_y = current%pos_y - nygrid
 !
         current => current%next
       enddo
