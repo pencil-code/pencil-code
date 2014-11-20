@@ -345,7 +345,7 @@ module Particles_surfspec
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k,k1,k2,i,ix0,iy0,iz0
       real :: weight, volume_cell,rho1_point
-      real :: mean_molar_mass, dmass
+      real :: mean_molar_mass, dmass, A_p
       integer :: ix1,iy1,iz1
       integer :: ixx,iyy,izz
       integer :: ixx0,iyy0,izz0
@@ -372,6 +372,7 @@ module Particles_surfspec
 !
       do k=k1,k2
 !
+        A_p=fp(k1,iap)**2*4.*pi
         mean_molar_mass = (interp_rho(k)*R_cgs*interp_TT(k)/&
             interp_pp(k))
 !
@@ -425,13 +426,18 @@ module Particles_surfspec
 !  negative dmass means particle is losing mass
 !
                 dmass = sum(mdot_ck(k,:))
+                dmass=0.
+                do i=1,N_surface_species
+                  index1 = jmap(i)
+                  dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
+                enddo
 !
                 do i=1,N_surface_species
                   index1 = jmap(i)
-                  index2= ichemspec(index1)
+                  index2 = ichemspec(index1)
                   df(ixx,iyy,izz,index2)=&
                       df(ixx,iyy,izz,index2)+&
-                      (ndot(k,i)*species_constants(index1,imass)+&
+                      (A_p*ndot(k,i)*species_constants(index1,imass)+&
                       dmass*interp_species(k,index1))*&
                       rho1_point*weight/volume_cell
                 enddo
@@ -440,18 +446,6 @@ module Particles_surfspec
           enddo
         endif
       enddo
-!
-!!$   print*,'x_infty'
-!!$   do i=1,N_surface_reactants
-!!$      print*,interp_species(k1,jmap(i))/ &
-!!$                    species_constants(jmap(i),imass) * &
-!!$                    (interp_rho(k1)*R_cgs*interp_TT(k1)/&
-!!$                    interp_pp(k1))
-!!$   enddo
-!!$   print*,'term'
-!!$   print*,term(k1,:)
-!!$   print*,'ndot'
-!!$   print*,ndot(k1,:)
 !
       deallocate(term)
 !
