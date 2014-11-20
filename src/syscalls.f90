@@ -61,7 +61,7 @@ module Syscalls
 !  25-may-03/axel: coded
 !  24-mar-10/Bourdin.KIS: moved here from sub.f90 and mpicomm.f90
 !
-      character (len=*) :: file
+      character(len=*) :: file
 !
       integer :: unit=1
 !
@@ -95,7 +95,7 @@ module Syscalls
 !
 !  06-Apr-2014/Bourdin.KIS: coded
 !
-      character (len=*) :: file
+      character(len=*) :: file
       integer :: bytes, result
       character, dimension(:) :: buffer
 !
@@ -127,8 +127,8 @@ module Syscalls
 !
       use General, only: operator(.IN.)
 !
-      character(len=*),                  intent(IN) :: file
-      character, dimension(:), optional, intent(IN) :: comchars
+      character(len=*), intent(in) :: file
+      character, dimension(:), optional, intent(in) :: comchars
       integer :: count_lines
 !
       integer :: unit=1, ierr

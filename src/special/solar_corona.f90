@@ -31,18 +31,18 @@ module Special
   ! maximum number of granulation levels, technical maximum is 9
   integer, parameter :: max_gran_levels=3
 !
-  real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
-  real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.,Kc=0.
-  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.,flux_tau=0.
-  real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
-  logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
-  logical :: luse_vel_field=.false.,lquench=.false.,lmassflux=.false.
-  logical :: luse_mag_field=.false.,luse_mag_vel_field=.false.
-  logical :: luse_timedep_magnetogram=.false.,lwrite_driver=.false.
-  logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
-  integer :: irefz=n1,nglevel=max_gran_levels,cool_type=5
-  real :: massflux=0.,u_add
-  real :: K_spitzer=0.,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
+  real :: tdown=0., allp=0., Kgpara=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
+  real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
+  real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
+  real :: Bavoid=0., nvor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
+  logical :: lgranulation=.false., lgran_proc=.false., lgran_parallel=.false.
+  logical :: luse_vel_field=.false., lquench=.false., lmassflux=.false.
+  logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
+  logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
+  logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
+  integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
+  real :: massflux=0., u_add
+  real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
   real :: init_time_fade_start=0.0, init_time_hcond_fade_start=0.0
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
@@ -54,21 +54,21 @@ module Special
 !
   real, dimension(nx,ny,2) :: A_init
 !
-  character (len=labellen), dimension(3) :: iheattype='nothing'
+  character(len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
-  character (len=labellen) :: prof_type='nothing'
-  real, dimension (mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
+  character(len=labellen) :: prof_type='nothing'
+  real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
   ! file location settings
-  character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
-  character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
-  character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
-  character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
-  character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
+  character(len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
+  character(len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
+  character(len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+  character(len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+  character(len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
   ! input parameters
   namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
@@ -101,12 +101,12 @@ module Special
                                ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
   ! video slices
-  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (nx,nz) :: rtv_xz
-  real, target, dimension (ny,nz) :: rtv_yz
-  real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
-  real, target, dimension (nx,nz) :: logQ_xz
-  real, target, dimension (ny,nz) :: logQ_yz
+  real, target, dimension(nx,ny) :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
+  real, target, dimension(nx,nz) :: rtv_xz
+  real, target, dimension(ny,nz) :: rtv_yz
+  real, target, dimension(nx,ny) :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
+  real, target, dimension(nx,nz) :: logQ_xz
+  real, target, dimension(ny,nz) :: logQ_yz
 !
   ! Granule midpoint:
   type point
@@ -129,17 +129,17 @@ module Special
   endtype gran_list_start
   type (gran_list_start), dimension(max_gran_levels) :: gran_list
 !
-  integer :: xrange,yrange,pow
-  real :: ampl,dxdy2,ig,granr,pd,life_t,avoid
-  real, dimension(:,:), allocatable :: w,vx,vy
-  real, dimension(:,:), allocatable :: Ux,Uy
-  real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
+  integer :: xrange, yrange, pow
+  real :: ampl, dxdy2, ig, granr, pd, life_t, avoid
+  real, dimension(:,:), allocatable :: w, vx, vy
+  real, dimension(:,:), allocatable :: Ux, Uy
+  real, dimension(:,:), allocatable :: Ux_ext, Uy_ext
   real, dimension(:,:), allocatable :: BB2
   integer, dimension(:,:), allocatable :: avoid_gran
-  real, save :: tsnap_uu=0.,thresh
+  real, save :: tsnap_uu=0., thresh
   integer, save :: isnap
   integer, save, dimension(mseed) :: points_rstate
-  real, dimension(nx,ny), save :: Ux_local,Uy_local
+  real, dimension(nx,ny), save :: Ux_local, Uy_local
 !
   integer, save, dimension(mseed) :: nano_seed
   integer :: alloc_err
@@ -167,7 +167,7 @@ module Special
 !
       use Mpicomm, only: parallel_file_exists
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
 ! Consistency checks:
 !
@@ -242,7 +242,7 @@ module Special
       use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
       use Messages, only: warning
 !
-      real, dimension (mx,my,mz,mfarray), intent (out) :: f
+      real, dimension(mx,my,mz,mfarray), intent(out) :: f
 !
       integer :: j
 !
@@ -293,7 +293,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       if (lgranulation .and. (lroot .or. lgran_proc) .and. lrun) then
         call free_points ()
@@ -374,14 +374,14 @@ module Special
       integer :: i, ierr
       integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
-      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT, prof_z
+      real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT
 !
       ! file location settings
-      character (len=*), parameter :: stratification_dat = 'stratification.dat'
-      character (len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
-      character (len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
-      character (len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
+      character(len=*), parameter :: stratification_dat = 'stratification.dat'
+      character(len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
+      character(len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
+      character(len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
 !
 !
 ! Check which stratification file should be used:
@@ -455,12 +455,12 @@ module Special
       use Mpicomm, only: mpibcast_int, mpibcast_real, parallel_file_exists
       use Syscalls, only: file_exists, file_size
 !
-      character (len=*), intent (in) :: filename
-      real, dimension (mz), intent (out) :: profile
-      real, intent (in) :: data_unit
-      logical, intent (in) :: llog
+      character(len=*), intent(in) :: filename
+      real, dimension(mz), intent(out) :: profile
+      real, intent(in) :: data_unit
+      logical, intent(in) :: llog
 !
-      real, dimension (:), allocatable :: data, data_z
+      real, dimension(:), allocatable :: data, data_z
       integer :: n_data
 !
       integer, parameter :: unit=12
@@ -525,8 +525,8 @@ module Special
       use General, only: itoa
 !
       integer :: n_data
-      real, dimension (n_data), intent(in) :: data, data_z
-      real, dimension (mz), intent(out) :: profile
+      real, dimension(n_data), intent(in) :: data, data_z
+      real, dimension(mz), intent(out) :: profile
 !
       integer :: i, j, num_over, num_below
 !
@@ -765,7 +765,7 @@ module Special
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset, lwr
       logical, optional :: lwrite
 !
       lwr = .false.
@@ -813,7 +813,7 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -846,8 +846,8 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       if (lgranulation .or. luse_vel_field) then
@@ -871,10 +871,10 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: fdiff
+      real, dimension(nx) :: fdiff
 !
       if (diffrho_hyper3 /= 0.0) then
         if (.not. ldensity_nolog) then
@@ -916,12 +916,12 @@ module Special
 !
       use Sub, only: del6, del4, dot, dot2, multsv, multmv
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc, tmp, quenchfactor, b_abs_inv
-      real, dimension (nx,3) :: hhh, tmpv
+      real, dimension(nx) :: hc, tmp, quenchfactor, b_abs_inv
+      real, dimension(nx,3) :: hhh, tmpv
       integer :: i, j, k
 !
       if (chi_hyper3 /= 0.0) then
@@ -1203,10 +1203,10 @@ module Special
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: fdiff
+      real, dimension(nx) :: fdiff
       real :: swamp_fade_fact
 !
       swamp_fade_fact = get_swamp_fade_fact (z(n))
@@ -1228,10 +1228,10 @@ module Special
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: fdiff
+      real, dimension(nx) :: fdiff
       real :: swamp_fade_fact
 !
       swamp_fade_fact = get_swamp_fade_fact (z(n))
@@ -1258,7 +1258,7 @@ module Special
 !
 !   19-Dec-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real :: swamp_fade_fact, dfade_fact
@@ -1281,7 +1281,7 @@ module Special
 !  18-jan-2011/Bourdin.KIS: coded
 !
       real, intent(in) :: time_offset
-      character (len=*), intent(in) :: times_dat, field_dat
+      character(len=*), intent(in) :: times_dat, field_dat
       real, intent(inout) :: time_l, time_r
       real, dimension(nx,ny), intent(inout) :: Ux_l, Uy_l, Ux_r, Uy_r
 !
@@ -1333,7 +1333,7 @@ module Special
 !  18-jan-2011/Bourdin.KIS: coded
 !
       real, intent(in) :: time_offset
-      character (len=*), intent(in) :: times_dat, field_dat
+      character(len=*), intent(in) :: times_dat, field_dat
       real, dimension(nx,ny,2), intent(out) :: A
       real, intent(inout) :: time_l, time_r
       logical, optional :: lfinalize
@@ -1416,7 +1416,7 @@ module Special
       use Mpicomm, only: distribute_xy
 !
       integer, intent(in) :: frame
-      character (len=*), intent(in) :: filename
+      character(len=*), intent(in) :: filename
       real, dimension(nx,ny), intent(out) :: Ux, Uy
 !
       integer, parameter :: unit=12
@@ -1465,7 +1465,7 @@ module Special
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       integer, intent(in) :: frame
-      character (len=*), intent(in) :: filename
+      character(len=*), intent(in) :: filename
       real, dimension(nx,ny,1,2), intent(out) :: A
       logical, optional :: lfinalize
 !
@@ -1544,8 +1544,8 @@ module Special
       use Syscalls, only: file_exists
 !
       real, intent(in) :: time
-      character (len=*), intent(in) :: filename
-      character (len=*), intent(in) :: frame_type
+      character(len=*), intent(in) :: filename
+      character(len=*), intent(in) :: frame_type
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
 !
@@ -1834,10 +1834,10 @@ module Special
       use EquationOfState, only: lnrho0
       use Sub, only: sine_step
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: newton, newtonr, tmp_tau, lnTT_ref
+      real, dimension(nx) :: newton, newtonr, tmp_tau, lnTT_ref
 !
       tmp_tau = 0.0
 !
@@ -1914,7 +1914,7 @@ module Special
 !
       real :: interpol_tabulated
       real, intent(in) :: needle
-      real, dimension (:), intent(in) :: haystack
+      real, dimension(:), intent(in) :: haystack
 !
       integer, save :: lower=1, upper=1
       integer :: mid, num, inc
@@ -2022,8 +2022,8 @@ module Special
 !
       use Mpicomm, only: globalize_z, mpibcast_real
 !
-      real, dimension (nx), intent(in) :: lnrho
-      real, dimension (nx), intent(out) :: lnTT_ref
+      real, dimension(nx), intent(in) :: lnrho
+      real, dimension(nx), intent(out) :: lnTT_ref
 !
       integer :: px, z_ref
       real :: pos, frac
@@ -2063,13 +2063,13 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot, dot2
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, intent(in) :: Kpara, expo
 !
-      real, dimension (nx,3) :: tmpv, gKp
-      real, dimension (nx) :: cos_B_glnTT, gKp_b
-      real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
+      real, dimension(nx,3) :: tmpv, gKp
+      real, dimension(nx) :: cos_B_glnTT, gKp_b
+      real, dimension(nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
       integer :: i, j
 !
       ! heatflux density vector: q = kappa * grad_T [W/m^2]
@@ -2149,11 +2149,11 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: rhs, tmp, glnrho_glnTT, fdiff
+      real, dimension(nx,3) :: tmpv
+      real, dimension(nx) :: rhs, tmp, glnrho_glnTT, fdiff
       integer :: i, j
 !
       call dot(p%glnrho,p%glnTT,glnrho_glnTT)
@@ -2195,10 +2195,10 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: rhs, glnrho_b, fdiff
+      real, dimension(nx) :: rhs, glnrho_b, fdiff
       real :: chi
 !
       if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
@@ -2238,11 +2238,11 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot, multsv
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: tmpv, gflux
-      real, dimension (nx) :: tmp, rhs, fdiff
+      real, dimension(nx,3) :: tmpv, gflux
+      real, dimension(nx) :: tmp, rhs, fdiff
       real :: chi
       integer :: i
 !
@@ -2282,12 +2282,12 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: glnT_glnrho
-      real, dimension (nx) :: rhs, tmp, fdiff
+      real, dimension(nx,3) :: tmpv
+      real, dimension(nx) :: glnT_glnrho
+      real, dimension(nx) :: rhs, tmp, fdiff
       real :: chi
       integer :: i
 !
@@ -2328,10 +2328,10 @@ module Special
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
+      real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
@@ -2395,17 +2395,17 @@ module Special
 !  input: lnTT in SI units
 !  output: lnP  [p]=W/s * m^3
 !
-      real, dimension (nx), intent(in) :: lnTT
-      real, dimension (nx), intent(out) :: lnQ, delta_lnTT
+      real, dimension(nx), intent(in) :: lnTT
+      real, dimension(nx), intent(out) :: lnQ, delta_lnTT
 !
-      real, parameter, dimension (37) :: intlnT = (/ &
+      real, parameter, dimension(37) :: intlnT = (/ &
           8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
           9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
           11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, &
           12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
           14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
           15.6576,  69.0776 /)
-      real, parameter, dimension (37) :: intlnQ = (/ &
+      real, parameter, dimension(37) :: intlnQ = (/ &
           -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
           -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
           -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
@@ -2414,11 +2414,11 @@ module Special
           -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
           -0.66650 /)
 !
-      real, parameter, dimension (16) :: intlnT1 = (/ &
+      real, parameter, dimension(16) :: intlnT1 = (/ &
           8.98008, 9.44060, 9.90112, 10.3616, 10.8221, 11.2827, &
           11.5129, 11.8583, 12.4340, 12.8945, 13.3550, 13.8155, &
           14.2760, 14.9668, 15.8878, 18.4207 /)
-      real, parameter, dimension (16) :: intlnQ1 = (/ &
+      real, parameter, dimension(16) :: intlnQ1 = (/ &
           -83.9292, -81.2275, -80.0532, -80.1837, -79.6694, -79.0938, &
           -79.1322, -79.4776, -79.2934, -79.6618, -79.3778, -79.5159, &
           -80.1990, -82.5093, -82.1793, -78.6717 /)
@@ -2427,8 +2427,8 @@ module Special
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
 !
-      real, dimension (nx) :: slope, ordinate
-      real, dimension (nx) :: logT, logQ
+      real, dimension(nx) :: slope, ordinate
+      real, dimension(nx) :: logT, logQ
       integer :: i, px, z_ref
       real :: pos, frac
 !
@@ -2555,14 +2555,14 @@ module Special
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: heatinput,heat_flux
-      real, dimension (nx) :: x_Mm,heat_nano,rhs
-      real, dimension (nx) :: heat_event,heat_event1D
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx) :: heatinput, heat_flux
+      real, dimension(nx) :: x_Mm, heat_nano, rhs
+      real, dimension(nx) :: heat_event, heat_event1D
       integer, dimension(mseed) :: global_rstate
-      real :: z_Mm,heat_unit
-      real :: nano_sigma_t,nano_time=0.,nano_start=0.,nano_sigma_z
-      real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
+      real :: z_Mm, heat_unit
+      real :: nano_sigma_t, nano_time=0., nano_start=0., nano_sigma_z
+      real :: nano_flare_energy, nano_pos_x, nano_pos_z, nano_pos_y
       real :: nano_amplitude
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
@@ -2856,7 +2856,7 @@ module Special
       integer :: level, partner
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
-      integer, parameter :: tag_Ux=323,tag_Uy=324
+      integer, parameter :: tag_Ux=323, tag_Uy=324
 !
       if (lwrite_driver .and. (nzgrid == 1)) then
         ! Stabilize 2D-runs
@@ -3057,8 +3057,8 @@ module Special
       real, intent(in) :: time
       real, dimension(nxgrid,nygrid), intent(in) :: Ux, Uy
 !
-      character (len=*), parameter :: gran_times_dat = 'driver/gran_times.dat'
-      character (len=*), parameter :: gran_field_dat = 'driver/gran_field.dat'
+      character(len=*), parameter :: gran_times_dat = 'driver/gran_times.dat'
+      character(len=*), parameter :: gran_field_dat = 'driver/gran_field.dat'
       integer, save :: gran_frame=0, unit=37
       integer :: rec_len
 !
@@ -3290,10 +3290,10 @@ module Special
 !
       use Fourier, only: fourier_transform_other
 !
-      real, dimension(nxgrid,nygrid) :: kx,ky,k2,filter
-      real, dimension(nxgrid,nygrid) :: fvx_r,fvy_r,fvx_i,fvy_i
-      real, dimension(nxgrid,nygrid) :: frx_r,fry_r,frx_i,fry_i
-      real, dimension(nxgrid,nygrid) :: fdx_r,fdy_r,fdx_i,fdy_i
+      real, dimension(nxgrid,nygrid) :: kx, ky, k2, filter
+      real, dimension(nxgrid,nygrid) :: fvx_r, fvy_r, fvx_i, fvy_i
+      real, dimension(nxgrid,nygrid) :: frx_r, fry_r, frx_i, fry_i
+      real, dimension(nxgrid,nygrid) :: fdx_r, fdy_r, fdx_i, fdy_i
       real :: k20
 !
       fvx_r = vx
@@ -3356,9 +3356,9 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
-      real :: xdist,ydist,dist2,dist,wtmp,vv
-      integer :: i,ii,j,jj
-      real :: dist0,tmp
+      real :: xdist, ydist, dist2, dist, wtmp, vv
+      integer :: i, ii, j, jj
+      real :: dist0, tmp
 !
 ! Update weight and velocity for new granule
 !
@@ -3618,9 +3618,9 @@ module Special
 !***********************************************************************
     subroutine fill_avoid_gran
 !
-      integer :: i,j,itmp,jtmp
-      integer :: il,ir,jl,jr
-      integer :: ii,jj
+      integer :: i, j, itmp, jtmp
+      integer :: il, ir, jl, jr
+      integer :: ii, jj
       real :: BB2_limit
 !
       avoid_gran = 0
@@ -3659,7 +3659,7 @@ module Special
 !***********************************************************************
     subroutine force_solar_wind(df,p)
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       if (n == n2 .and. llast_proc_z) &
@@ -3677,9 +3677,9 @@ module Special
 !
       use Mpicomm, only: sum_xy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real :: local_flux,local_mass
-      real :: total_flux,total_mass
+      real, dimension(mx,my,mz,mfarray) :: f
+      real :: local_flux, local_mass
+      real :: total_flux, total_mass
 !
       local_flux = sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
       local_mass = sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
@@ -3697,7 +3697,7 @@ module Special
 !***********************************************************************
     subroutine evolve_granules()
 !
-      integer :: xpos,ypos
+      integer :: xpos, ypos
 !
       current => first
       do while (associated (current))
@@ -3720,8 +3720,8 @@ module Special
 !***********************************************************************
     subroutine enhance_vorticity()
 !
-      real,dimension(nxgrid,nygrid) :: wscr,wscr2
-      real :: vrms,vtot
+      real, dimension(nxgrid,nygrid) :: wscr, wscr2
+      real :: vrms, vtot
 !
 ! Putting sum of velocities back into vx,vy
       vx = Ux
