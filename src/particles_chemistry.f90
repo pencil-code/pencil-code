@@ -175,7 +175,6 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: mass_trans_coeff_species
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species,Cg,A_p
-  real, dimension(:,:), allocatable :: x_surf
   real, dimension(:), allocatable :: q_reac
   real, dimension(:), allocatable :: Nu_p
 !
@@ -937,6 +936,7 @@ module Particles_chemistry
     subroutine get_reverse_K_k(l,fp)
 !
       integer :: l,k,k1,k2
+      real :: pre_pressure
       real, dimension(:), allocatable :: k_p,k_c
       real, dimension(:), allocatable :: denominator, exponent_
       real, dimension(:,:) :: fp
@@ -949,11 +949,17 @@ module Particles_chemistry
       allocate(denominator(k1:k2))
       allocate(exponent_(k1:k2))
 !
+      if (unit_system=='cgs') then
+        pre_pressure=0.1
+      else
+        pre_pressure=1.
+      endif
+!
       do k=k1,k2
         denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
         exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
         k_p(k) = exp(-exponent_(k))
-        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/interp_pp(k))**(dngas(l-1)))
+        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/(pre_pressure*interp_pp(k)))**(dngas(l-1)))
         K_k(k,l) = (K_k(k,l-1) / k_c(k))
       enddo
 !
@@ -1532,7 +1538,6 @@ module Particles_chemistry
       if (N_adsorbed_species>1) call calc_Cs(fp)
       call calc_A_p(fp)
       call calc_mass_trans_coeff(f,fp,p,ineargrid)
-      call calc_x_surf(f,fp,ineargrid)
       call calc_RR_hat(f,fp)
 !
       if (lreactive_heating) then
@@ -1640,9 +1645,6 @@ module Particles_chemistry
       allocate(A_p(k1:k2), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
           'Could not allocate memory for A_p')
-      allocate(x_surf(k1:k2,N_surface_species), STAT=stat)
-      if (stat>0) call fatal_error('allocate_variable_pencils',&
-          'Could not allocate memory for x_surf')
       allocate(Nu_p(k1:k2), STAT=stat)
       if (stat>0) call fatal_error('allocate_variable_pencils',&
           'Could not allocate memory for Nu_p')
@@ -1678,7 +1680,6 @@ module Particles_chemistry
       deallocate(mass_trans_coeff_reactants)
       deallocate(Cg)
       deallocate(A_p)
-      deallocate(x_surf)
       deallocate(q_reac)
       deallocate(Nu_p)
 !
@@ -1905,30 +1906,6 @@ module Particles_chemistry
       endif
 !
     end subroutine calc_K_k
-!*******************************************************************
-    Subroutine calc_x_surf(f,fp,ineargrid)
-!
-!  Routine to calculate the gas composition in the particle
-!  near field
-!
-      real, dimension(:,:,:,:) :: f
-      real, dimension(:,:) :: fp
-      integer :: k,k1,k2,i,j,l
-      integer, dimension(:,:) :: ineargrid
-!
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
-!
-!  allocation and calculation of factors used in determining the
-!  gas surface composition
-!
-      do k=k1,k2
-        do i=1,N_surface_species
-          x_surf(k,i) = fp(k,isurf-1+i)
-        enddo
-      enddo
-!
-    end subroutine calc_x_surf
 !*******************************************************************
     subroutine calc_Cg(p,ineargrid)
 !
