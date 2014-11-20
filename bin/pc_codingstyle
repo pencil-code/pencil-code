@@ -29,8 +29,8 @@ my @trigger_indent = ("program", "module", "contains", "interface", "type", "sub
 my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
 my @data_types = ("integer", "real", "logical", "character", "double precision");
 my @require_separator = (".and.", ".or.", ".not.", ".true.", ".false.", ".eqv.", ".neqv.");
-my %require_spaces = ("=" => "<>\\/=", ">" => "=", "<" => "=", ">=" => "", "<=" => "", "==" => "=", "/=" => "=");
-my %replace = (".gt." => " > ", ".lt." => " < ", ".ge." => " >= ", ".le." => " <= ", ".eq." => " == ", ".ne." => " /= ");
+my %require_spaces = ("=" => "<>\\/=", ">" => "=", "<" => "=", ">=" => "", "<=" => "", "==" => "=", "/=" => "=", "inquire" => "a-z0-9_%", "open" => "a-z0-9_%", "close" => "a-z0-9_%", "read" => "a-z0-9_%", "write" => "a-z0-9_%");
+my %replace = (".gt." => " > ", ".lt." => " < ", ".ge." => " >= ", ".le." => " <= ", ".eq." => " == ", ".ne." => " /= ", ".AND." => ".and.", ".OR." => ".or.", ".NOT." => ".not.", ".TRUE." => ".true.", ".FALSE." => ".false.", ".EQV." => ".eqv.", ".NEQV." => ".neqv.");
 
 # command line arguments
 my $picky = 1;
@@ -217,10 +217,19 @@ sub scan_file {
 		while (my ($search, $replace) = each (%replace)) {
 			my $pattern = $search;
 			$pattern =~ s/\./\\\./gs;
-			if (/${pattern}/is) {
-				warning ("replace '".$search."' by '".$replace."'");
-				s/${pattern}/${replace}/gis;
-				$lines[$pos] =~ s/${pattern}/${replace}/gis;
+			if (lc ($search) eq lc ($replace)) {
+				if (/${pattern}/s) {
+					warning ("replace '".$search."' by '".$replace."'");
+					s/${pattern}/${replace}/gs;
+					$lines[$pos] =~ s/${pattern}/${replace}/gs;
+				}
+			}
+			else {
+				if (/${pattern}/is) {
+					warning ("replace '".$search."' by '".$replace."'");
+					s/${pattern}/${replace}/gis;
+					$lines[$pos] =~ s/${pattern}/${replace}/gis;
+				}
 			}
 		}
 
@@ -232,13 +241,13 @@ sub scan_file {
 			if ($item eq "=") {
 				$clear_line = cut_brackets ($clear_line);
 			}
-			while ($clear_line =~ s/^(.*?[^ ${exclude}])(${item})/${1} ${2}/is) {
+			while ($clear_line =~ s/^(.*?[^ ${exclude}])(${item}[^${exclude}])/${1} ${2}/is) {
 				my $pre = length ($1);
 				if ($state{'fixed_equals_require_space'} == 0) {
 					picky_warning ("'".$item."' should be surrounded by spaces for readability");
 				}
-				s/^(.{${pre}})(${item})/${1} ${2}/is;
-				$lines[$pos] =~ s/^(.{${pre}})(${item})/${1} ${2}/is;
+				s/^(.{${pre}})(${item}[^${exclude}])/${1} ${2}/is;
+				$lines[$pos] =~ s/^(.{${pre}})(${item}[^${exclude}])/${1} ${2}/is;
 				$state{'fixed_equals_require_space'}++;
 			}
 			while ($clear_line =~ s/^(.*?[^${exclude}]${item})([^ ${exclude}])/${1} ${2}/is) {
@@ -478,7 +487,9 @@ sub write_file {
 	my ($filename) = @_;
 	if ($num_fixed == 0) {
 		# no automatic changes applied
-		warn ("NO automatic changes applied.\n");
+		if (($num_warnings > 0) || ($num_fatals > 0)) {
+			warn ("NO automatic changes applied.\n");
+		}
 		return;
 	}
 	if ($backup) {
@@ -709,7 +720,7 @@ sub check_closed_nesting {
 			$line =~ s/^( *else) +${type}/${1}${type}/is;
 			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?else) +${type}/${1}${type}/is;
 		}
-		if ($else =~ /^${type}[^a-z0-9_ ]/is) {
+		if ($else =~ /^${type}[^a-z0-9_% ]/is) {
 			warning ("space after 'else".$type."'-statement required");
 			$else =~ s/^${type}/${type} /is;
 			$line =~ s/^( *else${type})/${1} /is;
@@ -733,7 +744,7 @@ sub check_closed_nesting {
 			return (0);
 		}
 	}
-	elsif ($line =~ /^ *case([^a-z0-9_].*?)$/is && ($state{'last_nesting'} eq "select")) {
+	elsif ($line =~ /^ *case([^a-z0-9_%].*?)$/is && ($state{'last_nesting'} eq "select")) {
 		my $case = $1;
 		my $type = $state{'last_nesting'};
 		if ($case !~ /^ /s) {
