@@ -2334,7 +2334,7 @@ module Special
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
       real :: unit_lnQ
 !
-      unit_lnQ = 3*alog(real(unit_velocity))+&
+      unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
