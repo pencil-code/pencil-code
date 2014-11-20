@@ -28,8 +28,8 @@ my $preferred_line_length = 80;
 my @trigger_indent = ("program", "module", "contains", "interface", "type", "subroutine", "function", "where", "do", "repeat", "if", "select");
 my @trigger_unindent = ("program", "module", "interface", "type", "subroutine", "function", "where", "do", "if", "select");
 my @data_types = ("integer", "real", "logical", "character", "double precision");
-my @require_separator = (".and.", ".or.", ".not.", ".true.", ".false.", ".eqv.", ".neqv.");
-my %require_spaces = ("=" => "<>\\/=", ">" => "=", "<" => "=", ">=" => "", "<=" => "", "==" => "=", "/=" => "=", "inquire" => "a-z0-9_%", "open" => "a-z0-9_%", "close" => "a-z0-9_%", "read" => "a-z0-9_%", "write" => "a-z0-9_%");
+my @require_separator = (".and.", ".or.", ".not.", ".true.", ".false.", ".eqv.", ".neqv.", "::");
+my %require_spaces = ("=" => "<>\\/=", ">" => "=", "<" => "=", ">=" => "", "<=" => "", "==" => "=", "/=" => "=", "inquire" => "a-z0-9_%", "open" => "a-z0-9_%", "close" => "a-z0-9_%", "read" => "a-z0-9_%", "write" => "a-z0-9_%", "::" => ":");
 my %replace = (".gt." => " > ", ".lt." => " < ", ".ge." => " >= ", ".le." => " <= ", ".eq." => " == ", ".ne." => " /= ", ".AND." => ".and.", ".OR." => ".or.", ".NOT." => ".not.", ".TRUE." => ".true.", ".FALSE." => ".false.", ".EQV." => ".eqv.", ".NEQV." => ".neqv.");
 
 # command line arguments
@@ -60,6 +60,7 @@ my @line_numbers = [0];
 my $pos = 0;
 my $num_warnings = 0;
 my $num_fixed = 0;
+my $num_accumulative = 0;
 my $num_fatals = 0;
 my $indentation = length ($indentation_str);
 my $num_trigger_indent = @trigger_indent;
@@ -140,6 +141,7 @@ sub scan_file {
 		$state{'fixed_equals_require_space'} = 0;
 		$state{'num_warnings'} = 0;
 		$state{'num_fixed'} = 0;
+		$state{'num_accumulative'} = 0;
 		$state{'num_fatals'} = 0;
 
 		# white-spaces
@@ -333,12 +335,19 @@ sub scan_file {
 			$lines[$pos] =~ s/ *<remove-MCL>$//s;
 		}
 
+		# continuation line sign
+		if (/[^ ]\&$/s) {
+			picky_warning ("'&' requires a space in front of it");
+			s/([^ ])\&$/${1} \&/s;
+			$lines[$pos] =~ s/([^ ])\&$/${1} \&/s;
+		}
+
 		# construct complete line
 		$state{'complete_line'} .= $lines[$pos];
 		$state{'complete_line'} =~ s/ *\&$//s;
 		$state{'complete_line'} =~ s/(\S) {2,}/${1} /gs;
 
-		# continuation
+		# continued line
 		if (/\&$/s) {
 			$state{'continuation'}++;
 		}
@@ -469,6 +478,7 @@ sub warning {
 	my ($message) = @_;
 	if ($auto_correct) {
 		$message = "fixed: ".$message;
+		$message =~ s/^ *([^ :]+): +([^ :]+): +(.*)$/${1}: ${3} (${2})/is;
 	}
 	$num_fixed++;
 	$state{'num_fixed'}++;
@@ -516,7 +526,7 @@ sub print_num_warnings {
 		my $num_unfixed = ($num_warnings - $num_fixed);
 		if ($num_fixed > 0) {
 			if ($num_fatals > 0) {
-				warn ($num_fixed." STYLE BREAKS can be fixed automatically, once all FATAL ERRORS are solved.\n");
+				warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
 			}
 			else {
 				warn ($num_fixed." STYLE BREAKS were fixed.\n");
@@ -525,8 +535,8 @@ sub print_num_warnings {
 		if ($num_unfixed > 0) {
 			warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
 		}
-		if ($num_fatals > 0) {
-			warn ($num_fatals." FATAL ERRORS still remain!\n");
+		if (($num_accumulative + $num_fatals) > 0) {
+			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
 		}
 	}
 	else {
@@ -536,20 +546,21 @@ sub print_num_warnings {
 		if ($num_fixed > 0) {
 			warn ($num_fixed." of them can be fixed automatically!\n");
 		}
-		if ($num_fatals > 0) {
-			warn ($num_fatals." FATAL ERRORS still remain!\n");
+		if (($num_accumulative + $num_fatals) > 0) {
+			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
 		}
 	}
-	if (($num_warnings == 0) && ($num_fixed == 0) && ($num_fatals == 0)) { warn ("everything OK, congratulations!\n"); }
+	if (($num_warnings + $num_fixed + $num_accumulative + $num_fatals) == 0) { warn ("everything OK, congratulations!\n"); }
 	$num_warnings = 0;
 	$num_fixed = 0;
+	$num_accumulative = 0;
 	$num_fatals = 0;
 }
 
 sub accumulative_fatal {
 	my ($message) = @_;
-	$num_fatals++;
-	$state{'num_fatals'}++;
+	$num_accumulative++;
+	$state{'num_accumulative'}++;
 	print_warning ("FATAL: ".$message);
 }
 
