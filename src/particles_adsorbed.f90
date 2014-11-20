@@ -11,9 +11,7 @@
 !
 ! CPARAM logical, parameter :: lparticles_adsorbed=.true.
 !
-!! PENCILS PROVIDED adsp
 !  PENCILS PROVIDED theta(nadsspec)
-!  PENCILS PROVIDED x_surf(nsurfreacspec)
 !
 !***************************************************************
 module Particles_adsorbed
