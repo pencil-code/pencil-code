@@ -731,8 +731,6 @@ module Special
                 xx1=cos(tilt*pi/180.0)*(xx0-posx)+sin(tilt*pi/180.0)*(yy0-posy)
                 yy1=-sin(tilt*pi/180.0)*(xx0-posx)+cos(tilt*pi/180.0)*(yy0-posy)
                 if (dposz.ne.0) then
-                  dist=sqrt(xx0**2+yy0**2+zz0**2)
-                  distxy=sqrt(xx0**2+yy0**2)
 ! Set up new ring
                     call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,nwid,tmpv,PROFILE='gaussian')
             ! calculate D*tmpv
@@ -756,7 +754,7 @@ module Special
                     cs2=cs0**2*(exp(gamma*f(l1,m1,n1,iss)*cp1+gamma_m1*(f(l1,m1,n1,ilnrho)-alog(rho0))))
                     rho_corr=1.-0.5*(bb(1)**2+bb(2)**2+bb(3)**2)*mu01*gamma/(exp(f(l1,m1,n1,ilnrho))*cs2)
                     rho_corr=1.0
-                    f(l,m,n1-ig,ilnrho)=f(l1,m1,n1-ig,ilnrho)+alog(rho_corr)
+!                    f(l,m,n1-ig,ilnrho)=f(l1,m1,n1-ig,ilnrho)+alog(rho_corr)
 !
 ! make tube buoyant? Add density deficit at bottom boundary
 !
@@ -770,15 +768,21 @@ module Special
 ! Uniform translation velocity for induction equation at boundary
 !
                     
-                  if (iuu.ne.0.and.distyz.lt.nwid2*width) then
+                  if (iuu.ne.0) then 
+                    if (distyz.lt.nwid2*width) then
                       f(l,m,n1-ig,iux) = uu(1)  
                       f(l,m,n1-ig,iuy) = uu(2)  
                       f(l,m,n1-ig,iuz) = uu(3)  
+!                      if (ig.eq.0) print*, l,m,uu(3)
+                    else 
+                      call set_hydrostatic_velocity(f,dt_,l,m,ig)
+                    endif
                   endif
                   call cross(uu,bb,uxb)
                   f(l,m,n1-ig,iax:iaz)=f(l,m,n1-ig,iax:iaz)+uxb(1:3)*dt_
-!                else
-!                  if (iuu.ne.0) call set_hydrostatic_velocity(f,dt_,l,m,ig)
+!                  if (ig.eq.0.and.maxval(abs(uxb))>tini) print*, l,m,uxb(1),uxb(2),uxb(3)
+                else
+                  if (iuu.ne.0) call set_hydrostatic_velocity(f,dt_,l,m,ig)
                 endif
 
               enddo
@@ -1175,20 +1179,20 @@ module Special
 !
       call get_cp1(cp1)
 !
-!        Pres_p1=cs0**2*(exp(gamma*f(l,m,n1-ig+1,iss)*cp1+gamma*&
-!                   (f(l,m,n1-ig+1,ilnrho)-alog(rho0))))/gamma
-!        Pres_m1=cs0**2*(exp(gamma*f(l,m,n1-ig-1,iss)*cp1+gamma*&
-!                   (f(l,m,n1-ig-1,ilnrho)-alog(rho0))))/gamma
-!        f(l,m,n1-ig,iuz)=((Pres_m1-Pres_p1)*dz_1(n1-ig)/exp(f(l,m,n1-ig,ilnrho))+gravz)*dt_
+      if (ig.lt.3) then
+        Pres_p1=cs0**2*(exp(gamma*f(l,m,n1-ig+1,iss)*cp1+gamma*&
+                   (f(l,m,n1-ig+1,ilnrho)-alog(rho0))))/gamma
+        Pres_m1=cs0**2*(exp(gamma*f(l,m,n1-ig-1,iss)*cp1+gamma*&
+                   (f(l,m,n1-ig-1,ilnrho)-alog(rho0))))/gamma
+        f(l,m,n1-ig,iuz)=((Pres_m1-Pres_p1)*dz_1(n1-ig)/exp(f(l,m,n1-ig,ilnrho))+gravz)*dt_
         if (f(l,m,n1,iuz) < 0) then 
           call bc_sym_z(f,l,m,iux,ig,+1,'bot')
           call bc_sym_z(f,l,m,iuy,ig,+1,'bot')
-!          call bc_sym_z(f,l,m,iuz,ig,+1,'bot')
         else
           call bc_sym_z(f,l,m,iux,ig,-1,'bot')
           call bc_sym_z(f,l,m,iuy,ig,-1,'bot')
-!          call bc_sym_z(f,l,m,iuz,ig,+1,'bot')
         endif
+      endif
 !
     endsubroutine set_hydrostatic_velocity
 !***********************************************************************
