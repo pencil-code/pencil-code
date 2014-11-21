@@ -3246,9 +3246,14 @@ module Particles
                           rhop_swarm_par*rho1_point*dragforce*weight
                     endif
                     if (lpscalar_sink .and. lpscalar) then
-                      call find_grid_volume(ixx,iyy,izz,volume_cell)
-                      df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                          weight*pscalar_sink_rate/volume_cell
+                      if (ilncc == 0) then
+                        call fatal_error('dvvp_dt_pencil',&
+                            'lpscalar_sink not allowed for pscalar_nolog!')
+                      else
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                            weight*pscalar_sink_rate/volume_cell
+                      endif
                     endif
                   enddo; enddo; enddo
 !
@@ -3322,9 +3327,14 @@ module Particles
                             rhop_swarm_par*rho1_point*dragforce*weight
                       endif
                       if (lpscalar_sink .and. lpscalar) then
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
-                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                            weight*pscalar_sink_rate/volume_cell
+                        if (ilncc == 0) then
+                          call fatal_error('dvvp_dt_pencil',&
+                              'lpscalar_sink not allowed for pscalar_nolog!')
+                        else
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
+                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                              weight*pscalar_sink_rate/volume_cell
+                        endif
                       endif
                     enddo; enddo; enddo
                   else
@@ -3393,9 +3403,14 @@ module Particles
                             rhop_swarm_par*rho1_point*dragforce*weight
                       endif
                       if (lpscalar_sink .and. lpscalar) then
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
-                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                            weight*pscalar_sink_rate/volume_cell
+                        if (ilncc == 0) then
+                          call fatal_error('dvvp_dt_pencil',&
+                              'lpscalar_sink not allowed for pscalar_nolog!')
+                        else
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
+                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                              weight*pscalar_sink_rate/volume_cell
+                        endif
                       endif
                     enddo; enddo; enddo
                   endif
@@ -3410,9 +3425,14 @@ module Particles
                         rhop_swarm_par*p%rho1(l-nghost)*dragforce
                   endif
                   if (lpscalar_sink .and. lpscalar) then
-                    call find_grid_volume(l,m,n,volume_cell)
-                    df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                        pscalar_sink_rate/volume_cell
+                    if (ilncc == 0) then
+                      call fatal_error('dvvp_dt_pencil',&
+                          'lpscalar_sink not allowed for pscalar_nolog!')
+                    else
+                      call find_grid_volume(l,m,n,volume_cell)
+                      df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                          pscalar_sink_rate/volume_cell
+                    endif
                   endif
                 endif
               endif
