@@ -10,6 +10,9 @@
 # -a: automatic correction, where possible
 # -b: backups original, if changes are applied
 # -q: quiet
+# -c: comment empty lines
+# -i: indent after 'contains'
+# -o: old style
 # -l: loose checking
 # -v: verbose ouput
 # -d: debug ouput
@@ -23,9 +26,11 @@ use strict;
 my $indentation_str = '  ';
 my $continuation_str = '    ';
 my $tab_to_spaces_str = '        ';
+my $comment_str = '! ';
 my $max_line_length = 132;
 my $preferred_line_length = 80;
-my @trigger_indent = ('program', 'module', 'contains', 'interface', 'type', 'subroutine', 'function', 'where', 'do', 'repeat', 'if', 'select');
+my $routine_separator_length = $preferred_line_length - length ($comment_str);
+my @trigger_indent = ('program', 'module', 'interface', 'type', 'subroutine', 'function', 'where', 'do', 'repeat', 'if', 'select');
 my @trigger_unindent = ('program', 'module', 'interface', 'type', 'subroutine', 'function', 'where', 'do', 'if', 'select');
 my @data_types = ('integer', 'real', 'logical', 'character', 'double precision');
 my %require_separator = ('.and.' => '', '.or.' => '', '.not.' => '', '.true.' => '', '.false.' => '', '.eqv.' => '', '.neqv.' => '');
@@ -36,6 +41,10 @@ my %require_declaration_right_separator = ('dimension' => '(', 'intent' => '(', 
 my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.');
 
 # command line arguments
+my $comment_empty_lines = 0;
+my $indent_after_contains = 0;
+my $header_before_routine = 1;
+my $old_style = 0;
 my $picky = 1;
 my $auto_correct = 0;
 my $quiet = 0;
@@ -44,11 +53,20 @@ my $verbose = 0;
 while ($ARGV[0] =~ /^-/) {
 	my $argument = shift ();
 	if (lc ($argument) eq '-l') { $picky = 0; }
+	elsif (lc ($argument) eq '-c') { $comment_empty_lines = 1; }
+	elsif (lc ($argument) eq '-i') { $indent_after_contains = 1; }
 	elsif (lc ($argument) eq '-v') { if ($verbose < 1) { $verbose = 1; } }
 	elsif (lc ($argument) eq '-d') { $verbose = 2; }
 	elsif (lc ($argument) eq '-q') { $quiet = 1; }
 	elsif (lc ($argument) eq '-a') { $auto_correct = 1; }
 	elsif (lc ($argument) eq '-b') { $backup = 1; }
+	elsif (lc ($argument) eq '-o') {
+		warn ("WARNING: OLD STYLE activated!\n");
+		$indent_after_contains = 1;
+		$comment_empty_lines = 1;
+		$header_before_routine = 0;
+		$old_style = 1;
+	}
 	else {
 		usage ('Option "'.$argument.'" unkown ...');
 	}
@@ -57,6 +75,9 @@ my $num_files = @ARGV;
 if ($num_files == 0) { usage (''); }
 
 # initialize globals and scan file
+if ($indent_after_contains) {
+	push (@trigger_indent, 'contains');
+}
 my %state = ();
 my @lines = [''];
 my @line_numbers = [0];
@@ -96,7 +117,7 @@ exit ($exit_code);
 sub usage {
 	my ($message) = @_;
 	if ($message) { warn ($message."\n"); }
-	warn ('Usage: '.$0.' [-a] [-b] [-l] [-v] [-d] [-q] filename'."\n");
+	warn ('Usage: '.$0.' [-a] [-b] [-c] [-i] [-o] [-l] [-v] [-d] [-q] filename'."\n");
 }
 
 sub scan_file {
@@ -113,6 +134,7 @@ sub scan_file {
 	$state{'complete_line'} = '';
 	$state{'comment_block_length'} = 0;
 	$state{'routine_header'} = 0;
+	$state{'routine_footer'} = 0;
 
 	# read file
 	my $num_lines = 0;
@@ -125,9 +147,9 @@ sub scan_file {
 		$line =~ s/\n$//s;
 		# split multi-line commands
 		my $clean_line = cut_comment ($line);
-		while ($clean_line =~ s/^(.*?) *\; */<auto-indent>/s) {
-			$line =~ s/^(.*?) *\; */<auto-indent>/s;
-			$lines[$num_lines] = $1.'<remove-MLC>';
+		while ($clean_line =~ s/^(.*?) *\; */\{auto-indent}/s) {
+			$line =~ s/^(.*?) *\; */\{auto-indent}/s;
+			$lines[$num_lines] = $1.'{remove-MLC}';
 			$line_numbers[$num_lines] = $orig_line_number;
 			$num_lines++;
 		}
@@ -138,7 +160,6 @@ sub scan_file {
 
 	# parse and check file line by line
 	for ($pos = 1; $pos <= $num_lines; $pos++) {
-		$_ = $lines[$pos];
 
 		# reset per-line state
 		$state{'fixed_multiple_commands'} = 0;
@@ -148,38 +169,38 @@ sub scan_file {
 		$state{'num_fatals'} = 0;
 
 		# white-spaces
-		if (/\r$/s) {
+		if ($lines[$pos] =~ /\r$/s) {
 			warning ("convert to 'unix EOL'-format");
-			s/\r$//s;
+			$lines[$pos] =~ s/\r$//s;
 		}
-		if (/\r/s) {
+		if ($lines[$pos] =~ /\r/s) {
 			warning ("unallowed 'carriage-return' character");
-			s/\r//gs;
+			$lines[$pos] =~ s/\r//gs;
 		}
-		if (/\f/s) {
+		if ($lines[$pos] =~ /\f/s) {
 			warning ("unallowed 'form-feed' character");
-			s/\f//gs;
+			$lines[$pos] =~ s/\f//gs;
 		}
-		if (/\t/s) {
+		if ($lines[$pos] =~ /\t/s) {
 			warning ("unallowed 'tabulator' character");
-			s/\t/${tab_to_spaces_str}/gs;
+			$lines[$pos] =~ s/\t/${tab_to_spaces_str}/gs;
 		}
-		if (/\s+$/s) {
+		if ($lines[$pos] =~ /\s+$/s) {
 			warning ("remove 'spaces' at end of line");
-			s/\s*$//s;
+			$lines[$pos] =~ s/\s*$//s;
 		}
-		if (/ +,/s) {
+		if ($lines[$pos] =~ / +,/s) {
 			warning ("remove 'spaces' before a comma");
-			s/ +,/,/s;
+			$lines[$pos] =~ s/ +,/,/s;
 		}
 
 		# comments
-		if (/^$/) {
-			# empty line (deactivate this block to allow empty lines)
+		if ($comment_empty_lines && ($lines[$pos] =~ /^ *$/)) {
+			# empty line
 			warning ("empty lines should have a '!' in front");
-			$_ = '!';
+			$lines[$pos] = '!';
 		}
-		my $no_strings = cut_strings ($_);
+		my $no_strings = cut_strings ($lines[$pos]);
 		if ($no_strings =~ /^( +)\!/s) {
 			my $spaces = $1;
 			my $num_spaces = length ($spaces);
@@ -196,17 +217,42 @@ sub scan_file {
 					else {
 						$spaces = '';
 					}
-					s/^ +\!/${spaces}\!/s;
+					$lines[$pos] =~ s/^ +\!/${spaces}\!/s;
 				}
 			}
+			elsif ($lines[$pos] =~ s/^ +\!$/\!/s) {
+				picky_warning ("empty comment lines start at the beginning of a line");
+			}
 		}
-		if (/^ *\!\!+ */s) {
+		if ($lines[$pos] =~ /^ *\!\!+ */s) {
 			# double commenting
 			picky_warning ("comments start with only one exclamation mark");
-			s/^( *\!)\!+ */${1} /s;
+			$lines[$pos] =~ s/^( *\!)\!+ */${1} /s;
 		}
-		$lines[$pos] = $_;
-		if (/^ *\!/s) {
+		if (!$old_style && $state{'routine_footer'}) {
+			# routine separator line
+			if ($lines[$pos] =~ /^ *\! *\*[ \*]{11,}$/s) {
+				if ($lines[$pos] !~ /^\! \*{${routine_separator_length}}$/s) {
+					picky_warning ("non-standard separator line after the end of a routine");
+					$lines[$pos] = $comment_str.('*' x $routine_separator_length);
+				}
+			}
+			else {
+				if ($lines[$pos-1] =~ /^ *contains$/is) {
+					warning ("separator line required after 'contains'");
+				}
+				else {
+					warning ("separator line required after the end of a routine");
+				}
+				if ($lines[$pos] =~ s/^[ \!]*$/{remove-me}/s) {
+					warning ("no empty line allowed after 'contains'");
+					next;
+				}
+				$lines[$pos-1] .= "\n".$comment_str.('*' x $routine_separator_length);
+			}
+		}
+		$state{'routine_footer'} = 0;
+		if ($lines[$pos] =~ /^ *\!/s) {
 			# this line contains only a comment
 			$state{'comment_block_length'}++;
 			if ($state{'routine_header'}) { $state{'routine_header'}++; }
@@ -215,34 +261,152 @@ sub scan_file {
 		my $before = $state{'comment_block_length'};
 		if (!$state{'eol_comment'} && !$state{'routine_header'} && ($before >= 1) && ($before <= 3)) {
 			if ($lines[$pos-$before] =~ s/^ *(\!?)$/${1}/s) {
-				# empty comment line (currently deactivated!)
-				#$pos -= $before;
-				#warning ("empty lines shall stay empty");
-				#$lines[$pos] = '';
-				#$pos += $before;
+				# empty comment line
+				if (!$comment_empty_lines) {
+					$pos -= $before;
+					warning ("empty lines shall stay empty");
+					$lines[$pos] = '';
+					$pos += $before;
+				}
 				# single line comment
 				my $pre = $state{'indent'};
-				if ((($before == 2) && (!/^ *(?:subroutine|function)/is)) || (($before == 3) && ($lines[$pos-1] =~ /^ *\!?$/s))) {
+				if (!$old_style && (($before == 2) || (($before == 3) && ($lines[$pos-1] =~ /^ *\!?$/s)))) {
 					if ($lines[$pos-$before+1] !~ /^ {${pre}}\! *([^ ].*)$/s) {
 						if ($lines[$pos-$before+1] =~ /^ *\! *([^ ].*)$/s) {
 							my $comment = $1;
 							$pos -= $before-1;
 							warning ("single-line comments shall be indented");
-							$lines[$pos] = $state{'indent_str'}.'! '.$comment;
+							$lines[$pos] = $state{'indent_str'}.$comment_str.$comment;
 							$pos += $before-1;
 						}
 					}
 					if ($before == 3) {
 						$pos--;
 						warning ("single-line comments are not followed by an empty line");
-						$lines[$pos] = '<remove-me>';
+						$lines[$pos] = '{remove-me}';
 						$pos++;
 					}
 				}
 			}
 		}
+		if (!$state{'eol_comment'} && ($state{'routine_header'} == 2) && ($lines[$pos] =~ /^[ \!]*$/s)) {
+			# routine start
+			warning ("no empty lines after the beginning of a routine");
+			$lines[$pos] = '{remove-me}';
+			$state{'routine_header'} = 0;
+		}
+		if ($header_before_routine && !$state{'eol_comment'} && ($state{'routine_header'} >= 2)) {
+			# routine header
+			$pos--;
+			warning ("routine headers reside ahead of the routine they describe");
+			my $routine = $lines[$pos-$state{'routine_header'}+1];
+			my $warning_given = 0;
+			my $just_started = 1;
+			for (my $move = $state{'routine_header'}-1; $move >= 1; $move--) {
+				$lines[$pos-$move] = $lines[$pos-$move+1];
+				if ($just_started && ($lines[$pos-$move] =~ /^[ \!]*$/s)) {
+					if (!$warning_given) {
+						warning ("no empty lines after a routine separator line");
+						$warning_given = 1;
+					}
+					$lines[$pos-$move] = '{remove-me}';
+				}
+				else {
+					$just_started = 0;
+				}
+			}
+			if ($lines[$pos-1] !~ /^[ \!]+$/s) {
+				warning ("one empty line is required after the routine header");
+				$lines[$pos-1] .= "\n";
+				if ($comment_empty_lines) { $lines[$pos-1] .= '!'; }
+			}
+			else {
+				if (!$comment_empty_lines) { $lines[$pos-1] =~ s/^[ \!]+$//s; }
+			}
+			$lines[$pos] = $routine;
+			$pos++;
+		}
 		$state{'routine_header'} = 0;
-		if (/^ *(?:subroutine|function) /is) { $state{'routine_header'} = 1; }
+		if ($lines[$pos] =~ /^ *(?:subroutine|function) /is) {
+			$state{'routine_header'} = 1;
+			# empty lines after routine header
+			if ($lines[$pos-1] =~ s/^ *(\!?)$/${1}/s) {
+				my $found = $1;
+				if (!$comment_empty_lines && $found) {
+					warning ("a routine header does not end with an empty comment line");
+					$lines[$pos-1] = '';
+				}
+				my $back = 2;
+				my $warning_given = 0;
+				while ($lines[$pos-$back] =~ s/^[ \!]*$/\{remove-me}/s) {
+					if (!$warning_given) {
+						warning ("exactly one empty line is required between the header and its routine");
+						$warning_given = 1;
+					}
+					$back++;
+				}
+			}
+		}
+		my $min_block_length = 2;
+		if ($old_style) { $min_block_length = 3; }
+		if (($state{'comment_block_length'} > $min_block_length) || (($state{'comment_block_length'} == $min_block_length) && (!$old_style || ($lines[$pos] =~ /^[ \!]*$/s)))) {
+			# multi-line comment
+			my $before = $state{'comment_block_length'};
+			if ($lines[$pos-$before] =~ /^(\!?)$/s) {
+				# starting
+				my $found = $1;
+				if (!$comment_empty_lines && $found) {
+					$pos -= $before;
+					warning ("multi-line comment blocks do not start with an empty comment line");
+					$lines[$pos] = '';
+					if ($lines[$pos-1] =~ /^[ \!]*$/s) { $lines[$pos] = '{remove-me}'; }
+					$pos += $before;
+				}
+				my $back = 1;
+				my $warning_given = 0;
+				while ($lines[$pos-$before+$back] =~ s/^[ \!]*$/\{remove-me}/s) {
+					if (!$warning_given) {
+						$pos -= $before-$back;
+						if ($comment_empty_lines) {
+							warning ("multi-line comment blocks start with at maximum one empty comment line");
+						}
+						else {
+							warning ("multi-line comment blocks start with at maximum one empty line");
+						}
+						$pos += $before-$back;
+						$warning_given = 1;
+					}
+					$back++;
+				}
+			}
+			if ($lines[$pos-1] =~ /^(\!?)$/s) {
+				# ending
+				my $found = $1;
+				if (!$comment_empty_lines && $found) {
+					$pos--;
+					warning ("a multi-line comment does not end with an empty comment line");
+					$lines[$pos] = '';
+					if ($lines[$pos+1] =~ /^[ \!]*$/s) { $lines[$pos] = '{remove-me}'; }
+					$pos++;
+				}
+				my $back = 2;
+				my $warning_given = 0;
+				while ($lines[$pos-$back] =~ s/^[ \!]*$/\{remove-me}/s) {
+					if (!$warning_given) {
+						$pos -= $back;
+						if ($comment_empty_lines) {
+							warning ("a multi-line comment ends with at maximum one empty comment line");
+						}
+						else {
+							warning ("a multi-line comment ends with at maximum one empty line");
+						}
+						$pos += $back;
+						$warning_given = 1;
+					}
+					$back++;
+				}
+			}
+		}
 		$state{'comment_block_length'} = 0;
 		if ($no_strings =~ /\S *\!/s) {
 			# comment at end of line
@@ -257,16 +421,14 @@ sub scan_file {
 		while (my ($search, $replace) = each (%replace)) {
 			my $pattern = regex_escape ($search);
 			if (lc ($search) eq lc ($replace)) {
-				if (/${pattern}/s) {
+				if ($lines[$pos] =~ /${pattern}/s) {
 					warning ("replace '".$search."' by '".$replace."'");
-					s/${pattern}/${replace}/gs;
 					$lines[$pos] =~ s/${pattern}/${replace}/gs;
 				}
 			}
 			else {
-				if (/${pattern}/is) {
+				if ($lines[$pos] =~ /${pattern}/is) {
 					warning ("replace '".$search."' by '".$replace."'");
-					s/${pattern}/${replace}/gis;
 					$lines[$pos] =~ s/${pattern}/${replace}/gis;
 				}
 			}
@@ -276,7 +438,7 @@ sub scan_file {
 		while (my ($item, $exclude) = each (%require_spaces)) {
 			if (!$exclude) { $exclude = $item; }
 			$exclude = regex_escape ($exclude);
-			my $clear_line = cut_initialization ($_);
+			my $clear_line = cut_initialization ($lines[$pos]);
 			if ($item eq '=') {
 				$clear_line = cut_brackets ($clear_line);
 			}
@@ -287,7 +449,6 @@ sub scan_file {
 					picky_warning ("'".$item."' should be surrounded by spaces for readability");
 					$warning_given = 1;
 				}
-				s/^(.{${pre}})(${item}[^${exclude}])/${1} ${2}/is;
 				$lines[$pos] =~ s/^(.{${pre}})(${item}[^${exclude}])/${1} ${2}/is;
 			}
 			while ($clear_line =~ s/^(.*?[^${exclude}]${item})([^ ${exclude}])/${1} ${2}/is) {
@@ -296,44 +457,38 @@ sub scan_file {
 					picky_warning ("'".$item."' should be surrounded by spaces for readability");
 					$warning_given = 1;
 				}
-				s/^(.{${pre}})([^ ${exclude}])/${1} ${2}/is;
 				$lines[$pos] =~ s/^(.{${pre}})([^ ${exclude}])/${1} ${2}/is;
 			}
 		}
 
 		# use declaration
-		if (/^ *use +[${name}]+( *, *)only([ :].*)$/is) {
+		if ($lines[$pos] =~ /^ *use +[${name}]+( *, *)only([ :].*)$/is) {
 			my $pre = $1;
 			my $post = $2;
 			if ($pre =~ s/^ +//s) {
 				picky_warning ("a comma is not preceeded by spaces within a 'use'-statement");
-				s/^( *use +[${name}]+) +(, *only[ :])/${1}${2}/is;
 				$lines[$pos] =~ s/^( *use +[${name}]+) +(, *only[ :])/${1}${2}/is;
 			}
 			if ($pre =~ /^,$/s) {
 				picky_warning ("'only' requires a space left to it within a 'use'-statement");
-				s/^( *use +[^:]*,)only([ :])/${1} only${2}/is;
 				$lines[$pos] =~ s/^( *use +[^:]*,)only([ :])/${1} only${2}/is;
 			}
-			if ($pre =~ /^,  +/s) {
+			if (!$old_style && ($pre =~ /^,  +/s)) {
 				picky_warning ("'only' requires only one space left to it within a 'use'-statement");
-				s/^( *use +[^:]*,) +only([ :])/${1} only${2}/is;
 				$lines[$pos] =~ s/^( *use +[^:]*,) +only([ :])/${1} only${2}/is;
 			}
 			if ($post =~ s/^ +//s) {
 				picky_warning ("'only' is not followed by spaces within a 'use'-statement");
-				s/^( *use +[^:]*,) *only *:/${1} only:/is;
 				$lines[$pos] =~ s/^( *use +[^:]*,) *only *:/${1} only:/is;
 			}
 			if ($post =~ /^:(?:[^ ]|  +)/s) {
 				picky_warning ("'only' is followed by a colon and exactly one space within a 'use'-statement");
-				s/^( *use +[^:]*,) *only: */${1} only: /is;
 				$lines[$pos] =~ s/^( *use +[^:]*,) *only: */${1} only: /is;
 			}
 		}
 
 		# variable declaration
-		my $code_line = cut_comment ($_);
+		my $code_line = cut_comment ($lines[$pos]);
 		if ($code_line =~ /::/s) {
 			# comma-separated list of variables
 			$code_line = cut_brackets ($code_line);
@@ -344,7 +499,6 @@ sub scan_file {
 					picky_warning ("',' is followed by one space in a variable declaration for readability");
 					$warning_given = 1;
 				}
-				s/^(.{${pre}}) *,[ ,]*(?=[^ ])/${1}, /s;
 				$code_line =~ s/^(.{${pre}}) *,[ ,]*(?=[^ ])/${1}, /s;
 				$lines[$pos] =~ s/^(.{${pre}}) *,[ ,]*(?=[^ ])/${1}, /s;
 			}
@@ -361,7 +515,6 @@ sub scan_file {
 						picky_warning ("there is no space between '".$item."' and '".$found."'");
 						$warning_given = 1;
 					}
-					s/^(.{${pre}}) +([${follow}])/${1}${2}/is;
 					$code_line =~ s/^(.{${pre}}) +([${follow}])/${1}${2}/is;
 					$lines[$pos] =~ s/^(.{${pre}}) +([${follow}])/${1}${2}/is;
 				}
@@ -375,35 +528,31 @@ sub scan_file {
 						picky_warning ("'".$item."' should have a space left to it for readability");
 						$warning_given = 1;
 					}
-					s/^(.{${pre}})(${item}[ ,:])/${1} ${2}/is;
 					$code_line =~ s/^(.{${pre}})(${item}[ ,:])/${1} ${2}/is;
 					$lines[$pos] =~ s/^(.{${pre}})(${item}[ ,:])/${1} ${2}/is;
 				}
 			}
 			# convert declaration-keywords to small letters
-			if (/ character *\( *(LEN) *=/is) {
+			if ($lines[$pos] =~ / character *\( *(LEN) *=/is) {
 				my $found = $1;
 				if ($found =~ /[A-Z]/s) {
 					picky_warning ("'character(".$found."=...)' should be written in small letters");
 					$found = lc ($found);
-					s/( character *\() *${found} *=/${1}${found}=/gis;
 					$lines[$pos] =~ s/( character *\() *${found} *=/${1}${found}=/gis;
 				}
 			}
-			if (/ intent *\( *(IN|OUT|INOUT) *\)/is) {
+			if ($lines[$pos] =~ / intent *\( *(IN|OUT|INOUT) *\)/is) {
 				my $found = $1;
 				if ($found =~ /[A-Z]/s) {
 					picky_warning ("'intent(".$found.")' should be written in small letters");
 					$found = lc ($found);
-					s/( intent *\() *${found} *\)/${1}${found})/gis;
 					$lines[$pos] =~ s/( intent *\() *${found} *\)/${1}${found})/gis;
 				}
 			}
 			# put '(len=...)' after 'character(...)'
-			if (/ character *\( *(\d+|\*)\** *\)/is) {
+			if ($lines[$pos] =~ / character *\( *(\d+|\*)\** *\)/is) {
 				my $found = $1;
 				picky_warning ("write 'character(len=".$found.")' instead of 'character(".$found.")'");
-				s/( character) *\( *(\d+|\*)\** *\)/${1}(len=${2})/gis;
 				$lines[$pos] =~ s/( character) *\( *(\d+|\*)\** *\)/${1}(len=${2})/gis;
 			}
 		}
@@ -414,78 +563,85 @@ sub scan_file {
 			$separator = regex_escape ($separator);
 			my $pattern = regex_escape ($item);
 			my $warning_given = 0;
-			while (/[^${separator}]${pattern}/is) {
+			while ($lines[$pos] =~ /[^${separator}]${pattern}/is) {
 				if (!$warning_given) {
 					warning ("separator is required before and after '".$item."'");
 					$warning_given = 1;
 				}
-				s/([^ \(\)=,])${pattern}/${1} ${item}/is;
 				$lines[$pos] =~ s/([^ \(\)=,])${pattern}/${1} ${item}/is;
 			}
-			while (/${pattern}[^ \(\)=,]/is) {
+			while ($lines[$pos] =~ /${pattern}[^ \(\)=,]/is) {
 				if (!$warning_given) {
 					warning ("separator is required before and after '".$item."'");
 					$warning_given = 1;
 				}
-				s/${pattern}([^ \(\)=,])/${item} ${1}/is;
 				$lines[$pos] =~ s/${pattern}([^ \(\)=,])/${item} ${1}/is;
 			}
 		}
 
 		# jumping around
-		if (/, *end *=/is) {
+		if ($lines[$pos] =~ /, *end *=/is) {
 			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
-		if (/, *err *=/is) {
+		if ($lines[$pos] =~ /, *err *=/is) {
 			accumulative_fatal ("'err=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
 
 		# format strings
-		if (/, *fmt *= *(\d+)/is) {
+		if ($lines[$pos] =~ /, *fmt *= *(\d+)/is) {
 			accumulative_fatal ("'fmt=".$1."' is forbidden => better move the format string directly there");
 		}
 
 		# absolutely forbidden
-		if (/(?:^| )goto /is) {
+		if ($lines[$pos] =~ /(?:^| )goto /is) {
 			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else' or 'do-while-repeat'");
 			return;
 		}
-		if (/(?:^| )entry /is) {
+		if ($lines[$pos] =~ /(?:^| )entry /is) {
 			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
 			return;
 		}
 
 		# indentation
-		if (check_closed_nesting ($_)) { return; }
+		if (check_closed_nesting ($lines[$pos])) { return; }
 		if ($state{'indent'} < 0) {
 			fatal ("surplus 'end' => indentation became negative");
 			return;
 		}
 		my $start_spaces = $state{'indent_str'};
 		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
-		if (!/^${start_spaces}\S/s) {
-			if (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && (!/^${start_spaces}${continuation_str}\S/s))) {
+		if ($lines[$pos] && ($lines[$pos] !~ /^${start_spaces}\S/s)) {
+			if (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && ($lines[$pos] !~ /^${start_spaces}${continuation_str}\S/s))) {
 				if ($verbose) { warn ("NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"); }
-				if (!/^ *<auto-indent>/s) {
+				if ($lines[$pos] !~ /^ *<(?:auto-indent|remove-me)>/s) {
 					warning ("wrong indentation level");
 				}
-				s/^ *(?:<auto-indent> *)?/${start_spaces}/s;
-				$lines[$pos] =~ s/^ *(?:<auto-indent> *)?/${start_spaces}/s;
+				$lines[$pos] =~ s/^ *(?:\{auto-indent} *)?/${start_spaces}/s;
 			}
 		}
-		if (check_new_nesting ($_)) { return; }
+		if (check_new_nesting ($lines[$pos])) { return; }
+
+		# routine ending
+		if ($lines[$pos] =~ /^ *end(?:subroutine|function)(?: |$)/is) {
+			$pos--;
+			if (!$old_style && ($lines[$pos] =~ /^[ \!]*$/s)) {
+				picky_warning ("there is no empty line before the end of a routine");
+				$lines[$pos] = '{remove-me}';
+			}
+			$pos++;
+			$state{'routine_footer'} = 1;
+		}
+		if ($lines[$pos] =~ /^ *contains$/is) { $state{'routine_footer'} = 1; }
 
 		# multiple commands per line
-		if (/<remove-MCL>$/s && ($state{'fixed_multiple_commands'} <= 0)) {
+		if (!$state{'fixed_multiple_commands'} && ($lines[$pos] =~ /<remove-MCL>$/s)) {
 			picky_warning ("possible multi-command line => better put one command per line");
-			s/ *<remove-MCL>$//s;
 			$lines[$pos] =~ s/ *<remove-MCL>$//s;
 		}
 
 		# continuation line sign
-		if (/[^ ]\&$/s) {
+		if ($lines[$pos] =~ /[^ ]\&$/s) {
 			picky_warning ("'&' requires a space in front of it");
-			s/([^ ])\&$/${1} \&/s;
 			$lines[$pos] =~ s/([^ ])\&$/${1} \&/s;
 		}
 
@@ -495,17 +651,17 @@ sub scan_file {
 		$state{'complete_line'} =~ s/(\S) {2,}/${1} /gs;
 
 		# continued line
-		if (/\&$/s) {
+		if ($lines[$pos] =~ /\&$/s) {
 			$state{'continuation'}++;
 		}
 		else {
 			if ($state{'continuation'}) {
 				# end of continuation
-				if (/[^&]$/s && (length ($state{'complete_line'}) <= $preferred_line_length)) {
+				if (($lines[$pos] =~ /[^&]$/s) && (length ($state{'complete_line'}) <= $preferred_line_length)) {
 					# unneeded breaking
 					warning ("unneeded continuation-line break");
 					for (my $remove = 1; $remove <= $state{'continuation'}; $remove++) {
-						$lines[$pos-$remove] = '<remove-me>';
+						$lines[$pos-$remove] = '{remove-me}';
 					}
 					$lines[$pos] = $state{'complete_line'};
 				}
@@ -530,7 +686,7 @@ sub scan_file {
 
 	# file-global checks
 	$_ = join ("\n", @lines);
-	s/(?:\n<remove-me>)+//gs;
+	s/(?:\n *\{remove-me})+//gs;
 
 	# empty else-blocks
 	while (/(^.*?\n) *else(|where)(\n\![^\n]*)*\n *end *(|if|where)(?: |\n)/is) {
@@ -812,10 +968,10 @@ sub check_new_nesting {
 			}
 		}
 		if ($line =~ /^ *${trigger} /is) {
-			if ($line =~ / *<remove-MLC>$/s) {
+			if ($line =~ / *\{remove-MLC}$/s) {
 				warning ("put each indentation-sensitive command in a separate line");
-				$line =~ s/ *<remove-MLC>$//s;
-				$lines[$pos] =~ s/ *<remove-MLC>$//s;
+				$line =~ s/ *\{remove-MLC}$//s;
+				$lines[$pos] =~ s/ *\{remove-MLC}$//s;
 				$state{'fixed_multiple_commands'} = 1;
 			}
 			if (($trigger eq 'module') && ($line =~ /^ *module +procedure /is)) { last; }
@@ -843,12 +999,12 @@ sub check_new_nesting {
 
 sub check_closed_nesting {
 	my ($line) = cut_comment (@_);
-	$line =~ s/^<auto-indent>//s;
+	$line =~ s/^\{auto-indent}//s;
 	my $trigger_list = join ('|', @trigger_unindent);
 	my $trigger = '';
-	if ($line =~ s/ *<remove-MLC>$//s) {
+	if ($line =~ s/ *\{remove-MLC}$//s) {
 		warning ("put each indentation-sensitive command in a separate line");
-		$lines[$pos] =~ s/ *<remove-MLC>$//s;
+		$lines[$pos] =~ s/ *\{remove-MLC}$//s;
 		$state{'fixed_multiple_commands'} = 1;
 	}
 	if ($line =~ /^ *end *(${trigger_list})( +[${name}]+)?$/is) {
@@ -857,13 +1013,13 @@ sub check_closed_nesting {
 		if ($trigger =~ /(?:subroutine|function|module|type)/is) { $label = ''; }
 		if ($line =~ s/^( *end) +${trigger}/${1}${trigger}/is) {
 			warning ("either use 'end".$trigger."' or a pure 'end'-statement");
-			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?end) +${trigger}/${1}${trigger}/is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?end) +${trigger}/${1}${trigger}/is;
 		}
 		if ($label) {
 			warning ("using labels for 'end".$trigger."'-statements is not recommended");
 			$label =~ s/^ */ /s;
 			$line =~ s/^( *end${trigger}) *${label}/${1}/is;
-			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?end${trigger}) *${label}/${1}/is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?end${trigger}) *${label}/${1}/is;
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}${label}(\|+)$/${1}${2}/is) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TRIGGER:".$trigger."\n"); }
@@ -888,13 +1044,13 @@ sub check_closed_nesting {
 			warning ("better use 'else".$type."' instead of 'else ".$type."'");
 			$else =~ s/^ +//is;
 			$line =~ s/^( *else) +${type}/${1}${type}/is;
-			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?else) +${type}/${1}${type}/is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else) +${type}/${1}${type}/is;
 		}
 		if ($else =~ /^${type}[^ ${name}%]/is) {
 			warning ("space after 'else".$type."'-statement required");
 			$else =~ s/^${type}/${type} /is;
 			$line =~ s/^( *else${type})/${1} /is;
-			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?else${type})/${1} /is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else${type})/${1} /is;
 		}
 		if (($type eq 'if') && ($else !~ /^$/s) && ($else !~ /\&$/s) && ($else !~ / then/is)) {
 			# TODO: handle multi-line else-blocks correctly, currentyl just ignored
@@ -921,7 +1077,7 @@ sub check_closed_nesting {
 			warning ("space after 'case'-statement required");
 			$case = ' '.$case;
 			$line =~ s/^( *case)/${1} /is;
-			$lines[$pos] =~ s/^( *(?:<auto-indent> *)?case)/${1} /is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?case)/${1} /is;
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${type}\|$/${1}\|/s) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TYPE:".$type."\n"); }
