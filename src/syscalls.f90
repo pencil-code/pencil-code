@@ -34,7 +34,7 @@ module Syscalls
 !
 !  23-mar-10/Bourdin.KIS: implemented
 !
-      use Cparam, only : ip
+      use Cparam, only: ip
 !
       logical :: file_exists
       character(len=*) :: file
