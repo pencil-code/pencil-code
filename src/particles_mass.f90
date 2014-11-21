@@ -11,7 +11,7 @@
 ! MPAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles_mass=.true.
 !
-!! PENCILS PROVIDED TTp
+! PENCILS PROVIDED TTp
 !
 !***************************************************************
 module Particles_mass
@@ -30,14 +30,12 @@ module Particles_mass
   include 'particles_mass.h'
 !
   logical :: lpart_mass_backreac=.true.
-  real :: mass_const,dmpdt=1e-3
-  character (len=labellen), dimension (ninit) :: init_particle_mass='nothing'
+  real :: mass_const, dmpdt=1e-3
+  character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
-  namelist /particles_mass_init_pars/ &
-      init_particle_mass, mass_const
+  namelist /particles_mass_init_pars/ init_particle_mass, mass_const
 !
-  namelist /particles_mass_run_pars/ &
-      lpart_mass_backreac,dmpdt
+  namelist /particles_mass_run_pars/ lpart_mass_backreac,dmpdt
 !
   integer :: idiag_mpm=0
   integer :: idiag_convm=0
@@ -53,41 +51,35 @@ module Particles_mass
       if (lroot) call svn_id( &
           "$Id: particles_mass.f90 20849 2013-08-06 18:45:43Z anders@astro.lu.se $")
 !
-!  Index for particle mass.
+      ! Index for particle mass.
+      imp = npvar+1
+      pvarname(npvar+1) = 'imp'
+      npvar = npvar+1
 !
-      imp=npvar+1
-      pvarname(npvar+1)='imp'
-      npvar=npvar+1
+      ! Index for density at the outer shell.
+      irhosurf = npvar+1
+      pvarname(npvar+1) = 'irhosurf'
+      npvar = npvar+1
 !
-!  Index for density at the outer shell.
-!
-      irhosurf=npvar+1
-      pvarname(npvar+1)='irhosurf'
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
+      ! Check that the fp and dfp arrays are big enough.
       if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles_mass: npvar > mpvar','')
       endif
 !
-!  Index for initial value of particle mass.
+      ! Index for initial value of particle mass.
+      impinit = mpvar+npaux+1
+      pvarname(impinit) = 'impinit'
+      npaux = npaux+1
 !
-      impinit=mpvar+npaux+1
-      pvarname(impinit)='impinit'
-      npaux=npaux+1
+      ! Index for particle radius
+      iapinit = impinit+1
+      pvarname(iapinit) = 'iapinit'
+      npaux = npaux+1
 !
-!  Index for particle mass.
-!
-      iapinit=impinit+1
-      pvarname(iapinit)='iapinit'
-      npaux=npaux+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
+      ! Check that the fp and dfp arrays are big enough.
       if (npaux > mpaux) then
-        if (lroot) write(0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
+        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
         call fatal_error('register_particles_mass: npaux > mpaux','')
       endif
 !
@@ -102,7 +94,7 @@ module Particles_mass
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -114,29 +106,28 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray) :: fp
 !
       real :: rhom
       integer :: j, k
 !
-!  Initial particle position.
+      ! Initial particle position.
+      fp(1:mpar_loc,imp) = 0.
 !
-      fp(1:mpar_loc,imp)=0.
-!
-      do j=1,ninit
+      do j = 1,ninit
 !
         select case (init_particle_mass(j))
 !
         case ('nothing')
-          if (lroot.and.j==1) print*, 'init_particles_mass: nothing'
+          if (lroot .and. j == 1) print*, 'init_particles_mass: nothing'
 !
         case ('constant')
           if (lroot) then
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
-          fp(1:mpar_loc,imp)    =mass_const
+          fp(1:mpar_loc,imp)    = mass_const
 !
 !
         case ('rhopmat')
@@ -144,7 +135,7 @@ module Particles_mass
             print*, 'init_particles_mass: constant particle mass'
             print*, 'init_particles_mass: mass_const=', mass_const
           endif
-          fp(1:mpar_loc,imp)=4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
+          fp(1:mpar_loc,imp) = 4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
 ! NILS og JONAS: Must make auxiallary slot in fp array for initial_mass!!!!
 !
         case default
@@ -157,7 +148,11 @@ module Particles_mass
 !
 !  Set the initial mass
 !
-        fp(1:mpar_loc,impinit)=fp(1:mpar_loc,imp)
+        fp(1:mpar_loc,impinit) = fp(1:mpar_loc,imp)
+!
+!  Set initial surface shell density
+!
+        fp(1:mpar_loc,irhosurf) = fp(1:mpar_loc,imp)/ (fp(1:mpar_loc,iap)**3 * 4./3. * pi)
 !
       enddo
 !
@@ -178,17 +173,16 @@ module Particles_mass
 !
 !  23-sep-14/Nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
-!  Diagnostic output
-!
+      ! Diagnostic output
       if (ldiagnos) then
-        if (idiag_mpm/=0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
-        if (idiag_convm/=0) call sum_par_name(1.-fp(1:mpar_loc,imp)&
+        if (idiag_mpm /= 0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
+        if (idiag_convm /= 0) call sum_par_name(1.-fp(1:mpar_loc,imp) &
             /fp(1:mpar_loc,impinit),idiag_convm)
       endif
 !
@@ -206,20 +200,21 @@ module Particles_mass
 !
 !  23-sep-14/Nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(nx) :: volume_pencil
-      real :: volume_cell, rho1_point, weight,dmass, Vp
-      real, dimension (mpar_loc) :: St, Rc_hat
-      integer :: k, ix0,iy0,iz0
-      integer :: izz,izz0,izz1,iyy,iyy0,iyy1,ixx,ixx0,ixx1
+      real :: volume_cell, rho1_point, weight, dmass, Vp
+      real :: mass_per_radius, rho_init
+      real, dimension(mpar_loc) :: St
+      integer :: k, ix0, iy0, iz0
+      integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: dfp, df
+      intent(in) :: f, fp, ineargrid
+      intent(inout) :: dfp, df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -231,81 +226,74 @@ module Particles_mass
 !  Get total surface area and molar reaction rate of carbon
 !
       call get_St(St,k1_imn(imn),k2_imn(imn))
-      call get_R_c_hat(Rc_hat,k1_imn(imn),k2_imn(imn))
 !
-!  Loop over all particles in current pencil.
+      ! Loop over all particles in current pencil.
+      do k = k1_imn(imn),k2_imn(imn)
 !
-      do k=k1_imn(imn),k2_imn(imn)
-!
-!  Check if particles chemistry is turned on
-!
+        ! Check if particles chemistry is turned on
         if (lparticles_chemistry) then
 !
-!  Calculate the change in particle mass
-!
+          ! Calculate the change in particle mass
           dmass = sum(mdot_ck(k,:))
 !
         else
-          dmass=-dmpdt
+          dmass = -dmpdt
         endif
 !
-!  Add the change in particle mass to the dfp array
-!
-        dfp(k,imp)=dfp(k,imp)+dmass
+        ! Add the change in particle mass to the dfp array
+        dfp(k,imp) = dfp(k,imp)+dmass
 !
 !  Evolve the density at the outer particle shell. This is used to
 !  determine how evolve the particle radius (it should not start to
 !  decrease before the outer shell is entirly consumed).
 !
-        Vp=4*pi*fp(k,iap)**3/3.
-        dfp(k,irhosurf)=dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
+        Vp = 4*pi*fp(k,iap)**3/3.
+        dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
 !
-!  Calculate feed back from the particles to the gas phase
-!
+        ! Calculate feed back from the particles to the gas phase
         if (lpart_mass_backreac) then
 !
-          ix0=ineargrid(k,1)
-          iy0=ineargrid(k,2)
-          iz0=ineargrid(k,3)
+          ix0 = ineargrid(k,1)
+          iy0 = ineargrid(k,2)
+          iz0 = ineargrid(k,3)
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
+          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
               fp,k,ix0,iy0,iz0)
 !
-!  Loop over all neighbouring points
+          ! Loop over all neighbouring points
+          do izz = izz0,izz1
+            do iyy = iyy0,iyy1
+              do ixx = ixx0,ixx1
 !
-          do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                ! Find the relative weight of the current grid point
+                call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
-!  Find the relative weight of the current grid point
+                ! Find the volume of the grid cell of interest
+                call find_grid_volume(ixx,iyy,izz,volume_cell)
 !
-            call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                ! Find the gas phase density
+                if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
+                  rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                else
+                  rho1_point = p%rho1(ixx-nghost)
+                endif
 !
-!  Find the volume of the grid cell of interest
-!
-            call find_grid_volume(ixx,iyy,izz,volume_cell)
-!
-!  Find the gas phase density
-!
-            if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-              rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-            else
-              rho1_point = p%rho1(ixx-nghost)
-            endif
-!
-!  Add the source to the df-array
-!
-            if (ldensity_nolog) then
-              df(ixx,iyy,izz,irho)=df(ixx,iyy,izz,irho)&
-                  -dmass*weight/volume_cell
-            else
-              df(ixx,iyy,izz,ilnrho)=df(ixx,iyy,izz,ilnrho)&
-                  -dmass*rho1_point*weight/volume_cell
-            endif
-          enddo; enddo; enddo
+                ! Add the source to the df-array
+                if (ldensity_nolog) then
+                  df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
+                      -dmass*weight/volume_cell
+                else
+                  df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
+                      -dmass*rho1_point*weight/volume_cell
+                endif
+              enddo
+            enddo
+          enddo
         endif
       enddo
 !
@@ -315,16 +303,16 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_mass_init_pars,ERR=99,IOSTAT=iostat)
+        read (unit,NML=particles_mass_init_pars,ERR=99,IOSTAT=iostat)
       else
-        read(unit,NML=particles_mass_init_pars,ERR=99)
+        read (unit,NML=particles_mass_init_pars,ERR=99)
       endif
 !
-99    return
+      99    return
 !
     endsubroutine read_particles_mass_init_pars
 !***********************************************************************
@@ -332,9 +320,9 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_mass_init_pars)
+      write (unit,NML=particles_mass_init_pars)
 !
     endsubroutine write_particles_mass_init_pars
 !***********************************************************************
@@ -342,16 +330,16 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_mass_run_pars,ERR=99,IOSTAT=iostat)
+        read (unit,NML=particles_mass_run_pars,ERR=99,IOSTAT=iostat)
       else
-        read(unit,NML=particles_mass_run_pars,ERR=99)
+        read (unit,NML=particles_mass_run_pars,ERR=99)
       endif
 !
-99    return
+      99    return
 !
     endsubroutine read_particles_mass_run_pars
 !***********************************************************************
@@ -359,9 +347,9 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_mass_run_pars)
+      write (unit,NML=particles_mass_run_pars)
 !
     endsubroutine write_particles_mass_run_pars
 !***********************************************************************
@@ -372,27 +360,26 @@ module Particles_mass
 !  23-sep-14/Nils: adapted
 !
       use Diagnostics
-!      
+!
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
       logical :: lwr
 !
-!  Write information to index.pro.
-!
+      ! Write information to index.pro.
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'imp=', imp
+      if (present(lwrite)) lwr = lwrite
+      if (lwr) write (3,*) 'imp=', imp
 !
-!  Reset everything in case of reset.
-!
+      ! Reset everything in case of reset.
       if (lreset) then
-        idiag_mpm=0; idiag_convm=0
+        idiag_mpm = 0 
+        idiag_convm = 0
       endif
 !
-      if (lroot .and. ip<14) print*,'rprint_particles_mass: run through parse list'
-      do iname=1,nname
+      if (lroot .and. ip < 14) print*,'rprint_particles_mass: run through parse list'
+      do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
         call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
       enddo

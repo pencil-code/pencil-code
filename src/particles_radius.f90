@@ -18,6 +18,7 @@ module Particles_radius
   use Messages
   use Particles_cdata
   use Particles_sub
+  use Particles_chemistry
 !
   implicit none
 !
@@ -337,6 +338,8 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       logical :: lfirstcall=.true., lheader
+      integer :: k,i
+      real :: mass_per_radius, rho,mass_loss
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -355,6 +358,24 @@ module Particles_radius
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
       lfirstcall=.false.
+!
+!  Decrease particle radius with dmass if the density in the outer shell
+!  is wholly consumed (equation 51 in Equations to be solved for DNS
+!  reactive particles in a turbulent flow)
+!
+      if (lparticles_chemistry) then
+        do k = k1_imn(imn),k2_imn(imn)
+          if (fp(k,irhosurf) < 0) then
+            rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
+            mass_per_radius = 1./ 4. * pi * rho * fp(k,iap)**2
+            mass_loss = 0.
+            do i=1,N_surface_reactions
+              mass_loss = mass_loss + mdot_ck(k,i)
+            enddo
+            dfp(k,iap) = dfp(k,iap) + mass_loss *(1-effectiveness_factor(k))*mass_per_radius
+          endif
+        enddo
+      endif
 !
     endsubroutine dap_dt_pencil
 !***********************************************************************

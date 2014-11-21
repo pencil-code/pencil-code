@@ -19,14 +19,19 @@ module Particles_chemistry
   use Particles_cdata
   use Particles_sub
   use Particles_mpicomm
-  use Particles_radius
 !
   implicit none
 !
   include 'particles_chemistry.h'
 !
+  public :: mdot_ck, N_surface_reactions
+  public :: effectiveness_factor
+  
   integer :: N_adsorbed_species=0
   real :: mol_mass_carbon=12.0
+  integer :: N_surface_reactions=0
+  real, dimension(2,2) :: mdot_ck
+  real, dimension(2) :: effectiveness_factor 
 !
   contains
 !***********************************************************************

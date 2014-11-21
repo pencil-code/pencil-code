@@ -425,7 +425,6 @@ module Particles_surfspec
 !
 !  negative dmass means particle is losing mass
 !
-                dmass = sum(mdot_ck(k,:))
                 dmass=0.
                 do i=1,N_surface_species
                   index1 = jmap(i)
