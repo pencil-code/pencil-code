@@ -177,10 +177,11 @@ module Particles_chemistry
   real, dimension(:), allocatable :: q_reac
   real, dimension(:), allocatable :: Nu_p
 !
-  ! Some physical constants
+! Some physical constants
+! NILS: Must set up a system for these dimensional parameters
   real :: mol_mass_carbon=12.0
   !real :: Sgc_init=3e5 ! m^2/kg
-  real :: Sgc_init=3e6 ! cm^2/g NILS: Must set up a system for these dimensional parameters
+  real :: Sgc_init=3e6 ! cm^2/g 
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !
@@ -205,11 +206,13 @@ module Particles_chemistry
       lreactive_heating
 !
   contains
-!***********************************************************************
+! ******************************************************************************
     subroutine register_particles_chem()
 !
-!  wrapper routine for particle dependent and independent chemistry
+!  Wrapper routine for particle dependent and independent chemistry
 !  variables
+!
+!  oct-14/Jonas: coded
 !
       if (lroot) call svn_id( &
           "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
@@ -221,8 +224,12 @@ module Particles_chemistry
       call register_dep_pchem()
 !
     endsubroutine register_particles_chem
-!***********************************************************************
+! ******************************************************************************
     subroutine register_indep_pchem()
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: stat, i
       logical :: lenhance
@@ -257,7 +264,7 @@ module Particles_chemistry
 !
       effectiveness_factor_old = 1.
 !
-      ! Check if any of the reactions are enhanced
+! Check if any of the reactions are enhanced
       lenhance = .false.
       do i = 1,N_surface_reactions
         if (reaction_enhancement(i)  /=  1) then
@@ -267,16 +274,19 @@ module Particles_chemistry
           lenhance = .true.
         endif
       enddo
-      !if (lenhance) call sleep(4)
+!if (lenhance) call sleep(4)
 !
 ! Define the Arrhenius coefficients. The term ER_k is the activation energy
 ! divided by the gas constant (R)
 !
       call create_arh_param(part,B_k,ER_k,sigma_k)
-!
     endsubroutine register_indep_pchem
-!***********************************************************************
+! ******************************************************************************
     subroutine register_dep_pchem()
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: stat
 !
@@ -295,17 +305,15 @@ module Particles_chemistry
       allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for heating_k')
-!
     endsubroutine register_dep_pchem
-!***********************************************************************
-    subroutine get_pchem_info(species,string,variable,talk)
-!
+! ******************************************************************************
 !  Set up required variables etc. for reactive particles
 !
 !  02-sep-14/nils: coded
 !
 !  Count number of heterogeneous reactions and elements
 !
+    subroutine get_pchem_info(species,string,variable,talk)
       integer :: N_trash, variable, stat
       character(len=10), dimension(:) :: species
       character(len=*) :: string, talk
@@ -313,7 +321,8 @@ module Particles_chemistry
       N_surface_reactions = count_reactions('mechanics.in')
       N_max_elements = count_max_elements('mechanics.in') + 1
 !
-      ! Allocate some arrays
+! Allocate some arrays
+!
       if (.not. allocated(part)) then
         allocate(part(N_max_elements,N_surface_reactions))
       endif
@@ -337,7 +346,8 @@ module Particles_chemistry
       call read_mechanics_file('mechanics.in',part,n_max_elements, &
           reaction_direction,talk)
 !
-      ! Count heterogeneous species
+! Count heterogeneous species
+!
       call count_species(part,species,reactants,products)
       call count_species_type(species(:ns),N_adsorbed_species, &
           N_surface_species,ns)
@@ -348,10 +358,13 @@ module Particles_chemistry
       if (trim(string) == 'N_surface_reactants') variable = N_surface_reactants
       if (trim(string) == 'N_species') variable = ns
       if (trim(string) == 'N_reactants') variable = nr
-!
     endsubroutine get_pchem_info
-!***********************************************************************
+! ******************************************************************************
     subroutine calc_R_c_hat()
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
 !  JONAS talk to nils how to implement things from equ.f90
 !  JONAS implement right sequence so that mdot_ck is always calculated
@@ -359,10 +372,13 @@ module Particles_chemistry
 !
       R_c_hat = 0.0
       R_c_hat(:) = -sum(mdot_ck,DIM=2)/(St(:)*mol_mass_carbon)
-!
     endsubroutine calc_R_c_hat
-!***********************************************************************
+! ******************************************************************************
     subroutine calc_mod_surf_area(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:), allocatable :: mod_all, Sgc
       real, dimension(:,:) :: fp
@@ -389,8 +405,12 @@ module Particles_chemistry
       deallocate(Sgc)
 !
     endsubroutine calc_mod_surf_area
-!***********************************************************************
+! ******************************************************************************
     subroutine calc_St(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       real :: rho_p_init
@@ -411,8 +431,12 @@ module Particles_chemistry
       enddo
 !
     endsubroutine calc_St
-!**********************************************************************
+! ******************************************************************************
     subroutine create_arh_param(part,B_k,ER_k,sigma_k)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
 !takes the first numerical in part and writes it to b_k
 !
@@ -456,10 +480,14 @@ module Particles_chemistry
       enddo
 !
       ER_k = ER_k/gas_constant
-!
     endsubroutine create_arh_param
-!**********************************************************************
-    subroutine create_dependency(nu,dependent_reactant,n_surface_reactions,n_surface_reactants)
+! ******************************************************************************
+    subroutine create_dependency(nu,dependent_reactant,n_surface_reactions,&
+        n_surface_reactants)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, k, n_surface_reactions, n_surface_reactants
       real, dimension(:,:) :: nu
@@ -474,10 +502,13 @@ module Particles_chemistry
           endif
         enddo
       enddo
-!
     endsubroutine create_dependency
-!**********************************************************************
+! ******************************************************************************
     subroutine create_occupancy(adsorbed_species_names,site_occupancy)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i
       character(len=10), dimension(:) :: adsorbed_species_names
@@ -489,10 +520,13 @@ module Particles_chemistry
           site_occupancy(i) = 2
         endif
       enddo
-!
     endsubroutine create_occupancy
-!**********************************************************************
+! ******************************************************************************
     subroutine create_stoc(part,list,targ,lhs,nlist,power)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, j, k, stat, nlist
       real :: multi
@@ -502,7 +536,8 @@ module Particles_chemistry
       real, dimension(:,:) :: targ, power
       logical :: lhs, fwd, forpower
 !
-      ! list where the stochiometry is saved in
+! list where the stochiometry is saved in
+!
       if (lhs) then
         forpower = .true.
       else
@@ -519,7 +554,8 @@ module Particles_chemistry
             endif
             element = part(j,i)
 !
-            ! check if character is numeric
+! check if character is numeric
+!
             read (element(:1),*,iostat=stat) multi
             if (stat == 0) then
               element = element(2:)
@@ -527,7 +563,8 @@ module Particles_chemistry
               multi = 1.0
             endif
 !
-            ! if string is numeric, change stochiometric factor accordingly
+! if string is numeric, change stochiometric factor accordingly
+!
             if (element == list(k) .and. fwd .eqv. .true.) then
               targ(k,i) = real(multi)
               if (forpower) then
@@ -538,12 +575,13 @@ module Particles_chemistry
         enddo
       enddo
 !   targ(:,:) = int(targ(:,:))
-!
     endsubroutine create_stoc
-!**********************************************************************
+! ******************************************************************************
     subroutine get_ac(ac,list,nlist)
 !
-!  gets how many c atoms are on the surface species
+!  Gets how many c atoms are on the surface species
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, c_place, stat, nc, nlist
       character(len=10) :: species_in_q
@@ -565,13 +603,13 @@ module Particles_chemistry
           endif
         endif
       enddo
-!
     endsubroutine get_ac
-!**********************************************************************
+! ******************************************************************************
     subroutine sort_compounds(lhslist,species_list,nlist,n_big)
 !
-!  this file reads in the order of the
-!  compounds as prescribed
+!  This script reads in the order of the compounds as prescribed
+!
+!  oct-14/Jonas: coded
 !
       integer :: nlist, i, n_big,j
       character(len=10), dimension(:) :: lhslist
@@ -613,12 +651,13 @@ module Particles_chemistry
 !
       species_list(:nlist) = temp_list(:nlist)
       print*,'species_list=',species_list
-!
     endsubroutine sort_compounds
-!**********************************************************************
+! ******************************************************************************
     subroutine create_ad_sol_lists(list,target_list,ad_sol,nlist)
 !
-!  create lists of adsorbed and solid species
+!  Create lists of adsorbed and solid species
+!
+!  oct-14/Jonas: coded
 !
       character(len=10), dimension(:) :: list, target_list
       character(len=*) :: ad_sol
@@ -642,16 +681,20 @@ module Particles_chemistry
           endif
         endif
       enddo
-!
     endsubroutine create_ad_sol_lists
-!**********************************************************************
+! ******************************************************************************
     subroutine count_species_type(list,n_ad,n_sol,nlist)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, parenthes, nlist
       integer :: n_ad, n_sol
       character(len=10), dimension(:) :: list
 !
-      ! count adsorbed and surface species
+! count adsorbed and surface species
+!
       n_ad = 0
       n_sol = 0
       do i = 1,nlist
@@ -665,10 +708,13 @@ module Particles_chemistry
           endif
         endif
       enddo
-!
     endsubroutine count_species_type
-!**********************************************************************
+! ******************************************************************************
     subroutine count_species(part,species,reactants,products)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=10), dimension(:,:) :: part
       character(len=10) :: element
@@ -690,12 +736,14 @@ module Particles_chemistry
         do j = 1,jmax
           element = part(j,i)
 !
-          ! switch when the reaction arrow is read
+! switch when the reaction arrow is read
+!
           if (element == '->' .or. element == '<>') then
             lhs = .false.
           endif
 !
-          ! if element can be read as real, disregard
+! if element can be read as real, disregard
+!
           read (element,*,iostat=stat) numeric
           if (stat /= 0 .and. &
               element /= '->' .and. &
@@ -717,8 +765,7 @@ module Particles_chemistry
               place_reac = place_reac+1
             endif
 !
-            if ((.not. any(temp_prod  ==  element)) .and. &
-                (lhs .eqv. .false.)) then
+            if ((.not. any(temp_prod == element)) .and. (lhs .eqv. .false.)) then
               temp_prod(place_prod) = element
               place_prod = place_prod+1
             endif
@@ -727,17 +774,21 @@ module Particles_chemistry
         enddo
       enddo
 !
-      ! creating the lists
+! creating the lists
+!
       species(:place-1) = temp(:place-1)
       reactants(:place_reac-1) = temp_reac(:place_reac-1)
       products(:place_prod-1) = temp_prod(:place_prod-1)
       ns = place-1
       nr = place_reac-1
       np = place_prod-1
-!
     endsubroutine count_species
-!**********************************************************************
+! ******************************************************************************
     subroutine flip_and_parse(string,ireaction,target_list,direction)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=150) :: string, flipped_string
       character(len=50) :: lhs, sign, rhs, ende
@@ -771,10 +822,13 @@ module Particles_chemistry
       flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(ende)
       flags(ireaction) = 'rev'
       call parse(flipped_string,ireaction,target_list,'rev',direction)
-!
     endsubroutine flip_and_parse
-!**********************************************************************
+! ******************************************************************************
     subroutine parse(string,ireaction,target_list,flag,direction)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=150) :: string
       character :: tab = char(9)
@@ -818,10 +872,14 @@ module Particles_chemistry
 !   print*, target_list(:,ireaction)
 !
       direction(ireaction) = flag
-!
     endsubroutine parse
-!**********************************************************************
-    subroutine read_mechanics_file(inputfile,target_list,n_max_elements,reaction_direction,talk)
+! ******************************************************************************
+    subroutine read_mechanics_file(inputfile,target_list,n_max_elements,&
+        reaction_direction,talk)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: stat, ireaction, i, n_max_elements
       character(len=150) :: string
@@ -869,23 +927,27 @@ module Particles_chemistry
       else
         write (*,*) 'Could not open mechanics file'
       endif
-!
     endsubroutine read_mechanics_file
-!**********************************************************************
+! ******************************************************************************
     subroutine create_dngas()
 !
 !  Find the mole production of the forward reaction. This will later
 !  be used for the calculation of the reverse reaction rate.
+!
+!  oct-14/Jonas: coded
 !
       integer :: k
 !
       do k = 1,N_surface_reactions
         dngas(k) = sum(nu_prime(:,k)) - sum(nu(:,k))
       enddo
-!
     endsubroutine create_dngas
-!**********************************************************************
+! ******************************************************************************
     subroutine calc_entropy_of_reaction()
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, j, l, k, k1, k2
 !
@@ -909,10 +971,13 @@ module Particles_chemistry
           endif
         enddo
       enddo
-!
     endsubroutine calc_entropy_of_reaction
-!**********************************************************************
+! ******************************************************************************
     subroutine get_reverse_K_k(l,fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: l, k, k1, k2
       real :: pre_pressure
@@ -938,7 +1003,8 @@ module Particles_chemistry
         denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
         exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
         k_p(k) = exp(-exponent_(k))
-        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/(pre_pressure*interp_pp(k)))**(dngas(l-1)))
+        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/ &
+            (pre_pressure*interp_pp(k)))**(dngas(l-1)))
         K_k(k,l) = (K_k(k,l-1) / k_c(k))
       enddo
 !
@@ -946,10 +1012,13 @@ module Particles_chemistry
       deallocate(k_c)
       deallocate(denominator)
       deallocate(exponent_)
-!
     endsubroutine get_reverse_K_k
-!**********************************************************************
+! ******************************************************************************
     subroutine calc_conversion(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k
@@ -957,46 +1026,49 @@ module Particles_chemistry
       do k = k1_imn(imn),k2_imn(imn)
         conversion(k) = fp(k,imp) / fp(k,impinit)
       enddo
-!
     endsubroutine calc_conversion
-!***********************************************************************
+! ******************************************************************************
     subroutine get_St(var,start,end)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:) :: var
       integer :: start, end
 !
       var = St(start:end)
-!
     endsubroutine get_St
-!***********************************************************************
+! ******************************************************************************
     subroutine get_R_c_hat(var,start,end)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:) :: var
       integer :: start, end
 !
       var = R_c_hat(start:end)
-!
     endsubroutine get_R_c_hat
-!***********************************************************************
-! $  subroutine get_mod_surf_area(var,start,end)
-! $!
-! $    real, dimension(:) :: var
-! $    integer :: start, end
-! $!
-! $    var = mod_surf_area(start:end)
-! $!
-! $  end subroutine get_mod_surf_area
-!***********************************************************************
+! ******************************************************************************
     subroutine get_conversion(var,start,end)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:) :: var
       integer :: start, end
 !
       var = conversion(start:end)
-!
     endsubroutine get_conversion
-!***********************************************************************
+! ******************************************************************************
     subroutine calc_enthalpy_of_reaction()
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: i, k, k1, k2, j,l
 !
@@ -1020,14 +1092,14 @@ module Particles_chemistry
           endif
         enddo
       enddo
-!
     endsubroutine calc_enthalpy_of_reaction
-!**********************************************************************
+! ******************************************************************************
     subroutine calc_RR_hat(f,fp)
 !
 !  01-oct-2014/jonas:coded
 !
 !  JONAS: needs to be filled with life
+!  NILS: I guess it is filled with life now.... must be documented
 !  solid_reac L:30
 !
       real, dimension(mpar_loc,mparray) :: fp
@@ -1085,7 +1157,7 @@ module Particles_chemistry
         enddo
       enddo
 !
-      ! Find molar reaction rate of adsorbed surface species
+! Find molar reaction rate of adsorbed surface species
       if (N_adsorbed_species > 1) then
         R_j_hat = 0.
         do k = k1,k2
@@ -1108,15 +1180,14 @@ module Particles_chemistry
           RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
         enddo
       endif
-!
     endsubroutine calc_RR_hat
-!********************************************************************
+! ******************************************************************************
     subroutine calc_ndot_mdot_R_j_hat(fp)
-!
-!  taken from solid_reac L. 108 ff
 !
 ! Then find the carbon consumption rate and molar flux of each gaseous
 ! species at the particle surface
+!
+!  oct-14/jonas (coded)
 !
       real, dimension(:,:) :: fp
       integer :: n, i, j, k, l, k1, k2
@@ -1137,7 +1208,8 @@ module Particles_chemistry
         enddo
       enddo
 !
-      ! Find molar reaction rate of adsorbed surface species
+! Find molar reaction rate of adsorbed surface species
+!
       if (N_adsorbed_species > 1) then
         R_j_hat = 0.
         do k = k1,k2
@@ -1151,53 +1223,64 @@ module Particles_chemistry
         enddo
       endif
 !
-      ! Find mdot_ck
+! Find mdot_ck
+!
       do k = k1,k2
         do l = 1,N_surface_reactions
           mdot_ck(k,l) = -St(k)*Rck(k,l)
         enddo
       enddo
 !
-      ! Find the sum of all molar fluxes at the surface
+! Find the sum of all molar fluxes at the surface
+!
       do k = k1,k2
         ndot_total(k) = sum(ndot(k,:))
       enddo
-!
-!
     endsubroutine calc_ndot_mdot_R_j_hat
-!**********************************************************************
+! ******************************************************************************
     subroutine get_RR_hat(var,start,end)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: var
       integer :: start, end
 !
       var(start:end,:) = RR_hat(start:end,:)
-!
     endsubroutine get_RR_hat
-!**********************************************************************
+! ******************************************************************************
     subroutine get_part(var)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=10), dimension(:,:) :: var
 !
       var = part
-!
     endsubroutine get_part
-!**********************************************************************
+! ******************************************************************************
     subroutine get_reactants(var)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=10), dimension(40) :: var
 !
       intent(out) :: var
 !
       var = reactants
-!
     endsubroutine get_reactants
-!**********************************************************************
-    subroutine calc_effectiveness_factor(fp)
+! ******************************************************************************
+!
+!  DOCUMENT ME!
 !
 !  01-Oct-2014/Jonas: coded
 !  taken from solid_reac L. 149 and equations.pdf eq 35ff
 !
+    subroutine calc_effectiveness_factor(fp)
       real, dimension(:,:) :: fp
 !
       real, dimension(:,:), allocatable :: R_i_hat, D_eff
@@ -1223,7 +1306,7 @@ module Particles_chemistry
       allocate(tmp3(k1:k2))
       allocate(sum_R_i_hat_max(k1:k2))
 !
-      ! Find reaction rate for each of the reactants
+! Find reaction rate for each of the reactants
       R_i_hat = 0
       do k = k1,k2
         do l = 1,N_surface_reactions
@@ -1233,10 +1316,10 @@ module Particles_chemistry
         enddo
       enddo
 !
-      ! Find particle volume
+! Find particle volume
       volume(:) = 4.*pi*(fp(k1:k2,iap)**3)/3.
 !
-      ! Find pore radius
+! Find pore radius
       r_f = 2.
       pore_radius(:) = 2*r_f*porosity(:)*volume(:)/St(k1:k2)
 !
@@ -1266,7 +1349,7 @@ module Particles_chemistry
             thiele(k,i) = 1e-2
           endif
 !
-          ! calculate the effectivenes factor (all particles, all reactants)
+! calculate the effectivenes factor (all particles, all reactants)
           effectiveness_factor_species(k,i) = 3/thiele(k,i)* &
               (1./tanh(thiele(k,i))-1./thiele(k,i))
         enddo
@@ -1329,10 +1412,13 @@ module Particles_chemistry
       deallocate(tmp3)
       deallocate(sum_R_i_hat_max)
       deallocate(phi)
-!
     endsubroutine calc_effectiveness_factor
-!**********************************************************************
+! ******************************************************************************
     subroutine calc_surf_enthalpy(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(mpar_loc,mparray) :: fp
       integer :: k, k1, k2
@@ -1340,23 +1426,32 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      ! Unit: J/(mol)
+! Unit: J/(mol)
       do k = k1,k2
-        if (inuH2O > 0) surface_species_enthalpy(k,inuH2O) = -242.18e3-(5.47*fp(k,iTp))
+        if (inuH2O > 0) surface_species_enthalpy(k,inuH2O) = &
+            -242.18e3-(5.47*fp(k,iTp))
         if (inuO2 > 0)  surface_species_enthalpy(k,inuO2) = 0.
-        if (inuCO2 > 0) surface_species_enthalpy(k,inuCO2) = -392.52e3-(2.109*fp(k,iTp))
+        if (inuCO2 > 0) surface_species_enthalpy(k,inuCO2) = &
+            -392.52e3-(2.109*fp(k,iTp))
         if (inuH2 > 0)  surface_species_enthalpy(k,inuH2 ) = 0.
-        if (inuCO > 0)  surface_species_enthalpy(k,inuCO ) = -105.95e3-6.143*fp(k,iTp)
+        if (inuCO > 0)  surface_species_enthalpy(k,inuCO ) = &
+            -105.95e3-6.143*fp(k,iTp)
         if (inuCH > 0)  surface_species_enthalpy(k,inuCH ) = 594.13e3
-        if (inuHCO > 0) surface_species_enthalpy(k,inuHCO) =  45.31e3-(5.94*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_enthalpy(k,inuCH2) = 387.93e3-(5.8*fp(k,iTp))
+        if (inuHCO > 0) surface_species_enthalpy(k,inuHCO) = &
+            45.31e3-(5.94*fp(k,iTp))
+        if (inuCH2 > 0) surface_species_enthalpy(k,inuCH2) = &
+            387.93e3-(5.8*fp(k,iTp))
         if (inuCH4 > 0) surface_species_enthalpy(k,inuCH4) = -75e3
-        if (inuCH3 > 0) surface_species_enthalpy(k,inuCH3) = 144.65e3-(6.79*fp(k,iTp))
+        if (inuCH3 > 0) surface_species_enthalpy(k,inuCH3) = &
+            144.65e3-(6.79*fp(k,iTp))
       enddo
-!
     endsubroutine calc_surf_enthalpy
-!**********************************************************************
+! ******************************************************************************
     subroutine calc_surf_entropy(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k, k1, k2
@@ -1364,7 +1459,7 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      ! JONAS: units are in j/(mol*K)
+! JONAS: units are in j/(mol*K)
       do k = k1,k2
         if (inuH2O > 0) surface_species_entropy(k,inuH2O) = &
             189.00+(0.0425*fp(k,iTp))
@@ -1377,20 +1472,26 @@ module Particles_chemistry
         if (inuCO > 0)  surface_species_entropy(k,inuCO ) = &
             199.35+(0.0342*fp(k,iTp))
 !
-        ! taken from chemistry  webbook (1bar)
+! taken from chemistry  webbook (1bar)
         if (inuCH > 0)  surface_species_entropy(k,inuCH ) = 183.00
-        if (inuHCO > 0) surface_species_entropy(k,inuHCO) = 223.114+(0.0491*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_entropy(k,inuCH2) = 193.297+(0.0467*fp(k,iTp))
+        if (inuHCO > 0) surface_species_entropy(k,inuHCO) = &
+            223.114+(0.0491*fp(k,iTp))
+        if (inuCH2 > 0) surface_species_entropy(k,inuCH2) = &
+            193.297+(0.0467*fp(k,iTp))
 !
-        ! taken from chemistry webbook (1bar)
+! taken from chemistry webbook (1bar)
         if (inuCH4 > 0) surface_species_entropy(k,inuCH4) = 189.00
-        if (inuCH3 > 0) surface_species_entropy(k,inuCH3) = 190.18+(0.0601*fp(k,iTp))
+        if (inuCH3 > 0) surface_species_entropy(k,inuCH3) = &
+            190.18+(0.0601*fp(k,iTp))
 !
       enddo
-!
     endsubroutine calc_surf_entropy
-!*********************************************************************
+! ******************************************************************************
     subroutine calc_ads_entropy(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(mpar_loc,mparray) :: fp
       integer :: k, k1, k2
@@ -1398,7 +1499,7 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      ! Unit: J/(mol*K)
+! Unit: J/(mol*K)
       do k = k1,k2
 !
         if (imuadsO > 0)    then
@@ -1406,7 +1507,8 @@ module Particles_chemistry
               (164.19+(0.0218*fp(k,iTp)))*0.72 - (3.3*gas_constant)
         endif
 !
-        ! this is guessed
+! this is guessed
+!
         if (imuadsO2 > 0)   then
           adsorbed_species_entropy(k,imuadsO2) =  &
               2*adsorbed_species_entropy(k,imuadsO)
@@ -1425,14 +1527,18 @@ module Particles_chemistry
               0.6*(1+(1.44e-4*fp(k,iTp))) - (3.3*gas_constant)
         endif
 !
-        ! taken from nist
+! taken from nist
+!
         if (imufree > 0)    adsorbed_species_entropy(k,imufree) = 0
 !
       enddo
-!
     endsubroutine calc_ads_entropy
-!*********************************************************************
+! ******************************************************************************
     subroutine calc_ads_enthalpy(fp)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k, k1, k2
@@ -1452,17 +1558,21 @@ module Particles_chemistry
       if (imuadsCO > 0)   adsorbed_species_enthalpy(k1:k2,imuadsCO) = &
           -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
       if (imufree > 0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
-!
     endsubroutine calc_ads_enthalpy
-!*********************************************************************
+! ******************************************************************************
     subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
 !
-      ! Routine to calcute quantities used for reactive particles
+! Routine to calcute quantities used for reactive particles
+!
       call allocate_variable_pencils()
 !
       call calc_rho_p(fp)
@@ -1494,12 +1604,15 @@ module Particles_chemistry
 !
       call calc_ndot_mdot_R_j_hat(fp)
       call calc_R_c_hat()
-!
     endsubroutine calc_pchemistry_pencils
-!********************************************************************
+! ******************************************************************************
+!  allocate variables used in the pencil variable calculation
+!
     subroutine allocate_variable_pencils()
 !
-!  allocate variables used in the pencil variable calculation
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: k1, k2, stat
 !
@@ -1595,12 +1708,13 @@ module Particles_chemistry
       allocate(mdot_ck(k1:k2,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for mdot_ck')
-!
     endsubroutine allocate_variable_pencils
-!***************************************************
+! ******************************************************************************
     subroutine cleanup_chemistry_pencils()
 !
-!  06-oct-14/jonas:coded
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       deallocate(mod_surf_area)
       deallocate(surface_species_enthalpy)
@@ -1630,10 +1744,13 @@ module Particles_chemistry
       deallocate(q_reac)
       deallocate(Nu_p)
       deallocate(mdot_ck)
-!
     endsubroutine cleanup_chemistry_pencils
-!***************************************************
+! ******************************************************************************
     subroutine read_particles_chem_init_pars(unit,iostat)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1645,18 +1762,24 @@ module Particles_chemistry
       endif
 !
       99    return
-!
     endsubroutine read_particles_chem_init_pars
-!***********************************************************************
+! ******************************************************************************
     subroutine write_particles_chem_init_pars(unit)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer, intent(in) :: unit
 !
       write (unit,NML=particles_chem_init_pars)
-!
     endsubroutine write_particles_chem_init_pars
-!***********************************************************************
+! ******************************************************************************
     subroutine read_particles_chem_run_pars(unit,iostat)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1668,20 +1791,24 @@ module Particles_chemistry
       endif
 !
       99    return
-!
     endsubroutine read_particles_chem_run_pars
-!***********************************************************************
+! ******************************************************************************
     subroutine write_particles_chem_run_pars(unit)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer, intent(in) :: unit
 !
       write (unit,NML=particles_chem_run_pars)
-!
     endsubroutine write_particles_chem_run_pars
-!***********************************************************************
+! ******************************************************************************
     subroutine calc_rho_p(fp)
 !
-!  07-oct-14/jonas:coded
+!  DOCUMENT ME!
+!
+!  07-oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k, k1, k2
@@ -1693,12 +1820,13 @@ module Particles_chemistry
         rho_p(k) = fp(k,imp) / (4./3. *pi * fp(k,iap)**3)
         porosity(k) = 1-rho_p(k)/true_density_carbon
       enddo
-!
     endsubroutine calc_rho_p
-!***********************************************************************
+! ******************************************************************************
     subroutine remove_save_powers(target_list)
 !
-!  10-oct-14/jonas:coded
+!  DOCUMENT ME!
+!
+!  10-oct-14/Jonas: coded
 !
       character(len=10), dimension(:,:) :: target_list
       character(len=10) :: element, writeformat
@@ -1730,12 +1858,13 @@ module Particles_chemistry
         enddo
         i = i+1
       enddo
-!
     endsubroutine remove_save_powers
-!**********************************************************************
+! ******************************************************************************
     subroutine print_debug_info()
 !
+!  DOCUMENT ME!
 !
+!  oct-14/Jonas: coded
 !
       integer :: k
 !
@@ -1788,13 +1917,13 @@ module Particles_chemistry
       write (*,'(A20," ",10I4)') 'jmap=', jmap
       write (*,'(A20," ",10F4.0)') 'ac=',ac
       write (*,'(A20," ",10F4.0)') 'site_occupancy=',aac
-!
     endsubroutine print_debug_info
-!*******************************************************************
+! ******************************************************************************
     subroutine calc_K_k(f,fp,p,ineargrid)
 !
+!  Calculation of K_k from the Arrhenius factors
+!
 !  27-10-2014/jonas:coded
-!  calculation of K_k from the Arrhenius factors
 !
       real, dimension(:,:,:,:) :: f
       real, dimension(:,:) :: fp
@@ -1807,7 +1936,8 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      ! Calculation of the 'plain' K_k (reaction rate)
+! Calculation of the 'plain' K_k (reaction rate)
+!
       do k = k1,k2
         do l = 1,N_surface_reactions
           if (sigma_k(l) == 0) then
@@ -1817,8 +1947,7 @@ module Particles_chemistry
             dE = 2*delta_E/(N_iter-1)
             energy = ER_k(l)*gas_constant-delta_E
             if (energy < 0) then
-              print*,'k,delta_E,sigma_k(k),ER_k(k)=', &
-                  l,delta_E,sigma_k(l),ER_k(l)
+              print*,'k,delta_E,sigma_k(k),ER_k(k)=', l,delta_E,sigma_k(l),ER_k(l)
               call fatal_error('get_reaction_rates_solid', &
                   'delta_E is too large!')
             endif
@@ -1850,12 +1979,13 @@ module Particles_chemistry
         if (iter < 1) startup_quench = 0.
         K_k = K_k*startup_quench
       endif
-!
     endsubroutine calc_K_k
-!*******************************************************************
+! ******************************************************************************
     subroutine calc_Cg(p,ineargrid)
 !
 !  Gas concentration in the cell of the particle
+!
+!  oct-14/Jonas: coded
 !
       integer :: k, k1, k2
       integer :: ix0
@@ -1868,12 +1998,13 @@ module Particles_chemistry
       do k = k1,k2
         Cg(k) = interp_pp(k)/(R_cgs*interp_TT(k))
       enddo
-!
     endsubroutine calc_Cg
-!************************************************************************
+! ******************************************************************************
     subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
 !
 !  diffusion coefficients of gas species at nearest grid point
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:,:,:) :: f
       real, dimension(:,:) :: fp
@@ -1905,12 +2036,13 @@ module Particles_chemistry
       enddo
 !
       deallocate(diff_coeff_species)
-!
     endsubroutine calc_mass_trans_coeff
-!*************************************************************************
+! ******************************************************************************
     subroutine calc_A_p(fp)
 !
-!  particle surface
+!  Calculate particle surface area
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k1, k2
@@ -1921,10 +2053,12 @@ module Particles_chemistry
       A_p(k1:k2) = 4 * pi * fp(k1:k2,iap) * fp(k1:k2,iap)
 !
     endsubroutine calc_A_p
-!*************************************************************************
+! ******************************************************************************
     subroutine calc_Cs(fp)
 !
 !  calculate site concentration
+!
+!  oct-14/Jonas: coded
 !
       real, dimension(:,:) :: fp
       integer :: k, k1, k2,i
@@ -1940,12 +2074,13 @@ module Particles_chemistry
       enddo
 !
       Cs = Cs * total_carbon_sites
-!
     endsubroutine calc_Cs
-!*************************************************************************
+! ******************************************************************************
     subroutine calc_q_reac()
 !
 !  calculate the reactive heating of the particle
+!
+!  oct-14/Jonas: coded
 !
       integer :: k, k1, k2,i
       real, dimension(:,:), allocatable :: qk_reac
@@ -1959,25 +2094,27 @@ module Particles_chemistry
         q_reac(k) = sum(qk_reac(k,:))
       enddo
 !
-      ! JONAS: UNITS!!!!! qreac is in Joule, which is 10^7ergs
+! JONAS: UNITS!!!!! qreac is in Joule, which is 10^7ergs
       if (allocated(q_reac)) deallocate(q_reac)
-!
     endsubroutine calc_q_reac
-!*************************************************************************
+! ******************************************************************************
     subroutine get_q_reac(var)
 !
 !  transport routine to particles_temperature module
 !
+!  oct-14/Jonas: coded
 !
       real, dimension(:) :: var
 !
       var = q_reac
-!
     endsubroutine get_q_reac
-!************************************************************************
+! ******************************************************************************
+!
     subroutine calc_Nusselt()
 !
+!  DOCUMENT ME!
 !
+!  oct-14/Jonas: coded
 !
       integer :: k, k1, k2
       real :: Pr_g, Sc_g, rep
@@ -2006,20 +2143,24 @@ module Particles_chemistry
           Nu_p = 2.0
         endif
       enddo
-!
     endsubroutine calc_Nusselt
-!***********************************************************************
+! ******************************************************************************
     subroutine get_Nusselt(var)
 !
+!  DOCUMENT ME!
 !
+!  oct-14/Jonas: coded
 !
       real, dimension(:) :: var
 !
       var = Nu_p
-!
     endsubroutine get_Nusselt
-!**********************************************************************
+! ******************************************************************************
     subroutine remove_save_T_k(target_list)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       character(len=10), dimension(:,:) :: target_list
       character(len=10) :: el_T_k
@@ -2047,10 +2188,13 @@ module Particles_chemistry
           endif
         enddo
       enddo
-!
     endsubroutine remove_save_T_k
-!********************************************************************
+! ******************************************************************************
     function count_max_elements(inputfile)
+!
+!  DOCUMENT ME!
+!
+!  oct-14/Jonas: coded
 !
       integer :: count_max_elements
       character(len=*) :: inputfile
@@ -2093,12 +2237,13 @@ module Particles_chemistry
         maxelement = 0
         write (*,*) 'Problem with the single elements of the mechanics.in file'
       endif
-!
     endfunction count_max_elements
-!**************************************************
+! ******************************************************************************
     function count_reactions(inputfile)
 !
 !  this function counts the uncommented lines in the mechanics.in
+!
+!  oct-14/Jonas: coded
 !
       integer :: count_reactions
       integer :: stat, reactions
@@ -2125,12 +2270,13 @@ module Particles_chemistry
         count_reactions = 0
         write (*,*) 'Could not open mechanics file'
       endif
-!
     endfunction count_reactions
-!***********************************************************************
+! ******************************************************************************
     function find_species(species,unique_species,nlist)
 !
-!  function to replace the imu/inuX variables
+!  Function to replace the imu/inuX variables
+!
+!  oct-14/Jonas: coded
 !
       implicit none
 !
@@ -2146,7 +2292,6 @@ module Particles_chemistry
           find_species = i
         endif
       enddo
-!
     endfunction find_species
-!**********************************************************************
+! ******************************************************************************
 endmodule Particles_chemistry
