@@ -383,7 +383,6 @@ module Special
       character(len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
       character(len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
 !
-!
 ! Check which stratification file should be used:
 !
       lread_prof_uu    = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_uu') > 0)
@@ -2464,16 +2463,16 @@ module Special
       case (3)
         call fatal_error('get_lnQ','this invokes exp() too often')
         logT = lnTT*alog10(exp(1.)) ! Pencil units
-        !
+!
         lnQ = pars(1)*exp(-(logT-4.3)**2/pars(2)**2) &
             + pars(3)*exp(-(logT-4.9)**2/pars(4)**2) &
             + pars(5)*exp(-(logT-5.35)**2/pars(6)**2) &
             + pars(7)*exp(-(logT-5.85)**2/pars(8)**2) &
             + pars(9)
-        !
+!
         lnQ = lnQ * (20.*(-tanh((logT-3.7)*10.))+21)
         lnQ = lnQ + (tanh((logT-6.9)*3.1)/2.+0.5)*3.
-        !
+!
         lnQ = (lnQ+19.-32)*alog(10.)
         delta_lnTT = max_real
 !
@@ -2579,11 +2578,11 @@ module Special
         if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
-          !
+!
         case ('exp')
           ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
-          !
+!
           heatinput = heatinput + &
               heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))/heat_unit
 !
@@ -2597,7 +2596,7 @@ module Special
           ! For Sven et al. 2010 set:
           ! heat_par_exp= (1e3, 0.2 )
           ! heat_par_exp2= (1e-4, 10.)
-          !
+!
           heatinput = heatinput + &
               heat_par_exp2(1)*exp(-z_Mm/heat_par_exp2(2))/heat_unit
 !
@@ -2612,7 +2611,7 @@ module Special
           ! heat_par_gauss(1) is Center (z in Mm)
           ! heat_par_gauss(2) is Width (sigma)
           ! heat_par_gauss(3) is the amplitude (Flux)
-          !
+!
           heatinput = heatinput + &
               heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
               (2*heat_par_gauss(2)**2)))/heat_unit
@@ -2628,9 +2627,9 @@ module Special
           ! prec, inverser erf function)
           ! we draw for new flares as long as nano_time is /= 0. when done we
           ! reset nano_time to 0. again.
-          !
+!
           ! Later we will implement more options for nanoflaring! =D
-          !
+!
           ! SAVE GLOBAL SEED
           ! LOAD NANO_SEED
           call random_seed_wrapper(GET=global_rstate)
@@ -2639,7 +2638,7 @@ module Special
           if (nano_start == 0.) then
             ! If 0 roll to see if a nanoflare occurs
             call random_number_wrapper(nano_start)
-            !
+!
             if (nano_start > 0.95 ) then
               ! 5% chance for a nanoflare to occur, then get the location.
               call normal_deviate(nano_pos_z)
@@ -2653,7 +2652,7 @@ module Special
               nano_start = 0.
             endif
           endif
-          !
+!
           if (nano_start /= 0.) then
             ! if nano_start is not 0. then there is a nanoflare!
             ! 2nd assumption, nanoflare takes 60 seconds =)
@@ -2671,7 +2670,7 @@ module Special
 !
             if (nano_time <= 0.) nano_start = 0.
           endif
-          !
+!
           ! SAVE NANO_SEED
           ! RESTORE GLOBAL SEED
           call random_seed_wrapper(GET=nano_seed)
@@ -2713,7 +2712,7 @@ module Special
               'Please provide correct iheattype')
         endselect
       enddo
-      !
+!
       if (headtt) print*,'Total flux for all types:',heat_flux
 !
 ! Add to energy equation
