@@ -73,11 +73,11 @@ my $num_file = 0;
 my $exit_code = 0;
 my $filename = '';
 while ($filename = shift ()) {
-	if ($num_file > 0) {
+	if ($num_file) {
 		print ('========================================================================\n');
 	}
 	$num_file++;
-	if (!$quiet && ($num_files > 1)) {
+	if (!$quiet && ($num_files >= 2)) {
 		print ('File "'.$filename.'":'."\n");
 	}
 	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
@@ -85,7 +85,7 @@ while ($filename = shift ()) {
 	scan_file ($filename);
 	print STDERR ('File "'.$filename.'":'."\n");
 	print STDERR ('=> ');
-	if ($auto_correct && ($num_fatals == 0)) {
+	if ($auto_correct && !$num_fatals) {
 		write_file ($filename);
 	}
 	print_num_warnings ();
@@ -209,10 +209,11 @@ sub scan_file {
 		if (/^ *\!/s) {
 			# this line contains only a comment
 			$state{'comment_block_length'}++;
+			if ($state{'routine_header'}) { $state{'routine_header'}++; }
 			next;
 		}
 		my $before = $state{'comment_block_length'};
-		if (($state{'eol_comment'} + $state{'routine_header'} == 0) && ($before >= 1) && ($before <= 3)) {
+		if (!$state{'eol_comment'} && !$state{'routine_header'} && ($before >= 1) && ($before <= 3)) {
 			if ($lines[$pos-$before] =~ s/^ *(\!?)$/${1}/s) {
 				# empty comment line (currently deactivated!)
 				#$pos -= $before;
@@ -240,6 +241,8 @@ sub scan_file {
 				}
 			}
 		}
+		$state{'routine_header'} = 0;
+		if (/^ *(?:subroutine|function) /is) { $state{'routine_header'} = 1; }
 		$state{'comment_block_length'} = 0;
 		if ($no_strings =~ /\S *\!/s) {
 			# comment at end of line
@@ -249,10 +252,6 @@ sub scan_file {
 		else {
 			$state{'eol_comment'} = 0;
 		}
-
-		# routine header
-		$state{'routine_header'} = 0;
-		if (/^ *(?:subroutine|function) /is) { $state{'routine_header'}++; }
 
 		# replace
 		while (my ($search, $replace) = each (%replace)) {
@@ -500,7 +499,7 @@ sub scan_file {
 			$state{'continuation'}++;
 		}
 		else {
-			if ($state{'continuation'} > 0) {
+			if ($state{'continuation'}) {
 				# end of continuation
 				if (/[^&]$/s && (length ($state{'complete_line'}) <= $preferred_line_length)) {
 					# unneeded breaking
@@ -631,7 +630,7 @@ sub picky_warning {
 sub fixme_warning {
 	my ($message) = @_;
 	print_warning ($message);
-	if ($num_fatals > 0) { perish (); }
+	if ($num_fatals) { perish (); }
 }
 
 sub warning {
@@ -643,7 +642,7 @@ sub warning {
 	$num_fixed++;
 	$state{'num_fixed'}++;
 	print_warning ($message);
-	if ($num_fatals > 0) { perish (); }
+	if ($num_fatals) { perish (); }
 }
 
 sub print_warning {
@@ -655,7 +654,7 @@ sub print_warning {
 
 sub write_file {
 	my ($filename) = @_;
-	if ($num_fixed == 0) {
+	if (!$num_fixed) {
 		# no automatic changes applied
 		if (($num_warnings > 0) || ($num_fatals > 0)) {
 			warn ("NO automatic changes applied.\n");
@@ -684,33 +683,33 @@ sub write_file {
 sub print_num_warnings {
 	if ($auto_correct) {
 		my $num_unfixed = ($num_warnings - $num_fixed);
-		if ($num_fixed > 0) {
-			if ($num_fatals > 0) {
+		if ($num_fixed) {
+			if ($num_fatals) {
 				warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
 			}
 			else {
 				warn ($num_fixed." STYLE BREAKS were fixed.\n");
 			}
 		}
-		if ($num_unfixed > 0) {
+		if ($num_unfixed) {
 			warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
 		}
-		if (($num_accumulative + $num_fatals) > 0) {
+		if ($num_accumulative || $num_fatals) {
 			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
 		}
 	}
 	else {
-		if ($num_warnings > 0) {
+		if ($num_warnings) {
 			warn ($num_warnings." STYLE BREAKS should be fixed.\n");
 		}
-		if ($num_fixed > 0) {
+		if ($num_fixed) {
 			warn ($num_fixed." of them can be fixed automatically!\n");
 		}
-		if (($num_accumulative + $num_fatals) > 0) {
+		if ($num_accumulative || $num_fatals) {
 			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
 		}
 	}
-	if (($num_warnings + $num_fixed + $num_accumulative + $num_fatals) == 0) { warn ("everything OK, congratulations!\n"); }
+	if (!$num_warnings && !$num_fixed && !$num_accumulative && !$num_fatals) { warn ("everything OK, congratulations!\n"); }
 	$num_warnings = 0;
 	$num_fixed = 0;
 	$num_accumulative = 0;
