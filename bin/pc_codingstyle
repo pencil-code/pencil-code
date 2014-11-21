@@ -111,6 +111,8 @@ sub scan_file {
 	$state{'else_branch'} = '';
 	$state{'eol_comment'} = 0;
 	$state{'complete_line'} = '';
+	$state{'comment_block_length'} = 0;
+	$state{'routine_header'} = 0;
 
 	# read file
 	my $num_lines = 0;
@@ -205,16 +207,51 @@ sub scan_file {
 		$lines[$pos] = $_;
 		if (/^ *\!/s) {
 			# this line contains only a comment
+			$state{'comment_block_length'}++;
 			next;
 		}
+		my $before = $state{'comment_block_length'};
+		if (($state{'eol_comment'} + $state{'routine_header'} == 0) && ($before >= 1) && ($before <= 3)) {
+			if ($lines[$pos-$before] =~ s/^ *(\!?)$/${1}/s) {
+				# empty comment line (currently deactivated!)
+				#$pos -= $before;
+				#warning ("empty lines shall stay empty");
+				#$lines[$pos] = '';
+				#$pos += $before;
+				# single line comment
+				my $pre = $state{'indent'};
+				if ((($before == 2) && (!/^ *(?:subroutine|function)/is)) || (($before == 3) && ($lines[$pos-1] =~ /^ *\!?$/s))) {
+					if ($lines[$pos-$before+1] !~ /^ {${pre}}\! *([^ ].*)$/s) {
+						if ($lines[$pos-$before+1] =~ /^ *\! *([^ ].*)$/s) {
+							my $comment = $1;
+							$pos -= $before-1;
+							warning ("single-line comments shall be indented");
+							$lines[$pos] = $state{'indent_str'}.'! '.$comment;
+							$pos += $before-1;
+						}
+					}
+					if ($before == 3) {
+						$pos--;
+						warning ("single-line comments are not followed by an empty line");
+						$lines[$pos] = '<remove-me>';
+						$pos++;
+					}
+				}
+			}
+		}
+		$state{'comment_block_length'} = 0;
 		if ($no_strings =~ /\S *\!/s) {
 			# comment at end of line
 			picky_fixme_warning ("avoid end-of-line comments");
-			$state{'eol_comment'} = 1;
+			$state{'eol_comment'}++;
 		}
 		else {
 			$state{'eol_comment'} = 0;
 		}
+
+		# routine header
+		$state{'routine_header'} = 0;
+		if (/^ *(?:subroutine|function) /is) { $state{'routine_header'} = 1; }
 
 		# replace
 		while (my ($search, $replace) = each (%replace)) {
@@ -261,6 +298,37 @@ sub scan_file {
 				}
 				s/^(.{${pre}})([^ ${exclude}])/${1} ${2}/is;
 				$lines[$pos] =~ s/^(.{${pre}})([^ ${exclude}])/${1} ${2}/is;
+			}
+		}
+
+		# use declaration
+		if (/^ *use +[${name}]+( *, *)only([ :].*)$/is) {
+			my $pre = $1;
+			my $post = $2;
+			if ($pre =~ s/^ +//s) {
+				picky_warning ("a comma is not preceeded by spaces within a 'use'-statement");
+				s/^( *use +[${name}]+) +(, *only[ :])/${1}${2}/is;
+				$lines[$pos] =~ s/^( *use +[${name}]+) +(, *only[ :])/${1}${2}/is;
+			}
+			if ($pre =~ /^,$/s) {
+				picky_warning ("'only' requires a space left to it within a 'use'-statement");
+				s/^( *use +[^:]*,)only([ :])/${1} only${2}/is;
+				$lines[$pos] =~ s/^( *use +[^:]*,)only([ :])/${1} only${2}/is;
+			}
+			if ($pre =~ /^,  +/s) {
+				picky_warning ("'only' requires only one space left to it within a 'use'-statement");
+				s/^( *use +[^:]*,) +only([ :])/${1} only${2}/is;
+				$lines[$pos] =~ s/^( *use +[^:]*,) +only([ :])/${1} only${2}/is;
+			}
+			if ($post =~ s/^ +//s) {
+				picky_warning ("'only' is not followed by spaces within a 'use'-statement");
+				s/^( *use +[^:]*,) *only *:/${1} only:/is;
+				$lines[$pos] =~ s/^( *use +[^:]*,) *only *:/${1} only:/is;
+			}
+			if ($post =~ /^:(?:[^ ]|  +)/s) {
+				picky_warning ("'only' is followed by a colon and exactly one space within a 'use'-statement");
+				s/^( *use +[^:]*,) *only: */${1} only: /is;
+				$lines[$pos] =~ s/^( *use +[^:]*,) *only: */${1} only: /is;
 			}
 		}
 
