@@ -175,6 +175,7 @@ sub scan_file {
 
 		# comments
 		if (/^$/) {
+			# empty line (deactivate this block to allow empty lines)
 			warning ("empty lines should have a '!' in front");
 			$_ = '!';
 		}
