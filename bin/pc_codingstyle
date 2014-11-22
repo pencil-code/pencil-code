@@ -133,6 +133,7 @@ sub scan_file {
 	$state{'eol_comment'} = 0;
 	$state{'complete_line'} = '';
 	$state{'comment_block_length'} = 0;
+	$state{'routine_declaration'} = 1;
 	$state{'routine_header'} = 0;
 	$state{'routine_footer'} = 0;
 
@@ -328,6 +329,7 @@ sub scan_file {
 		}
 		$state{'routine_header'} = 0;
 		if ($lines[$pos] =~ /^ *(?:subroutine|function) /is) {
+			$state{'routine_declaration'} = 1;
 			$state{'routine_header'} = 1;
 			# empty lines after routine header
 			if ($lines[$pos-1] =~ s/^ *(\!?)$/${1}/s) {
@@ -353,7 +355,7 @@ sub scan_file {
 			# multi-line comment
 			my $before = $state{'comment_block_length'};
 			if ($lines[$pos-$before] =~ /^(\!?)$/s) {
-				# starting
+				# start of multi-line comment
 				my $found = $1;
 				if (!$comment_empty_lines && $found) {
 					$pos -= $before;
@@ -380,7 +382,7 @@ sub scan_file {
 				}
 			}
 			if ($lines[$pos-1] =~ /^(\!?)$/s) {
-				# ending
+				# end of multi-line comment
 				my $found = $1;
 				if (!$comment_empty_lines && $found) {
 					$pos--;
@@ -581,15 +583,15 @@ sub scan_file {
 
 		# jumping around
 		if ($lines[$pos] =~ /, *end *=/is) {
-			accumulative_fatal ("'end=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
+			accumulative_fatal ("'end=' is deprecated => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
 		if ($lines[$pos] =~ /, *err *=/is) {
-			accumulative_fatal ("'err=' is forbidden => use 'iostat=' instead, a conditional 'exit' may help in loops");
+			accumulative_fatal ("'err=' is deprecated => use 'iostat=' instead, a conditional 'exit' may help in loops");
 		}
 
 		# format strings
 		if ($lines[$pos] =~ /, *fmt *= *(\d+)/is) {
-			accumulative_fatal ("'fmt=".$1."' is forbidden => better move the format string directly there");
+			accumulative_fatal ("'fmt=".$1."' is deprecated => better move the format string directly there");
 		}
 
 		# absolutely forbidden
@@ -609,9 +611,24 @@ sub scan_file {
 			return;
 		}
 		my $start_spaces = $state{'indent_str'};
-		if ($state{'continuation'} > 0) { $start_spaces .= $continuation_str; }
+		if ($state{'continuation'} > 0) {
+			if ($state{'routine_declaration'}) { $start_spaces =~ s/${indentation_str}$//s; }
+			$start_spaces .= $continuation_str;
+		}
 		if ($lines[$pos] && ($lines[$pos] !~ /^${start_spaces}\S/s)) {
-			if (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && ($lines[$pos] !~ /^${start_spaces}${continuation_str}\S/s))) {
+			if (($state{'continuation'} == 0) && ($lines[$pos] =~ /^( *(\d+) +)\S/s)) {
+				# numeric label
+				my $indent_level = length ($1);
+				my $label = $2;
+				fixme_warning ("numeric labels are deprecated => use proper control structures, like 'if-else' or 'do-while-repeat'");
+				if ($indent_level != $state{'indent'}) {
+					warning ("wrong indentation level");
+					my $add_spaces = ' ' x (length ($start_spaces) - length ($label));
+					$lines[$pos] =~ s/^ *(\d+) +/${1}${add_spaces}/s;
+				}
+			}
+			elsif (($state{'continuation'} <= 1) || (($state{'continuation'} >= 2) && ($lines[$pos] !~ /^${start_spaces}${continuation_str}\S/s))) {
+				# regular line
 				if ($verbose) { warn ("NESTING:".$state{'nesting'}." INDENT:".$state{'indent'}."\n"); }
 				if ($lines[$pos] !~ /^ *<(?:auto-indent|remove-me)>/s) {
 					warning ("wrong indentation level");
@@ -653,6 +670,7 @@ sub scan_file {
 		# continued line
 		if ($lines[$pos] =~ /\&$/s) {
 			$state{'continuation'}++;
+			if ($state{'routine_declaration'}) { $state{'routine_declaration'}++; }
 		}
 		else {
 			if ($state{'continuation'}) {
@@ -668,6 +686,7 @@ sub scan_file {
 			}
 			$state{'continuation'} = 0;
 			$state{'complete_line'} = '';
+			$state{'routine_declaration'} = 0;
 		}
 
 		# line length
