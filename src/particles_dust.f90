@@ -962,7 +962,7 @@ module Particles
 !
 ! Start the particles obeying a power law pdlaw
 !
-            tmp=2.!2-pdlaw
+            tmp=2-pdlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
