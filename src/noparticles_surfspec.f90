@@ -173,4 +173,24 @@ module Particles_surfspec
 !
     endsubroutine rprint_particles_surf
 !***********************************************************************
+!
+!  nov-14/jonas: coded
+!
+    subroutine calc_psurf_pencils(f,fp,p,ineargrid)
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer, dimension(mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
+    endsubroutine calc_psurf_pencils
+! **********************************************************************
+    subroutine cleanup_surf_pencils()
+!
+!  nov-14/jonas: coded
+!
+    endsubroutine cleanup_surf_pencils
+! **********************************************************************
 end module Particles_surfspec

@@ -33,12 +33,16 @@ module Particles_surfspec
 !*********************************************************************!
 !
   character (len=labellen), dimension (ninit) :: init_surf='nothing'
+  character(len=10), dimension(:), allocatable :: solid_species
   real, dimension(10) :: init_surf_mol_frac
   real :: surfplaceholder=0.0
+  real, dimension(:,:), allocatable :: nu_power
   real, dimension(:), allocatable :: uscale,fscale,constr
   integer, dimension(:), allocatable :: dependent_reactant
   integer :: surf_save
   logical :: lspecies_transfer=.true.
+  logical :: linfinite_diffusion=.true.
+  logical :: lboundary_explicit=.true.
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -49,6 +53,8 @@ module Particles_surfspec
 !*********************************************************************!
 !
   real, dimension(:,:), allocatable :: X_infty_reactants
+  real, dimension(:,:), allocatable :: mass_trans_coeff_reactants
+  real, dimension(:,:), allocatable :: mass_trans_coeff_species
 !
   namelist /particles_surf_init_pars/ &
       init_surf, &
@@ -56,7 +62,9 @@ module Particles_surfspec
 !
   namelist /particles_surf_run_pars/ &
       surfplaceholder, &
-      lspecies_transfer
+      lboundary_explicit, &
+      linfinite_diffusion, &
+      lspecies_transfer 
 !
   contains
 !***********************************************************************
@@ -134,8 +142,10 @@ module Particles_surfspec
       if (stat>0) call fatal_error('register_indep_psurfchem',&
           'Could not allocate memory for fscale')
       allocate(constr(N_surface_reactants),STAT=stat)
-      if (stat>0) call fatal_error('register_indep_psurfchem',&
-          'Could not allocate memory for constr')
+      if (stat>0) call fatal_error('register_indep_psurfchem', 'Could not allocate memory for constr')
+    allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
+    if (stat > 0) call fatal_error('register_indep_chem', &
+        'Could not allocate memory for nu_power')
 !
       call create_ad_sol_lists(species,solid_species,'sol',ns)
       call sort_compounds(reactants,solid_species,n_surface_species,nr)
@@ -607,4 +617,84 @@ module Particles_surfspec
 !
     end subroutine calc_mass_trans_reactants
 !***********************************************************************
+!  Allocate pencils for mass transport coefficiens
+!
+!  nov-14/jonas: coded
+
+    subroutine allocate_surface_pencils()
+      integer :: k1, k2, stat
+
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
+
+      allocate(mass_trans_coeff_species(k1:k2,N_species), STAT=stat)
+      if (stat > 0) call fatal_error('allocate_variable_pencils', &
+          'Could not allocate memory for mass_trans_coeff_species')
+      allocate(mass_trans_coeff_reactants(k1:k2,N_surface_reactants),STAT=stat)
+      if (stat > 0) call fatal_error('register_indep_psurfchem', &
+          'Could not allocate memory for mass_trans_coeff_reactants')
+    endsubroutine allocate_surface_pencils
+! **********************************************************************
+!
+!  Clean up surface pencils
+!
+!  nov-14/jonas: coded
+
+    subroutine cleanup_surf_pencils()
+    deallocate(mass_trans_coeff_species)
+    deallocate(mass_trans_coeff_reactants)
+    endsubroutine cleanup_surf_pencils
+! **********************************************************************
+!
+!  Calculate pencils used for surface gas phase fraction evolution
+!
+!  nov-14/jonas: coded
+
+    subroutine calc_psurf_pencils(f,fp,p,ineargrid)
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer, dimension(mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
+
+      call allocate_surface_pencils()
+      call calc_mass_trans_coeff(f,fp,p,ineargrid)
+    endsubroutine calc_psurf_pencils
+! *********************************************************************
+!  diffusion coefficients of gas species at nearest grid point
+!
+!  oct-14/Jonas: coded
+
+  subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
+    real, dimension(:,:,:,:) :: f
+    real, dimension(:,:) :: fp
+    type (pencil_case) :: p
+    integer, dimension(:,:) :: ineargrid
+    integer :: k, k1, k2,i
+    integer :: ix0, iy0, iz0
+    integer::spec_glob, spec_chem
+    real, dimension(:,:), allocatable :: diff_coeff_species
+
+    k1 = k1_imn(imn)
+    k2 = k2_imn(imn)
+
+    allocate(diff_coeff_species(k1:k2,N_species))
+
+    do k = k1,k2
+      ix0 = ineargrid(k,1)
+      iy0 = ineargrid(k,2)
+      iz0 = ineargrid(k,3)
+      do i = 1,N_surface_species
+        diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
+      enddo
+    enddo
+
+    do k = k1,k2
+      do i = 1,N_surface_species
+        mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species(k,i)/ fp(k,iap)
+      enddo
+    enddo
+
+    deallocate(diff_coeff_species)
+  endsubroutine calc_mass_trans_coeff
+! *************************************************************************
 end module Particles_surfspec

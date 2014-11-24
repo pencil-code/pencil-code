@@ -46,7 +46,7 @@ module Particles_chemistry
   public :: porosity, Rck_max, effectiveness_factor, Cg, ndot, ndot_total
 
 ! NILS: Move to particles_chemistry.h
-  public :: N_surface_reactions, N_adsorbed_species
+  public :: N_surface_reactions, N_adsorbed_species,N_species
   public :: N_surface_reactants, N_surface_species
   public :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
   public :: inuCH, inuHCO, inuCH2, inuCH3
@@ -59,11 +59,6 @@ module Particles_chemistry
   public :: adsorbed_species_names
 
 ! NILS: Move to particles_surfspec
-  public :: nu_power
-  public :: linfinite_diffusion
-  public :: lboundary_explicit
-  public :: mass_trans_coeff_reactants
-  public :: solid_species
 
 ! NILS: Move to particles_cdata
   public :: iads, iads_end
@@ -79,7 +74,6 @@ module Particles_chemistry
 
 ! NILS: Ask Jonas about this
   public :: R_j_hat, R_c_hat, mod_surf_area
-  public :: mass_trans_coeff_species
 
 
 !***************************************************************!
@@ -93,7 +87,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(:,:), allocatable :: mu, mu_prime
   real, dimension(:,:), allocatable :: nu, nu_prime
-  real, dimension(:,:), allocatable :: nu_power, mu_power
+  real, dimension(:,:), allocatable :: mu_power
   real, dimension(:), allocatable :: aac, T_k
   real, dimension(:), allocatable :: dngas
   real, dimension(:), allocatable :: diff_coeff_reactants
@@ -107,7 +101,6 @@ module Particles_chemistry
   character(len=3), dimension(:), allocatable, save :: reaction_direction
   character(len=3), dimension(:), allocatable ::flags
   character(len=10), dimension(:,:), allocatable, save :: part
-  character(len=10), dimension(:), allocatable :: solid_species
   character(len=10), dimension(50) :: species_name, adsorbed_species_names
   character(len=10), dimension(40) :: reactants, products
   character(len=20) :: element, writeformat
@@ -146,8 +139,6 @@ module Particles_chemistry
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
   logical :: lthiele=.false.
-  logical :: lboundary_explicit=.false.
-  logical :: linfinite_diffusion=.false.
   logical :: lreactive_heating=.false.
 
 !*********************************************************************!
@@ -177,8 +168,6 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: ndot, K_k
   real, dimension(:,:), allocatable :: R_j_hat
   real, dimension(:,:), allocatable :: Cs
-  real, dimension(:,:), allocatable :: mass_trans_coeff_reactants
-  real, dimension(:,:), allocatable :: mass_trans_coeff_species
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species, Cg, A_p
   real, dimension(:), allocatable :: q_reac
@@ -208,8 +197,6 @@ module Particles_chemistry
   namelist /particles_chem_run_pars/ &
       chemplaceholder, &
       lthiele, &
-      lboundary_explicit, &
-      linfinite_diffusion, &
       lreactive_heating
 
   contains
@@ -259,9 +246,6 @@ module Particles_chemistry
     allocate(effectiveness_factor_old(N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_pchem', &
         'Could not allocate memory for effectiveness_factor_old')
-    allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_chem', &
-        'Could not allocate memory for nu_power')
     allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_chem', &
         'Could not allocate memory for mu_power')
@@ -1579,7 +1563,6 @@ module Particles_chemistry
     call calc_Cg(p,ineargrid)
     if (N_adsorbed_species > 1) call calc_Cs(fp)
     call calc_A_p(fp)
-    call calc_mass_trans_coeff(f,fp,p,ineargrid)
     call calc_RR_hat(f,fp)
 
     if (lreactive_heating) then
@@ -1677,12 +1660,6 @@ module Particles_chemistry
     allocate(K_k(k1:k2,N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('allocate_variable_pencils', &
         'Could not allocate memory for K_k')
-    allocate(mass_trans_coeff_species(k1:k2,N_species), STAT=stat)
-    if (stat > 0) call fatal_error('allocate_variable_pencils', &
-        'Could not allocate memory for mass_trans_coeff_species')
-    allocate(mass_trans_coeff_reactants(k1:k2,N_surface_reactants),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_psurfchem', &
-        'Could not allocate memory for mass_trans_coeff_reactants')
     allocate(Cg(k1:k2), STAT=stat)
     if (stat > 0) call fatal_error('allocate_variable_pencils', &
         'Could not allocate memory for Cg')
@@ -1723,8 +1700,6 @@ module Particles_chemistry
     deallocate(porosity)
     deallocate(St)
     deallocate(K_k)
-    deallocate(mass_trans_coeff_species)
-    deallocate(mass_trans_coeff_reactants)
     deallocate(Cg)
     deallocate(A_p)
     deallocate(q_reac)
@@ -1849,17 +1824,11 @@ module Particles_chemistry
   subroutine print_debug_info()
     integer :: k
 
-    print*,'Solid_species'
-    print*, solid_species
     writeformat = '(A12," ",I4,  F7.2)'
     write (writeformat(13:14),'(I2)') N_surface_species
 
     do k = 1,N_surface_reactions
       write (*,writeformat) 'nu=',k,nu(:,k)
-    enddo
-
-    do k = 1,N_surface_reactions
-      write (*,writeformat) 'nu_power=',k,nu_power(:,k)
     enddo
 
     do k = 1,N_surface_reactions
@@ -1872,10 +1841,6 @@ module Particles_chemistry
     print*, adsorbed_species_names
     do k = 1,N_surface_reactions
       write (*,writeformat) 'mu=',k,mu(:,k)
-    enddo
-
-    do k = 1,N_surface_reactions
-      write (*,writeformat) 'mu_power=',k,mu_power(:,k)
     enddo
 
     do k = 1,N_surface_reactions
@@ -1977,43 +1942,6 @@ module Particles_chemistry
       Cg(k) = interp_pp(k)/(R_cgs*interp_TT(k))
     enddo
   endsubroutine calc_Cg
-! ******************************************************************************
-!  diffusion coefficients of gas species at nearest grid point
-!
-!  oct-14/Jonas: coded
-
-  subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
-    real, dimension(:,:,:,:) :: f
-    real, dimension(:,:) :: fp
-    type (pencil_case) :: p
-    integer, dimension(:,:) :: ineargrid
-    integer :: k, k1, k2,i
-    integer :: ix0, iy0, iz0
-    integer::spec_glob, spec_chem
-    real, dimension(:,:), allocatable :: diff_coeff_species
-
-    k1 = k1_imn(imn)
-    k2 = k2_imn(imn)
-
-    allocate(diff_coeff_species(k1:k2,N_species))
-
-    do k = k1,k2
-      ix0 = ineargrid(k,1)
-      iy0 = ineargrid(k,2)
-      iz0 = ineargrid(k,3)
-      do i = 1,N_surface_species
-        diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
-      enddo
-    enddo
-
-    do k = k1,k2
-      do i = 1,N_surface_species
-        mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species(k,i)/ fp(k,iap)
-      enddo
-    enddo
-
-    deallocate(diff_coeff_species)
-  endsubroutine calc_mass_trans_coeff
 ! ******************************************************************************
 !  Calculate particle surface area
 !

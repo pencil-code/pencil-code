@@ -759,8 +759,11 @@ module Particles_main
 !
      if (lparticles_chemistry) then
         call calc_pchemistry_pencils(f,fp,p,ineargrid)
-     else
      endif
+     if (lparticles_surfspec) then
+       call calc_psurf_pencils(f,fp,p,ineargrid)
+     endif
+       
 !
 !  Dynamical equations.
 !
@@ -793,6 +796,7 @@ module Particles_main
           call particles_coagulation_timestep(fp,ineargrid)
 !
       call cleanup_chemistry_pencils()
+      call cleanup_surf_pencils()
       call cleanup_interpolated_quantities()
       call timing('particles_pde_pencil','finished',mnloop=.true.)
 !
