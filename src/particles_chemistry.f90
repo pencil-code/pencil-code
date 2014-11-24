@@ -36,43 +36,52 @@ module Particles_chemistry
 !
   include 'particles_chemistry.h'
 !
-  public :: mu, mu_prime, ac, aac, nu, nu_prime, adsorbed_species_entropy
-  public :: adsorbed_species_enthalpy
+
+! NILS: Ask Jonas about this
+  public :: part
+  public :: nr, ns, np
+  public :: species
+
+  public :: mdot_ck, total_carbon_sites
+  public :: porosity, Rck_max, effectiveness_factor, Cg, ndot, ndot_total
+
+! NILS: Move to particles_chemistry.h
   public :: N_surface_reactions, N_adsorbed_species
   public :: N_surface_reactants, N_surface_species
   public :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
   public :: inuCH, inuHCO, inuCH2, inuCH3
   public :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
+  public :: mu, mu_prime, ac, aac, nu, nu_prime
+  public :: jmap  
+
+! NILS: Move to particles_adsorbed
+  public :: mu_power
+  public :: adsorbed_species_names
+
+! NILS: Move to particles_surfspec
+  public :: nu_power
+  public :: linfinite_diffusion
+  public :: lboundary_explicit
+  public :: mass_trans_coeff_reactants
+  public :: solid_species
+
+! NILS: Move to particles_cdata
   public :: iads, iads_end
   public :: isurf, isurf_end
-  public :: R_j_hat
-  public :: jmap
-  public :: solid_species
-  public :: mass_trans_coeff_reactants
-  public :: mass_trans_coeff_species
-  public :: part
-  public :: diff_coeff_reactants
-  public :: adsorbed_species_names
-  public :: reactants
-  public :: nr, ns, np
-  public :: nu_power
-  public :: mu_power
-  public :: species
-  public :: dummy
-  public :: lboundary_explicit
-  public :: linfinite_diffusion
-  public :: gas_constant
-  public :: total_carbon_sites
-  public :: R_c_hat
-  public :: mod_surf_area
+  
+! NILS: Should not be public???
+  public :: dummy, gas_constant
+  public :: adsorbed_species_enthalpy, adsorbed_species_entropy
+  public :: lreactive_heating
   public :: K_k
-  public :: mdot_ck
-  public :: ndot_total
-  public :: ndot
-  public :: porosity
-  public :: Cg
-  public :: lreactive_heating, Rck_max
-  public :: effectiveness_factor
+  public :: diff_coeff_reactants ! Move allocation from particles_surfspec
+  public :: reactants ! A subroutine get_reactants exists
+
+! NILS: Ask Jonas about this
+  public :: R_j_hat, R_c_hat, mod_surf_area
+  public :: mass_trans_coeff_species
+
+
 !
 !***************************************************************!
 !  Particle independent variables below here                    !
@@ -1159,7 +1168,6 @@ module Particles_chemistry
 !
 ! Find molar reaction rate of adsorbed surface species
       if (N_adsorbed_species > 1) then
-        R_j_hat = 0.
         do k = k1,k2
           do l = 1,N_surface_reactions
             do j = 1,N_adsorbed_species-1
