@@ -164,7 +164,7 @@ module Particles_surfspec
       call create_stoc(part,solid_species,nu,.true., &
           N_surface_species,nu_power)
       call create_stoc(part,solid_species,nu_prime,.false., &
-          N_surface_species,dummy)
+          N_surface_species)
 !
 ! Define which gas phase reactants the given reaction depends on
 !

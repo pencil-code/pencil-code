@@ -70,7 +70,7 @@ module Particles_chemistry
   public :: isurf, isurf_end
 
 ! NILS: Should not be public???
-  public :: dummy, gas_constant
+  public :: gas_constant
   public :: adsorbed_species_enthalpy, adsorbed_species_entropy
   public :: lreactive_heating
   public :: K_k
@@ -98,7 +98,6 @@ module Particles_chemistry
   real, dimension(:), allocatable :: dngas
   real, dimension(:), allocatable :: diff_coeff_reactants
   real, dimension(:,:), allocatable, save :: part_power
-  real, dimension(2,2) :: dummy
 
 !  JONAS: implement something to calculate molar_mass of
 !  gas phase species
@@ -534,7 +533,8 @@ module Particles_chemistry
     character(len=10), dimension(:,:) :: part
     character(len=10), dimension(:) :: list
     character(len=10) :: element
-    real, dimension(:,:) :: targ, power
+    real, dimension(:,:) :: targ
+    real, dimension(:,:), optional :: power
     logical :: lhs, fwd, forpower
 
     ! list where the stochiometry is saved in
@@ -543,7 +543,7 @@ module Particles_chemistry
     else
       forpower = .false.
     endif
-    power = 0.0
+    if (present(power)) power = 0.0
     targ = 0
     do i = 1,size(part,2)
       fwd = lhs
@@ -566,7 +566,7 @@ module Particles_chemistry
           if (element == list(k) .and. fwd .eqv. .true.) then
             targ(k,i) = real(multi)
             if (forpower) then
-              power(k,i) = part_power(j,i)
+              if (present(power)) power(k,i) = part_power(j,i)
             endif
           endif
         enddo
