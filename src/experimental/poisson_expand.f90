@@ -72,7 +72,7 @@ module Poisson
 !
     endsubroutine initialize_poisson
 !***********************************************************************
-    subroutine inverse_laplacian(f,phi)
+    subroutine inverse_laplacian(phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
@@ -81,7 +81,6 @@ module Poisson
 !
       use General, only: keep_compiler_quiet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
 !
       intent(inout) :: phi
@@ -112,8 +111,6 @@ module Poisson
               'this file is just for expand grid') 
         endif
       endif
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
