@@ -534,6 +534,20 @@ sub scan_file {
 					$lines[$pos] =~ s/^(.{${pre}})(${item}[ ,:])/${1} ${2}/is;
 				}
 			}
+			# old-style variable declaration
+			my $type_list = join ('|', @data_types);
+			$type_list =~ s/ / \+/gs;
+			if ($lines[$pos] =~ / (${type_list}) *\* *(\d+)/is) {
+				my $found_type = lc ($1);
+				my $found_number = $2;
+				if ($found_type eq 'character') {
+					warning ("old-style variable declaration '".$found_type.'*'.$found_number."' => use 'character(len=".$found_number.")'");
+					$lines[$pos] =~ s/ character *\* *\d+/ character\(len=${found_number}\)/is;
+				}
+				else {
+					accumulative_fatal ("old-style variable declaration '".$found_type.'*'.$found_number."' => replace with e.g.'".$found_type."(kind=...)'");
+				}
+			}
 			# convert declaration-keywords to small letters
 			if ($lines[$pos] =~ / character *\( *(LEN) *=/is) {
 				my $found = $1;
