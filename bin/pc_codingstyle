@@ -13,6 +13,7 @@
 # -c: comment empty lines
 # -i: indent after 'contains'
 # -o: old style
+# -n: new style
 # -l: loose checking
 # -v: verbose ouput
 # -d: debug ouput
@@ -41,10 +42,10 @@ my %require_declaration_right_separator = ('dimension' => '(', 'intent' => '(', 
 my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.');
 
 # command line arguments
-my $comment_empty_lines = 0;
-my $indent_after_contains = 0;
-my $header_before_routine = 1;
-my $old_style = 0;
+my $comment_empty_lines = 1;
+my $indent_after_contains = 1;
+my $header_before_routine = 0;
+my $old_style = 1;
 my $picky = 1;
 my $auto_correct = 0;
 my $quiet = 0;
@@ -60,10 +61,16 @@ while ($ARGV[0] =~ /^-/) {
 	elsif (lc ($argument) eq '-q') { $quiet = 1; }
 	elsif (lc ($argument) eq '-a') { $auto_correct = 1; }
 	elsif (lc ($argument) eq '-b') { $backup = 1; }
+	elsif (lc ($argument) eq '-n') {
+		warn ("WARNING: NEW STYLE activated!\n");
+		$comment_empty_lines = 0;
+		$indent_after_contains = 0;
+		$header_before_routine = 1;
+		$old_style = 0;
+	}
 	elsif (lc ($argument) eq '-o') {
-		warn ("WARNING: OLD STYLE activated!\n");
-		$indent_after_contains = 1;
 		$comment_empty_lines = 1;
+		$indent_after_contains = 1;
 		$header_before_routine = 0;
 		$old_style = 1;
 	}
