@@ -122,10 +122,12 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     # Chao-Chin Yang, 2014-07-31
     from . import read
     from collections import namedtuple
-    from numpy import sqrt
+    from numpy import sqrt, unique
     from scipy import integrate
     # Read the time series.
     ts = read.time_series(datadir=datadir)
+    t, indices = unique(ts.t, return_index=True)
+    ts = ts[indices]
     # Check the time span.
     tmax = max(ts.t)
     if tmax <= tmin:
