@@ -45,33 +45,6 @@ module Particles_chemistry
   public :: mdot_ck, total_carbon_sites
   public :: porosity, Rck_max, effectiveness_factor, Cg, ndot, ndot_total
 
-! NILS: Move to particles_chemistry.h
-  public :: N_surface_reactions, N_adsorbed_species,N_species
-  public :: N_surface_reactants, N_surface_species
-  public :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
-  public :: inuCH, inuHCO, inuCH2, inuCH3
-  public :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
-  public :: mu, mu_prime, ac, aac, nu, nu_prime
-  public :: jmap
-
-! NILS: Move to particles_adsorbed
-  public :: mu_power
-  public :: adsorbed_species_names
-
-! NILS: Move to particles_surfspec
-
-! NILS: Move to particles_cdata
-  public :: iads, iads_end
-  public :: isurf, isurf_end
-
-! NILS: Should not be public???
-  public :: gas_constant
-  public :: adsorbed_species_enthalpy, adsorbed_species_entropy
-  public :: lreactive_heating
-  public :: K_k
-  public :: diff_coeff_reactants ! Move allocation from particles_surfspec
-  public :: reactants ! A subroutine get_reactants exists
-
 ! NILS: Ask Jonas about this
   public :: R_j_hat, R_c_hat, mod_surf_area
 
@@ -87,7 +60,6 @@ module Particles_chemistry
   real, dimension(:), allocatable :: omega_pg_dbl
   real, dimension(:,:), allocatable :: mu, mu_prime
   real, dimension(:,:), allocatable :: nu, nu_prime
-  real, dimension(:,:), allocatable :: mu_power
   real, dimension(:), allocatable :: aac, T_k
   real, dimension(:), allocatable :: dngas
   real, dimension(:), allocatable :: diff_coeff_reactants
@@ -101,7 +73,7 @@ module Particles_chemistry
   character(len=3), dimension(:), allocatable, save :: reaction_direction
   character(len=3), dimension(:), allocatable ::flags
   character(len=10), dimension(:,:), allocatable, save :: part
-  character(len=10), dimension(50) :: species_name, adsorbed_species_names
+  character(len=10), dimension(50) :: species_name
   character(len=10), dimension(40) :: reactants, products
   character(len=20) :: element, writeformat
   character(len=10), dimension(40) :: species
@@ -111,8 +83,6 @@ module Particles_chemistry
   integer :: N_surface_reactions, N_adsorbed_species
   integer :: N_surface_reactants, N_surface_species
   integer :: nr, ns, np, N_max_elements
-  integer :: iads=0, iads_end=0
-  integer :: isurf=0, isurf_end=0
   integer :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
   integer :: inuCH, inuHCO, inuCH2, inuCH3
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
@@ -246,9 +216,9 @@ module Particles_chemistry
     allocate(effectiveness_factor_old(N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_pchem', &
         'Could not allocate memory for effectiveness_factor_old')
-    allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_chem', &
-        'Could not allocate memory for mu_power')
+      allocate(diff_coeff_reactants(N_surface_reactants),STAT=stat)
+      if (stat>0) call fatal_error('register_indep_pchem',&
+          'Could not allocate memory for diff_coeff_reactants')
 
     effectiveness_factor_old = 1.
 
@@ -1837,8 +1807,6 @@ module Particles_chemistry
 
     write (writeformat(13:14),'(I2)') N_adsorbed_species
 
-    print*,'Adsorbed_species_names'
-    print*, adsorbed_species_names
     do k = 1,N_surface_reactions
       write (*,writeformat) 'mu=',k,mu(:,k)
     enddo

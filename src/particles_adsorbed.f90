@@ -35,7 +35,9 @@ module Particles_adsorbed
 !
   real, dimension(:), allocatable :: site_occupancy
   character (len=labellen), dimension (ninit) :: init_adsorbed='nothing'
+  character(len=10), dimension(50) :: adsorbed_species_names
   real, dimension(10) :: init_surf_ads_frac
+  real, dimension(:,:), allocatable :: mu_power
   real :: init_thCO=0.0
   real :: adsplaceholder=0.0
   real :: sum_ads
@@ -80,6 +82,7 @@ module Particles_adsorbed
       use FArrayManager, only: farray_register_auxiliary
 !
       integer :: i,stat,j
+      character(len=10), dimension(40) :: reactants
 !
 !  check if enough storage was reserved in fp and dfp to store
 !  the adsorbed species surface and gas phase surface concentrations
@@ -93,6 +96,7 @@ module Particles_adsorbed
 !
       if (N_adsorbed_species>1) then
         call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
+        call get_reactants(reactants)
         call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
       endif
 !
@@ -158,6 +162,9 @@ module Particles_adsorbed
         allocate(site_occupancy(N_adsorbed_species),STAT=stat)
         if (stat>0) call fatal_error('register_indep_ads',&
             'Could not allocate memory for site_occupancy')
+        allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
+        if (stat > 0) call fatal_error('register_indep_ads', &
+            'Could not allocate memory for mu_power')
       endif
 !
 ! Define the aac array which gives the amount of carbon in the

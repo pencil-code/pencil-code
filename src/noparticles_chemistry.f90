@@ -12,347 +12,303 @@
 !
 !***************************************************************
 module Particles_chemistry
-!
+
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
   use Particles_sub
   use Particles_mpicomm
-!
+
   implicit none
-!
+
   include 'particles_chemistry.h'
-!
-  public :: mdot_ck, N_surface_reactions
+
+  public :: mdot_ck
   public :: effectiveness_factor
-  
-  integer :: N_adsorbed_species=0
+
   real :: mol_mass_carbon=12.0
-  integer :: N_surface_reactions=0
+  integer :: N_surface_reactions=0, N_adsorbed_species=0
+  integer :: N_species=0, N_surface_reactants = 0
+  integer :: N_surface_species=0
+
+  integer :: inuH2=0, inuCO2=0, inuH2O=0, inuCO=0, inuCH4=0, inuO2=0
+  integer :: inuCH=0, inuHCO=0, inuCH2=0, inuCH3=0
+  integer :: imufree=0, imuadsO=0, imuadsO2=0, imuadsOH=0, imuadsH=0, imuadsCO=0
+  integer :: mu=0, mu_prime=0, ac=0, aac=0, nu=0, nu_prime=0
+  integer :: jmap=0
   real, dimension(2,2) :: mdot_ck
-  real, dimension(2) :: effectiveness_factor 
-!
+  real, dimension(2) :: effectiveness_factor
+
   contains
-!***********************************************************************
-    subroutine get_pchem_info()
-!
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-    end subroutine get_pchem_info
-!***********************************************************************
-    subroutine get_R_c_hat(var,start,end)
-!
+
+  subroutine get_pchem_info()
+  endsubroutine get_pchem_info
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-      real, dimension(:), intent(out) :: var
-      integer :: start,end
-!
-      call keep_compiler_quiet(var)
-      call keep_compiler_quiet(start)
-      call keep_compiler_quiet(end)
-!
-    end subroutine get_R_c_hat
-!***********************************************************************
-    subroutine get_R_j_hat(var)
-!
+
+  subroutine get_R_c_hat(var,start,end)
+    real, dimension(:), intent(out) :: var
+    integer :: start, end
+
+    call keep_compiler_quiet(var)
+    call keep_compiler_quiet(start)
+    call keep_compiler_quiet(end)
+  endsubroutine get_R_c_hat
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-      real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var
-!
-      call keep_compiler_quiet(var)
-!
-    end subroutine get_R_j_hat
-!***********************************************************************
-    subroutine get_mod_surf_area(var,fp,irhopswarm,iap)
-!
+
+  subroutine get_R_j_hat(var)
+    real, dimension(mpar_loc,N_adsorbed_species), intent(out) :: var
+
+    call keep_compiler_quiet(var)
+  endsubroutine get_R_j_hat
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-      real, dimension(mpar_loc), intent(out) :: var
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: irhopswarm,iap
-!
-      call keep_compiler_quiet(var)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(iap)
-      call keep_compiler_quiet(irhopswarm)
-!
-    end subroutine get_mod_surf_area
-!***********************************************************************
-    subroutine get_St(var,start,end)
-!
+
+  subroutine get_mod_surf_area(var,fp,irhopswarm,iap)
+    real, dimension(mpar_loc), intent(out) :: var
+    real, dimension(mpar_loc,mparray) :: fp
+    integer :: irhopswarm, iap
+
+    call keep_compiler_quiet(var)
+    call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(iap)
+    call keep_compiler_quiet(irhopswarm)
+  endsubroutine get_mod_surf_area
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-      real, dimension(:),intent(out) :: var
-      integer :: start, end
-!
-      call keep_compiler_quiet(var)
-      call keep_compiler_quiet(start)
-      call keep_compiler_quiet(end)
-!
-   end subroutine get_St
-!**************************************************
-  integer function count_reactions()
-!
-!  09.09.14/jonas : coded
-!
-     count_reactions=0
-!
-  end function count_reactions
-!***********************************************************************
-integer function find_species()
-!
-    find_species=0
-!
-  end function find_species
-!*********************************************************************
-  integer function count_max_elements()
-!
-    count_max_elements=0
-!
-  end function count_max_elements
-!**********************************************************************
+
+  subroutine get_St(var,start,end)
+    real, dimension(:), intent(out) :: var
+    integer :: start, end
+
+    call keep_compiler_quiet(var)
+    call keep_compiler_quiet(start)
+    call keep_compiler_quiet(end)
+  endsubroutine get_St
+! ******************************************************************************
+! 09.09.14/jonas : coded
+
+  function count_reactions()
+    integer :: count_reactions
+    count_reactions = 0
+  endfunction count_reactions
+! ******************************************************************************
+  function find_species()
+    integer :: find_species
+    find_species = 0
+  endfunction find_species
+! ******************************************************************************
+  function count_max_elements()
+    integer :: count_max_elements
+    count_max_elements = 0
+  endfunction count_max_elements
+! ******************************************************************************
+!  19.09.2014/Jonas:coded
+
   subroutine get_conversion()
-!
+  endsubroutine get_conversion
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-  end subroutine get_conversion
-!***********************************************************************
+
   subroutine calc_St()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine calc_St
-!***********************************************************************
-  subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
-!
+  endsubroutine calc_St
+! ******************************************************************************
 !  06-oct-14/jonas:coded
-!
-    real, dimension (mpar_loc,mparray) :: fp
+
+  subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
+    real, dimension(mpar_loc,mparray) :: fp
     real, dimension(mx,my,mz,mfarray)  :: f
     integer, dimension(:,:) :: ineargrid
     type (pencil_case) :: p
-!
-  call keep_compiler_quiet(f)
-  call keep_compiler_quiet(fp)
-  call keep_compiler_quiet(ineargrid)
-  call keep_compiler_quiet(p)
-!
-  end subroutine calc_pchemistry_pencils
-!***********************************************************************
+
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(ineargrid)
+    call keep_compiler_quiet(p)
+  endsubroutine calc_pchemistry_pencils
+! ******************************************************************************
+!  19.09.2014/Jonas:coded
+
   subroutine calc_mod_surf_area()
-!
+  endsubroutine calc_mod_surf_area
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-  end subroutine calc_mod_surf_area
-!***********************************************************************
+
   subroutine calc_enthalpy_of_reaction()
-!
+  endsubroutine calc_enthalpy_of_reaction
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-  end subroutine calc_enthalpy_of_reaction
-!***********************************************************************
+
   subroutine calc_entropy_of_reaction()
-!
+  endsubroutine calc_entropy_of_reaction
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-  end subroutine calc_entropy_of_reaction
-!***********************************************************************
+
   subroutine calc_conversion()
-!
+  endsubroutine calc_conversion
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-  end subroutine calc_conversion
-!***********************************************************************
+
   subroutine calc_R_c_hat()
-!
-!  19.09.2014/Jonas:coded
-!
-  end subroutine calc_R_c_hat
-!***********************************************************************
- subroutine create_dependency()
-!
+  endsubroutine calc_R_c_hat
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine create_dependency
-!***********************************************************************
- subroutine create_ad_sol_lists()
-!
+
+  subroutine create_dependency()
+  endsubroutine create_dependency
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine create_ad_sol_lists
-!***********************************************************************
- subroutine create_occupancy()
-!
+
+  subroutine create_ad_sol_lists()
+  endsubroutine create_ad_sol_lists
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine create_occupancy
-!***********************************************************************
- subroutine create_dngas()
-!
+
+  subroutine create_occupancy()
+  endsubroutine create_occupancy
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine create_dngas
-!***********************************************************************
- subroutine create_stoc()
-!
+
+  subroutine create_dngas()
+  endsubroutine create_dngas
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine create_stoc
-!***********************************************************************
- subroutine get_ac()
-!
+
+  subroutine create_stoc()
+  endsubroutine create_stoc
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine get_ac
-!***********************************************************************
- subroutine get_part()
-!
+
+  subroutine get_ac()
+  endsubroutine get_ac
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine get_part
-!***********************************************************************
- subroutine get_reactants()
-!
+
+  subroutine get_part()
+  endsubroutine get_part
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine get_reactants
-!***********************************************************************
- subroutine get_RR_hat()
-!
+
+  subroutine get_reactants()
+  endsubroutine get_reactants
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine get_RR_hat
-!***********************************************************************
- subroutine get_total_carbon_sites()
-!
+
+  subroutine get_RR_hat()
+  endsubroutine get_RR_hat
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine get_total_carbon_sites
-!***********************************************************************
- subroutine sort_compounds()
-!
+
+  subroutine get_total_carbon_sites()
+  endsubroutine get_total_carbon_sites
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine sort_compounds
-!***********************************************************************
- subroutine register_particles_chem()
-!
+
+  subroutine sort_compounds()
+  endsubroutine sort_compounds
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
-  end subroutine register_particles_chem
-!***********************************************************************
- subroutine calc_RR_hat()
-!
+
+  subroutine register_particles_chem()
+  endsubroutine register_particles_chem
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
- end subroutine calc_RR_hat
-!***********************************************************************
- subroutine calc_ndot_mdot_R_j_hat()
-!
+
+  subroutine calc_RR_hat()
+  endsubroutine calc_RR_hat
+! ******************************************************************************
 ! 30.09.2014/Jonas:coded
-!
- end subroutine calc_ndot_mdot_R_j_hat
-!***********************************************************************
+
+  subroutine calc_ndot_mdot_R_j_hat()
+  endsubroutine calc_ndot_mdot_R_j_hat
+! ******************************************************************************
+!  30.09.2014/jonas:coded
+
   subroutine calc_surf_enthalpy()
-!
+  endsubroutine calc_surf_enthalpy
+! ******************************************************************************
 !  30.09.2014/jonas:coded
-!
-  end subroutine calc_surf_enthalpy
-!**************************************************************
+
   subroutine calc_surf_entropy()
-!
+  endsubroutine calc_surf_entropy
+! ******************************************************************************
 !  30.09.2014/jonas:coded
-!
-  end subroutine calc_surf_entropy
-!**************************************************************
+
   subroutine calc_ads_enthalpy(fp)
-!
-!  30.09.2014/jonas:coded
-!
     real, dimension(:,:) :: fp
-!
+
     call keep_compiler_quiet(fp)
-!
-  end subroutine calc_ads_enthalpy
-!***********************************************************************
+  endsubroutine calc_ads_enthalpy
+! ******************************************************************************
+!  30.09.2014/jonas:coded
+
   subroutine calc_ads_entropy(fp)
-!
-!  30.09.2014/jonas:coded
-!
     real, dimension(:,:) :: fp
-!
+
     call keep_compiler_quiet(fp)
-!
-  end subroutine calc_ads_entropy
-!***********************************************************************
-  subroutine cleanup_chemistry_pencils()
-!
+  endsubroutine calc_ads_entropy
+! ******************************************************************************
 !  06-oct-14/jonas: coded
-!
-  end subroutine cleanup_chemistry_pencils
-!***********************************************************************
+
+  subroutine cleanup_chemistry_pencils()
+  endsubroutine cleanup_chemistry_pencils
+! ******************************************************************************
 !***************************************************
-    subroutine read_particles_chem_init_pars(unit,iostat)
-!
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if(present(iostat)) call keep_compiler_quiet(iostat) 
-!
-    endsubroutine read_particles_chem_init_pars
-!***********************************************************************
-    subroutine write_particles_chem_init_pars(unit)
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_chem_init_pars
-!***********************************************************************
-    subroutine read_particles_chem_run_pars(unit,iostat)
-!
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if(present(iostat)) call keep_compiler_quiet(iostat) 
-!
-    endsubroutine read_particles_chem_run_pars
-!***********************************************************************
-    subroutine write_particles_chem_run_pars(unit)
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_chem_run_pars
-!***********************************************************************
-    subroutine calc_rho_p()
-!
+
+  subroutine read_particles_chem_init_pars(unit,iostat)
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+  endsubroutine read_particles_chem_init_pars
+! ******************************************************************************
+
+  subroutine write_particles_chem_init_pars(unit)
+    integer, intent(in) :: unit
+
+    call keep_compiler_quiet(unit)
+  endsubroutine write_particles_chem_init_pars
+! ******************************************************************************
+
+  subroutine read_particles_chem_run_pars(unit,iostat)
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+  endsubroutine read_particles_chem_run_pars
+! ******************************************************************************
+
+  subroutine write_particles_chem_run_pars(unit)
+    integer, intent(in) :: unit
+
+    call keep_compiler_quiet(unit)
+  endsubroutine write_particles_chem_run_pars
+! ******************************************************************************
 !  07-oct-14/jonas: coded
-!
-    end subroutine calc_rho_p
-!***********************************************************************
+
+  subroutine calc_rho_p()
+  endsubroutine calc_rho_p
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
   subroutine get_q_reac(var)
-!
-!  11-nov-2014/jonas: coded
-!
     real, dimension(:) :: var
-!
+
     call keep_compiler_quiet(var)
-!
-  end subroutine get_q_reac
-!***********************************************************************
+  endsubroutine get_q_reac
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
   subroutine get_Nusselt(var)
-!
-!  11-nov-2014/jonas: coded
-!
     real, dimension(:) :: var
-!
+
     call keep_compiler_quiet(var)
-!
-  end subroutine get_Nusselt
-!***********************************************************************
-  end module Particles_chemistry
+  endsubroutine get_Nusselt
+! ******************************************************************************
+endmodule Particles_chemistry

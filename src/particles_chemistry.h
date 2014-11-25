@@ -1,5 +1,8 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
+!
+!  These are routines
+!
  
   public :: register_particles_chem
   public :: get_St
@@ -47,6 +50,17 @@
 
   public :: read_particles_chem_init_pars, write_particles_chem_init_pars
   public :: read_particles_chem_run_pars, write_particles_chem_run_pars
+!
+!  These are variables
+!
+  public :: N_surface_reactions, N_adsorbed_species,N_species
+  public :: N_surface_reactants, N_surface_species
+  public :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
+  public :: inuCH, inuHCO, inuCH2, inuCH3
+  public :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
+  public :: mu, mu_prime, ac, aac, nu, nu_prime
+  public :: jmap
+
 
   
 

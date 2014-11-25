@@ -12,185 +12,163 @@
 !
 !***************************************************************
 module Particles_surfspec
-!
+
   use Cdata
   use General, only: keep_compiler_quiet
   use Particles_cdata
-!
+
   implicit none
-!
+
   include 'particles_surfspec.h'
-!
+
   contains
-!***********************************************************************
-    subroutine register_particles_surfspec()
-!
+! ******************************************************************************
 !  09.09.14/jonas : coded
-!
-    end subroutine register_particles_surfspec
-!***********************************************************************
-    subroutine register_dep_psurfchem()
-!
+
+  subroutine register_particles_surfspec()
+  endsubroutine register_particles_surfspec
+! ******************************************************************************
+!  19.09.2014/Jonas:coded
+
+  subroutine register_dep_psurfchem()
+  endsubroutine register_dep_psurfchem
+! ******************************************************************************
+!  19.09.2014/Jonas:coded
+
+  subroutine register_indep_psurfchem()
+  endsubroutine register_indep_psurfchem
+! ******************************************************************************
+
+  subroutine init_particles_surf(f,fp)
+    real, dimension(mx,my,mz,mfarray) :: f
+    real, dimension(mpar_loc,mparray) :: fp
+
+    ! 19.09.2014/Jonas:coded
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(fp)
+  endsubroutine init_particles_surf
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
 !
-    end subroutine register_dep_psurfchem
-!***********************************************************************
-    subroutine register_indep_psurfchem()
-!
+
+  subroutine read_particles_surf_run_pars(unit,iostat)
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+  endsubroutine read_particles_surf_run_pars
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-    end subroutine register_indep_psurfchem
-!**********************************************************************
-    subroutine init_particles_surf(f,fp)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-!
+
+  subroutine read_particles_surf_init_pars(unit,iostat)
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+  endsubroutine read_particles_surf_init_pars
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    end subroutine init_particles_surf
-!***********************************************************************
-    subroutine read_particles_surf_run_pars(unit,iostat)
-!
+
+  subroutine write_particles_surf_init_pars(unit)
+    integer, intent(in) :: unit
+
+    call keep_compiler_quiet(unit)
+  endsubroutine write_particles_surf_init_pars
+! ******************************************************************************
 !  19.09.2014/Jonas:coded
-!
-!
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    end subroutine read_particles_surf_run_pars
-!***********************************************************************
-    subroutine read_particles_surf_init_pars(unit,iostat)
-!
-!  19.09.2014/Jonas:coded
-!
-      integer, intent (in) :: unit
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    end subroutine read_particles_surf_init_pars
-!***********************************************************************
-    subroutine write_particles_surf_init_pars(unit)
-!
-!  19.09.2014/Jonas:coded
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    end subroutine write_particles_surf_init_pars
-!***********************************************************************
-    subroutine write_particles_surf_run_pars(unit)
-!
-!  19.09.2014/Jonas:coded
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    end subroutine write_particles_surf_run_pars
-!***********************************************************************
-    subroutine initialize_particles_surf(f)
-!
+
+  subroutine write_particles_surf_run_pars(unit)
+    integer, intent(in) :: unit
+
+    call keep_compiler_quiet(unit)
+  endsubroutine write_particles_surf_run_pars
+! ******************************************************************************
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  29-sep-14/jonas coded
 !  JONAS: needs to be filled with life
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    end subroutine initialize_particles_surf
-!**************************************************************
-    subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
-!
+
+  subroutine initialize_particles_surf(f)
+    real, dimension(mx,my,mz,mfarray) :: f
+
+    call keep_compiler_quiet(f)
+  endsubroutine initialize_particles_surf
+! ******************************************************************************
 !  Evolution of particle near field composition
 !
 !  28-aug-14/jonas+nils: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dpsurf_dt
-!**************************************************************
-    subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
+
+  subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
+    real, dimension(mx,my,mz,mfarray) :: f
+    real, dimension(mx,my,mz,mvar) :: df
+    real, dimension(mpar_loc,mparray) :: fp
+    real, dimension(mpar_loc,mpvar) :: dfp
+    integer, dimension(mpar_loc,3) :: ineargrid
+
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(df)
+    call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(dfp)
+    call keep_compiler_quiet(ineargrid)
+  endsubroutine dpsurf_dt
+! ******************************************************************************
 !  Evolution of particle surface fraction
 !
 !  01-sep-14/jonas: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      intent (in) :: f, df, fp, ineargrid
-      intent (inout) :: dfp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dpsurf_dt_pencil
-!***********************************************************************
-    subroutine rprint_particles_surf(lreset,lwrite)
-!
+
+  subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    real, dimension(mx,my,mz,mfarray) :: f
+    real, dimension(mx,my,mz,mvar) :: df
+    real, dimension(mpar_loc,mparray) :: fp
+    real, dimension(mpar_loc,mpvar) :: dfp
+    type (pencil_case) :: p
+    integer, dimension(mpar_loc,3) :: ineargrid
+
+    intent(in) :: f, df, fp, ineargrid
+    intent(inout) :: dfp
+
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(df)
+    call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(dfp)
+    call keep_compiler_quiet(p)
+    call keep_compiler_quiet(ineargrid)
+  endsubroutine dpsurf_dt_pencil
+! ******************************************************************************
 !  Read and register print parameters relevant for particles
 !  surface fractions.
 !
 !  28-aug-14/jonas+nils: coded
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
-!
-      call keep_compiler_quiet(lreset)
-!
-    endsubroutine rprint_particles_surf
-!***********************************************************************
-!
-!  nov-14/jonas: coded
-!
-    subroutine calc_psurf_pencils(f,fp,p,ineargrid)
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer, dimension(mpar_loc,3) :: ineargrid
-      type (pencil_case) :: p
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(ineargrid)
-    endsubroutine calc_psurf_pencils
-! **********************************************************************
-    subroutine cleanup_surf_pencils()
+
+  subroutine rprint_particles_surf(lreset,lwrite)
+    logical :: lreset
+    logical, optional :: lwrite
+
+    if (present(lwrite)) call keep_compiler_quiet(lwrite)
+
+    call keep_compiler_quiet(lreset)
+  endsubroutine rprint_particles_surf
+! ******************************************************************************
 !
 !  nov-14/jonas: coded
-!
-    endsubroutine cleanup_surf_pencils
-! **********************************************************************
-end module Particles_surfspec
+
+  subroutine calc_psurf_pencils(f,fp,p,ineargrid)
+    real, dimension(mpar_loc,mparray) :: fp
+    real, dimension(mx,my,mz,mfarray) :: f
+    integer, dimension(mpar_loc,3) :: ineargrid
+    type (pencil_case) :: p
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(p)
+    call keep_compiler_quiet(ineargrid)
+  endsubroutine calc_psurf_pencils
+! ******************************************************************************
+!  nov-14/jonas: coded
+
+  subroutine cleanup_surf_pencils()
+  endsubroutine cleanup_surf_pencils
+! ******************************************************************************
+endmodule Particles_surfspec
