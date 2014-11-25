@@ -53,6 +53,7 @@ my $backup = 0;
 my $verbose = 0;
 while ($ARGV[0] =~ /^-/) {
 	my $argument = shift ();
+	if ($argument =~ s/^(-.)(.+)$/${1}/s) { unshift (@ARGV, '-'.$2); }
 	if (lc ($argument) eq '-l') { $picky = 0; }
 	elsif (lc ($argument) eq '-c') { $comment_empty_lines = 1; }
 	elsif (lc ($argument) eq '-i') { $indent_after_contains = 1; }
@@ -124,7 +125,20 @@ exit ($exit_code);
 sub usage {
 	my ($message) = @_;
 	if ($message) { warn ($message."\n"); }
-	warn ('Usage: '.$0.' [-a] [-b] [-c] [-i] [-o] [-l] [-v] [-d] [-q] filename'."\n");
+	my $script_name = $0;
+	$script_name =~ s/^.*\///s;
+	warn ('Usage: '.$script_name.' [-options] filename'."\n");
+	warn ('Options:'."\n");
+	warn ('-a: automatic correction, where possible'."\n");
+	warn ('-b: backups original, if changes are applied'."\n");
+	warn ('-o: old style'."\n");
+	warn ('-n: new style'."\n");
+	warn ('-c: comment empty lines'."\n");
+	warn ('-i: indent after \'contains\''."\n");
+	warn ('-l: loose checking'."\n");
+	warn ('-q: quiet'."\n");
+	warn ('-v: verbose ouput'."\n");
+	warn ('-d: debug ouput'."\n");
 }
 
 sub scan_file {
