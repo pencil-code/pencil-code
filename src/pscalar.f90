@@ -125,7 +125,10 @@ module Pscalar
 !
 !  24-nov-02/tony: coded
 !
+      use SharedVariables, only: put_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ierr
 !
 !  Re-initialize scalar
 !
@@ -133,6 +136,8 @@ module Pscalar
         f(:,:,:,ilncc)=0.
         call init_lncc(f)
       endif
+!
+      call put_shared_variable('pscalar_diff',pscalar_diff,ierr)
 !
     endsubroutine initialize_pscalar
 !***********************************************************************

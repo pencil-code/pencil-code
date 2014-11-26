@@ -3041,6 +3041,7 @@ module Particles
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
       use Particles_dragforce
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3056,9 +3057,12 @@ module Particles
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0
+      integer :: k, l, ix0, iy0, iz0, ierr
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
+      real, pointer :: pscalar_diff
+      real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
+      real :: dthetadt
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -3210,6 +3214,20 @@ module Particles
 !
               if (ldragforce_gas_par .or. (lpscalar_sink .and. lpscalar)) then
 !
+!  Check if the particles consume passive scalar, and calculate the
+!  consumption rate
+!                
+                if (lpscalar_sink .and. lpscalar) then
+                  gas_consentration=0.1
+                  Sherwood=2.
+                  call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
+                  mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
+                      (2*fp(k,iap))
+                  lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
+                      (pscalar_sink_rate*gas_consentration+mass_trans_coeff)
+                  dthetadt=lambda_tilde*4.*pi*fp(k,iap)**2
+                endif
+!
 !  Cloud In Cell (CIC) scheme.
 !
                 if (lparticlemesh_cic) then
@@ -3252,7 +3270,7 @@ module Particles
                       else
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
                         df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                            weight*pscalar_sink_rate/volume_cell
+                            weight*dthetadt/volume_cell
                       endif
                     endif
                   enddo; enddo; enddo
@@ -3333,7 +3351,7 @@ module Particles
                         else
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
                           df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                              weight*pscalar_sink_rate/volume_cell
+                              weight*dthetadt/volume_cell
                         endif
                       endif
                     enddo; enddo; enddo
@@ -3409,7 +3427,7 @@ module Particles
                         else
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
                           df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                              weight*pscalar_sink_rate/volume_cell
+                              weight*dthetadt/volume_cell
                         endif
                       endif
                     enddo; enddo; enddo
@@ -3431,7 +3449,7 @@ module Particles
                     else
                       call find_grid_volume(l,m,n,volume_cell)
                       df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                          pscalar_sink_rate/volume_cell
+                          dthetadt/volume_cell
                     endif
                   endif
                 endif
