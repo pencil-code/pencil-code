@@ -24,7 +24,7 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Particles_chemistry, only: get_q_reac, get_Nusselt
+  use Particles_chemistry, only: get_q_reac,get_Nusselt
 !
   implicit none
 !
@@ -172,6 +172,8 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -179,10 +181,10 @@ module Particles_temperature
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
-      real, dimension(:), allocatable :: q_reac,Nusselt
+      real, dimension(:), allocatable :: q_reac, Nu_p
       real :: volume_cell
       real :: pmass, Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
-      integer :: k, inx0, ix0,iy0,iz0
+      integer :: k, inx0, ix0,iy0,iz0,ierr
       real :: rho1_point, weight
       integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
       integer :: ixx,iyy,izz,k1,k2
@@ -203,10 +205,10 @@ module Particles_temperature
 !  for reactive heating of the particle if lreactive_heating is false,
 !  q_reac is set to zero in particles_chemistry
 !
+      allocate(Nu_p(k1:k2))
       allocate(q_reac(k1:k2))
       call get_q_reac(q_reac)
-      allocate(Nusselt(k1:k2))
-      call get_Nusselt(Nusselt)
+      call get_Nusselt(Nu_p)
 !
 !  Loop over all particles in current pencil.
 !
@@ -216,7 +218,7 @@ module Particles_temperature
 !  changed when there is a relative velocity between the partciles and
 !  the fluid.
 !
-!            Nusselt=2.
+!            Nu_p=2.
 !
 !  Calculate convective and conductive heat
 !
@@ -226,7 +228,7 @@ module Particles_temperature
         inx0=ix0-nghost
         cond=p%tcond(inx0)
         Ap=4.*pi*fp(k,iap)**2
-        heat_trans_coef=Nusselt(k)*cond/(2*fp(k,iap))
+        heat_trans_coef=Nu_p(k)*cond/(2*fp(k,iap))
         Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Find the mass of the particle
@@ -293,8 +295,8 @@ module Particles_temperature
         endif
       enddo
 !
+      deallocate(Nu_p)
       deallocate(q_reac)
-      deallocate(Nusselt)
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************

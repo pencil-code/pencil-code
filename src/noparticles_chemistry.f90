@@ -24,9 +24,6 @@ module Particles_chemistry
 
   include 'particles_chemistry.h'
 
-  public :: mdot_ck
-  public :: effectiveness_factor
-
   real :: mol_mass_carbon=12.0
   integer :: N_surface_reactions=0, N_adsorbed_species=0
   integer :: N_species=0, N_surface_reactants = 0
@@ -37,8 +34,7 @@ module Particles_chemistry
   integer :: imufree=0, imuadsO=0, imuadsO2=0, imuadsOH=0, imuadsH=0, imuadsCO=0
   integer :: mu=0, mu_prime=0, ac=0, aac=0, nu=0, nu_prime=0
   integer :: jmap=0
-  real, dimension(2,2) :: mdot_ck
-  real, dimension(2) :: effectiveness_factor
+  real, dimension(2) :: mass_loss
 
   contains
 ! ******************************************************************************
@@ -135,6 +131,12 @@ module Particles_chemistry
 
   subroutine calc_mod_surf_area()
   endsubroutine calc_mod_surf_area
+! ******************************************************************************
+
+!  19.09.2014/Jonas:coded
+
+  subroutine calc_get_mod_surf_area()
+  endsubroutine calc_get_mod_surf_area
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
@@ -310,5 +312,37 @@ module Particles_chemistry
 
     call keep_compiler_quiet(var)
   endsubroutine get_Nusselt
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
+  subroutine get_mass_chemistry(var1,var2,var3)
+    real, dimension(:) :: var1,var2
+    real, dimension(:,:) :: var3
+!
+    call keep_compiler_quiet(var1)
+    call keep_compiler_quiet(var2)
+    call keep_compiler_quiet(var3)
+!
+  endsubroutine get_mass_chemistry
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
+  subroutine get_surface_chemistry()
+  endsubroutine get_surface_chemistry
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
+  subroutine get_adsorbed_chemistry()
+  endsubroutine get_adsorbed_chemistry
+! ******************************************************************************
+!  11-nov-2014/jonas: coded
+
+  subroutine get_radius_chemistry(var1,var2)
+    real, dimension(:) :: var1,var2
+!
+    call keep_compiler_quiet(var1)
+    call keep_compiler_quiet(var2)
+!
+  endsubroutine get_radius_chemistry
 ! ******************************************************************************
 endmodule Particles_chemistry

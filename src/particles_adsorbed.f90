@@ -24,6 +24,7 @@ module Particles_adsorbed
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry
+  use SharedVariables
 !
   implicit none
 !
@@ -95,9 +96,9 @@ module Particles_adsorbed
       endif
 !
       if (N_adsorbed_species>1) then
-        call create_ad_sol_lists(species,adsorbed_species_names,'ad',ns)
+        call create_ad_sol_lists(adsorbed_species_names,'ad')
         call get_reactants(reactants)
-        call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species,nr)
+        call sort_compounds(reactants,adsorbed_species_names,N_adsorbed_species)
       endif
 !
 !  Set some indeces (this is hard-coded for now)
@@ -175,9 +176,9 @@ module Particles_adsorbed
         if (imuadsCO>0) aac(imuadsCO)=1
       endif
 !
-      call create_stoc(part,adsorbed_species_names,mu,.true.,&
+      call create_stoc(adsorbed_species_names,mu,.true.,&
           N_adsorbed_species,mu_power)
-      call create_stoc(part,adsorbed_species_names,mu_prime,.false.,&
+      call create_stoc(adsorbed_species_names,mu_prime,.false.,&
           N_adsorbed_species)
       call create_occupancy(adsorbed_species_names,site_occupancy)
 !
@@ -297,9 +298,12 @@ module Particles_adsorbed
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(:), allocatable :: mod_surf_area,R_c_hat
+      real, dimension(:,:), allocatable :: R_j_hat
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: n_ads,stat,k1,k2,k
+      integer :: n_ads,stat,k1,k2,k,ierr
+      real, pointer :: total_carbon_sites
 !
       intent (inout) :: dfp
       intent (in) :: fp
@@ -309,11 +313,21 @@ module Particles_adsorbed
       n_ads = iads_end - iads +1
 !
       if (N_adsorbed_species > 1) then
+        allocate(mod_surf_area(k1:k2))
+        allocate(R_c_hat(k1:k2))
+        allocate(R_j_hat(k1:k2,1:n_ads))
+        call calc_get_mod_surf_area(mod_surf_area,fp)
+        call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
+        call get_adsorbed_chemistry(R_j_hat,R_c_hat)
+        if (ierr /= 0) call fatal_error('dpads_dt_pencil', 'unable to get total_carbon')
         do k=k1,k2
           dfp(k,iads:iads_end)= R_j_hat(k,1:n_ads)/ &
               total_carbon_sites + mod_surf_area(k)* &
               R_c_hat(k)*fp(k,iads:iads_end)
         enddo
+        deallocate(mod_surf_area)
+        deallocate(R_c_hat)
+        deallocate(R_j_hat)
       endif
 !
     endsubroutine dpads_dt_pencil
@@ -407,30 +421,5 @@ module Particles_adsorbed
 !
     end subroutine particles_ads_prepencil_calc
 !***********************************************************************
-    subroutine calc_R_j_hat()
-!
-      integer :: j,k,stat
-      real, dimension(:,:), allocatable :: RR_hat
-!
-!  Calculation of R_j_hat according to eq.50 in 8th US combustion
-!  meeting, coal and  biomass combustion and gasification.
-!
-!  JONAS: RR_hat still to be calculated, get() from chemistry
-!
-      allocate(RR_hat(k1_imn(imn):k2_imn(imn), &
-          N_surface_reactions),STAT=stat)
-      if (stat>0) call fatal_error('register_indep_pchem',&
-          'Could not allocate memory for St_array')
-!
-      call get_RR_hat(RR_hat,k1_imn(imn),k2_imn(imn))
-!
-      R_j_hat = 0.0
-      do k=1,N_surface_reactions
-        do j=1,N_adsorbed_species-1
-          R_j_hat(:,j)=R_j_hat(:,j)+(mu_prime(j,k)-mu(j,k))*RR_hat(:,k)
-        enddo
-      enddo
-!
-    end subroutine calc_R_j_hat
 !***********************************************************************
 end module Particles_adsorbed

@@ -1,34 +1,35 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
 !
-!  These are routines
+!  These are routines that are used once or to transport variables to 
+!  _surfspec or _adsorbed
 !
  
   public :: register_particles_chem
-  public :: get_St
-  public :: get_conversion
-  public :: get_R_c_hat
-!  public :: get_mod_surf_area
+  public :: calc_get_mod_surf_area
   public :: get_pchem_info
   public :: get_reactants
   public :: get_part
 !  public :: get_total_carbon_sites
-  public :: get_RR_hat
   public :: get_ac
   public :: get_q_reac
   public :: get_nusselt
-
   public :: find_species
-
+!
+!  Routines used in the mn loop for each pencil
+!
   public :: calc_pchemistry_pencils
-  public :: calc_entropy_of_reaction
-  public :: calc_enthalpy_of_reaction
-  public :: calc_RR_hat
-  public :: calc_ndot_mdot_R_j_hat
-  public :: calc_mod_surf_area
-  public :: calc_R_c_hat
-  public :: calc_conversion
-  public :: calc_St
+  public :: cleanup_chemistry_pencils
+!
+!  Transport routines used in _radius, _mass,_surfspec and _adsorbed
+!
+  public :: get_mass_chemistry
+  public :: get_radius_chemistry
+  public :: get_adsorbed_chemistry
+  public :: get_surface_chemistry
+!
+!  Routines that are used once in startup or per processor
+!
   public :: calc_ads_entropy
   public :: calc_ads_enthalpy
   public :: calc_surf_enthalpy
@@ -38,20 +39,21 @@
   public :: create_dngas
   public :: create_occupancy
   public :: create_ad_sol_lists
-
-  
-  public :: cleanup_chemistry_pencils
-  
   public :: sort_compounds
-
   public :: count_reactions, count_max_elements
 
-  public :: mol_mass_carbon
-
-  public :: read_particles_chem_init_pars, write_particles_chem_init_pars
-  public :: read_particles_chem_run_pars, write_particles_chem_run_pars
 !
-!  These are variables
+!  Obligatory routines for reading in of the start and run namelists
+!
+  public :: read_particles_chem_init_pars, write_particles_chem_init_pars
+  public :: read_particles_chem_run_pars, write_particles_chem_run_pars  
+!
+!  These are variables that are needed in particles_mass, _radius, 
+!  _surfspec and _adsorbed in their pencil variable evolution 
+!
+  public :: mol_mass_carbon
+!
+!  These are variables that need to be communicated to _surfspec and _adsorbed
 !
   public :: N_surface_reactions, N_adsorbed_species,N_species
   public :: N_surface_reactants, N_surface_species

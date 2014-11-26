@@ -338,8 +338,9 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       logical :: lfirstcall=.true., lheader
-      integer :: k,i
-      real :: mass_per_radius, rho,mass_loss
+      integer :: k,i,k1,k2
+      real :: mass_per_radius, rho
+      real, dimension(:), allocatable :: effectiveness_factor, mass_loss
 !
       intent (in) :: f, fp
       intent (out) :: dfp
@@ -364,17 +365,23 @@ module Particles_radius
 !  reactive particles in a turbulent flow)
 !
       if (lparticles_chemistry) then
-        do k = k1_imn(imn),k2_imn(imn)
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
+!
+        allocate(mass_loss(k1:k2))
+        allocate(effectiveness_factor(k1:k2))
+!
+        call get_radius_chemistry(mass_loss,effectiveness_factor)
+
+        do k = k1,k2
           if (fp(k,irhosurf) < 0) then
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
             mass_per_radius = 1./ 4. * pi * rho * fp(k,iap)**2
-            mass_loss = 0.
-            do i=1,N_surface_reactions
-              mass_loss = mass_loss + mdot_ck(k,i)
-            enddo
-            dfp(k,iap) = dfp(k,iap) + mass_loss *(1-effectiveness_factor(k))*mass_per_radius
+            dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))*mass_per_radius
           endif
         enddo
+        deallocate(mass_loss)
+        deallocate(effectiveness_factor)
       endif
 !
     endsubroutine dap_dt_pencil

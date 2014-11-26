@@ -209,9 +209,10 @@ module Particles_mass
       real, dimension(nx) :: volume_pencil
       real :: volume_cell, rho1_point, weight, dmass, Vp
       real :: mass_per_radius, rho_init
-      real, dimension(mpar_loc) :: St
-      integer :: k, ix0, iy0, iz0
+      integer :: k, ix0, iy0, iz0, k1,k2
       integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
+      real, dimension(:), allocatable :: mass_loss, St
+      real, dimension(:,:), allocatable :: Rck_max
 !
       intent(in) :: f, fp, ineargrid
       intent(inout) :: dfp, df
@@ -221,20 +222,28 @@ module Particles_mass
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
+!
+      allocate(mass_loss(k1:k2))
+      allocate(St(k1:k2))
+      allocate(Rck_max(k1:k2,1:N_surface_reactions))
+!
+      call get_mass_chemistry(mass_loss,St,Rck_max)
+!
 !  JONAS: this place is better for new "pencil-calling" of variables
 !
 !  Get total surface area and molar reaction rate of carbon
 !
-      call get_St(St,k1_imn(imn),k2_imn(imn))
 !
       ! Loop over all particles in current pencil.
-      do k = k1_imn(imn),k2_imn(imn)
+      do k = k1,k2
 !
         ! Check if particles chemistry is turned on
         if (lparticles_chemistry) then
 !
           ! Calculate the change in particle mass
-          dmass = sum(mdot_ck(k,:))
+          dmass = mass_loss(k)
 !
         else
           dmass = -dmpdt
@@ -296,6 +305,10 @@ module Particles_mass
           enddo
         endif
       enddo
+!
+      deallocate(mass_loss)
+      deallocate(St)
+      deallocate(Rck_max)
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
