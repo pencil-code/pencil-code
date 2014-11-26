@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
-! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
+! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3) 
 !
 !***************************************************************
 !
@@ -45,6 +45,7 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
+
   real, dimension (mz,3) :: uumz
   real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
@@ -89,6 +90,16 @@ module Hydro
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   integer :: nb_rings=0
   integer :: neddy=0
+!
+! variables for expansion into spherical harmonics 
+!
+  integer,parameter :: lSH_max=2
+! Nmodes_SH=(lSH_max+1)*(lSH_max+1)
+  integer, parameter :: Nmodes_SH=(lSH_max+1)*(lSH_max+1)
+  real, dimension(nx,Nmodes_SH) :: urlm
+  integer :: index_rSH=0
+  real, dimension(nx) :: profile_SH=0.
+!
   real, dimension (5) :: om_rings=0.
   integer :: N_modes_uu=0
   logical :: llinearized_hydro=.false.
@@ -132,7 +143,7 @@ module Hydro
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
-      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range
+      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range,index_rSH
 !
 !  Run parameters.
 !
@@ -392,6 +403,7 @@ module Hydro
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
 !
+  integer, dimension(Nmodes_SH) :: idiag_urlm=0 ! DIAG_DOC: $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$
   integer :: idiag_udpxxm=0, &  ! DIAG_DOC: components of symmetric tensor
              idiag_udpyym=0, &  ! DIAG_DOC: $\left< u_i \partial_j p + u_j \partial_i p \right>$
              idiag_udpzzm=0, &
@@ -1046,7 +1058,7 @@ module Hydro
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz
-      integer :: j,i,l,ixy,ix,iy,iz
+      integer :: j,i,l,ixy,ix,iy,iz,iz0
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -1087,6 +1099,16 @@ module Hydro
           do iy=m1,m2; do iz=n1,n2
             f(:,iy,iz,iuy)=ampluu(j)*(cos(kx_uu*x)+amp_factor*cos(kx_uu_perturb*x))
           enddo; enddo
+        case ('uxsinx-deltaz')
+          iz0=nint((zsphere-xyz0(3))/dz)
+          print*, 'Ux=sin(kx*x)\delta(z)'
+          print*, 'ampluu,kx_uu,zsphere,iz0',ampluu,kx_uu,zsphere,iz0
+          print*, 'dz=',dz
+          f(:,:,:,iux:iuz) = 0.
+          do ix=l1,l2
+             if ((iz0 .le. n2) .and. (iz0 .gt. n1) )  &
+             f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
+          enddo 
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
@@ -1850,6 +1872,7 @@ module Hydro
           lpenc_diagnos(i_ugu)=.true.
       if (idiag_uguxmxy/=0 .or. idiag_uguymxy/=0 .or. idiag_uguzmxy/=0) &
           lpenc_diagnos2d(i_ugu)=.true.
+!
       if (idiag_ugu2m/=0 .or. idiag_ugurmsx/=0) lpenc_diagnos(i_ugu2)=.true.
       if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
@@ -2334,7 +2357,7 @@ module Hydro
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
       real :: kx
-      integer :: j, ju
+      integer :: j, ju, k
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -2552,6 +2575,14 @@ module Hydro
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
+! urlm 
+! This is being always calcualted but written out only when asked. 
+! It should not be done this way, but calculated only is must be written out.
+!
+        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
+        do k=1,Nmodes_SH
+          if (idiag_urlm(k)/=0) call sum_mn_name(urlm(:,k),idiag_urlm(k))
+        enddo
         if (idiag_urmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%u2,idiag_urmsh)
           if (lequatorz) call sum_mn_name_halfz(p%u2,idiag_urmsh)
@@ -5573,5 +5604,20 @@ module Hydro
       endif
 !
     endsubroutine expand_shands_hydro
+!***********************************************************************
+    subroutine amp_lm(psi,psilm,rselect)
+      use Sub, only: ylm
+      real,dimension(nx),intent(in):: psi,rselect
+      real,dimension(nx,Nmodes_SH),intent(out) :: psilm
+      real :: sph_har
+      integer :: ell,emm,imode
+      do ell=0,lSH_max
+        do emm=-ell,ell
+          imode=(ell+1)*(ell+1)-ell+emm
+          call ylm(y(m),z(n),ell,emm,sph_har)
+          psilm(:,imode) = psi(:)*rselect(:)*sph_har
+        enddo
+      enddo
+    endsubroutine amp_lm
 !***********************************************************************
 endmodule Hydro

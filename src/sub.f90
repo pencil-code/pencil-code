@@ -21,6 +21,7 @@ module Sub
   private
 !
   public :: step,step_scalar,stepdown,der_stepdown
+  public :: ylm
   public :: kronecker_delta
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
@@ -3584,6 +3585,53 @@ module Sub
       enddo
 !
     endfunction poly_3
+!***********************************************************************
+    subroutine ylm(theta,phi,ell,emm,sph_har)
+!
+!  Spherical harmonic
+!
+!   24-nov-14/dhruba: copied from step
+!
+      real :: theta,phi
+      integer :: ell,emm
+      real :: sph_har
+!
+! the one over pi, cosines and sines below may be pre-calculated
+!
+      select case (ell)
+          case (0)
+            sph_har=(0.5)*sqrt(1./pi)
+          case (1)
+            select case(emm)
+              case (-1)
+                sph_har=(0.5)*sqrt(3./(2*pi))*sin(theta)*cos(phi)
+              case (0)
+                sph_har=(0.5)*sqrt(3./pi)*cos(theta)
+              case (1) 
+                sph_har=-(0.5)*sqrt(3./(2*pi))*sin(theta)*cos(phi)
+              case default
+                call fatal_error('sub:ylm','l=1 wrong m ')
+              endselect
+         case (2)
+            select case(emm)
+              case (-2)
+                sph_har=(0.25)*sqrt(15./(2*pi))*sin(theta)*sin(theta)*cos(2*phi)
+              case (-1)
+                sph_har=(0.5)*sqrt(15./(2*pi))*sin(theta)*cos(theta)*cos(phi)
+              case (0)
+                sph_har=(0.25)*sqrt(5./pi)*(3.*cos(theta)*cos(theta)-1.)
+              case (1) 
+                sph_har=-(0.5)*sqrt(15./(2*pi))*sin(theta)*cos(theta)*cos(phi)
+              case (2)
+                sph_har=(0.25)*sqrt(15./(2*pi))*sin(theta)*sin(theta)*cos(2*phi)
+              case default
+                call fatal_error('sub:ylm','l=2 wrong m ')
+              endselect
+          case default
+            call fatal_error('sub:ylm','your ylm is not implemented')
+          endselect
+!
+    endsubroutine ylm
 !***********************************************************************
     function step_scalar(x,x0,width)
 !
