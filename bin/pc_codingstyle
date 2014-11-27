@@ -161,6 +161,7 @@ sub scan_file {
 	$state{'multiline_if'} = 0;
 	$state{'multiline_where'} = 0;
 	$state{'multiline_elseif'} = 0;
+	$state{'multiline_declaration'} = 0;
 	$state{'else_branch'} = '';
 	$state{'eol_comment'} = 0;
 	$state{'complete_line'} = '';
@@ -530,7 +531,9 @@ sub scan_file {
 
 		# variable declaration
 		my $code_line = cut_comment ($lines[$pos]);
-		if ($code_line =~ /::/s) {
+		if (($code_line =~ /::/s) || $state{'multiline_declaration'}) {
+			$state{'multiline_declaration'} = 0;
+			if ($code_line =~ /\&$/s) { $state{'multiline_declaration'} = 1; }
 			# comma-separated list of variables
 			$code_line = cut_brackets ($code_line);
 			my $warning_given = 0;
@@ -791,6 +794,7 @@ sub regex_escape {
 
 sub cut_initialization {
 	my ($line) = cut_comment (@_);
+	if ($state{'multiline_declaration'}) { $line = ''; }
 	$line =~ s/ *::.*$//s;
 	return ($line);
 }
