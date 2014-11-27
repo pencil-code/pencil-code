@@ -58,10 +58,10 @@
             mm=m+ipy*ny
             nn=n+ipz*nz
             if ((l==0.and.iproc==0).or.l>0) write(lun2) l,mm,nn,v1,v2,v3
-            if (l==0) goto 888
+            if (l==0) exit
           enddo
-          print*,'nvecmax is too small!'
-888       t=v1
+          if (l>0) print*,'nvecmax is too small!'
+          t=v1
         enddo
         print*,'t=',t
       enddo
