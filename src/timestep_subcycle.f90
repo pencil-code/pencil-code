@@ -321,7 +321,8 @@ module Timestep
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-      call impose_entropy_floor(f)
+! Sven.Bingert: routine not existing      
+!  call impose_entropy_floor(f)
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
