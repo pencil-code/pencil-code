@@ -4275,7 +4275,7 @@ module Chemistry
 !
                       endif
                     enddo
-                    goto 100
+                    goto 100 ! this is an excellent example of "spaghetti code" [Bourdin.KIS]
 !
 !
                   else
