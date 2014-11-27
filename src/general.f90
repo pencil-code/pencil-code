@@ -961,7 +961,7 @@ module General
       if (naa==2*nghost+1) then
         ii1=nghost+1
         ii2=nghost+1
-        goto 99
+        return
       endif
 !
 !  Find lower index.
@@ -970,21 +970,19 @@ module General
       do ii=1,naa
         if (aa(ii)>=aa1) then
           ii1=ii
-          goto 10
+          exit
         endif
       enddo
 !
 !  Find upper index.
 !
-10    ii2=1
+      ii2=1
       do ii=naa,1,-1
         if (aa(ii)<=aa2) then
           ii2=ii
-          goto 99
+          return
         endif
       enddo
-!
-99    continue
 !
     endsubroutine find_index_range
 !***********************************************************************
