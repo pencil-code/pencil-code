@@ -167,7 +167,7 @@ module Diagnostics
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-      logical,save :: first=.true.
+      logical,save :: lfirst_call=.true.
       character (len=640) :: fform,legend,line
       integer :: iname, iostat, nnamel
       real, dimension(2*nname) :: buffer
@@ -202,12 +202,12 @@ module Diagnostics
 !  This treats all numbers as floating point numbers.  Only those numbers are
 !  given (and computed) that are also listed in print.in.
 !
-        if (first) write(*,*)
-        if (first) write(*,'(" ",A)') trim(legend)
+        if (lfirst_call) write(*,*)
+        if (lfirst_call) write(*,'(" ",A)') trim(legend)
 !
 !  Write legend to extra file (might want to do only once after each lreset)
 !
-        if (first) then
+        if (lfirst_call) then
 !
           open(1,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
           if (outlog(iostat,'open',trim(datadir)//'/legend.dat')) goto 91
@@ -248,7 +248,7 @@ module Diagnostics
 !  file not distributed, backskipping enabled
         if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92
 !
-        if (first) then
+        if (lfirst_call) then
           write(1,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
           if (outlog(iostat,'write legend')) goto 92
         endif
@@ -267,7 +267,7 @@ module Diagnostics
       endif                     ! (lroot)
 !
       if (ldebug) write(*,*) 'exit prints'
-      first = .false.
+      lfirst_call = .false.
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
@@ -351,7 +351,7 @@ module Diagnostics
 !
       real, intent(in) :: tout
 !
-      logical,save :: lfirst=.true.
+      logical,save :: lfirst_call=.true.
       logical :: ldata
       character (len=640) :: fform,legend,sublegend,coorlegend,line
       character (len=6), parameter :: tform='(f10.4'
@@ -368,7 +368,7 @@ module Diagnostics
         call safe_character_append(fform, trim(itoa(ncoords_sound))//'(')
       endif
 !
-      if (lfirst) then
+      if (lfirst_call) then
 !
         legend = comment_char//noform('t'//tform//')')
 !
@@ -409,7 +409,7 @@ module Diagnostics
 !
         if (cform_sound(iname)/=' ') then
           ldata=.true.
-          if (lfirst) then
+          if (lfirst_call) then
 !
             item = noform(cname_sound(iname))
             if ( ncoords_sound>1 ) then
@@ -454,7 +454,7 @@ module Diagnostics
 ! file distributed (???), backskipping enabled
         if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) goto 99
 !
-        if (lfirst) then
+        if (lfirst_call) then
 !
           write(1,'(a)',IOSTAT=iostat) trim(legend)
           if (outlog(iostat,'write legend')) goto 99
@@ -482,7 +482,7 @@ module Diagnostics
         if (outlog(iostat,'close')) continue
 !
 99    if (ldebug) write(*,*) 'exit write_sound'
-      lfirst = .false.
+      lfirst_call = .false.
 !
       fname_sound(1:nname_sound,1:ncoords_sound)=0.0
 !
