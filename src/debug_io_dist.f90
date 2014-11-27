@@ -97,23 +97,35 @@ contains
       if (lserial_io) call start_serialize()
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) goto 99
+      if (outlog(iostat,'open',file)) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
       write(lun_output,IOSTAT=iostat) a
-      if (outlog(iostat,'write a')) goto 99
+      if (outlog(iostat,'write a')) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
       if (lshear) then
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       else
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       endif
 !
       close(lun_output,IOSTAT=iostat)
       if (outlog(iostat,'close')) continue
 !
-99    if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
 !***********************************************************************
@@ -141,23 +153,35 @@ contains
       if (lserial_io) call start_serialize()
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) goto 99
+      if (outlog(iostat,'open',file)) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
       write(lun_output,IOSTAT=iostat) a
-      if (outlog(iostat,'write a')) goto 99
+      if (outlog(iostat,'write a')) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
       if (lshear) then
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       else
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       endif
 !
       close(lun_output,IOSTAT=iostat)
       if (outlog(iostat,'close')) continue
 !
-99    if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize()
 !
     endsubroutine output_scal
 !***********************************************************************
