@@ -171,6 +171,7 @@ module Diagnostics
       character (len=640) :: fform,legend,line
       integer :: iname, iostat, nnamel
       real, dimension(2*nname) :: buffer
+      integer, parameter :: lun=1
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -209,16 +210,17 @@ module Diagnostics
 !
         if (lfirst_call) then
 !
-          open(1,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
-          if (outlog(iostat,'open',trim(datadir)//'/legend.dat')) goto 91
+          open(lun,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
+          if (.not. outlog(iostat,'open',trim(datadir)//'/legend.dat')) then
 !
-          write(1,'(" ",A)',IOSTAT=iostat) trim(legend)
-          if (outlog(iostat,'write legend')) goto 91
+            write(lun,'(" ",A)',IOSTAT=iostat) trim(legend)
+            if (.not. outlog(iostat,'write legend')) then
 !
-          close(1,IOSTAT=iostat)
-          if (outlog(iostat,'close')) continue
+              close(lun,IOSTAT=iostat)
+              if (outlog(iostat,'close')) continue
 !
-91        continue
+            endif
+          endif
         endif
 !
 !  Put output line into a string.
@@ -244,24 +246,28 @@ module Diagnostics
 !
 !  Append to diagnostics file.
 !
-        open(1,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
+        open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
 !  file not distributed, backskipping enabled
-        if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92
+        if (.not. outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) then
 !
-        if (lfirst_call) then
-          write(1,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
-          if (outlog(iostat,'write legend')) goto 92
-        endif
+          if (lfirst_call) then
+            write(lun,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
+          endif
+          if (.not. outlog(iostat,'write legend')) then
 !
-        write(1,'(a)',IOSTAT=iostat) trim(line)
-        if (outlog(iostat,'write line')) goto 92
+            write(lun,'(a)',IOSTAT=iostat) trim(line)
+            if (.not. outlog(iostat,'write line')) then
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+              close(lun,IOSTAT=iostat)
+              if (outlog(iostat,'close')) continue
+!
+             endif
+           endif
+         endif
 !
 !  Write to stdout.
 !
-92       write(*,'(a)') trim(line)
+         write(*,'(a)') trim(line)
 !        call flush() ! has to wait until F2003
 !
       endif                     ! (lroot)
@@ -336,6 +342,51 @@ module Diagnostics
 !
     endsubroutine clean_line
 !***********************************************************************
+    subroutine write_sound_append(legend,sublegend,coorlegend,line)
+!
+!  Append to diagnostics file.
+!
+!  27-Nov-2014/Bourdin.KIS: cleaned up code from write_sound
+!
+      character (len=*), intent(in) :: legend, sublegend, coorlegend, line
+!
+      logical, save :: lfirst_call=.true.
+      integer, parameter :: lun=1
+      integer :: iostat
+!
+        open(lun,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat)
+! file distributed (???), backskipping enabled
+        if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) return
+!
+        if (lfirst_call) then
+!
+          write(lun,'(a)',IOSTAT=iostat) trim(legend)
+          if (outlog(iostat,'write legend')) return
+!
+          if (dimensionality>0) then
+!
+            write(lun,'(a)',IOSTAT=iostat) trim(coorlegend)
+            if (outlog(iostat,'write coorlegend')) return
+!
+            if ( ncoords_sound>1 ) then
+              write(lun,'(a)',IOSTAT=iostat) trim(sublegend)
+              if (outlog(iostat,'write sublegend')) return
+            endif
+!
+            write(lun,'(a)',IOSTAT=iostat) comment_char//repeat('-',len_trim(legend)-1)
+            if (outlog(iostat,'write comment')) return
+!
+          endif
+        endif
+!
+        write(lun,'(a)',IOSTAT=iostat) trim(line)
+        if (outlog(iostat,'write line')) return
+!
+        close(lun,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
+    endsubroutine write_sound_append
+!***********************************************************************
     subroutine write_sound(tout)
 !
 !  Reads and registers "sound" parameters gathered from the different
@@ -351,15 +402,15 @@ module Diagnostics
 !
       real, intent(in) :: tout
 !
-      logical,save :: lfirst_call=.true.
+      logical, save :: lfirst_call=.true.
       logical :: ldata
-      character (len=640) :: fform,legend,sublegend,coorlegend,line
-      character (len=6), parameter :: tform='(f10.4'
+      character (len=linelen*3) :: fform,legend,sublegend,coorlegend,line
+      character (len=*), parameter :: tform='(f10.4'
       integer, parameter :: ltform=10
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j,iostat
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j
 !
 !  Produce the format.
 !
@@ -436,52 +487,20 @@ module Diagnostics
 !
 !  Put output line into a string.
 !
-        if (ldata) then
-          fform = fform(1:len_trim(fform)-1)
-          if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
-          write(line,trim(fform)//')') tout, ((fname_sound(i,j),  &
-              j=1,ncoords_sound), i=1,nname_sound)
-                 !(1:nname_sound,1:ncoords_sound)
-        else
-          write(line,tform//')')tout
-        endif
+      if (ldata) then
+        fform = fform(1:len_trim(fform)-1)
+        if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
+        write(line,trim(fform)//')') tout, ((fname_sound(i,j),  &
+            j=1,ncoords_sound), i=1,nname_sound)
+               !(1:nname_sound,1:ncoords_sound)
+      else
+        write(line,tform//')')tout
+      endif
 !
-        call clean_line(line)
+      call clean_line(line)
+      call write_sound_append(legend,sublegend,coorlegend,line)
 !
-!  Append to diagnostics file.
-!
-        open(1,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat)
-! file distributed (???), backskipping enabled
-        if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) goto 99
-!
-        if (lfirst_call) then
-!
-          write(1,'(a)',IOSTAT=iostat) trim(legend)
-          if (outlog(iostat,'write legend')) goto 99
-!
-          if (dimensionality>0) then
-!
-            write(1,'(a)',IOSTAT=iostat) trim(coorlegend)
-            if (outlog(iostat,'write coorlegend')) goto 99
-!
-            if ( ncoords_sound>1 ) then
-              write(1,'(a)',IOSTAT=iostat) trim(sublegend)
-              if (outlog(iostat,'write sublegend')) goto 99
-            endif
-!
-            write(1,'(a)',IOSTAT=iostat) comment_char//repeat('-',len_trim(legend)-1)
-            if (outlog(iostat,'write comment')) goto 99
-!
-          endif
-        endif
-!
-        write(1,'(a)',IOSTAT=iostat) trim(line)
-        if (outlog(iostat,'write line')) goto 99
-!
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-!
-99    if (ldebug) write(*,*) 'exit write_sound'
+      if (ldebug) write(*,*) 'exit write_sound'
       lfirst_call = .false.
 !
       fname_sound(1:nname_sound,1:ncoords_sound)=0.0
@@ -1067,6 +1086,53 @@ module Diagnostics
 !
     endsubroutine write_zaverages
 !***********************************************************************
+    subroutine write_phiaverages_file(ch)
+!
+!  File format:
+!    1. nr_phiavg, nz_phiavg, nvars, nprocz
+!    2. t, r_phiavg, z_phiavg, dr, dz
+!    3. data
+!    4. len(labels),labels
+!
+!   27-Nov-2014/Bourdin.KIS: cleaned up code from write_phiaverages
+!
+      use General, only: safe_character_append
+!
+      character(len=*), intent(in) :: ch
+!
+      integer, parameter :: lun=1
+      integer :: i,iostat
+      character (len=1024) :: labels
+!
+      open(lun,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat)
+      if (outlog(iostat,'open',trim(datadir)//'/averages/PHIAVG'//trim(ch))) return
+!
+      write(lun,IOSTAT=iostat) nrcyl,nzgrid,nnamerz,nprocz
+      if (outlog(iostat,'write nrcyl etc.')) return
+!
+      write(lun,IOSTAT=iostat) t2davgfirst,rcyl,z(n1)+(/(i*dz, i=0,nzgrid-1)/),drcyl,dz
+      if (outlog(iostat,'write t2davgfirst etc.')) return
+!
+      !ngrs: use pack to explicitly order the array before writing
+      !     (write was messing up on copson without this...)
+!
+      write(lun,IOSTAT=iostat) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
+      if (outlog(iostat,'write fnamerz')) return
+!
+!  Write labels at the end of file.
+!
+      labels = trim(cnamerz(1))
+      do i=2,nnamerz
+        call safe_character_append(labels,",",trim(cnamerz(i)))
+      enddo
+      write(lun,IOSTAT=iostat) len(labels),labels
+      if (outlog(iostat,'write labels')) return
+!
+      close(lun,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
+!
+    endsubroutine write_phiaverages_file
+!***********************************************************************
     subroutine write_phiaverages(ch)
 !
 !  Write azimuthal averages (which are 2d data) that have been requested
@@ -1075,66 +1141,30 @@ module Diagnostics
 !  we are writing we automatically end up with the full z-direction
 !  written contiguously.
 !
-!  File format:
-!    1. nr_phiavg, nz_phiavg, nvars, nprocz
-!    2. t, r_phiavg, z_phiavg, dr, dz
-!    3. data
-!    4. len(labels),labels
-!
 !   2-jan-03/wolf: adapted from write_zaverages
 !
-      use General, only: safe_character_append
+      character(len=*), intent(in) :: ch
 !
-      character (len=*) :: ch
+      integer, parameter :: lun=1
+      integer :: iostat
 !
-      integer :: i,iostat
-      character (len=1024) :: labels
+      if (.not. lroot .or. (nnamerz <= 0)) return
 !
 !  Write result; normalization is already done in phiaverages_rz.
 !
-      if (lroot.and.nnamerz>0) then
-        open(1,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(datadir)//'/averages/PHIAVG'//trim(ch))) goto 93
-!
-        write(1,IOSTAT=iostat) nrcyl,nzgrid,nnamerz,nprocz
-        if (outlog(iostat,'write nrcyl etc.')) goto 93
-!
-        write(1,IOSTAT=iostat) t2davgfirst,rcyl, &
-                 z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
-                 drcyl,dz
-        if (outlog(iostat,'write t2davgfirst etc.')) goto 93
-!
-        !ngrs: use pack to explicitly order the array before writing
-        !     (write was messing up on copson without this...)
-!
-        write(1,IOSTAT=iostat) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
-        if (outlog(iostat,'write fnamerz')) goto 93
-!
-!  Write labels at the end of file.
-!
-        labels = trim(cnamerz(1))
-        do i=2,nnamerz
-          call safe_character_append(labels,",",trim(cnamerz(i)))
-        enddo
-        write(1,IOSTAT=iostat) len(labels),labels
-        if (outlog(iostat,'write labels')) goto 93
-!
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+      call write_phiaverages_file(ch)
 !
 !  Write file name to file list.
 !
-93      open(1,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat)
-! file not distributed, backskipping enabled
-        if (outlog(iostat,'open',trim(datadir)//'/averages/phiavg.files',dist=-1)) return
+      open(lun,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat)
+      ! file not distributed, backskipping enabled
+      if (outlog(iostat,'open',trim(datadir)//'/averages/phiavg.files',dist=-1)) return
 !
-        write(1,'(A)',IOSTAT=iostat)'PHIAVG'//trim(ch)
-        if (outlog(iostat,'write "PHIAVG"')) return
+      write(lun,'(A)',IOSTAT=iostat)'PHIAVG'//trim(ch)
+      if (outlog(iostat,'write "PHIAVG"')) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-!
-      endif
+      close(lun,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
 !
     endsubroutine write_phiaverages
 !***********************************************************************
