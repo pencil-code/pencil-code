@@ -66,12 +66,6 @@ module Density
 !
   integer :: idiag_drhomz = 0    ! XYAVG_DOC: $\langle\Delta\rho/\rho_0\rangle_{xy}$
   integer :: idiag_drho2mz = 0   ! XYAVG_DOC: $\langle\left(\Delta\rho/\rho_0\right)^2\rangle_{xy}$
-  integer :: idiag_rux2mz = 0    ! YZAVG_DOC: $\langle\rho u_x^2\rangle_{xy}$
-  integer :: idiag_ruy2mz = 0    ! YZAVG_DOC: $\langle\rho u_y^2\rangle_{xy}$
-  integer :: idiag_ruz2mz = 0    ! YZAVG_DOC: $\langle\rho u_z^2\rangle_{xy}$
-  integer :: idiag_ruxuymz = 0   ! YZAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
-  integer :: idiag_ruxuzmz = 0   ! YZAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
-  integer :: idiag_ruyuzmz = 0   ! YZAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
 !
 !  xz-averages
 !
@@ -301,11 +295,6 @@ module Density
 !
 !  xy-average related
 !
-      ruumz: if (idiag_rux2mz /= 0 .or. idiag_ruy2mz /= 0 .or. idiag_ruz2mz /= 0 .or. &
-                 idiag_ruxuymz /= 0 .or. idiag_ruxuzmz /= 0 .or. idiag_ruyuzmz /= 0) then
-        lpenc_diagnos(i_rho) = .true.
-        lpenc_diagnos(i_uu) = .true.
-      endif ruumz
 !
 !  yz-average related
 !
@@ -527,12 +516,6 @@ module Density
 !       xy-averages
         if (idiag_drhomz /= 0) call xysum_mn_name_z(penc, idiag_drhomz)
         if (idiag_drho2mz /= 0) call xysum_mn_name_z(penc**2, idiag_drho2mz)
-        if (idiag_rux2mz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,1)**2, idiag_rux2mz)
-        if (idiag_ruy2mz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,2)**2, idiag_ruy2mz)
-        if (idiag_ruz2mz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,3)**2, idiag_ruz2mz)
-        if (idiag_ruxuymz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,1) * p%uu(:,2), idiag_ruxuymz)
-        if (idiag_ruxuzmz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,1) * p%uu(:,3), idiag_ruxuzmz)
-        if (idiag_ruyuzmz /= 0) call xysum_mn_name_z(p%rho * p%uu(:,2) * p%uu(:,3), idiag_ruyuzmz)
 !       xz-averages
         if (idiag_drhomy /= 0) call xzsum_mn_name_y(penc, idiag_drhomy)
         if (idiag_drho2my /= 0) call xzsum_mn_name_y(penc**2, idiag_drho2my)
@@ -771,12 +754,6 @@ module Density
 !       xy-averages
         idiag_drhomz = 0
         idiag_drho2mz = 0
-        idiag_rux2mz = 0
-        idiag_ruy2mz = 0
-        idiag_ruz2mz = 0
-        idiag_ruxuymz = 0
-        idiag_ruxuzmz = 0
-        idiag_ruyuzmz = 0
 !       xz-averages
         idiag_drhomy = 0
         idiag_drho2my = 0
@@ -815,12 +792,6 @@ module Density
       xyaver: do iname = 1, nnamez
         call parse_name(iname, cnamez(iname), cformz(iname), 'drhomz', idiag_drhomz)
         call parse_name(iname, cnamez(iname), cformz(iname), 'drho2mz', idiag_drho2mz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'rux2mz', idiag_rux2mz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'ruy2mz', idiag_ruy2mz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'ruz2mz', idiag_ruz2mz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'ruxuymz', idiag_ruxuymz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'ruxuzmz', idiag_ruxuzmz)
-        call parse_name(iname, cnamez(iname), cformz(iname), 'ruyuzmz', idiag_ruyuzmz)
       enddo xyaver
 !
 !  Check for xz-averages listed in xzaver.in.
