@@ -23,7 +23,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
         verbose
             Whether or not to print information.
     """
-    # Chao-Chin Yang, 2014-08-29
+    # Chao-Chin Yang, 2014-11-27
     import numpy as np
     from scipy.interpolate import interp1d
     # Read the dimensions and check the plane of average.
@@ -64,6 +64,9 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
             avg[v][i,:] = fetch(nc)
     # Close file.
     f.close()
+    # Discard duplicate entries.
+    t, indices = np.unique(t, return_index=True)
+    avg = avg[indices]
     # Interpolate the time series if requested.
     if tsize is not None:
         if verbose:
