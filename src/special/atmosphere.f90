@@ -67,10 +67,10 @@ module Special
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
-  integer :: ind_H2O, ind_N2, ! ind_cloud=0
+  integer :: ind_H2O, ind_N2
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
-  real :: dsize0_max=0.,dsize0_min=0.
+  real :: dsize0_max=0.,dsize0_min=0., UY_ref=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
   logical :: llog_distribution=.true., lACTOS=.false.
@@ -88,11 +88,11 @@ module Special
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lnTT1,lnTT2
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1,lnTT2
 !
 !
   integer :: idiag_dtcrad=0
@@ -463,7 +463,7 @@ module Special
       endif
 !
        dt1=1./(8.*dt)
-       del=0.05
+       del=0.1
 !
          lzone_left=.false.
          lzone_right=.false.
@@ -478,17 +478,19 @@ module Special
 !
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
            if (lzone_right) then
+             dt1=(m-(m2-sz_y))/sz_y/(8.*dt)
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT2))*dt1
            endif
-         elseif (j==2) then
+         else if (j==2) then
            mm1=1
            mm2=sz_y
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
            if (lzone_left) then
+             dt1=(sz_y-m)/(sz_y-1)/(8.*dt)
              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT1))*dt1
            endif
          endif
@@ -553,23 +555,31 @@ module Special
                 lzone=.true.
               endif           
             endif 
+!
+              dt1=1./(8.*dt)
 ! 
              if (lzone) then
-               df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-                 + 2.5e6/1005.*p%ccondens*p%TT1
- !              do i=1,ndustspec
- !               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
- !                     + p%dndr(:,i)
- !              enddo
+!
+!               df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+!                 + 2.5e6/1005.*p%ccondens*p%TT1
+!
+               do i=1,ndustspec
+                df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
+               enddo
 
+             else
+!                df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
+!                df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+!                df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-UY_ref)*dt1
+         
              endif
            else
              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               + 2.5e6/1005.*p%ccondens*p%TT1
- !            do i=1,ndustspec
- !              df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
- !                     + p%dndr(:,i)
- !            enddo
+             do i=1,ndustspec
+               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
+                      + p%dndr(:,i)
+             enddo
            endif
 !        
         elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
@@ -788,7 +798,7 @@ module Special
          case ('sat')
          select case (bc%location)
            case (iBC_X_BOT)
-             call bc_satur_x(f,bc)
+!             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -1355,17 +1365,17 @@ subroutine bc_satur_x(f,bc)
 !
 !
 !
-           air_mass_1=0
-           do k=1,nchemspec
-             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
-           enddo
-           air_mass_1=1./air_mass_1
+!           air_mass_1=0
+!           do k=1,nchemspec
+!             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_1=1./air_mass_1
 !
-           air_mass_2=0
-           do k=1,nchemspec
-             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
-           enddo
-           air_mass_2=1./air_mass_2
+!           air_mass_2=0
+!           do k=1,nchemspec
+!             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_2=1./air_mass_2
         do iter=1,3
 !
 !
@@ -1396,17 +1406,17 @@ subroutine bc_satur_x(f,bc)
            init_Yk_2(ind_N2)=1.-sum2
 !
 
-           tmp=0.
-           do k=1,nchemspec
-             tmp=tmp+init_Yk_1(k)/species_constants(k,imass)
-           enddo
-           air_mass_1=1./tmp
+!           tmp=0.
+!           do k=1,nchemspec
+!             tmp=tmp+init_Yk_1(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_1=1./tmp
 !
-           tmp=0.
-           do k=1,nchemspec
-             tmp=tmp+init_Yk_2(k)/species_constants(k,imass)
-           enddo
-           air_mass_2=1./tmp
+!           tmp=0.
+!           do k=1,nchemspec
+!             tmp=tmp+init_Yk_2(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_2=1./tmp
 !
 !
 !
