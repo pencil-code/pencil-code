@@ -652,12 +652,10 @@ sub scan_file {
 
 		# absolutely forbidden
 		if ($lines[$pos] =~ /(?:^| )goto /is) {
-			fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else' or 'do-while-repeat'");
-			return;
+			accumulative_fatal ("'goto' is absolutely forbidden => use proper control structures, like 'if-else' or 'do-while-repeat'");
 		}
 		if ($lines[$pos] =~ /(?:^| )entry /is) {
-			fatal ("'entry' is absolutely forbidden => use 'interface' instead");
-			return;
+			accumulative_fatal ("'entry' is absolutely forbidden => use 'interface' instead");
 		}
 
 		# indentation
@@ -1060,6 +1058,9 @@ sub check_new_nesting {
 			if ($line =~ s/^( *)($type_list) +function /${1}function /is) {
 				picky_fixme_warning ("data type '".$2."' belongs inside the 'function' block");
 			}
+		}
+		if (($trigger eq 'subroutine') || ($trigger eq 'function')) {
+			$line =~ s/^( *)recursive +/${1}/is;
 		}
 		if ($line =~ /^ *${trigger} /is) {
 			if ($line =~ / *\{remove-MLC}$/s) {
