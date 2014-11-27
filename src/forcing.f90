@@ -2370,7 +2370,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist
-      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,&
+      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
       real :: rz,rindex,ralpha,&
               rmin,rmax,rphase2
@@ -2425,9 +2425,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               a_ell = -anum/adenom
               do l=l1-nghost,l2+nghost
                 alphar=Balpha*x(l)
-                call sp_besselj_l(jlm,Legendrel,alphar)
-                call sp_bessely_l(ylm,Legendrel,alphar)
-                Zpsi_list(l,ilist,aindex) = (a_ell*jlm+ylm)
+                call sp_besselj_l(jlm_ff,Legendrel,alphar)
+                call sp_bessely_l(ylm_ff,Legendrel,alphar)
+                Zpsi_list(l,ilist,aindex) = (a_ell*jlm_ff+ylm_ff)
               enddo
             enddo
           enddo
@@ -2468,9 +2468,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
      do l=l1-nghost,l2+nghost
        alphar=Balpha*x(l)
-       call sp_besselj_l(jlm,Legendrel,alphar)
-       call sp_bessely_l(ylm,Legendrel,alphar)
-       Z_psi(l) = (a_ell*jlm+ylm)
+       call sp_besselj_l(jlm_ff,Legendrel,alphar)
+       call sp_bessely_l(ylm_ff,Legendrel,alphar)
+       Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
      enddo
 !-------
      do n=n1-nghost,n2+nghost
@@ -2554,7 +2554,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist
-      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,&
+      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
       real :: rz,ralpha,&
               rmin,rmax,rphase2
@@ -2609,9 +2609,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               a_ell = -anum/adenom
               do l=l1-nghost,l2+nghost
                 alphar=Balpha*x(l)
-                call sp_besselj_l(jlm,Legendrel,alphar)
-                call sp_bessely_l(ylm,Legendrel,alphar)
-                Zpsi_list(l,ilist,aindex) = (a_ell*jlm+ylm)
+                call sp_besselj_l(jlm_ff,Legendrel,alphar)
+                call sp_bessely_l(ylm_ff,Legendrel,alphar)
+                Zpsi_list(l,ilist,aindex) = (a_ell*jlm_ff+ylm_ff)
               enddo
             enddo
           enddo
@@ -2652,9 +2652,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
      do l=l1-nghost,l2+nghost
        alphar=Balpha*x(l)
-       call sp_besselj_l(jlm,Legendrel,alphar)
-       call sp_bessely_l(ylm,Legendrel,alphar)
-       Z_psi(l) = (a_ell*jlm+ylm)
+       call sp_besselj_l(jlm_ff,Legendrel,alphar)
+       call sp_bessely_l(ylm_ff,Legendrel,alphar)
+       Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
      enddo
 !-------
      do n=n1-nghost,n2+nghost
