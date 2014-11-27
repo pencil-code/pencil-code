@@ -2416,7 +2416,7 @@ module Boundcond
       integer, intent (in) :: j
 !
       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-      integer :: i,lbc0,lbc1,lbc2,stat
+      integer :: i,lbc0,lbc1,lbc2,stat,io_code
       real :: lbc,frac
       logical, save :: lbc_file_x=.true.
 !
@@ -2430,7 +2430,13 @@ module Boundcond
         if (lroot) then
           print*,'opening bc_file_x.dat'
           open(9,file=trim(directory_dist)//'/bc_file_x.dat',form='unformatted')
-          read(9,end=99) bc_file_x_array
+          read(9,iostat=io_code) bc_file_x_array
+          if (io_code < 0) then
+            ! end of file
+            if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
+            deallocate(bc_file_x_array)
+            call stop_it("boundary file bc_file_x.dat has incorrect size")
+          endif
           close(9)
         endif
         lbc_file_x=.false.
@@ -2469,15 +2475,7 @@ module Boundcond
 !
       endselect
 !
-      goto 98
-99    continue
-      if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
-!
-      call stop_it("boundary file bc_file_x.dat not found")
-!
-!  Deallocate array
-!
-98    if (allocated(bc_file_x_array)) deallocate(bc_file_x_array)
+      deallocate(bc_file_x_array)
 !
     endsubroutine bc_file_x
 !***********************************************************************
