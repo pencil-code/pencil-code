@@ -912,11 +912,14 @@ sub write_file {
 
 sub print_num_warnings {
 	if ((!$quiet && !$fatals_only) || $summary_only) {
+		my $num_unfixed = ($num_warnings - $num_fixed);
 		if ($auto_correct) {
-			my $num_unfixed = ($num_warnings - $num_fixed);
 			if ($num_fixed) {
 				if ($num_fatals) {
 					warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
+				}
+				elsif (!$num_unfixed) {
+					warn ("ALL STYLE BREAKS were fixed.\n");
 				}
 				else {
 					warn ($num_fixed." STYLE BREAKS were fixed.\n");
@@ -931,12 +934,20 @@ sub print_num_warnings {
 				warn ($num_warnings." STYLE BREAKS should be fixed.\n");
 			}
 			if ($num_fixed) {
-				warn ($num_fixed." of them can be fixed automatically.\n");
+				if (!$num_unfixed) {
+					warn ("ALL of them can be fixed automatically.\n");
+				}
+				else {
+					warn ($num_fixed." of them can be fixed automatically.\n");
+				}
+			}
+			if ($num_unfixed) {
+				warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
 			}
 		}
 	}
 	if ($num_accumulative || $num_fatals) {
-		warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
+		warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain for manual fixing!\n");
 	}
 	elsif (!$quiet && !$num_warnings && !$num_fixed) { warn ("everything OK, congratulations!\n"); }
 	$num_warnings = 0;
