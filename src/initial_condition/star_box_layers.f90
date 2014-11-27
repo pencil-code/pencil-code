@@ -115,22 +115,22 @@ module InitialCondition
       call strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
       rb_new=rhobot
 !
-      do 10 iter=1,10
+      do iter=1,10
 !
 !  New estimate.
 !
         rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
 !
         crit=abs(rhotop/rt_new-1.)
-        if (crit<=1e-4) goto 20
+        if (crit<=1e-4) exit
         call strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
 !
 !  Update new estimates.
 !
         rt_old=rt_new ; rb_old=rb_new
         rt_new=rhotop ; rb_new=rhobot
- 10   continue
- 20   print*,'- iteration completed: rhotop,crit=',rhotop,crit
+      enddo
+      print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 !  Redefine rho0 and lnrho0 (important for eoscalc!).
 !
