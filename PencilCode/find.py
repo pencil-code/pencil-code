@@ -49,6 +49,38 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
+def midplane(**kwarg):
+    """Finds horizontally-averaged mid-plane properties as a function of
+    time.
+
+    Returned Values:
+        Time and mid-plane properties.
+
+    Keyword Arguments:
+        **kwarg
+            Keyword arguments to be passed to read.avg1d(), except
+            keyword plane.
+    """
+    # Chao-Chin Yang, 2014-11-27
+    from . import read
+    import numpy as np
+    from scipy.interpolate import interp1d
+    from Toolbox import get
+    # Read the horizontal averages.
+    dir = get.pairs(kwarg, 'datadir')
+    t, avg = read.avg1d(plane='xy', **kwarg)
+    g = read.grid(trim=True, **dir)
+    # Find the mid-plane properties.
+    print("Finding mid-plane properties...")
+    var = avg.dtype.names
+    nvar = len(var)
+    nt = avg.shape[0]
+    avg0 = np.core.records.array(nvar * [np.zeros(nt,)], names=var)
+    for v in var:
+        for i in range(nt):
+            avg0[v][i] = interp1d(g.z, avg[v][i,:])(0)
+    return t, avg0
+#=======================================================================
 def sigma0(datadir='./data'):
     """Returns the background gas column density inside the
     computational domain.
