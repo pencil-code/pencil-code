@@ -9,12 +9,14 @@
 # Command-line arguments:
 # -a: automatic correction, where possible
 # -b: backups original, if changes are applied
-# -q: quiet
-# -c: comment empty lines
-# -i: indent after 'contains'
 # -o: old style
 # -n: new style
+# -c: comment empty lines
+# -i: indent after 'contains'
 # -l: loose checking
+# -f: fatal errors only
+# -q: quiet
+# -s: summary only
 # -v: verbose ouput
 # -d: debug ouput
 #
@@ -46,20 +48,24 @@ my $comment_empty_lines = 1;
 my $indent_after_contains = 1;
 my $header_before_routine = 0;
 my $old_style = 1;
-my $picky = 1;
+my $loose_check = 0;
+my $fatals_only = 0;
 my $auto_correct = 0;
 my $quiet = 0;
+my $summary_only = 0;
 my $backup = 0;
 my $verbose = 0;
 while ($ARGV[0] =~ /^-/) {
 	my $argument = shift ();
 	if ($argument =~ s/^(-.)(.+)$/${1}/s) { unshift (@ARGV, '-'.$2); }
-	if (lc ($argument) eq '-l') { $picky = 0; }
+	if (lc ($argument) eq '-l') { $loose_check = 1; }
+	elsif (lc ($argument) eq '-f') { $fatals_only = 1; }
 	elsif (lc ($argument) eq '-c') { $comment_empty_lines = 1; }
 	elsif (lc ($argument) eq '-i') { $indent_after_contains = 1; }
 	elsif (lc ($argument) eq '-v') { if ($verbose < 1) { $verbose = 1; } }
 	elsif (lc ($argument) eq '-d') { $verbose = 2; }
 	elsif (lc ($argument) eq '-q') { $quiet = 1; }
+	elsif (lc ($argument) eq '-s') { $summary_only = 1; }
 	elsif (lc ($argument) eq '-a') { $auto_correct = 1; }
 	elsif (lc ($argument) eq '-b') { $backup = 1; }
 	elsif (lc ($argument) eq '-n') {
@@ -102,18 +108,22 @@ my $num_file = 0;
 my $exit_code = 0;
 my $filename = '';
 while ($filename = shift ()) {
-	if ($num_file) {
-		print ('========================================================================\n');
+	if ((!$quiet || $summary_only) && $num_files && $num_file) {
+		print ('========================================================================'."\n");
 	}
 	$num_file++;
-	if (!$quiet && ($num_files >= 2)) {
+	if ((!$quiet || $summary_only) && ($num_files >= 2)) {
 		print ('File "'.$filename.'":'."\n");
 	}
 	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
 	if (!-f $filename) { die ('Not a file: "'.$filename.'"'."\n"); }
 	scan_file ($filename);
-	print STDERR ('File "'.$filename.'":'."\n");
-	print STDERR ('=> ');
+	if (!$summary_only && ((!$fatals_only && $num_accumulative) || $num_fatals)) {
+		warn ('File "'.$filename.'":'."\n");
+	}
+	if (!$quiet || $summary_only || (!$fatals_only && $num_accumulative) || $num_fatals) {
+		print STDERR ('=> ');
+	}
 	if ($auto_correct && !$num_fatals) {
 		write_file ($filename);
 	}
@@ -136,7 +146,9 @@ sub usage {
 	warn ('-c: comment empty lines'."\n");
 	warn ('-i: indent after \'contains\''."\n");
 	warn ('-l: loose checking'."\n");
+	warn ('-f: fatal errors only'."\n");
 	warn ('-q: quiet'."\n");
+	warn ('-s: summary only'."\n");
 	warn ('-v: verbose ouput'."\n");
 	warn ('-d: debug ouput'."\n");
 }
@@ -150,6 +162,7 @@ sub scan_file {
 	$state{'continuation'} = 0;
 	$state{'multiline_if'} = 0;
 	$state{'multiline_where'} = 0;
+	$state{'multiline_elseif'} = 0;
 	$state{'else_branch'} = '';
 	$state{'eol_comment'} = 0;
 	$state{'complete_line'} = '';
@@ -229,7 +242,7 @@ sub scan_file {
 			if ($num_spaces != $state{'indent'}) {
 				if (($state{'eol_comment'} > 0) && ($num_spaces > $state{'indent'})) {
 					# multi-line comment block with extra indentation
-					fixme_warning ("no extra indentation for multi-line comment blocks");
+					picky_fixme_warning ("no extra indentation for multi-line comment blocks");
 				}
 				else {
 					warning ("comments start either at the beginning of a line or at the correct indentation level");
@@ -827,13 +840,13 @@ sub cut_strings {
 
 sub picky_fixme_warning {
 	my ($message) = @_;
-	if (!$picky) { return; }
+	if ($loose_check) { return; }
 	fixme_warning ("picky: ".$message);
 }
 
 sub picky_warning {
 	my ($message) = @_;
-	if (!$picky) { return; }
+	if ($loose_check) { return; }
 	warning ("picky: ".$message);
 }
 
@@ -857,9 +870,10 @@ sub warning {
 
 sub print_warning {
 	my ($message) = @_;
+	if ($fatals_only && ($message !~ /^FATAL: /s)) { return; }
 	$num_warnings++;
 	$state{'num_warnings'}++;
-	if (!$quiet) { warn ("[".$line_numbers[$pos]."] ".$message."\n"); }
+	if (!$quiet && !$summary_only) { warn ("[".$line_numbers[$pos]."] ".$message."\n"); }
 }
 
 sub write_file {
@@ -891,35 +905,34 @@ sub write_file {
 }
 
 sub print_num_warnings {
-	if ($auto_correct) {
-		my $num_unfixed = ($num_warnings - $num_fixed);
-		if ($num_fixed) {
-			if ($num_fatals) {
-				warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
+	if ((!$quiet && !$fatals_only) || $summary_only) {
+		if ($auto_correct) {
+			my $num_unfixed = ($num_warnings - $num_fixed);
+			if ($num_fixed) {
+				if ($num_fatals) {
+					warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
+				}
+				else {
+					warn ($num_fixed." STYLE BREAKS were fixed.\n");
+				}
 			}
-			else {
-				warn ($num_fixed." STYLE BREAKS were fixed.\n");
+			if ($num_unfixed) {
+				warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
 			}
 		}
-		if ($num_unfixed) {
-			warn ($num_unfixed." STYLE BREAKS need to be fixed manually.\n");
-		}
-		if ($num_accumulative || $num_fatals) {
-			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
+		else {
+			if ($num_warnings) {
+				warn ($num_warnings." STYLE BREAKS should be fixed.\n");
+			}
+			if ($num_fixed) {
+				warn ($num_fixed." of them can be fixed automatically.\n");
+			}
 		}
 	}
-	else {
-		if ($num_warnings) {
-			warn ($num_warnings." STYLE BREAKS should be fixed.\n");
-		}
-		if ($num_fixed) {
-			warn ($num_fixed." of them can be fixed automatically!\n");
-		}
-		if ($num_accumulative || $num_fatals) {
-			warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
-		}
+	if ($num_accumulative || $num_fatals) {
+		warn (($num_accumulative + $num_fatals)." FATAL ERRORS still remain!\n");
 	}
-	if (!$num_warnings && !$num_fixed && !$num_accumulative && !$num_fatals) { warn ("everything OK, congratulations!\n"); }
+	elsif (!$quiet && !$num_warnings && !$num_fixed) { warn ("everything OK, congratulations!\n"); }
 	$num_warnings = 0;
 	$num_fixed = 0;
 	$num_accumulative = 0;
@@ -985,6 +998,12 @@ sub check_new_nesting {
 			my $clean_line = cut_brackets ($state{'complete_line'}.$line);
 			if ($clean_line !~ /\(_+\) *\S/s) { add_nesting ('where'); }
 		}
+		return (0);
+	}
+	if ($state{'multiline_elseif'}) {
+		$state{'multiline_elseif'} = 0;
+		if ($line =~ / then$/is) { add_nesting ('if'); }
+		if ($line =~ /\&$/s) { $state{'multiline_elseif'} = 1; }
 		return (0);
 	}
 	if ($state{'else_branch'}) {
@@ -1097,8 +1116,8 @@ sub check_closed_nesting {
 		if ($else =~ /^ +${type}/s) {
 			warning ("better use 'else".$type."' instead of 'else ".$type."'");
 			$else =~ s/^ +//is;
-			$line =~ s/^( *else) +${type}/${1}${type}/is;
-			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else) +${type}/${1}${type}/is;
+			$line =~ s/^( *else) +(${type})/${1}${2}/is;
+			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else) +(${type})/${1}${2}/is;
 		}
 		if ($else =~ /^${type}[^ ${name}%]/is) {
 			warning ("space after 'else".$type."'-statement required");
@@ -1106,8 +1125,13 @@ sub check_closed_nesting {
 			$line =~ s/^( *else${type})/${1} /is;
 			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else${type})/${1} /is;
 		}
-		if (($type eq 'if') && ($else !~ /^$/s) && ($else !~ /\&$/s) && ($else !~ / then/is)) {
-			# TODO: handle multi-line else-blocks correctly, currentyl just ignored
+		if (($type eq 'if') && ($else =~ /^${type}(?: |$)/is) && ($else !~ / then$/is)) {
+			if ($else =~ /\&$/s) {
+				# multi-line elseif-block
+				$state{'multiline_elseif'} = 1;
+				$state{'nesting'} =~ s/(^|\|)${type}\|$/${1}/s;
+				return (remove_nesting ());
+			}
 			fatal ("must place 'then' after 'elseif'");
 			return (1);
 		}
