@@ -143,7 +143,7 @@ module Hydro
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
-      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range,index_rSH
+      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH
 !
 !  Run parameters.
 !
@@ -206,7 +206,7 @@ module Hydro
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
-      lpropagate_borderuu, hydro_zaver_range, &
+      lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum
 !
 !  Diagnostic variables (need to be consistent with reset list below).
@@ -642,6 +642,11 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
       integer :: ierr,j
+!
+! set the right point in profile to unity.
+!
+      write(*,*)'DM: index_rSH',index_rSH
+      profile_SH(index_rSH)=dx_1(index_rSH)
 !
 !  Block use of uninitalised p%fcont
 !
@@ -1735,6 +1740,7 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
+      integer :: k
       if (ladvection_velocity) then
         if (lweno_transport) then
           lpenc_requested(i_uu)=.true.
@@ -2579,7 +2585,7 @@ module Hydro
 ! This is being always calcualted but written out only when asked. 
 ! It should not be done this way, but calculated only is must be written out.
 !
-        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
+        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH,p)
         do k=1,Nmodes_SH
           if (idiag_urlm(k)/=0) call sum_mn_name(urlm(:,k),idiag_urlm(k))
         enddo
@@ -3921,7 +3927,10 @@ module Hydro
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
+      use General, only: itoa
 !
+      integer :: k
+      character (len=intlen) :: smode
       integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -4338,6 +4347,20 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxym',idiag_udpxym)
         call parse_name(iname,cname(iname),cform(iname),'udpyzm',idiag_udpyzm)
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
+      enddo
+!
+!  Loop over dust species (for species-dependent diagnostics).
+!
+      do k=1,Nmodes_SH
+        smode=itoa(k)
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+        if (lroot.and.ip<14) print*,'hydro: run through parse list'
+        do iname=1,nname
+          call parse_name(iname,cname(iname),cform(iname), &
+              'urlm'//trim(smode),idiag_urlm(k))
+        enddo
       enddo
 !
 ! Quantities which are averaged over half (north-south) the box
@@ -5605,17 +5628,21 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
-    subroutine amp_lm(psi,psilm,rselect)
+    subroutine amp_lm(psi,psilm,rselect,p)
       use Sub, only: ylm
+      type (pencil_case) :: p
       real,dimension(nx),intent(in):: psi,rselect
       real,dimension(nx,Nmodes_SH),intent(out) :: psilm
       real :: sph_har
       integer :: ell,emm,imode
+      real,dimension(nx) :: one_by_rsqr
+      one_by_rsqr=1./(x(l1:l2)*x(l1:l2))
+      if ((m.eq.1).and.(n.eq.1)) write(*,*) rselect
       do ell=0,lSH_max
         do emm=-ell,ell
           imode=(ell+1)*(ell+1)-ell+emm
           call ylm(y(m),z(n),ell,emm,sph_har)
-          psilm(:,imode) = psi(:)*rselect(:)*sph_har
+          psilm(:,imode) = psi(:)*rselect(:)*sph_har*one_by_rsqr(:)
         enddo
       enddo
     endsubroutine amp_lm
