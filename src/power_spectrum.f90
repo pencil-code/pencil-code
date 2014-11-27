@@ -450,24 +450,24 @@ module power_spectrum
     ivec = ioptest(ivecp,1)
 !
     if (sp=='u') then
-       if (iuu==0) goto 1
+       if (iuu==0) call fatal_error('get_comp_spectrum','variable "u" not existent')
        ar=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
     elseif (sp=='rho') then
        if ( ldensity_nolog ) then
-         if (irho==0) goto 1
+         if (irho==0) call fatal_error('get_comp_spectrum','variable "rho" not existent')
          ind = irho
        else
-         if (ilnrho==0) goto 1
+         if (ilnrho==0) call fatal_error('get_comp_spectrum','variable "lnrho" not existent')
          ind = ilnrho
        endif
        if (ivec>1) return
        ar=f(l1:l2,m1:m2,n1:n2,ind)
     elseif (sp=='s') then
-       if (iss==0) goto 1
+       if (iss==0) call fatal_error('get_comp_spectrum','variable "s" not existent')
        if (ivec>1) return
        ar=f(l1:l2,m1:m2,n1:n2,iss)
     elseif (sp=='b') then
-        if (iaa==0) goto 1
+        if (iaa==0) call fatal_error('get_comp_spectrum','variable "b" not existent')
         do n=n1-nghost,n2-nghost
           do m=m1-nghost,m2-nghost
              call curli(f,iaa,bb,ivec)
@@ -475,10 +475,10 @@ module power_spectrum
           enddo
        enddo
     elseif (sp=='a') then
-       if (iaa==0) goto 1
+       if (iaa==0) call fatal_error('get_comp_spectrum','variable "a" not existent')
        ar=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
     elseif (sp=='jxb') then
-       if (ijxb==0) goto 1
+       if (ijxb==0) call fatal_error('get_comp_spectrum','variable "jxb" not existent')
        ar=f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
     else
        print*,'comp_spectrum_xy: Warning - There is no such sp=',sp
@@ -492,8 +492,6 @@ module power_spectrum
     call fourier_transform_xy(ar,ai)
 !
    return
-!
- 1 call fatal_error('get_comp_spectrum','variable '//trim(sp)//' not existent')  ! Perhaps only warning
 !
    endsubroutine comp_spectrum_xy
 !***********************************************************************
