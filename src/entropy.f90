@@ -6507,7 +6507,7 @@ module Energy
       if (lgravx) then
         do n=1,ntotal
           read(31,*,iostat=stat) var1,var2
-          if (stat<0) then exit
+          if (stat<0) exit
           if (ip<5) print*,'hcond, glhc: ',var1,var2
           tmp1(n)=var1
           tmp2(n)=var2
@@ -6532,7 +6532,7 @@ module Energy
       else if (lgravz) then
         do n=1,nztotal
           read(31,*,iostat=stat) var1,var2
-          if (stat<0) then exit
+          if (stat<0) exit
           if (ip<5) print*,'hcond, glhc: ',var1,var2
           tmp1z(n)=var1
           tmp2z(n)=var2
