@@ -1187,28 +1187,33 @@ module Special
       use Sub, only: notanumber
 !
       real :: left,right,sigma,omega,mdot,phileft,phiright
-      real :: x1,x2,out,xl,xh,rts,dxold,deltax
+      real :: x1,x2,xl,xh,rts,dxold,deltax
       real :: phi,dphi,d2phi,bla1,bla2
       real :: halley_factor,temp,a
       real :: temperature
       integer :: j
 !
-      x1=left ; x2=right
+      x1=left
+      x2=right
 !
       if (phileft .eq. 0.) then
-        out=x1 ; goto 999
+        temperature=x1
+        return
       endif
 !
       if (phiright .eq. 0.) then
-        out=x2 ; goto 999
+        temperature=x2
+        return
       endif
 !
 ! Orient the search so that phi(x1)<0
 !
       if (phileft < 0.) then
-        xl=x1 ; xh=x2
+        xl=x1
+        xh=x2
       else
-        xh=x1 ; xl=x2
+        xh=x1
+        xl=x2
       endif
 !
       rts=.5*(x1+x2)
@@ -1227,8 +1232,8 @@ module Special
           deltax=0.5*(xh-xl)
           rts=xl+deltax
           if (xl .eq. rts) then
-            out=xl
-            goto 999
+            temperature=xl
+            return
           endif
         else
           dxold=deltax
@@ -1240,13 +1245,13 @@ module Special
           temp=rts
           rts=rts-deltax
           if (temp .eq. rts) then
-            out=rts
-            goto 999
+            temperature=rts
+            return
           endif
         endif
         if (abs(deltax) < 2*temperature_precision) then
-          out=rts
-          goto 999
+          temperature=rts
+          return
         endif
 !
         if (notanumber(rts) .or. (rts < 0.0)) then
@@ -1254,8 +1259,8 @@ module Special
             print*,'newton_raphson : NaN in temperature, sigma=',sigma
             print*,'will try bisection instead'
           endif
-          call bisection(x1,x2,sigma,omega,mdot,out)
-          goto 999
+          call bisection(x1,x2,sigma,omega,mdot,temperature)
+          return
         endif
 !
         call get_phi(rts,sigma,omega,mdot,phi,dphi,d2phi)
@@ -1271,10 +1276,6 @@ module Special
         print*,'left,right=',xl,xh
         call fatal_error("newton_raphson","")
       endif
-!
-999   continue
-!
-      temperature=out
 !
     endsubroutine newton_raphson
 !********************************************************************
