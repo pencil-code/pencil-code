@@ -4612,7 +4612,6 @@ module Initcond
           v_re=u_re
           v_im=u_im
         else
-        r=1./k2
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
@@ -4620,9 +4619,9 @@ module Initcond
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-              r(ikz,ikx,iky)=kx(ikx+ipy*ny)*u_re(ikz,ikx,iky,1) &
-                            +ky(iky+ipz*nz)*u_re(ikz,ikx,iky,2) &
-                            +kz(ikz+ipx*nx)*u_re(ikz,ikx,iky,3)
+              r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_re(ikz,ikx,iky,1) &
+                             +ky(iky+ipz*nz)*u_re(ikz,ikx,iky,2) &
+                             +kz(ikz+ipx*nx)*u_re(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
               v_re(ikz,ikx,iky,1)=u_re(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
               v_re(ikz,ikx,iky,2)=u_re(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
               v_re(ikz,ikx,iky,3)=u_re(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
@@ -4630,9 +4629,9 @@ module Initcond
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-              r(ikz,ikx,iky)=kx(ikx+ipy*ny)*u_im(ikz,ikx,iky,1) &
-                            +ky(iky+ipz*nz)*u_im(ikz,ikx,iky,2) &
-                            +kz(ikz+ipx*nx)*u_im(ikz,ikx,iky,3)
+              r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_im(ikz,ikx,iky,1) &
+                             +ky(iky+ipz*nz)*u_im(ikz,ikx,iky,2) &
+                             +kz(ikz+ipx*nx)*u_im(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
               v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
               v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
               v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
