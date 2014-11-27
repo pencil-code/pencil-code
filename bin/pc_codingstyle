@@ -919,10 +919,10 @@ sub print_num_warnings {
 					warn ($num_fixed." STYLE BREAKS can be fixed automatically, once ".$num_fatals." FATAL ERRORS are resolved manually.\n");
 				}
 				elsif (!$num_unfixed) {
-					warn ("ALL STYLE BREAKS were fixed.\n");
+					warn ("ALL style breaks were FIXED.\n");
 				}
 				else {
-					warn ($num_fixed." STYLE BREAKS were fixed.\n");
+					warn ($num_fixed." style breaks were FIXED.\n");
 				}
 			}
 			if ($num_unfixed) {
