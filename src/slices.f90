@@ -215,15 +215,17 @@ module Slices
               else
                 open(1,file='video.err',position='append',iostat=IOSTAT)
               endif
-              if (outlog(iostat,'open','video.err',dist=-1)) goto 99       ! video.err is not distributed, backskipping enabled
+              if (.not. outlog(iostat,'open','video.err',dist=-1)) then
+                ! video.err is not distributed, backskipping enabled
 !
-              write(1,*,iostat=IOSTAT) 'unknown slice: ',trim(cnamev(inamev))
-              if (outlog(iostat,'write cnamev(inamev)')) goto 99
+                write(1,*,iostat=IOSTAT) 'unknown slice: ',trim(cnamev(inamev))
+                if (.not. outlog(iostat,'write cnamev(inamev)')) then
 !
-              close(1,iostat=IOSTAT)
-              if (outlog(iostat,'close')) continue
+                  close(1,iostat=IOSTAT)
+                  if (outlog(iostat,'close')) continue
 !
-99            continue
+                endif
+              endif
             endif
           else
             slices%index=0
@@ -278,6 +280,56 @@ module Slices
       endif
 !
     endsubroutine wslice
+!***********************************************************************
+    subroutine setup_slices_write()
+!
+!  27-Nov-2014/Bourdin.KIS: cleaned up the actual writing code
+!
+      integer :: iostat
+      integer, parameter :: lun = 1
+!
+      open(lun,file=trim(directory)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
+!
+!  file 'data/procN/slice_position.dat' is distributed, but will not be synchronized
+!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary
+!
+      if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) return
+!
+      if (lroot) then
+        ! write slice position to the root-rank file (for convenient post-processing)
+        ! [Bourdin.KIS]: wouldn't it be more clever to write the position to each file for consistency checking?
+        write(lun,'(a)',IOSTAT=iostat) slice_position
+        ! [Bourdin.KIS]: The following line would almost sure lead to an infinite hanging MPI communication
+        ! if more than one MPI rank is active and a file-writing error occurrs on the root-rank.
+        ! => commented the follwoing line:
+        ! if (outlog(iostat,'write slice_position')) continue
+      endif
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy,iz_loc
+      if (outlog(iostat,'write lwrite_slice_xy,iz_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy2,iz2_loc
+      if (outlog(iostat,'write lwrite_slice_xy2,iz2_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy3,iz3_loc
+      if (outlog(iostat,'write lwrite_slice_xy3,iz3_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy4,iz4_loc
+      if (outlog(iostat,'write lwrite_slice_xy4,iz4_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz,iy_loc
+      if (outlog(iostat,'write lwrite_slice_xz,iy_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz2,iy2_loc
+      if (outlog(iostat,'write lwrite_slice_xz2,iy2_loc')) return
+!
+      write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_yz,ix_loc
+      if (outlog(iostat,'write lwrite_slice_yz,ix_loc')) return
+!
+      close(lun,IOSTAT=iostat)
+      if (outlog(iostat,'close')) return
+!
+    endsubroutine setup_slices_write
 !***********************************************************************
     subroutine setup_slices()
 !
@@ -492,57 +544,12 @@ module Slices
         endif
       endif
 !
-!  write slice position to a file (for convenient post-processing)
-!
-      if (lroot) then
-!
-        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(datadir)//'/slice_position.dat')) goto 98
-!
-        write(1,'(a)',IOSTAT=iostat) slice_position
-        if (outlog(iostat,'write slice_position')) goto 98
-!
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-!
-98      continue
-      endif
-!
-     open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
-!
-!  file 'data/procN/slice_position.dat' is distributed, but will not be synchronized
-!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary
-!
-     if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy,iz_loc
-     if (outlog(iostat,'write lwrite_slice_xy,iz_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy2,iz2_loc
-     if (outlog(iostat,'write lwrite_slice_xy2,iz2_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy3,iz3_loc
-     if (outlog(iostat,'write lwrite_slice_xy3,iz3_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy4,iz4_loc
-     if (outlog(iostat,'write lwrite_slice_xy4,iz4_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz,iy_loc
-     if (outlog(iostat,'write lwrite_slice_xz,iy_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz2,iy2_loc
-     if (outlog(iostat,'write lwrite_slice_xz2,iy2_loc')) goto 99
-!
-     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_yz,ix_loc
-     if (outlog(iostat,'write lwrite_slice_yz,ix_loc')) goto 99
-!
-     close(1,IOSTAT=iostat)
-     if (outlog(iostat,'close')) continue
+      call setup_slices_write()
 !
 !  make sure ix_loc,iy_loc,iy2_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries
 !
-99     ix_loc=min( ix_loc,l2)
+       ix_loc=min( ix_loc,l2)
        ix_loc=max( ix_loc,l1)
        iy_loc=min( iy_loc,m2) ; iy2_loc=min( iy2_loc,m2)
        iy_loc=max( iy_loc,m1) ; iy2_loc=max( iy2_loc,m1)
