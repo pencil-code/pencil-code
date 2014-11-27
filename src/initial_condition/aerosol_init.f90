@@ -515,7 +515,7 @@ module InitialCondition
       integer :: file_id=123, ind_glob, ind_chem,jj
       character (len=800) :: ChemInpLine
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter, ll1, mm1, nn1
-      real ::  TT=300., ddsize, tmp2, right, left, PP_aver, rho_aver
+      real ::  TT=300., ddsize, tmp2, right, left, PP_aver=0., rho_aver
       double precision, dimension (mx,my,mz) :: tmp5
 !      real, intent(out) :: PP ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2, stor1
@@ -661,12 +661,18 @@ module InitialCondition
 !      close(143)
 !
 
-        PP_aver=sum(PP_data)/Ndata
-        PP_data=PP_aver
+       PP_aver=0.
 
-  print*,'PP_aver=',PP_aver      
-  print*,TT_data(int(0.05*nygrid)),TT_data(nygrid-int(0.05*nygrid))      
-        
+             
+      do i=1,Ndata   
+        PP_aver=PP_aver+PP_data(i)
+   enddo
+        PP_data=PP_aver/Ndata
+
+  print*,'PP_aver=',PP_aver/Ndata
+!      
+!  print*,TT_data(int(0.05*nygrid)),TT_data(nygrid-int(0.05*nygrid))      
+!        
        if (ladd_points) then
          k=1
          do i=1,Ndata
