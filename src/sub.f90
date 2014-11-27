@@ -3416,7 +3416,7 @@ module Sub
       logical, optional :: lcomplex
       character (len=max_col_width) :: noform,cform,cnumber,dashes
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
-      integer :: iform0,iform1,iform2,length,number,number1,number2
+      integer :: iform0,iform1,iform2,length,number,number1,number2,io_code
 !
       intent(in)  :: cname
 !
@@ -3457,8 +3457,16 @@ module Sub
 !  Calculate the length of the format and assemble expression for legend.
 !
       cnumber=cform(index1+1:index2-1)
-      read(cnumber,'(i4)',err=99) number
-10    if (loptest(lcomplex)) number = 2*number+4
+      read(cnumber,'(i4)',iostat=io_code) number
+      if (io_code /= 0) then
+!
+!  Error while reading or end of file.
+!
+        print*,'noform: formatting problem'
+        print*,'problematic cnumber= <',cnumber,'>'
+        number=10
+      endif
+      if (loptest(lcomplex)) number = 2*number+4
       number1=max(0,(number-length)/2)
       number2=max(1,number-length-number1) ! at least one separating dash
 !
@@ -3470,14 +3478,6 @@ module Sub
       endif
 !
       noform=dashes(1:number1)//cname(1:length)//dashes(1:number2)
-      return
-!
-!  In case of errors.
-!
-99    print*,'noform: formatting problem'
-      print*,'problematic cnumber= <',cnumber,'>'
-      number=10
-      goto 10
 !
     endfunction noform
 !***********************************************************************
