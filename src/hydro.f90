@@ -489,6 +489,12 @@ module Hydro
   integer :: idiag_ruxmx=0      ! YZAVG_DOC: $\left<\varrho u_x \right>_{yz}$
   integer :: idiag_ruymx=0      ! YZAVG_DOC: $\left<\varrho u_y \right>_{yz}$
   integer :: idiag_ruzmx=0      ! YZAVG_DOC: $\left<\varrho u_z \right>_{yz}$
+  integer :: idiag_rux2mx = 0   ! YZAVG_DOC: $\langle\rho u_x^2\rangle_{yz}$
+  integer :: idiag_ruy2mx = 0   ! YZAVG_DOC: $\langle\rho u_y^2\rangle_{yz}$
+  integer :: idiag_ruz2mx = 0   ! YZAVG_DOC: $\langle\rho u_z^2\rangle_{yz}$
+  integer :: idiag_ruxuymx = 0  ! YZAVG_DOC: $\langle\rho u_x u_y\rangle_{yz}$
+  integer :: idiag_ruxuzmx = 0  ! YZAVG_DOC: $\langle\rho u_x u_z\rangle_{yz}$
+  integer :: idiag_ruyuzmx = 0  ! YZAVG_DOC: $\langle\rho u_y u_z\rangle_{yz}$
   integer :: idiag_ux2mx=0      ! YZAVG_DOC: $\left<u_x^2\right>_{yz}$
   integer :: idiag_uy2mx=0      ! YZAVG_DOC: $\left<u_y^2\right>_{yz}$
   integer :: idiag_uz2mx=0      ! YZAVG_DOC: $\left<u_z^2\right>_{yz}$
@@ -1838,6 +1844,8 @@ module Hydro
           idiag_ruxmx/=0 .or. idiag_ruymx/=0 .or. idiag_ruzmx/=0 .or. &
           idiag_ruxuymz/=0 .or. idiag_ruxuzmz/=0 .or. idiag_ruyuzmz/=0) &
           lpenc_diagnos(i_rho)=.true.
+      if (idiag_rux2mx /= 0 .or. idiag_ruy2mx /= 0 .or. idiag_ruz2mx /= 0 .or. &
+          idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) lpenc_diagnos(i_rho) = .true.
       if (idiag_ormr/=0 .or. idiag_opmr/=0 .or. idiag_ozmr/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
@@ -2920,6 +2928,12 @@ module Hydro
         call yzsum_mn_name_x(p%rho*p%uu(:,1),idiag_ruxmx)
         call yzsum_mn_name_x(p%rho*p%uu(:,2),idiag_ruymx)
         call yzsum_mn_name_x(p%rho*p%uu(:,3),idiag_ruzmx)
+        if (idiag_rux2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1)**2, idiag_rux2mx)
+        if (idiag_ruy2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,2)**2, idiag_ruy2mx)
+        if (idiag_ruz2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,3)**2, idiag_ruz2mx)
+        if (idiag_ruxuymx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1) * p%uu(:,2), idiag_ruxuymx)
+        if (idiag_ruxuzmx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1) * p%uu(:,3), idiag_ruxuzmx)
+        if (idiag_ruyuzmx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,2) * p%uu(:,3), idiag_ruyuzmx)
         call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
         call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
@@ -3996,6 +4010,12 @@ module Hydro
         idiag_ruxmx=0
         idiag_ruymx=0
         idiag_ruzmx=0
+        idiag_rux2mx = 0
+        idiag_ruy2mx = 0
+        idiag_ruz2mx = 0
+        idiag_ruxuymx = 0
+        idiag_ruxuzmx = 0
+        idiag_ruyuzmx = 0
         idiag_ruxmz=0
         idiag_ruymz=0
         idiag_ruzmz=0
@@ -4392,6 +4412,12 @@ module Hydro
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruxmx',idiag_ruxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruymx',idiag_ruymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruzmx',idiag_ruzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rux2mx',idiag_rux2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruy2mx',idiag_ruy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruz2mx',idiag_ruz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruxuymx',idiag_ruxuymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruxuzmx',idiag_ruxuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruyuzmx',idiag_ruyuzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'ux2mx',idiag_ux2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &

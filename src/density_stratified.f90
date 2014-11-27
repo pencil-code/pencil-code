@@ -76,12 +76,6 @@ module Density
 !
   integer :: idiag_drhomx = 0    ! YZAVG_DOC: $\langle\Delta\rho/\rho_0\rangle_{yz}$
   integer :: idiag_drho2mx = 0   ! YZAVG_DOC: $\langle\left(\Delta\rho/\rho_0\right)^2\rangle_{yz}$
-  integer :: idiag_rux2mx = 0    ! YZAVG_DOC: $\langle\rho u_x^2\rangle_{yz}$
-  integer :: idiag_ruy2mx = 0    ! YZAVG_DOC: $\langle\rho u_y^2\rangle_{yz}$
-  integer :: idiag_ruz2mx = 0    ! YZAVG_DOC: $\langle\rho u_z^2\rangle_{yz}$
-  integer :: idiag_ruxuymx = 0   ! YZAVG_DOC: $\langle\rho u_x u_y\rangle_{yz}$
-  integer :: idiag_ruxuzmx = 0   ! YZAVG_DOC: $\langle\rho u_x u_z\rangle_{yz}$
-  integer :: idiag_ruyuzmx = 0   ! YZAVG_DOC: $\langle\rho u_y u_z\rangle_{yz}$
 !
 !  y-averages
 !
@@ -292,17 +286,6 @@ module Density
         lpencil_in(i_rho)=.true.
         lpencil_in(i_u2)=.true.
       endif ekin
-!
-!  xy-average related
-!
-!
-!  yz-average related
-!
-      ruumx: if (idiag_rux2mx /= 0 .or. idiag_ruy2mx /= 0 .or. idiag_ruz2mx /= 0 .or. &
-                 idiag_ruxuymx /= 0 .or. idiag_ruxuzmx /= 0 .or. idiag_ruyuzmx /= 0) then
-        lpenc_diagnos(i_rho) = .true.
-        lpenc_diagnos(i_uu) = .true.
-      endif ruumx
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -522,12 +505,6 @@ module Density
 !       yz-averages
         if (idiag_drhomx /= 0) call yzsum_mn_name_x(penc, idiag_drhomx)
         if (idiag_drho2mx /= 0) call yzsum_mn_name_x(penc**2, idiag_drho2mx)
-        if (idiag_rux2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1)**2, idiag_rux2mx)
-        if (idiag_ruy2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,2)**2, idiag_ruy2mx)
-        if (idiag_ruz2mx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,3)**2, idiag_ruz2mx)
-        if (idiag_ruxuymx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1) * p%uu(:,2), idiag_ruxuymx)
-        if (idiag_ruxuzmx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,1) * p%uu(:,3), idiag_ruxuzmx)
-        if (idiag_ruyuzmx /= 0) call yzsum_mn_name_x(p%rho * p%uu(:,2) * p%uu(:,3), idiag_ruyuzmx)
       endif avg_1d
 !
 !  Diagnostics
@@ -760,12 +737,6 @@ module Density
 !       yz-averages
         idiag_drhomx = 0
         idiag_drho2mx = 0
-        idiag_rux2mx = 0
-        idiag_ruy2mx = 0
-        idiag_ruz2mx = 0
-        idiag_ruxuymx = 0
-        idiag_ruxuzmx = 0
-        idiag_ruyuzmx = 0
 !       y-averages
         idiag_drhomxz = 0
         idiag_drho2mxz = 0
@@ -806,12 +777,6 @@ module Density
       yzaver: do iname = 1, nnamex
         call parse_name(iname, cnamex(iname), cformx(iname), 'drhomx', idiag_drhomx)
         call parse_name(iname, cnamex(iname), cformx(iname), 'drho2mx', idiag_drho2mx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'rux2mx', idiag_rux2mx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'ruy2mx', idiag_ruy2mx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'ruz2mx', idiag_ruz2mx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'ruxuymx', idiag_ruxuymx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'ruxuzmx', idiag_ruxuzmx)
-        call parse_name(iname, cnamex(iname), cformx(iname), 'ruyuzmx', idiag_ruyuzmx)
       enddo yzaver
 !
 !  Check for y-averages listed in yaver.in.
