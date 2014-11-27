@@ -108,11 +108,9 @@ my $num_file = 0;
 my $exit_code = 0;
 my $filename = '';
 while ($filename = shift ()) {
-	if ((!$quiet || $summary_only) && $num_files && $num_file) {
-		print ('========================================================================'."\n");
-	}
 	$num_file++;
 	if ((!$quiet || $summary_only) && ($num_files >= 2)) {
+		print ('========================================================================'."\n");
 		print ('File "'.$filename.'":'."\n");
 	}
 	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
@@ -170,6 +168,13 @@ sub scan_file {
 	$state{'routine_declaration'} = 1;
 	$state{'routine_header'} = 0;
 	$state{'routine_footer'} = 0;
+	$state{'header_file'} = 0;
+
+	# header file
+	if ($filename =~ /\.h$/is) {
+		$state{'header_file'} = 1;
+		add_nesting ('');
+	}
 
 	# read file
 	my $num_lines = 0;
@@ -744,6 +749,7 @@ sub scan_file {
 	}
 
 	# test for open indentation
+	if ($state{'header_file'} && ($state{'nesting'} =~ s/^\|//s)) { remove_nesting (); }
 	if ($state{'nesting'} ne '') {
 		$pos = $num_lines;
 		my $last_nesting = '';
