@@ -7039,7 +7039,7 @@ module Mpicomm
       ncompl = 1
       goto 1
 !
-      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange ) ! please use interfaces
 !
       lcomplex = .true.
       ncompl = ncomp
