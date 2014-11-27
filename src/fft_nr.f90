@@ -32,16 +32,15 @@
             data(i+1)=tempi
          endif
          m=n/2
- 1       if ((m.ge.2).and.(j.gt.m)) then
+         do while ((m.ge.2).and.(j.gt.m))
             j=j-m
             m=m/2
-            goto 1
-         endif
+         enddo
          j=j+m
       enddo
       mmax=2                    ! Here begins the Danielson-Lanczos
                                 ! section of the routine
- 2    if (n.gt.mmax) then       ! Outer loop executed log2 nn times
+      do while (n.gt.mmax)      ! Outer loop executed log2 nn times
          istep=2*mmax
          theta=6.28318530717959d0/(isign*mmax) ! Initialize for the
                                                ! trigonometric recurrence
@@ -65,8 +64,7 @@
             wi=wi*wpr+wtemp*wpi+wi
          enddo
          mmax=istep
-         goto 2                 ! Not yet done
-      endif                     ! All done.
+      enddo
       return
 
       END
