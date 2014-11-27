@@ -1791,7 +1791,7 @@ module Energy
       call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
       rb_new=rhobot
 !
-      do 10 iter=1,10
+      do iter=1,10
 !
 !  New estimate.
 !
@@ -1800,7 +1800,7 @@ module Energy
 !  Check convergence.
 !
         crit=abs(rhotop/rt_new-1.)
-        if (crit<=1e-4) goto 20
+        if (crit<=1e-4) exit
 !
         call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
@@ -1810,8 +1810,8 @@ module Energy
         rb_old=rb_new
         rt_new=rhotop
         rb_new=rhobot
-   10 continue
-   20 if (lfirst_proc_z) print*,'- iteration completed: rhotop,crit=',rhotop,crit
+      enddo
+      if (lfirst_proc_z) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 !  Redefine rho0 and lnrho0 as we don't have rho0=1 at the top.
 !  (important for eoscalc!)
@@ -6507,13 +6507,10 @@ module Energy
       if (lgravx) then
         do n=1,ntotal
           read(31,*,iostat=stat) var1,var2
-          if (stat>=0) then
-            if (ip<5) print*,'hcond, glhc: ',var1,var2
-            tmp1(n)=var1
-            tmp2(n)=var2
-          else
-            exit
-          endif
+          if (stat<0) then exit
+          if (ip<5) print*,'hcond, glhc: ',var1,var2
+          tmp1(n)=var1
+          tmp2(n)=var2
         enddo
 !
 !  Assuming no ghost zones in hcond_glhc.dat.
@@ -6535,13 +6532,10 @@ module Energy
       else if (lgravz) then
         do n=1,nztotal
           read(31,*,iostat=stat) var1,var2
-          if (stat>=0) then
-            if (ip<5) print*,'hcond, glhc: ',var1,var2
-            tmp1z(n)=var1
-            tmp2z(n)=var2
-          else
-            exit
-          endif
+          if (stat<0) then exit
+          if (ip<5) print*,'hcond, glhc: ',var1,var2
+          tmp1z(n)=var1
+          tmp2z(n)=var2
         enddo
 !
 !  Assuming no ghost zones in hcond_glhc.dat.
