@@ -2207,11 +2207,11 @@ module Energy
       print*, 'find rhobot=', rhobot
       rb_new=rhobot
 !
-      do 10 iter=1,10
+      do iter=1,10
         rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
 !
         crit=abs(rhotop/rt_new-1.)
-        if (crit<=1e-4) goto 20
+        if (crit<=1e-4) exit
         call strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
 !
 !  Update new estimates.
@@ -2220,8 +2220,8 @@ module Energy
         rb_old=rb_new
         rt_new=rhotop
         rb_new=rhobot
- 10 continue
- 20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
+      enddo
+      print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 !  One needs to refresh rho0 and lnrho0 because the density top value
 !  has changed --> important for the future EOS calculations (ss, ...)
