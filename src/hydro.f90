@@ -651,7 +651,6 @@ module Hydro
 !
 ! set the right point in profile to unity.
 !
-      write(*,*)'DM: index_rSH',index_rSH
       profile_SH(index_rSH)=dx_1(index_rSH)
 !
 !  Block use of uninitalised p%fcont

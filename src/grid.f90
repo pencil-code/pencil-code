@@ -1286,6 +1286,16 @@ module Grid
 !
         tanth=sinth*cos1th
 !
+! also calculate sin(phi) and cos(phi) useful to calculate spherical harmonic
+! decomposition.
+!
+        if (nzgrid.gt.1) then
+          sinph=sin(z)
+          cosph=cos(z)
+        else
+           sinph=0.;cosph=1
+        endif
+!
       elseif (lcylindrical_coords) then
 !
 !  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,

@@ -3593,37 +3593,39 @@ module Sub
 !   24-nov-14/dhruba: copied from step
 !
       real :: theta,phi
+      real :: cos2p
       integer :: ell,emm
       real :: sph_har
 !
 ! the one over pi, cosines and sines below may be pre-calculated
 !
+      cos2p=2*cosph(n)*cosph(n)-1
       select case (ell)
           case (0)
             sph_har=(0.5)*sqrt(1./pi)
           case (1)
             select case(emm)
               case (-1)
-                sph_har=(0.5)*sqrt(3./(2*pi))*sin(theta)*cos(phi)
+                sph_har=(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
               case (0)
-                sph_har=(0.5)*sqrt(3./pi)*cos(theta)
+                sph_har=(0.5)*sqrt(3./pi)*costh(n)
               case (1) 
-                sph_har=-(0.5)*sqrt(3./(2*pi))*sin(theta)*cos(phi)
+                sph_har=-(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
               case default
                 call fatal_error('sub:ylm','l=1 wrong m ')
               endselect
          case (2)
             select case(emm)
               case (-2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sin(theta)*sin(theta)*cos(2*phi)
+                sph_har=(0.25)*sqrt(15./(2*pi))*sinth(m)*sinth(m)*cos2p
               case (-1)
-                sph_har=(0.5)*sqrt(15./(2*pi))*sin(theta)*cos(theta)*cos(phi)
+                sph_har=(0.5)*sqrt(15./(2*pi))*sinth(m)*costh(m)*cosph(n)
               case (0)
-                sph_har=(0.25)*sqrt(5./pi)*(3.*cos(theta)*cos(theta)-1.)
+                sph_har=(0.25)*sqrt(5./pi)*(3.*costh(m)*costh(m)-1.)
               case (1) 
-                sph_har=-(0.5)*sqrt(15./(2*pi))*sin(theta)*cos(theta)*cos(phi)
+                sph_har=-(0.5)*sqrt(15./(2*pi))*sinth(m)*costh(m)*cosph(n)
               case (2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sin(theta)*sin(theta)*cos(2*phi)
+                sph_har=(0.25)*sqrt(15./(2*pi))*sinth(m)*sinth(m)*cos2p
               case default
                 call fatal_error('sub:ylm','l=2 wrong m ')
               endselect
