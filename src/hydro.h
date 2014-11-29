@@ -20,6 +20,7 @@
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
+  public :: uumx,        lcalc_uumeanx
   public :: uumz, guumz, lcalc_uumeanz, lupw_uu
   public :: uumxy, uumxz, lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
