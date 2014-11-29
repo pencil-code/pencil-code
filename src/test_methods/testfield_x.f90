@@ -513,7 +513,9 @@ module Testfield
 !
       if (lcalc_uumeanx) then
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumx(:,j)
+          !uufluct(:,j)=p%uu(:,j)-uumx(:,j)
+!AB: quick fix
+          uufluct(:,j)=p%uu(:,j)-uumx(l1:l2,j)
         enddo
       else
         uufluct=p%uu
