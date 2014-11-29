@@ -97,7 +97,7 @@ module Hydro
 ! Nmodes_SH=(lSH_max+1)*(lSH_max+1)
   integer, parameter :: Nmodes_SH=(lSH_max+1)*(lSH_max+1)
   real, dimension(nx,Nmodes_SH) :: urlm
-  integer :: index_rSH=0
+  integer :: index_rSH=nx/2
   real, dimension(nx) :: profile_SH=0.
 !
   real, dimension (5) :: om_rings=0.
