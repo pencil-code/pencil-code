@@ -147,12 +147,8 @@ class TimeSeries:
         count = len(self.t)
         t_min = self.t.min()
         t_max = self.t.max()
-        if count > 1:
-            dt = (t_max - t_min) / (count - 1)
-        else:
-            dt = N.NaN
-        return "TimeSeries(t=%g..%g, dt_avg=%4.2g): %s" \
-            % (t_min, t_max, dt, str(self.keys), )
+        return "TimeSeries(t=%g..%g, rows=%d): %s" \
+            % (t_min, t_max, count, str(self.keys), )
 
 
 if __name__=='__main__':
