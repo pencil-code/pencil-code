@@ -1069,31 +1069,43 @@ sub test_scripts {
     my $dir   = shift;
     my $t_ref = shift;          # start time
 
-    if ($t_script) {
-        my $tester = Test::ScriptTester->new([$dir], \%interpreter_map);
-        my @tests = $tester->list_tests();
-        return unless @tests;
+    return unless $t_script;
 
-        print "    Running script tests.. ";
-        printf "$indi_fmt ", '';
+    my $tester = Test::ScriptTester->new([$dir], \%interpreter_map);
+    my @tests = $tester->list_tests();
 
-        my $test_cmd = sub {
-            $tester->run_tests(@tests);
-        };
-        if ($time_limit) {
-            test_timelimited_perl_cmd(
-                $test_cmd,
-                $time_limit,
-                $dir, "running script tests",
-                NOQUIET, $t_ref
-            );
-        } else {
-            test_perl_cmd(
-                $test_cmd,
-                $dir, "running script tests",
-                NOQUIET, $t_ref
-            );
+    return unless @tests;
+
+    if ($debug) {
+        print "\nRunning test scripts:\n";
+        for my $t (@tests) {
+            my ($test_dir, $test_ref) = @{$t};
+            my ($test_file, $test_type) = @{$test_ref};
+            print "  -> $test_dir/$test_file ($test_type)\n";
         }
+    }
+
+    print "    Running script tests.. ";
+    printf "$indi_fmt ", '';
+
+    my $test_cmd = sub {
+        $tester->run_tests(@tests);
+    };
+    if ($time_limit) {
+        print "\nRunning Perl cmd with time limit $time_limit" if $debug;
+        test_timelimited_perl_cmd(
+            $test_cmd,
+            $time_limit,
+            $dir, "running script tests",
+            NOQUIET, $t_ref
+            );
+    } else {
+        print "\nRunning Perl cmd" if $debug;
+        test_perl_cmd(
+            $test_cmd,
+            $dir, "running script tests",
+            NOQUIET, $t_ref
+            );
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1162,8 +1174,8 @@ sub read_lines {
 }
 # ---------------------------------------------------------------------- #
 sub test_rundir {
-# Full program for one run directory: Test compilation, starting, running
-# and results
+# Full program for one run directory: Test compilation, starting, running,
+# results, and scripts
     my $dir      = shift;
     my $makeopts = shift;
     my $t0 = get_time();
