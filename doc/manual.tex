@@ -749,7 +749,7 @@ Johansen, A., Klahr, H., \& Henning, Th.\yanaN{2011}{529}{A62}
 Johansen, A., Youdin, A. N., \& Lithwick, Y.\yanaN{2012}{537}{A125}
 {Adding particle collisions to the formation of asteroids and Kuiper belt objects via streaming instabilities}
 
-% -- photoelectric effect in debris disks -- 
+% -- photoelectric effect in debris disks --
 Lyra, W. \& Kuchner, W. \ynat{2013}{499}{184}{187}
 {Formation of sharp eccentric rings in debris disks with gas but without planets}
 
@@ -3876,7 +3876,7 @@ To start rapidly under Python:
 
 \end{enumerate}
 
-Example of using Python: 
+Example of using Python:
 
 \begin{alltt}
   \prompt{unix> } ipython -pylab
@@ -3889,18 +3889,18 @@ Example of using Python:
 
 \noindent While in IDL you would would type ``print,tag_names(ts)'' in
 the prompt to examine the structure, in python you type
-``ts.'' and  hit tab to see what is inside the class. 
+``ts.'' and  hit tab to see what is inside the class.
 
 \begin{alltt}
   \prompt{In [3]: } ts.
-  ts.dt      ts.plot    ts.rhomax  ts.t       ts.xpar2   ts.ypar2   
-  ts.it      ts.rhom    ts.rhomin  ts.xpar1   ts.ypar1   
+  ts.dt      ts.plot    ts.rhomax  ts.t       ts.xpar2   ts.ypar2
+  ts.it      ts.rhom    ts.rhomin  ts.xpar1   ts.ypar1
 \end{alltt}
 
-Next, for plotting, type, for instance: 
+Next, for plotting, type, for instance:
 
 \begin{alltt}
-\prompt{In [4]: } plot(ts.t,ts.rhomax) 
+\prompt{In [4]: } plot(ts.t,ts.rhomax)
 \end{alltt}
 
 % ---------------------------------------------------------------------- %
@@ -4231,9 +4231,9 @@ ny & nprocyx & nprocy & nprocz & ncpus \\
  512 & 2 & 16 & 32 & 1024 \\
  512 & 4 & 16 & 16 & 1024 \\
  512 & 4 & 16 & 32 & 2048 \\
- 576 & 4 & 18 & 32 & 2304 \\  
- 576 & 8 & 18 & 32 & 4608 \\  
- 576 &16 & 18 & 32 & 9216 \\  
+ 576 & 4 & 18 & 32 & 2304 \\
+ 576 & 8 & 18 & 32 & 4608 \\
+ 576 &16 & 18 & 32 & 9216 \\
 1024 & 4 & 32 & 32 & 4096 \\
 1024 & 4 & 16 & 64 & 4096 \\
 1024 & 8 & 16 & 32 & 4096 \\
@@ -4337,7 +4337,7 @@ as the velocity of the particles are equal to the instantaneous fluid velocity
 at that point. In addition one can choose to have several additional internal
 degrees of freedoms for the particles. For example one can temporally evolve
 the particles radius by setting \code{PARTICLES_RADIUS} to
-\code{particles_radius} in \code{Makefile.local}.  
+\code{particles_radius} in \code{Makefile.local}.
 
 All particle infrastructure is controlled and organized by the
 \code{Particles_main} module. This module is automatically selected by
@@ -4345,7 +4345,7 @@ All particle infrastructure is controlled and organized by the
 Particle modules are compiled as a separate library. This way the main part of
 the Pencil Code only needs to know about the \code{particles_main.a} library,
 but not of the individual particle modules.
- 
+
 For a simulation with particles one must in addition define a few parameters in
 \code{cparam.local}. Here is a sample of \code{cparam.local} for a parallel run
 with 2,000,000 particles:
@@ -6022,7 +6022,7 @@ better.
 
 \subsubsection{Can I restart with a different number of cpus?}
 
-{\bf Q}: 
+{\bf Q}:
 I am running a simulation of nonhelical turbulence on the cluster
 using MPI. Suppose if I am running a $128^3$ simulation on 32 cpus/cores i.e.
 \begin{Verbatim}
@@ -6046,7 +6046,7 @@ data for restart in another processor layout.
 
 \subsubsection{Can I restart with a different number of cpus?}
 
-{\bf Q}: 
+{\bf Q}:
 Is it right that once the simulation is resumed, pencil-code takes the
 last data from var.dat (which is the current snapshot of the fields)?
 If that is true, then, is it not possible to give that as the initial
@@ -6991,7 +6991,7 @@ following are the relevant lines from \code{particles_main.f90}.
 !
     endsubroutine particles_register_modules
 !***********************************************************************
-\end{verbatim} 
+\end{verbatim}
 
 The subroutine \code{resister_particles} can mean either the tracer particles
 or dust particles. For the former the first three slots of the fp-array are the
@@ -6999,7 +6999,7 @@ three spatial coordinates. For the latter the first six slots of the fp-array
 are the three spatial coordinates followed by the three velocity components.
 The seventh slot (or the fourth if we are use tracer particles) is the radius
 of the particle which can also change as a function of time as particles
-collide and fuse together to form bigger particles.  
+collide and fuse together to form bigger particles.
 
 \subsection{The pencil case}
 \label{pencil-case}
@@ -7187,8 +7187,8 @@ linitialcondition=.false. header to say linitialcondition=.true.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
-add the line INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90 
-to your \file{src/Makefile.local} file. Here, ``myinitialcondition'' is the 
+add the line INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90
+to your \file{src/Makefile.local} file. Here, ``myinitialcondition'' is the
 name you gave to your initial condition file.
 Add also ``initial\_condition\_pars'' to the start.in file, just
 below ``init\_pars''. This is
@@ -7828,10 +7828,10 @@ The interconnect is myrinet.
 \item[Lenn:] (full name Lenngren) is a Dell Xeon cluster with 442 nodes.
 Each node has two 3.4GHz ``Nocona'' Xeon processors and 8GB of main memory.
 A high performance Infiniband network from Mellanox is used for MPI traffic.
-\item[Kraken:] Cray Linux Environment (CLE) 3.1, with a peak performance of 1.17 PetaFLOP; 
-the cluster has 112,896 cores, 147 TB of memory, in 9,408 nodes.  
-Each node has two 2.6 GHz six-core AMD Opteron processors (Istanbul), 12 cores, and 16 GB of memory. 
-Connection via Cray SeaStar2+ router. 
+\item[Kraken:] Cray Linux Environment (CLE) 3.1, with a peak performance of 1.17 PetaFLOP;
+the cluster has 112,896 cores, 147 TB of memory, in 9,408 nodes.
+Each node has two 2.6 GHz six-core AMD Opteron processors (Istanbul), 12 cores, and 16 GB of memory.
+Connection via Cray SeaStar2+ router.
 \item[Hermit:] Cray XE6 with 7104 2.3 GHz AMD Interlagos 16 core processors (113,664 cores in total), nodes with either 1 or 2 GB of memory per core.
 \item[Sisu:] Cray XC30 with 1472 2.6 GHz Intel (Xeon) Sandy Bridge 8 core (E5-2670) processors (11,776 cores in total), 2 GB of memory per core.
 
@@ -7870,8 +7870,8 @@ in Fig~\ref{cvsstat}.
   \includegraphics%
     [width=.6\textwidth,keepaspectratio]%
     {strongscaling}
-  \caption{Scaling results on Kraken at fixed problem size, for a magnetized disk model in cylindrical coordinates. 
-    The black line shows ideal scaling from 32 cores. The blue line is the best second-order fit to the data points. 
+  \caption{Scaling results on Kraken at fixed problem size, for a magnetized disk model in cylindrical coordinates.
+    The black line shows ideal scaling from 32 cores. The blue line is the best second-order fit to the data points.
     A load of 16$^3$ mesh points per processor marks the best strong scaling.}
   \label{strongscaling}
 \end{figure}
@@ -7882,7 +7882,7 @@ in Fig~\ref{cvsstat}.
     [width=\textwidth,keepaspectratio]%
     {weakscaling}
   \caption{Scaling results on Kraken at fixed load per processor, for a magnetized disk model in cylindrical coordinates.
-    The figure shows, after determing that 16$^3$ is the best load per processor for strong scaling, how far one can push 
+    The figure shows, after determing that 16$^3$ is the best load per processor for strong scaling, how far one can push
     with weak scaling. The scaling index is found to be 0.7 for 16$^3$ and 0.93 for 64$^3$, up to 73\,728 processors.}
   \label{weakscaling}
 \end{figure}
