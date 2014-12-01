@@ -261,6 +261,11 @@ sub compare {
 ## Private utility subroutines:
 ##
 
+my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
+                                                                   # for C float
+my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
+
+
 sub _parse {
 #
 # Parse the given data file and return a list
@@ -271,12 +276,20 @@ sub _parse {
 #
     my ($file) = @_;
 
-    my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
-                                                                   # for C float
-    my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
-
     croak "No such file: $file\n" unless -e $file;
     croak "Cannot open file $file\n" unless -r $file;
+
+    return _read_file_in_column_format($file);
+}
+
+
+sub _read_file_in_column_format {
+#
+# Read and parse a file in column format (e.g. some time_series.dat file)
+# Return
+#   (\@variables, \%values, \%accuracies)
+#
+    my ($file) = @_;
 
     my $fh;
     unless (open($fh, '<', $file)) {
