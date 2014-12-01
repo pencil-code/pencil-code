@@ -20,7 +20,32 @@ from index import read_index
 from dim import read_dim
 from pencil.math.derivatives import curl, curl2
 
-class read_var:
+
+def read_var(*args, **kwargs):
+    """Read VAR files from Pencil Code. if proc < 0, then load all data
+    and assemble. otherwise, load VAR file from specified processor.
+
+    format -- one of (['native', 'n'], ['ieee-le', 'l'],
+    ['ieee-be', 'B']) for byte-ordering
+
+    Params:
+    ------
+        varfile=''
+        datadir='data/'
+        proc=-1
+        ivar=-1
+        quiet=False
+        trimall=False
+        format='native'
+        param=None
+        dim=None
+        index=None
+        run2D=False
+    """
+    return DataCube(*args, **kwargs)
+
+
+class DataCube(object):
 # !!!  The file format written by output() (and used, e.g. in var.dat)
 # !!!  consists of the followinig Fortran records:
 # !!!    1. data(mx,my,mz,nvar)
@@ -36,7 +61,7 @@ class read_var:
         """
         Description:
         -----------
-        read VAR files from pencil code. if proc < 0, then load all data
+        Read VAR files from pencil code. if proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
 
         format -- one of (['native', 'n'], ['ieee-le', 'l'],

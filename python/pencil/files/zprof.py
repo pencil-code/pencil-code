@@ -3,8 +3,26 @@
 from numpy import zeros, asarray
 from pencil import read_dim
 
-class read_zprof:
-    """ 
+
+def read_zprof(*args, **kwargs):
+    """Read vertical profiles written in data/proc*/zprof_varname.dat
+
+    Params:
+    ------
+    varname = we want to read data/proc*/zprof_varname.dat files
+    datadir = 'data/' (optionnal)
+    dim     = None (optional)
+    nfield  = number of fields to be read (optional)
+
+    Returns:
+    -------
+    A ZProfile object with z and profiles(z)
+    """
+    return ZProfile(*args, **kwargs)
+
+
+class ZProfile(object):
+    """
     13-mar-2008/dintrans: coded
     f = read_zprof(varname,datadir='data/',dim=None,nfield=1)
     Read vertical profiles written in data/proc*/zprof_varname.dat
@@ -54,4 +72,3 @@ class read_zprof:
                     self.prof[izcount]=data[1]
                 izcount=izcount+1
         file.close()
-

@@ -2,7 +2,18 @@
 import os
 from pencil import read_param, read_dim
 
-class read_index(dict):
+
+def read_index(*args, **kwargs):
+    """Read index.pro and return an Index object.
+
+    Params:
+    ------
+    datadir='data/' (optionnal)
+    """
+    return Index(*args, **kwargs)
+
+
+class Index(dict):
     """
      read index.pro and returns a read_index class which is composed
      of a python dictionnary
@@ -16,9 +27,9 @@ class read_index(dict):
          Params:
          ------
             datadir='data/' (optionnal)
-         
+
          Returns:
-         -------      
+         -------
             a read_index class
         """
         if param is None:
@@ -37,7 +48,7 @@ class read_index(dict):
             name=clean.split('=')[0].strip()
             val=int(clean.split('=')[1].strip())
             #            print name,val
-            # need to compare val to totalvars as global indices 
+            # need to compare val to totalvars as global indices
             # may be present in index.pro
             #            if (val != 0 and val <= totalvars and \
             if (val != 0  and val <= totalvars \
@@ -46,4 +57,3 @@ class read_index(dict):
                 if (name == 'lnTT' and param.ltemperature_nolog):
                     name = 'tt'
                 self[name] = val
-

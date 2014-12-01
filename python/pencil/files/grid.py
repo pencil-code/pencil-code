@@ -11,12 +11,22 @@ import os
 from param import read_param
 from dim import read_dim
 
-class read_grid:
+
+def read_grid(*args, **kwargs):
+    """Read grid from pencil code.
+
+    If proc < 0, then load all data and assemble. otherwise, load grid
+    from specified processor.
+    """
+    return Grid(*args, **kwargs)
+
+
+class Grid(object):
 
     def __init__(self, datadir='data/', proc=-1, ivar=-1, quiet=False,
                  trim=False, format='native', param=None):
         """
-        read grid from pencil code. if proc < 0, then load all data
+        Read grid from pencil code. if proc < 0, then load all data
         and assemble. otherwise, load grid from specified processor.
         """
         datadir = os.path.expanduser(datadir)

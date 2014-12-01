@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
 class zaverage:
+  """A dummy class for explicitly adding attributes.
+
+  Something like collections.namedtuple may be a better solution.
+  """
   pass
 
-class read():
+
+class ZAverage():
 
   def __init__(self,filename='zaverages.dat',datadir='data',infile='zaver.in',
                     record_length=4,read_deltay=False):
@@ -37,8 +42,8 @@ class read():
 
     self.__read_deltay = read_deltay
 
-  def next(self):
 
+  def next(self):
     from numpy import fromfile
 
     file = self.__file
@@ -50,22 +55,22 @@ class read():
     read_deltay = self.__read_deltay
 
     if not file.read(record_length): raise StopIteration
-    self.t = fromfile(file,dtype=dtype,count=1)[0]
+    self.t = fromfile(file, dtype=dtype, count=1)[0]
     file.read(record_length)
 
     file.read(record_length)
-    data = fromfile(file,dtype=dtype,count=count).reshape(shape,order='F')
+    data = fromfile(file, dtype=dtype, count=count).reshape(shape, order='F')
     file.read(record_length)
 
     if read_deltay:
       file.read(record_length)
-      self.deltay = fromfile(file,dtype=dtype,count=1)[0]
+      self.deltay = fromfile(file, dtype=dtype, count=1)[0]
       file.read(record_length)
 
     zaver = zaverage()
     zaver.t = self.t
     for i in range(len(varnames)):
-      setattr(zaver,varnames[i],data[:,:,i])
+      setattr(zaver, varnames[i], data[:,:,i])
 
     return zaver
 
