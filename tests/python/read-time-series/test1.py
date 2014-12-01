@@ -8,7 +8,7 @@ import os
 import sys
 import pencil as pc
 
-input_dir = './input'
+input_dir = '../../input'
 
 
 def main(args):
@@ -16,7 +16,7 @@ def main(args):
     write_summary('test1.out', ts)
 
 
-def read_ts(datadir, filename='time-series.dat'):
+def read_ts(datadir, filename='time-series-1.dat'):
     return pc.read_ts(
         datadir=datadir, filename=filename, plot_data=False, quiet=True
     )
@@ -33,6 +33,7 @@ def write_summary(filename, ts):
         output.write('std(%s): %g\n' % (var, values.std()))
         output.write('\n')
     output.close()
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
