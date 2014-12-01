@@ -229,11 +229,13 @@ sub compare {
             my $act = $column_act[$i];
             my $comparison = $comparator->compare($ref, $act);
             if ($comparison != 0) {
-                push @{$problems{$var}},
-                    $comparator->format_comparison($ref, $act);
+                my $diagnostic = $comparator->format_comparison($ref, $act);
+                if (@column_ref > 1) {
+                    $diagnostic = sprintf("Row %d: %s", ($i + 1), $diagnostic);
+                }
+                push @{$problems{$var}}, $diagnostic;
             }
         }
-
     }
 
     my @summary;
