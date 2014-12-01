@@ -41,7 +41,7 @@ or relative accuracy.
 
   my ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
   $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
 =head2 Methods
 
@@ -228,23 +228,23 @@ sub _max {
 
   ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
   $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
   ($a, $b) = (100., 99.5);  # equal within relative accuracy
   $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
   ($a, $b) = (1.0e-3, 0.99e-3);  equal within relative accuracy
   $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
   ($a, $b) = (1.0e-3, 0.9e-3);  not equal
   $comparator->compare($a, $b) == +1 \
-      or warn "Failed: expected $a > $b, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected $a > $b, got ", $comparator->format_comparison($a, $b);
 
   ($a, $b) = (1.0e-3, 1.1e-3);  not equal
   $comparator->compare($a, $b) == -1 \
-      or warn "Failed: expected $a < $b, got ", $comparator->format_comparison($a, $b);
+      or warn "Expected $a < $b, got ", $comparator->format_comparison($a, $b);
 
 =cut
 
