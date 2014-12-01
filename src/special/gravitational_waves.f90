@@ -38,7 +38,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 3
 !
 !***************************************************************
 !
@@ -102,6 +102,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
+      use Sub, only: register_report_aux
       use FArrayManager
 !
       if (lroot) call svn_id( &
@@ -109,6 +110,12 @@ module Special
 !
       call farray_register_pde('hij',ihij,vector=6)
       call farray_register_pde('gij',igij,vector=6)
+!
+!  Set indices for auxiliary variables.
+!
+      !call farray_register_auxiliary('bb',ibb)
+      call register_report_aux('bb', ibb, ibx, iby, ibz)
+print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -282,6 +289,155 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_lspecial_pars(f)
+!
+!  dummy routine
+!
+!  15-jan-08/axel: coded
+!
+      use Fourier, only: fourier_transform
+!
+      real, dimension (:,:,:,:), allocatable :: B_re, B_im, v_re, v_im
+      real, dimension (:,:,:), allocatable :: k2, r
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,ikx,iky,ikz,stat
+      logical :: lscale_tobox1=.true.
+      real :: scale_factor
+      intent(inout) :: f
+!
+!  Allocate memory for arrays.
+!
+      allocate(k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for k2')
+      allocate(r(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for r')
+!
+      allocate(B_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for B_re')
+      allocate(B_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for B_im')
+!
+      allocate(v_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for v_re')
+      allocate(v_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for v_im')
+!
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),stat=stat)
+      if (stat>0) call fatal_error('calc_lspecial_pars', &
+          'Could not allocate memory for kz')
+!
+!  calculate k^2
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Lx
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Ly
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+!
+        scale_factor=1
+        if (lscale_tobox1) scale_factor=2*pi/Lz
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+!
+!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
+!  the full nx extent (which, currently, must be equal to nxgrid).
+!
+        if (lroot .AND. ip<10) &
+             print*,'calc_lspecial_pars:fft ...'
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+            enddo
+          enddo
+        enddo
+        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+!
+!  Compute Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
+!
+!  Find bb if as communicated auxiliary.
+!
+      call zero_ghosts(f, iax, iaz)
+      call update_ghosts(f, iax, iaz)
+      mn_loop: do imn = 1, ny * nz
+        m = mm(imn)
+        n = nn(imn)
+        call gij(f, iaa, aij, 1)
+        call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+!
+!  Add imposed field, if any
+!
+        bext: if (lB_ext_in_comaux) then
+          call get_bext(b_ext)
+          forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
+          if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext
+= ', b_ext
+        endif bext
+        f(l1:l2,m,n,ibx:ibz) = bb
+        enddo mn_loop
+      endif getbb
+
+!
+!  Go into Fourier space
+!
+        v_im=0.0
+        v_re=f(l1:l2,m1:m2,n1:n2,iax:iaz)
+        do i=1,3
+          call fourier_transform(v_re(:,:,:,i),v_im(:,:,:,i))
+        enddo !i
+!
+!  Compute the magnetic field in Fourier space from vector potential.
+!  In this definition of the Fourier transform, nabla = +ik.
+!
+      do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+!
+!  (vx, vy, vz) -> Bx
+!
+        B_re(ikz,ikx,iky,1)=+( &
+          -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3) &
+          +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2) )
+        B_im(ikz,ikx,iky,1)=+( &
+          +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3) &
+          -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2) )
+!
+!  (vx, vy, vz) -> By
+!
+        B_re(ikz,ikx,iky,2)=+( &
+          -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1) &
+          +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3) )
+        B_im(ikz,ikx,iky,2)=+( &
+          +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1) &
+          -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3) )
+!
+!  (vx, vy, vz) -> Bz
+!
+        B_re(ikz,ikx,iky,3)=+( &
+          -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2) &
+          +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1) )
+        B_im(ikz,ikx,iky,3)=+( &
+          +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2) &
+          -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1) )
+!
+      enddo; enddo; enddo
+!
+!  back to real space
+!
+print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
+        do i=1,3
+          call fourier_transform(B_re(:,:,:,i),B_im(:,:,:,i),linv=.true.)
+          f(l1:l2,m1:m2,n1:n2,ibb+i-1)=B_re(:,:,:,i)
+        enddo !i
+!
+    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
