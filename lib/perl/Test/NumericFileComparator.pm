@@ -285,7 +285,7 @@ sub _parse {
 
 sub _read_file_in_column_format {
 #
-# Read and parse a file in column format (e.g. some time_series.dat file)
+# Read and parse a file in column format (e.g. some time_series.dat file).
 # Return
 #   (\@variables, \%values, \%accuracies)
 #
@@ -321,9 +321,10 @@ sub _read_file_in_column_format {
                 push $columns[$i], $items[$i];
             }
         } else {
-            croak "File $file: Unexpected line <$line>\n";
+            croak "File $file: Unexpected line in column format: <$line>\n";
         }
     }
+    close $fh;
 
     %accuracies = _infer_accuracies(\@variables, \@columns) unless (%accuracies);
     %values = _numerical_values(\@variables, \@columns);
