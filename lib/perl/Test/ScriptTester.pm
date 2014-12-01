@@ -279,6 +279,19 @@ sub debug {
 }
 
 
+=item B<find_interpreter_for>($test_type)
+
+Return the default interpreter (path of an executable) for the given
+$test_type, or undef.
+
+=cut
+
+sub find_interpreter_for {
+    my ($self, $test_type) = @_;
+
+}
+
+
 =item @default_types
 
 All supported test types.
@@ -357,19 +370,6 @@ sub _in_PATH {
         if (-x "$path/$file") { return 1; }
     }
     return 0;
-}
-
-
-=item B<find_interpreter_for>($test_type)
-
-Return the default interpreter (path of an executable) for the given
-$test_type, or undef.
-
-=cut
-
-sub find_interpreter_for {
-    my ($self, $test_type) = @_;
-
 }
 
 
