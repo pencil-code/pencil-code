@@ -279,7 +279,37 @@ sub _parse {
     croak "No such file: $file\n" unless -e $file;
     croak "Cannot open file $file\n" unless -r $file;
 
-    return _read_file_in_column_format($file);
+    if (_has_line_format($file)) {
+        return _read_file_in_line_format($file);
+    } else {
+        return _read_file_in_column_format($file);
+    }
+}
+
+
+sub _has_line_format {
+#
+# Does the given file look like it is in line format?
+# We simply look for a ':' character in a non-comment line.
+#
+    my ($file) = @_;
+
+    my $fh;
+    unless (open($fh, '<', $file)) {
+        croak "Cannot open $file for reading: $!\n";
+    }
+
+    my $line_format = 0;
+    while (defined(my $line = <$fh>)) {
+        next if $line =~ /^\s*$/;  # empty line
+        next if $line =~ /^\s*#/;  # comment line
+        if ($line =~ /:/) {
+            $line_format = 1;
+            last;
+        }
+    }
+    close $fh;
+    return $line_format;
 }
 
 
