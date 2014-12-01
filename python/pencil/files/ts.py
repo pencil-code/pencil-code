@@ -4,7 +4,7 @@
 # arrrays
 #
 #
-import os.path 
+import os.path
 import re
 import numpy as N
 import pylab as P
@@ -33,7 +33,7 @@ class TimeSeries:
         """
         constructor:
         -----------
-        __init__ -- reads Pencil Code time series data. 
+        __init__ -- reads Pencil Code time series data.
         Modeled after idl function of same name.
 
         params:
@@ -51,10 +51,10 @@ class TimeSeries:
             infile.close()
         except IOError:
             return
-    
-        # need to handle cases where restart AND print.in changes, 
+
+        # need to handle cases where restart AND print.in changes,
         # but not right away
-        # idl version uses input_table function with a STOP_AT 
+        # idl version uses input_table function with a STOP_AT
         # and FILEPOSITION keywords
         nlines_init = len(lines)
         keys = []
@@ -79,30 +79,30 @@ class TimeSeries:
                     print "Invalid data on line %i. Skipping." % nlines
         #clean up data
         data = N.resize(data,(nlines,len(keys)))
-    
+
         if (not quiet):
             print "Read",nlines,"lines."
 
         #assemble into a TimeSeries class
         for i in range(0,len(keys)):
             setattr(self,keys[i],data[:,i])
-       
+
         if hasattr(self,'t') and plot_data: self.plot()
 
-            
+
     def plot(self):
         """
           plot:
           ----
             Do two plots:
             Try to plot urms(t), ruzm(t) and brms(t), if any of these
-            three is not available or zero, fill the list with the first two 
+            three is not available or zero, fill the list with the first two
             variables other than `it' and `dt*'
         """
         P.ioff() # speed up graphics (in connection with an ending P.show())
         elim = re.compile(r'dt|it|__|plot')
         # every argument of the TimeSeries class is listed in listargs
-        listargs = dir(self) 
+        listargs = dir(self)
         # to eliminate it, dt*, and __*__ names
         for item in dir(self):
             if re.match(elim,item):
@@ -138,7 +138,7 @@ class TimeSeries:
                 P.plot(self.t, getattr(self, listargs[i]))
                 P.xlabel('Time')
                 P.ylabel(listargs[i])
-                i += 1 
+                i += 1
         P.show()
         P.ion()
 
