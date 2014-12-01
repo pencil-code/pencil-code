@@ -426,7 +426,7 @@ sub _create_var_names {
 #
 # Create variable names by enumeration
 #
-    my (@items) = @_;
+    my @items = @_;
 
     my @var_names;
     for (my $i = 0; $i < @items; $i++) {
@@ -561,42 +561,6 @@ sub _numerical_values {
 
 __END__
 
-
-=back
-
-
-=head1 BUGS AND LIMITATIONS
-
-=over 4
-
-=item *
-
-None worth mentioning (so far).
-
-=back
-
-
-=head1 AUTHOR
-
-Wolfgang Dobler <wdobler#cpan:org =~ tr/:#/.@/>
-
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright (c) 2007, Wolfgang Dobler.
-All rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same conditions as Perl or under the GNU General Public
-License, version 3 or later.
-
-
-=head1 DISCLAIMER OF WARRANTY
-
-Use completely at your own risk.
-
-
-=cut
 
 
 # End of file
