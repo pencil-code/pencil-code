@@ -515,7 +515,7 @@ module Special
       real, dimension (mx) :: func_x
       integer :: i, j,  sz_l_x,sz_r_x,ll1,ll2, ll1_, ll2_
       real :: dt1, lnTT_ref
-      real :: del
+      real :: del2
       logical :: lzone=.false., lzone_left, lzone_right, lnoACTOS=.true.
 !
 
@@ -527,8 +527,8 @@ module Special
                + 2.5e6/1005.*p%ccondens*p%TT1
         endif
 !
-       dt1=1./(3.*dt)
-       del=0.1
+       dt1=1./(8.*dt)
+       del2=0.1
 !
 !
 
@@ -540,18 +540,14 @@ module Special
            if (lbuffer_zone_T) then
             lzone=.false.
             if ((y(m1)==xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
-              if (y(m)>y(int(del*nygrid))) then
-                lzone=.true.
-              endif
+              if (y(m)>xyz0(2)+del2*Lxyz(2)) lzone=.true.
             elseif ((y(m1)>xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
-              if (y(m)<y(nygrid-int(del*nygrid))) then
-                lzone=.true.
-              endif
+              if (y(m)<xyz0(2)+(1.-del2)*Lxyz(2)) lzone=.true.
             elseif ((y(m1)>xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
                lzone=.true.
             elseif ((y(m1)==xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
-              if ((y(m)<y(nygrid-int(del*nygrid))) .and. &
-              (y(m)>y(int(del*nygrid)))) then
+              if ((y(m)<xyz0(2)+(1.-del2)*Lxyz(2)) .and. &
+              (y(m)>xyz0(2)+del2*Lxyz(2))) then
                 lzone=.true.
               endif           
             endif 
@@ -569,7 +565,7 @@ module Special
 
              else
 !                df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
-!                df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+                df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !                df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-UY_ref)*dt1
          
              endif
@@ -583,8 +579,8 @@ module Special
            endif
 !        
         elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
-         sz_r_x=l1+nxgrid-int(del*nxgrid)
-         sz_l_x=int(del*nxgrid)+l1
+         sz_r_x=l1+nxgrid-int(del2*nxgrid)
+         sz_l_x=int(del2*nxgrid)+l1
         do j=1,2
 !
          if (j==1) then
