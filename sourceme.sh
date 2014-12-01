@@ -54,8 +54,8 @@ if [ -z $_sourceme ]; then	# called for the first time?
     #  Set IDL path
     IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
 
-#    #  Set Perl module path
-#    PERL5LIB="${PENCIL_HOME}/perl${PERL5LIB:+:$PERL5LIB}"
+#    #  Set Perl module path [no longer needed]
+#    PERL5LIB="${PENCIL_HOME}/lib/perl${PERL5LIB:+:$PERL5LIB}"
 #    export PERL5LIB
     #   Set PYTHONPATH
     if [ -z $PYTHONPATH ]; then

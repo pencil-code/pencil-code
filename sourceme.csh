@@ -73,8 +73,8 @@ if (! $?_sourceme) then		# called for the fist time?
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
 
-#    #  Set Perl module path
-#    set _perl5lib = "${PENCIL_HOME}/perl"
+#    #  Set Perl module path [no longer needed]
+#    set _perl5lib = "${PENCIL_HOME}/lib/perl"
 #    if ($?PERL5LIB) then
 #      setenv PERL5LIB "${_perl5lib}:$PERL5LIB"
 #    else
