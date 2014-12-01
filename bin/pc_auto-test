@@ -446,7 +446,7 @@ my %time_summary;               # hash to accumulate timing summary
 
 ## Debugging output:
 if ($debug) {
-    eval("use Data::Dumper");   # Need eval here to calm down compiler
+    eval { use Data::Dumper };   # Need eval here to calm down compiler
     print STDERR Dumper(\%opts);
     print STDERR
         "(\$t_comp, \$t_start, \$t_run, \$t_res, \$t_script)"
@@ -908,7 +908,7 @@ sub test_timelimited_perl_cmd {
 
     print STDERR " ..done \n" if ($debug);
     my $dt;
-    $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
+    $dt = get_time() - $t_ref if defined $t_ref;  # otherwise leave undefined
 
     my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
     return $res;           # Return output so we can analyze it if desired
