@@ -42,6 +42,7 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_modules(
     'Pencil::ReadmeReader',
     'Test::NumericFileComparator',
+    'Test::ScriptTester',
     ) or die;
 
 use strict;
@@ -226,7 +227,8 @@ my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                # for C float
 my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
 my $res;
-my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
+my ($t_comp, $t_start, $t_run, $t_res, $t_script)
+    = (1, 1, 1, 1, 1); # test everything by default
 my (%opts);                     # variables written by GetOptions
 (my $cmdname = $0) =~ s{.*/}{};
 my $help  = 0;
@@ -345,7 +347,8 @@ if ($opts{'v'} || $opts{'version'}) {
     $help=1;
     die '$Id$ ' . "\n";
 }
-if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
+if ($opts{'c'} || $opts{'compile-only'}) {
+    $t_start = $t_run = $t_res = $t_script = 0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
 my $res_from_file = ($opts{'f'} || $opts{'res_from_file'} || 0 );
 if ($res_from_file) { $t_comp=$t_start=$t_run=0 };
@@ -424,18 +427,19 @@ if ($debug) {
     eval("use Data::Dumper");   # Need eval here to calm down compiler
     print STDERR Dumper(\%opts);
     print STDERR
-        "(\$t_comp,\$t_start,\$t_run,\$t_res)"
-        . " = ($t_comp,$t_start,$t_run,$t_res)\n";
+        "(\$t_comp, \$t_start, \$t_run, \$t_res, \$t_script)"
+        . " = ($t_comp, $t_start, $t_run, $t_res, $t_script)\n";
     print STDERR
         "(\$debug,\$help,\$short)           "
         . " = ($debug,$help,$short)\n";
 }
 
-# $t_comp .. $t_res form a hierarchy: We can't test running without
+# $t_comp .. $t_script form a hierarchy: We can't test running without
 # compiling and starting
-$t_start &&= $t_comp;
-$t_run   &&= $t_start;
-$t_res   &&= ($t_run || $res_from_file);
+$t_start  &&= $t_comp;
+$t_run    &&= $t_start;
+$t_res    &&= ($t_run || $res_from_file);
+$t_script &&= $t_res;
 
 # Check for lock file and write one
 unless ($nolock or $list_only) {
@@ -822,6 +826,28 @@ sub test_timelimited_shell_cmd {
     return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
 }
 # ---------------------------------------------------------------------- #
+sub test_perl_cmd {
+# Execute a Perl function.
+# The first argument is a ref to a function that returns
+# its status as ($error_count, $message).
+    my $cmd   = shift;
+    my $dir   = (shift || "<Unknown directory>");
+    my $phase = (shift || "<Unknown phase>");
+    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $t_ref = shift;
+
+    print STDERR "\nRunning Perl command" if ($debug);
+    my ($error_count, $mesg) = &$cmd();
+    $res = $error_count ? "[$mesg]" : '';
+
+    print STDERR " ..done \n" if ($debug);
+    my $dt;
+    $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
+
+    my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
+    return $res;           # Return output so we can analyze it if desired
+}
+# ---------------------------------------------------------------------- #
 sub test_compile {
 # Test compilation only
     if ($t_comp) {
@@ -829,7 +855,7 @@ sub test_compile {
         my @makeopts = (shift); # gets one string ("" or "-j N")
         my $t_ref = shift;      # start time
 
-        print "    Compiling..          ";
+        print "    Compiling..            ";
 
         # First pc_setupsrc, then make clean (if requested). Must be done
         # in this order as pc_setupsrc links the Makefile to the run directory.
@@ -863,11 +889,11 @@ sub test_compile {
 # ---------------------------------------------------------------------- #
 sub test_start {
 # Test starting only
-    my $dir   = shift;          # not used...
+    my $dir   = shift;
     my $t_ref = shift;          # start time
 
     if ($t_start) {
-        print "    Starting..           ";
+        print "    Starting..             ";
         printf "$indi_fmt ", '';
 
         my $start_cmd = "@pc_run start";
@@ -894,7 +920,7 @@ sub test_run {
     my $t_ref = shift;          # start time
 
     if ($t_run) {
-        print "    Running..            ";
+        print "    Running..              ";
 
         # Handle KEEP_RELOADING file (our -r/--reload option)
         my $reload_file = "$dir/KEEP_RELOADING";
@@ -940,7 +966,7 @@ sub test_results {
 
     if ($t_res) {
         my ($rdmsg,$diagn);
-        print "    Validating results.. ";
+        print "    Validating results..   ";
         printf "$indi_fmt ", '';
         my $ts_file = 'data/time_series.dat';
 
@@ -968,6 +994,39 @@ sub test_results {
             my_ok(0, 1, $msg, $dir, "results");
         } else {
             my_ok(0, 0, "", $dir, "results");
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub test_scripts {
+# Run test scripts if available
+    my $dir   = shift;
+    my $t_ref = shift;          # start time
+
+    if ($t_script) {
+        my $tester = Test::ScriptTester->new([$dir]);
+        my @tests = $tester->list_tests();
+        return unless @tests;
+
+        print "    Running script tests.. ";
+        printf "$indi_fmt ", '';
+
+        my $test_cmd = sub {
+            $tester->run_tests(@tests);
+        };
+        if ($time_limit) {
+            test_timelimited_perl_cmd(
+                $test_cmd,
+                $time_limit,
+                $dir, "running script tests",
+                NOQUIET, $t_ref
+            );
+        } else {
+            test_perl_cmd(
+                $test_cmd,
+                $dir, "running script tests",
+                NOQUIET, $t_ref
+            );
         }
     }
 }
@@ -1064,6 +1123,9 @@ sub test_rundir {
 
     # 4. Check the output
     test_results($dir);
+
+    # 5. Run scripts
+    test_scripts($dir);
 
     # Clean up if necessary
   cleanup:
