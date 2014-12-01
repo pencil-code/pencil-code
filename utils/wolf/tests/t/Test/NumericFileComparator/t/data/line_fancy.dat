@@ -1,0 +1,5 @@
+  # Reference data for pressure and temperature.
+  # We print 4 decimals for temperature, but due to the phase of Jupiter's
+  # moons, we can only expect an accuracy of about 1e-2.
+  Pressure      : 1.5e-7:r : 0.6345238 0.7345238 0.655238  # slice (5,7,3:5)
+  Temp(5,7,3:5) : 0.8e-2   : 0.7543 0.7411 0.7123
