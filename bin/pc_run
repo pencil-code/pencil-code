@@ -1445,8 +1445,8 @@ sub usage {
 # Extract description and usage information from this file's header.
     my $thisfile = __FILE__;
     local $/ = '';              # Read paragraphs
-    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
-    while (<FILE>) {
+    open my $fh, '<', $thisfile or die "Cannot open $thisfile\n";
+    while (<$fh>) {
         # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
@@ -1455,14 +1455,15 @@ sub usage {
         s/^\s*# ?//mg;
         last;                        # ignore body
     }
+    close $fh;
     return $_ or "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
 sub version {
 # Return SVN/CVS data and version info.
     my $doll='\$';              # Need this to trick SVN/CVS
-    my $rev = '$Revision: 1.12 $';
-    my $date = '$Date: 2008/07/07 21:37:16 $';
+    my $rev = '$Revision$';
+    my $date = '$Date$';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
 
