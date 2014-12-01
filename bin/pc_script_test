@@ -62,7 +62,6 @@ use Cwd qw/getcwd abs_path/;
 use File::Basename;
 use File::Find;
 use File::Copy 'move';
-use Test::NumericFileComparator;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
@@ -127,16 +126,35 @@ if (in_PATH('idl')) {
 
 my @suffixes = get_suffixes(@types);
 
-my $status = 0;
+my ($good_count, $bad_count) = (0, 0);
 my %record;
 for my $test_dir (find_test_dirs(@top_dirs)) {
     for my $test_script (find_test_scripts($test_dir)) {
         notify($test_dir, $test_script, \%record);
-        my $status |= run_test($test_script);
+        my $status = run_test($test_script);
+        if ($status) {
+            print "OK\n";
+            $good_count++;
+        } else {
+            print "Not OK\n";
+            $bad_count++;
+        }
     }
 }
 
-exit $status;
+my $separator = ('-' x 70) . "\n";
+print "$separator";
+
+my $total_count = $good_count + $bad_count;
+if ($bad_count) {
+    print "$bad_count out of $total_count tests failed.\n";
+} else {
+    print "All $total_count tests succeeded.\n";
+}
+
+print "$separator";
+
+exit $bad_count;
 
 
 # ----------------------------------------------------------------------
@@ -168,6 +186,8 @@ sub run_test {
         }
     }
     chdir $workdir;
+
+    return $ok;
 }
 
 
@@ -202,7 +222,7 @@ sub notify {
     if (! $record{$test_dir}++) {
         print "$test_dir:\n";
     }
-    print "    $script_file ($type)\n";
+    print "    $script_file ($type)  ";
 }
 
 
