@@ -176,7 +176,7 @@ sub _equal_abs {
     my ($a, $b) = @_[0, 1];
 
     my $deviation = abs($a - $b);
-    return $deviation < $self->{ABS_ACC};
+    return $deviation <= $self->{ABS_ACC};
 
 }
 
@@ -190,7 +190,7 @@ sub _equal_rel {
     my ($a, $b) = @_[0, 1];
 
     my $deviation = abs($a - $b);
-    return $deviation < $self->{REL_ACC} * $self->_max(abs($a), abs($b));
+    return $deviation <= $self->{REL_ACC} * $self->_max(abs($a), abs($b));
 
 }
 
