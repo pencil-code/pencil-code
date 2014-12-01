@@ -16,6 +16,7 @@ def read_ts(*args, **kwargs):
      string: filename  ='time_series.dat'
      string: datadir   = 'data'
      logical: double    = 0
+     logical: plot_data = True
      logical: print_std = 0
      logical: quiet     = 0
     """
@@ -41,6 +42,7 @@ class TimeSeries:
          string: filename  ='time_series.dat'
          string: datadir   = 'data'
          logical: double    = 0
+         logical: plot_data = True
          logical: print_std = 0
          logical: quiet     = 0
         """
