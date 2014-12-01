@@ -93,6 +93,7 @@ I<abs_acc>, or I<rel_acc> * Max(|$a|, |$b|), return 0.
 Otherwise return -1 if $a < $b, or +1 if $a > $b.
 
 One could call this method 'a sloppy version of $a <=> $b'.
+
 =cut
 
 sub compare {
@@ -130,8 +131,6 @@ out.
 
 =cut
 
-=back
-
 
 sub format_comparison {
     my $self = shift();
@@ -162,7 +161,7 @@ sub format_comparison {
     } elsif ($result == 1) {
         return sprintf("$a > $b according to %s", $reason);
     } else {
-        die "Unexpected: \$self->compare($a, $b) returned nonsense.";
+        croak "Unexpected: \$self->compare($a, $b) returned nonsense.";
     }
 
 }
@@ -212,6 +211,8 @@ sub _max {
 }
 
 # ---------------------------------------------------------------------- #
+
+=back
 
 =head1 EXAMPLES
 
