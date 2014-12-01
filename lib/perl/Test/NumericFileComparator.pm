@@ -12,6 +12,9 @@
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
 #
 
+# TODO:
+# - We currently assume that either no or all accuracies are specified.
+#   Need to implement the mixed case.
 
 package Test::NumericFileComparator;
 
