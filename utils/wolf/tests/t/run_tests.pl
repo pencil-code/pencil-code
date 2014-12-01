@@ -24,5 +24,5 @@ find({
      $t_dir
     );
 
-$harness->runtests(@tests);
+$harness->runtests(sort @tests);
 

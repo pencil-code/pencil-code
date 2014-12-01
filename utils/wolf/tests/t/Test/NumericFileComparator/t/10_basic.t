@@ -2,6 +2,9 @@
 
 # Description:
 #   Unit tests for Tests::NumericFileComparator
+#
+#   These tests verify the creation of comparator objects and parsing of
+#   column and line format.
 
 use strict;
 
@@ -61,9 +64,6 @@ read_line_data_fancy();
 
 read_line_data1();
 read_line_data2();
-
-compare_files_2_1();
-compare_files_3_1();
 
 done_testing();
 
@@ -253,26 +253,6 @@ sub read_line_data2 {
     my $file = "$dir/read_data.ref";
     my $comp1 = Test::NumericFileComparator->new($file);
     ok($comp1, "Parse $file");
-}
-
-
-sub compare_files_2_1 {
-    my $file = "$test_dir/data/time-series-1.dat";
-    my $ref_file = "$test_dir/data/time-series-2.dat";
-    my $comparator = Test::NumericFileComparator->new($ref_file);
-    my @message = $comparator->compare($file);
-    ok(! @message, 'time-series-{1,2} equal')
-      or diag(join("\n  ", "Files $ref_file, $file differ:", @message));
-}
-
-
-sub compare_files_3_1 {
-    my $file = "$test_dir/data/time-series-1.dat";
-    my $ref_file = "$test_dir/data/time-series-3.dat";
-    my $comparator = Test::NumericFileComparator->new($ref_file);
-    my @message = $comparator->compare($file);
-    ok(@message, 'time-series-{1,3} differ')
-      or diag("Files $ref_file, $file should differ, but are equal");
 }
 
 
