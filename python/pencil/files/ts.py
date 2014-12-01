@@ -48,7 +48,7 @@ class TimeSeries:
         """
 
         datadir = os.path.expanduser(datadir)
-        infile = open(datadir+'/'+filename, "r")
+        infile = open(os.path.join(datadir, filename), "r")
         lines = infile.readlines()
         infile.close()
 
