@@ -895,9 +895,9 @@ sub test_timelimited_perl_cmd {
             alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
         }
         my ($good, $bad, $output) = call_sub_catch_output($cmd);
+        alarm 0;                # clear alarm
         $error_count += $bad;
         $res .= $output if $bad;
-        alarm 0;                # clear alarm
         print STDERR "good: $good, bad: $bad, errors: $error_count\n" if $debug;
     };
     if ($@) {
@@ -920,8 +920,44 @@ sub call_sub_catch_output {
 # Return the return value of &$cmd() and a string containing the output.
     my $cmd = shift;
 
-    my @retval = &$cmd();
-    return @retval, '';
+    # We need to explicitly mark the end of conversation pver the pipe, or
+    # else the reader hangs (why does it not realize that the pipe is
+    # closed?).
+    my $end_marker = '## DONE ##';
+    my $ipc_prefix = 'IPC: ';
+    my $output;
+    my $comm;
+    my @retval;
+
+    pipe my $read_retval_handle, my $write_retval_handle;
+
+    my $child_id = open($comm, '-|') // die "can't fork: $!";
+    if ($child_id) { # parent --> read output from child
+        while (<$comm>) {
+            $output .= $_;
+        }
+        close $comm || warn "child exited $?";
+        while (<$read_retval_handle>) {
+            chomp;
+            last if $_ eq $end_marker;
+            push @retval, $_;
+        }
+        close $read_retval_handle;
+    } else {                    # child --> run &$cmd
+        $nosummary = 1;         # skip END block
+        open(STDERR, ">& STDOUT"); # also redirect STDERR to $comm
+        @retval = &$cmd();
+
+        # Send @retval to parent
+        for my $value (@retval) {
+            print $write_retval_handle "$value\n";
+        }
+        print $write_retval_handle "$end_marker\n";
+        # close $write_retval_handle;
+        exit;
+    }
+
+    return @retval, $output;
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
