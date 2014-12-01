@@ -333,6 +333,61 @@ sub _read_file_in_column_format {
 }
 
 
+sub _read_file_in_line_format {
+#
+# Read and parse a file in line format (one variable per line).
+# Return
+#   (\@variables, \%values, \%accuracies)
+#
+    my ($file) = @_;
+
+    my $fh;
+    unless (open($fh, '<', $file)) {
+        croak "Cannot open $file for reading: $!\n";
+    }
+
+    my (@variables, %values, %accuracies);
+
+    while (defined(my $line = <$fh>)) {
+        next if $line =~ /^\s*$/;  # empty line
+        next if $line =~ /^\s*#/;  # comment line
+        $line =~ s{#.*}{};  # strip trailing comments
+        chomp($line);
+        if ($line =~ /^
+                      \s *
+                      (?<variable>[^:]+?)
+                      \s *
+                      :
+                      \s *
+                      (?<value>$ieee_float)
+                      (?:
+                          \s +
+                          (?<accuracy>$ieee_float)
+                      )?
+                      \s *
+                      $
+                     /x) {
+            my ($var, $val, $acc) = ($+{variable}, $+{value}, $+{accuracy});
+            if (defined $values{$var}) {
+                croak "Duplicate variable '$var' in file $file\n";
+            }
+            push @variables, $var;
+            $values{$var} = [0 + $val];
+            if (defined $acc) {
+                $accuracies{$var} = $acc;
+            } else {
+                $accuracies{$var} = _accuracy_from_num_string($val);
+            }
+        } else {
+            croak "File $file: Unexpected line in line format: <$line>\n";
+        }
+    }
+    close $fh;
+
+    return (\@variables, \%values, \%accuracies);
+}
+
+
 sub _create_var_names {
 #
 # Create variable names by enumeration
