@@ -839,12 +839,12 @@ at the price of requiring one dummy module for each physics module.
 For nonmagnetic hydrodynamics, for example, one will use the module
 \file{nomagnetic.f90} and specifies
 \begin{Verbatim}
-  MAGNETIC=nomagnetic
+  MAGNETIC = nomagnetic
 \end{Verbatim}
 in \file{Makefile.local},
 while for MHD simulations, \file{magnetic.f90} will be used:
 \begin{Verbatim}
-  MAGNETIC=magnetic
+  MAGNETIC = magnetic
 \end{Verbatim}
 Note that the term \name{module} as used here is only loosely related to
 Fortran modules:
@@ -3945,13 +3945,13 @@ CPUs, you need to do the following (in that directory):
 
 \item Edit \file[cparam.local]{src/cparam.local} and replace
   \begin{alltt}
-  integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
-  integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid \
+  integer, parameter :: ncpus=1, nprocy=1, nprocz=ncpus/nprocy, nprocx=1
+  integer, parameter :: nxgrid=32, nygrid=nxgrid, nzgrid=nxgrid \
   \end{alltt}
   by
   \begin{alltt}
-  integer, parameter :: ncpus=16,nprocy=4,nprocz=ncpus/nprocy,nprocx=1
-  integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid \
+  integer, parameter :: ncpus=16, nprocy=4, nprocz=ncpus/nprocy, nprocx=1
+  integer, parameter :: nxgrid=128, nygrid=nxgrid, nzgrid=nxgrid \
   \end{alltt}
   The first line specifies a $4{\times}4$ layout of the data in the $y$
   and $z$ direction.
@@ -4170,8 +4170,8 @@ power spectra also the one-dimensional power spectra will be calculated
 In addition one must edit
 \file[Makefile.local]{src/Makefile.local} and add the lines
 \begin{alltt}
-   FOURIER=fourier_fftpack
-   POWER=power_spectrum
+   FOURIER = fourier_fftpack
+   POWER = power_spectrum
 \end{alltt}
 
 Running the code will now create the files \file{powerhel_mag.dat} and
@@ -4266,7 +4266,7 @@ S^p_{\rm trans}(l)= \left< | u_y(x{+}l,y,z)-u_y(x,y,z)|^p \right>
 Edit \file{run.in} and add for example the following lines
   \begin{alltt}
   dspec=2.3,
-  lsfu=T,lsfb=T,lsfz1=T,lsfz2=T
+  lsfu=T, lsfb=T, lsfz1=T, lsfz2=T
   \end{alltt}
 under \code{run_pars}.
 The velocity (\code{lsfu}), magnetic (\code{lsfb}) and Elsasser
@@ -4276,7 +4276,7 @@ now be calculated every 2.3 (\code{dspec}) time unit.
 In addition one must edit
 \file[Makefile.local]{src/Makefile.local} and add the line
   \begin{alltt}
-  STRUCT_FUNC  = struct_func
+  STRUCT_FUNC = struct_func
   \end{alltt}
 You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
 
