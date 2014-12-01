@@ -6,13 +6,13 @@ so you can just do
 
 import pencil as pc
 
-in your script or from your favorite python shell (ipython is a good one). 
+in your script or from your favorite python shell (ipython is a good one).
 
-Once you've done so, 
+Once you've done so,
 
 var = pc.read_var(datadir='data/')
 
-returns an object with the entire f array as well as some handy constants. 
+returns an object with the entire f array as well as some handy constants.
 
 Note that because python is C-indexed instead of fortran-indexed, and
 matplotlib assumes [y,x] ordering for 2D plotting, the f array returned is in
@@ -31,4 +31,3 @@ To start rapidly under Python:
 5. you must load all of the Python pencil modules using 'import pencil
    as pc'
 6. you run a module using 'pc.read_ts()' and so on...
-
