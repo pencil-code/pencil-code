@@ -92,13 +92,37 @@ Compare $a and $b. If the modulus of the difference is smaller than either
 I<abs_acc>, or I<rel_acc> * Max(|$a|, |$b|), return 0.
 Otherwise return -1 if $a < $b, or +1 if $a > $b.
 
+The B<compare()> method is (anti)symmetric in the sense that
+
+  compare($a, $b) == - compare($b, $a)
+
+It cannot be transitive.
+
 One could call this method 'a sloppy version of $a <=> $b'.
+
+Comparison to NaN or ±Inf is essentially lexical and ignores accuracy.
+The following table shows equality for combinations of IEEE numbers:
+
+  |      | real | Inf | +Inf | -Inf | NaN |
+  |------+------+-----+------+------+-----|
+  | real |      | !=  | !=   | !=   | !=  |
+  | Inf  |      | ==  | ==   | ==   | !=  |
+  | +Inf |      |     | ==   | !=   | !=  |
+  | -Inf |      |     |      | ==   | !=  |
+  | NaN  |      |     |      |      | ==  |
 
 =cut
 
 sub compare {
     my $self = shift;
     my ($a, $b) = @_[0, 1];
+
+    if (_is_special_ieee($a)) {
+        return _compare_special_ieee($a, $b);
+    }
+    if (_is_special_ieee($b)) {
+        return - _compare_special_ieee($b, $a);
+    }
 
     if ($self->equal($a, $b)) {
         return 0;
