@@ -55,19 +55,19 @@ class TimeSeries:
         # idl version uses input_table function with a STOP_AT
         # and FILEPOSITION keywords
         nlines_init = len(lines)
-        keys = []
-        data = N.zeros((nlines_init, len(keys)))
+        self.keys = []
+        data = N.zeros((nlines_init, len(self.keys)))
         nlines = 0
         for line in lines:
             if re.search("^%s--" % comment_char, line):
                 # read header and create keys for dictionary
                 line = line.strip("%s-\n" % comment_char)
                 keys_new = re.split("-+", line)
-                if keys_new != keys:
-                    n_newrows = abs(len(keys_new) - len(keys))
+                if keys_new != self.keys:
+                    n_newrows = abs(len(keys_new) - len(self.keys))
                     data = N.append(data, N.zeros((nlines_init, n_newrows)),
                                  axis=1)
-                    keys = keys_new
+                    self.keys = keys_new
             else:
                 try:
                     row = N.array(map(float, re.split(" +", line.strip(" \n"))))
@@ -76,14 +76,14 @@ class TimeSeries:
                 except ValueError:
                     print "Invalid data on line %i. Skipping." % nlines
         #clean up data
-        data = N.resize(data,(nlines,len(keys)))
+        data = N.resize(data, (nlines, len(self.keys)))
 
         if (not quiet):
             print "Read",nlines,"lines."
 
         #assemble into a TimeSeries class
-        for i in range(0,len(keys)):
-            setattr(self,keys[i],data[:,i])
+        for i in range(0, len(self.keys)):
+            setattr(self, self.keys[i], data[:,i])
 
         if hasattr(self,'t') and plot_data: self.plot()
 
