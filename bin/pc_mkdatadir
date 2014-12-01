@@ -82,7 +82,8 @@ else if ($hn =~ ds0*) then
   echo "for Axel on DataStar"
   set str='s/rmount\/users02\/ucsd/gpfs-wan\/scratch/g'
 else if (($hn =~ nl6)) then
-  set str='s/home/wkspace\/data/g'
+  set str='s/home/D/g'
+  #set str='s/home/wkspace\/data/g'
   #set str='s/wkspace/wkspace\/data/g'
   #set str='s/brandenb/brandenb\/storage/g'
 else if (($hn =~ nl11) || ($hn =~ wormhole)) then
