@@ -1,0 +1,25 @@
+${PENCIL_HOME}/tests
+--------------------
+
+NOTE: The bulk of test setups (run via pc_auto-test) is not located here,
+but in the samples/ directory.
+
+
+This directory contains specific tests, e.g. for reading data from Python
+and IDL.
+
+The contract for a Python test:
+
+- It is represented by a file <test_name>.py in some subdirectory of
+  ${PENCIL_HOME}/tests/python/ .
+
+- The file is executable and can be run from the ${PENCIL_HOME}/tests/
+  directory (i.e. data from ${PENCIL_HOME}/tests/input/ can be accessed
+  via './input/...').
+
+- There exists a file <test_name>.ref in the same directory that defines
+  the reference data and possibly specifies accuracies.
+
+- When the script is run, it writes a file <test_name>.out in the same
+  directory.
+
