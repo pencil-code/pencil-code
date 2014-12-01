@@ -5,19 +5,19 @@
 # NB: the f array returned is C-ordered: f[nvar,nz,ny,nx]
 #     NOT Fortran as in Pencil (& IDL):  f[nx,ny,nz,nvar]
 #
-# Author: J. Oishi (joishi@amnh.org). 
-# 
+# Author: J. Oishi (joishi@amnh.org).
+#
 # modify var.py in a more object-oriented way
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
-# 
+#
 import numpy as N
 from npfile import npfile
 import os
 import string
 import sys
-from param import read_param 
+from param import read_param
 from index import read_index
-from dim import read_dim 
+from dim import read_dim
 from pencil.math.derivatives import curl, curl2
 
 class read_var:
@@ -31,17 +31,17 @@ class read_var:
 
     def __init__(self, varfile='', datadir='data/', proc=-1, ivar=-1,
                  quiet=False, trimall=False, format='native',
-                 param=None, dim=None, index=None, run2D=False, 
+                 param=None, dim=None, index=None, run2D=False,
                  magic=None, setup=None):
         """
         Description:
         -----------
         read VAR files from pencil code. if proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
-        
-        format -- one of (['native', 'n'], ['ieee-le', 'l'], 
+
+        format -- one of (['native', 'n'], ['ieee-le', 'l'],
         ['ieee-be', 'B']) for byte-ordering
-        
+
         Params:
         ------
             varfile=''
@@ -65,7 +65,7 @@ class read_var:
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
-                dim = read_dim(datadir,proc) 
+                dim = read_dim(datadir,proc)
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)
             if index is None:
@@ -75,7 +75,7 @@ class read_var:
             precision = 'd'
         else:
             precision = 'f'
-        
+
         if param.lwrite_aux:
             totalvars = dim.mvar+dim.maux
         else:
@@ -91,9 +91,9 @@ class read_var:
                 varfile='var.dat'
             else:
                 varfile='VAR'+str(ivar)
-        
+
         if proc < 0:
-            procdirs = filter(lambda s:s.startswith('proc'), 
+            procdirs = filter(lambda s:s.startswith('proc'),
                               os.listdir(datadir))
         else:
             procdirs = ['proc'+str(proc)]
@@ -126,7 +126,7 @@ class read_var:
             filename = os.path.join(datadir,directory,varfile)
             infile = npfile(filename, endian=format)
             if (not run2D):
-                f_loc = infile.fort_read(precision, 
+                f_loc = infile.fort_read(precision,
                                shape=(-1, mzloc, myloc, mxloc))
             else:
                 if dim.ny == 1:
@@ -147,13 +147,13 @@ class read_var:
                 deltay = raw_etc[-1]
             else:
                 shear_offset = 0
-                
+
             dx = raw_etc[-3-shear_offset]
             dy = raw_etc[-2-shear_offset]
             dz = raw_etc[-1-shear_offset]
 
             if len(procdirs) > 1:
-                # calculate where the local processor will go in 
+                # calculate where the local processor will go in
                 # the global array
 
                 #
@@ -164,44 +164,44 @@ class read_var:
                 # recall that in NumPy, slicing is NON-INCLUSIVE on the right end
                 # ie, x[0:4] will slice all of a 4-digit array, not produce
                 # an error like in idl.
-                
+
                 if procdim.ipx == 0:
                     i0x = 0
                     i1x = i0x+procdim.mx
-                    i0xloc = 0 
+                    i0xloc = 0
                     i1xloc = procdim.mx
                 else:
-                    i0x = procdim.ipx*procdim.nx+procdim.nghostx 
+                    i0x = procdim.ipx*procdim.nx+procdim.nghostx
                     i1x = i0x+procdim.mx-procdim.nghostx
                     i0xloc = procdim.nghostx
                     i1xloc = procdim.mx
-                    
+
                 if procdim.ipy == 0:
                     i0y = 0
                     i1y = i0y+procdim.my
-                    i0yloc = 0 
+                    i0yloc = 0
                     i1yloc = procdim.my
                 else:
-                    i0y = procdim.ipy*procdim.ny+procdim.nghosty 
+                    i0y = procdim.ipy*procdim.ny+procdim.nghosty
                     i1y = i0y+procdim.my-procdim.nghosty
-                    i0yloc = procdim.nghosty 
+                    i0yloc = procdim.nghosty
                     i1yloc = procdim.my
-                        
+
                 if procdim.ipz == 0:
                     i0z = 0
                     i1z = i0z+procdim.mz
-                    i0zloc = 0 
+                    i0zloc = 0
                     i1zloc = procdim.mz
                 else:
-                    i0z = procdim.ipz*procdim.nz+procdim.nghostz 
+                    i0z = procdim.ipz*procdim.nz+procdim.nghostz
                     i1z = i0z+procdim.mz-procdim.nghostz
-                    i0zloc = procdim.nghostz 
+                    i0zloc = procdim.nghostz
                     i1zloc = procdim.mz
 
                 x[i0x:i1x] = x_loc[i0xloc:i1xloc]
                 y[i0y:i1y] = y_loc[i0yloc:i1yloc]
                 z[i0z:i1z] = z_loc[i0zloc:i1zloc]
-                
+
                 if (not run2D):
                     f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
                         f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
@@ -225,13 +225,13 @@ class read_var:
                 # compute the magnetic field before doing trimall
                 aa = f[index['ax']-1:index['az'],...]
                 self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
-                if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1, 
+                if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # compute the electric current field before doing trimall
                 aa = f[index['ax']-1:index['az'],...]
                 self.jj = curl2(aa,dx,dy,dz)
-                if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1, 
+                if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # compute the vorticity field before doing trimall
@@ -240,13 +240,13 @@ class read_var:
                 if (trimall):
                     if (param.lwrite_2d):
                         if (dim.nz == 1):
-                            self.vort=self.vort[:, dim.m1:dim.m2+1, 
+                            self.vort=self.vort[:, dim.m1:dim.m2+1,
                             dim.l1:dim.l2+1]
                         else:
-                            self.vort=self.vort[:, dim.n1:dim.n2+1, 
+                            self.vort=self.vort[:, dim.n1:dim.n2+1,
                             dim.l1:dim.l2+1]
                     else:
-                        self.vort=self.vort[:, dim.n1:dim.n2+1, 
+                        self.vort=self.vort[:, dim.n1:dim.n2+1,
                         dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
         # trim the ghost zones of the global f-array if asked
@@ -272,7 +272,7 @@ class read_var:
             self.m2 = dim.m2+1
             self.n1 = dim.n1
             self.n2 = dim.n2+1
-            
+
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
         for key,value in index.items():
@@ -361,4 +361,3 @@ class read_var:
                     self.pp = (cp-cv)*self.tt*N.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
-

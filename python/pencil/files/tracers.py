@@ -4,7 +4,7 @@
 # and reads the fixed point values.
 #
 # Author: Simon Candelaresi (iomsn@physto.se, iomsn1@googlemail.com).
-# 
+#
 #
 
 import struct
@@ -20,35 +20,32 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     Reads the tracer files, composes a color map.
 
     call signature::
-    
+
       tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim, head_size = 3)
-    
+
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
     doi:10.1088/1751-8113/44/26/265501.
     Returns the tracer values, the color mapping and the times of the snapshots.
     The color mapping can be plotted with:
     pc.animate_interactive(mapping[:,::-1,:,:], t, dimOrder = (2,1,0,3))
-    
+
     Keyword arguments:
-    
+
       *dataDir*:
         Data directory.
-        
+
       *fileName*:
         Name of the tracer file.
 
       *zlim*:
         The upper limit for the field line mapping at which a field line is considered
         to have reached the upper boundary.
-        
+
       *head_size*:
         Size of the Fortran header in binary data. Most of the time this is 3.
         For the St Andrews cluster it is 5.
     """
-    
-    #if ((sub == 0) and (post == True))
-        #print "error: you must specify"
     class data_struct:
         def __init__(self):
             self.xi = []
@@ -70,7 +67,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         off = 2
     if (head_size == 5):
         off = 3
-    
+
     # read the cpu structure
     dim = pc.read_dim(datadir = dataDir)
     if (dim.nprocz > 1):
@@ -78,7 +75,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
     # read the parameters
     params = pc.read_param(datadir = dataDir, quiet = True)
-    
+
     # read the grid
     grid = pc.read_grid(datadir = dataDir, quiet = True)
 
@@ -111,7 +108,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     # set the upper z-limit to the domain boundary
     if zlim == []:
         zlim = grid.z[-dim.nghostz-1]
-        
+
     # read the data from all cores
     for i in range(n_proc):
         # read the cpu structure
@@ -131,9 +128,9 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         tmp = array.array('f')
         tmp.read(tracer_file, int(np.round(head_size + 2*post + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times))
         tracer_file.close()
-        
+
         t = []
-        
+
         for j in range(n_times):
             t.append(tmp[off-1+j*llen])
             data.xi = tmp[off+j*llen          : off+1*stride+j*llen]
@@ -169,7 +166,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
             mapping[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
                     np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
                     mapping_core[:,:,j,:]
-            
+
             # swap axes for post evaluation
             tracers = tracers.swapaxes(0, 1)
             mapping = mapping.swapaxes(0, 1)
@@ -184,24 +181,24 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm =
     Reads the fixed points files.
 
     call signature::
-    
+
       fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
-    
+
     Reads from the fixed points files. Returns the fixed points positions.
-    
+
     Keyword arguments:
-    
+
       *dataDir*:
         Data directory.
-        
+
       *fileName*:
         Name of the fixed points file.
-        
+
       *hm*:
         Header multiplication factor in case Fortran's binary data writes extra large
         header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
     """
-    
+
 
     class data_struct:
         def __init__(self):
@@ -218,17 +215,17 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm =
 
     # determine the file structure
     n_proc = dim.nprocx*dim.nprocy
-    
+
     data = []
 
     # total number of fixed points
     n_fixed = 0
-    
+
     # read the data from all cores
     for i in range(n_proc):
         fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = fixed_file.read(4*hm)
-        
+
         data.append(data_struct())
         eof = 0
         if tmp == '':
@@ -249,13 +246,13 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm =
             data[i].x.append(x)
             data[i].y.append(y)
             data[i].q.append(q)
- 
+
             tmp = fixed_file.read(4*hm)
             if tmp == '':
                 eof = 1
 
         fixed_file.close()
-        
+
     fixed = data_struct()
     for i in range(len(data[0].t)):
         fixed.t.append(data[0].t[i])
@@ -267,12 +264,12 @@ def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm =
         fixed.x.append(x)
         fixed.y.append(y)
         fixed.q.append(q)
-    
+
     fixed.t = np.array(fixed.t)
     fixed.x = np.array(fixed.x)
     fixed.y = np.array(fixed.y)
     fixed.q = np.array(fixed.q)
-    
+
     return fixed
 
 
@@ -282,24 +279,24 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
     Reads the fixed points files.
 
     call signature::
-    
+
       fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
-    
+
     Reads from the fixed points files. Returns the fixed points positions.
-    
+
     Keyword arguments:
-    
+
       *dataDir*:
         Data directory.
-        
+
       *fileName*:
         Name of the fixed points file.
-        
+
       *hm*:
         Header multiplication factor in case Fortran's binary data writes extra large
         header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
     """
-    
+
 
     class data_struct:
         def __init__(self):
@@ -316,13 +313,13 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
 
     # determine the file structure
     n_proc = dim.nprocx*dim.nprocy
-    
+
     data = []
 
     # read the data
     fixed_file = open(dataDir+fileName, 'rb')
     tmp = fixed_file.read(4*hm)
-    
+
     data = data_struct()
     eof = 0
     # length of longest array of fixed points
@@ -348,12 +345,12 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
         tmp = fixed_file.read(4*hm)
         if tmp == '':
             eof = 1
-            
+
         if fixedMax < len(x):
             fixedMax = len(x)
 
     fixed_file.close()
-    
+
     # add NaN to fill up the times with smaller number of fixed points
     fixed = data_struct()
     for i in range(len(data.t)):
@@ -363,13 +360,13 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
         fixed.y.append(data.y[i] + annex)
         fixed.q.append(data.q[i] + annex)
         fixed.fidx.append(data.fidx[i])
-    
+
     fixed.t = np.array(fixed.t)
     fixed.x = np.array(fixed.x)
     fixed.y = np.array(fixed.y)
     fixed.q = np.array(fixed.q)
     fixed.fidx = np.array(fixed.fidx)
-    
+
     return fixed
 
 
@@ -384,63 +381,63 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     Creates a movie file.
 
     call signature::
-    
+
       tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
                  fixedFile = 'fixed_points.dat', zlim = [],
                  head_size = 3, hm = 1,
                  imageDir = './', movieFile = 'fixed_points.mpg',
                  fps = 5.0, bitrate = 1800)
-    
+
     Plots the field line mapping together with the fixed points and creates
     a movie file.
-    
+
       *dataDir*:
         Data directory.
-        
+
       *tracerFile*:
         Name of the tracer file.
-        
+
       *fixedFile*:
         Name of the fixed points file.
 
       *zlim*:
         The upper limit for the field line mapping at which a field line is considered
         to have reached the upper boundary.
-      
+
       *head_size*:
         Size of the fortran header in binary data. Most of the time this is 3.
         For the St Andrews cluster it is 5.
-        
+
       *hm*:
         Header multiplication factor in case Fortran's binary data writes extra large
         header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
-        
+
       *imageDir*:
         Directory with the temporary png files.
-        
+
       *movieFile*:
         Output file for the movie. Ending should be 'mpg', since the compression
         format is mpg.
-        
+
       *fps*:
         Frames per second of the animation.
-        
+
       *bitrate*:
         Bitrate of the movie file. Set to higher value for higher quality.
     """
-    
-    
+
+
     # read the mapping and the fixed point positions
     tracers, mapping, t = read_tracers(dataDir = dataDir, fileName = tracerFile, zlim = zlim, head_size = head_size)
     fixed = read_fixed_points(dataDir = dataDir, fileName = fixedFile, hm = hm)
-    
+
     # read the parameters for the domain boundaries
     params = pc.read_param(quiet = True)
     domain = [params.xyz0[0], params.xyz1[0], params.xyz0[1], params.xyz1[1]]
-    
+
     # determine the how much faster the fixed pints have been written out than the color mapping
     advance = np.ceil(float(len(fixed.t))/len(mapping[0,0,:,0]))
-    
+
     # determine the colors for the fixed points
     colors = np.zeros(np.shape(fixed.q) + (3,))
     colors[:,:,:] = 0.
@@ -453,7 +450,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
             else:
                 colors[j,k,0] = colors[j,k,1] = (1+fixed.q[j,k]/np.max(np.abs(fixed.q[:,k])))
                 colors[j,k,2] = -fixed.q[j,k]/np.max(np.abs(fixed.q[:,k]))
-    
+
     # prepare the plot
     width = 6
     height = 6
@@ -485,8 +482,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     # convert the images into a mpg file
     mencodeCommand = "mencoder 'mf://"+imageDir+"images*.png' -mf type=png:fps="+np.str(fps)+" -ovc lavc -lavcopts vcodec=mpeg4:vhq:vbitrate="+np.str(bitrate)+" -ffourcc MP4S -oac copy -o "+movieFile
     os.system(mencodeCommand)
-    
+
     # remove the image files
     for fname in imageFiles:
         os.remove(fname)
-    

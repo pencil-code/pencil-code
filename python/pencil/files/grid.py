@@ -2,18 +2,18 @@
 #
 # read grid
 #
-# Author: J. Oishi (joishi@amnh.org). 
-# 
-# 
+# Author: J. Oishi (joishi@amnh.org).
+#
+#
 import numpy as N
 from npfile import npfile
 import os
-from param import read_param 
-from dim import read_dim 
+from param import read_param
+from dim import read_dim
 
 class read_grid:
 
-    def __init__(self, datadir='data/', proc=-1, ivar=-1, quiet=False, 
+    def __init__(self, datadir='data/', proc=-1, ivar=-1, quiet=False,
                  trim=False, format='native', param=None):
         """
         read grid from pencil code. if proc < 0, then load all data
@@ -22,7 +22,7 @@ class read_grid:
         datadir = os.path.expanduser(datadir)
         if param is None:
             param = read_param(datadir, quiet=quiet)
-        dim = read_dim(datadir, proc) 
+        dim = read_dim(datadir, proc)
         if dim.precision == 'D':
             precision = 'd'
         else:
@@ -34,7 +34,7 @@ class read_grid:
             totalvars = dim.mvar
 
         if proc < 0:
-            procdirs = filter(lambda s:s.startswith('proc'), 
+            procdirs = filter(lambda s:s.startswith('proc'),
                               os.listdir(datadir))
         else:
             procdirs = ['proc'+str(proc)]
@@ -49,7 +49,7 @@ class read_grid:
         dx_tilde = N.zeros(dim.mx, dtype=precision)
         dy_tilde = N.zeros(dim.my, dtype=precision)
         dz_tilde = N.zeros(dim.mz, dtype=precision)
-        
+
         for directory in procdirs:
             proc = int(directory[4:])
             procdim = read_dim(datadir, proc)
@@ -82,39 +82,39 @@ class read_grid:
             dx_tilde_loc = dx_tilde_raw[0:mxloc]
             dy_tilde_loc = dx_tilde_raw[mxloc:mxloc+myloc]
             dz_tilde_loc = dx_tilde_raw[mxloc+myloc:mxloc+myloc+mzloc]
-            
+
             if len(procdirs) >1:
                 if procdim.ipx == 0:
                     i0x = 0
                     i1x = i0x+procdim.mx
-                    i0xloc = 0 
+                    i0xloc = 0
                     i1xloc = procdim.mx
                 else:
-                    i0x = procdim.ipx*procdim.nx+procdim.nghostx 
+                    i0x = procdim.ipx*procdim.nx+procdim.nghostx
                     i1x = i0x+procdim.mx-procdim.nghostx
                     i0xloc = procdim.nghostx
                     i1xloc = procdim.mx
-                    
+
                 if procdim.ipy == 0:
                     i0y = 0
                     i1y = i0y+procdim.my
-                    i0yloc = 0 
+                    i0yloc = 0
                     i1yloc = procdim.my
                 else:
-                    i0y = procdim.ipy*procdim.ny+procdim.nghosty 
+                    i0y = procdim.ipy*procdim.ny+procdim.nghosty
                     i1y = i0y+procdim.my-procdim.nghosty
-                    i0yloc = procdim.nghosty 
+                    i0yloc = procdim.nghosty
                     i1yloc = procdim.my
-                        
+
                 if procdim.ipz == 0:
                     i0z = 0
                     i1z = i0z+procdim.mz
-                    i0zloc = 0 
+                    i0zloc = 0
                     i1zloc = procdim.mz
                 else:
-                    i0z = procdim.ipz*procdim.nz+procdim.nghostz 
+                    i0z = procdim.ipz*procdim.nz+procdim.nghostz
                     i1z = i0z+procdim.mz-procdim.nghostz
-                    i0zloc = procdim.nghostz 
+                    i0zloc = procdim.nghostz
                     i1zloc = procdim.mz
 
                 x[i0x:i1x] = x_loc[i0xloc:i1xloc]
@@ -126,7 +126,7 @@ class read_grid:
                 dx_tilde[i0x:i1x] = dx_tilde_loc[i0xloc:i1xloc]
                 dy_tilde[i0y:i1y] = dy_tilde_loc[i0yloc:i1yloc]
                 dz_tilde[i0z:i1z] = dz_tilde_loc[i0zloc:i1zloc]
-                
+
             else:
                 x = x_loc
                 y = y_loc
@@ -149,7 +149,7 @@ class read_grid:
             self.dx_1 = dz_1[dim.n1:dim.n2+1]
             self.dx_tilde = dx_tilde[dim.l1:dim.l2+1]
             self.dy_tilde = dy_tilde[dim.m1:dim.m2+1]
-            self.dx_tilde = dz_tilde[dim.n1:dim.n2+1]        
+            self.dx_tilde = dz_tilde[dim.n1:dim.n2+1]
         else:
             self.x = x
             self.y = y
@@ -160,7 +160,7 @@ class read_grid:
             self.dx_tilde = dx_tilde
             self.dy_tilde = dy_tilde
             self.dx_tilde = dz_tilde
-            
+
         self.t = t
         self.dx = dx
         self.dy = dy
