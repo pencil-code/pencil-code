@@ -28,6 +28,7 @@ module Hydro
   include 'record_types.h'
   include 'hydro.h'
 !
+  real, dimension (mx,3) :: uumx=0.
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.
   real, dimension (nz,3) :: guumz=0.
@@ -36,7 +37,8 @@ module Hydro
 !
   real :: u_out_kep=0.0
   logical, target :: lpressuregradient_gas=.false.
-  logical :: lcalc_uumean=.false.,lupw_uu=.false.,lcalc_uumeanz=.false.
+  logical :: lcalc_uumean=.false.,lupw_uu=.false.
+  logical :: lcalc_uumeanx=.false.,lcalc_uumeanz=.false.
   logical :: lcalc_uumeanxy=.false.,lcalc_uumeanxz=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
