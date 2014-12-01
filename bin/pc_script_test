@@ -55,7 +55,7 @@ BEGIN {
 }
 
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_module('Test::NumericFileComparator')
+Pencil::Util::use_pencil_perl_modules('Test::NumericFileComparator')
   or die;
 
 use Cwd qw/getcwd abs_path/;

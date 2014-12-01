@@ -53,7 +53,7 @@ eval 'use Pencil::Util';
 if ($@) {                       # Pencil::Util not found
     die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
-Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor')
+Pencil::Util::use_pencil_perl_modules('Pencil::DocExtractor')
   or die;
 
 use Getopt::Long;

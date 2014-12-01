@@ -20,18 +20,30 @@ use vars qw($VERSION);
 
 ##use critic
 
-$VERSION = '0.1';
+$VERSION = '0.2';
 
 # ---------------------------------------------------------------------- #
 
-sub use_pencil_perl_module {
-# Try to use a module from the Pencil Code lib/perl directory and give
+sub use_pencil_perl_modules {
+# Try to use modules from the Pencil Code lib/perl directory and give
 # useful advice if the module cannot be found.
 # E.g.
 #   use Pencil::Util;
-#   Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor') or die;
+#   Pencil::Util::use_pencil_perl_modules('Pencil::DocExtractor') or die;
 #   my $diag_doc = Pencil::DocExtractor->new([...]);
 #
+    my @modules = @_;
+
+    my $success = 1;
+    for my $module (@modules) {
+        $success &&= _use_one_module($module);
+    }
+    return $success;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub _use_one_module {
     my $module = shift;
 
     my $modulefile = $module;

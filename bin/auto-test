@@ -39,7 +39,7 @@ BEGIN {
 }
 
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_module('Pencil::ReadmeReader')
+Pencil::Util::use_pencil_perl_modules('Pencil::ReadmeReader')
   or die;
 
 use strict;

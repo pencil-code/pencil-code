@@ -87,8 +87,10 @@ BEGIN {
 }
 
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
-Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
+Pencil::Util::use_pencil_perl_modules(
+    'Pencil::ConfigFinder',
+    'Pencil::ConfigParser'
+    ) or die;
 
 use POSIX qw(strftime);
 use Cwd;

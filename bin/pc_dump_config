@@ -55,8 +55,10 @@ BEGIN {
 
 use Data::Dumper;
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
-Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
+Pencil::Util::use_pencil_perl_modules(
+    'Pencil::ConfigFinder',
+    'Pencil::ConfigParser'
+    ) or die;
 
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
