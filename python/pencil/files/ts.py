@@ -143,5 +143,17 @@ class TimeSeries:
         P.ion()
 
 
+    def __repr__(self):
+        count = len(self.t)
+        t_min = self.t.min()
+        t_max = self.t.max()
+        if count > 1:
+            dt = (t_max - t_min) / (count - 1)
+        else:
+            dt = N.NaN
+        return "TimeSeries(t=%g..%g, dt_avg=%4.2g): %s" \
+            % (t_min, t_max, dt, str(self.keys), )
+
+
 if __name__=='__main__':
     print TimeSeries.__doc__
