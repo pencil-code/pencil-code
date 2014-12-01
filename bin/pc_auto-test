@@ -887,17 +887,18 @@ sub test_timelimited_perl_cmd {
     my $t_ref = shift;
 
     print STDERR "\nRunning Perl command" if ($debug);
-    # To do: Redirect STDOUT and STDERR and connect to a string...
 
-    my ($error_count, $res) = (0, "[To do: Should store output here]");
+    my ($error_count, $res) = (0, '');
     eval {
-        local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n required
+        local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n is required here
         if ($time_limit != 0) {
             alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
         }
-        my ($good_count, $bad_count) = &$cmd();
-        $error_count += $bad_count;
+        my ($good, $bad, $output) = call_sub_catch_output($cmd);
+        $error_count += $bad;
+        $res .= $output if $bad;
         alarm 0;                # clear alarm
+        print STDERR "good: $good, bad: $bad, errors: $error_count\n" if $debug;
     };
     if ($@) {
         die unless $@ eq "timed out\n";  # propagate unexpected errors
@@ -912,6 +913,15 @@ sub test_timelimited_perl_cmd {
 
     my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
     return $res;           # Return output so we can analyze it if desired
+}
+# ---------------------------------------------------------------------- #
+sub call_sub_catch_output {
+# Call the given $cmd, intercepting output to stdout and stderr.
+# Return the return value of &$cmd() and a string containing the output.
+    my $cmd = shift;
+
+    my @retval = &$cmd();
+    return @retval, '';
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
