@@ -1,5 +1,0 @@
-#
-#  original location and name of files
-#
-convert ~/pencil-code/doc/figs/pauto-tests.ps autotests.pnm; convert autotests.pnm autotests.png; rm autotests.pnm
-convert ~/pencil-code/doc/figs/pfile-size.ps code_size.pnm; convert code_size.pnm code_size.png; rm code_size.pnm
