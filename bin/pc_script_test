@@ -46,9 +46,11 @@
 
 use strict;
 
-use Cwd 'abs_path';
+use Cwd qw/getcwd abs_path/;
 use File::Basename;
 use File::Find;
+use File::Copy 'move';
+use Test::NumericFileComparator;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
@@ -58,6 +60,7 @@ my %opts;                     # Options hash for GetOptions
 ## Process command line
 GetOptions(\%opts,
            qw( -h   --help
+               -t=s --type=s
                     --debug
                -q   --quiet
                -v   --version
@@ -76,7 +79,20 @@ my $cmdname = (split('/', $0))[-1];
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
-my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
+my $default_types = "python:idl";
+my @types = split(/:/, $opts{'t'} || $opts{'type'}  || $default_types);
+my $quiet = $opts{'q'} || $opts{'quiet'} || '';
+
+my %type_map = (
+    'python'  => '.py',
+    'gdl'     => '.pro',
+    'idl'     => '.pro',
+);
+
+my %run_dispatch_table = (
+    python => \&run_python_script,
+    idl    => \&run_idl_script,
+);
 
 my @default_dirs = (
     "$ENV{PENCIL_HOME}/tests",
@@ -87,16 +103,153 @@ my @top_dirs = @ARGV
   ? @ARGV
   : @default_dirs;
 
+my $idl_interpreter;
+if (in_PATH('idl')) {
+    $idl_interpreter = 'idl';
+} elsif (in_PATH('gdl')) {
+    $idl_interpreter = 'gdl';
+} else {
+    $idl_interpreter = '';
+    @types = grep(!/^idl$/, @types); # remove 'idl' fromt test types
+}
+
+my @suffixes = get_suffixes(@types);
+
 my $status = 0;
-for my $test_dir (find_tests_dirs(@top_dirs)) {
-    my $status |= run_tests_in($test_dir);
+for my $test_dir (find_test_dirs(@top_dirs)) {
+    for my $test_script (find_test_scripts($test_dir)) {
+        my $status |= run_test($test_script);
+    }
 }
 
 exit $status;
 
 
+# ----------------------------------------------------------------------
 
-sub find_tests_dirs {
+sub run_test {
+# Run test for one script
+    my ($test_script) = @_;
+
+    my ($file, $type) = @$test_script;
+    my ($base, $dir, $suffix) = fileparse($file, @suffixes);
+    die "Unexpected script file <$file>" unless $suffix;
+    my $script = $base . $suffix;
+    my $outfile = "${base}.out";
+    my $reffile = "${base}.ref";
+
+    my $action = $run_dispatch_table{$type};
+    my $workdir = getcwd();
+    chdir $dir;
+    backup($outfile);
+
+    my $ok = 1;
+    $ok &= &$action($script);
+    $ok &= compare_files($reffile, $outfile);
+
+    chdir $workdir;
+}
+
+
+sub run_python_script {
+    my ($file) = @_;
+
+    my $ok;
+    debug("Running Python script $file from ", getcwd());
+    my $status = system('python', $file);
+    debug("  -> status: ", $status + 0, "\n");
+    return $status == 0;
+}
+
+
+sub run_idl_script {
+    my ($file) = @_;
+
+    my $ok;
+    debug("Running IDL script $file using $idl_interpreter");
+    my $status = system($idl_interpreter, $file);
+    debug("  -> status: ", $status + 0, "\n");
+    return $status == 0;
+}
+
+
+sub compare_files {
+    my ($reference, $actual) = @_;
+
+    my $comparator = Test::NumericFileComparator->new($reference);
+
+    # Compare file to reference data
+    my @message = $comparator->compare($actual);
+    if (@message) {
+        print "File $actual differs: @message\n";
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub in_PATH {
+# Check whether an executable is available in the execution PATH
+    my ($file) = @_;
+
+    foreach my $path (split(/:/,$ENV{PATH})) {
+        if (-x "$path/$file") { return 1; }
+    }
+    return 0;
+}
+
+
+sub backup {
+# Move $file to $file.old if applicable
+# An existing backup file will be overwritten without further ado.
+    my ($file) = @_;
+
+    if (-e $file) {
+        move $file, "${file}.old";
+    }
+}
+
+
+sub get_suffixes {
+# Map a list of file types to a list of supported suffices.
+    my @types = @_;
+
+    my @suffixes;
+    for my $type (@types) {
+        push @suffixes, type_to_suffix($type);
+    }
+    return @suffixes;
+}
+
+
+sub type_to_suffix {
+# Map test type (e.g. 'idl') to suffix of executable files ('pro' in the
+# example)
+    my ($type) = @_;
+
+    my $suffix = $type_map{$type};
+    if (defined $suffix) {
+        return $suffix;
+    } else {
+        die "Unknown test type <$type>\n";
+    }
+}
+
+
+sub suffix_to_type {
+# Map suffix (e.g. '.pro') to enabled test type (e.g. 'idl')
+    my ($suffix) = @_;
+
+    for my $type (@types) {
+        if ($type_map{$type} eq $suffix) {
+            return $type;
+        }
+    }
+    die "Unknown test file suffix <$suffix>\n";
+}
+
+
+sub find_test_dirs {
 # Find all test directories at or below the given @top_dirs.
 # We do not recurse further into identified test directories.
     my @top_dirs = @_;
@@ -104,22 +257,22 @@ sub find_tests_dirs {
     my @dirs;
     for my $dir (@top_dirs) {
         $dir = abs_path($dir);
-        if (is_tests_dir($dir)) {
+        if (is_test_dir($dir)) {
             push @dirs, $dir;
         } else {
             File::Find::find({
-                wanted => sub {
-                    my $name = $File::Find::name;
-                    if (is_tests_dir($name)) {
-                        push @dirs, $name;
-                        $File::Find::prune = 1;
-                    }
+                    wanted => sub {
+                        my $name = $File::Find::name;
+                        if (is_test_dir($name)) {
+                            push @dirs, $name;
+                            $File::Find::prune = 1;
+                        }
+                    },
+                    follow => 1,       # follow symlinks
+                    follow_skip => 2,  # ignore duplicates
                 },
-                follow => 1,
-                follow_skip => 2,
-            },
-            $dir
-        );
+                $dir
+            );
         }
     }
 
@@ -127,7 +280,34 @@ sub find_tests_dirs {
 }
 
 
-sub is_tests_dir {
+sub find_test_scripts {
+# Find all test scripts below any of @dir.
+# A test script has a known suffix and is executable.
+# Return an array ref [$filename, $type]
+    my @dirs = @_;
+
+    my @scripts;
+    for my $dir (@dirs) {
+        File::Find::find({
+                wanted => sub {
+                    my $name = $File::Find::name;
+                    my $type = is_test_script($name);
+                    if ($type) {
+                        push @scripts, [$name, $type];
+                    }
+                },
+                follow => 1,       # follow symlinks
+                follow_skip => 2,  # ignore duplicates
+            },
+            $dir
+        );
+    }
+
+    return @scripts;
+}
+
+
+sub is_test_dir {
 # Does the given $path represent a test directory?
     my ($path) = @_;
 
@@ -136,11 +316,38 @@ sub is_tests_dir {
 }
 
 
-sub run_tests_in {
-    my ($test_dir) = @_;
+sub is_test_script {
+# Does the given $path represent a test script?
+# Return the test type if it does, '' otherwise
+    my ($path) = @_;
 
-    return 0;
-    # Should do something instead
+    my ($name, $dir, $suffix) = fileparse($path, @suffixes);
+    if ((-x $path) && $suffix) {
+        return suffix_to_type($suffix);
+    } else {
+        return '';
+    }
+}
+
+
+sub debug {
+    my @args = @_;
+
+    if ($debug) {
+        my $string = join(' ', @args);
+        chomp($string);
+        print "$string\n";
+    }
+}
+
+
+sub printopts {
+# Print command line options
+    my ($optsref) = @_;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+        print STDERR "\$opts{$opt} = '$opts{$opt}'\n";
+    }
 }
 
 
