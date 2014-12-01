@@ -1,0 +1,25 @@
+min(lnrho): -1.76792e-09
+avg(lnrho): 1.02304e-09
+max(lnrho): 5.79895e-09
+std(lnrho): 2.25633e-09
+
+min(ss): 1.79004e-21
+avg(ss): 1.5164e-19
+max(ss): 5.83741e-19
+std(ss): 1.74554e-19
+
+min(ux): -2.93577e-09
+avg(ux): 0
+max(ux): 2.93577e-09
+std(ux): 1.11641e-09
+
+min(uy): -4.4115e-09
+avg(uy): -2.12793e-17
+max(uy): 4.4115e-09
+std(uy): 1.40763e-09
+
+min(uz): -2.04884e-09
+avg(uz): 2.6831e-10
+max(uz): 2.42804e-09
+std(uz): 1.13227e-09
+
