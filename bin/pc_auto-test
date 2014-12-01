@@ -235,6 +235,7 @@ my $help  = 0;
 my $itest = 1;
 my $indi_fmt = '%-17s';        # allow that much space for indicators like
                                # `[double]' or `[KEEP_RELOADING]'
+my $skip_end_block = 0;
 
 my $usage =
 "Usage:  $cmdname [options] [dir1 [dir2 [..]]]
@@ -944,7 +945,7 @@ sub call_sub_catch_output {
         }
         close $read_retval_handle;
     } else {                    # child --> run &$cmd
-        $nosummary = 1;         # skip END block
+        $skip_end_block = 1;    # don't remove lock, etc. yet
         open(STDERR, ">& STDOUT"); # also redirect STDERR to $comm
         @retval = &$cmd();
 
@@ -1589,6 +1590,9 @@ sub get_maintainers {
 
 ## Summarize results
 END {
+
+    exit 0 if $skip_end_block;
+
     unless ($help || $nosummary || $list_only) {
         print "\n" . "-" x 70 . "\n";
 
