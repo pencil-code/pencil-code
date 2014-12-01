@@ -252,7 +252,7 @@ sub _run_test {
     backup($outfile);
     my $ok = 1;
 
-    my $interpreter = $self->{INTERPRETERS}{$type};
+    my $interpreter = $self->{INTERPRETERS}->{$type};
     my @cmd = split(/\s+/, $interpreter);
     $ok &= (system(@cmd, $file) == 0);
 
@@ -291,6 +291,7 @@ $test_type, or undef.
 sub find_interpreter_for {
     my ($self, $test_type) = @_;
 
+    return $self->{INTERPRETERS}->{$test_type};
 }
 
 
@@ -300,7 +301,7 @@ All supported test types.
 
 =cut
 
-
+@default_types = keys {get_default_interpreters()};
 
 =item B<Test::ScriptTester::get_default_interpreters>()
 
