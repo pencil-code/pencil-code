@@ -148,12 +148,15 @@ sub format_comparison {
     my @violated_accuracies = ();
     if (! $self->_equal_abs($a, $b)) {
         push @violated_accuracies,
-          sprintf("absolute accuracy %g", $self->{ABS_ACC});
+          sprintf("absolute accuracy %g", $self->{ABS_ACC})
+            if $self->{ABS_ACC} > 0;
     }
     if (! $self->_equal_rel($a, $b)) {
         push @violated_accuracies,
-          sprintf("relative accuracy %g", $self->{REL_ACC});
+          sprintf("relative accuracy %g", $self->{REL_ACC})
+            if $self->{REL_ACC} > 0;
     }
+    @violated_accuracies = ("strict comparison") unless @violated_accuracies;
     my $reason = join(', ', @violated_accuracies);
 
     if ($result == -1) {
