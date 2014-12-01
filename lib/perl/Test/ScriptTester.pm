@@ -311,10 +311,11 @@ sub get_default_interpreters {
     if (_in_PATH('idl')) {
         $idl_interpreter = 'idl';
     } elsif (_in_PATH('gdl')) {
-        $idl_interpreter = 'idl';
+        $idl_interpreter = 'gdl';
     } elsif (_in_PATH('gnudl')) {
         $idl_interpreter = 'gnudl';
     }
+
     if (defined $idl_interpreter) {
         $interpreters{'idl'} = $idl_interpreter;
     }
