@@ -58,11 +58,11 @@ Test::NumericFileComparator - Compare numbers in files.
 Test::NumericFileComparator compares numerical data from files.
 The input file can be either in column format:
 
-  # [Maybe
-  #  some comment lines]
-  [#:names: var1 var2 var3 [...]]
+  [# Maybe]
+  [#  some comment lines]
+  [#:name: var1 var2 var3 [...]]
   [#--------var1-var2-var3-[...]]
-  [#:accuracies: acc1 acc2 acc3 [...]]
+  [#:accuracy: acc1 acc2 acc3 [...]]
   <var1_val1> <var2_val1> <var3_val1> [...]
   <var1_val2> <var2_val2> <var3_val2> [...]
   [...]
@@ -108,8 +108,8 @@ or
 
 Alternativly, the input file can be in line format:
 
-  # [Maybe
-  #  some comment lines]
+  [# Maybe
+  [# some comment lines]
   var1 : [acc1 :] <var1_val1> [<var1_val2> ... ] [# comment]
   var2 : [acc2 :] <var2_val1> [<var2_val2> ... ] [# comment]
   [...]
@@ -127,7 +127,23 @@ or
   Pressure      : 1.5e-7 : 0.6345238 0.6345238 0.6345238  # slice (5,7,3:5)
   Temp(5,7,3:5) : 0.8e-2 : 0.7543 0.7411 0.7123
 
-Note that the accuracies acc1, etc. are absolute accuracies.
+Note that the colon (:) as separator must be followed by at least one
+space. Thus,
+
+  Temp(5,7,3:5): 0.8e-2: 0.7543 0.7411 0.7123
+
+is parsed correctly, but
+
+  Temp(5,7,3:5) :0.8e-2 :0.7543 0.7411 0.7123
+
+is not, and nor is
+
+  Temp(5,7,3: 5) : 0.8e-2 : 0.7543 0.7411 0.7123
+
+
+For both formats, the accuracies acc1, etc. are absolute accuracies.
+If no accuracy is specified, for each column / line, an absolute accuracy
+of 1.5 times the last digit of the largest number (by modulus) is used.
 
 
 =head2 Methods
@@ -188,7 +204,8 @@ sub new {
 
 =item B<$reader-E<gt>compare>($file)
 
-Compare the given file to the reference data.
+Compare the given file to the reference data, using the accuracies defined
+by the reference data (i.e. any accuracies specified in $file are ignored).
 
 The data file may define extra columns or values compared to the reference
 data, but the comparison fails if any of the expected columns or values is
