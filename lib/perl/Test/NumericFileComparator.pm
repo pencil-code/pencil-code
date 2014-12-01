@@ -329,7 +329,9 @@ sub _read_file_in_column_format {
 
     my @columns;
 
+    my $linenum = 0;
     while (defined(my $line = <$fh>)) {
+        $linenum++;
         chomp($line);
         next if $line =~ /^ \s * $/x;  # empty line
         if ($line =~ /^
@@ -364,7 +366,7 @@ sub _read_file_in_column_format {
                 push $columns[$i], $items[$i];
             }
         } else {
-            croak "File $file: Unexpected line in column format: <$line>\n";
+            croak "File $file: Unexpected line $linenum in column format: <$line>\n";
         }
     }
     close $fh;
@@ -390,7 +392,9 @@ sub _read_file_in_line_format {
 
     my @columns;                # in fact rows, but stick to names used above
 
+    my $linenum = 0;
     while (defined(my $line = <$fh>)) {
+        $linenum++;
         next if $line =~ /^\s*$/;  # empty line
         next if $line =~ /^\s*#/;  # comment line
         $line =~ s{#.*}{};  # strip trailing comments
@@ -418,7 +422,7 @@ sub _read_file_in_line_format {
             my ($var, $acc) = ($+{variable}, $+{accuracy});
             my @vals = split('\s+', $+{values});
             if ($var ~~ @variables) {
-                croak "Duplicate variable '$var' in file $file\n";
+                croak "Duplicate variable '$var' in file $file:$linenum\n";
             }
 
             push @variables, $var;
@@ -429,7 +433,7 @@ sub _read_file_in_line_format {
                 $accuracies{$var} = $acc;
             }
         } else {
-            croak "File $file: Unexpected line in line format: <$line>\n";
+            croak "File $file: Unexpected line $linenum in line format: <$line>\n";
         }
     }
     close $fh;
