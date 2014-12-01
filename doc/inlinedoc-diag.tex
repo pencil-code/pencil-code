@@ -13,9 +13,9 @@
 %%   advective_gauge.f90
 %%   anelastic.f90
 %%   bfield.f90
-%%   blame.f90
 %%   chemistry.f90
 %%   coronae.f90
+%%   cosmicray_current.f90
 %%   density_stratified.f90
 %%   detonate.f90
 %%   entropy_anelastic.f90
@@ -216,7 +216,8 @@
   \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
   \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
   \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
-  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$
+                    $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
   \var{udpxxm}    & components of symmetric tensor
                     $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
 \midrule
@@ -616,22 +617,6 @@
   \var{vAmin}     & $\min v_A$ \\
   \var{vAm}       & $\langle v_A\rangle$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{blame.f90}} \\
-\midrule
-  \var{rhom}      & $\left<\varrho\right>$
-                    \quad(mean density) \\
-  \var{rhomxmask} & $\left<\varrho\right>$ for
-                    the density_xaver_range \\
-  \var{rhomzmask} & $\left<\varrho\right>$ for
-                    the density_zaver_range \\
-  \var{rhomin}    & $\min(\rho)$ \\
-  \var{rhomax}    & $\max(\rho)$ \\
-  \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
-  \var{totmass}   & $\int\varrho\,dV$ \\
-  \var{mass}      & $\int\varrho\,dV$ \\
-  \var{vol}       & $\int\,dV$ (volume) \\
-  \var{grhomax}   & $\max (|\nabla \varrho|)$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{Y1m}       & $\left<Y_1\right>$ \\
@@ -739,6 +724,11 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
+\midrule
+  \multicolumn{2}{c}{Module \file{cosmicray_current.f90}} \\
+\midrule
+  \var{ekincr}    & $\left<{1\over2}\varrho\uv_{\rm cr}^2\right>$ \\
+  \var{ethmcr}    & $\left<\varrho_{\rm cr} e_{\rm cr}\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density_stratified.f90}} \\
 \midrule
