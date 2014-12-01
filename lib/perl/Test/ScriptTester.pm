@@ -14,7 +14,12 @@ package Test::ScriptTester;
 
 use warnings;
 use strict;
+use Cwd qw/getcwd abs_path/;
 use Carp;
+use File::Basename;
+use File::Copy 'move';
+use File::Find;
+use Test::NumericFileComparator;
 use vars qw($VERSION);
 
 use feature 'say';
@@ -90,7 +95,11 @@ and the <test_name>.out file is compared to the reference data
 =cut
 
 
+our (@default_types, @types, %type_map);
+
+
 =item B<Test::ScriptTester-E<gt>new>($dirs, $interpreters)
+      B<Test::ScriptTester-E<gt>new>($dirs)
 
 Create a new object that searches the given directories
 
@@ -100,19 +109,20 @@ and uses the given interpreters, e.g.
 
   {'python' => 'python', 'idl' => '/usr/bin/gdl'} )
 
-Only test types appearing as keys in the interpreters map are run.
-To get the default map of interpreters, use
+If no interpreter map ref is given, use the default map as returned by
 I<Test::ScriptTests::get_default_interpreters>().
+
+Only test types listed in the interpreters map are run.
 
 =cut
 
 sub new {
 #
-#   Test::ScriptTester->new($dirs_ref, $interpreters_ref);
-#   $tester->new($dirs_ref, $interpreters_ref);
+#   Test::ScriptTester->new($dirs_ref [, $interpreters_ref]);
+#   $tester->new($dirs_ref [, $interpreters_ref]);
 #
     my $proto = shift;          # either classref or object ref or string
-    my @argv  = @_;
+    my ($dirs_ref, $interpreters_ref)  = @_;
 
     my $self = {};
     my $class;
@@ -123,13 +133,30 @@ sub new {
         $class = $proto;
     }
 
-    if (@argv == 2) {
-        ($self->{ABS_ACC}, $self->{REL_ACC}) = @argv;
+    $self->{DIRS} = $dirs_ref;
+
+    if (defined $interpreters_ref) {
+        $self->{INTERPRETERS} = $interpreters_ref;
     } else {
-        croak('Usage: Test::NumberComparator->new($abs_acc, $rel_acc)');
+        my %interpreters = get_default_interpreters();
+        $self->{INTERPRETERS} = \%interpreters;
     }
 
-    $self->{DEBUG} = 0;
+    my %full_type_map = (       # all known suffixes and types
+        '.py'  => 'python',
+        '.pro' => 'idl',
+        );
+    my %type_map = ();
+    while (my ($suffix, $type) = each %full_type_map) {
+        if (exists $self->{INTERPRETERS}->{$type}) {
+            $type_map{$suffix} = $type;
+        }
+    }
+    $self->{TYPE_MAP} = \%type_map;
+
+    $self->{SUFFIXES} = [ keys %{$self->{TYPE_MAP}} ];
+
+    $self->{DEBUG} = 1;  # @@@
 
     bless $self, $class;
     return $self;
@@ -140,24 +167,14 @@ sub new {
 
 Run all tests supported by this $tester.
 
+Return counts ($good_count, $bad_count) of successful and failed tests.
+
 =cut
 
 sub run {
-    my $self = shift;
-    my ($a, $b) = @_[0, 1];
+    my ($self) = @_;
 
-    if (_is_special_ieee($a)) {
-        return _compare_special_ieee($a, $b);
-    }
-    if (_is_special_ieee($b)) {
-        return - _compare_special_ieee($b, $a);
-    }
-
-    if ($self->equal($a, $b)) {
-        return 0;
-    } else {
-        return $a <=> $b;
-    }
+    return $self->run_tests($self->list_tests());
 }
 
 
@@ -171,10 +188,21 @@ Returns a list of list refs
 =cut
 
 sub list_tests {
-    my $self = shift;
-    my ($a, $b) = @_[0, 1];
+    my ($self) = @_;
 
-    return $self->_equal_abs($a, $b) || $self->_equal_rel($a, $b);
+    my @test_dirs;
+    foreach my $dir (@{$self->{DIRS}}) {
+        push @test_dirs, $self->_find_test_dirs($dir);
+    }
+
+    my @tests;
+    foreach my $testdir (@test_dirs) {
+        foreach my $test_script ($self->_find_test_scripts($testdir)) {
+            push @tests, [$testdir, $test_script];
+        }
+    }
+
+    return @tests;
 }
 
 
@@ -185,60 +213,152 @@ Run the given tests.
 Each test is a list ref [$tests_dir, $script], where $script is the path
 to an executable script file, either relative to $tests_dir, or absolute.
 
+Return counts ($good_count, $bad_count) of successful and failed tests.
+
 =cut
 
 sub run_tests {
-    my $self = shift;
-    my ($a, $b) = @_[0, 1];
+    my ($self, @tests) = @_;
 
-    my $result = $self->compare($a, $b);
-
-    if ($result == 0) {
-        return sprintf(
-            "$a == $b up to both accuracies (abs: %g, rel: %g)",
-            $self->{ABS_ACC}, $self->{REL_ACC}
-        );
+    my ($good_count, $bad_count) = (0, 0);
+    foreach my $test (@tests) {
+        my $good = $self->_run_test($test);
+        if ($good) {
+            $good_count++;
+        } else {
+            $bad_count++;
+        }
     }
-
-    my @violated_accuracies = ();
-    if (! $self->_equal_abs($a, $b)) {
-        push @violated_accuracies,
-          sprintf("absolute accuracy %g", $self->{ABS_ACC})
-            if $self->{ABS_ACC} > 0;
-    }
-    if (! $self->_equal_rel($a, $b)) {
-        push @violated_accuracies,
-          sprintf("relative accuracy %g", $self->{REL_ACC})
-            if $self->{REL_ACC} > 0;
-    }
-    @violated_accuracies = ("strict comparison") unless @violated_accuracies;
-    my $reason = join(', ', @violated_accuracies);
-
-    if ($result == -1) {
-        return sprintf("$a < $b according to %s", $reason);
-    } elsif ($result == 1) {
-        return sprintf("$a > $b according to %s", $reason);
-    } else {
-        croak "Unexpected: \$self->compare($a, $b) returned nonsense.";
-    }
-
+    return ($good_count, $bad_count);
 }
+
+
+sub _run_test {
+    my ($self, $test_ref) = @_;
+
+    my ($tests_dir, $test) = @$test_ref;
+    my ($file, $type) = @$test;
+    my ($base, $dir, $suffix) = fileparse($file, @{$self->{SUFFIXES}});
+    my $script = $base . $suffix;
+    my $outfile = "${base}.out";
+    my $reffile = "${base}.ref";
+
+    $self->debug("Running $type script $script from $tests_dir / $dir");
+    my $workdir = getcwd();
+    chdir $tests_dir;
+
+    backup($outfile);
+    my $ok = 1;
+
+    my $interpreter = $self->{INTERPRETERS}{$type};
+    my @cmd = split(/\s+/, $interpreter);
+    $ok &= (system(@cmd, $file) == 0);
+
+    if (-e $reffile) {
+        if (-e $outfile) {
+            $ok &= compare_files($reffile, $outfile);
+        } else {
+            warn "Script $script did not write expected file $outfile\n";
+            $ok = 0;
+        }
+    }
+
+    chdir $workdir;
+    return $ok;
+}
+
+
+sub debug {
+    my ($self, @args) = @_;
+
+    if ($self->{DEBUG}) {
+        my $string = join(' ', @args);
+        chomp($string);
+        print "$string\n";
+    }
+}
+
+
+=item @default_types
+
+All supported test types.
+
+=cut
+
 
 
 =item B<get_default_interpreters>()
 
-Return a hash ref
+Return a hash
 
-  { type1 => interpreter1,
+  ( type1 => interpreter1,
     type2 => interpreter1, ...
-  }
+  )
 
-representing the default interpreters (hash values) for all known test
-types (hash keys).
+representing the default interpreters (values) for all known test
+types (keys).
 
 =cut
 
 sub get_default_interpreters {
+    my ($self) = @_;
+
+    my %interpreters = (
+        'python' => 'python',
+        );
+
+    my $idl_interpreter;
+    if (_in_PATH('idl')) {
+        $idl_interpreter = 'idl';
+    } elsif (_in_PATH('gdl')) {
+        $idl_interpreter = 'idl';
+    } elsif (_in_PATH('gnudl')) {
+        $idl_interpreter = 'gnudl';
+    }
+    if (defined $idl_interpreter) {
+        $interpreters{'idl'} = $idl_interpreter;
+    }
+
+    return %interpreters;
+}
+
+
+sub compare_files {
+    my ($reference, $actual) = @_;
+
+    my $comparator = Test::NumericFileComparator->new($reference);
+
+    # Compare file to reference data
+    my @message = $comparator->compare($actual);
+    if (@message) {
+        print "File $actual differs: @message\n";
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+
+sub backup {
+# Move $file to $file.old if applicable
+# An existing backup file will be overwritten without further ado.
+    my ($file) = @_;
+
+    if (-e $file) {
+        move $file, "${file}.old";
+    }
+}
+
+
+sub _in_PATH {
+# Check whether an executable is available in the execution PATH
+    my $file = shift;
+
+    foreach my $path (split(/:/,$ENV{PATH})) {
+        if (-x "$path/$file") { return 1; }
+    }
+    return 0;
+}
 
 
 =item B<find_interpreter_for>($test_type)
@@ -249,12 +369,142 @@ $test_type, or undef.
 =cut
 
 sub find_interpreter_for {
+    my ($self, $test_type) = @_;
+
+}
+
+
+# ---------------------------------------------------------------------- #
+
+
+sub _find_test_dirs {
+# Find all test directories at or below the given @top_dirs.
+# We do not recurse further into identified test directories.
+    my ($self, @top_dirs) = @_;
+
+    my @dirs;
+    for my $dir (@top_dirs) {
+        $dir = abs_path($dir);
+        if ($self->_is_test_dir($dir)) {
+            push @dirs, $dir;
+        } else {
+            File::Find::find({
+                    wanted => sub {
+                        my $name = $File::Find::name;
+                        if ($self->_is_test_dir($name)) {
+                            push @dirs, $name;
+                            my $dummy = $File::Find::prune;  # suppress
+                                                             # 'used only
+                                                             # once'
+                                                             # warning
+                            $File::Find::prune = 1;
+                        }
+                    },
+                    follow => 1,       # follow symlinks
+                    follow_skip => 2,  # ignore duplicates
+                },
+                $dir
+            );
+        }
+    }
+
+    return @dirs;
+}
+
+
+sub _is_test_dir {
+# Does the given $path represent a test directory?
+    my ($self, $path) = @_;
+
+    my ($name, undef, undef) = fileparse($path);
+    return (-d $path) && ($name =~ '^tests$');
+}
+
+
+sub _find_test_scripts {
+# Find all test scripts below directory $dir.
+# A test script has a known suffix and is executable.
+# Return an array ref [$filename, $type], where
+# $filename is the file name of the script relative to the test dir.
+    my ($self, $dir) = @_;
+
+    my @scripts;
+    File::Find::find({
+            wanted => sub {
+                my $name = $File::Find::name;
+                my $type = $self->_is_test_script($name);
+                if ($type) {
+                    push @scripts, [_make_relative($name, $dir), $type];
+                }
+            },
+            follow => 1,       # follow symlinks
+            follow_skip => 2,  # ignore duplicates
+        },
+        $dir
+    );
+
+    return @scripts;
+}
+
+
+sub _is_test_script {
+# Does the given $path represent a test script?
+# Return the test type if it does, '' otherwise
+    my ($self, $path) = @_;
+
+    my ($name, $dir, $suffix) = fileparse($path, @{$self->{SUFFIXES}});
+
+    if ((-x $path) && $suffix) {
+        return $self->{TYPE_MAP}->{$suffix};
+    } else {
+        return '';
+    }
+}
+
+
+sub _get_suffixes {
+# Map a list of file types to a list of supported suffices.
     my $self = shift;
-    my ($a, $b) = @_[0, 1];
+    my @types = @_;
 
-    my $deviation = abs($a - $b);
-    return $deviation <= $self->{ABS_ACC};
+    my @suffixes;
+    for my $type (@types) {
+        push @suffixes, $self->_type_to_suffix($type);
+    }
+    return @suffixes;
+}
 
+
+sub _type_to_suffix {
+# Map test type (e.g. 'idl') to suffix of executable files ('pro' in the
+# example)
+    my ($self, $type) = @_;
+
+    my $suffix = $self->{TYPE_MAP}->{$type};
+    if (defined $suffix) {
+        return $suffix;
+    } else {
+        die "Unknown test type <$type>\n";
+    }
+}
+
+
+sub _make_relative {
+# Return $path relative to $dir.
+# This is a dumb version that assumes (and verifies) that $path is a
+# subpath of $dir.
+# In cases where a good relative path would require leading '..', this
+# routine will just cry foul.
+    my ($path, $dir) = @_;
+
+    my $abs_path = abs_path($path);
+    my $abs_dir = abs_path($dir);
+    my ($undef, $rel_path) = ($abs_path =~ m{^($abs_dir)/*(.*)});
+    if (defined $rel_path) {
+        return $rel_path;
+    } else {
+        croak("_make_relative() requires that $path is below \$dir");
+    }
 }
 
 
@@ -267,8 +517,7 @@ sub find_interpreter_for {
   use Test::ScriptTester;
 
   my $tester = Test::ScriptTester->new(
-      ["$env{PENCIL_HOME}/tests"],
-      \Test::ScriptTester::get_default_interpreters()
+      ["$env{PENCIL_HOME}/tests"]
       );
   $tester->run();  # Run all test scripts under $PENCIL_HOME/tests/
 
