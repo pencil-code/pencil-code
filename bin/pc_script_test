@@ -157,8 +157,14 @@ sub run_test {
 
     my $ok = 1;
     $ok &= &$action($script);
-    $ok &= compare_files($reffile, $outfile);
-
+    if (-e $reffile) {
+        if (-e $outfile) {
+            $ok &= compare_files($reffile, $outfile);
+        } else {
+            warn "Script $script did not write expected file $outfile\n";
+            $ok = 0;
+        }
+    }
     chdir $workdir;
 }
 
