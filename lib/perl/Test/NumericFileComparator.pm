@@ -19,6 +19,8 @@ use warnings;
 use strict;
 use Carp;
 use Math::Complex;
+use Test::NumberComparator;
+
 use vars qw($VERSION);
 
 use feature 'say';
@@ -140,9 +142,11 @@ Note that the accuracies acc1, etc. are absolute accuracies.
 ## Object constructor
 ##
 
-=item B<Test::NumberComparator-E<gt>new>('I<reference_file>')
+=item B<Test::NumericFileComparator-E<gt>new>('I<reference_file>')
 
-Create a new object.
+Create a new object, reading the reference data from I<reference_file>.
+The reference data define the variable list, the accuracies, and the
+count of data values.
 
 =cut
 
@@ -183,30 +187,70 @@ sub new {
 ## Methods
 ##
 
-=item B<$reader-E<gt>get_content>($section)
+=item B<$reader-E<gt>compare>($file)
 
-Return content of the given section, or undef if the section doesn't exist.
+Compare the given file to the reference data.
 
-In list context, return a list of content lines.
-The lines are stripped of leading whitespace and the trailing newline
-character.
+The data file may define extra columns or values compared to the reference
+data, but the comparison fails if any of the expected columns or values is
+missing.
 
-In scalar context, return a string containing all lines joined with a
-newline character.
+Return an array of descriptive error messages with one entry for each
+variable that differs.
 
 =cut
 
-sub get_content {
+sub compare {
     my $self = shift();
-    my ($section) = @_;
+    my ($file) = @_;
 
-    my @lines = @{$self->{HASH}->{$section}};
-
-    if (wantarray()) {
-        return @lines;
-    } else {
-        return join("\n", @lines);
+    my %problems;
+    foreach my $var (@{$self->{VARS}}) {
+        $problems{$var} = [];
     }
+
+    my (undef, $val_ref, undef) = _parse($file);
+    my %reference = %{$self->{VALUES}};
+    my %actual = %$val_ref;
+    VAR: foreach my $var (@{$self->{VARS}}) {
+        my @column_ref = @{$reference{$var}};
+        my @column_act = @{$actual{$var}};
+        if (@column_act < @column_ref) {
+            push @{$problems{$var}},
+                sprintf("Expected %d values, got %d", );
+            next VAR;
+        }
+
+        my $abs_acc = $self->{ACCS}->{$var};
+        my $rel_acc = 0.0;
+        my $comparator = Test::NumberComparator->new($abs_acc, $rel_acc);
+        for (my $i = 0; $i < @column_ref; $i++) {
+            my $ref = $column_ref[$i];
+            my $act = $column_act[$i];
+            my $comparison = $comparator->compare($ref, $act);
+            if ($comparison != 0) {
+                push @{$problems{$var}},
+                    $comparator->format_comparison($ref, $act);
+            }
+        }
+
+    }
+
+    my @summary;
+    foreach my $var (@{$self->{VARS}}) {
+        my $prob = $problems{$var};
+        if (@$prob) {
+            my $message;
+            if ($self->{DEBUG}) {
+                $message = join("\n  ", @$prob);  # all diffs for this $var
+            } else {
+                $message = $prob->[0];  # only the first diff
+            }
+            push @summary, "$var: $message";
+        }
+    }
+
+    return @summary;
 }
 
 # ====================================================================== #
@@ -329,7 +373,7 @@ sub _max_abs_as_string {
 
     my $max_val = -$Math::Complex::Inf;
     my $max_string = '<UNDEFINED>';
-    for my $string (@strings) {
+    foreach my $string (@strings) {
         my $abs_val = abs(0 + $string);
         if ($abs_val > $max_val) {
             $max_string = $string;
@@ -397,7 +441,7 @@ sub _numerical_values {
         my $var = $variables[$i];
         my @col = @{$columns[$i]};
         $values{$var} = [];
-        for my $val_string (@col) {
+        foreach my $val_string (@col) {
             push @{$values{$var}}, 0 + $val_string;
         }
     }
