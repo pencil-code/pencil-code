@@ -42,9 +42,21 @@
 # -   Give some output [spinner or '.', or ...]
 # - summarize results
 
-# This would probably be painful in bash -> Perl.
-
 use strict;
+
+
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Test::NumericFileComparator')
+  or die;
 
 use Cwd qw/getcwd abs_path/;
 use File::Basename;
