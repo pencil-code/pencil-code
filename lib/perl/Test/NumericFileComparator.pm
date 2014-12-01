@@ -107,12 +107,12 @@ or
      40    0.27 0.0058  0.0449 14.4708 -0.4475 0.978 0.013
 
 
-Alternativly, the input file can be in 'record' format:
+Alternativly, the input file can be in line format:
 
   # [Maybe
   #  some comment lines]
-  var1: value1 [acc1]
-  var2: value2 [acc2]
+  var1: value1 [acc1] [# comment]
+  var2: value2 [acc2] [# comment]
   [...]
 
 e.g.
@@ -124,9 +124,9 @@ or
 
   # Reference data for pressure and temperature.
   # We print 4 decimals for temperature, but due to the phase of Jupiter's
-  # moons, we can only expect an accuracy of about 1e-2.
-  Pressure:    0.6345238  1.5e-7
-  Temperature: 0.7543     0.8e-2
+  # moons, we can only expect an accuracy of less than 1e-2.
+  Pressure: 0.6345238  1.5e-7  # should be 1.3e-7, but that doesn't work yet
+  Temperature: 0.7543  0.8e-2
 
 Note that the accuracies acc1, etc. are absolute accuracies.
 
