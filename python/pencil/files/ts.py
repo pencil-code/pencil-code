@@ -23,7 +23,7 @@ def read_ts(*args, **kwargs):
     return TimeSeries(*args, **kwargs)
 
 
-class TimeSeries:
+class TimeSeries(object):
     """
     TimeSeries -- holds pencil code time series data. each variable is
     represented by a data member of the class.
