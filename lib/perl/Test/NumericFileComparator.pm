@@ -634,12 +634,16 @@ sub _accuracy_from_num_string {
 # Return the accuracy of the given numeric string, i.e. a step of 1 in the
 # last decimal.
 #
-# Note that trailing zeros in the mantissa are not treated sepcial, i.e. a
+# Note that trailing zeros in the mantissa are not treated special, i.e. a
 # value of 100 is considered equal to 1.00e2, not 1.e-2.
 #
-# NaN or Inf values are not handled yet.
+# For values NaN or Inf, return 0.
 #
     my ($num_string) = @_;
+
+    if ($num_string =~ m{(inf|nan)}i) {
+        return 0.0;
+    }
 
     $num_string =~ /^
                     \s *
