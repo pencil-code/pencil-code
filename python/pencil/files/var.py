@@ -13,7 +13,6 @@
 import numpy as N
 from npfile import npfile
 import os
-import string
 import sys
 from param import read_param
 from index import read_index
