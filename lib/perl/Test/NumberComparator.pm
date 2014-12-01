@@ -133,7 +133,7 @@ out.
 
 
 sub format_comparison {
-    my $self = shift();
+    my $self = shift;
     my ($a, $b) = @_[0, 1];
 
     my $result = $self->compare($a, $b);
@@ -175,7 +175,7 @@ sub _equal_abs {
 # If $a and $b are equal up to our absolute accuracy, return true, else
 # return false.
 #
-    my $self = shift();
+    my $self = shift;
     my ($a, $b) = @_[0, 1];
 
     my $deviation = abs($a - $b);
@@ -189,7 +189,7 @@ sub _equal_rel {
 # If $a and $b are equal up to our relative accuracy, return true, else
 # return false.
 #
-    my $self = shift();
+    my $self = shift;
     my ($a, $b) = @_[0, 1];
 
     my $deviation = abs($a - $b);
@@ -202,7 +202,7 @@ sub _max {
 #
 # Return the maximum of two numbers
 #
-    my $self = shift();
+    my $self = shift;
     my ($a, $b) = @_[0, 1];
 
     if ($a >= $b) {
@@ -237,15 +237,15 @@ sub _max {
   $comparator->compare($a, $b) == 0 \
       or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
-  ($a, $b) = (1.0e-3, 0.99e-3);  equal within relative accuracy
+  ($a, $b) = (1.0e-3, 0.99e-3);  # equal within relative accuracy
   $comparator->compare($a, $b) == 0 \
       or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
 
-  ($a, $b) = (1.0e-3, 0.9e-3);  not equal
+  ($a, $b) = (1.0e-3, 0.9e-3);  # not equal
   $comparator->compare($a, $b) == +1 \
       or warn "Expected $a > $b, got ", $comparator->format_comparison($a, $b);
 
-  ($a, $b) = (1.0e-3, 1.1e-3);  not equal
+  ($a, $b) = (1.0e-3, 1.1e-3);  # not equal
   $comparator->compare($a, $b) == -1 \
       or warn "Expected $a < $b, got ", $comparator->format_comparison($a, $b);
 
