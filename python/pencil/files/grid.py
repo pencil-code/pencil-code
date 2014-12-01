@@ -38,11 +38,6 @@ class Grid(object):
         else:
             precision = 'f'
 
-        if param.lwrite_aux:
-            totalvars = dim.mvar+dim.maux
-        else:
-            totalvars = dim.mvar
-
         if proc < 0:
             procdirs = filter(lambda s:s.startswith('proc'),
                               os.listdir(datadir))
