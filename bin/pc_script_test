@@ -128,8 +128,10 @@ if (in_PATH('idl')) {
 my @suffixes = get_suffixes(@types);
 
 my $status = 0;
+my %record;
 for my $test_dir (find_test_dirs(@top_dirs)) {
     for my $test_script (find_test_scripts($test_dir)) {
+        notify($test_dir, $test_script, \%record);
         my $status |= run_test($test_script);
     }
 }
@@ -188,6 +190,19 @@ sub run_idl_script {
     my $status = system($idl_interpreter, $file);
     debug("  -> status: ", $status + 0, "\n");
     return $status == 0;
+}
+
+
+sub notify {
+    my ($test_dir, $test_script, $record_ref) = @_;
+    my ($script_file, $type) = @$test_script;
+    my %record = %$record_ref;
+
+    $script_file =~ s{$test_dir/}{};
+    if (! $record{$test_dir}++) {
+        print "$test_dir:\n";
+    }
+    print "    $script_file ($type)\n";
 }
 
 
