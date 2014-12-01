@@ -39,8 +39,10 @@ BEGIN {
 }
 
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_module('Pencil::ReadmeReader')
-  or die;
+Pencil::Util::use_pencil_perl_modules(
+    'Pencil::ReadmeReader',
+    'Test::NumericFileComparator',
+    ) or die;
 
 use strict;
 use constant NOQUIET     => 0;
@@ -940,69 +942,38 @@ sub test_results {
         my ($rdmsg,$diagn);
         print "    Validating results.. ";
         printf "$indi_fmt ", '';
+        my $ts_file = 'data/time_series.dat';
 
-        my @output;
-        if ($res_from_file) {
-            @output = read_lines('data/time_series.dat', $rdmsg);
-            if ($rdmsg) {
-                my_ok(0,1,"[$rdmsg]",$dir,"results");
-                return;
-            }
+        if (! -r $reference_out) {
+            my_ok(0, 1, "File $reference_out missing or unreadable",
+                  $dir, "results");
+            return;
+        }
+        if (! -r $ts_file) {
+            my_ok(0, 1, "File $ts_file missing or unreadable",
+                  $dir, "results");
+            return;
+        }
+        my $comparator = Test::NumericFileComparator->new($reference_out);
+        my @message = $comparator->compare($ts_file);
+        if (@message) {
+            my $msg = join(
+                "\n  ",
+                "Files $reference_out, $ts_file differ:", @message
+                );
+            $msg .= "\n";
+            $msg .= join("  \n", 'Expected:', read_lines($reference_out));
+            $msg .= "\n";
+            $msg .= join("  \n", 'Got:', read_lines($ts_file));
+            my_ok(0, 1, $msg, $dir, "results");
         } else {
-            @output = split(/[\n\r]+/,$res);
+            my_ok(0, 0, "", $dir, "results");
         }
-        my_ok(0,0,"",$dir,"results","quiet");
-
-        my @foutput = extract_results(\@output); # filtered output
-        if ($foutput[0] ne "$noheader") {
-            my @ref_output = read_lines($reference_out,$rdmsg);
-            if ($rdmsg) {
-                print " [$rdmsg]\n";
-            } else {
-                my $comp = compare_results(\@ref_output,\@foutput,$diagn);
-                my_ok($comp,1,$diagn,$dir,"results");
-            }
-        } else { # No header line found
-            warn " No header line found\n";
-            my_ok(0,1,join("\n",@output),$dir,"results");
-        }
-    }
-}
-# ---------------------------------------------------------------------- #
-sub extract_results {
-# Extract result lines (header line and numerical data) from the output of
-# the code
-    my $lineptr = shift;
-    my @lines = @$lineptr;
-
-    my @results = ();
-    my @labels = ();
-    my $body = 0;               # true after header line
-    my $ncols;
-
-    line: foreach my $line (@lines) {
-        unless ($body) {
-            # Before or at header line
-            next line unless ($line =~ /$headerpat/);
-            push @results, $line;
-            $body = 1;
-            @labels = grep { /\S/ } split(/-+/,$line); # ignore empty labels
-            $ncols = @labels;
-        } else {
-            # After header line
-            next unless ($line =~ /^(\s+$ieee_float){$ncols}\s*$/i);
-            push @results, $line;
-        }
-    }
-    if ($body) {
-        @results;
-    } else {
-        ($noheader);
     }
 }
 # ---------------------------------------------------------------------- #
 sub read_lines {
-# Read file an return hash of non-empty lines
+# Read file an return list of non-empty lines
     my $file = shift;
     my @lines = ();
     my $msg = "";
@@ -1019,144 +990,6 @@ sub read_lines {
     }
     $_[0] = $msg;
     @lines;
-}
-# ---------------------------------------------------------------------- #
-sub compare_results {
-# Compare two arrays of lines linewise; if all lines are the same, return
-# 1; if not, return 0 and write report to third argument
-    my $arr1 = shift;
-    my $arr2 = shift;
-
-    my @pref = ("< ", "> ", "  "); # prefixes to mark differing lines
-    my $n1 = $#$arr1;
-    my $n2 = $#$arr2;
-    my $N = ($n2>$n1 ? $n2 : $n1);
-    my $diagn = "";
-    my $equal = 1;
-    for my $i (0..$N) {
-        my $line1 = ($$arr1[$i] || ""); chomp $line1;
-        my $line2 = ($$arr2[$i] || ""); chomp $line2;
-        unless (compare_lines_fuzzily($line1,$line2)) {
-            $diagn .= $pref[0] . $line1 . "\n" if ($line1);
-            $diagn .= $pref[1] . $line2 . "\n" if ($line2);
-            $equal = 0;
-        } else {
-            if ($i == 0) {      # Keep header line for easier reading
-                $diagn .= $pref[2] . $line1 . "\n";
-            }
-        }
-    }
-    $_[0] = $diagn;             # the remaining argument (was the third one)
-    $equal;
-}
-# ---------------------------------------------------------------------- #
-sub compare_lines_fuzzily {
-# Compare the numerical values in two lines fuzzily. Return 1 if numbers
-# are approximately equal (differ by 1 or less in the last decimal), zero
-# otherwise.
-    my $xline = shift;
-    my $yline = shift;
-
-    my $equal = 1;
-
-    if ($xline =~ /$headerpat/) { # header lines --> string comparison
-        $equal = 0 unless ($xline eq $yline);
-    } else {                      #  diagnostic lines --> fuzzy comparison
-        my @x = split(/\s+/,$xline);
-        my @y = split(/\s+/,$yline);
-        @x = grep(/([0-9]|NaN|Inf)/i, @x);      # weed out empty entries
-        @y = grep(/([0-9]|NaN|Inf)/i, @y);
-
-        return 0 unless ($#x == $#y); # lengths must match
-        foreach my $i (0..$#x) {
-            my ($x,$y) = ($x[$i], $y[$i]);
-            $equal = 0 unless (compare_numbers_fuzzily($x,$y));
-            print STDERR "compare_lines_fuzzily: \$equal = $equal for <$x>, <$y>\n"
-              if ($debug);
-        }
-    }
-
-    return $equal;
-}
-# ---------------------------------------------------------------------- #
-sub compare_numbers_fuzzily {
-# Compare two numbers and return true if they differ only by one in the
-# last digit, else false.
-    my $x = shift;
-    my $y = shift;
-
-    my $debug = 0;
-
-
-    # Short-circuit NaN/Inf -- they will be taken care of as they will make
-    # any comparison fail
-    return 1 if (   ($x =~ /^([+-]?(NaN|Inf))$/i)
-                 || ($y =~ /^([+-]?(NaN|Inf))$/i) );
-
-    # Regexp for general float, groups into pre-exponent and
-    # post-exponent part
-    my $numeric = '((?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?)((?:[EeDd](?:[+-]?\d+))?)';
-    my ($x1,$x2) = ($x =~ /^\s*$numeric\s*$/);
-    $x2 = '' unless defined($x2);
-    print STDERR "(\$x1,\$x2) = ($x1,$x2)\n" if ($debug);
-
-    my ($y1,$y2) = ($y =~ /^\s*$numeric\s*$/);
-    $y2 = '' unless defined($y2);
-    print STDERR "(\$y1,\$y2) = ($y1,$y2)\n" if ($debug);
-
-    # Are $x, $y really numeric?
-    unless(defined($x1) && defined($y1)) {
-        warn "Not a numerical value: <$x> or <$y>\n";
-        return 0;
-    }
-
-    # Short-circuit identical numbers (so Perl's rounding errors to double
-    # precision can't screw them up)
-    return 1 if ("$x1#$x2" eq "$y1#$y2");
-
-    # Choose the longer string for decrementing/incrementing, so we
-    # correctly compare stuff like [1.3599, 1.36] (succeeds) and [1.3598,
-    # 1.36] (fails) in both directions.
-    if (length($x1) < length($y1)) {
-        ($x,$x1,$x2, $y,$y1,$y2) = ($y,$y1,$y2, $x,$x1,$x2);
-    }
-
-    # Do comparison
-    $x1 =~ /([+-]?[0-9]*)\.?([0-9]*)/;
-    my ($xint,$xfrac) = ($1, $2);
-
-    die "Cannot split <$x1> into int/fract parts (should not happen)"
-      unless defined($xint);
-    my $delta;
-    if (length($xfrac) > 0) {
-        $delta = '0.' . '0'x(length($xfrac)-1) . '1';
-    } else {
-        $delta = 1;
-    }
-    my $x1_p = $x1 + $delta;
-    my $x1_m = $x1 - $delta;
-    ($x1_m, $x1_p) = sort  { $a <=> $b } $x1_m, $x1_p;
-    my ($x_m, $x_p) = ("${x1_m}${x2}", "${x1_p}${x2}");
-
-    # Are the constructed numbers $x_m, $x_p really numerical?
-    eval { my $dummy = 1 + $x_m + $x_p };
-    if ($@) {
-        warn "$@";
-        return 0;
-    }
-
-    printf STDERR
-      "%8s -> %8s -> <%6s>.<%6s> -> %8s -> [%8s, %8s]\n",
-      $x, $x1, $xint, $xfrac, $delta, $x_m, $x_p   if ($debug);
-    print STDERR "$y >= $x_m  =  ", ($y >= $x_m), "\n" if ($debug);
-    print STDERR "$y <= $x_p  =  ", ($y <= $x_p), "\n" if ($debug);
-    print STDERR "Ergo: ", (($y >= $x_m) && ($y <= $x_p)), "\n" if ($debug);
-
-    if (($y >= $x_m) && ($y <= $x_p)) {
-        return 1;
-    } else {
-        return 0;
-    }
 }
 # ---------------------------------------------------------------------- #
 sub test_rundir {
