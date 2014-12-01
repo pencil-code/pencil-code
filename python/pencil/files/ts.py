@@ -100,12 +100,10 @@ class TimeSeries(object):
             variables other than `it' and `dt*'
         """
         P.ioff() # speed up graphics (in connection with an ending P.show())
-        elim = re.compile(r'dt|it|__|plot')
-        # every argument of the TimeSeries class is listed in listargs
-        listargs = dir(self)
-        # to eliminate it, dt*, and __*__ names
+        listargs = self.keys    # all data columns of the TimeSeries object
+        elim = re.compile(r'^(it|dt.*)')  # columns to drop
         for item in dir(self):
-            if re.match(elim,item):
+            if re.match(elim, item):
                 listargs.remove(item)
         cnt = 0
         if (hasattr(self, 'urms') and self.urms.max() != 0.):
