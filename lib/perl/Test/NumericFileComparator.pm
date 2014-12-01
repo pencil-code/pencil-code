@@ -69,14 +69,15 @@ The input file can be either in column format:
 
 e.g.
 
-  1.0000000  1.0000
-  0.5000000  0.6667
-  0.8333333  0.8667
-  0.5833333  0.7238
-  0.7833333  0.8349
-  0.6166667  0.7440
-  0.7595238  0.8209
-  0.6345238  0.7543
+  1.0000000    1.0000
+  0.5000000    0.6667
+  0.8333333    0.8667
+  0.5833333    0.7238
+  0.2833333    0.8349
+  0.1066667    0.7440
+  0.04759523   0.8209
+  0.01345238   0.7942
+  0.003124355  0.7734
 
 or
 
@@ -84,17 +85,18 @@ or
   # We print 4 decimals for temperature, but due to the phase of Jupiter's
   # moons, we can only expect an accuracy of about 1e-2.
   #
-  #:name:     Pressure   Temperature
-  #:accuracy: 1.5e-7     0.8e-2
-  # --------------------------------
-              1.0000000  1.0000
-              0.5000000  0.6667
-              0.8333333  0.8667
-              0.5833333  0.7238
-              0.7833333  0.8349
-              0.6166667  0.7440
-              0.7595238  0.8209
-              0.6345238  0.7543
+  #:name:     Pressure     Temperature
+  #:accuracy: 5.0e-6:r     0.8e-2
+  # ----------------------------------
+              1.0000000    1.0000
+              0.5000000    0.6667
+              0.8333333    0.8667
+              0.5833333    0.7238
+              0.2833333    0.8349
+              0.1066667    0.7440
+              0.04759523   0.8209
+              0.01345238   0.7942
+              0.003124355  0.7734
 
 or
 
@@ -124,8 +126,8 @@ or
   # Reference data for pressure and temperature.
   # We print 4 decimals for temperature, but due to the phase of Jupiter's
   # moons, we can only expect an accuracy of about 1e-2.
-  Pressure      : 1.5e-7 : 0.6345238 0.6345238 0.6345238  # slice (5,7,3:5)
-  Temp(5,7,3:5) : 0.8e-2 : 0.7543 0.7411 0.7123
+  Pressure      : 1.5e-7:r : 0.6345238 0.7345238 0.655238  # slice (5,7,3:5)
+  Temp(5,7,3:5) : 0.8e-2   : 0.7543 0.7411 0.7123
 
 Note that the colon (:) as separator must be followed by at least one
 space. Thus,
@@ -136,12 +138,18 @@ is parsed correctly, but
 
   Temp(5,7,3:5) :0.8e-2 :0.7543 0.7411 0.7123
 
-is not, and nor is
+is not, nor is
 
   Temp(5,7,3: 5) : 0.8e-2 : 0.7543 0.7411 0.7123
 
 
-For both formats, the accuracies acc1, etc. are absolute accuracies.
+For both formats, the accuracies acc1, etc. are absolute accuracies if
+they are plain numbers or followed by ':a' without a space (e.g. '1.2e-2'
+or '1.2e-3:a'). Numbers followed by ':r' indicate relative precision (e.g.
+'3.5e-2:r'). A combination of both is possible ('1.2e-3:a|3.5e-2:r'); in
+this case, two numbers are considered sufficiently equal if they are close
+enough by either absolute or relative accuracy.
+
 If no accuracy is specified, for each column / line, an absolute accuracy
 of 1.5 times the last digit of the largest number (by modulus) is used.
 
@@ -237,8 +245,7 @@ sub compare {
             next VAR;
         }
 
-        my $abs_acc = $self->{ACCS}->{$var};
-        my $rel_acc = 0.0;
+        my ($abs_acc, $rel_acc) = @{$self->{ACCS}->{$var}};
         my $comparator = Test::NumberComparator->new($abs_acc, $rel_acc);
         for (my $i = 0; $i < @column_ref; $i++) {
             my $ref = $column_ref[$i];
@@ -286,9 +293,10 @@ sub _parse {
 #
 # Parse the given data file and return a list
 #   (\@variables, \%values, \%accuracies)
-# where @variables lists the variable names in the order in which they are
-# defined in the file, %values is a map var_name => [values], and
-# %accuracies is a map var_name => accuracy.
+# with
+#   @variables  -- list of variables names
+#   %values     -- map variable_name => [value1, value2, ...]
+#   %accuracies -- map variable_name => [abs_acc, rel_acc]
 #
     my ($file) = @_;
 
@@ -342,9 +350,9 @@ sub _read_file_in_column_format {
         croak "Cannot open $file for reading: $!\n";
     }
 
-    my (@variables, %values, %accuracies);
+    my (@variables, %values);
 
-    my @columns;
+    my (@columns, @accuracies);
 
     my $linenum = 0;
     while (defined(my $line = <$fh>)) {
@@ -361,7 +369,25 @@ sub _read_file_in_column_format {
                       - *
                       $
                      /x) {
-            @variables = _extract_var_names($line);
+            @variables = _split_line($line, qr'^#[-]+', qr'[-]+');
+            next;
+        }
+
+        if ($line =~ /^
+                      \s *
+                      \#:name:
+                      \s +
+                     /x) {
+            @variables = _split_line($line, qr'^#:name:\s+', qr'\s+');
+            next;
+        }
+
+        if ($line =~ /^
+                      \s *
+                      \#:accuracy:
+                      \s +
+                     /x) {
+            @accuracies = _extract_accuracies($line);
             next;
         }
 
@@ -388,7 +414,11 @@ sub _read_file_in_column_format {
     }
     close $fh;
 
-    return _extract_data(\@variables, \@columns, \%accuracies, $file);
+    my %accuracy_map;
+    for (my $i=0; $i < @accuracies; $i++) {
+        $accuracy_map{$variables[$i]} = $accuracies[$i];
+    }
+    return _extract_data(\@variables, \@columns, \%accuracy_map, $file);
 }
 
 
@@ -447,7 +477,7 @@ sub _read_file_in_line_format {
             push @columns, \@vals;
 
             if (defined $acc) {
-                $accuracies{$var} = $acc;
+                $accuracies{$var} = _parse_accuracy($acc);
             }
         } else {
             croak "File $file: Unexpected line $linenum in line format: <$line>\n";
@@ -476,16 +506,56 @@ sub _extract_data {
 }
 
 
-sub _extract_var_names {
+sub _extract_accuracies {
 #
-# Extract variable names from a header line like
-#   #--it------t--------dt-------urms-------rhom-------ecrm------ecrmax---
+# Extract accuracies from a header line like
+#   #:accuracy:  1  1e-3  1e-3:r  1e-4  1e-6:a|1e-3:r  1e-3:r
+# Returns a list of pairs [abs_acc, rel_acc], e.g.
+#   ([1, 0], [1e-3, 0], [0, 1e-3], [1e-4, 0], [1e-6, 1e-3], [0, 1e-3])
 #
     my ($line) = @_;
 
-    $line =~ s{^\s*#-*}{};
-    $line =~ s{-+$}{};
-    return split(/-+/, $line);
+    my @strings = _split_line($line, qr'^#:accuracy:\s+', qr'\s+');
+    return map { _parse_accuracy($_) } @strings;
+}
+
+
+sub _split_line {
+#
+# Remove from a line the start sequence and extract the individual
+# elements separated by $separator.
+# Return the list of elements (as strings).
+#
+    my ($line, $start, $separator) = @_;
+
+    chomp $line;
+    if ($line !~ m{^$start}) {
+        croak("Line does not start with $start: $line");
+    }
+    $line =~ s{$start (?: $separator) ?}{}x;
+    $line =~ s{(?: $separator) $}{}x;
+    return split($separator, $line);
+}
+
+
+sub _parse_accuracy {
+#
+# Parse an accuracy string like '1e-3', '1e-3:r', or '1e-6:a|1e-3:r' to a
+# pair of numbers like (), (), or ()
+    my ($string) = @_;
+
+    my ($abs, $rel) = (0, 0);
+    foreach my $acc (split(/\|/, $string)) {
+        if ($acc =~ m{^ ($ieee_float) : r $}x) {
+            $rel = $1;
+        } elsif ($acc =~ m{^ ($ieee_float) (?: :a)? $ }x) {
+            $abs = $1;
+        } else {
+            croak("Cannot parse accuracy string '$acc'");
+        }
+    }
+
+    return [$abs, $rel];
 }
 
 
@@ -528,7 +598,10 @@ sub _infer_accuracies {
     for (my $i = 0; $i < @variables; $i++) {
         my $var = $variables[$i];
         my $max_string = _max_abs_as_string($columns[$i]);
-        $accuracies{$var} = _accuracy_from_num_string($max_string) * 1.5;
+        $accuracies{$var} = [
+            _accuracy_from_num_string($max_string) * 1.5,  # absolute
+            0                                              # relative
+            ];
     }
 
     return %accuracies;
