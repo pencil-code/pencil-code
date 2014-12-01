@@ -1,0 +1,36 @@
+# Testing it values is a bit strange, but might still be useful in some
+# corner cases
+min(it):      0         0       # exact
+avg(it):      75        0       # exact
+max(it):      150       0       # exact
+std(it):      55.9      1.0e-1  # sqrt(3125)
+
+min(t):       0.000     1.0e-3
+avg(t):       0.715     1.0e-3
+max(t):       1.480     1.0e-3
+std(t):       0.5527    1.0e-4
+
+min(dt):      0.00863   1.0e-5
+avg(dt):      0.00975   1.0e-5
+max(dt):      0.01100   1.0e-5
+std(dt):      0.000914  1.0e-6
+
+min(urms):    0.2600    1.0e-4
+avg(urms):    0.4663    1.0e-4
+max(urms):    0.7071    1.0e-4
+std(urms):    0.1883    1.0e-4
+
+min(rhom):    1.000     1.0e-3
+avg(rhom):    1.000     1.0e-3
+max(rhom):    1.000     1.0e-3
+std(rhom):    0.000     1.0e-10
+
+min(ecrm):    1.000     1.0e-3
+avg(ecrm):    1.034     1.0e-3
+max(ecrm):    1.059     1.0e-3
+std(ecrm):    0.02526   1.0e-5
+
+min(ecrmax):  1.000     1.0e-3
+avg(ecrmax):  1.814     1.0e-3
+max(ecrmax):  2.492     1.0e-3
+std(ecrmax):  0.5330    1.0e-4
