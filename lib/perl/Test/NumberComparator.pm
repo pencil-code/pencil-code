@@ -28,8 +28,8 @@ $VERSION = '0.1';
 
 Test::NumberComparator - Compare numbers up to some specified accuracy.
 
-Two numbers are consider equal if they are closer than either absolute or
-relative accuracy.
+Two numbers are consider equal if they are close enough by either absolute
+or relative accuracy.
 
 =head1 SYNOPSIS
 
@@ -38,35 +38,10 @@ relative accuracy.
   my $abs_accuracy = 1.0e-4;
   my $rel_accuracy = 1.0e-2;
   my $comparator = Test::NumberComparator->new($abs_accuracy, $rel_accuracy);
-  my $abs_comparator = Test::NumberComparator->new($abs_accuracy, 0.0);
-  my $rel_comparator = Test::NumberComparator->new(0.0, $rel_accuracy);
 
-  my ($a, $b);
-
-  ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
+  my ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
   $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", \
-          $comparator->format_comparison($a, $b);
-
-  ($a, $b) = (100., 99.5);  # equal within relative accuracy
-  $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", \
-          $comparator->format_comparison($a, $b);
-
-  ($a, $b) = (1.0e-3, 0.99e-3);  equal within relative accuracy
-  $comparator->compare($a, $b) == 0 \
-      or warn "Failed: expected equality, got ", \
-          $comparator->format_comparison($a, $b);
-
-  ($a, $b) = (1.0e-3, 0.9e-3);  not equal
-  $comparator->compare($a, $b) == +1 \
-      or warn "Failed: expected $a > $b, got ", \
-          $comparator->format_comparison($a, $b);
-
-  ($a, $b) = (1.0e-3, 1.1e-3);  not equal
-  $comparator->compare($a, $b) == -1 \
-      or warn "Failed: expected $a < $b, got ", \
-          $comparator->format_comparison($a, $b);
+      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
 
 =head2 Methods
 
@@ -117,6 +92,7 @@ Compare $a and $b. If the modulus of the difference is smaller than either
 I<abs_acc>, or I<rel_acc> * Max(|$a|, |$b|), return 0.
 Otherwise return -1 if $a < $b, or +1 if $a > $b.
 
+One could call this method 'a sloppy version of $a <=> $b'.
 =cut
 
 sub compare {
@@ -153,6 +129,9 @@ Compare $a and $b and return a string explaining how the comparison turned
 out.
 
 =cut
+
+=back
+
 
 sub format_comparison {
     my $self = shift();
@@ -234,15 +213,45 @@ sub _max {
 
 # ---------------------------------------------------------------------- #
 
+=head1 EXAMPLES
+
+  use Test::NumberComparator;
+
+  my $abs_accuracy = 1.0e-4;
+  my $rel_accuracy = 1.0e-2;
+  my $comparator = Test::NumberComparator->new($abs_accuracy, $rel_accuracy);
+  my $abs_comparator = Test::NumberComparator->new($abs_accuracy, 0.0);
+  my $rel_comparator = Test::NumberComparator->new(0.0, $rel_accuracy);
+
+  my ($a, $b);
+
+  ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
+  $comparator->compare($a, $b) == 0 \
+      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+
+  ($a, $b) = (100., 99.5);  # equal within relative accuracy
+  $comparator->compare($a, $b) == 0 \
+      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+
+  ($a, $b) = (1.0e-3, 0.99e-3);  equal within relative accuracy
+  $comparator->compare($a, $b) == 0 \
+      or warn "Failed: expected equality, got ", $comparator->format_comparison($a, $b);
+
+  ($a, $b) = (1.0e-3, 0.9e-3);  not equal
+  $comparator->compare($a, $b) == +1 \
+      or warn "Failed: expected $a > $b, got ", $comparator->format_comparison($a, $b);
+
+  ($a, $b) = (1.0e-3, 1.1e-3);  not equal
+  $comparator->compare($a, $b) == -1 \
+      or warn "Failed: expected $a < $b, got ", $comparator->format_comparison($a, $b);
+
+=cut
+
+
 1;
 
 __END__
 
-
-=back
-
-
-=cut
 
 
 # End of file
