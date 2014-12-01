@@ -100,7 +100,7 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
 
 
 # This is an easy implementation for the read function. 
-# It simply uses the read_ts class.
+# It simply uses the TimeSeries class.
 
 def read_post(filename = 'post_evaluation.dat', datadir = 'data',
                 double = 0, quiet = 1, comment_char = '#'):
@@ -123,7 +123,7 @@ def read_post(filename = 'post_evaluation.dat', datadir = 'data',
         Name of the data directory.
         
       *double*:
-        No use yet (see the read_ts options).
+        Not used yet (see the read_ts options).
         
       *quiet*:
         If True do not show how many lines are being read.

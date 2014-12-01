@@ -4,15 +4,27 @@
 # arrrays
 #
 #
-import sys
 import os.path 
 import re
 import numpy as N
 import pylab as P
 
-class read_ts:
+
+def read_ts(*args, **kwargs):
+    """Read Pencil Code time series data.
+    params:
+     string: filename  ='time_series.dat'
+     string: datadir   = 'data'
+     logical: double    = 0
+     logical: print_std = 0
+     logical: quiet     = 0
     """
-    read_ts -- holds pencil code time series data. each variable is
+    return TimeSeries(*args, **kwargs)
+
+
+class TimeSeries:
+    """
+    TimeSeries -- holds pencil code time series data. each variable is
     represented by a data member of the class.
     """
 
@@ -87,10 +99,9 @@ class read_ts:
             three is not available or zero, fill the list with the first two 
             variables other than `it' and `dt*'
         """
-# speed the graphics (in connection with an ending P.show())
-        P.ioff()
+        P.ioff() # speed up graphics (in connection with an ending P.show())
         elim = re.compile(r'dt|it|__|plot')
-        # every argument of the read_ts class is listed in listargs
+        # every argument of the TimeSeries class is listed in listargs
         listargs = dir(self) 
         # to eliminate it, dt*, and __*__ names
         for item in dir(self):
@@ -130,6 +141,7 @@ class read_ts:
                 i += 1 
         P.show()
         P.ion()
-     
+
+
 if __name__=='__main__':
-    read_ts.__doc__
+    print TimeSeries.__doc__
