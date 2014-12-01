@@ -48,15 +48,17 @@ Test::ScriptTester - Run script tests in a set of directories
 
   $tester->run_tests(@tests[0..2);
 
-  my %default_interpreters = Test::ScriptTests::get_default_interpreters()
+  my %default_interpreters = Test::ScriptTests::get_default_interpreters();
 
-  my $idl_interpreter = Test::ScriptTests::find_interpreter_for('idl')
+  my $default_idl_interpreter = $default_interpreters{'idl'};
+
+  my $idl_interpreter = $test->find_interpreter_for('idl');
 
 
 =head1 DESCRIPTION
 
 Scan the given directories for subdirectories named 'tests/'; in each
-tests directory, run all script tests.
+tests directory run all script tests.
 
 A I<script test> consists of a test file that
 
@@ -279,9 +281,9 @@ sub debug {
 }
 
 
-=item B<find_interpreter_for>($test_type)
+=item B<$tester-E<gt>find_interpreter_for>($test_type)
 
-Return the default interpreter (path of an executable) for the given
+Return the interpreter (path of an executable) for the given
 $test_type, or undef.
 
 =cut
@@ -292,7 +294,7 @@ sub find_interpreter_for {
 }
 
 
-=item @default_types
+=item B<Test::ScriptTester::@default_types>
 
 All supported test types.
 
@@ -314,10 +316,12 @@ types (keys).
 =cut
 
 sub get_default_interpreters {
+    # Python
     my %interpreters = (
         'python' => 'python',
         );
 
+    # Idl/Gdl
     my $idl_interpreter;
     if (_in_PATH('idl')) {
         $idl_interpreter = 'idl';
@@ -326,7 +330,6 @@ sub get_default_interpreters {
     } elsif (_in_PATH('gnudl')) {
         $idl_interpreter = 'gnudl';
     }
-
     if (defined $idl_interpreter) {
         $interpreters{'idl'} = $idl_interpreter;
     }
