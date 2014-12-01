@@ -46,9 +46,9 @@ Test::NumericFileComparator - Compare numbers in files.
   my $comparator = Test::NumericFileComparator->new('reference.out');
 
   # Compare file to reference data
-  my @message = $comparator->compare('actual.out'));
+  my @message = $comparator->compare('actual.out');
   if (@message) {
-      say "not ok: @message");
+      say "not ok: @message";
   } else {
       say 'ok';
   }
