@@ -356,6 +356,8 @@ sub _read_file_in_column_format {
     }
     close $fh;
 
+    croak("No data found in $file") unless @columns;
+
     %accuracies = _infer_accuracies(\@variables, \@columns) unless (%accuracies);
     %values = _numerical_values(\@variables, \@columns);
 
@@ -413,6 +415,8 @@ sub _read_file_in_line_format {
         }
     }
     close $fh;
+
+    croak("No data found in $file") unless @variables;
 
     return (\@variables, \%values, \%accuracies);
 }
