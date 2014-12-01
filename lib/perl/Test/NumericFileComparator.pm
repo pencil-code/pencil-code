@@ -23,6 +23,7 @@ use Test::NumberComparator;
 
 use vars qw($VERSION);
 
+use 5.010;                      # for the ~~ operator
 use feature 'say';
 
 ##use critic
@@ -111,8 +112,8 @@ Alternativly, the input file can be in line format:
 
   # [Maybe
   #  some comment lines]
-  var1: value1 [acc1] [# comment]
-  var2: value2 [acc2] [# comment]
+  var1 : [acc1 :] <var1_val1> [<var1_val2> ... ] [# comment]
+  var2 : [acc2 :] <var2_val1> [<var2_val2> ... ] [# comment]
   [...]
 
 e.g.
@@ -124,9 +125,9 @@ or
 
   # Reference data for pressure and temperature.
   # We print 4 decimals for temperature, but due to the phase of Jupiter's
-  # moons, we can only expect an accuracy of less than 1e-2.
-  Pressure: 0.6345238  1.5e-7  # should be 1.3e-7, but that doesn't work yet
-  Temperature: 0.7543  0.8e-2
+  # moons, we can only expect an accuracy of about 1e-2.
+  Pressure      : 1.5e-7 : 0.6345238 0.6345238 0.6345238  # slice (5,7,3:5)
+  Temp(5,7,3:5) : 0.8e-2 : 0.7543 0.7411 0.7123
 
 Note that the accuracies acc1, etc. are absolute accuracies.
 
@@ -370,12 +371,7 @@ sub _read_file_in_column_format {
     }
     close $fh;
 
-    croak("No data found in $file") unless @columns;
-
-    %accuracies = _infer_accuracies(\@variables, \@columns) unless (%accuracies);
-    %values = _numerical_values(\@variables, \@columns);
-
-    return (\@variables, \%values, \%accuracies);
+    return _extract_data(\@variables, \@columns, \%accuracies, $file);
 }
 
 
@@ -394,6 +390,8 @@ sub _read_file_in_line_format {
 
     my (@variables, %values, %accuracies);
 
+    my @columns;                # in fact rows, but stick to names used above
+
     while (defined(my $line = <$fh>)) {
         next if $line =~ /^\s*$/;  # empty line
         next if $line =~ /^\s*#/;  # comment line
@@ -401,28 +399,34 @@ sub _read_file_in_line_format {
         chomp($line);
         if ($line =~ /^
                       \s *
-                      (?<variable>[^:]+?)
+                      (?<variable> . +?)
                       \s *
-                      :
-                      \s *
-                      (?<value>$ieee_float)
+                      : \s +
+
                       (?:
-                          \s +
-                          (?<accuracy>$ieee_float)
+                          (?<accuracy> . +?)
+                          \s *
+                          : \s +
                       )?
-                      \s *
+
+                      (?<values>
+                          $ieee_float
+                          (\s +? | $)
+                      ) +
                       $
                      /x) {
-            my ($var, $val, $acc) = ($+{variable}, $+{value}, $+{accuracy});
-            if (defined $values{$var}) {
+            my ($var, $acc) = ($+{variable}, $+{accuracy});
+            my @vals = split('\s+', $+{values});
+            if ($var ~~ @variables) {
                 croak "Duplicate variable '$var' in file $file\n";
             }
+
             push @variables, $var;
-            $values{$var} = [0 + $val];
+
+            push @columns, \@vals;
+
             if (defined $acc) {
                 $accuracies{$var} = $acc;
-            } else {
-                $accuracies{$var} = _accuracy_from_num_string($val);
             }
         } else {
             croak "File $file: Unexpected line in line format: <$line>\n";
@@ -430,9 +434,24 @@ sub _read_file_in_line_format {
     }
     close $fh;
 
-    croak("No data found in $file") unless @variables;
+    return _extract_data(\@variables, \@columns, \%accuracies, $file);
+}
 
-    return (\@variables, \%values, \%accuracies);
+
+sub _extract_data {
+    my ($vars_ref, $cols_ref, $accs_ref, $file) = @_;
+
+    croak("No data found in $file") unless @$cols_ref;
+
+    my %accuracies;
+    if (%$accs_ref) {
+        %accuracies = %$accs_ref;
+    } else {
+        %accuracies = _infer_accuracies($vars_ref, $cols_ref);
+    }
+    my %values = _numerical_values($vars_ref, $cols_ref);
+
+    return ($vars_ref, \%values, \%accuracies);
 }
 
 
