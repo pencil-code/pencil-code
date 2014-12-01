@@ -28,8 +28,8 @@ $VERSION = '0.1';
 
 Test::NumberComparator - Compare numbers up to some specified accuracy.
 
-Two numbers are consider equal if they are close enough by either absolute
-or relative accuracy.
+Two numbers are considered equal if they are close enough by either
+absolute or relative accuracy.
 
 =head1 SYNOPSIS
 
