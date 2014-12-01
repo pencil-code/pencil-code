@@ -8,7 +8,7 @@ import os
 import sys
 import pencil as pc
 
-input_dir = '../../input'
+input_dir = 'input'
 
 
 def main(args):

@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
-"""Read time series."""
+"""Read var.dat."""
 
 import os
 import sys
 import pencil as pc
 
-input_dir = '../../input'
+input_dir = 'input'
 
 
 def main(args):
