@@ -331,9 +331,23 @@ sub _read_file_in_column_format {
     my @columns;
 
     while (defined(my $line = <$fh>)) {
-        next if $line =~ /^\s*$/;  # empty line
-        next if $line =~ /^\s*#/;  # comment line: skip for now
         chomp($line);
+        next if $line =~ /^ \s * $/x;  # empty line
+        if ($line =~ /^
+                      \s *
+                      \#
+                      (?:
+                          - +
+                          [^ - ] +
+                      ) +
+                      - *
+                      $
+                     /x) {
+            @variables = _extract_var_names($line);
+            next;
+        }
+
+        next if $line =~ /^\s*#/;  # comment line: skip for now
         if ($line =~ /^\s*((?:$ieee_float(\s|$)+)+)$/) {
             my @items = split(/\s+/, $1);
             @variables = _create_var_names(@items) unless @variables;
@@ -419,6 +433,19 @@ sub _read_file_in_line_format {
     croak("No data found in $file") unless @variables;
 
     return (\@variables, \%values, \%accuracies);
+}
+
+
+sub _extract_var_names {
+#
+# Extract variable names from a header line like
+#   #--it------t--------dt-------urms-------rhom-------ecrm------ecrmax---
+#
+    my ($line) = @_;
+
+    $line =~ s{^\s*#-*}{};
+    $line =~ s{-+$}{};
+    return split(/-+/, $line);
 }
 
 
