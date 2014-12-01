@@ -28,8 +28,6 @@ $VERSION = '0.1';
 
 Test::NumberComparator - Compare numbers up to some specified accuracy.
 
-Two numbers are considered equal if they are close enough by either
-absolute or relative accuracy.
 
 =head1 SYNOPSIS
 
@@ -42,6 +40,29 @@ absolute or relative accuracy.
   my ($a, $b) = (1.0, 0.995);  # equal within absolute and relative accuracy
   $comparator->compare($a, $b) == 0 \
       or warn "Expected equality, got ", $comparator->format_comparison($a, $b);
+
+
+=head1 DESCRIPTION
+
+Two numbers are considered equal if they are close enough by either
+absolute or relative accuracy.
+
+Equality is symmetric, but cannot be transitive.
+
+
+=head2 IEEE special numbers
+
+This module is designed for verifying consistency of new date with respect
+to reference data and hence does not honour IEEE semantics for e.g. NaN:
+If we got NaN before and still get it, that is consistent, even though
+IEEE declares that NaN == NaN is false.
+
+We also consider -Inf equal to Inf and +Inf equal to Inf, but -Inf is not
+equal to +Inf.
+In the light of -0 being numerically equal to +0 (up to any accuracy), we
+may want to revise this decision, but for most applications, no NaN or Inf
+values are expected anyway.
+
 
 =head2 Methods
 
@@ -132,11 +153,55 @@ sub compare {
 }
 
 
+sub _is_special_ieee {
+    my ($x) = @_;
+
+    return $x =~ m{ nan | inf }ix;
+}
+
+
+sub _compare_special_ieee {
+    my ($a, $b) = @_;
+
+    if ($a =~ m/NaN/i) {
+        if ($b =~ m/NaN/i) {
+            return 0;           # NaN == NaN for us
+        } else {
+            return +1;          # NaN > other (abritrary, but must be != 0)
+        }
+    } elsif ($a =~ m{ (?<sign_a> [-+])? Inf }ix) {
+        my $sign_a = $+{sign_a};
+        if ($b =~ m{ (?<sign_b> [-+])? Inf }ix) {
+            # Comparing ±∞ to ±∞ or ∞
+            my $sign_b = $+{sign_b};
+            if (defined $sign_a && defined $sign_b) {
+                return $sign_a cmp $sign_b;
+            } else {
+                return 0;       # ∞ = +∞ or ∞ = -∞
+            }
+        } else {
+            # Comparing ∞ to something else
+            if (defined $sign_a && $sign_a eq '-') {
+                return -1;      # -∞ < $b
+            } else {
+                return 1;       # ∞ = +∞ > $b
+            }
+        }
+    }
+}
+
+
 =item B<$comparator-E<gt>equal>($a, $b)
 
 Compare $a and $b. If the modulus of the difference is smaller than either
 I<abs_acc>, or I<rel_acc> * Max(|$a|, |$b|), return 1
 (true), otherwise return '' (false).
+
+The B<equal()> method is symmetric in the sense that
+
+  equal($a, $b) == equal($b, $a)
+
+It cannot be transitive.
 
 =cut
 
