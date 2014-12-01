@@ -3860,19 +3860,19 @@ for such are placed in the subfolder \file{\$PENCIL_HOME/python}. A
 README file placed under that subfolder contains the information
 needed to read Pencil output data into python.
 
-To start rapidly under Python:
-
+To get started with visualizing Pencil-Code data in Python:
 \begin{enumerate}
 
-\item you must install the matplotlib library (a package often called
-   python-matplotlib)
-\item normally, numpy is installed as a dependency
-\item the PYTHONPATH is initialised when sourcing 'sourceme.*'
-\item for us, the best practical way to use Python is to start the ipython
-   shell so its installation is a good idea
-\item you must load all of the Python pencil modules using 'import pencil
-   as pc'
-\item you run a module using 'pc.read_ts()' and so on...
+\item Install the matplotlib library (a package often called
+  \name{python-matplotlib}), which should install \name{numpy} as a
+  dependency.\\
+  You may also want to install ipython.
+
+\item Initialize you PYTHONPATH environment variable by sourcing 'sourceme.*'.
+
+\item Load all of the Python pencil modules using 'import pencil as pc'
+
+\item Load data using 'pc.read_ts()', etc.
 
 \end{enumerate}
 
@@ -3884,7 +3884,7 @@ Example of using Python:
 
 \begin{alltt}
   \prompt{In [1]: } import pencil as pc
-  \prompt{In [2]: } ts=pc.read_ts()
+  \prompt{In [2]: } ts = pc.read_ts()
 \end{alltt}
 
 \noindent While in IDL you would would type ``print,tag_names(ts)'' in
