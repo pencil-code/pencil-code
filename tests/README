@@ -20,6 +20,8 @@ The contract for a Python test:
 - There exists a file <test_name>.ref in the same directory that defines
   the reference data and possibly specifies accuracies.
 
-- When the script is run, it writes a file <test_name>.out in the same
-  directory.
+- When the script is run, it writes a file <test_name>.out of similar
+  format in the same directory.
 
+See `perldoc Test::NumericFileComparator' for definition and examples of
+the file formats for .ref and .out files.
