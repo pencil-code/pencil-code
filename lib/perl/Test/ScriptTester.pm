@@ -287,7 +287,7 @@ All supported test types.
 
 
 
-=item B<get_default_interpreters>()
+=item B<Test::ScriptTester::get_default_interpreters>()
 
 Return a hash
 
@@ -301,8 +301,6 @@ types (keys).
 =cut
 
 sub get_default_interpreters {
-    my ($self) = @_;
-
     my %interpreters = (
         'python' => 'python',
         );
