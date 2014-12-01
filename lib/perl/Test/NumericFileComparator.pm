@@ -408,9 +408,11 @@ sub _read_file_in_line_format {
                       )?
 
                       (?<values>
-                          $ieee_float
-                          (\s +? | $)
-                      ) +
+                          (?:
+                              $ieee_float
+                              (\s +? | $)
+                          ) +
+                      )
                       $
                      /x) {
             my ($var, $acc) = ($+{variable}, $+{accuracy});
