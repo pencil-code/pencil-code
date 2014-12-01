@@ -45,17 +45,12 @@ Test::NumericFileComparator - Compare numbers in files.
   # Infer required accuracy from the reference file
   my $comparator = Test::NumericFileComparator->new('reference.out');
 
-  # Specify accuracy
-  my $comparator = Test::NumericFileComparator->new({
-      file => 'reference.out',
-      relative
-  );
-
   # Compare file to reference data
-  if ($comparator->check_file('actual.out')) {
-      say 'ok';
+  my @message = $comparator->compare('actual.out'));
+  if (@message) {
+      say "not ok: @message");
   } else {
-      say "not ok: %s", $comparator->message();
+      say 'ok';
   }
 
 =head1 DESCRIPTION
