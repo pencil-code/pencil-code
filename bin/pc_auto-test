@@ -270,12 +270,12 @@ Options:
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
-       --script-tests[=TYPES]
-                           \tRun script tests matching TYPES (default: all known
-                             types), a comma-separated list of types
-                             'type1,type2,...', or a map (comma-separated list
-                             of colon-separated associations
-                             'type1:interp1,type2:interp2,...'
+       --script-tests=TYPES\tRun script tests matching TYPES, a comma-separated
+                           \tlist of types 'type1,type2,...', or a map
+                           \t(comma-separated list of colon-separated
+                           \tassociations 'type1:interp1,type2:interp2,...'.
+                           \tUse 'DEFAULT' to get all configured types with
+                           \ttheir default interpreters
        --time-limit=limit  \tLimit time for each phase
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
@@ -1100,18 +1100,17 @@ sub test_scripts {
 sub interpreter_map_from {
 # Create the appropriate script tester.
 # $types_arg is either
-# - the empty string: use default interpreters
-# - a comma-separated list of types, e.g. 'python,idl': use the default
-#   interpreters the types given
-# - a comma-separated list of key:value pairs, e.g.
-#   'python:/usr/bin/python3,idl:/usr/bin/gdl': use the values as
-#   interpreters
+# - 'DEFAULT': use default interpreters
+# - a comma-separated list of types and key-value pairs, e.g.
+#   'python,idl:/usr/bin/gdl': use the default interpreter for python
+#   tests and gdl for idl tests.
 
     my ($types_arg) = @_;
 
+    my %default_interpreters = Test::ScriptTester::get_default_interpreters();
     my %interpreters;
-    if ($types_arg eq '') {
-        my %interpreters = Test::ScriptTester::get_default_interpreters();
+    if ($types_arg eq 'DEFAULT') {
+        %interpreters = %default_interpreters;
     } else {
         foreach my $type_spec (split(',', $types_arg)) {
             my $regex = qr{
@@ -1130,11 +1129,15 @@ sub interpreter_map_from {
             $type_spec =~ m/$regex/;
             my ($type, $interpreter) = ($+{type}, $+{interpreter});
             if (! defined $interpreter) {
-                $interpreter = Test::ScriptTests::find_interpreter_for($type);
+                $interpreter = $default_interpreters{$type};
+            }
+            if (! defined $interpreter) {
+                croak("Cannot find interpreter for $type\n");
             }
             $interpreters{$type} = $interpreter;
         }
     }
+
     return %interpreters;
 }
 # ---------------------------------------------------------------------- #
