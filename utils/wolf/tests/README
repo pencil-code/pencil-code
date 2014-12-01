@@ -1,0 +1,9 @@
+${PENCIL_HOME}/utils/wolf/tests
+-------------------------------
+
+The files under this directory are used for testing Perl modules and the
+like.
+It is unlikely that they are of much use to anybody else but myself, but
+I'd like them to be committed with the code, and I don't think we
+currently have a better place for such tests.
+
