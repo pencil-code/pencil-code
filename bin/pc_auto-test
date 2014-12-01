@@ -270,6 +270,12 @@ Options:
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
+       --script-tests[=TYPES]
+                           \tRun script tests matching TYPES (default: all known
+                             types), a comma-separated list of types
+                             'type1,type2,...', or a map (comma-separated list
+                             of colon-separated associations
+                             'type1:interp1,type2:interp2,...'
        --time-limit=limit  \tLimit time for each phase
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
@@ -300,6 +306,12 @@ Examples:
   pc_auto-test -al  # list all dirs `pc_auto-test -a' would run in
   pc_auto-test -aL  # list all run dirs under samples/, even those without
                     # reference data
+  pc_auto-test --script-tests    # standard program, plus all supported
+                                 # script tests (python and idl)
+  pc_auto-test --script-tests=python  # standard program, plus python script
+                                      # tests
+  pc_auto-test --script-tests='python:python3,idl:bin/gdl'
+                                 # explicitly specify interpreters
 ";
 
 ## Process command line options
@@ -331,6 +343,7 @@ GetOptions(\%opts,
                -a   --all-dirs
                     --level=s
                     --max-level=s
+                    --script-tests:s
                     --time-limit=s
                     --config-files=s
                     --host-id=s
@@ -371,6 +384,7 @@ my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
 my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
 my $level       = (              $opts{'level'}                   );
 my $max_level   = (              $opts{'max-level'}               );
+my $script_tests = (             $opts{'script-tests'}            );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
@@ -383,6 +397,14 @@ my $notify      = (              $opts{'notify'}          || ''   );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
+
+my %interpreter_map;
+if (defined($script_tests)) {
+    %interpreter_map = interpreter_map_from($script_tests);
+    $t_script = 1;
+} else {
+    $t_script = 0;
+}
 
 my @exit_status=('setting up directory',
                  'cleaning up',
@@ -867,20 +889,21 @@ sub test_timelimited_perl_cmd {
     print STDERR "\nRunning Perl command" if ($debug);
     # To do: Redirect STDOUT and STDERR and connect to a string...
 
-    my ($error_count, $mesg) = (0, undef);
+    my ($error_count, $res) = (0, "[To do: Should store output here]");
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n required
         if ($time_limit != 0) {
             alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
         }
-        ($error_count, $mesg) = &$cmd();
+        my ($good_count, $bad_count) = &$cmd();
+        $error_count += $bad_count;
         alarm 0;                # clear alarm
     };
     if ($@) {
         die unless $@ eq "timed out\n";  # propagate unexpected errors
         $error_count++;
-        $mesg .= ' -- ' if defined $mesg;
-        $mesg .= 'Timed out';
+        $res .= ' -- ' if defined $res;
+        $res .= 'Timed out';
     }
 
     print STDERR " ..done \n" if ($debug);
@@ -888,7 +911,7 @@ sub test_timelimited_perl_cmd {
     $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
 
     my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
-    return $mesg;
+    return $res;           # Return output so we can analyze it if desired
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
@@ -1047,7 +1070,7 @@ sub test_scripts {
     my $t_ref = shift;          # start time
 
     if ($t_script) {
-        my $tester = Test::ScriptTester->new([$dir]);
+        my $tester = Test::ScriptTester->new([$dir], \%interpreter_map);
         my @tests = $tester->list_tests();
         return unless @tests;
 
@@ -1072,6 +1095,47 @@ sub test_scripts {
             );
         }
     }
+}
+# ---------------------------------------------------------------------- #
+sub interpreter_map_from {
+# Create the appropriate script tester.
+# $types_arg is either
+# - the empty string: use default interpreters
+# - a comma-separated list of types, e.g. 'python,idl': use the default
+#   interpreters the types given
+# - a comma-separated list of key:value pairs, e.g.
+#   'python:/usr/bin/python3,idl:/usr/bin/gdl': use the values as
+#   interpreters
+
+    my ($types_arg) = @_;
+
+    my %interpreters;
+    if ($types_arg eq '') {
+        my %interpreters = Test::ScriptTester::get_default_interpreters();
+    } else {
+        foreach my $type_spec (split(',', $types_arg)) {
+            my $regex = qr{
+                           ^ \s *            # leading whitespace
+                           (?<type>
+                               [^:] *
+                           )
+                           (?:               # don't group
+                               \s * : \s *   # colon with optional whitespace
+                               (?<interpreter>
+                                   .*?
+                               )
+                           )?
+                           \s * $            # trailing whitespace
+                          }x;
+            $type_spec =~ m/$regex/;
+            my ($type, $interpreter) = ($+{type}, $+{interpreter});
+            if (! defined $interpreter) {
+                $interpreter = Test::ScriptTests::find_interpreter_for($type);
+            }
+            $interpreters{$type} = $interpreter;
+        }
+    }
+    return %interpreters;
 }
 # ---------------------------------------------------------------------- #
 sub read_lines {
