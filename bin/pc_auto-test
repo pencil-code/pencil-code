@@ -270,7 +270,7 @@ Options:
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
-       --time-limit=limit  \tUse reaper to limit time for {start,run}.x
+       --time-limit=limit  \tLimit time for each phase
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
                            \tconfiguration files, rather than trying to find a
@@ -828,9 +828,11 @@ sub test_timelimited_shell_cmd {
 # ---------------------------------------------------------------------- #
 sub test_perl_cmd {
 # Execute a Perl function.
-# The first argument is a ref to a function that returns
-# its status as ($error_count, $message).
+# The first argument is a ref to a function that returns its status as
+# ($error_count, $message).
+# Return error message.
     my $cmd   = shift;
+    return test_timelimited_perl_cmd($cmd, 0, @_);
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);   # flag for suppressing the `ok'
@@ -846,6 +848,47 @@ sub test_perl_cmd {
 
     my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
     return $res;           # Return output so we can analyze it if desired
+}
+# ---------------------------------------------------------------------- #
+sub test_timelimited_perl_cmd {
+# Execute a Perl function within a limited time.
+# The first argument is a ref to a function that returns its status as
+# ($error_count, $message).
+# Return error message.
+#
+# Due to the
+    my $cmd   = shift;
+    my $time_limit   = shift;
+    my $dir   = (shift || "<Unknown directory>");
+    my $phase = (shift || "<Unknown phase>");
+    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $t_ref = shift;
+
+    print STDERR "\nRunning Perl command" if ($debug);
+    # To do: Redirect STDOUT and STDERR and connect to a string...
+
+    my ($error_count, $mesg) = (0, undef);
+    eval {
+        local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n required
+        if ($time_limit != 0) {
+            alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
+        }
+        ($error_count, $mesg) = &$cmd();
+        alarm 0;                # clear alarm
+    };
+    if ($@) {
+        die unless $@ eq "timed out\n";  # propagate unexpected errors
+        $error_count++;
+        $mesg .= ' -- ' if defined $mesg;
+        $mesg .= 'Timed out';
+    }
+
+    print STDERR " ..done \n" if ($debug);
+    my $dt;
+    $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
+
+    my_ok($error_count, 0, $res, $dir, $phase, $quiet, $dt);
+    return $mesg;
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
@@ -1243,6 +1286,16 @@ sub s_to_hms {
     return $string;
 }
 # ---------------------------------------------------------------------- #
+sub min {
+# Numerical minimum
+    my ($a, $b) = @_;
+    if ($a+0 < $b+0) {
+        $a;
+    } else {
+        $b;
+    }
+}
+# ---------------------------------------------------------------------- #
 sub quote {
 # Quote most non-word characters in a string, but not a few common ones
     my ($text) = @_;
@@ -1293,6 +1346,20 @@ sub get_time {
         $time = Time::HiRes::time();
     };
     return $time || time();
+}
+# ---------------------------------------------------------------------- #
+sub hi_res_sleep {
+# Sleep $duration secons, with sub-second accuracy
+    my ($duration) = @_;
+
+    eval {
+        require Time::HiRes;
+        time::HiRes::usleep($duration * 1e6);
+        return;
+    };
+
+    select(undef, undef, undef, $duration);
+    return;
 }
 # ---------------------------------------------------------------------- #
 sub postprocess {
