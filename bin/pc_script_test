@@ -1,0 +1,190 @@
+#!/usr/bin/perl -w
+
+# Usage:
+#   pc_script_test [dir1 [dir2 [...]]]
+#
+# Description:
+#   Run tests in tests/ directories. These are normally tests of
+#   Python or IDL scripts, or similar.
+#   For each directory given, we recursively scan for subdirectories
+#   named 'tests'. If no directories are given, the directories
+#   tests/, samples/, runs/ of ${PENCIL_HOME} are used as starting
+#   points.
+#
+#   Under each tests/ directory, we look for test files (which may be
+#   located deeper in subdirectories).
+#   The contract for a test file:
+#   - It is named <test_name>.<suff>, where <suff> is a known suffix
+#   - <suff> (currently supported: py, pro).
+#   - The file is executable and can be run from the tests directory
+#     (thus, many of the test scripts read data from '../data/').
+#   - When run, the script writes a file <test_name>.out in the same
+#     directory.
+#   - There exist a file <test_name>.ref in the same directory that defines
+#     the reference data and possibly accuracy.
+#
+#   Each test script is run (if we find an appropriate interpreter)
+#   and the <test_name>.out file is compared to the reference data
+#   <test_name>.ref .
+#
+# Examples:
+#   pc_script_test       # Run all tests under $PENCIL_HOME/{tests,samples,runs}/
+#   pc_script_test <dir> # Run all tests under the given directory
+
+# # TODO:
+# - scan directories for 'test'
+# - find test files
+# - for each test file:
+# -   cd to its directory
+# -   run it
+# -   compare .ref and .out files
+# -   [should we allow the case where no .ref exists and no .out is written?]
+# -   Give some output [spinner or '.', or ...]
+# - summarize results
+
+# This would probably be painful in bash -> Perl.
+
+use strict;
+
+use Cwd 'abs_path';
+use File::Basename;
+use File::Find;
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my %opts;                     # Options hash for GetOptions
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+                    --debug
+               -q   --quiet
+               -v   --version
+            )
+          ) or die "Aborting.\n";
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+my $cmdname = (split('/', $0))[-1];
+
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
+
+my @default_dirs = (
+    "$ENV{PENCIL_HOME}/tests",
+    "$ENV{PENCIL_HOME}/samples",
+    "$ENV{PENCIL_HOME}/runs",
+    );
+my @top_dirs = @ARGV
+  ? @ARGV
+  : @default_dirs;
+
+my $status = 0;
+for my $test_dir (find_tests_dirs(@top_dirs)) {
+    my $status |= run_tests_in($test_dir);
+}
+
+exit $status;
+
+
+
+sub find_tests_dirs {
+# Find all test directories at or below the given @top_dirs.
+# We do not recurse further into identified test directories.
+    my @top_dirs = @_;
+
+    my @dirs;
+    for my $dir (@top_dirs) {
+        $dir = abs_path($dir);
+        if (is_tests_dir($dir)) {
+            push @dirs, $dir;
+        } else {
+            File::Find::find({
+                wanted => sub {
+                    my $name = $File::Find::name;
+                    if (is_tests_dir($name)) {
+                        push @dirs, $name;
+                        $File::Find::prune = 1;
+                    }
+                },
+                follow => 1,
+                follow_skip => 2,
+            },
+            $dir
+        );
+        }
+    }
+
+    return @dirs;
+}
+
+
+sub is_tests_dir {
+# Does the given $path represent a test directory?
+    my ($path) = @_;
+
+    my ($name, undef, undef) = fileparse($path);
+    return (-d $path) && ($name =~ '^tests$');
+}
+
+
+sub run_tests_in {
+    my ($test_dir) = @_;
+
+    return 0;
+    # Should do something instead
+}
+
+
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open my $fh, '<', $thisfile or die "Cannot open $thisfile\n";
+    while (<$fh>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^
+                     \s* \# \s*
+                     ( Description | Usage )
+                     :
+                    /mx;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/^
+          (?: .*? \n) ??
+          (
+              \s* \# \s*
+              (?: Description | Usage )
+              :
+              \s*
+              \n
+              .*
+          )
+         / $1
+         /sx;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    close $fh;
+    return $_ or "<No usage information found>\n";
+}
+
+
+sub version {
+# Return SVN/CVS data and version info.
+    my $doll='\$';              # Need this to trick SVN/CVS
+    my $rev = '$Revision: 1.12 $';
+    my $date = '$Date: 2008/07/07 21:37:16 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+
+    return "$cmdname version $rev ($date)\n";
+}
