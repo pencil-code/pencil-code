@@ -449,26 +449,26 @@ sub _read_file_in_line_format {
         chomp($line);
         if ($line =~ /^
                       \s *
-                      (?<variable> . +?)
+                      ( . +? )
                       \s *
                       : \s +
 
                       (?:
-                          (?<accuracy> . +?)
+                          ( . +? )
                           \s *
                           : \s +
                       )?
 
-                      (?<values>
+                      (
                           (?:
                               $ieee_float
-                              (\s +? | $)
+                              (?: \s +? | $ )
                           ) +
                       )
                       $
                      /x) {
-            my ($var, $acc) = ($+{variable}, $+{accuracy});
-            my @vals = split('\s+', $+{values});
+            my ($var, $acc) = ($1, $2);
+            my @vals = split('\s+', $3);
             if (defined $known_vars{$var}) {
                 croak "Duplicate variable '$var' in file $file:$linenum\n";
             }
@@ -649,24 +649,25 @@ sub _accuracy_from_num_string {
 
     $num_string =~ /^
                     \s *
-                    ( ?<mantissa> [-+.0-9] + )
-                    ( [eEdD]
-                      ( ?<exponent>[-+]?[0-9] * )
+                    ( [-+.0-9] + )
+                    (?: [eEdD]
+                        ( [-+]?[0-9] * )
                     )?
                     \s *
                     $
                    /x;
-    my $exponent = $+{exponent};
+    my $exponent = $2;
     $exponent = 0 unless defined($exponent);
-    my $mantissa = $+{mantissa};
+    my $mantissa = $1;
     $mantissa =~ /^
-                  ( ?<int> [-+0-9] * )
-                  ( \.
-                    ( ?<frac> [0-9] * )
+                  ( [-+0-9] * )
+                  (?: \.
+                      ( [0-9] * )
                   ) ?
                   $
                  /x;
-    my $frac = $+{frac};
+    # my $int = $1;  # not needed
+    my $frac = $2;
     $frac = '' unless defined $frac;
 
     return 10**(-length($frac) + $exponent);
