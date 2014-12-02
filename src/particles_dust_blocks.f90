@@ -1597,6 +1597,10 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 gravx*sin(kx_gg*fp(1:npar_loc,ixp))
 !
+          case ('z2')
+            if (lheader) print *, 'dvvp_dt: g_x = gravx * z^2, gravx = ', gravx
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + gravx * fp(1:npar_loc,izp)**2
+!
           case default
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 !
