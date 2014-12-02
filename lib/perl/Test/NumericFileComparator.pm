@@ -436,6 +436,7 @@ sub _read_file_in_line_format {
     }
 
     my (@variables, %values, %accuracies);
+    my %known_vars;
 
     my @columns;                # in fact rows, but stick to names used above
 
@@ -468,11 +469,12 @@ sub _read_file_in_line_format {
                      /x) {
             my ($var, $acc) = ($+{variable}, $+{accuracy});
             my @vals = split('\s+', $+{values});
-            if ($var ~~ @variables) {
+            if (defined $known_vars{$var}) {
                 croak "Duplicate variable '$var' in file $file:$linenum\n";
             }
 
             push @variables, $var;
+            $known_vars{$var}++;
 
             push @columns, \@vals;
 
