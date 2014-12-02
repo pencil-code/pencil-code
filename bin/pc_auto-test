@@ -344,7 +344,7 @@ GetOptions(\%opts,
                -a   --all-dirs
                     --level=s
                     --max-level=s
-                    --script-tests:s
+                    --script-tests=s
                     --time-limit=s
                     --config-files=s
                     --host-id=s
