@@ -5,6 +5,12 @@
 
 import os
 import sys
+
+# Set up Python load path and configure a matplotlib backend that does not
+# need X11. This needs to happen before importing the pencil module.
+sys.path.append('../python')
+import matplotlib
+matplotlib.use('agg')
 import pencil as pc
 
 input_dir = 'input'
