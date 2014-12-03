@@ -89,18 +89,16 @@ def dimensions(datadir='./data'):
             Name of the data directory
     """
     # Chao-Chin Yang, 2013-10-23
-
+    from collections import namedtuple
     # Read dim.dat.
     f = open(datadir.strip() + '/dim.dat')
     a = f.read().rsplit()
     f.close()
-
     # Sanity check
     if a[6] == '?':
         print('Warning: unknown data precision. ')
     if not a[7] == a[8] == a[9]:
         raise Exception('unequal number of ghost zones in different directions. ')
-
     # Extract the dimensions.
     mxgrid, mygrid, mzgrid, mvar, maux, mglobal = (int(b) for b in a[0:6])
     double_precision = a[6] == 'D'
@@ -108,16 +106,13 @@ def dimensions(datadir='./data'):
     nxgrid, nygrid, nzgrid = (int(b) - 2 * nghost for b in a[0:3])
     nprocx, nprocy, nprocz = (int(b) for b in a[10:13])
     procz_last = int(a[13]) == 1
-
     # Define and return a named tuple.
-    from collections import namedtuple
     Dimensions = namedtuple('Dimensions', ['nxgrid', 'nygrid', 'nzgrid', 'nghost', 'mxgrid', 'mygrid', 'mzgrid',
                                            'mvar', 'maux', 'mglobal', 'double_precision',
                                            'nprocx', 'nprocy', 'nprocz', 'procz_last'])
     return Dimensions(nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, nghost=nghost, mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
-
 #=======================================================================
 def grid(datadir='./data', trim=False):
     """Returns the coordinates and their derivatives of the grid.
@@ -210,7 +205,6 @@ def parameters(datadir='./data', par2=False):
             Read param2.nml if True; read param.nml otherwise.
     """
     # Chao-Chin Yang, 2014-06-18
-
     # Function to convert a string to the correct type.
     def convert(v):
         if v == 'T' or v == ".TRUE.":
@@ -225,7 +219,6 @@ def parameters(datadir='./data', par2=False):
                     return float(v)
                 except ValueError:
                     return v.strip("' ")
-
     # Function to parse the values.
     def parse(v):
         v = v.split(',')
@@ -241,7 +234,6 @@ def parameters(datadir='./data', par2=False):
             return u[0]
         else:
             return u
-
     # Read the parameter file.
     if par2:
         f = open(datadir.strip() + "/param2.nml")
@@ -258,7 +250,6 @@ def parameters(datadir='./data', par2=False):
             else:
                 print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
     f.close()
-
     # Define a container class and return the parameters in it.
     class Parameter:
         """A container class to hold the parameters of the Pencil Code data. """
@@ -266,7 +257,6 @@ def parameters(datadir='./data', par2=False):
             for key, value in d.items():
                 setattr(self, key, value)
     return Parameter(dict(zip(keys, values)))
-
 #=======================================================================
 def pdim(datadir='./data'):
     """Returns the numbers associated with particles.
@@ -276,17 +266,14 @@ def pdim(datadir='./data'):
             Name of the data directory
     """
     # Chao-Chin Yang, 2014-02-11
-
+    from collections import namedtuple
     # Read pdim.dat.
     f = open(datadir.strip() + '/pdim.dat')
     a = f.read().rsplit()
     f.close()
-
     # Extract the numbers.
     npar, mpvar, npar_stalk = (int(b) for b in a)
-
     # Define and return a named tuple.
-    from collections import namedtuple
     ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk'])
     return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk)
 #=======================================================================
@@ -522,26 +509,19 @@ def time_series(datadir='./data'):
             Name of the data directory
     """
     # Chao-Chin Yang, 2013-05-13
-
-    # Import necessary modules.
     from numpy import recfromtxt
     from io import BytesIO
-
     # Save the data path.
     path = datadir.strip()
-
     # Read legend.dat.
     f = open(path + '/legend.dat')
     names = f.read().replace('-', ' ').split()
     f.close()
-
     # Read time_series.dat.
     f = open(path + '/time_series.dat')
     ts = recfromtxt(BytesIO(f.read().encode()), names=names)
     f.close()
-
     return ts
-
 #=======================================================================
 def varname(datadir='./data', filename='varname.dat'):
     """Returns the names of variables.
@@ -553,7 +533,6 @@ def varname(datadir='./data', filename='varname.dat'):
             Name of the file containing variable names
     """
     # Chao-Chin Yang, 2013-05-13
-
     # Read varname.dat.
     f = open(datadir.strip() + '/' + filename.strip())
     var = []
@@ -563,6 +542,4 @@ def varname(datadir='./data', filename='varname.dat'):
         except:
             var.append(line.rstrip('\n'))
     f.close()
-
     return var
-
