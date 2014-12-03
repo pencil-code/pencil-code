@@ -376,7 +376,7 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
-def proc_snapshot(datadir='./data', dim=None, file='var.dat', proc=0):
+def proc_snapshot(datadir='./data', dim=None, proc=0, varfile='var.dat'):
     """Returns the patch of one snapshot saved by one process.
 
     Keyword Arguments:
@@ -385,10 +385,10 @@ def proc_snapshot(datadir='./data', dim=None, file='var.dat', proc=0):
         dim
             Dimensions supplied by proc_dim().  If None, proc_dim() will
             be called.
-        file
-            Name of the snapshot file.
         proc
             Process ID.
+        varfile
+            Name of the snapshot file.
     """
     # Chao-Chin Yang, 2014-12-03
     from collections import namedtuple
@@ -410,7 +410,7 @@ def proc_snapshot(datadir='./data', dim=None, file='var.dat', proc=0):
         adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar))
     nb = calcsize(fmt)
     # Read the snapshot.
-    f = open(datadir.strip() + '/proc' + str(proc) + '/' + file.strip(), 'rb')
+    f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
     f.read(hsize)
     a = np.frombuffer(f.read(nb*adim.prod()), dtype=dtype).reshape(adim, order='F')
     f.read(2*hsize)
