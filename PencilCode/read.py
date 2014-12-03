@@ -376,6 +376,59 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
+def proc_snapshot(datadir='./data', dim=None, file='var.dat', proc=0):
+    """Returns the patch of one snapshot saved by one process.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        dim
+            Dimensions supplied by proc_dim().  If None, proc_dim() will
+            be called.
+        file
+            Name of the snapshot file.
+        proc
+            Process ID.
+    """
+    # Chao-Chin Yang, 2014-12-03
+    from collections import namedtuple
+    import numpy as np
+    from struct import unpack, calcsize
+    # Check the dimensions and precision.
+    par = parameters(datadir=datadir)
+    if dim is None:
+        dim = proc_dim(datadir=datadir, proc=proc)
+    if dim.double_precision:
+        dtype = np.float64
+        fmt = 'd'
+    else:
+        dtype = np.float32
+        fmt = 'f'
+    if par.lwrite_aux:
+        adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar + dim.maux))
+    else:
+        adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar))
+    nb = calcsize(fmt)
+    # Read the snapshot.
+    f = open(datadir.strip() + '/proc' + str(proc) + '/' + file.strip(), 'rb')
+    f.read(hsize)
+    a = np.frombuffer(f.read(nb*adim.prod()), dtype=dtype).reshape(adim, order='F')
+    f.read(2*hsize)
+    t = unpack(fmt, f.read(nb))[0]
+    x = np.frombuffer(f.read(nb*dim.mx), dtype=dtype)
+    y = np.frombuffer(f.read(nb*dim.my), dtype=dtype)
+    z = np.frombuffer(f.read(nb*dim.mz), dtype=dtype)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    if par.lshear:
+        deltay = unpack(fmt, f.read(nb))[0]
+    else:
+        deltay = None
+    f.read(hsize)
+    f.close()
+    # Define and return a named tuple.
+    Snapshot = namedtuple('Snapshot', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
+    return Snapshot(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+#=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
 
