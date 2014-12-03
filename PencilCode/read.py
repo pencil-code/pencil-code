@@ -429,6 +429,91 @@ def proc_snapshot(datadir='./data', dim=None, proc=0, varfile='var.dat'):
     Snapshot = namedtuple('Snapshot', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
     return Snapshot(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
+def snapshot(datadir='./data', varfile='var.dat'):
+    """Returns one snapshot.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        varfile
+            Name of the snapshot file.
+    """
+    # Chao-Chin Yang, 2014-11-03
+    from collections import namedtuple
+    import numpy as np
+    # Get the dimensions.
+    par = parameters(datadir=datadir)
+    dim = dimensions(datadir=datadir)
+    var = varname(datadir=datadir)
+    if par.lwrite_aux:
+        mvar = dim.mvar + dim.maux
+        if len(var) == dim.mvar:
+            for i in range(dim.maux):
+                var.append("aux" + str(i+1))
+    else:
+        mvar = dim.mvar
+    # Check the precision.
+    if dim.double_precision:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+    # Allocate arrays.
+    fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
+    f = np.zeros(fdim, dtype=dtype)
+    x = np.zeros((dim.nxgrid,), dtype=dtype)
+    y = np.zeros((dim.nygrid,), dtype=dtype)
+    z = np.zeros((dim.nzgrid,), dtype=dtype)
+    t, dx, dy, dz = 0.0, 0.0, 0.0, 0.0
+    if par.lshear:
+        deltay = 0.0
+    else:
+        deltay = None
+    # Define functions for assigning local coordinates to global.
+    def assign(l1, l2, xg, xl, label, proc):
+        indices = xg[l1:l2] != 0.0
+        if any(xg[l1:l2][indices] != xl[indices]):
+            print("Warning: inconsistent ", label, " for process", proc)
+        xg[l1:l2][~indices] = xl[~indices]
+        return xg
+    def assign1(old, new, label, proc):
+        if old != 0.0 and old != new:
+            print("Warning: inconsistent ", label, " for process", proc)
+        return new
+    # Loop over each process.
+    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+        # Read data.
+        print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
+        dim1 = proc_dim(datadir=datadir, proc=proc)
+        snap1 = proc_snapshot(datadir=datadir, proc=proc, varfile=varfile) 
+        # Assign the data to the corresponding block.
+        l1 = dim1.iprocx * dim1.nx
+        l2 = l1 + dim1.nx
+        m1 = dim1.iprocy * dim1.ny
+        m2 = m1 + dim1.ny
+        n1 = dim1.iprocz * dim1.nz
+        n2 = n1 + dim1.nz
+        f[l1:l2,m1:m2,n1:n2,:] = snap1.f[dim1.nghost:-dim1.nghost,dim1.nghost:-dim1.nghost,dim1.nghost:-dim1.nghost,:]
+        # Assign the coordinates and other scalars.
+        t = assign1(t, snap1.t, 't', proc)
+        x = assign(l1, l2, x, snap1.x[dim1.nghost:-dim1.nghost], 'x', proc)
+        y = assign(m1, m2, y, snap1.y[dim1.nghost:-dim1.nghost], 'y', proc)
+        z = assign(n1, n2, z, snap1.z[dim1.nghost:-dim1.nghost], 'z', proc)
+        dx = assign1(dx, snap1.dx, 'dx', proc)
+        dy = assign1(dy, snap1.dy, 'dy', proc)
+        dz = assign1(dz, snap1.dz, 'dz', proc)
+        if par.lshear:
+            deltay = assign1(deltay, snap1.deltay, 'deltay', proc)
+    # Define and return a named tuple.
+    fdim.pop()
+    for i in range(fdim.count(1)):
+        fdim.remove(1)
+    keys = ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'] + var
+    values = [t, x, y, z, dx, dy, dz, deltay]
+    for i in range(len(var)):
+        values.append(f[:,:,:,i].reshape(fdim))
+    Snapshot = namedtuple('Snapshot', keys)
+    return Snapshot(**dict(zip(keys, values)))
+#=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
 
