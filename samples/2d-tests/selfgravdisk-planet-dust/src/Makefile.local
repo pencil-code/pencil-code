@@ -1,0 +1,31 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     = noshear
+SHOCK     = shock_highorder
+
+
+PARTICLES            =   particles_dust
+PARTICLES_NBODY      =   particles_nbody
+PARTICLES_SELFGRAVITY=   particles_selfgravity
+SELFGRAVITY          =   selfgravity
+POISSON              =   experimental/poisson_expand
+FOURIER              =   fourier_fftpack
+BORDER_PROFILES      =   border_profiles
+
+REAL_PRECISION = double
+
+INITIAL_CONDITION = initial_condition/centrifugal_balance
