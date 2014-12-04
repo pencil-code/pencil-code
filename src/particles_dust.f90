@@ -972,8 +972,18 @@ module Particles
                    "The world is flat, and we never got here")
             endif
 !
-            rpar_int = xyz0_loc(1)
-            rpar_ext = xyz1_loc(1)
+            if (lcartesian_coords) then 
+              if (nprocx==1) then 
+                rpar_int=rp_int
+                rpar_ext=rp_ext
+              else
+                call fatal_error("init_particles",&
+                     "random-cyl not yet ready for nprocx/=1 in Cartesian. Parallelize in y or z")
+              endif
+            else
+              rpar_int = xyz0_loc(1)
+              rpar_ext = xyz1_loc(1)
+            endif
             call random_number_wrapper(rad_scl)
             rad_scl = rpar_int**tmp + rad_scl*(rpar_ext**tmp-rpar_int**tmp)
             rad = rad_scl**(1./tmp)

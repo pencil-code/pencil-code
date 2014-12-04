@@ -145,8 +145,9 @@ module Particles_mpicomm
             nfracz = (xyz1_loc(3) - xyz0_loc(3))/(xyz1(3) - xyz0(3))
             npar_loc_array(i)=npar * nfracx * nfracy * nfracz
           enddo
+          npar_loc=npar_loc_array(iproc)
+!
         endif
-        npar_loc=npar_loc_array(iproc)
 !
 !  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
 !
