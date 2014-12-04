@@ -290,19 +290,41 @@ program start
     xyz0_loc(1) = xyz0(1)+ipx*Lxyz_loc(1)
     xyz1_loc(1) = xyz0_loc(1)+Lxyz_loc(1)
   else
-    xyz0_loc(1) = x(l1)
-    xyz1_loc(1) = x(l2)
+    !
+    !  In the equidistant grid, the processor boundaries (xyz[01]_loc) do NOT 
+    !  coincide with the l[mn]1[2] points. Also, xyz0_loc[ipx+1]=xyz1_loc[ipx], i.e.,
+    !  the inner boundary of one is exactly the outer boundary of the other. Reproduce
+    !  this behavior also for non-equidistant grids. 
+    !
+    if (ipx==0) then 
+      xyz0_loc(1) = x(l1)
+    else
+      xyz0_loc(1) = x(l1) - .5/dx_1(l1)
+    endif
+    if (ipx==nprocx-1) then 
+      xyz1_loc(1) = x(l2)
+    else
+      xyz1_loc(1) = x(l2+1) - .5/dx_1(l2+1)
+    endif
     Lxyz_loc(1) = xyz1_loc(1) - xyz0_loc(1)
-  endif
+  endif  
 !
   if (lequidist(2)) then
     Lxyz_loc(2) = Lxyz(2)/nprocy
     xyz0_loc(2) = xyz0(2)+ipy*Lxyz_loc(2)
     xyz1_loc(2) = xyz0_loc(2)+Lxyz_loc(2)
   else
-    xyz0_loc(2) = y(m1)
-    xyz1_loc(2) = y(m2)
-    Lxyz_loc(2) = xyz1_loc(2) - xyz0_loc(3)
+    if (ipy==0) then
+      xyz0_loc(2) = y(m1) 
+    else
+      xyz0_loc(2) = y(m1) - .5/dy_1(m1)
+    endif
+    if (ipy==nprocy-1) then
+      xyz1_loc(2) = y(m2)
+    else
+      xyz1_loc(2) = y(m2+1) - .5/dy_1(m2+1)
+    endif
+    Lxyz_loc(2) = xyz1_loc(2) - xyz0_loc(2)
   endif
 !
   if (lequidist(3)) then 
@@ -310,8 +332,16 @@ program start
     xyz0_loc(3) = xyz0(3)+ipz*Lxyz_loc(3)
     xyz1_loc(3) = xyz0_loc(3)+Lxyz_loc(3)
   else
-    xyz0_loc(3) = z(n1)
-    xyz1_loc(3) = z(n2)
+    if (ipz==0) then
+      xyz0_loc(3) = z(n1) 
+    else
+      xyz0_loc(3) = z(n1) - .5/dz_1(n1)
+    endif
+    if (ipz==nprocz-1) then
+      xyz1_loc(3) = z(n2)
+    else
+      xyz1_loc(3) = z(n2+1) - .5/dz_1(n2+1)
+    endif
     Lxyz_loc(3) = xyz1_loc(3) - xyz0_loc(3)
   endif
 !
