@@ -167,9 +167,9 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
                     np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
                     mapping_core[:,:,j,:]
 
-            # swap axes for post evaluation
-            tracers = tracers.swapaxes(0, 1)
-            mapping = mapping.swapaxes(0, 1)
+        # swap axes for post evaluation
+        tracers = tracers.swapaxes(0, 1)
+        mapping = mapping.swapaxes(0, 1)
 
     return tracers, mapping, t
 
