@@ -121,7 +121,7 @@ It cannot be transitive.
 
 One could call this method 'a sloppy version of $a <=> $b'.
 
-Comparison to NaN or ±Inf is essentially lexical and ignores accuracy.
+Comparison to NaN or +/-Inf is essentially lexical and ignores accuracy.
 The following table shows equality for combinations of IEEE numbers:
 
   |      | real | Inf | +Inf | -Inf | NaN |
@@ -172,19 +172,19 @@ sub _compare_special_ieee {
     } elsif ($a =~ m{ (?<sign_a> [-+])? Inf }ix) {
         my $sign_a = $+{sign_a};
         if ($b =~ m{ (?<sign_b> [-+])? Inf }ix) {
-            # Comparing ±∞ to ±∞ or ∞
+            # Comparing +/-oo to +/-oo or oo
             my $sign_b = $+{sign_b};
             if (defined $sign_a && defined $sign_b) {
                 return $sign_a cmp $sign_b;
             } else {
-                return 0;       # ∞ = +∞ or ∞ = -∞
+                return 0;       # oo = +oo or oo = -oo
             }
         } else {
-            # Comparing ∞ to something else
+            # Comparing oo to something else
             if (defined $sign_a && $sign_a eq '-') {
-                return -1;      # -∞ < $b
+                return -1;      # -oo < $b
             } else {
-                return 1;       # ∞ = +∞ > $b
+                return 1;       # oo = +oo > $b
             }
         }
     }

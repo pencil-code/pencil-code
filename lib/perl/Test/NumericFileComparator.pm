@@ -286,7 +286,7 @@ sub compare {
 
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                    # for C float
-my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | ±NaN | ±Inf
+my $ieee_float = "(?:$cfloat|[+-]?(?:NaN|Inf))"; # C float | +/-NaN | +/-Inf
 
 
 sub _parse {
