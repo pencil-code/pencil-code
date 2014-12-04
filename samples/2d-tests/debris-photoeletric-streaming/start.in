@@ -47,7 +47,7 @@
 &particles_init_pars
 !  lcalc_uup=T
   initxxp='random-cylindrical', initvvp='Keplerian'
-  pdlaw=1.5
+  dustdensity_powerlaw=1.5
   bcpx='rmv',bcpy='p',bcpz='p'
 !  bcpx='p',bcpy='p',bcpz='p'
 !
