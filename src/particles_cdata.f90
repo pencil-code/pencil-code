@@ -24,6 +24,7 @@ module Particles_cdata
   real :: log_ap_min_dist=0.0, log_ap_max_dist=6.0
   real :: rsinkparticle_1=0.0
   real :: t_nextinsert=0. !The time at which new particles are going to be inserted.
+  real :: dustdensity_powerlaw=0.
 !
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour

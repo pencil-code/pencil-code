@@ -49,6 +49,9 @@ module Particles_mpicomm
 !  particles evenly so the logical variable ldist_particles_evenly has been
 !  introduced. This variable is true by default.
 !
+!  WL: This logical has been removed, right? This comment does not seem to 
+!  be relevant anymore. 
+!
       if (lstart) call dist_particles_evenly_procs(ipar)
 !
       call keep_compiler_quiet(f)
@@ -67,6 +70,7 @@ module Particles_mpicomm
 !
       integer :: i, k, jspec, npar_per_species, npar_rest, icycle, iproc_rec
       integer :: npar_per_species_missed
+      real :: ndim,nfracx,nfracy,nfracz
       integer, dimension (0:ncpus-1) :: ipar1, ipar2
       integer, dimension (0:ncpus-1) :: npar_loc_array, npar_rest_array
 !
@@ -74,8 +78,7 @@ module Particles_mpicomm
 !
 !  Set index interval of particles that belong to the local processor.
 !
-!  WL:
-!  For runs with few particles (rather arbitrarily set to npar==nspar),
+!  WL: For runs with few particles (rather arbitrarily set to npar==nspar),
 !  set them all at the root processor at first. Not an optimal solution, but
 !  it will do for now. The best thing would be to allocate all nbody particles
 !  at the root and the rest (if any) distributed evenly
@@ -98,18 +101,52 @@ module Particles_mpicomm
 !  Place particles evenly on all processors. Some processors may get an extra
 !  particle if the particle number is not divisible by the number of processors.
 !
-        npar_loc =npar/ncpus
-        npar_rest=npar-npar_loc*ncpus
-        do i=0,ncpus-1
-          if (i<npar_rest) then
-            npar_loc_array(i)=npar_loc+1
+        if (lcartesian_coords) then 
+          npar_loc =npar/ncpus
+          npar_rest=npar-npar_loc*ncpus
+          do i=0,ncpus-1
+            if (i<npar_rest) then
+              npar_loc_array(i)=npar_loc+1
+            else
+              npar_loc_array(i)=npar_loc
+            endif
+          enddo
+        else
+!
+!  Take into account that in cylindrical and spherical coordinates the volume occupied by
+!  different processors in the radial direction is different. The line is correct also in 
+!  the case of nprocx=1, in which case the stuff in parentheses reduces to 1/ncpus.
+!
+          if (lcylindrical_coords) then 
+            ndim=2-dustdensity_powerlaw
+          elseif (lspherical_coords) then 
+            ndim=3-dustdensity_powerlaw
           else
-            npar_loc_array(i)=npar_loc
+            call fatal_error("dist_particles_evenly","The world is flat, and we never got here.")
           endif
-        enddo
+!
+!  Sanity check
+!
+          if (ndim==0) then
+            if (lroot) then
+              print*,''
+              print*,'For cylindrical coordinates dustdensity_powerlaw cannot be exactly 2.'
+              print*,'For spherical coordinates dustdensity_powerlaw cannot be exactly 3.'
+              print*,'Because of the dimensionality of the Jacobian, it becomes a mathematical'
+              print*,'pole for calculating npar_loc and the dust density distribution.'
+            endif
+            call fatal_error("dist_particles_evenly","")
+          endif
+!
+          do i=0,ncpus-1 
+            nfracx = (xyz1_loc(1)**ndim - xyz0_loc(1)**ndim)/(xyz1(1)**ndim - xyz0(1)**ndim)
+!
+            nfracy = (xyz1_loc(2) - xyz0_loc(2))/(xyz1(2) - xyz0(2))
+            nfracz = (xyz1_loc(3) - xyz0_loc(3))/(xyz1(3) - xyz0(3))
+            npar_loc_array(i)=npar * nfracx * nfracy * nfracz
+          enddo
+        endif
         npar_loc=npar_loc_array(iproc)
-        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array     =',&
-            npar_loc_array
 !
 !  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
 !
@@ -138,7 +175,8 @@ module Particles_mpicomm
           do k=1,npar_loc
             ipar(k)=k-1+ipar1(iproc)
           enddo
-        else
+!
+        else !start multiple particle species
 !
 !  Must have same number of particles in each species.
 !

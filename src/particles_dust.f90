@@ -64,7 +64,7 @@ module Particles
   real :: tstart_sink_par=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
-  real :: pdlaw=0.0, rad_sphere=0.0
+  real :: rad_sphere=0.0
   real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
@@ -154,7 +154,7 @@ module Particles
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, tstart_sink_par, &
@@ -380,7 +380,7 @@ module Particles
         call put_shared_variable( 'tausp_species', tausp_species)
         call put_shared_variable('tausp1_species',tausp1_species)
       endif
-!
+!      
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
       if (beta_dPdr_dust/=0.0) then
@@ -717,6 +717,7 @@ module Particles
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
+      real :: rpar_int,rpar_ext
 !
       intent (out) :: f, fp, ineargrid
 !
@@ -956,15 +957,25 @@ module Particles
         case ('random-cylindrical','random-cyl')
 !
           if (lroot) print*, 'init_particles: Random particle '//&
-              'cylindrical positions with power-law pdlaw=',pdlaw
+              'cylindrical positions with power-law = ', dustdensity_powerlaw
 !
           do k=1,npar_loc
 !
-! Start the particles obeying a power law pdlaw
+! Start the particles obeying a power law
 !
-            tmp=2-pdlaw
+            if (lcylindrical_coords.or.lcartesian_coords) then
+              tmp=2-dustdensity_powerlaw
+            elseif (lspherical_coords) then 
+              tmp=3-dustdensity_powerlaw
+            else
+              call fatal_error("init_particles",&
+                   "The world is flat, and we never got here")
+            endif
+!
+            rpar_int = xyz0_loc(1)
+            rpar_ext = xyz1_loc(1)
             call random_number_wrapper(rad_scl)
-            rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
+            rad_scl = rpar_int**tmp + rad_scl*(rpar_ext**tmp-rpar_int**tmp)
             rad = rad_scl**(1./tmp)
 !
 ! Random in azimuth
