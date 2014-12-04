@@ -1176,12 +1176,28 @@ module Particles_sub
 !
 !  Reads the gas density at location (ix, iy, iz).
 !
-!  20-may-13/ccyang: coded.
+!  04-dec-14/ccyang: coded.
+!
+      use EquationOfState, only: get_stratz
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix, iy, iz
 !
-      if (ldensity_nolog) then
+      real, dimension(mz) :: rho0z = 0.0
+      logical :: lfirstcall = .true.
+!
+!  Initialization
+!
+      init: if (lfirstcall) then
+        if (lstratz) call get_stratz(z, rho0z)
+        lfirstcall = .false.
+      endif init
+!
+!  Find the gas density at (ix,iy,iz).
+!
+      if (lstratz) then
+        rho = rho0z(iz) * (1.0 + f(ix, iy, iz, irho))
+      elseif (ldensity_nolog) then
         rho = f(ix, iy, iz, irho)
       else
         rho = exp(f(ix, iy, iz, ilnrho))
