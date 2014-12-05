@@ -45,18 +45,12 @@
 &special_init_pars
 /
 &particles_init_pars
-!  lcalc_uup=T
   initxxp='random-cylindrical', initvvp='Keplerian'
   dustdensity_powerlaw=1.5
   bcpx='rmv',bcpy='p',bcpz='p'
-!  bcpx='p',bcpy='p',bcpz='p'
-!
   lparticlemesh_tsc=T
   tausp=1.0
   eps_dtog=1.
   rp_int=0.6
   rp_ext=2.4
-  !lmigration_real_check=F
-  !lcheck_exact_frontier=F
-  !lmigration_redo=F
 /
