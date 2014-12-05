@@ -48,7 +48,7 @@ module Particles
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=0.
-  real :: pdlaw=0.0, rad_sphere=0.0
+  real :: rad_sphere=0.0
   real :: qbym=0.0
   real :: cdtp=0.2
   real :: particles_insert_rate=0.

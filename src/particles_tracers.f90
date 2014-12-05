@@ -33,7 +33,7 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical :: ltrace_dust=.false.
-  real :: pdlaw=0.,particles_insert_rate=0.,max_particle_insert_time=huge1
+  real :: particles_insert_rate=0.,max_particle_insert_time=huge1
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: insertxxp='nothing'
   character (len=labellen) :: gravz_profile='zero'
@@ -43,7 +43,7 @@ module Particles
       initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, tausp, &
       ldragforce_equi_global_eps, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
-      gravz_profile, nu_epicycle, pdlaw, lglobalrandom
+      gravz_profile, nu_epicycle, lglobalrandom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
@@ -249,13 +249,13 @@ module Particles
 !
        case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
-               'cylindrical positions with power-law pdlaw=',pdlaw
+               'cylindrical positions with power-law =',dustdensity_powerlaw
 !
           do k=1,npar_loc
 !
-! Start the particles obeying a power law pdlaw
+! Start the particles obeying a power law
 !
-            tmp=2-pdlaw
+            tmp=2-dustdensity-powerlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)

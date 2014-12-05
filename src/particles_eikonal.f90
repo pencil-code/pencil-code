@@ -63,7 +63,7 @@ module Particles
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
-  real :: pdlaw=0.0, rad_sphere=0.0
+  real :: rad_sphere=0.0
   real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: particles_insert_rate=0.
@@ -147,7 +147,7 @@ module Particles
       lcollisional_heat, &
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, &
       tstart_brownian_par, &
@@ -935,13 +935,13 @@ module Particles
        case ('random-cylindrical','random-cyl')
 !
           if (lroot) print*, 'init_particles: Random particle '//&
-               'cylindrical positions with power-law pdlaw=',pdlaw
+               'cylindrical positions with power-law =',dustdensity_powerlaw
 !
           do k=1,npar_loc
 !
-! Start the particles obeying a power law pdlaw
+! Start the particles obeying a power law 
 !
-            tmp=2-pdlaw
+            tmp=2-dustdensity_powerlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)

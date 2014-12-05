@@ -61,7 +61,7 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
-  real :: pdlaw=0.0, rad_sphere=0.0
+  real :: rad_sphere=0.0
   real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -97,7 +97,7 @@ module Particles
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, tausp_species, &
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
-      ldraglaw_epstein, lcheck_exact_frontier, pdlaw, ldt_grav_par, &
+      ldraglaw_epstein, lcheck_exact_frontier, dustdensity_powerlaw, ldt_grav_par, &
       lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
@@ -630,13 +630,13 @@ module Particles
 !
        case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
-               'cylindrical positions with power-law pdlaw=',pdlaw
+               'cylindrical positions with power-law =',dustdensity_powerlaw
 !
           do k=1,npar_loc
 !
-! Start the particles obeying a power law pdlaw
+! Start the particles obeying a power law 
 !
-            tmp=2-pdlaw
+            tmp=2-dustdensity_powerlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
