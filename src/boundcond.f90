@@ -2842,8 +2842,8 @@ module Boundcond
       use Sub, only: step
 !
       real, dimension (ny,nz), intent (out) :: prof
-      integer :: i,j,k
-      real :: vel,rad,ylim,ymid,y1,zlim,zmid,z1
+      integer :: j,k
+      real :: vel,rad,ymid,y1,zlim,zmid,z1
       real :: yhat_min,yhat_max,zhat_min,zhat_max
       real :: width_hat
       real, dimension (ny) :: hatprofy
