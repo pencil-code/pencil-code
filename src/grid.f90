@@ -819,7 +819,6 @@ module Grid
       use Sub, only: remove_zprof
       use Mpicomm
 !
-      real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
       real :: fact
       integer :: xj,yj,zj,itheta
