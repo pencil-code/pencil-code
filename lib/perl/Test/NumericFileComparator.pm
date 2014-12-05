@@ -406,7 +406,7 @@ sub _read_file_in_column_format {
             for (my $i = 0; $i < @items; $i++) {
                 my $var = $variables[$i];
                 $columns[$i] = [] unless defined $columns[$i];
-                push $columns[$i], $items[$i];
+                push @{$columns[$i]}, $items[$i];
             }
         } else {
             croak "File $file: Unexpected line $linenum in column format: <$line>\n";

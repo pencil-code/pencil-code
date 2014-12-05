@@ -300,8 +300,8 @@ sub find_interpreter_for {
 All supported test types.
 
 =cut
-
-@default_types = keys {get_default_interpreters()};
+my ($interpreters) = {get_default_interpreters()};
+@default_types = keys %{$interpreters};
 
 =item B<Test::ScriptTester::get_default_interpreters>()
 
