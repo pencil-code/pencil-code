@@ -1747,7 +1747,6 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      integer :: k
       if (ladvection_velocity) then
         if (lweno_transport) then
           lpenc_requested(i_uu)=.true.
