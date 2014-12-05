@@ -342,8 +342,6 @@ module Slices
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
-      integer :: iostat
-
       if (slice_position=='p' .or. slice_position=='S') then
         ix_loc=l1; iy_loc=m1; iz_loc=n1; iz2_loc=n2
         lwrite_slice_xy2=llast_proc_z
