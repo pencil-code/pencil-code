@@ -93,6 +93,8 @@ module Sub
   public :: find_max_fvec, find_xyrms_fvec
   public :: finalize_aver
 !
+  public :: mean_density
+!
   interface poly                ! Overload the `poly' function
     module procedure poly_0
     module procedure poly_1
@@ -6168,6 +6170,45 @@ nameloop: do
       rms = sqrt(rms / nxygrid)
 !
     endfunction find_xyrms_fvec
+!***********************************************************************
+   function mean_density(f)
+!
+!  Calculate mean density
+!
+!   3-mar-14/MR: coded
+!
+     use Mpicomm, only: mpiallreduce_sum
+!
+     real :: mean_density
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      integer :: n,m
+      real :: tmp
+!
+      mean_density=0.
+!
+      do n=n1,n2
+        tmp=0.
+        do m=m1,m2
+          if (ldensity_nolog) then
+            tmp=tmp+sum(f(l1:l2,m,n,irho)*dVol_x(l1:l2))*dVol_y(m)
+          else
+            tmp=tmp+sum(exp(f(l1:l2,m,n,ilnrho))*dVol_x(l1:l2))*dVol_y(m)
+          endif
+        enddo
+        mean_density=mean_density+tmp*dVol_z(n)
+      enddo
+!
+      mean_density = mean_density/box_volume
+!
+      if (ncpus>1) then
+        call mpiallreduce_sum(mean_density,tmp)
+        mean_density=tmp
+      endif
+!
+    endfunction mean_density
 !***********************************************************************
     subroutine finalize_aver_3D(nproc,idir,arrm)
 !

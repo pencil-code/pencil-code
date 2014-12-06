@@ -1258,7 +1258,7 @@ module Density
 !    3-mar-14/MR: correction of total mass added
 !   17-aug-14/MR: finalize_aver used
 !
-      use Sub, only: grad, finalize_aver
+      use Sub, only: grad, finalize_aver,mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -1298,45 +1298,6 @@ module Density
       endif
 !
    endsubroutine calc_ldensity_pars
-!***********************************************************************
-   function mean_density(f)
-!
-!  Calculate mean density
-!
-!   3-mar-14/MR: coded
-!
-     use Mpicomm, only: mpiallreduce_sum
-!
-     real :: mean_density
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      integer :: n,m
-      real :: tmp
-!
-      mean_density=0.
-!
-      do n=n1,n2
-        tmp=0.
-        do m=m1,m2
-          if (ldensity_nolog) then
-            tmp=tmp+sum(f(l1:l2,m,n,irho)*dVol_x(l1:l2))*dVol_y(m)
-          else
-            tmp=tmp+sum(exp(f(l1:l2,m,n,ilnrho))*dVol_x(l1:l2))*dVol_y(m)
-          endif
-        enddo
-        mean_density=mean_density+tmp*dVol_z(n)
-      enddo
-!
-      mean_density = mean_density/box_volume
-!
-      if (ncpus>1) then
-        call mpiallreduce_sum(mean_density,tmp)
-        mean_density=tmp
-      endif
-!
-    endfunction mean_density
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint,fac_cs)
