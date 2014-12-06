@@ -309,6 +309,7 @@ module Particles
 !
       use EquationOfState, only: rho0, cs0
       use SharedVariables, only: put_shared_variable
+      use Sub, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -406,7 +407,7 @@ module Particles
           rhom = sqrt(2.0 * pi) / Lz
           if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          rhom = rho0
+          rhom = mean_density(f)
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)

@@ -208,6 +208,7 @@ module Particles
       use EquationOfState, only: cs0, rho0, get_stratz
       use FArrayManager
       use SharedVariables, only: put_shared_variable
+      use Sub, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -304,7 +305,7 @@ module Particles
           rhom = sqrt(2.0 * pi) / Lz
           if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          rhom = rho0
+          rhom = mean_density(f)
         endif
         if (rhop_swarm==0.0) &
              rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
@@ -409,7 +410,7 @@ module Particles
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      real :: rad,rad_scl,phi,tmp,OO,xx0,yy0,r2
+      real :: rad,rad_scl,tht,phi,tmp,OO,xx0,yy0,r2
       integer :: l, j, k, ix0, iy0, iz0, ib
       logical :: lequidistant=.false.
 !
@@ -636,7 +637,14 @@ module Particles
 !
 ! Start the particles obeying a power law 
 !
-            tmp=2-dustdensity_powerlaw
+            if (lcylindrical_coords.or.lcartesian_coords) then
+              tmp=2-dustdensity_powerlaw
+            elseif (lspherical_coords) then 
+              tmp=3-dustdensity_powerlaw
+            else
+              call fatal_error("init_particles",&
+                   "The world is flat, and we never got here")
+            endif
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
@@ -654,8 +662,15 @@ module Particles
               if (nxgrid/=1) fp(k,ixp)=rad
               if (nygrid/=1) fp(k,iyp)=phi
             elseif (lspherical_coords) then
-              call fatal_error('init_particles','random-cylindrical '// &
-                  'not implemented for spherical coordinates')
+              if (nxgrid/=1) fp(k,ixp)=rad
+              if (nygrid/=1) then
+                call random_number_wrapper(tht)
+                fp(k,iyp) = xyz0_par(2)+tht*Lxyz_par(2)
+              endif
+              if (nzgrid/=1) then
+                call random_number_wrapper(phi)
+                fp(k,izp) = xyz0_par(3)+phi*Lxyz_par(3)
+              endif
             endif
 !
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
@@ -1210,9 +1225,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*, 'init_particles: Keplerian velocity'
-            if (lspherical_coords) call fatal_error('init_particles', &
-                 'Keplerian particle initial condition: '// &
-                 'not implemented for spherical coordinates')
+            if (lshear) call fatal_error("init_particles",&
+                 "Keplerian initial condition is for global disks, not shearing boxes")
           endif
           do k=1,npar_loc
             if (lcartesian_coords) then
@@ -1227,6 +1241,9 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpx) =  0.0
               fp(k,ivpy) =  OO*rad
               fp(k,ivpz) =  0.0
+            elseif (lspherical_coords) then               
+              rad=fp(k,ixp)*sin(fp(k,iyp))
+              OO=sqrt(gravr)*rad**(-1.5)
             endif
           enddo
 !
