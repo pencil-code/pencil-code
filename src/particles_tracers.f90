@@ -255,7 +255,7 @@ module Particles
 !
 ! Start the particles obeying a power law
 !
-            tmp=2-dustdensity-powerlaw
+            tmp=2-dustdensity_powerlaw
             call random_number_wrapper(rad_scl)
             rad_scl = rp_int**tmp + rad_scl*(rp_ext**tmp-rp_int**tmp)
             rad = rad_scl**(1./tmp)
