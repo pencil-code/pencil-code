@@ -394,7 +394,6 @@ program start
 !  example).
 !
   call initialize_modules(f)
-  call particles_initialize_modules(f)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
 !  alternatively: read existing snapshot and overwrite only some fields
@@ -460,7 +459,10 @@ program start
     call init_special(f)
   enddo
 !
-  if (lparticles) call particles_init(f)
+  if (lparticles) then 
+    call particles_initialize_modules(f)
+    call particles_init(f)
+  endif
 !
 !  If desired, the f array can be initialized in one call.
 !
