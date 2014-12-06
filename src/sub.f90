@@ -3610,7 +3610,7 @@ module Sub
               case (-1)
                 sph_har=(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
               case (0)
-                sph_har=(0.5)*sqrt(3./pi)*costh(n)
+                sph_har=(0.5)*sqrt(3./pi)*costh(m)
               case (1) 
                 sph_har=-(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
               case default
