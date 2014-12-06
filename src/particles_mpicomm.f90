@@ -149,6 +149,9 @@ module Particles_mpicomm
 !
         endif
 !
+        if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array     =',&
+            npar_loc_array
+!
 !  If there are zero particles on a processor, set ipar1 and ipar2 to zero.
 !
         if (npar_species==1) then
