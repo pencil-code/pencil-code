@@ -20,10 +20,6 @@ module Grid
 !
   implicit none
 !
-!  Special definition for degenerate directions
-!
-  logical :: ldegenerate_directions=.false.
-!
   private
 !
   public :: construct_grid
@@ -810,7 +806,6 @@ module Grid
 !  Coordinate-related issues: nonuniform meshes, different coordinate systems
 !
 !  20-jul-10/wlad: moved here from register
-!  21-apr-11/axel: insert special ldegenerate_directions option for degenerate directions
 !  3-mar-14/MR: outsourced calculation of box_volume into box_vol
 !  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
 !                coordinates into coords_aux; set coordinate switsches at the
@@ -920,12 +915,7 @@ module Grid
         if (nxgrid/=1) then
           dVol_x=x**2*xprim
         else
-!
-          if (ldegenerate_directions) then
-            dVol_x=1.
-          else
-            dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
-          endif
+          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
         endif
 !
 !  Theta extent (if non-radially symmetric)
@@ -933,11 +923,7 @@ module Grid
         if (nygrid/=1) then
           dVol_y=sinth*yprim
         else
-          if (ldegenerate_directions) then
-            dVol_y=1.
-          else
-            dVol_y=2.
-          endif
+          dVol_y=2.
         endif
 !
 !  phi extent (if non-axisymmetry)
@@ -945,11 +931,7 @@ module Grid
         if (nzgrid/=1) then
           dVol_z=zprim
         else
-          if (ldegenerate_directions) then
-            dVol_z=1.
-          else
-            dVol_z=2.*pi
-          endif
+          dVol_z=2.*pi
         endif
 !
 !  weighted coordinates for integration purposes
@@ -997,11 +979,7 @@ module Grid
         if (nxgrid/=1) then
           dVol_x=x*xprim
         else
-          if (ldegenerate_directions) then
-            dVol_x=1.
-          else
-            dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
-          endif
+          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
         endif
 !
 !  theta extent (non-cylindrically symmetric)
@@ -1009,11 +987,7 @@ module Grid
         if (nygrid/=1) then
           dVol_y=yprim
         else
-          if (ldegenerate_directions) then
-            dVol_y=1.
-          else
-            dVol_y=2.*pi
-          endif
+          dVol_y=2.*pi
         endif
 !
 !  z extent (vertically extended)
@@ -1347,7 +1321,7 @@ module Grid
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
         else
-          if (.not.ldegenerate_directions) box_volume = box_volume*2.
+          box_volume = box_volume*2.
         endif
 !
 !  phi extent (if non-axisymmetry)
@@ -1355,7 +1329,7 @@ module Grid
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
         else
-          if (.not.ldegenerate_directions) box_volume = box_volume*2.*pi
+          box_volume = box_volume*2.*pi
         endif
 !
       elseif (coord_system=='cylindric' &
@@ -1371,7 +1345,7 @@ module Grid
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
         else
-          if (.not.ldegenerate_directions) box_volume = box_volume*2.*pi
+          box_volume = box_volume*2.*pi
         endif
 !
 !  z extent (vertically extended)
