@@ -172,19 +172,19 @@ sub _compare_special_ieee {
     } elsif ($a =~ m{ (?<sign_a> [-+])? Inf }ix) {
         my $sign_a = $+{sign_a};
         if ($b =~ m{ (?<sign_b> [-+])? Inf }ix) {
-            # Comparing +/-oo to +/-oo or oo
+            # Comparing +/-Inf to +/-Inf or Inf
             my $sign_b = $+{sign_b};
             if (defined $sign_a && defined $sign_b) {
                 return $sign_a cmp $sign_b;
             } else {
-                return 0;       # oo = +oo or oo = -oo
+                return 0;       # Ind = +Inf or Inf = -Inf
             }
         } else {
-            # Comparing oo to something else
+            # Comparing Inf to something else
             if (defined $sign_a && $sign_a eq '-') {
-                return -1;      # -oo < $b
+                return -1;      # -Inf < $b
             } else {
-                return 1;       # oo = +oo > $b
+                return 1;       # Inf = +Ibf > $b
             }
         }
     }
