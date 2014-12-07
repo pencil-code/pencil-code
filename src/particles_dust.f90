@@ -407,7 +407,12 @@ module Particles
           rhom = sqrt(2.0 * pi) / Lz
           if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          rhom = mean_density(f)
+          ! for backward compatibility 
+          if (lcartesian_coords) then 
+            rhom = rho0
+          else
+            rhom = mean_density(f)
+          endif
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
