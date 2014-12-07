@@ -1660,6 +1660,7 @@ END {
         if (%failed) {
             print "The following configuration has been used:\n";
             system(@pc_dump_config);
+            print "Perl version $^V\n";
         }
 
     }
