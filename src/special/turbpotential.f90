@@ -103,7 +103,8 @@ module Special
   integer, dimension(nmode_max) :: mode_wnumber 
 !
   real, dimension(mx) :: rad,amplitude_scaled
-  real, dimension(my) :: phi
+  real, dimension(:), allocatable :: phi
+  real, dimension(my) :: tht
 !
   integer :: ipotturb
   integer :: idiag_potturbm=0,idiag_potturbmax=0,idiag_potturbmin=0
@@ -153,14 +154,19 @@ module Special
 !
       f(:,:,:,ipotturb)=0.0
 !
-!  For readability, use rad and phi instead of x and y. Break if not cylindrical
+!  For readability, use rad and phi instead of x and [yz]. 
 !
-      if (.not.lcylindrical_coords) then
-        call fatal_error("initialize_special",&
-             "turbulent potential coded for cylindrical coordinates only")
-      else
-        rad=x
+      rad=x
+      if (lspherical_coords) then 
+        tht=y
+        allocate(phi(mz))
+        phi=z
+      elseif (lcylindrical_coords) then 
+        allocate(phi(my))
         phi=y
+      else
+        call fatal_error("initialize_special",&
+             "turbulent potential coded only for spherical and cylindrical coordinates")
       endif
 !
 !  Useful constants
@@ -242,7 +248,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: lambda, time_dependant_amplitude
-      real ::  tmode_age
+      real ::  tmode_age,phi_pt
       integer :: k,icount
 !
 !  This main loop sets the modes.
@@ -278,11 +284,17 @@ module Special
                 time_dependant_amplitude = 1.
               endif
 !
+              if (lspherical_coords) then 
+                phi_pt=phi(n)
+              elseif (lcylindrical_coords) then
+                phi_pt=phi(m)
+              endif
+!
               lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
                    exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
-                   cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
+                   cos(mode_wnumber(k)*phi_pt - phicenter(k) - &
 !..with Keplerianly-shifting center
                    omega_mode(k)*tmode_age)* &
 !mode grows and fades in time following a sine curve
