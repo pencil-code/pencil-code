@@ -97,14 +97,12 @@ module Special
 !
   type (InternalPencils) :: q
 !
-  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
+  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter, zcenter
   real, dimension(nmode_max) :: omega_mode, tmode_init, radial_sigma_inv
   real, dimension(nmode_max) :: tmode_lifetime, tmode_lifetime_inv
   integer, dimension(nmode_max) :: mode_wnumber 
 !
   real, dimension(mx) :: rad,amplitude_scaled
-  real, dimension(:), allocatable :: phi
-  real, dimension(my) :: tht
 !
   integer :: ipotturb
   integer :: idiag_potturbm=0,idiag_potturbmax=0,idiag_potturbmin=0
@@ -145,29 +143,27 @@ module Special
       use Cdata 
       use Mpicomm
       use EquationOfState, only: cs0
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mx) :: Omega2
+      real, pointer :: gsum
       real :: aspect_ratio, amplitude
+      integer :: ierr
 !
 !  Initialize the turbulent potential to zero. 
 !
       f(:,:,:,ipotturb)=0.0
 !
-!  For readability, use rad and phi instead of x and [yz]. 
+!  For readability, use rad instead of x
 !
       rad=x
-      if (lspherical_coords) then 
-        tht=y
-        allocate(phi(mz))
-        phi=z
-      elseif (lcylindrical_coords) then 
-        allocate(phi(my))
-        phi=y
-      else
-        call fatal_error("initialize_special",&
-             "turbulent potential coded only for spherical and cylindrical coordinates")
-      endif
+!
+!  Break for Cartesian
+!
+      if (lcartesian_coords) &
+           call fatal_error("initialize_special",&
+           "turbulent potential coded only for spherical and cylindrical coordinates")
 !
 !  Useful constants
 !
@@ -182,8 +178,9 @@ module Special
 !
 !  Scale the amplitude by r**2 * Omega**2
 !
-      !Omega2 = g0/rad**3
-      Omega2 = 1./rad**3
+      call get_shared_variable('gsum',gsum,ierr)
+      if (ierr/=0) call fatal_error("initialize_special","there was an error getting gsum")
+      Omega2 = gsum/rad**3
       amplitude_scaled = rad**2*Omega2 * amplitude
 !
 !  Inverse sound speed
@@ -247,8 +244,8 @@ module Special
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: lambda, time_dependant_amplitude
-      real ::  tmode_age,phi_pt
+      real, dimension(mx) :: lambda, time_dependant_amplitude,zed
+      real ::  tmode_age,phi
       integer :: k,icount
 !
 !  This main loop sets the modes.
@@ -285,18 +282,22 @@ module Special
               endif
 !
               if (lspherical_coords) then 
-                phi_pt=phi(n)
+                zed=rad*costh(m)
+                phi=z(n)
               elseif (lcylindrical_coords) then
-                phi_pt=phi(m)
+                phi=y(m)
+                zed=z(n)
               endif
 !
               lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
                    exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
-                   cos(mode_wnumber(k)*phi_pt - phicenter(k) - &
+                   cos(mode_wnumber(k)*phi - phicenter(k) - &
 !..with Keplerianly-shifting center
                    omega_mode(k)*tmode_age)* &
+!
+                   (zed-zcenter(k))* &
 !mode grows and fades in time following a sine curve
                    time_dependant_amplitude
 !
@@ -321,7 +322,7 @@ module Special
 !
 !  Auxiliary array for the broadcast only. 
 !
-      real, dimension(8) :: g
+      real, dimension(9) :: g
       integer  :: h
 !
       real :: tmode_age
@@ -351,7 +352,7 @@ module Special
             endif
             call get_mode(g,h)
           endif
-          call mpibcast_real(g,8)
+          call mpibcast_real(g,9)
           call mpibcast_int(h)
           call set_values(g,h,k)
         enddo
@@ -387,8 +388,8 @@ module Special
 !
           do k=1,nmode_max
             if (lroot) read(19,*,iostat=stat)    &
-                   g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),h
-            call mpibcast_real(g,8)
+                   g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),g(9),h
+            call mpibcast_real(g,9)
             call mpibcast_int(h)
             call set_values(g,h,k)
           enddo
@@ -423,7 +424,7 @@ module Special
                 call output_modes(trim(datadir)//'/modes_old.dat')
               endif
 !
-              call mpibcast_real(g,8)
+              call mpibcast_real(g,9)
               call mpibcast_int(h)
               call set_values(g,h,k)
 !
@@ -481,7 +482,7 @@ module Special
 !
       open(18,file=file)
       do k=1,nmode_max 
-        write(18,*) gauss_ampl(k),rcenter(k),phicenter(k),&
+        write(18,*) gauss_ampl(k),rcenter(k),phicenter(k),zcenter(k),&
              radial_sigma_inv(k),tmode_init(k),tmode_lifetime(k),&
              omega_mode(k),tmode_lifetime_inv(k),mode_wnumber(k)
       enddo
@@ -496,10 +497,10 @@ module Special
 !
       !use General, only: random_number_wrapper
 !
-      real, dimension(8), intent(out) :: g
+      real, dimension(9), intent(out) :: g
       integer, intent(out) :: h
 !
-      real :: gauss_ampl_scl,rcenter_scl,phicenter_scl
+      real :: gauss_ampl_scl,rcenter_scl,phicenter_scl,zcenter_scl
       real :: tmode_lifetime_scl,inv_radial_sigma_scl,cs1_mode
       real :: tmode_init_scl,omega_mode_scl,mode_aspect_ratio
       integer :: mode_wnumber_scl
@@ -541,8 +542,20 @@ module Special
 !
 !  Mode's random radial and azimuthal location.
 !
-        call random_number(aux1)
-        phicenter_scl  = aux1*2*pi
+        if (lspherical_coords) then
+          call random_number(aux1)
+          phicenter_scl  = xyz0(3) + aux1*Lxyz(3)
+          call random_number(aux1)
+          !random theta
+          aux1=xyz0(2) + aux1*Lxyz(2)
+          !z=r*cos(theta)
+          zcenter_scl  = rcenter_scl*cos(aux1) 
+        elseif (lcylindrical_coords) then
+          call random_number(aux1)
+          phicenter_scl  = xyz0(2) + aux1*Lxyz(2)
+          call random_number(aux1)
+          zcenter_scl    = xyz0(3) + aux1*Lxyz(3)
+        endif
 !
 !  Keplerian frequency at mode location.
 !
@@ -575,6 +588,7 @@ module Special
 !
         gauss_ampl_scl       = 0.
         phicenter_scl        = 1.
+        zcenter_scl          = 0.
         omega_mode_scl       = 1.
         inv_radial_sigma_scl = 1.
 !
@@ -585,28 +599,30 @@ module Special
       g(1) = gauss_ampl_scl
       g(2) = rcenter_scl
       g(3) = phicenter_scl
-      g(4) = inv_radial_sigma_scl
-      g(5) = tmode_init_scl
-      g(6) = tmode_lifetime_scl
-      g(7) = omega_mode_scl
-      g(8) = 1./tmode_lifetime_scl
+      g(4) = zcenter_scl
+      g(5) = inv_radial_sigma_scl
+      g(6) = tmode_init_scl
+      g(7) = tmode_lifetime_scl
+      g(8) = omega_mode_scl
+      g(9) = 1./tmode_lifetime_scl
       h    = mode_wnumber_scl
 !
     endsubroutine get_mode
 !***********************************************************************
     subroutine set_values(g,h,k)
 !
-      real, dimension(8) :: g
+      real, dimension(9) :: g
       integer :: h,k
 !
       gauss_ampl(k)          = g(1) 
       rcenter(k)             = g(2) 
       phicenter(k)           = g(3) 
-      radial_sigma_inv(k)    = g(4) 
-      tmode_init(k)          = g(5) 
-      tmode_lifetime(k)      = g(6) 
-      omega_mode(k)          = g(7) 
-      tmode_lifetime_inv(k)  = g(8) 
+      zcenter(k)             = g(4)
+      radial_sigma_inv(k)    = g(5) 
+      tmode_init(k)          = g(6) 
+      tmode_lifetime(k)      = g(7) 
+      omega_mode(k)          = g(8) 
+      tmode_lifetime_inv(k)  = g(9) 
       mode_wnumber(k)        = h    
       
     endsubroutine set_values
