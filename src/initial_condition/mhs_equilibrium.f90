@@ -29,20 +29,17 @@ module InitialCondition
   real :: rm_int=0.0,rm_ext=impossible
   real :: tm_bot=0.0,tm_top=impossible
   real :: ampluu_cs_factor=0.01
-  real :: rp1=1.
   logical :: lnumerical_mhsequilibrium=.true.
   logical :: lintegrate_potential=.true.
   logical :: lcap_field=.false.,lcap_field_radius=.false.,lcap_field_theta=.false.
   logical :: ladd_noise_propto_cs=.false. 
-  logical :: lcorotational_frame=.false.
   logical :: ladd_field=.true.
 !
   namelist /initial_condition_pars/ &
       g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
-      ladd_noise_propto_cs, ampluu_cs_factor, lcorotational_frame, &
-      rp1,ladd_field
+      ladd_noise_propto_cs, ampluu_cs_factor, ladd_field
   
 !
   real :: ksi=1.
@@ -122,9 +119,12 @@ module InitialCondition
 !
       if (.not.lnumerical_mhsequilibrium) then 
 !
-        OOcorot=0.
-        if (lcorotational_frame) OOcorot=rp1**(-1.5)
-
+        if (lcorotational_frame) then 
+          OOcorot=rcorot**(-1.5)
+        else
+          OOcorot=0.
+        endif
+!
         p=-density_power_law
         q=-temperature_power_law
 !
