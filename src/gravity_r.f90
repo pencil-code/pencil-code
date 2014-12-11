@@ -44,7 +44,8 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real :: g1=0., rp1=1.0, rp1_pot=0.
+  real :: g1=0.,rp1,rp1_pot=0.
+  real, target :: gsum=0.
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
@@ -55,26 +56,24 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   real :: nu_epicycle=1.0
-  real :: Omega_secondary=0.
   character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
-  logical :: lsecondary_body=.false.
   logical :: lindirect_terms=.false.
-!
+  logical :: lsecondary_body=.false.
   integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot,lindirect_terms
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,lsecondary_body,g1,rp1,rp1_pot,lindirect_terms
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms
 !
   contains
 !***********************************************************************
@@ -108,12 +107,13 @@ module Gravity
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
       real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,pot
       logical :: lpade=.true. ! set to false for 1/r potential
-      integer :: j
+      integer :: j,ierr
 !
 !  for lpade=.true. set coefficients for potential (coefficients a0, a2, a3,
 !  b2, b3) for the rational approximation
@@ -318,9 +318,21 @@ module Gravity
 !  Pre-calculate the angular frequency of the rotating frame in the case a
 !  secondary stationary body is added to the simulation.
 !
-      if (lsecondary_body) then
-        Omega_secondary = sqrt((g0+g1)/rp1**3)
+      if (lcorotational_frame) then 
+        gsum=g0+g1
+        Omega_corot = sqrt(gsum/rcorot**3)
+        rp1=rcorot
+      else
+        gsum=g0
+        if (g1/=0) call fatal_error("initialize_gravity",&
+             "companion gravity coded only for corotational frame")
       endif
+!
+!  Share gsum to modules that may need it
+!
+      call put_shared_variable('gsum',gsum,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting gsum')
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -460,7 +472,7 @@ module Gravity
 !
 !  Indirect term for binary systems with origin at the primary.
 !
-      if (lsecondary_body) call indirect_plus_inertial_terms(df,p)
+      if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
 !
       call keep_compiler_quiet(f)
 !
@@ -491,13 +503,13 @@ module Gravity
 !
 !  Coriolis force
 !
-        c2 = 2*Omega_secondary
+        c2 = 2*Omega_corot
         df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
 !
 !  Centrifugal force
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_secondary**2
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_corot**2
 !
       else if (lspherical_coords) then
 !
@@ -509,8 +521,8 @@ module Gravity
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
         endif
 !
-        c2 = 2*Omega_secondary*costh(m)
-        s2 = 2*Omega_secondary*sinth(m)
+        c2 = 2*Omega_corot*costh(m)
+        s2 = 2*Omega_corot*sinth(m)
 !
 !  Coriolis force
 !
@@ -521,8 +533,8 @@ module Gravity
 !  Centrifugal force
 !
         rrcyl_mn=x(l1:l2)*sinth(m)
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_secondary**2
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_secondary**2
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_corot**2
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_corot**2
 !
       endif
 !
@@ -906,7 +918,7 @@ module Gravity
 !
 !  Add the gravity of a stationary secondary body (i.e., following reference frame)
 !
-      if (lsecondary_body) call secondary_body_gravity(gg_mn)
+      if (g1/=0) call secondary_body_gravity(gg_mn)
 !
     endsubroutine get_gravity_field
 !***********************************************************************

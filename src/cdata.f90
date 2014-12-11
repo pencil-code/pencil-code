@@ -611,6 +611,12 @@ module Cdata
 !
   logical :: lfargo_advection=.false.
 !
+!  Switch for running global disks in a corotational frame, 
+!  and associated corotational radius and omega.
+!
+  logical :: lcorotational_frame=.false.
+  real :: rcorot=1.0, Omega_corot=0.0
+!
 !  Switch for local isothermal approximation: a hardcoded time-invariant
 !  temperature gradient for global disks.
 !
