@@ -115,10 +115,9 @@ module InitialCondition
   logical :: lcorrect_lorentzforce=.false.
   logical :: lpolynomial_fit_cs2=.false.
   logical :: ladd_noise_propto_cs=.false.
-  logical :: lcorotational_frame=.false.
   real :: ampluu_cs_factor=1d-3
   real :: widthbb1=0.0,widthbb2=0.0
-  real :: rp1=1.,OOcorot
+  real :: OOcorot
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -130,7 +129,6 @@ module InitialCondition
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
-       lcorotational_frame,rp1
 !
   contains
 !***********************************************************************
@@ -155,8 +153,8 @@ module InitialCondition
 !
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
-      if (lcorotational_frame) then 
-        OOcorot=rp1**(-1.5)
+      if (lcorotational_frame) then
+        OOcorot=rcorot**(-1.5)
       else
         OOcorot=0.
       endif
