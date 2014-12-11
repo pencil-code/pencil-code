@@ -21,6 +21,7 @@ module General
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
+  public :: spline_coeff_clamped
   public :: polynomial_interpolation
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
@@ -1454,6 +1455,50 @@ module General
       enddo
 !
     endsubroutine spline
+!***********************************************************************
+    pure subroutine spline_coeff_clamped(y, yp1, yp2, b, c, d, err, msg)
+!
+!  Calculates the coefficients of the cubic polynomials from the clamped
+!  spline interpolation.  The step size is assumed to be unity.  The
+!  polynomials are
+!
+!    S_i(x) = y_i + b_i (x - i) + c_i (x - i)^2 + d_i (x - i)^3,
+!
+!  for x in [i, i+1] and i = 1, 2, ..., n-1, which satisfies
+!
+!    S'(1) = yp1 and S'(n) = yp2.
+!
+!  11-dec-14/ccyang: coded.
+!
+      real, dimension(:), intent(in) :: y
+      real, intent(in) :: yp1, yp2
+      real, dimension(size(y)), intent(out) :: b, c, d
+      character(len=*), intent(out), optional :: msg
+      logical, intent(out), optional :: err
+!
+      real, parameter :: onethird = 1.0 / 3.0
+      real, dimension(size(y)) :: r
+      character(len=72) :: msg1
+      logical :: err1
+      integer :: n
+!
+!  Solve the tridiagonal system for coefficient c's.
+!
+      n = size(y)
+      r(1) = y(2) - y(1) - yp1
+      r(2:n-1) = y(3:n) - 2.0 * y(2:n-1) + y(1:n-2)
+      r(n) = yp2 - y(n) + y(n-1)
+      r = 3.0 * r
+      call tridag(spread(1.0, 1, n), (/2.0, spread(4.0, 1, n-2), 2.0/), spread(1.0, 1, n), r, c, err1, msg1)
+      if (present(err)) err = err1
+      if (present(msg)) msg = msg1
+!
+!  Find the rest of the coefficients.
+!
+      b(1:n-1) = y(2:n) - y(1:n-1) - onethird * (c(2:n) + 2.0 * c(1:n-1))
+      d(1:n-1) = onethird * (c(2:n) - c(1:n-1))
+!
+    endsubroutine spline_coeff_clamped
 !***********************************************************************
     subroutine poly_interp_one(xa, ya, x, y, istatus, message)
 !
