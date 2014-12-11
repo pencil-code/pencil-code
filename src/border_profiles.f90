@@ -162,11 +162,15 @@ module BorderProfiles
       if (tborder/=0.) then
         tborder1=1./tborder
       else
-        call get_shared_variable('gsum',gsum,ierr)
-        if (ierr/=0) call fatal_error("initialize_border_profiles",&
-             "there was an error getting gsum")
-        !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
-        fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+        if (lgravr) then 
+          call get_shared_variable('gsum',gsum,ierr)
+          if (ierr/=0) call fatal_error("initialize_border_profiles",&
+               "there was an error getting gsum")
+          !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
+          fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+        else
+          fac_sqrt_gsum1 = 1/(2*pi)
+        endif
 !
         fraction_tborder1=1./fraction_tborder
       endif
