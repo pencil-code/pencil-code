@@ -128,7 +128,7 @@ module InitialCondition
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
+       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2
 !
   contains
 !***********************************************************************
