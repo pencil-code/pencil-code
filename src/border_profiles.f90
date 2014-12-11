@@ -28,6 +28,7 @@ module BorderProfiles
   real, dimension(nx) :: rborder_mn
   real                :: tborder1=impossible
   real                :: fraction_tborder1=impossible
+  real                :: fac_sqrt_gsum1=1.0
 !
 ! WL: Ideally,this 4D array f_init should be allocatable, since it
 !     is only used in specific conditions in the code (only when the
@@ -52,11 +53,15 @@ module BorderProfiles
 !                  because r_int and r_ext are not set until after all
 !                  calls to initialize are done in Register.
 !
+      use SharedVariables, only: get_shared_variable
+      use Messages, only: fatal_error
+!
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
-      integer :: l
+      integer :: l,ierr
+      real, pointer :: gsum
 !
 !  x-direction
 !
@@ -157,6 +162,12 @@ module BorderProfiles
       if (tborder/=0.) then
         tborder1=1./tborder
       else
+        call get_shared_variable('gsum',gsum,ierr)
+        if (ierr/=0) call fatal_error("initialize_border_profiles",&
+             "there was an error getting gsum")
+        !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
+        fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+!
         fraction_tborder1=1./fraction_tborder
       endif
 !
@@ -422,23 +433,20 @@ module BorderProfiles
 !  24-jun-09/axel: added tborder as input
 !
       real, intent(out) :: inverse_drive_time
-      real :: uphi
+      real :: inverse_period
       type (pencil_case) :: p
       integer :: i
 !
 !  calculate orbital time
 !
       if (tborder==0.) then
-        if (lcylinder_in_a_box.or.lcylindrical_coords) then
-          uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
-        elseif (lspherical_coords) then
-          uphi=p%uu(i,3)
-        else
-          call fatal_error('get_drive_time', &
-          'not implemented for cartesian grid')
-          uphi=0.
-        endif
-        inverse_drive_time = fraction_tborder1*.5*pi_1*uphi/rborder_mn(i)
+!
+!  If tborder is not hardcoded, use a fraction of the 
+!  orbital period 2pi/Omega. This is of course specific
+!  to Keplerian global disks. 
+!
+        inverse_period = rborder_mn(i)**1.5 * fac_sqrt_gsum1
+        inverse_drive_time = fraction_tborder1*inverse_period
 !
 !  specify tborder as input
 !
