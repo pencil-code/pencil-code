@@ -178,8 +178,13 @@ module Special
 !
 !  Scale the amplitude by r**2 * Omega**2
 !
-      call get_shared_variable('gsum',gsum,ierr)
-      if (ierr/=0) call fatal_error("initialize_special","there was an error getting gsum")
+      if (lgravr) then 
+        call get_shared_variable('gsum',gsum,ierr)
+        if (ierr/=0) call fatal_error("initialize_special","there was an error getting gsum")
+      else
+        call fatal_error("initialize_special",&
+             "this turbulent potential should be used with gravity_r")
+      endif
       Omega2 = gsum/rad**3
       amplitude_scaled = rad**2*Omega2 * amplitude
 !
