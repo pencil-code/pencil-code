@@ -24,14 +24,14 @@ module Particles_temperature
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Particles_chemistry, only: get_q_reac,get_Nusselt
+  use Particles_chemistry, only: get_temperature_chemistry
 !
   implicit none
 !
   include 'particles_temperature.h'
 !
   logical :: lpart_temp_backreac=.true.
-  real :: init_part_temp, emissivity, cp_part=1.
+  real :: init_part_temp, emissivity, cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
@@ -183,7 +183,7 @@ module Particles_temperature
       real, dimension(nx) :: feed_back, volume_pencil
       real, dimension(:), allocatable :: q_reac, Nu_p
       real :: volume_cell
-      real :: pmass, Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
+      real :: Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0,iy0,iz0,ierr
       real :: rho1_point, weight
       integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
@@ -207,8 +207,7 @@ module Particles_temperature
 !
       allocate(Nu_p(k1:k2))
       allocate(q_reac(k1:k2))
-      call get_q_reac(q_reac)
-      call get_Nusselt(Nu_p)
+      call get_temperature_chemistry(q_reac,Nu_p)
 !
 !  Loop over all particles in current pencil.
 !
@@ -220,7 +219,7 @@ module Particles_temperature
 !
 !            Nu_p=2.
 !
-!  Calculate convective and conductive heat
+!  Calculate convective and conductive heat, all in CGS units
 !
         ix0=ineargrid(k,1)
         iy0=ineargrid(k,2)
@@ -231,18 +230,10 @@ module Particles_temperature
         heat_trans_coef=Nu_p(k)*cond/(2*fp(k,iap))
         Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
-!  Find the mass of the particle
-!
-        if (lparticles_density) then
-          call fatal_error('dpTT_dt','Variable mass not implemented yet!')
-        else
-          pmass=4.*pi*fp(k,iap)**3*rhopmat/3.
-        endif
-!
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-        dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(pmass*cp_part)
+        dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
 !
 !  Calculate feed back from the particles to the gas phase
 !

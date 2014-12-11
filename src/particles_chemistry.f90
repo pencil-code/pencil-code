@@ -920,7 +920,7 @@ module Particles_chemistry
       integer :: l, k, k1, k2
       real :: pre_pressure
       real, dimension(:), allocatable :: k_p, k_c
-      real, dimension(:), allocatable :: denominator, exponent_
+      real, dimension(:), allocatable :: denominator, expo
       real, dimension(:,:) :: fp
 !
       k1 = k1_imn(imn)
@@ -929,7 +929,7 @@ module Particles_chemistry
       allocate(k_p(k1:k2))
       allocate(k_c(k1:k2))
       allocate(denominator(k1:k2))
-      allocate(exponent_(k1:k2))
+      allocate(expo(k1:k2))
 !
       if (unit_system == 'cgs') then
         pre_pressure = 0.1
@@ -939,8 +939,8 @@ module Particles_chemistry
 !
       do k = k1,k2
         denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-        exponent_(k) = denominator(k)/(gas_constant*fp(k,iTp))
-        k_p(k) = exp(-exponent_(k))
+        expo(k) = denominator(k)/(gas_constant*fp(k,iTp))
+        k_p(k) = exp(-expo(k))
 !
 ! k_p == pressure independent equilibrium constant
         k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/ &
@@ -953,7 +953,7 @@ module Particles_chemistry
       deallocate(k_p)
       deallocate(k_c)
       deallocate(denominator)
-      deallocate(exponent_)
+      deallocate(expo)
     endsubroutine get_reverse_K_k
 ! ******************************************************************************
 !  Calculate the conversion of the particle
@@ -1127,7 +1127,7 @@ module Particles_chemistry
         do l = 1,N_surface_reactions
           mdot_ck(k,l) = -St(k)*Rck(k,l)
         enddo
-        mass_loss(k)=sum(mdot_ck(k,:))
+        mass_loss(k) = sum(mdot_ck(k,:))
       enddo
 !
 ! Find the sum of all molar fluxes at the surface
@@ -1215,7 +1215,7 @@ module Particles_chemistry
       enddo
 !
 ! Find particle volume
-      do k=k1,k2
+      do k = k1,k2
         volume(k) = 4.*pi*(fp(k,iap)**3)/3.
         porosity(k) = 1- (fp(k,imp)/volume(k))/true_density_carbon
       enddo
@@ -1471,7 +1471,12 @@ module Particles_chemistry
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
 !
+      if(allocated(part)) deallocate(part)
+      if(allocated(part_power)) deallocate(part_power)
+!
+!
 ! Routine to calcute quantities used for reactive particles
+!
       call allocate_variable_pencils()
 !
       call calc_rho_p(fp)
@@ -1524,7 +1529,7 @@ module Particles_chemistry
           'Could not allocate memory for q_reac')
       allocate(St(k1:k2),STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for St')      
+          'Could not allocate memory for St')
       allocate(mass_loss(k1:k2),STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for mass_loss')
@@ -1965,26 +1970,6 @@ module Particles_chemistry
 !
     endsubroutine calc_Nusselt
 ! ******************************************************************************
-!  get the nusselt variable
-!
-!  oct-14/Jonas: coded
-!
-    subroutine get_Nusselt(var)
-      real, dimension(:) :: var
-!
-      var = Nu_p
-    endsubroutine get_Nusselt
-! ******************************************************************************
-!  get the q_reac variable
-!
-!  oct-14/Jonas: coded
-!
-    subroutine get_q_reac(var)
-      real, dimension(:) :: var
-!
-      var = q_reac
-    endsubroutine get_q_reac
-! ******************************************************************************
 !  This subroutine parses trough the list of elements of the mechanics.in
 !  and looks for terms of the form T^x.yz where x.yz is a real number.
 !  This is saved in T_k and is for temperature dependent reactions
@@ -2128,9 +2113,9 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine get_mass_chemistry(mass_loss_targ,St_targ,Rck_max_targ)
-      real, dimension(:) :: mass_loss_targ,St_targ
+      real, dimension(:) :: mass_loss_targ, St_targ
       real, dimension(:,:) :: Rck_max_targ
-
+!
       mass_loss_targ = mass_loss
       St_targ = St
       Rck_max_targ = Rck_max
@@ -2140,8 +2125,8 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine get_radius_chemistry(mass_loss_targ,effectiveness_targ)
-      real, dimension(:) :: mass_loss_targ,effectiveness_targ
-
+      real, dimension(:) :: mass_loss_targ, effectiveness_targ
+!
       mass_loss_targ = mass_loss
       effectiveness_targ = effectiveness_factor
     endsubroutine get_radius_chemistry
@@ -2155,7 +2140,7 @@ module Particles_chemistry
 !
       R_j_targ = R_j_hat
       R_c_targ = R_c_hat
-
+!
     endsubroutine get_adsorbed_chemistry
 ! ******************************************************************************
 !  Get surface-chemistry dependent variables!
@@ -2165,7 +2150,18 @@ module Particles_chemistry
       real, dimension(:,:) :: ndot_targ
 !
       ndot_targ = ndot
-
+!
     endsubroutine get_surface_chemistry
+! ******************************************************************************
+!  Get temperature-chemistry dependent variables!
+!  dec-11/Jonas: coded
+!
+    subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ)
+      real, dimension(:) :: q_reac_targ,Nu_p_targ
+!
+      Nu_p_targ = Nu_p
+      q_reac_targ = q_reac
+!
+    endsubroutine get_temperature_chemistry
 ! ******************************************************************************
 endmodule Particles_chemistry

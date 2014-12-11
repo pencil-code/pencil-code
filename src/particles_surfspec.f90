@@ -39,14 +39,14 @@ module Particles_surfspec
   real, dimension(:,:), allocatable :: nu_power
   real, dimension(:), allocatable :: uscale, fscale, constr
   integer, dimension(:), allocatable :: dependent_reactant
-  integer :: surf_save
+  integer :: Ysurf
   logical :: lspecies_transfer=.true.
   logical :: linfinite_diffusion=.true.
   logical :: lboundary_explicit=.true.
 
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
-  integer :: idiag_surf_save=0
+  integer :: idiag_surf=0
 
 !*********************************************************************!
 !               Particle dependent variables below here               !
@@ -294,6 +294,7 @@ module Particles_surfspec
     real, dimension(mpar_loc,mparray) :: fp
     real, dimension(mpar_loc,mpvar) :: dfp
     integer, dimension(mpar_loc,3) :: ineargrid
+    integer :: i
 
     ! JONAS: equations.tex eq 37
     call keep_compiler_quiet(f)
@@ -303,8 +304,10 @@ module Particles_surfspec
     call keep_compiler_quiet(ineargrid)
 
     if (ldiagnos) then
-      if (idiag_surf_save /= 0) then
-        call sum_par_name(fp(1:mpar_loc,isurf),idiag_surf_save)
+      if (idiag_surf /= 0) then
+        do i=1,isurf_end-isurf
+          call sum_par_name(fp(1:mpar_loc,isurf+i-1),idiag_surf+i-1)
+        enddo
       endif
     endif
   endsubroutine dpsurf_dt
@@ -449,16 +452,16 @@ module Particles_surfspec
     ! Write information to index.pro
     lwr = .false.
     if (present(lwrite)) lwr = lwrite
-    if (lwr) write (3,*) 'isurf_save=', surf_save
+    if (lwr) write (3,*) 'Ysurf=', isurf
 
     if (lreset) then
-      idiag_surf_save = 0
+      idiag_surf = 0
     endif
 
     if (lroot .and. ip < 14) print*,'rprint_particles_surf: run through parse list'
 
     do iname = 1,nname
-      call parse_name(iname,cname(iname),cform(iname),'surf_save',idiag_surf_save)
+      call parse_name(iname,cname(iname),cform(iname),'Ysurf',idiag_surf)
     enddo
   endsubroutine rprint_particles_surf
 ! ******************************************************************************

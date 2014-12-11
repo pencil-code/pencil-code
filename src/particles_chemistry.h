@@ -12,8 +12,6 @@
   public :: get_part
 !  public :: get_total_carbon_sites
   public :: get_ac
-  public :: get_q_reac
-  public :: get_nusselt
   public :: find_species
 !
 !  Routines used in the mn loop for each pencil
@@ -27,6 +25,7 @@
   public :: get_radius_chemistry
   public :: get_adsorbed_chemistry
   public :: get_surface_chemistry
+  public :: get_temperature_chemistry
 !
 !  Routines that are used once in startup or per processor
 !

@@ -192,7 +192,7 @@ module Particles_adsorbed
 !
     end subroutine register_dep_ads
 !***********************************************************************
-    subroutine initialize_particles_ads(fp)
+    subroutine initialize_particles_ads(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -200,9 +200,9 @@ module Particles_adsorbed
 !  29-aug-14/jonas coded
 !  JONAS: do i need this?
 !
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(f)
 !
     end subroutine initialize_particles_ads
 !***********************************************************************
@@ -273,6 +273,7 @@ module Particles_adsorbed
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: i
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -282,7 +283,9 @@ module Particles_adsorbed
 !
       if (ldiagnos) then
         if (idiag_ads /= 0) then
-          call sum_par_name(fp(1:mpar_loc,iads),idiag_ads)
+          do i=1,iads_end-iads
+            call sum_par_name(fp(1:mpar_loc,iads+i-1),idiag_ads+i-1)
+          enddo
         endif
       endif
 !
@@ -406,7 +409,11 @@ module Particles_adsorbed
       if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ads',idiag_ads)
+        call parse_name(iname,cname(iname),cform(iname),'Yads',idiag_ads)
+        call parse_name(iname,cname(iname),cform(iname),'Yads1',idiag_ads)
+        call parse_name(iname,cname(iname),cform(iname),'Yads2',idiag_ads)
+        call parse_name(iname,cname(iname),cform(iname),'Yads3',idiag_ads)
+        call parse_name(iname,cname(iname),cform(iname),'Yads4',idiag_ads)
       enddo
 !
     end subroutine rprint_particles_ads
