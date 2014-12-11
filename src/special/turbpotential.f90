@@ -244,7 +244,8 @@ module Special
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: lambda, time_dependant_amplitude,zed
+      real, dimension(mx) :: lambda, time_dependant_amplitude
+      real, dimension(mx) :: zed,omega_mode_corot
       real ::  tmode_age,phi
       integer :: k,icount
 !
@@ -289,13 +290,21 @@ module Special
                 zed=z(n)
               endif
 !
+!  Take into account that the mode too should corotate
+!  (Omega_corot is a global variable set in gravity_r 
+!  if lcorotational_frame is used. It is zero otherwise.
+!
+              omega_mode_corot=omega_mode(k)-Omega_corot
+!
+!  Write mode
+!
               lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
                    exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
                    cos(mode_wnumber(k)*phi - phicenter(k) - &
 !..with Keplerianly-shifting center
-                   omega_mode(k)*tmode_age)* &
+                   omega_mode_corot*tmode_age)* &
 !
                    (zed-zcenter(k))* &
 !mode grows and fades in time following a sine curve
