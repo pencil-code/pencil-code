@@ -1,0 +1,58 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  ip=14,
+  nt=10000, it1=1000, isave=10000, itorder=1, ialive=0
+  cdt=0.4,
+  cdtv=0.4,
+  dtmin=1e-18
+  dt=1e-8
+  lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  lupw_lnTT=T
+/
+&chemistry_run_pars
+  lfilter=T
+  lreactions=T
+/
+&viscosity_run_pars
+  ivisc='nu-mixture'
+/
+&particles_run_pars
+  ldragforce_dust_par=T
+  ldraglaw_steadystate=T
+  lnostore_uu=F
+  lparticlemesh_cic=F
+  !lcheck_exact_frontier=F
+/
+&particles_radius_run_pars
+/
+&particles_stalker_run_pars
+/
+&particles_mass_run_pars
+  lpart_mass_backreac=T
+/
+&particles_TT_run_pars
+  lpart_temp_backreac=T
+/
+&particles_ads_run_pars
+/
+&particles_surf_run_pars
+  lspecies_transfer=T
+  lboundary_explicit=F
+  linfinite_diffusion=T
+/
+&particles_chem_run_pars
+lthiele=F
+lreactive_heating=T
+/

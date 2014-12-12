@@ -1,0 +1,4 @@
+runtime/
+--------
+This directory is created by pc_run.
+It can be safely removed while the code is not running.

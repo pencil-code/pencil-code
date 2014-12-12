@@ -68,6 +68,7 @@ turbulent_flame                     Nils Erland L. Haugen <nils.e.haugen/gmail[d
 0d-tests/heating_ionize             Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
 0d-tests/heating_ionize             Axel Brandenburg <brandenb/nordita[dot]dk>
 0d-tests/heating_noionize           Axel Brandenburg <brandenb/nordita[dot]org>
+0d-tests/reactive_particles         Jonas Krueger <jonas.kruger/ntnu[dot].no>
 0d-tests/solar_system               Wladimir Lyra <wlyra/caltech[dot]edu>
 1d-tests/alphadisk                  Wladimir Lyra <wlyra/caltech[dot]edu>
 1d-tests/ambipolar_diffusion        Wladimir Lyra <wlyra/caltech[dot]edu>

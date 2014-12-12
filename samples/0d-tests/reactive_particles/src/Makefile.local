@@ -1,0 +1,26 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+HYDRO     =   hydro
+VISCOSITY =   viscosity
+DENSITY   =   density
+
+ENTROPY   =   temperature_ionization
+CHEMISTRY =   chemistry
+EOS       =   eos_chemistry
+
+PARTICLES_MAIN   =  particles_main
+PARTICLES_SUB    =  particles_sub
+PARTICLES        =  particles_dust
+PARTICLES_RADIUS =  particles_radius
+PARTICLES_STALKER=  particles_stalker
+PARTICLES_MASS   =  particles_mass
+PARTICLES_TEMPERATURE = particles_temperature
+PARTICLES_CHEMISTRY   = particles_chemistry
+PARTICLES_SURFSPEC    = particles_surfspec
+PARTICLES_ADSORBED    = particles_adsorbed
+
+REAL_PRECISION = double

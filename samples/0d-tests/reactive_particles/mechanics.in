@@ -1,0 +1,13 @@
+!
+! Units are Joule and mole
+!
+C(O)           	    -> Cf + CO	   		1.00e13   353.0e3         28.0e3
+Cf + CO2            <> C(O) + CO     		3.70e03	  161.0e3	        0.
+C(O) + CO2          -> C(O) + 2CO               1.26e08	  276.0e3	        0.
+C(CO)               <> Cf + CO			1.00e13	  455.0e3	        53.0e3
+CO + C(CO)          -> CO2 + 2Cf		9.80e06	  269.78e3	0.
+2Cf + O2 	    -> C(O) + CO		5.00e10	  150.0e3	        0.
+2Cf + O2 	    -> C2(O2) 			4.00e07	  93.0e3	        0.
+Cf + C(O) + O2      -> CO2 + C(O) + Cf		1.50e07	  78.0e3	        0.
+Cf + C(O) + O2 	    -> CO + 2C(O)   		2.10e07	  103.0e3	        0.
+C2(O2)	  	    -> CO2 + 2Cf		1.00e13	  304.0e3	        33.0e3
