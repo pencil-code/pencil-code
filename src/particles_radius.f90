@@ -372,7 +372,6 @@ module Particles_radius
         allocate(effectiveness_factor(k1:k2))
 !
         call get_radius_chemistry(mass_loss,effectiveness_factor)
-
         do k = k1,k2
           if (fp(k,irhosurf) < 0) then
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )

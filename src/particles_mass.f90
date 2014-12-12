@@ -39,6 +39,8 @@ module Particles_mass
 !
   integer :: idiag_mpm=0
   integer :: idiag_convm=0
+  integer :: idiag_chrhopm=0
+  integer :: idiag_rhosurf=0
 !
   contains
 !***********************************************************************
@@ -184,6 +186,10 @@ module Particles_mass
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
         if (idiag_convm /= 0) call sum_par_name(1.-fp(1:mpar_loc,imp) &
             /fp(1:mpar_loc,impinit),idiag_convm)
+        if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:mpar_loc,irhosurf),idiag_rhosurf)
+        if (idiag_chrhopm /= 0) then
+          call sum_par_name(fp(1:mpar_loc,imp)/(4./3.*pi*fp(1:mpar_loc,iap)**3),idiag_chrhopm) 
+        endif
       endif
 !
       call keep_compiler_quiet(f)
@@ -389,12 +395,16 @@ module Particles_mass
       if (lreset) then
         idiag_mpm = 0 
         idiag_convm = 0
+        idiag_chrhopm = 0
+        idiag_rhosurf = 0
       endif
 !
       if (lroot .and. ip < 14) print*,'rprint_particles_mass: run through parse list'
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
         call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_chrhopm)
+        call parse_name(iname,cname(iname),cform(iname),'rhosurf',idiag_rhosurf)
       enddo
 !
     endsubroutine rprint_particles_mass

@@ -281,6 +281,8 @@ module Particles_adsorbed
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
+!  JONAS look at dustdensity.f90 l.1897
+!
       if (ldiagnos) then
         if (idiag_ads /= 0) then
           do i=1,iads_end-iads
