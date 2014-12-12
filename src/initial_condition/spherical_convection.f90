@@ -33,13 +33,13 @@ module InitialCondition
   real :: xi0=1.0, npoly1=1.5, npoly_jump=1.0, nad=1.5
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
-  logical :: lcorona=.false.
+  logical :: lcorona=.false., lwrite_cooling_profile=.false.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, chiSGS_top, chit0
+      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile
 !
   contains
 !***********************************************************************
@@ -86,6 +86,7 @@ module InitialCondition
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
       real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
+      real, dimension (nxgrid) :: ss_global, cs2_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
@@ -110,7 +111,7 @@ module InitialCondition
       if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
            "there was a problem when getting gravx")
 !
-!  Select typo of stratification
+!  Select type of stratification
 !
       select case (strat_type)
 !
@@ -210,6 +211,7 @@ module InitialCondition
 !  Renormalize entropy with rho0 and cs20
 !
       cs2_prof=cs20*TT*cv*gamma*(gamma-1.)
+      cs2_global=cs20*TT_global*cv*gamma*(gamma-1.)
       ss_prof=log(cs2_prof/cs20)/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
 !
@@ -265,6 +267,19 @@ module InitialCondition
             write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
          enddo
          close(unit)
+      endif
+!
+!  Write cs2 to a file to be used in cooling
+!
+      if (lwrite_cooling_profile) then
+        if (iproc .eq. root) then 
+           call safe_character_assign(wfile,'cooling_profile.dat')
+           open(unit,file=wfile,status='unknown')
+           do ix=1,nxgrid
+              write(unit,'(3(2x,1pe17.10))') cs2_global(ix)
+           enddo
+           close(unit)
+        endif
       endif
 !
 !  Compute flux at the bottom and a modified Stefan-Boltzmann constant
