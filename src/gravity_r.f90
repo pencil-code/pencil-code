@@ -56,6 +56,7 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   real :: nu_epicycle=1.0
+  real :: t_ramp_mass=impossible
   character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
@@ -63,17 +64,18 @@ module Gravity
   logical :: lgravity_dust=.true.
   logical :: lindirect_terms=.false.
   logical :: lsecondary_body=.false.
+  logical :: lramp_mass=.false.
   integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
 !
   contains
 !***********************************************************************
@@ -490,7 +492,14 @@ module Gravity
       real :: c2,s2,g2
       type (pencil_case) :: p
 !
-      g2 = g1/rp1**2
+      if (lramp_mass.and.(t<=t_ramp_mass)) then 
+!
+!  Ramp up g1 for the first 5 orbits, to prevent to big an initial impulse
+!
+        g2 = g1/rp1**2 * t/t_ramp_mass
+      else
+        g2 = g1/rp1**2
+      endif
 !
       if (lcylindrical_coords) then
 !
@@ -938,14 +947,22 @@ module Gravity
         else
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
         endif
-        gp = -g1*rr2_pm**(-1.5)
+        if (lramp_mass.and.(t<=t_ramp_mass)) then 
+          gp = -g1*rr2_pm**(-1.5) * t/t_ramp_mass
+        else
+          gp = -g1*rr2_pm**(-1.5) 
+        endif
         ggp(:,1) =  gp * (x(l1:l2)-rp1*cos(y(m)))
         ggp(:,2) =  gp *           rp1*sin(y(m))
         ggp(:,3) =  gp *  z(  n  )
         if (lcylindrical_gravity) ggp(:,3)=0.
       else if (lspherical_coords) then
         rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cos(z(n)) + rp1_pot**2
-        gp = -g1*rr2_pm**(-1.5)
+        if (lramp_mass.and.(t<=t_ramp_mass)) then 
+          gp = -g1*rr2_pm**(-1.5) * t/t_ramp_mass
+        else
+          gp = -g1*rr2_pm**(-1.5) 
+        endif
         ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n)))
         ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n))
         ggp(:,3) =  gp *             rp1*         sin(z(n))
