@@ -28,7 +28,9 @@
   public :: mpigather_xy, mpimerge_1d, mpigather_z, &
             mpigather_and_out_cmplx, mpigather_and_out_real
   public :: mpiwtime, mpiwtick
-
+!
+  public :: mpi_isend_real,mpi_irecv_real
+!
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: isendrcv_bdry_x
@@ -58,6 +60,8 @@
   public :: parallel_count_lines
 !
   public :: report_clean_output
+!
+  public :: mpiwait
 !
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send

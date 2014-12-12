@@ -1534,6 +1534,27 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpi_irecv_real(bcast_array,nbcast_array,proc_src,ireq,tag_id)
+!
+!  Receive real array(:,:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(4) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3),nbcast_array(4)) :: bcast_array
+      integer :: proc_src, tag_id, nbcast, ireq
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+!
+      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+!
+    endsubroutine mpi_irecv_real
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
@@ -1697,6 +1718,24 @@ module Mpicomm
           tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr4
+!***********************************************************************
+    subroutine mpi_isend_real(bcast_array,nbcast_array,proc_rec,ireq,tag_id)
+!
+!  Send real array(:,:,:,:) to other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(4) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3),nbcast_array(4)) :: bcast_array
+      integer :: proc_rec, tag_id, nbcast, ireq
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+!
+      call MPI_ISEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
+          tag_id, MPI_COMM_WORLD,ireq,mpierr)
+!
+    endsubroutine mpi_isend_real
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,sendcnt,proc_dest,sendtag, &
       recv_array,recvcnt,proc_src,recvtag)
@@ -7367,6 +7406,15 @@ module Mpicomm
       enddo
 !
     endsubroutine mpigather_and_out_real
+!***********************************************************************
+    subroutine mpiwait(bwait)!,stat,ierr)
+!
+      integer, dimension (MPI_STATUS_SIZE) :: stat
+      integer :: bwait,ierr
+!
+      call MPI_WAIT(bwait,stat,ierr)
+
+    endsubroutine mpiwait
 !***********************************************************************
     subroutine merge_1d( vec1, vec2, n, type )
 !

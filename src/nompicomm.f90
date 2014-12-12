@@ -556,6 +556,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpi_irecv_real(bcast_array,nb,proc_src,ireq,tag_id)
+!
+      integer, dimension(4) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
+      integer :: proc_src, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
+!
+    endsubroutine mpi_irecv_real
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
       integer :: nbcast_array
@@ -645,6 +655,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr4
+!***********************************************************************
+    subroutine mpi_isend_real(bcast_array,nb,proc_rec,ireq,tag_id)
+!
+      integer, dimension(4) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
+!
+    endsubroutine mpi_isend_real
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,sendcnt,proc_dest,sendtag, &
       recv_array,recvcnt,proc_src,recvtag)
@@ -885,6 +905,14 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_cmplx_arr_sgl
+!***********************************************************************
+    subroutine mpiwait(bwait)
+!
+      integer :: bwait
+!      
+      if (ALWAYS_FALSE) print*,bwait
+! 
+   endsubroutine mpiwait
 !***********************************************************************
     subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
 !
