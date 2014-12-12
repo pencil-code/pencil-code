@@ -3309,11 +3309,21 @@ module Energy
 !
       if (lcalc_cs2mean) then
         call get_cv1(cv1)
-        fact=1./nyzgrid
-        do l=1,mx
-          cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
-              -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
-        enddo
+        if (lcartesian_coords) then
+          fact=1./nyzgrid
+          do l=1,mx
+             cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
+                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+          enddo
+        endif
+        if (lspherical_coords) then
+          fact=Lxyz(2)/(nyzgrid*(cos(y0)-cos(y0+Lxyz(2))))
+          do l=1,mx
+            cs2mx(l)=fact*sum(spread(sinth(m1:m2),2,nz)* & 
+                (cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
+                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss))))
+          enddo
+        endif
 !
 !  Communication over all processors in the yz plane.
 !
@@ -5111,6 +5121,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: heat,prof,prof2
+      real, dimension (nx), save :: cs2cool_x
       real :: prof1
 !
       intent(in) :: p
@@ -5166,6 +5177,14 @@ module Energy
         prof = step(x(l1:l2),rcool,wcool)
         prof2 = cs2cool + abs(cs2cool2-cs2cool)*step(x(l1:l2),rcool2,wcool2)
         heat = heat - cool*prof*(p%cs2-prof2)/prof2
+!
+!  Cool the mean temperature toward a specified profile stored in a file
+!
+      case ('shell_mean_yz')
+        if (it == 1) call read_cooling_profile_x(cs2cool_x)
+        if (rcool==0.0) rcool=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+        heat = heat - cool*prof*(cs2mx(l1:l2)-cs2cool_x)
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
@@ -6220,6 +6239,59 @@ module Energy
       endif
 !
     endsubroutine newton_cool
+!***********************************************************************
+    subroutine read_cooling_profile_x(cs2cool_x)
+!
+!  Read sound speed profile from an ascii-file
+!
+!  11-dec-2014/pete: aped from read_hcond
+!
+      use Mpicomm, only: mpibcast_real_arr
+!
+      real, dimension(nx), intent(out) :: cs2cool_x
+      integer, parameter :: ntotal=nx*nprocx
+      real, dimension(nx*nprocx) :: tmp1
+      real :: var1
+      logical :: exist
+      integer :: stat, nn
+!
+!  Read cs2_cool_x and write into an array.
+!  If file is not found in run directory, search under trim(directory).
+!
+      if (lroot ) then
+        inquire(file='cooling_profile.dat',exist=exist)
+        if (exist) then
+          open(36,file='cooling_profile.dat')
+        else
+          inquire(file=trim(directory)//'/cooling_profile.ascii',exist=exist)
+          if (exist) then
+            open(36,file=trim(directory)//'/cooling_profile.ascii')
+          else
+            call fatal_error('read_cooling_profile_x','*** error *** - no input file')
+          endif
+        endif
+!
+!  Read profiles.
+!
+        do nn=1,ntotal
+          read(36,*,iostat=stat) var1
+          if (stat<0) exit
+          if (ip<5) print*,'cs2cool_x: ',var1
+          tmp1(nn)=var1
+        enddo
+        close(36)
+!
+      endif
+!
+      call mpibcast_real_arr(tmp1, ntotal)
+!
+!  Assuming no ghost zones in cooling_profile.dat
+!
+      do nn=l1,l2
+        cs2cool_x(nn-nghost)=tmp1(ipx*nx+nn-nghost)
+      enddo
+!
+    endsubroutine read_cooling_profile_x
 !***********************************************************************
     subroutine strat_MLT(rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
