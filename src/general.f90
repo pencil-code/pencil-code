@@ -21,7 +21,7 @@ module General
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
-  public :: spline_coeff_clamped
+  public :: spline_coeff_clamped, spline_tvd
   public :: polynomial_interpolation
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
@@ -1499,6 +1499,75 @@ module General
       d(1:n-1) = onethird * (c(2:n) - c(1:n-1))
 !
     endsubroutine spline_coeff_clamped
+!***********************************************************************
+    pure subroutine spline_tvd(y1, x2, y2)
+!
+!  Use clamped cubic spline interpolants to interpolate y1 into y2 at x2,
+!  assuming y1(i) is at x = i-1 for all i.  Local extrema are located to
+!  force the derivatives zero there.
+!
+!  Periodic boundary conditions are assumed for the moment.
+!
+!  12-dec-14/ccyang: coded.
+!
+      real, dimension(:), intent(in) :: y1, x2
+      real, dimension(size(x2)), intent(out) :: y2
+!
+      integer, parameter :: ng = 1
+      integer, dimension(size(x2)) :: inode
+      real, dimension(1-ng:size(y1)+ng) :: y
+      real, dimension(size(y1)) :: b, c, d, p, q, r
+      integer :: nnode, n1, n, i, j1, j2
+!
+!  Find local extrema in y1.
+!
+      n1 = size(y1)
+      y = (/y1(n1-ng+1:n1), y1, y1(1:ng)/)  ! periodic boundary conditions
+      nnode = 0
+      scan: do i = 1, n1
+        extrema: if (maxval(y(i-ng:i+ng)) == y(i) .or. minval(y(i-ng:i+ng)) == y(i)) then
+          nnode = nnode + 1
+          inode(nnode) = i
+        endif extrema
+      enddo scan
+!
+!  Find the interpolants
+!
+      segment: do i = 1, nnode - 1
+        j1 = inode(i)
+        j2 = inode(i+1)
+        call spline_coeff_clamped(y1(j1:j2), 0.0, 0.0, p, q, r)
+        n = j2 - j1
+        j2 = j2 - 1
+        b(j1:j2) = p(1:n)
+        c(j1:j2) = q(1:n)
+        d(j1:j2) = r(1:n)
+      enddo segment
+!
+!  And the periodically wrapped interpolant.
+!
+      j1 = inode(nnode)
+      j2 = inode(1)
+      call spline_coeff_clamped((/y1(j1:n1), y1(1:j2)/), 0.0, 0.0, p, q, r)
+      n = n1 - j1 + 1
+      b(j1:n1) = p(1:n)
+      c(j1:n1) = q(1:n)
+      d(j1:n1) = r(1:n)
+      j2 = j2 - 1
+      i = n + 1
+      n = n + j2
+      b(1:j2) = p(i:n)
+      c(1:j2) = q(i:n)
+      d(1:j2) = r(i:n)
+!
+!  Interpolate.
+!
+      inode = floor(x2)
+      y2 = x2 - real(inode)
+      inode = modulo(inode, n1) + 1  ! periodic boundary conditions
+      y2 = y1(inode) + (b(inode) + (c(inode) + d(inode) * y2) * y2) * y2
+!
+    endsubroutine spline_tvd
 !***********************************************************************
     subroutine poly_interp_one(xa, ya, x, y, istatus, message)
 !
