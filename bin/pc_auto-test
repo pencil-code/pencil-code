@@ -86,6 +86,7 @@ my %tests = (
              2 => [qw(
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
+                         0d-tests/reactive_particles
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
