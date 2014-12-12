@@ -1513,23 +1513,24 @@ module General
       real, dimension(:), intent(in) :: y1, x2
       real, dimension(size(x2)), intent(out) :: y2
 !
-      integer, parameter :: ng = 1
+      integer, parameter :: ng = nghost
       integer, dimension(size(x2)) :: inode
       real, dimension(1-ng:size(y1)+ng) :: y
       real, dimension(size(y1)) :: b, c, d, p, q, r
       integer :: nnode, n1, n, i, j1, j2
+      real :: a, s
 !
 !  Find local extrema in y1.
 !
       n1 = size(y1)
       y = (/y1(n1-ng+1:n1), y1, y1(1:ng)/)  ! periodic boundary conditions
       nnode = 0
-      scan: do i = 1, n1
-        extrema: if (maxval(y(i-ng:i+ng)) == y(i) .or. minval(y(i-ng:i+ng)) == y(i)) then
+      extrema: do i = 1, n1
+        node: if (maxval(y(i-ng:i+ng)) == y(i) .or. minval(y(i-ng:i+ng)) == y(i)) then
           nnode = nnode + 1
           inode(nnode) = i
-        endif extrema
-      enddo scan
+        endif node
+      enddo extrema
 !
 !  Find the interpolants
 !
@@ -1566,6 +1567,22 @@ module General
       y2 = x2 - real(inode)
       inode = modulo(inode, n1) + 1  ! periodic boundary conditions
       y2 = y1(inode) + (b(inode) + (c(inode) + d(inode) * y2) * y2) * y2
+!
+!  Check TVD.
+!
+      tvd: do i = 1, size(x2)
+        n = inode(i)
+        if (n < n1) then
+          a = y1(n + 1)
+        else  ! periodic boundary condition
+          a = y1(1)
+        endif
+        notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
+!         Downgrade to linear interpolation
+          s = x2(i) - floor(x2(i))
+          y2(i) = y1(n) * (1.0 - s) + a * s
+        endif notvd
+      enddo tvd
 !
     endsubroutine spline_tvd
 !***********************************************************************
