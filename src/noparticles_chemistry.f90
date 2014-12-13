@@ -34,6 +34,7 @@ module Particles_chemistry
   integer :: imufree=0, imuadsO=0, imuadsO2=0, imuadsOH=0, imuadsH=0, imuadsCO=0
   integer :: mu=0, mu_prime=0, ac=0, aac=0, nu=0, nu_prime=0
   integer :: jmap=0
+  integer :: dependent_reactant = 0
   real, dimension(2) :: mass_loss
 
   contains

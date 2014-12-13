@@ -61,6 +61,7 @@
   public :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
   public :: mu, mu_prime, ac, aac, nu, nu_prime
   public :: jmap
+  public :: dependent_reactant
 
 
   

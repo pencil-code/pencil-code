@@ -219,6 +219,10 @@ module Particles_temperature
 !
 !            Nu_p=2.
 !
+!  Radiative heat transfer, has yet to be filled with life
+!
+        Qrad = 0.0
+!
 !  Calculate convective and conductive heat, all in CGS units
 !
         ix0=ineargrid(k,1)

@@ -51,6 +51,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: aac, T_k
   real, dimension(:), allocatable :: dngas
   real, dimension(:), allocatable :: diff_coeff_reactants
+  integer, dimension(:), allocatable :: dependent_reactant
   real, dimension(:,:), allocatable, save :: part_power
 !
 !  JONAS: implement something to calculate molar_mass of
@@ -74,8 +75,7 @@ module Particles_chemistry
   integer :: inuH2, inuCO2, inuH2O, inuCO, inuCH4, inuO2
   integer :: inuCH, inuHCO, inuCH2, inuCH3
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
-  integer :: iter
-  integer, dimension(:), allocatable :: dependent_reactant
+  integer :: iter=0
   integer, dimension(:), allocatable :: jmap
   real :: x_s_total, rho_part
   real :: effectiveness_factor_timeaver=1.
@@ -125,8 +125,8 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: Cs
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: diff_coeffs_species, Cg, A_p
-  real, dimension(:), allocatable, target :: q_reac
-  real, dimension(:), allocatable, target :: Nu_p
+  real, dimension(:), allocatable :: q_reac
+  real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
 !
 ! Some physical constants
@@ -1186,7 +1186,7 @@ module Particles_chemistry
       real, dimension(:), allocatable ::  phi, sum_eta_i_R_i_hat_max
       real, dimension(:), allocatable :: sum_R_i_hat_max
       real, dimension(:), allocatable :: volume, porosity
-      integer :: i, dep, n, k, k1, k2,l
+      integer :: i, dep, k, k1, k2,l
       real :: r_f
 !
       k1 = k1_imn(imn)
@@ -1202,6 +1202,7 @@ module Particles_chemistry
       allocate(tmp2(k1:k2))
       allocate(tmp3(k1:k2))
       allocate(sum_R_i_hat_max(k1:k2))
+      allocate(sum_eta_i_R_i_hat_max(k1:k2))
       allocate(porosity(k1:k2))
 !
 ! Find reaction rate for each of the reactants
@@ -1270,7 +1271,7 @@ module Particles_chemistry
       enddo
 !
       do k = k1,k2
-        sum_eta_i_R_i_hat_max(n) = 0
+        sum_eta_i_R_i_hat_max(k) = 0
         do i = 1,N_surface_reactants
           if (R_i_hat(k,i) < 0) then
             sum_eta_i_R_i_hat_max(k) = sum_eta_i_R_i_hat_max(k) &
@@ -1312,6 +1313,7 @@ module Particles_chemistry
       deallocate(tmp2)
       deallocate(tmp3)
       deallocate(sum_R_i_hat_max)
+      deallocate(sum_eta_i_R_i_hat_max)
       deallocate(phi)
       deallocate(porosity)
     endsubroutine calc_effectiveness_factor

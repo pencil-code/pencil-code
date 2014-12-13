@@ -38,7 +38,6 @@ module Particles_surfspec
   real :: surfplaceholder=0.0
   real, dimension(:,:), allocatable :: nu_power
   real, dimension(:), allocatable :: uscale, fscale, constr
-  integer, dimension(:), allocatable :: dependent_reactant
   integer :: Ysurf
   logical :: lspecies_transfer=.true.
   logical :: linfinite_diffusion=.true.
