@@ -21,7 +21,7 @@ module General
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
-  public :: spline_coeff_clamped, spline_tvd
+  public :: spline_tvd
   public :: polynomial_interpolation
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
@@ -1537,69 +1537,32 @@ module General
 !
     endsubroutine spline_coeff_periodic
 !***********************************************************************
-    pure subroutine spline_tvd(y1, x2, y2)
+    subroutine spline_tvd(y1, x2, y2)
 !
-!  Use clamped cubic spline interpolants to interpolate y1 into y2 at x2,
-!  assuming y1(i) is at x = i-1 for all i.  Local extrema are located to
-!  force the derivatives zero there.
+!  Use cubic spline interpolants to interpolate y1 into y2 at x2,
+!  assuming y1(i) is at x = i-1 for all i.  Those interpolated points
+!  that violate the TVD condition are downgraded to linear
+!  interpolation.
 !
 !  Periodic boundary conditions are assumed for the moment.
 !
-!  12-dec-14/ccyang: coded.
+!  13-dec-14/ccyang: coded.
 !
       real, dimension(:), intent(in) :: y1, x2
       real, dimension(size(x2)), intent(out) :: y2
 !
-      integer, parameter :: ng = nghost
       integer, dimension(size(x2)) :: inode
-      real, dimension(1-ng:size(y1)+ng) :: y
-      real, dimension(size(y1)) :: b, c, d, p, q, r
-      integer :: nnode, n1, n, i, j1, j2
+      real, dimension(size(y1)) :: b, c, d
+      integer :: n1, i, n
       real :: a, s
 !
-!  Find local extrema in y1.
+!  Find the interpolants.
 !
-      n1 = size(y1)
-      y = (/y1(n1-ng+1:n1), y1, y1(1:ng)/)  ! periodic boundary conditions
-      nnode = 0
-      extrema: do i = 1, n1
-        node: if (maxval(y(i-ng:i+ng)) == y(i) .or. minval(y(i-ng:i+ng)) == y(i)) then
-          nnode = nnode + 1
-          inode(nnode) = i
-        endif node
-      enddo extrema
-!
-!  Find the interpolants
-!
-      segment: do i = 1, nnode - 1
-        j1 = inode(i)
-        j2 = inode(i+1)
-        call spline_coeff_clamped(y1(j1:j2), 0.0, 0.0, p, q, r)
-        n = j2 - j1
-        j2 = j2 - 1
-        b(j1:j2) = p(1:n)
-        c(j1:j2) = q(1:n)
-        d(j1:j2) = r(1:n)
-      enddo segment
-!
-!  And the periodically wrapped interpolant.
-!
-      j1 = inode(nnode)
-      j2 = inode(1)
-      call spline_coeff_clamped((/y1(j1:n1), y1(1:j2)/), 0.0, 0.0, p, q, r)
-      n = n1 - j1 + 1
-      b(j1:n1) = p(1:n)
-      c(j1:n1) = q(1:n)
-      d(j1:n1) = r(1:n)
-      j2 = j2 - 1
-      i = n + 1
-      n = n + j2
-      b(1:j2) = p(i:n)
-      c(1:j2) = q(i:n)
-      d(1:j2) = r(i:n)
+      call spline_coeff_periodic(y1, b, c, d)
 !
 !  Interpolate.
 !
+      n1 = size(y1)
       inode = floor(x2)
       y2 = x2 - real(inode)
       inode = modulo(inode, n1) + 1  ! periodic boundary conditions
@@ -1607,7 +1570,7 @@ module General
 !
 !  Check TVD.
 !
-      tvd: do i = 1, size(x2)
+      scan: do i = 1, size(x2)
         n = inode(i)
         if (n < n1) then
           a = y1(n + 1)
@@ -1619,7 +1582,7 @@ module General
           s = x2(i) - floor(x2(i))
           y2(i) = y1(n) * (1.0 - s) + a * s
         endif notvd
-      enddo tvd
+      enddo scan
 !
     endsubroutine spline_tvd
 !***********************************************************************
