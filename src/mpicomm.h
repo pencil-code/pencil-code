@@ -30,6 +30,7 @@
   public :: mpiwtime, mpiwtick
 !
   public :: mpi_isend_real,mpi_irecv_real
+  public :: mpi_isend_int,mpi_irecv_int
 !
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
