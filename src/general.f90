@@ -1500,6 +1500,43 @@ module General
 !
     endsubroutine spline_coeff_clamped
 !***********************************************************************
+    subroutine spline_coeff_periodic(y, b, c, d)
+!
+!  Calculates the coefficients of the cubic spline interpolants with
+!  periodic boundary conditions.  The nodes start from one and the step
+!  size is assumed to be unity.  The interpolants are
+!
+!    S_i(x) = y_i + b_i (x - i) + c_i (x - i)^2 + d_i (x - i)^3,
+!
+!  for x in [i, i+1] and i = 1, 2, ..., n.
+!
+!  13-dec-14/ccyang: coded.
+!
+      real, dimension(:), intent(in) :: y
+      real, dimension(size(y)), intent(out) :: b, c, d
+!
+      real, parameter :: onethird = 1.0 / 3.0
+      real, dimension(size(y)) :: r
+      integer :: n
+!
+!  Solve the cyclic system for coefficient c's.
+!
+      n = size(y)
+      r(2:n-1) = y(3:n) - 2.0 * y(2:n-1) + y(1:n-2)
+      r(1) = y(2) - 2.0 * y(1) + y(n)
+      r(n) = y(1) - 2.0 * y(n) + y(n-1)
+      r = 3.0 * r
+      call cyclic(spread(1.0, 1, n), spread(4.0, 1, n), spread(1.0, 1, n), 1.0, 1.0, r, c, n)
+!
+!  Find the rest of the coefficients.
+!
+      b(1:n-1) = y(2:n) - y(1:n-1) - onethird * (c(2:n) + 2.0 * c(1:n-1))
+      d(1:n-1) = onethird * (c(2:n) - c(1:n-1))
+      b(n) = y(1) - y(n) - onethird * (c(1) + 2.0 * c(n))
+      d(n) = onethird * (c(1) - c(n))
+!
+    endsubroutine spline_coeff_periodic
+!***********************************************************************
     pure subroutine spline_tvd(y1, x2, y2)
 !
 !  Use clamped cubic spline interpolants to interpolate y1 into y2 at x2,
