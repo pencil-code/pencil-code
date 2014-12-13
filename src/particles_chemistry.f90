@@ -736,8 +736,13 @@ module Particles_chemistry
 !
       do while (numerical  /= 0 )
         i = i + 1
+!
+!  NILS: real_number is not necessarily a number when done like this, this
+!  NILS: may cause problems for some compilers (e.g. 
+!  NILS: hosts/nordita/norlx51-daily-test.conf)
+!
         read (string(i:i+7),*,iostat=numerical) real_number
-        if (real_number < 10) then
+        if (real_number .lt. 10) then
           numerical = 1
         endif
         if (i > len(string)-10) then
