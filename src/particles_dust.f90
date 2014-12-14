@@ -3067,7 +3067,6 @@ module Particles
       use Particles_spin, only: calc_liftforce
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
-      use Particles_dragforce
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f

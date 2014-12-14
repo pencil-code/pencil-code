@@ -15,6 +15,7 @@ module Particles_main
   use Particles_cdata
   use Particles_collisions
   use Particles_coagulation
+  use Particles_drag
   use Particles_map
   use Particles_density
   use Particles_mpicomm
@@ -63,6 +64,7 @@ module Particles_main
       call register_particles_sink         ()
       call register_particles_TT           ()
       call register_particles_mass         ()
+      call register_particles_drag         ()
       call register_particles_chem         ()
       call register_particles_ads          ()
       call register_particles_surfspec     ()
@@ -202,6 +204,7 @@ module Particles_main
       call initialize_particles_viscosity    (f)
       call initialize_particles_TT           (f)
       call initialize_particles_mass         (f)
+      call initialize_particles_drag
       call initialize_particles_ads          (f)
       call initialize_particles_surf         (f)
       call initialize_particles_coag         (f)
@@ -1191,6 +1194,8 @@ module Particles_main
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
+      integer :: stat
+!
       call read_particles_run_pars(unit,iostat)
       if (present(iostat)) then
         if (iostat/=0) then
@@ -1352,6 +1357,15 @@ module Particles_main
         endif
       endif
 !
+      drag: if (lparticles_drag) then
+        call read_particles_drag_run_pars(unit, stat)
+        if (present(iostat)) iostat = stat
+        err: if (stat /= 0) then
+          call samplepar_runpars('read_particles_drag_run_pars', stat)
+          return
+        endif err
+      endif drag
+!
       if (lparticles_temperature) then
         call read_particles_TT_run_pars(unit,iostat)
         if (present(iostat)) then
@@ -1422,6 +1436,7 @@ module Particles_main
         if (lparticles_diagnos_dv)     print*,'&particles_diagnos_dv_run_pars/'
         if (lparticles_diagnos_state)  print*,'&particles_diagnos_state_run_pars/'
         if (lparticles_mass)           print*,'&particles_mass_run_pars /'
+        if (lparticles_drag)           print*,'&particles_drag_run_pars /'
         if (lparticles_temperature)    print*,'&particles_TT_run_pars /'
         if (lparticles_adsorbed)       print*,'&particles_ads_run_pars /'
         if (lparticles_surfspec)       print*,'&particles_surf_run_pars /'
@@ -1460,6 +1475,7 @@ module Particles_main
       if (lparticles_diagnos_dv)     call write_pars_diagnos_dv_run_pars(unit)
       if (lparticles_diagnos_state)  call write_pars_diag_state_run_pars(unit)
       if (lparticles_mass)           call write_particles_mass_run_pars(unit)
+      if (lparticles_drag)           call write_particles_drag_run_pars(unit)
       if (lparticles_temperature)    call write_particles_TT_run_pars(unit)
       if (lparticles_adsorbed)       call write_particles_ads_run_pars(unit)
       if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
