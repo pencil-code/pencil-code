@@ -140,6 +140,32 @@ module Timestep
 !
       enddo
 !
+!  Integrate operator split terms.
+!
+      call split_update(f)
+!
     endsubroutine time_step
+!***********************************************************************
+    subroutine split_update(f)
+!
+!  Integrate operator split terms.
+!
+!  14-dec-14/ccyang: coded
+!
+      use Density, only: split_update_density
+      use Energy, only: split_update_energy
+      use Magnetic, only: split_update_magnetic
+      use Viscosity, only: split_update_viscosity
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+!  Dispatch to respective modules.
+!
+      if (ldensity) call split_update_density(f)
+      if (lenergy) call split_update_energy(f)
+      if (lmagnetic) call split_update_magnetic(f)
+      if (lviscosity) call split_update_viscosity(f)
+!
+    endsubroutine split_update
 !***********************************************************************
 endmodule Timestep

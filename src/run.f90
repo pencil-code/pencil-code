@@ -54,11 +54,10 @@ program run
   use Boundcond,       only: update_ghosts
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
-  use Density,         only: split_update_density, boussinesq
+  use Density,         only: boussinesq
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use Energy,         only: split_update_energy
   use Equ,             only: debug_imn_arrays,initialize_pencils
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
@@ -70,7 +69,7 @@ program run
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
   use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, output_form
-  use Magnetic,        only: rescaling_magnetic, split_update_magnetic
+  use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
@@ -93,7 +92,6 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step
-  use Viscosity,       only: split_update_viscosity
 !
   implicit none
 !
@@ -632,13 +630,6 @@ program run
 !  Time advance.
 !
     call time_step(f,df,p)
-!
-!  Integrate operator split terms.
-!
-    if (ldensity) call split_update_density(f)
-    if (lenergy) call split_update_energy(f)
-    if (lmagnetic) call split_update_magnetic(f)
-    if (lviscosity) call split_update_viscosity(f)
 !
 !  Print diagnostic averages to screen and file.
 !
