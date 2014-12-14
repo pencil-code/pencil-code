@@ -156,6 +156,7 @@ module Timestep
       use Energy, only: split_update_energy
       use Magnetic, only: split_update_magnetic
       use Viscosity, only: split_update_viscosity
+      use Particles_main, only: split_update_particles
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -165,6 +166,8 @@ module Timestep
       if (lenergy) call split_update_energy(f)
       if (lmagnetic) call split_update_magnetic(f)
       if (lviscosity) call split_update_viscosity(f)
+!
+      if (lparticles) call split_update_particles(f)
 !
     endsubroutine split_update
 !***********************************************************************

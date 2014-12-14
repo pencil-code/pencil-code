@@ -455,6 +455,18 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
+    subroutine split_update_particles(f)
+!
+!  Wrapper for operator split terms for particle dynamics.
+!
+!  14-dec-14/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_particles
+!***********************************************************************
     subroutine particles_discrete_collisions()
 !
 !  Discrete particle collisions.
