@@ -36,6 +36,7 @@
   interp_pol_TT='cic'
   interp_pol_uu='cic'
   eps_dtog=1.0
+  mean_free_path_gas=2.9e-7 !cm, 24bar
 /
 &particles_radius_init_pars
   initap='constant'
