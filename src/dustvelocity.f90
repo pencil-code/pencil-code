@@ -75,6 +75,7 @@ module Dustvelocity
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
   character (len=labellen) :: draglaw='epstein_cst'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
+  character (len=labellen) :: iefficiency_type='nothing'
 !
   namelist /dustvelocity_init_pars/ &
       uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, &
@@ -85,7 +86,7 @@ module Dustvelocity
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
       lvshear_dust_global_eps, cdtd, &
       ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0,&
-      lstokes_highspeed_corr
+      lstokes_highspeed_corr, iefficiency_type
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
@@ -1389,72 +1390,88 @@ module Dustvelocity
     subroutine get_dustcrosssection
 !
 !  Calculate surface of dust particles. Add collision efficiency, Xiangyu, 12/12/2014
- 
 !
+      integer :: i,j
 
-    IMPLICIT NONE
+      real, dimension(200,110) :: efficiency
+      real, dimension(110,1) :: radius
+      real, dimension(200,1) :: ratio
+      real ::  e,radius_ratio, adx, ady, radius1, ratio1
 
-integer :: i,j
-
-  REAL, DIMENSION(200,110) :: efficiency
-  REAL, DIMENSION(110,1) :: radius
-  REAL, DIMENSION(200,1) :: ratio
-  REAL ::  e,radius_ratio, adx, ady, radius1, ratio1
-
-
-  INTEGER :: row,col,max_rows,max_cols, ex, ey
-  max_rows=200
-  max_cols=110
-
- 
-
-  OPEN(UNIT=11, FILE="Interpolation.txt")
-  OPEN(UNIT=12, FILE="radius.txt")
-  OPEN(UNIT=13, FILE="ratio.txt")
-
-
-
-   DO row = 1,max_rows
-      READ(11,*) (efficiency(row,col),col=1,max_cols)
-   END DO
-  close(unit=11)
-
-   DO row = 1,max_cols
-      READ(12,*), radius(row,1)
-   END DO
-  close(unit=12)
-
-   DO row = 1,max_rows
-      READ(13,*), ratio(row,1)
-   END DO     
-  close(unit=13)
+      integer :: row,col,max_rows,max_cols, ex, ey
+      logical :: luse_table
+!
+!  select efficiency type
+!
+      select case (iefficiency_type)
+!
+      case ('nothing')
+        luse_table=.false.
+        efficiency=1.
+      case ('read_table')
+        luse_table=.true.
+        max_rows=200
+        max_cols=110
+!
+!  read file (can make more general)
+!
+        open(unit=11, file="Interpolation.txt")
+        open(unit=12, file="radius.txt")
+        open(unit=13, file="ratio.txt")
+!
+!  read table
+!
+        do row = 1,max_rows
+          read(11,*) (efficiency(row,col),col=1,max_cols)
+        enddo
+        close(unit=11)
+!
+!  read corresponding radius
+!
+        do row = 1,max_cols
+          read(12,*), radius(row,1)
+        enddo
+        close(unit=12)
+!
+!  read corresponding radius ratio
+!
+        do row = 1,max_rows
+          read(13,*), ratio(row,1)
+        enddo     
+        close(unit=13)
+      endselect
+!
+!  compute cross section
 !
       do i=1,ndustspec
         do j=1,ndustspec
-           adx = ad(i)
-           ady = ad(j)
+          adx = ad(i)
+          ady = ad(j)
 
-           if (adx>=ady) then
-                 do col = 1,max_cols
-                    radius1 = radius(col,1)
-                
-                    if (radius1==adx) then
-                       ey = col
-                    end if
-                 end do
+          if (luse_table) then
+            if (adx>=ady) then
+              do col = 1,max_cols
+                radius1 = radius(col,1)
+                  
+                if (radius1==adx) then
+                  ey = col
+                end if
+              end do
+  
+              radius_ratio = adx/ady
+              do row = 1,max_rows
+                ratio1 = ratio(row,1)
+                if (ratio1==radius_ratio) then
+                  ex = row
+                end if
+              end do
+            endif
+            e = efficiency(ex,ey)
+          else
+            e = 1.
+          endif
 
-                 radius_ratio = adx/ady
-                 do row = 1,max_rows
-                    ratio1 = ratio(row,1)
-                    if (ratio1==radius_ratio) then
-                       ex = row
-                    end if
-                 end do
-
-                 e = efficiency(ex,ey)
-
-                 scolld(i,j) = e*pi*(adx+ady)**2
-            end if
+          scolld(i,j) = e*pi*(adx+ady)**2
 
         enddo
       enddo
