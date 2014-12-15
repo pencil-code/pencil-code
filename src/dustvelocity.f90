@@ -1429,14 +1429,14 @@ module Dustvelocity
 !  read corresponding radius
 !
         do row = 1,max_cols
-          read(12,*), radius(row,1)
+          read(12,*) radius(row,1)
         enddo
         close(unit=12)
 !
 !  read corresponding radius ratio
 !
         do row = 1,max_rows
-          read(13,*), ratio(row,1)
+          read(13,*) ratio(row,1)
         enddo     
         close(unit=13)
       endselect
