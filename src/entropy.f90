@@ -5181,6 +5181,8 @@ module Energy
 !  Cool the mean temperature toward a specified profile stored in a file
 !
       case ('shell_mean_yz')
+        if (.not.lcalc_cs2mean) call fatal_error('shell_mean_yz:', &
+            'works only for lcalc_cs2mean=T')
         if (it == 1) call read_cooling_profile_x(cs2cool_x)
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
