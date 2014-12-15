@@ -1456,6 +1456,81 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
+    subroutine spline_tvd(y1, x2, y2, nonperiodic)
+!
+!  Use cubic spline interpolants to interpolate y1 into y2 at x2,
+!  assuming y1(i) is at x = i-1 for all i.  Those interpolated points
+!  that violate the TVD condition are downgraded to linear
+!  interpolation.  If parameter nonperiodic is present and is .true.,
+!  the natural spline is used; periodic boundary conditions are assumed,
+!  otherwise.
+!
+!  15-dec-14/ccyang: coded.
+!
+      real, dimension(:), intent(in) :: y1, x2
+      real, dimension(size(x2)), intent(out) :: y2
+      logical, intent(in), optional :: nonperiodic
+!
+      integer, dimension(size(x2)) :: inode
+      real, dimension(size(y1)) :: b, c, d
+      logical :: lperiodic
+      integer :: n1, i, n
+      real :: a, s
+!
+!  Determine the boundary conditions.
+!
+      lperiodic = .true.
+      if (present(nonperiodic)) lperiodic = .not. nonperiodic
+!
+!  Find the interpolants.
+!
+      if (lperiodic) then
+        call spline_coeff_periodic(y1, b, c, d)
+      else
+        call spline_coeff(y1, b, c, d)
+      endif
+!
+!  Interpolate.
+!
+      n1 = size(y1)
+      inode = floor(x2)
+      y2 = x2 - real(inode)
+      interp: if (lperiodic) then
+        inode = modulo(inode, n1) + 1
+        y2 = y1(inode) + (b(inode) + (c(inode) + d(inode) * y2) * y2) * y2
+      else interp
+        inode = inode + 1
+        n = n1 - 1
+        s = b(n) + 2.0 * c(n) + 3.0 * d(n)
+        where (inode < 1)
+          y2 = y1(1) + b(1) * x2
+        elsewhere (inode > n)
+          y2 = y1(n1) + s * (x2 - real(n))
+        elsewhere
+          y2 = y1(inode) + (b(inode) + (c(inode) + d(inode) * y2) * y2) * y2
+        endwhere
+      endif interp
+!
+!  Check TVD.
+!
+      scan: do i = 1, size(x2)
+        n = inode(i)
+        if (.not. lperiodic .and. (n < 1 .or. n >= n1)) then
+          cycle scan  ! Allow for extrapolation.
+        elseif (lperiodic .and. n >= n1) then
+          a = y1(1)
+        else
+          a = y1(n + 1)
+        endif
+        notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
+!         Downgrade to linear interpolation
+          s = x2(i) - floor(x2(i))
+          y2(i) = y1(n) * (1.0 - s) + a * s
+        endif notvd
+      enddo scan
+!
+    endsubroutine spline_tvd
+!***********************************************************************
     pure subroutine spline_coeff(y, b, c, d, yp1, yp2, err, msg)
 !
 !  Calculates the coefficients of the cubic spline interpolants
@@ -1557,55 +1632,6 @@ module General
       d(n) = onethird * (c(1) - c(n))
 !
     endsubroutine spline_coeff_periodic
-!***********************************************************************
-    subroutine spline_tvd(y1, x2, y2)
-!
-!  Use cubic spline interpolants to interpolate y1 into y2 at x2,
-!  assuming y1(i) is at x = i-1 for all i.  Those interpolated points
-!  that violate the TVD condition are downgraded to linear
-!  interpolation.
-!
-!  Periodic boundary conditions are assumed for the moment.
-!
-!  13-dec-14/ccyang: coded.
-!
-      real, dimension(:), intent(in) :: y1, x2
-      real, dimension(size(x2)), intent(out) :: y2
-!
-      integer, dimension(size(x2)) :: inode
-      real, dimension(size(y1)) :: b, c, d
-      integer :: n1, i, n
-      real :: a, s
-!
-!  Find the interpolants.
-!
-      call spline_coeff_periodic(y1, b, c, d)
-!
-!  Interpolate.
-!
-      n1 = size(y1)
-      inode = floor(x2)
-      y2 = x2 - real(inode)
-      inode = modulo(inode, n1) + 1  ! periodic boundary conditions
-      y2 = y1(inode) + (b(inode) + (c(inode) + d(inode) * y2) * y2) * y2
-!
-!  Check TVD.
-!
-      scan: do i = 1, size(x2)
-        n = inode(i)
-        if (n < n1) then
-          a = y1(n + 1)
-        else  ! periodic boundary condition
-          a = y1(1)
-        endif
-        notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
-!         Downgrade to linear interpolation
-          s = x2(i) - floor(x2(i))
-          y2(i) = y1(n) * (1.0 - s) + a * s
-        endif notvd
-      enddo scan
-!
-    endsubroutine spline_tvd
 !***********************************************************************
     subroutine poly_interp_one(xa, ya, x, y, istatus, message)
 !
