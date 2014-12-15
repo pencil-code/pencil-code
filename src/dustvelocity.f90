@@ -1388,13 +1388,74 @@ module Dustvelocity
 !***********************************************************************
     subroutine get_dustcrosssection
 !
-!  Calculate surface of dust particles
+!  Calculate surface of dust particles. Add collision efficiency, Xiangyu, 12/12/2014
+ 
 !
-      integer :: i,j
+
+    IMPLICIT NONE
+
+integer :: i,j
+
+  REAL, DIMENSION(200,110) :: efficiency
+  REAL, DIMENSION(110,1) :: radius
+  REAL, DIMENSION(200,1) :: ratio
+  REAL ::  e,radius_ratio, adx, ady, radius1, ratio1
+
+
+  INTEGER :: row,col,max_rows,max_cols, ex, ey
+  max_rows=200
+  max_cols=110
+
+ 
+
+  OPEN(UNIT=11, FILE="Interpolation.txt")
+  OPEN(UNIT=12, FILE="radius.txt")
+  OPEN(UNIT=13, FILE="ratio.txt")
+
+
+
+   DO row = 1,max_rows
+      READ(11,*) (efficiency(row,col),col=1,max_cols)
+   END DO
+  close(unit=11)
+
+   DO row = 1,max_cols
+      READ(12,*), radius(row,1)
+   END DO
+  close(unit=12)
+
+   DO row = 1,max_rows
+      READ(13,*), ratio(row,1)
+   END DO     
+  close(unit=13)
 !
       do i=1,ndustspec
         do j=1,ndustspec
-          scolld(i,j) = pi*(ad(i)+ad(j))**2
+           adx = ad(i)
+           ady = ad(j)
+
+           if (adx>=ady) then
+                 do col = 1,max_cols
+                    radius1 = radius(col,1)
+                
+                    if (radius1==adx) then
+                       ey = col
+                    end if
+                 end do
+
+                 radius_ratio = adx/ady
+                 do row = 1,max_rows
+                    ratio1 = ratio(row,1)
+                    if (ratio1==radius_ratio) then
+                       ex = row
+                    end if
+                 end do
+
+                 e = efficiency(ex,ey)
+
+                 scolld(i,j) = e*pi*(adx+ady)**2
+            end if
+
         enddo
       enddo
 !
