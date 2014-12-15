@@ -623,7 +623,7 @@ module Shear
       stvd: if (tvd .and. method == 'spline') then
         if (.not. lequidist(1)) &
             call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
-        xnew = (xnew - xgrid(1)) / dx
+        xnew = (xnew - xglobal(1)) / dx
       endif stvd
 !
 !  Check positive definiteness.
@@ -647,9 +647,9 @@ module Shear
               case ('spline') xmethod
                 stvdx: if (tvd) then
                   perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
-                    call spline_tvd(b(nghost+1:nghost+nxgrid,j,k), xnew, px)
+                    call spline_tvd(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px)
                   else perx
-                    call fatal_error('sheared_advection_nonfft', 'TVD spline for non-periodic x is not implemented. ')
+                    call spline_tvd(b(:,j,k), xnew, px)
                   endif perx
                   error = .false.
                 else stvdx
