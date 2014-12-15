@@ -742,12 +742,14 @@ module Particles_chemistry
 !  NILS: hosts/nordita/norlx51-daily-test.conf)
 !
         read (string(i:i+7),*,iostat=numerical) real_number
-        if (real_number .lt. 10) then
-          numerical = 1
-        endif
-        if (i > len(string)-10) then
-          print*,'no numericals found after sign!'
-          numerical = 0
+        if (numerical == 0) then 
+          if (real_number < 10.) then
+            numerical = 1
+          endif
+          if (i > len(string)-10) then
+            print*,'no numericals found after sign!'
+            numerical = 0
+          endif
         endif
       enddo
 !
@@ -921,20 +923,12 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine get_reverse_K_k(l,fp)
-      integer :: l, k, k1, k2
+    subroutine get_reverse_K_k(l,fp,k)
+      integer :: l, k
       real :: pre_pressure
-      real, dimension(:), allocatable :: k_p, k_c
-      real, dimension(:), allocatable :: denominator, expo
+      real :: k_p, k_c
+      real :: denominator, expo
       real, dimension(:,:) :: fp
-!
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
-!
-      allocate(k_p(k1:k2))
-      allocate(k_c(k1:k2))
-      allocate(denominator(k1:k2))
-      allocate(expo(k1:k2))
 !
       if (unit_system == 'cgs') then
         pre_pressure = 0.1
@@ -942,24 +936,19 @@ module Particles_chemistry
         pre_pressure = 1.
       endif
 !
-      do k = k1,k2
-        denominator(k) = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-        expo(k) = denominator(k)/(gas_constant*fp(k,iTp))
-        k_p(k) = exp(-expo(k))
+        denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
+        expo = denominator/(gas_constant*fp(k,iTp))
+        k_p = exp(-expo)
 !
 ! k_p == pressure independent equilibrium constant
-        k_c(k) = k_p(k) / (((gas_constant)*fp(k,iTp)/ &
+!
+        k_c = k_p / (((gas_constant)*fp(k,iTp)/ &
             (pre_pressure*interp_pp(k)))**(dngas(l-1)))
 !
 ! k_c == pressure dependent equilibrium constant
-        K_k(k,l) = (K_k(k,l-1) / k_c(k))
-      enddo
 !
-      deallocate(k_p)
-      deallocate(k_c)
-      deallocate(denominator)
-      deallocate(expo)
-    endsubroutine get_reverse_K_k
+        K_k(k,l) = (K_k(k,l-1) / k_c)
+      endsubroutine get_reverse_K_k
 ! ******************************************************************************
 !  Calculate the conversion of the particle
 !
@@ -1842,7 +1831,7 @@ module Particles_chemistry
             K_k(k,l) = int_k
           endif
           if (reaction_direction(l) == 'rev') then
-            call get_reverse_K_k(l,fp)
+            call get_reverse_K_k(l,fp,k)
           endif
         enddo
       enddo
