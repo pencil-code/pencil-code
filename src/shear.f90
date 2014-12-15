@@ -620,11 +620,21 @@ module Shear
       xnew = xgrid - dt_shear * u0_advec(1)
       ynew = ygrid - dt_shear * u0_advec(2)
       yshift = Sshear * (xgrid - x0_shear) * dt_shear
+      stvd: if (tvd .and. method == 'spline') then
+        if (.not. lequidist(1)) &
+            call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
+        xnew = (xnew - xgrid(1)) / dx
+      endif stvd
+!
+!  Check positive definiteness.
+!
+      pd: if (posdef) then
+        if (any(a(:,:,:,ic1:ic2) < 0.0)) call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
+        if (method == 'spline') call warning('sheared_advection_nonfft', 'spline does not support posdef. ')
+      endif pd
 !
 !  Loop through each component.
 !
-      if (posdef .and. any(a(l1:l2,m1:m2,n1:n2,ic1:ic2) < 0.0)) &
-          call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
       comp: do ic = ic1, ic2
 !
 !  Interpolation in x: assuming the correct boundary conditions have been applied.
@@ -635,8 +645,16 @@ module Shear
             scan_xy: do j = nghost + 1, nghost + nypx
               xmethod: select case (method)
               case ('spline') xmethod
-                if (tvd) call fatal_error('sheared_advection_nonfft', 'TVD spline for x is not implemented. ')
-                call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
+                stvdx: if (tvd) then
+                  perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
+                    call spline_tvd(b(nghost+1:nghost+nxgrid,j,k), xnew, px)
+                  else perx
+                    call fatal_error('sheared_advection_nonfft', 'TVD spline for non-periodic x is not implemented. ')
+                  endif perx
+                  error = .false.
+                else stvdx
+                  call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
+                endif stvdx
               case ('poly') xmethod
                 call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
@@ -659,25 +677,19 @@ module Shear
             scan_yx: do j = 1, nxpy
               ynew1 = ynew - yshift((ipy * nprocx + ipx) * nxpy + j)
 !
-              periodic: if (.not. tvd .or. .not. method == 'spline') then
+              pery: if (.not. tvd .or. .not. method == 'spline') then
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
                 by(mm1:mm2) = bt(:,j,k)
                 by(1:nghost) = by(mm2i:mm2)
                 by(mm2+1:mygrid) = by(mm1:mm1i)
-              endif periodic
+              endif pery
 !
               ymethod: select case (method)
               case ('spline') ymethod
                 stvdy: if (tvd) then
                   if (.not. lequidist(2)) &
                       call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
-                  ynew1 = (ynew1 - ygrid(1)) / dy
-                  spdy: if (posdef) then
-                    call spline_tvd(log(bt(:,j,k)), ynew1, py)
-                    py = exp(py)
-                  else spdy
-                    call spline_tvd(bt(:,j,k), ynew1, py)
-                  endif spdy
+                  call spline_tvd(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py)
                   error = .false.
                 else stvdy
                   call spline(yglobal, by, ynew1, py, mygrid, nygrid, err=error, msg=message)
