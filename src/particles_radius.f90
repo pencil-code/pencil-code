@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 1
+! MPAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
 !***************************************************************
@@ -58,6 +59,7 @@ module Particles_radius
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
+  integer :: idiag_ieffp=0
 !
   contains
 !***********************************************************************
@@ -84,6 +86,19 @@ module Particles_radius
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles: npvar > mpvar','')
+      endif
+!
+! Index for the effectiveness factor of surface reactions
+!
+      ieffp = mpvar+npaux+1
+      pvarname(ieffp) = 'ieffp'
+      npaux = npaux+1
+!
+! Check that the fp and dfp arrays are big enough.
+!
+      if (npaux > mpaux) then
+        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
+        call fatal_error('register_particles_radius: npaux > mpaux','')
       endif
 !
     endsubroutine register_particles_radius
@@ -342,8 +357,9 @@ module Particles_radius
       real :: mass_per_radius, rho
       real, dimension(:), allocatable :: effectiveness_factor, mass_loss
 !
-      intent (in) :: f, fp
+      intent (in) :: f
       intent (out) :: dfp
+      intent (inout) :: fp
 !
 !  Print out header information in first time step.
 !
@@ -378,6 +394,7 @@ module Particles_radius
             mass_per_radius = 1./ 4. * pi * rho * fp(k,iap)**2
             dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))*mass_per_radius
           endif
+          fp(k,ieffp) = effectiveness_factor(k)
         enddo
         deallocate(mass_loss)
         deallocate(effectiveness_factor)
@@ -677,6 +694,8 @@ module Particles_radius
         if (idiag_npswarmm/=0) &
             call sum_par_name(rhop_swarm/ &
             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
+        if (idiag_ieffp/=0) & 
+            call sum_par_name(fp(1:mpar_loc,ieffp),idiag_ieffp)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -767,6 +786,7 @@ module Particles_radius
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
         idiag_dvp12m=0; idiag_dtsweepp=0; idiag_npswarmm=0
+        idiag_ieffp=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -781,6 +801,7 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
         call parse_name(iname,cname(iname),cform(iname),'dtsweepp', &
             idiag_dtsweepp)
+        call parse_name(iname,cname(iname),cform(iname),'ieffp',idiag_ieffp)
         if (.not.lparticles_number) call parse_name(iname,cname(iname), &
             cform(iname),'npswarmm',idiag_npswarmm)
       enddo

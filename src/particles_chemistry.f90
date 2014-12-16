@@ -1175,8 +1175,8 @@ module Particles_chemistry
       real, dimension(:,:) :: fp
 !
       real, dimension(:,:), allocatable :: R_i_hat, D_eff
-      real, dimension(:), allocatable :: Knudsen, pore_radius
-      real, dimension(:), allocatable :: tmp1, tmp2, tmp3
+      real :: Knudsen, tmp3, tmp2, tmp1
+      real, dimension(:), allocatable :: pore_radius
       real, dimension(:), allocatable ::  phi, sum_eta_i_R_i_hat_max
       real, dimension(:), allocatable :: sum_R_i_hat_max
       real, dimension(:), allocatable :: volume, porosity
@@ -1190,11 +1190,7 @@ module Particles_chemistry
       allocate(D_eff(k1:k2,N_surface_reactants))
       allocate(volume(k1:k2))
       allocate(pore_radius(k1:k2))
-      allocate(Knudsen(k1:k2))
-      allocate(tmp1(k1:k2))
       allocate(phi(k1:k2))
-      allocate(tmp2(k1:k2))
-      allocate(tmp3(k1:k2))
       allocate(sum_R_i_hat_max(k1:k2))
       allocate(sum_eta_i_R_i_hat_max(k1:k2))
       allocate(porosity(k1:k2))
@@ -1225,11 +1221,11 @@ module Particles_chemistry
 !
       do k = k1,k2
         do i = 1,N_surface_reactants
-          tmp3(k) = 8*gas_constant*fp(k,iTp)/(pi*molar_mass(jmap(i)))
-          Knudsen(k) = 2*pore_radius(k)*porosity(k)*sqrt(tmp3(k))/(3*tortuosity)
-          tmp1(i) = 1./diff_coeff_reactants(i)
-          tmp2(k) = 1./Knudsen(k)
-          D_eff(k,i) = 1./(tmp1(i)+tmp2(k))
+          tmp3 = 8*gas_constant*fp(k,iTp)/(pi*molar_mass(jmap(i)))
+          Knudsen = 2*pore_radius(k)*porosity(k)*sqrt(tmp3)/(3*tortuosity)
+          tmp1 = 1./diff_coeff_reactants(i)
+          tmp2 = 1./Knudsen
+          D_eff(k,i) = 1./(tmp1+tmp2)
         enddo
       enddo
 !
@@ -1238,11 +1234,11 @@ module Particles_chemistry
 !
       do k = k1,k2
         do i = 1,N_surface_reactants
-          if (R_i_hat(k,i) < 0) then
+          if (R_i_hat(k,i) < 0.0) then
             thiele(k,i) = fp(k,iap)*sqrt(-R_i_hat(k,i)*St(k)/ &
-                (fp(k,imp)*Cg(i)*fp(k,iads-1+i)*D_eff(k,i)))
+                (fp(k,imp)*Cg(k)*fp(k,isurf-1+i)*D_eff(k,i)))
           else
-            thiele(k,i) = 1e-2
+            thiele(k,i) = 1.e-2
           endif
 !
 ! calculate the effectivenes factor (all particles, all reactants)
@@ -1302,10 +1298,6 @@ module Particles_chemistry
       deallocate(D_eff)
       deallocate(volume)
       deallocate(pore_radius)
-      deallocate(Knudsen)
-      deallocate(tmp1)
-      deallocate(tmp2)
-      deallocate(tmp3)
       deallocate(sum_R_i_hat_max)
       deallocate(sum_eta_i_R_i_hat_max)
       deallocate(phi)

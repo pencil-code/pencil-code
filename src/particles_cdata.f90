@@ -47,6 +47,7 @@ module Particles_cdata
   integer :: nbin_ap_dist=100
   integer :: iads=0, iads_end=0
   integer :: isurf=0,isurf_end=0
+  integer :: ieffp=0
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.

@@ -171,7 +171,7 @@ module Particles_mass
 !***********************************************************************
     subroutine dpmass_dt(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of particle temperature.
+!  Diagnostic output concerning the mass, density and surface density
 !
 !  23-sep-14/Nils: coded
 !
