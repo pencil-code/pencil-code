@@ -590,7 +590,7 @@ module Shear
 !    dt_shear: time increment
 !    method: interpolation method
 !
-      use General, only: spline, spline_tvd, polynomial_interpolation
+      use General, only: cspline, polynomial_interpolation
       use Messages, only: warning, fatal_error
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
 !
@@ -620,11 +620,11 @@ module Shear
       xnew = xgrid - dt_shear * u0_advec(1)
       ynew = ygrid - dt_shear * u0_advec(2)
       yshift = Sshear * (xgrid - x0_shear) * dt_shear
-      stvd: if (tvd .and. method == 'spline') then
+      scalex: if (method == 'spline') then
         if (.not. lequidist(1)) &
             call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
         xnew = (xnew - xglobal(1)) / dx
-      endif stvd
+      endif scalex
 !
 !  Check positive definiteness.
 !
@@ -645,16 +645,12 @@ module Shear
             scan_xy: do j = nghost + 1, nghost + nypx
               xmethod: select case (method)
               case ('spline') xmethod
-                stvdx: if (tvd) then
-                  perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
-                    call spline_tvd(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px)
-                  else perx
-                    call spline_tvd(b(:,j,k), xnew, px, nonperiodic=.true.)
-                  endif perx
-                  error = .false.
-                else stvdx
-                  call spline(xglobal, b(:,j,k), xnew, px, mxgrid, nxgrid, err=error, msg=message)
-                endif stvdx
+                perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
+                  call cspline(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px, tvd=tvd)
+                else perx
+                  call cspline(b(:,j,k), xnew, px, nonperiodic=.true., tvd=tvd)
+                endif perx
+                error = .false.
               case ('poly') xmethod
                 call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
@@ -686,14 +682,10 @@ module Shear
 !
               ymethod: select case (method)
               case ('spline') ymethod
-                stvdy: if (tvd) then
-                  if (.not. lequidist(2)) &
-                      call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
-                  call spline_tvd(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py)
-                  error = .false.
-                else stvdy
-                  call spline(yglobal, by, ynew1, py, mygrid, nygrid, err=error, msg=message)
-                endif stvdy
+                if (.not. lequidist(2)) &
+                    call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
+                call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd)
+                error = .false.
               case ('poly') ymethod
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
@@ -848,7 +840,7 @@ module Shear
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
 !
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
-      use General, only: spline, spline_tvd, polynomial_interpolation
+      use General, only: cspline, polynomial_interpolation
       use Messages, only: warning, fatal_error
 !
       real, dimension(nghost,ny,nz), intent(inout) :: a
@@ -867,22 +859,27 @@ module Shear
 !  Find the new y-coordinates after shift.
 !
       ynew = ygrid - shift
-      if (method == 'spline' .and. ltvd_advection) then
+      newy: if (method == 'spline') then
         if (.not. lequidist(2)) &
             call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
         ynew = (ynew - ygrid(1)) / dy
-      else
+      else newy
         ynew = ynew - floor((ynew - y0) / Ly) * Ly
-      endif
+      endif newy
+!
+!  Check positive definiteness.
+!
+      pd: if (posdef) then
+        if (any(a < 0.0)) call warning('shift_ghostzones_nonfft_subtask', 'negative value(s) before interpolation')
+        if (method == 'spline') call warning('shift_ghostzones_nonfft_subtask', 'spline does not support posdef. ')
+      endif pd
 !
 !  Shift the ghost cells.
 !
-      if (posdef .and. any(a < 0.0)) &
-          call warning('shift_ghostzones_nonfft_subtask', 'negative value(s) before interpolation')
       call remap_to_pencil_y(a, work)
       scan_z: do k = 1, nz
         scan_x: do i = 1, nghost
-          periodic: if (.not. method == 'spline' .or. .not. ltvd_advection) then
+          periodic: if (.not. method == 'spline') then
             worky(nghost+1:mygrid-nghost) = work(i,:,k)
             worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
             worky(mygrid-nghost+1:mygrid) = worky(nghost+1:nghost+nghost)
@@ -890,17 +887,8 @@ module Shear
 !
           dispatch: select case (method)
           case ('spline') dispatch
-            stvd: if (ltvd_advection) then
-              spd: if (posdef) then
-                call spline_tvd(log(work(i,:,k)), ynew, penc)
-                penc = exp(penc)
-              else spd
-                call spline_tvd(work(i,:,k), ynew, penc)
-              endif spd
-              error = .false.
-            else stvd
-              call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
-            endif stvd
+            call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection)
+            error = .false.
           case ('poly') dispatch
             call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
                                           istatus=istat, message=message)

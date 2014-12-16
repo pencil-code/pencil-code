@@ -21,7 +21,7 @@ module General
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
-  public :: spline_tvd
+  public :: cspline
   public :: polynomial_interpolation
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
@@ -1456,31 +1456,33 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
-    subroutine spline_tvd(y1, x2, y2, nonperiodic)
+    subroutine cspline(y1, x2, y2, nonperiodic, tvd)
 !
 !  Use cubic spline interpolants to interpolate y1 into y2 at x2,
-!  assuming y1(i) is at x = i-1 for all i.  Those interpolated points
-!  that violate the TVD condition are downgraded to linear
-!  interpolation.  If parameter nonperiodic is present and is .true.,
-!  the natural spline is used; periodic boundary conditions are assumed,
-!  otherwise.
+!  assuming y1(i) is at x = i-1 for all i.
+!  If parameter nonperiodic is present and is .true., the natural spline
+!  is used; periodic boundary conditions are assumed, otherwise.
+!  If parameter tvd is present and is .true., those interpolated points
+!  that violate the TVD condition are downgraded to linear interpolation.
 !
-!  15-dec-14/ccyang: coded.
+!  16-dec-14/ccyang: coded.
 !
       real, dimension(:), intent(in) :: y1, x2
       real, dimension(size(x2)), intent(out) :: y2
-      logical, intent(in), optional :: nonperiodic
+      logical, intent(in), optional :: nonperiodic, tvd
 !
       integer, dimension(size(x2)) :: inode
       real, dimension(size(y1)) :: b, c, d
-      logical :: lperiodic
+      logical :: lperiodic, ltvd
       integer :: n1, i, n
       real :: a, s
 !
-!  Determine the boundary conditions.
+!  Check the switches.
 !
       lperiodic = .true.
       if (present(nonperiodic)) lperiodic = .not. nonperiodic
+      ltvd = .false.
+      if (present(tvd)) ltvd = tvd
 !
 !  Find the interpolants.
 !
@@ -1513,23 +1515,25 @@ module General
 !
 !  Check TVD.
 !
-      scan: do i = 1, size(x2)
-        n = inode(i)
-        if (.not. lperiodic .and. (n < 1 .or. n >= n1)) then
-          cycle scan  ! Allow for extrapolation.
-        elseif (lperiodic .and. n >= n1) then
-          a = y1(1)
-        else
-          a = y1(n + 1)
-        endif
-        notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
-!         Downgrade to linear interpolation
-          s = x2(i) - floor(x2(i))
-          y2(i) = y1(n) * (1.0 - s) + a * s
-        endif notvd
-      enddo scan
+      chktvd: if (ltvd) then
+        scan: do i = 1, size(x2)
+          n = inode(i)
+          if (.not. lperiodic .and. (n < 1 .or. n >= n1)) then
+            cycle scan  ! Allow for extrapolation.
+          elseif (lperiodic .and. n >= n1) then
+            a = y1(1)
+          else
+            a = y1(n + 1)
+          endif
+          notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
+!           Downgrade to linear interpolation
+            s = x2(i) - floor(x2(i))
+            y2(i) = y1(n) * (1.0 - s) + a * s
+          endif notvd
+        enddo scan
+      endif chktvd
 !
-    endsubroutine spline_tvd
+    endsubroutine cspline
 !***********************************************************************
     pure subroutine spline_coeff(y, b, c, d, yp1, yp2, err, msg)
 !
