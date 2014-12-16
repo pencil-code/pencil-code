@@ -649,11 +649,11 @@ module Shear
                   perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
                     call spline_tvd(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px)
                   else perx
-                    call spline_tvd(b(:,j,k), xnew, px)
+                    call spline_tvd(b(:,j,k), xnew, px, nonperiodic=.true.)
                   endif perx
                   error = .false.
                 else stvdx
-                  call spline(xglobal, b(:,j,k), xnew, px, mx, nxgrid, err=error, msg=message)
+                  call spline(xglobal, b(:,j,k), xnew, px, mxgrid, nxgrid, err=error, msg=message)
                 endif stvdx
               case ('poly') xmethod
                 call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
