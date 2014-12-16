@@ -12,6 +12,7 @@
 !***************************************************************
 module Particles_drag
 !
+  use Cparam
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -63,12 +64,22 @@ module Particles_drag
 !
     endsubroutine write_particles_drag_run_pars
 !***********************************************************************
-    subroutine integrate_drag()
+    subroutine integrate_drag(f, fp, ipar, ineargrid)
 !
 !  Wrapper for the integration of the drag force between particles and
 !  gas.
 !
-!  14-dec-14/ccyang: dummy.
+!  16-dec-14/ccyang: dummy.
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc), intent(in) :: ipar
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine integrate_drag
 !***********************************************************************

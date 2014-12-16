@@ -462,11 +462,13 @@ module Particles_main
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  14-dec-14/ccyang: coded.
+!  16-dec-14/ccyang: coded.
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      use Particles_drag, only: integrate_drag
 !
-      call keep_compiler_quiet(f)
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (lparticles_drag) call integrate_drag(f, fp, ipar, ineargrid)
 !
     endsubroutine split_update_particles
 !***********************************************************************
