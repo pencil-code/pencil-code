@@ -45,7 +45,7 @@ module Particles_surfspec
 
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
-  integer :: idiag_surf=0
+  integer, dimension(:), allocatable :: idiag_surf
 
 !*********************************************************************!
 !               Particle dependent variables below here               !
@@ -136,6 +136,10 @@ module Particles_surfspec
     allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_chem', &
         'Could not allocate memory for nu_power')
+    allocate(idiag_surf(N_surface_species),STAT=stat)
+    if (stat > 0) call fatal_error('register_indep_chem', &
+        'Could not allocate memory for idiag_surf')
+    idiag_surf=0
 
     call create_ad_sol_lists(solid_species,'sol')
     call get_reactants(reactants)
@@ -303,11 +307,11 @@ module Particles_surfspec
     call keep_compiler_quiet(ineargrid)
 
     if (ldiagnos) then
-      if (idiag_surf /= 0) then
-        do i=1,isurf_end-isurf
-          call sum_par_name(fp(1:mpar_loc,isurf+i-1),idiag_surf+i-1)
-        enddo
-      endif
+      do i=1,N_surface_species
+        if (idiag_surf(i) /= 0) then
+          call sum_par_name(fp(1:mpar_loc,isurf+i-1),idiag_surf(i))
+        endif
+      enddo
     endif
   endsubroutine dpsurf_dt
 ! ******************************************************************************
@@ -446,7 +450,8 @@ module Particles_surfspec
     logical, optional :: lwrite
 
     logical :: lwr
-    integer :: iname
+    integer :: iname,i
+    character(len=7) :: diagn_surf,number
 
     ! Write information to index.pro
     lwr = .false.
@@ -460,7 +465,12 @@ module Particles_surfspec
     if (lroot .and. ip < 14) print*,'rprint_particles_surf: run through parse list'
 
     do iname = 1,nname
-      call parse_name(iname,cname(iname),cform(iname),'Ysurf',idiag_surf)
+      do i=1,N_surface_species
+        write (number,'(I2)') i
+        diagn_surf = 'Ysurf'//trim(adjustl(number))
+        print*,trim(diagn_surf)
+        call parse_name(iname,cname(iname),cform(iname),trim(diagn_surf),idiag_surf(i))
+      enddo
     enddo
   endsubroutine rprint_particles_surf
 ! ******************************************************************************

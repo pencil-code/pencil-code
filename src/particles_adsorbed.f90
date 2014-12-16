@@ -44,7 +44,7 @@ module Particles_adsorbed
   real :: sum_ads
   real :: dpads=0.0
   logical :: lexperimental_adsorbed=.false.
-  integer :: idiag_ads=0
+  integer, dimension(:), allocatable :: idiag_ads
 !
 !*********************************************************************!
 !               Particle dependent variables below here               !
@@ -166,6 +166,10 @@ module Particles_adsorbed
         allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
         if (stat > 0) call fatal_error('register_indep_ads', &
             'Could not allocate memory for mu_power')
+        allocate(idiag_ads(N_adsorbed_species),STAT=stat)
+        if (stat > 0) call fatal_error('register_indep_ads', &
+            'Could not allocate memory for idiag_ads')
+        idiag_ads=0
       endif
 !
 ! Define the aac array which gives the amount of carbon in the
@@ -284,11 +288,11 @@ module Particles_adsorbed
 !  JONAS look at dustdensity.f90 l.1897
 !
       if (ldiagnos) then
-        if (idiag_ads /= 0) then
-          do i=1,iads_end-iads
-            call sum_par_name(fp(1:mpar_loc,iads+i-1),idiag_ads+i-1)
-          enddo
-        endif
+        do i=1,N_adsorbed_species
+          if (idiag_ads(i) /= 0) then
+            call sum_par_name(fp(1:npar_loc,iads+i-1),idiag_ads(i))
+          endif
+        enddo
       endif
 !
     endsubroutine dpads_dt
@@ -396,7 +400,8 @@ module Particles_adsorbed
       logical, optional :: lwrite
 !
       logical :: lwr
-      integer :: iname
+      integer :: iname,i
+      character(len=6) :: diagn_ads,number
 !
 !  Write information to index.pro
 !
@@ -411,11 +416,12 @@ module Particles_adsorbed
       if (lroot .and. ip<14) print*,'rprint_particles_ads: run through parse list'
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'Yads',idiag_ads)
-        call parse_name(iname,cname(iname),cform(iname),'Yads1',idiag_ads)
-        call parse_name(iname,cname(iname),cform(iname),'Yads2',idiag_ads)
-        call parse_name(iname,cname(iname),cform(iname),'Yads3',idiag_ads)
-        call parse_name(iname,cname(iname),cform(iname),'Yads4',idiag_ads)
+        do i=1,N_adsorbed_species
+          write (number,'(I2)') i
+          diagn_ads = 'Yads'//trim(adjustl(number))
+          print*,trim(diagn_ads)
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_ads),idiag_ads(i))
+        enddo
       enddo
 !
     end subroutine rprint_particles_ads

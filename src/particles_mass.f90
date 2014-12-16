@@ -403,7 +403,7 @@ module Particles_mass
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
         call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_chrhopm)
+        call parse_name(iname,cname(iname),cform(iname),'chrhopm',idiag_chrhopm)
         call parse_name(iname,cname(iname),cform(iname),'rhosurf',idiag_rhosurf)
       enddo
 !
