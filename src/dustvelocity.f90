@@ -1396,7 +1396,7 @@ module Dustvelocity
       real, dimension(200,110) :: efficiency
       real, dimension(110,1) :: radius
       real, dimension(200,1) :: ratio
-      real ::  e,radius_ratio, adx, ady, radius1, ratio1
+      real ::  e,radius_ratio, adx, ady, radius1, ratio1, scolld1
 
       integer :: row,col,max_rows,max_cols, ex, ey
       logical :: luse_table
@@ -1447,6 +1447,7 @@ module Dustvelocity
         do j=1,ndustspec
           adx = ad(i)
           ady = ad(j)
+          scolld1 = scolld(i,j)
 
           if (luse_table) then
             if (adx>=ady) then
@@ -1469,9 +1470,11 @@ module Dustvelocity
             e = efficiency(ex,ey)
           else
             e = 1.
+            scolld1 = e*pi*(adx+ady)**2
           endif
 
-          scolld(i,j) = e*pi*(adx+ady)**2
+         ! scolld(i,j) = e*pi*(adx+ady)**2
+           scolld(i,j) = scolld1
 
         enddo
       enddo
