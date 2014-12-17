@@ -1391,14 +1391,16 @@ module Dustvelocity
 !
 !  Calculate surface of dust particles. Add collision efficiency, Xiangyu, 12/12/2014
 !
-      integer :: i,j
+      
+      integer, parameter :: max_rows = 200, max_cols = 110
+      real, parameter :: step_radius =0.00000266, step_ratio = 0.00477
+      
+      integer :: i,j, row,col,ex,ey
+      real, dimension(max_rows,max_cols) :: efficiency
+      real, dimension(max_cols,1) :: radius
+      real, dimension(max_rows,1) :: ratio
+      real ::  e,radius_ratio, adx, ady, radius1, radiusx, radiusy,  ratio1, ratiox, ratioy, scolld1
 
-      real, dimension(200,110) :: efficiency
-      real, dimension(110,1) :: radius
-      real, dimension(200,1) :: ratio
-      real ::  e,radius_ratio, adx, ady, radius1, ratio1, scolld1
-
-      integer :: row,col,max_rows,max_cols, ex, ey
       logical :: luse_table
 !
 !  select efficiency type
@@ -1410,8 +1412,7 @@ module Dustvelocity
         efficiency=1.
       case ('read_table')
         luse_table=.true.
-        max_rows=200
-        max_cols=110
+
 !
 !  read file (can make more general)
 !
@@ -1453,18 +1454,24 @@ module Dustvelocity
             if (adx>=ady) then
               do col = 1,max_cols
                 radius1 = radius(col,1)
+                radiusx = radius1+step_radius
+                radiusy = radius1-step_radius
                   
-                if (radius1==adx) then
+               ! if (radius1==adx) then
+                if (radius1>=radiusy .and. radius1<=radiusx) then
                   ey = col
                 end if
               end do
   
               radius_ratio = adx/ady
               do row = 1,max_rows
-                ratio1 = ratio(row,1)
-                if (ratio1==radius_ratio) then
-                  ex = row
-                end if
+                 ratio1 = ratio(row,1)
+                 ratiox = ratio1+step_ratio
+                 ratioy = ratio1-step_ratio
+               ! if (ratio1==radius_ratio) then
+                 if (ratio1>=ratioy .and. ratio1<=ratiox) then
+                    ex = row
+                 end if
               end do
             endif
             e = efficiency(ex,ey)
