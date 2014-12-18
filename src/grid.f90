@@ -30,6 +30,7 @@ module Grid
   public :: get_grid_mn
   public :: box_vol
   public :: save_grid
+  public :: inverse_grid
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -1800,6 +1801,50 @@ module Grid
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
     endfunction find_star
+!***********************************************************************
+    subroutine inverse_grid(dir, x, xi)
+!
+!  Transform the x coordinates in real space to the xi coordinates in
+!  index space in dir direction, where dir = 1, 2, or, 3.
+!
+!  18-dec-14/ccyang: coded.
+!
+      integer, intent(in) :: dir
+      real, dimension(:), intent(in) :: x
+      real, dimension(:), intent(out) :: xi
+!
+      character(len=linelen) :: msg
+      real :: h
+!
+!  Check the direction.
+!
+      ckdir: select case (dir)
+      case (1) ckdir
+        h = dx
+      case (2) ckdir
+        h = dy
+      case (3) ckdir
+        h = dz
+      case default ckdir
+        write(msg,*) 'unknown direction dir = ', dir
+        call fatal_error('inverse_grid', trim(msg))
+      endselect ckdir
+!
+!  Make the transformation.
+!
+      func: select case (grid_func(dir))
+!
+      case ('linear') func
+        xi = (x - xyz0(dir)) / h + real(nghost + 1)
+!
+      case default func
+        call fatal_error('inverse_grid', 'unknown grid function ' // trim(grid_func(dir)))
+!
+      endselect func
+!
+      if (lperi(dir)) xi = xi - 0.5
+!
+    endsubroutine inverse_grid
 !***********************************************************************
     subroutine construct_serial_arrays
 !
