@@ -1802,29 +1802,42 @@ module Grid
 !
     endfunction find_star
 !***********************************************************************
-    subroutine inverse_grid(dir, x, xi)
+    subroutine inverse_grid(dir, x, xi, local)
 !
 !  Transform the x coordinates in real space to the xi coordinates in
 !  index space in dir direction, where dir = 1, 2, or, 3.
+!  If local is present and .true., the index space is with respect to
+!  the local grid.
 !
 !  18-dec-14/ccyang: coded.
 !
       integer, intent(in) :: dir
       real, dimension(:), intent(in) :: x
       real, dimension(:), intent(out) :: xi
+      logical, intent(in), optional :: local
 !
       character(len=linelen) :: msg
+      logical :: loc
+      integer :: shift
       real :: h
+!
+!  Global or local index space?
+!
+      loc = .false.
+      if (present(local)) loc = local
 !
 !  Check the direction.
 !
       ckdir: select case (dir)
       case (1) ckdir
         h = dx
+        if (loc) shift = nx * ipx
       case (2) ckdir
         h = dy
+        if (loc) shift = ny * ipy
       case (3) ckdir
         h = dz
+        if (loc) shift = nz * ipz
       case default ckdir
         write(msg,*) 'unknown direction dir = ', dir
         call fatal_error('inverse_grid', trim(msg))
@@ -1843,6 +1856,7 @@ module Grid
       endselect func
 !
       if (lperi(dir)) xi = xi - 0.5
+      if (loc) xi = xi - real(shift)
 !
     endsubroutine inverse_grid
 !***********************************************************************
