@@ -171,4 +171,7 @@ module Particles_surfspec
   subroutine cleanup_surf_pencils()
   endsubroutine cleanup_surf_pencils
 ! ******************************************************************************
+  subroutine particles_surfspec_clean_up()
+  endsubroutine particles_surfspec_clean_up
+! ******************************************************************************
 endmodule Particles_surfspec

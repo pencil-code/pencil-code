@@ -6430,6 +6430,8 @@ module Chemistry
   if (allocated(net_react_m))    deallocate(net_react_m)
   if (allocated(net_react_p))    deallocate(net_react_p)
   if (allocated(back))           deallocate(back)
+  if (allocated(Diff_full))      deallocate(Diff_full)
+  if (allocated(Diff_full_add))  deallocate(Diff_full_add)
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************

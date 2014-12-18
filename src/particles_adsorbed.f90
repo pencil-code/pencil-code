@@ -419,7 +419,6 @@ module Particles_adsorbed
         do i=1,N_adsorbed_species
           write (number,'(I2)') i
           diagn_ads = 'Yads'//trim(adjustl(number))
-          print*,trim(diagn_ads)
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_ads),idiag_ads(i))
         enddo
       enddo
@@ -436,5 +435,15 @@ module Particles_adsorbed
 !
     end subroutine particles_ads_prepencil_calc
 !***********************************************************************
+    subroutine particles_adsorbed_clean_up()
+!
+      if (allocated(mu)) deallocate(mu)
+      if (allocated(mu_prime)) deallocate(mu_prime)
+      if (allocated(aac)) deallocate(aac)
+      if (allocated(site_occupancy)) deallocate(site_occupancy)
+      if (allocated(mu_power)) deallocate(mu_power)
+      if (allocated(idiag_ads)) deallocate(idiag_ads)
+!
+    endsubroutine particles_adsorbed_clean_up
 !***********************************************************************
 end module Particles_adsorbed

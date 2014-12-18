@@ -511,7 +511,7 @@ module Particles_chemistry
           enddo
         enddo
       enddo
-!   targ(:,:) = int(targ(:,:))
+!
     endsubroutine create_stoc
 ! ******************************************************************************
 !  Gets how many c atoms are on the surface species
@@ -2151,5 +2151,26 @@ module Particles_chemistry
       q_reac_targ = q_reac
 !
     endsubroutine get_temperature_chemistry
+! ******************************************************************************
+    subroutine particles_chemistry_clean_up
+!      
+      if(allocated(dngas)) deallocate(dngas)
+      if(allocated(omega_pg_dbl)) deallocate(omega_pg_dbl)
+      if(allocated(B_k)) deallocate(B_k)
+      if(allocated(Er_k)) deallocate(Er_k)
+      if(allocated(sigma_k)) deallocate(sigma_k)
+      if(allocated(reaction_order)) deallocate(reaction_order)
+      if(allocated(effectiveness_factor_old)) deallocate(effectiveness_factor_old)
+      if(allocated(diff_coeff_reactants)) deallocate(diff_coeff_reactants)
+      if(allocated(reaction_direction)) deallocate(reaction_direction)
+      if(allocated(flags)) deallocate(flags)
+      if(allocated(T_k)) deallocate(T_k)
+      if(allocated(R_c_hat)) deallocate(R_c_hat)
+      if(allocated(heating_k)) deallocate(heating_k)
+      if(allocated(entropy_k)) deallocate(entropy_k)
+      if(allocated(part)) deallocate(part)
+      if(allocated(part_power)) deallocate(part_power)
+!
+    endsubroutine particles_chemistry_clean_up
 ! ******************************************************************************
 endmodule Particles_chemistry

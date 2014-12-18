@@ -1700,6 +1700,11 @@ module Particles_main
     subroutine particles_cleanup
 !
       if (lparticles_potential) call particles_potential_clean_up()
+      if (lparticles_chemistry) then 
+        call particles_chemistry_clean_up()
+        call particles_surfspec_clean_up()
+        call particles_adsorbed_clean_up()
+      endif
 !
     endsubroutine particles_cleanup
 !***********************************************************************

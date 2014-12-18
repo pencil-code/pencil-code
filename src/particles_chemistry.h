@@ -40,6 +40,7 @@
   public :: create_ad_sol_lists
   public :: sort_compounds
   public :: count_reactions, count_max_elements
+  public :: particles_chemistry_clean_up
 
 !
 !  Obligatory routines for reading in of the start and run namelists

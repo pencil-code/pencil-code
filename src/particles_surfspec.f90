@@ -37,7 +37,6 @@ module Particles_surfspec
   real, dimension(10) :: init_surf_mol_frac
   real :: surfplaceholder=0.0
   real, dimension(:,:), allocatable :: nu_power
-  real, dimension(:), allocatable :: uscale, fscale, constr
   integer :: Ysurf
   logical :: lspecies_transfer=.true.
   logical :: linfinite_diffusion=.true.
@@ -125,14 +124,6 @@ module Particles_surfspec
     allocate(solid_species(N_surface_species),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_psurfchem', &
         'Could not allocate memory for solid_species')
-    allocate(uscale(N_surface_reactants),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_psurfchem', &
-        'Could not allocate memory for uscale')
-    allocate(fscale(N_surface_reactants),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_psurfchem', &
-        'Could not allocate memory for fscale')
-    allocate(constr(N_surface_reactants),STAT=stat)
-    if (stat > 0) call fatal_error('register_indep_psurfchem', 'Could not allocate memory for constr')
     allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
     if (stat > 0) call fatal_error('register_indep_chem', &
         'Could not allocate memory for nu_power')
@@ -177,13 +168,7 @@ module Particles_surfspec
 
   endsubroutine register_indep_psurfspec
 ! ******************************************************************************
-
   subroutine register_dep_psurfspec()
-    integer :: stat
-
-    allocate(x_infty_reactants(mpar_loc,N_surface_reactants), STAT = stat)
-    if (stat > 0) call fatal_error('register_dep_psurfchem', &
-        'Could not allocate memory for x_infty_reactants')
   endsubroutine register_dep_psurfspec
 ! ******************************************************************************
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -468,7 +453,6 @@ module Particles_surfspec
       do i=1,N_surface_species
         write (number,'(I2)') i
         diagn_surf = 'Ysurf'//trim(adjustl(number))
-        print*,trim(diagn_surf)
         call parse_name(iname,cname(iname),cform(iname),trim(diagn_surf),idiag_surf(i))
       enddo
     enddo
@@ -675,5 +659,18 @@ module Particles_surfspec
 
     deallocate(diff_coeff_species)
   endsubroutine calc_mass_trans_coeff
+! ******************************************************************************
+  subroutine particles_surfspec_clean_up()
+!
+    if (allocated(dependent_reactant)) deallocate(dependent_reactant)
+    if (allocated(nu)) deallocate(nu)
+    if (allocated(nu_prime)) deallocate(nu_prime)
+    if (allocated(ac)) deallocate(ac)
+    if (allocated(jmap)) deallocate(jmap)
+    if (allocated(solid_species)) deallocate(solid_species)
+    if (allocated(nu_power)) deallocate(nu_power)
+    if (allocated(idiag_surf)) deallocate(idiag_surf)
+!
+  endsubroutine particles_surfspec_clean_up
 ! ******************************************************************************
 endmodule Particles_surfspec

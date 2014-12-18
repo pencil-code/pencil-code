@@ -158,4 +158,7 @@ module Particles_adsorbed
     call keep_compiler_quiet(f)
   endsubroutine particles_ads_prepencil_calc
 ! ******************************************************************************
+  subroutine particles_adsorbed_clean_up()
+  endsubroutine particles_adsorbed_clean_up
+! ******************************************************************************
 endmodule Particles_adsorbed

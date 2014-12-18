@@ -356,4 +356,7 @@ module Particles_chemistry
 !
   endsubroutine get_temperature_chemistry
 ! ******************************************************************************
+  subroutine particles_chemistry_clean_up()
+  endsubroutine particles_chemistry_clean_up
+! ******************************************************************************
 endmodule Particles_chemistry

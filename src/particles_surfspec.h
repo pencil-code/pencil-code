@@ -12,3 +12,4 @@
   public :: dpsurf_dt, dpsurf_dt_pencil
   public :: calc_psurf_pencils
   public :: cleanup_surf_pencils
+  public :: particles_surfspec_clean_up
