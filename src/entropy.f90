@@ -3240,7 +3240,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: l,m,n
-      real :: fact, cv1
+      real :: fact, cv1, tmp1
       real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
       real, dimension (mx) :: cs2mx_tmp, ssmx1_tmp
       real, dimension (mx,my) :: cs2mxy_tmp, ssmxy1_tmp
@@ -3317,12 +3317,17 @@ module Energy
           enddo
         endif
         if (lspherical_coords) then
-          fact=Lxyz(2)/(nyzgrid*(cos(y0)-cos(y0+Lxyz(2))))
+          cs2mx=0.
+          fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
           do l=1,mx
-            cs2mx(l)=fact*sum(spread(sinth(m1:m2),2,nz)* & 
-                (cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
-                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss))))
+            tmp1=0.
+            do n=n1,n2
+              tmp1=tmp1+sum(cs20*exp(gamma_m1*(f(l,m1:m2,n,ilnrho) &
+                   -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+            enddo
+            cs2mx(l)=cs2mx(l)+tmp1
           enddo
+          cs2mx=fact*cs2mx
         endif
 !
 !  Communication over all processors in the yz plane.
