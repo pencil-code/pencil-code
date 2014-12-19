@@ -2334,7 +2334,7 @@ clean:
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-	rm -f Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
+	rm -f Makefile src/Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile

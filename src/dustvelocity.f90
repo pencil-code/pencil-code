@@ -1391,7 +1391,6 @@ module Dustvelocity
 !
 !  Calculate surface of dust particles. Add collision efficiency, Xiangyu, 12/12/2014
 !
-      
       integer, parameter :: max_rows = 200, max_cols = 110
       real, parameter :: step_radius =0.00000266, step_ratio = 0.00477
       
@@ -1477,8 +1476,8 @@ module Dustvelocity
             e = efficiency(ex,ey)
           else
             e = 1.
-            scolld1 = e*pi*(adx+ady)**2
           endif
+          scolld1 = e*pi*(adx+ady)**2
 
          ! scolld(i,j) = e*pi*(adx+ady)**2
            scolld(i,j) = scolld1
