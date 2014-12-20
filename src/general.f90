@@ -1456,7 +1456,7 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
-    subroutine cspline(y1, x2, y2, nonperiodic, tvd)
+    subroutine cspline(y1, x2, y2, nonperiodic, tvd, posdef)
 !
 !  Use cubic spline interpolants to interpolate y1 into y2 at x2,
 !  assuming y1(i) is at x = i-1 for all i.
@@ -1464,16 +1464,18 @@ module General
 !  is used; periodic boundary conditions are assumed, otherwise.
 !  If parameter tvd is present and is .true., those interpolated points
 !  that violate the TVD condition are downgraded to linear interpolation.
+!  If parameter posdef is present and is .true., those interpolated
+!  points that dip below zero are downgraded to linear interpolation.
 !
 !  16-dec-14/ccyang: coded.
 !
       real, dimension(:), intent(in) :: y1, x2
       real, dimension(size(x2)), intent(out) :: y2
-      logical, intent(in), optional :: nonperiodic, tvd
+      logical, intent(in), optional :: nonperiodic, tvd, posdef
 !
       integer, dimension(size(x2)) :: inode
       real, dimension(size(y1)) :: b, c, d
-      logical :: lperiodic, ltvd
+      logical :: lperiodic, ltvd, lposdef
       integer :: n1, i, n
       real :: a, s
 !
@@ -1483,6 +1485,8 @@ module General
       if (present(nonperiodic)) lperiodic = .not. nonperiodic
       ltvd = .false.
       if (present(tvd)) ltvd = tvd
+      lposdef = .false.
+      if (present(posdef)) lposdef = posdef
 !
 !  Find the interpolants.
 !
@@ -1513,9 +1517,9 @@ module General
         endwhere
       endif interp
 !
-!  Check TVD.
+!  Check TVD and/or positive definiteness.
 !
-      chktvd: if (ltvd) then
+      tvdpd: if (ltvd .or. lposdef) then
         scan: do i = 1, size(x2)
           n = inode(i)
           if (.not. lperiodic .and. (n < 1 .or. n >= n1)) then
@@ -1525,13 +1529,14 @@ module General
           else
             a = y1(n + 1)
           endif
-          notvd: if ((y1(n) - y2(i)) * (y2(i) - a) < 0.0) then
+          downgrade: if (ltvd .and. (y1(n) - y2(i)) * (y2(i) - a) < 0.0 .or. &
+                         lposdef .and. y2(i) < 0.0) then
 !           Downgrade to linear interpolation
             s = x2(i) - floor(x2(i))
             y2(i) = y1(n) * (1.0 - s) + a * s
-          endif notvd
+          endif downgrade
         enddo scan
-      endif chktvd
+      endif tvdpd
 !
     endsubroutine cspline
 !***********************************************************************
