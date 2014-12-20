@@ -628,7 +628,7 @@ module Shear
 !
 !  Check positive definiteness.
 !
-      if (posdef .and. any(a(:,:,:,ic1:ic2) < 0.0)) &
+      if (posdef .and. any(a(l1:l2,m1:m2,n1:n2,ic1:ic2) < 0.0)) &
           call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
 !
 !  Loop through each component.
