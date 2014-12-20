@@ -628,10 +628,8 @@ module Shear
 !
 !  Check positive definiteness.
 !
-      pd: if (posdef) then
-        if (any(a(:,:,:,ic1:ic2) < 0.0)) call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
-        if (method == 'spline') call warning('sheared_advection_nonfft', 'spline does not support posdef. ')
-      endif pd
+      if (posdef .and. any(a(:,:,:,ic1:ic2) < 0.0)) &
+          call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
 !
 !  Loop through each component.
 !
@@ -646,9 +644,9 @@ module Shear
               xmethod: select case (method)
               case ('spline') xmethod
                 perx: if (bcx(ic) == 'p' .or. bcx(ic) == 'p:p') then
-                  call cspline(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px, tvd=tvd)
+                  call cspline(b(nghost+1:nghost+nxgrid,j,k), xnew - real(nghost), px, tvd=tvd, posdef=posdef)
                 else perx
-                  call cspline(b(:,j,k), xnew, px, nonperiodic=.true., tvd=tvd)
+                  call cspline(b(:,j,k), xnew, px, nonperiodic=.true., tvd=tvd, posdef=posdef)
                 endif perx
                 error = .false.
               case ('poly') xmethod
@@ -684,7 +682,7 @@ module Shear
               case ('spline') ymethod
                 if (.not. lequidist(2)) &
                     call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
-                call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd)
+                call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd, posdef=posdef)
                 error = .false.
               case ('poly') ymethod
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
@@ -869,10 +867,8 @@ module Shear
 !
 !  Check positive definiteness.
 !
-      pd: if (posdef) then
-        if (any(a < 0.0)) call warning('shift_ghostzones_nonfft_subtask', 'negative value(s) before interpolation')
-        if (method == 'spline') call warning('shift_ghostzones_nonfft_subtask', 'spline does not support posdef. ')
-      endif pd
+      if (posdef .and. any(a < 0.0)) &
+          call warning('shift_ghostzones_nonfft_subtask', 'negative value(s) before interpolation')
 !
 !  Shift the ghost cells.
 !
@@ -887,7 +883,7 @@ module Shear
 !
           dispatch: select case (method)
           case ('spline') dispatch
-            call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection)
+            call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection, posdef=posdef)
             error = .false.
           case ('poly') dispatch
             call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
@@ -896,7 +892,7 @@ module Shear
           case default dispatch
             call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
           endselect dispatch
-          if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in spline; ' // trim(message))
+          if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in interpolation; ' // trim(message))
 !
           work(i,:,k) = penc
         enddo scan_x
