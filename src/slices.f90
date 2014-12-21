@@ -295,16 +295,6 @@ module Slices
 !
       if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) return
 !
-      if (lroot) then
-        ! write slice position to the root-rank file (for convenient post-processing)
-        ! [Bourdin.KIS]: wouldn't it be more clever to write the position to each file for consistency checking?
-        write(lun,'(a)',IOSTAT=iostat) slice_position
-        ! [Bourdin.KIS]: The following line would almost sure lead to an infinite hanging MPI communication
-        ! if more than one MPI rank is active and a file-writing error occurrs on the root-rank.
-        ! => commented the follwoing line:
-        ! if (outlog(iostat,'write slice_position')) continue
-      endif
-!
       write(lun,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy,iz_loc
       if (outlog(iostat,'write lwrite_slice_xy,iz_loc')) return
 !
