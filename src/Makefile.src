@@ -1050,6 +1050,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(t-mn01.hpc2n.umu.se)
 #LD_MPI= #(t-mn01.hpc2n.umu.se)
 #FFLAGS_DOUBLE=-r8 #(t-mn01.hpc2n.umu.se)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(t-mn01.hpc2n.umu.se)
 #LIBMPISUFFIX=#(t-mn01.hpc2n.umu.se)
 ##
 ## Axel on Gardar
