@@ -32,11 +32,11 @@ foreach pdir ($dirlist)
 #
 #  add directories and files to cvs
 #
-  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial data
+  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro data
 #
   if (-e data) then
       cd data
-      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat
+      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat pc_constants.pro jobid.dat svnid.dat pdim.dat tstalk.dat particles_stalker_header.dat
   else
       echo "no data directory found"
   endif

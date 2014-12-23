@@ -10,7 +10,7 @@
 #
 #   scp-proc-to-proc dim.dat $nor52/pencil-code/axel/forced/kf8_helical/512_kf3_Pm20c .
 #   scp-proc-to-proc dim.dat $tri/pencil-code/axel/forced/LSrot/256om0a .
-# scp-proc-to-proc dim.dat $tri/pencil-code/illa/forced/rotation/TOm100_b0_th0 .
+# scp-proc-to-proc dim.dat $nor52/pencil-code/hubbard/eikonal/3d/576x576x192o .
 #
 #  to copy from another machine to here
 #

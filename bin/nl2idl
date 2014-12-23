@@ -56,7 +56,7 @@ BEGIN {
 }
 
 use Pencil::Util;
-Pencil::Util::use_pencil_perl_modules('Fortran::F90Namelist') or die;
+Pencil::Util::use_pencil_perl_module('Fortran::F90Namelist') or die;
 
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
