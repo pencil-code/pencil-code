@@ -56,14 +56,13 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   real :: nu_epicycle=1.0
-  real :: t_ramp_mass=impossible
+  real :: t_ramp_mass=impossible,t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
   logical :: lindirect_terms=.false.
-  logical :: lsecondary_body=.false.
   logical :: lramp_mass=.false.
   integer :: iglobal_gg=0
 !
@@ -336,6 +335,8 @@ module Gravity
       if (ierr/=0) call fatal_error('initialize_gravity', &
           'there was a problem when putting gsum')
 !
+      if (t_ramp_mass/=impossible) t1_ramp_mass=1./t_ramp_mass
+!
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
@@ -400,7 +401,7 @@ module Gravity
 !
 !  20-11-04/anders: coded
 !
-      if (lsecondary_body) lpenc_requested(i_uu)=.true.
+      if (lcorotational_frame) lpenc_requested(i_uu)=.true.
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -431,6 +432,7 @@ module Gravity
       use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3):: ggp
       type (pencil_case) :: p
       integer, pointer :: iglobal_gg
 !
@@ -441,6 +443,14 @@ module Gravity
       if (lpencil(i_gg)) then
         call farray_use_global('global_gg',iglobal_gg)
         p%gg = f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+!
+!  If there is a secondary body whose mass is changing in time (ramped-up), then 
+!  this gravity is not added to the global array. It is re-calculated instead. 
+!
+        if (g1/=0 .and. lramp_mass) then
+          call secondary_body_gravity(ggp)
+          p%gg = p%gg + ggp
+        endif
       endif
 !
     endsubroutine calc_pencils_gravity
@@ -496,7 +506,7 @@ module Gravity
 !
 !  Ramp up g1 for the first 5 orbits, to prevent to big an initial impulse
 !
-        g2 = g1/rp1**2 * t/t_ramp_mass
+        g2 = g1/rp1**2 * t*t1_ramp_mass
       else
         g2 = g1/rp1**2
       endif
@@ -903,6 +913,7 @@ module Gravity
 !
       real, dimension(nx),intent(in) :: gr,rr_mn
       real, dimension(nx,3),intent(out) :: gg_mn
+      real, dimension(nx,3) :: ggp
 !
       if (coord_system=='cartesian') then
         gg_mn(:,1) = x(l1:l2)/rr_mn*gr
@@ -927,18 +938,23 @@ module Gravity
 !
 !  Add the gravity of a stationary secondary body (i.e., following reference frame)
 !
-      if (g1/=0) call secondary_body_gravity(gg_mn)
+      if (.not.lramp_mass .and. g1/=0) then 
+!
+!  In this case, the mass is constant in time. Add to the global array.
+!
+        call secondary_body_gravity(ggp)
+        gg_mn = gg_mn + ggp 
+      endif
 !
     endsubroutine get_gravity_field
 !***********************************************************************
-    subroutine secondary_body_gravity(gg_mn)
+    subroutine secondary_body_gravity(ggp)
 !
 !  Add the gravity of a body fixed at position (rp1,0,0).
 !
 !  20-jul-14/wlad: coded
 !
-      real, dimension(nx,3),intent(out) :: gg_mn
-      real, dimension(nx,3) :: ggp
+      real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
 !
       if (lcylindrical_coords) then
@@ -948,7 +964,7 @@ module Gravity
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
         endif
         if (lramp_mass.and.(t<=t_ramp_mass)) then 
-          gp = -g1*rr2_pm**(-1.5) * t/t_ramp_mass
+          gp = -g1*rr2_pm**(-1.5) * t*t1_ramp_mass
         else
           gp = -g1*rr2_pm**(-1.5) 
         endif
@@ -957,19 +973,18 @@ module Gravity
         ggp(:,3) =  gp *  z(  n  )
         if (lcylindrical_gravity) ggp(:,3)=0.
       else if (lspherical_coords) then
-        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cos(z(n)) + rp1_pot**2
+        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n) + rp1_pot**2
         if (lramp_mass.and.(t<=t_ramp_mass)) then 
-          gp = -g1*rr2_pm**(-1.5) * t/t_ramp_mass
+          gp = -g1*rr2_pm**(-1.5) * t*t1_ramp_mass
         else
           gp = -g1*rr2_pm**(-1.5) 
         endif
-        ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cos(z(n)))
-        ggp(:,2) = -gp *             rp1*costh(m)*cos(z(n))
-        ggp(:,3) =  gp *             rp1*         sin(z(n))
+        ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cosph(n))
+        ggp(:,2) = -gp *             rp1*costh(m)*cosph(n)
+        ggp(:,3) =  gp *             rp1*         sinph(n)
       else
         call fatal_error("secondary_body_gravity","not coded for Cartesian")
       endif
-      gg_mn = gg_mn + ggp
 !
     endsubroutine secondary_body_gravity
 !***********************************************************************
