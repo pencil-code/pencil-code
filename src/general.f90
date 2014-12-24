@@ -23,6 +23,7 @@ module General
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: cspline
   public :: polynomial_interpolation
+  public :: arcsinh
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
@@ -1867,6 +1868,18 @@ module General
       return
 !
     endfunction erfcc
+!***********************************************************************
+    elemental real function arcsinh(x)
+!
+!  Returns the inverse hyperbolic sine of x.
+!
+!  24-dec-14/ccyang: coded
+!
+      real, intent(in) :: x
+!
+      arcsinh = log(x + sqrt(x * x + 1.0))
+!
+    endfunction arcsinh
 !***********************************************************************
     subroutine besselj_nu_int(res,nu,arg,loversample)
 !
