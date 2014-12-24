@@ -537,9 +537,9 @@ module Gravity
 !  Indirect terms
 !
         if (lindirect_terms) then
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cos(z(n))
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cos(z(n))
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sin(z(n))
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*sinth(m)*cosph(n)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*costh(m)*cosph(n)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sinph(n)
         endif
 !
         c2 = 2*Omega_corot*costh(m)
