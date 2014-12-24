@@ -116,6 +116,29 @@ module Gravity
       logical :: lpade=.true. ! set to false for 1/r potential
       integer :: j,ierr
 !
+!  Pre-calculate the angular frequency of the rotating frame in the case a
+!  secondary stationary body is added to the simulation.
+!
+      if (lcorotational_frame) then 
+        gsum=g0+g1
+        Omega_corot = sqrt(gsum/rcorot**3)
+        rp1=rcorot
+      else
+        gsum=g0
+        if (g1/=0) call fatal_error("initialize_gravity",&
+             "companion gravity coded only for corotational frame")
+      endif
+!
+!  Share gsum to modules that may need it
+!
+      call put_shared_variable('gsum',gsum,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting gsum')
+!
+!  Shortcut for optimization
+!
+      if (t_ramp_mass/=impossible) t1_ramp_mass=1./t_ramp_mass
+!
 !  for lpade=.true. set coefficients for potential (coefficients a0, a2, a3,
 !  b2, b3) for the rational approximation
 !
@@ -315,27 +338,6 @@ module Gravity
         call fatal_error('initialize_gravity','chosen gravz_profile not valid')
 !
       endselect
-!
-!  Pre-calculate the angular frequency of the rotating frame in the case a
-!  secondary stationary body is added to the simulation.
-!
-      if (lcorotational_frame) then 
-        gsum=g0+g1
-        Omega_corot = sqrt(gsum/rcorot**3)
-        rp1=rcorot
-      else
-        gsum=g0
-        if (g1/=0) call fatal_error("initialize_gravity",&
-             "companion gravity coded only for corotational frame")
-      endif
-!
-!  Share gsum to modules that may need it
-!
-      call put_shared_variable('gsum',gsum,ierr)
-      if (ierr/=0) call fatal_error('initialize_gravity', &
-          'there was a problem when putting gsum')
-!
-      if (t_ramp_mass/=impossible) t1_ramp_mass=1./t_ramp_mass
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -938,7 +940,7 @@ module Gravity
 !
 !  Add the gravity of a stationary secondary body (i.e., following reference frame)
 !
-      if (.not.lramp_mass .and. g1/=0) then 
+      if (g1/=0 .and. (.not.lramp_mass)) then 
 !
 !  In this case, the mass is constant in time. Add to the global array.
 !
