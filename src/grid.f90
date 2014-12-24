@@ -1811,6 +1811,8 @@ module Grid
 !
 !  24-dec-14/ccyang: coded.
 !
+      use General, only: arcsinh
+!
       integer, intent(in) :: dir
       real, dimension(:), intent(in) :: x
       real, dimension(:), intent(out) :: xi
@@ -1862,7 +1864,7 @@ module Grid
         a = (xyz_star(dir) - xyz0(dir)) / Lxyz(dir)
         a = a * b / sqrt(1.0 + 2.0 * a * (1.0 - a) * c)
         b = (sqrt(1.0 + a * a) * b - a * c) / Lxyz(dir)
-        xi = (asinh(a) + asinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
+        xi = (arcsinh(a) + arcsinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
 !
       case default func
         call fatal_error('inverse_grid', 'unknown grid function ' // trim(grid_func(dir)))
