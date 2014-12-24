@@ -741,7 +741,7 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
   set mpirunops = ''
   set mpirun = 'mpirun'
   set npops = "-n $ncpus"
-  set local_disc = 0
+  set local_disc = 1
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
@@ -1775,9 +1775,15 @@ else if ($hn =~ fred-asus) then
   set nprocpernode = $ncpus
 #-------------------------------------------------
 else
-  echo "Generic setup; hostname is <$hn>"
+  echo "Generic setup; hostname is <$hn>."
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
+  #set nprocpernode = 16
+  #setenv SCRATCH_DIR $SNIC_TMP
+  #set local_disc = 1
+  #set one_local_disc = 0
+  #set remote_top     = 0
+  #set local_binary = 0
 endif
 ## ------------------------------
 ## End of machine specific settings
