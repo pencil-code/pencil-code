@@ -1809,7 +1809,7 @@ module Grid
 !  If local is present and .true., the index space is with respect to
 !  the local grid.
 !
-!  18-dec-14/ccyang: coded.
+!  24-dec-14/ccyang: coded.
 !
       integer, intent(in) :: dir
       real, dimension(:), intent(in) :: x
@@ -1819,7 +1819,12 @@ module Grid
       character(len=linelen) :: msg
       logical :: loc
       integer :: shift
-      real :: h
+      real :: h, a, b, c
+!
+!  Sanity check.
+!
+      if (any(lshift_origin) .or. any(lshift_origin_lower)) &
+          call fatal_error('inverse_grid', 'lshift_origin and lshift_origin_lower are not supported. ')
 !
 !  Global or local index space?
 !
@@ -1843,19 +1848,37 @@ module Grid
         call fatal_error('inverse_grid', trim(msg))
       endselect ckdir
 !
-!  Make the transformation.
+!  Make the inversion according to the grid function.
 !
       func: select case (grid_func(dir))
 !
       case ('linear') func
-        xi = (x - xyz0(dir)) / h + real(nghost + 1)
+        xi = (x - xyz0(dir)) / h
+!
+      case ('sinh') func
+        a = coeff_grid(dir) * Lxyz(dir)
+        b = sinh(a)
+        c = cosh(a) - 1.0
+        a = (xyz_star(dir) - xyz0(dir)) / Lxyz(dir)
+        a = a * b / sqrt(1.0 + 2.0 * a * (1.0 - a) * c)
+        b = (sqrt(1.0 + a * a) * b - a * c) / Lxyz(dir)
+        xi = (asinh(a) + asinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
 !
       case default func
         call fatal_error('inverse_grid', 'unknown grid function ' // trim(grid_func(dir)))
 !
       endselect func
 !
-      if (lperi(dir)) xi = xi - 0.5
+!  Shift to match the global index space.
+!
+      if (lperi(dir)) then
+        xi = xi + real(nghost) + 0.5
+      else
+        xi = xi + real(nghost + 1)
+      endif
+!
+!  Convert to the local index space if requested.
+!
       if (loc) xi = xi - real(shift)
 !
     endsubroutine inverse_grid
