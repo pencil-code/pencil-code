@@ -478,9 +478,9 @@ module Special
 !
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
            if (lzone_right) then
-             dt1=(m-(m2-sz_y))/sz_y/(8.*dt)
-             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             dt1=(m-(m2-sz_y))/sz_y/(8.*dt)
+!             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
+             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT2))*dt1
            endif
          else if (j==2) then
@@ -488,9 +488,9 @@ module Special
            mm2=sz_y
            if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
            if (lzone_left) then
-             dt1=(sz_y-m)/(sz_y-1)/(8.*dt)
-             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-10.)*dt1
+!             dt1=(sz_y-m)/(sz_y-1)/(8.*dt)
+!             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT1))*dt1
            endif
          endif
@@ -511,111 +511,57 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: l_sz
+      integer :: l_sz, mm1,mm2, sz_y
       real, dimension (mx) :: func_x
       integer :: i, j,  sz_l_x,sz_r_x,ll1,ll2, ll1_, ll2_
       real :: dt1, lnTT_ref
-      real :: del2
+      real :: del
       logical :: lzone=.false., lzone_left, lzone_right, lnoACTOS=.true.
 !
-
-!        df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
-!              - p%ccondens
-       
-        if (.not. lACTOS) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                + 2.5e6/1005.*p%ccondens*p%TT1
-        endif
 !
        dt1=1./(8.*dt)
-       del2=0.1
+       del=0.1
 !
-!
-
          lzone_left=.false.
          lzone_right=.false.
+         sz_y=int(del*nygrid)
 !
-         if (lACTOS) then
-!
-           if (lbuffer_zone_T) then
-            lzone=.false.
-            if ((y(m1)==xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
-              if (y(m)>xyz0(2)+del2*Lxyz(2)) lzone=.true.
-            elseif ((y(m1)>xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
-              if (y(m)<xyz0(2)+(1.-del2)*Lxyz(2)) lzone=.true.
-            elseif ((y(m1)>xyz0(2)) .and. (y(m2)<xyz0(2)+Lxyz(2))) then
-               lzone=.true.
-            elseif ((y(m1)==xyz0(2)) .and. (y(m2)==xyz0(2)+Lxyz(2))) then
-              if ((y(m)<xyz0(2)+(1.-del2)*Lxyz(2)) .and. &
-              (y(m)>xyz0(2)+del2*Lxyz(2))) then
-                lzone=.true.
-              endif           
-            endif 
-!
-              dt1=1./(8.*dt)
-! 
-             if (lzone) then
-!
-!               df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-!                 + 2.5e6/1005.*p%ccondens*p%TT1
-!
-               do i=1,ndustspec
-                df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
-               enddo
-
-             else
-!                df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
-                df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
-!                df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-UY_ref)*dt1
-         
-             endif
-           else
-             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-              + 2.5e6/1005.*p%ccondens*p%TT1
-             do i=1,ndustspec
-               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) &
-                      + p%dndr(:,i)
-             enddo
-           endif
-!        
-        elseif ((lbuffer_zone_T) .and. (lnoACTOS)) then 
-         sz_r_x=l1+nxgrid-int(del2*nxgrid)
-         sz_l_x=int(del2*nxgrid)+l1
+        if (lbuffer_zone_T) then
         do j=1,2
 !
          if (j==1) then
-           lzone=.false.
-           ll1=sz_r_x
-           ll2=l2
-           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.false.
-           if (TT2>0.) then
-            lnTT_ref=log(TT2)
-            lzone=.true.
+           mm1=nygrid-sz_y
+           mm2=nygrid
+!
+           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
+           if (lzone_right) then
            endif
-           if (lzone .and. lzone_right) then
-!             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-!              -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
-           endif
-         elseif (j==2) then
-           lzone=.false.
-           ll1=l1
-           ll2=sz_l_x
-           if (x(l1)==xyz0(1)) lzone_left=.true.
-           if (TT1>0.) then
-            lnTT_ref=log(TT1)
-            lzone=.true.
-           endif
-           if (lzone .and. lzone_left) then
-!             if (dYw==1.) then
-               df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-                 -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
-!             endif
+         else if (j==2) then
+           mm1=1
+           mm2=sz_y
+           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
+           if (lzone_left) then
            endif
          endif
 !
-!
+          if (lACTOS) then
+          if ((ygrid(sz_y)<y(m)) .and. (y(m)<ygrid(nygrid-sz_y))) then
+            do i=1,ndustspec
+               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
+            enddo
+          endif
+          endif
+!       
         enddo
+        else
+          do i=1,ndustspec
+               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
+          enddo
         endif
+
+!
 !
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
@@ -635,6 +581,7 @@ module Special
       real :: del
       logical :: lzone=.false., lzone_left, lzone_right
 !
+
        dt1=1./(3.*dt)
        del=0.1
 !
