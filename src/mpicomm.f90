@@ -3009,8 +3009,6 @@ module Mpicomm
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      integer :: count_rate,time
-!
       mpiwtime = MPI_WTIME()
 !
     endfunction mpiwtime
