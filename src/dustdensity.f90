@@ -64,7 +64,7 @@ module Dustdensity
   real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
-  real :: AA=0.66e-4,  BB0, Ntot
+  real :: AA=0.66e-4,  Ntot
   real :: nd_reuni,init_x1, init_x2, a0, a1
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -402,16 +402,7 @@ module Dustdensity
 !  if the maximum size (dsize_max) of the dust grain is nonzero.
 !
       if (latm_chemistry) then
-        if (lspecial)  call set_init_parameters(Ntot,BB0,dsize,init_distr,init_distr2)
-        if (ldcore) then
-          do i=1,ndustspec0
-            BB(i)=BB0+0.1*BB0
-              print*,'BB(i)', BB(i)
-          enddo
-        else
-            print*,'BB0= ',  BB0
-        endif
-!
+        if (lspecial)  call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !          if (ndustspec>4) then
 !            Ntot_tmp=spline_integral(dsize,init_distr)
 !           Ntot=Ntot_tmp(ndustspec)
@@ -1384,21 +1375,8 @@ module Dustdensity
           if (dsize(k)>0.) then
           if (.not. ldcore) then
 !
-!            if (dsize(k)>8e-6) then
-!              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-!                                -BB0/(8.*dsize(k)**3))
                 p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
                                 -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
-
-!            else
-!              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)**0.5*8e-6**0.5) &
-!                                     -BB0/(8.*dsize(k)*8e-6**2))
-!
-!              p%ppsf(:,k)=  p%ppsat*exp(AA*p%TT1/2./(dsize(k)) &
-!                                     -BB0*0.00001/(8.*dsize(k)**3))
-!
-!
-!            endif
           endif
           endif
           enddo
@@ -1654,7 +1632,8 @@ module Dustdensity
           else
             do k=1,ndustspec
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                     - p%udropgnd(:,k) + p%dndr(:,k)
+                     - p%udropgnd(:,k)
+! + p%dndr(:,k)
 !
             enddo
           endif

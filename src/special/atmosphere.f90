@@ -73,11 +73,11 @@ module Special
   real :: dsize0_max=0.,dsize0_min=0., UY_ref=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
-  logical :: llog_distribution=.true., lACTOS=.false.
+  logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
-  real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
+  real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
   real :: lnTT1, lnTT2, Ntot_ratio=1.
 
 
@@ -87,8 +87,8 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
-      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref
+      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, &
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -169,7 +169,7 @@ module Special
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: k,i
-      real :: ddsize, Ntot_,BB0_
+      real :: ddsize, Ntot_
       real, dimension (ndustspec) :: lnds,dsize_
 !
 !  Initialize any module variables which are parameter dependent
@@ -196,12 +196,7 @@ module Special
       print*,'special: N2 index', ind_N2
 !
 !
-      call set_init_parameters(Ntot,BB0,dsize,init_distr,init_distr2)
-!
-!print*,'Ntot_',Ntot_,'BB0',BB0_
-!
-!
-!
+      call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -791,7 +786,6 @@ module Special
      if (lACTOS) then
        call dustspec_normalization_(f)
      endif
-!      call write_0d_result(f)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -860,129 +854,6 @@ module Special
       enddo
 !
     endsubroutine dustspec_normalization_
-!***********************************************************************
-     subroutine write_0d_result(f)
-!
-!   7-apr-11/Natalia: coded
-!   writing the results in 0d case
-!
-      use General, only: spline_integral
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (ndustspec) :: ff_tmp, ttt
-      integer :: k,i
-      character (len=20) :: output_file="./data/nd.out"
-      character (len=20) :: output_file2="./data/nd2.out"
-      character (len=20) :: output_file3="./data/nd3.out"
-      character (len=20) :: output_file4="./data/nd4.out"
-      integer :: file_id=123
-!
-        if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
-      if (it == 1) then
-        open(file_id,file=output_file)
-            write(file_id,'(7E12.4)') t
-          if (lmdvar) then
-            do k=1,ndustspec
-              if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-               write(file_id,'(7E15.8)') dsize(k), &
-                 f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
-            enddo
-          elseif (ldcore) then
-           do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
-             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-           enddo
-          else
-            do k=1,ndustspec
-              write(file_id,'(7E15.8)') dsize(k), &
-                f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-            enddo
-          endif
-        close(file_id)
-        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec)
-      endif
-      if (it == 200) then
-        open(file_id,file=output_file2)
-            write(file_id,'(7E12.4)') t
-         if (lmdvar) then
-          do k=1,ndustspec
-            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), &
-               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
-          enddo
-!
-         elseif (ldcore) then
-           do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
-             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-           enddo
-         else
-           do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-          enddo
-         endif
-        close(file_id)
-        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec)
-      endif
-      if (it == 20000) then
-        open(file_id,file=output_file3)
-            write(file_id,'(7E12.4)') t
-        if (lmdvar) then
-          do k=1,ndustspec
-            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
-          enddo
-        elseif (ldcore) then
-           do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
-             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-          enddo
-        else
-          do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-          enddo
-        endif
-        close(file_id)
-        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec)
-      endif
-!
-      if (it == 100000) then
-        open(file_id,file=output_file4)
-            write(file_id,'(7E12.4)') t
-        if (lmdvar) then
-          do k=1,ndustspec
-            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
-          enddo
-        elseif (ldcore) then
-          do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
-             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-          enddo
-        else
-          do k=1,ndustspec
-             write(file_id,'(7E15.8)') dsize(k), &
-             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
-          enddo
-        endif
-        close(file_id)
-        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec)
-      endif
-      endif
-!
-      endsubroutine  write_0d_result
 !***********************************************************************
 !-----------------------------------------------------------------------
 !
@@ -1296,11 +1167,11 @@ subroutine bc_satur_x(f,bc)
                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
-      psf_1=psat1 !*exp(AA/TT1/2./r0-BB0/(8.*r0**3))
+      psf_1=psat1 
       if (r0/=0.) then
-       psf_2=psat2 !*exp(AA/TT2/2./r02-BB0/(8.*r02**3))
+       psf_2=psat2
       else
-       psf_2=psat2 !*exp(AA/TT2/2./r0-BB0/(8.*r0**3))
+       psf_2=psat2 
       endif
 !
 !
@@ -1416,7 +1287,7 @@ subroutine bc_satur_x(f,bc)
     endsubroutine special_before_boundary
 !
 !********************************************************************
-   subroutine set_init_parameters(Ntot_,BB0_,dsize,init_distr, init_distr2)
+   subroutine set_init_parameters(Ntot_,dsize,init_distr, init_distr2)
 !
 
      use General, only:  spline, spline_integral
@@ -1429,10 +1300,9 @@ subroutine bc_satur_x(f,bc)
        real, dimension (1) ::   x2, s 
        real, dimension (6) ::   coeff
        real, dimension (76) :: nd_data,dsize_data
-       real :: Ntot_, BB0_
+       real :: Ntot_
       integer :: i,k
       real :: ddsize, tmp
-      logical :: stop_find
  !
        ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
        do i=0,(ndustspec-1)
@@ -1440,9 +1310,8 @@ subroutine bc_satur_x(f,bc)
          dsize(i+1)=exp(lnds(i+1))
        enddo
 !
-            if (lACTOS) then
-
-       nd_data=[339.575456246242, 720.208321148821, 2286.01480884891, 3839.39274704826, &
+       if (lACTOS) then
+         nd_data=[339.575456246242, 720.208321148821, 2286.01480884891, 3839.39274704826, &
                 5864.54364319772, 8239.59202946498, 10855.9261236828, 13505.8296100921, &
                 15262.5613594914, 15896.5311592612, 15796.9043080092, 14853.4889078194, &
                  13255.369567693, 11726.7023256169, 10552.7448431257, 9307.63526706903, &
@@ -1462,7 +1331,7 @@ subroutine bc_satur_x(f,bc)
                 27.8160000556516, 16.0116934313036,  10.575710375307, 7.62746384792302, & 
                 4.37655374527983, 2.21561698388422, 1.92235157186522, 0.654667507529657]
 
-       dsize_data=[5.43, 5.77, 6.14, 6.54, 6.96, 7.4, 7.88, 8.38, 8.92, 9.49, 10.1, 10.75, &
+         dsize_data=[5.43, 5.77, 6.14, 6.54, 6.96, 7.4, 7.88, 8.38, 8.92, 9.49, 10.1, 10.75, &
                11.44, 12.17, 12.95, 13.78, 14.67, 15.61, 16.61, 17.68, 18.81, 20.02, 21.3, 22.67,&
                24.12, 25.67, 27.32, 29.07, 30.93, 32.92, 35.03, 37.27, 39.66, 42.21, 44.92, 47.8, &
                50.86, 54.13, 57.6, 61.29, 65.22, 69.41, 73.86, 78.6, 83.64, 89., 94.71, 100.79,&
@@ -1470,81 +1339,66 @@ subroutine bc_satur_x(f,bc)
                199.71, 212.52, 226.15, 304.42, 356.429, 417.324, 488.622, 572.102, 669.844, 784.284,&
                918.276, 1075.161, 1258.848, 1473.918, 1725.732, 2020.567, 2365.775, 2769.959]
 !
-       nd_data=nd_data*Ntot_ratio
-       dsize_data=dsize_data*1e-7/2.
+         nd_data=nd_data*Ntot_ratio
+         dsize_data=dsize_data*1e-7/2.
 !
-!      call spline(dsize_data,nd_data,dsize,init_distr2,76,20)
-!
-               do k=1,ndustspec
-                 stop_find=.false.
-               do i=1,76
-!                 tmp=dsize(k)*1e7*2.
-!                 if (tmp<226.15)   then
-!                    init_distr2(k) = (341.699*exp(-0.5*( (tmp-155.111) /60.8664 )**2))/dsize(k)
-!                else
-!                    init_distr2(k)= (40.1308*exp(-0.5*( (tmp-270.085 ) /371.868 )**2) +0.864957)/dsize(k)
-!                 endif
-!                    init_distr(:,k)=init_distr2(k)
-                 if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then 
-                  init_distr2(k)=((nd_data(i)-nd_data(i-1))&
+           do k=1,ndustspec
+             do i=1,76
+               if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then 
+                 init_distr2(k)=((nd_data(i)-nd_data(i-1))&
                           /(dsize_data(i)-dsize_data(i-1))*(dsize(k)-dsize_data(i-1))+nd_data(i-1))/dsize(k)
-!                  print*, init_distr2(k),dsize_data(i-1),dsize(k),dsize_data(i),k
-                 endif  
-! 
-               enddo
-                 init_distr(:,k)=init_distr2(k)
-
-print*,k,'   ',init_distr2(k)
-               enddo
-
-
-
-!              
-              if (llarge_part) then
-                do k=1,ndustspec
-                  init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
-                enddo
-              elseif (lsmall_part) then
-                do k=1,ndustspec
-                  init_distr(:,k)= Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-                               * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
-                enddo
-              elseif (lsmall_large_part) then
-                do k=1,ndustspec
-                  init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
-                  init_distr(:,k)=init_distr(:,k) &
-                               + Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-                               * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+               endif  
+             enddo
+               init_distr(:,k)=init_distr2(k)
+           enddo
 !
-                enddo
-              endif
-            else
-              if (r0 /= 0.) then
-                do k=1,ndustspec
+           if (llarge_part) then
+             do k=1,ndustspec
+               init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+             enddo
+           elseif (lsmall_part) then
+             do k=1,ndustspec
+               init_distr(:,k)= Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                      * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+             enddo
+           elseif (lsmall_large_part) then
+             do k=1,ndustspec
+               init_distr(:,k)= 31.1443*exp(-0.5*((2.*dsize(k)/1e-4-17.6595)/6.25204)**2)-0.0349555
+               init_distr(:,k)=init_distr(:,k) &
+                         + Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                      * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+             enddo
+           elseif (llognormal) then
+             if ((r0 /= 0.) .and. (delta /=0.)) then
+               do k=1,ndustspec
                   init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-                    *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
-                enddo
-              endif
-            endif
-            
-            if (r02 /= 0.) then
-              do k=1,ndustspec
-                init_distr2(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-                  *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))!+0.0001
-              enddo
-            endif
+                     *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
+               enddo
+             endif  
+           endif
 !
+!  no ACTOS
+!
+       else
+         if (r0 /= 0.) then
+           do k=1,ndustspec
+             init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                 *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
+           enddo
+         endif
+       endif
+!            
         if (lACTOS) then
-          ttt=spline_integral(dsize,init_distr2)
-!
-          Ntot_=ttt(ndustspec)
-          Ntot =Ntot_
-          print*,'Ntot=',Ntot
-!
-!           Ntot=1e3
+          if (llognormal) then
+            Ntot_=Ntot
+          else
+            ttt=spline_integral(dsize,init_distr2)
+            Ntot_=ttt(ndustspec)
+            Ntot =Ntot_
+            print*,'Ntot=',Ntot
+          endif
         else
           Ntot_=Ntot
-          BB0_=BB0
         endif
 !
      endsubroutine set_init_parameters
