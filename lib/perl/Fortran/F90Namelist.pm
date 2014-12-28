@@ -4,11 +4,6 @@
 #
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
-# Author: wd (wdobler [at] cpan.org)
-# $Date: 2007-11-16 13:57:03 $
-# $Revision: 1.2 $
-# [Date and CVS revision are now pretty irrelevant, as I keep the code
-#  under Darcs now]
 
 package Fortran::F90Namelist;
 
@@ -80,6 +75,9 @@ Write namelist:
   # Write namelist in F90 namelist format
   print "F90 format:\n", $nl->output();
 
+  # Write namelist as Python class
+  print "Python format:\n", $nl->output(format => 'python', name => 'par2');
+
   # Write namelist as IDL structure
   print "IDL format:\n", $nl->output(format => 'idl', name => 'par2');
 
@@ -126,13 +124,17 @@ F90 namelist
 
 =item *
 
+Python class
+
+=item *
+
 IDL struct
 
 =back
 
 This module is used with the I<Pencil Code>
 (L<http://www.nordita.dk/software/pencil-code/>) to import the values of
-all available input parameters into GDL/IDL or other visualization
+all available input parameters into Python, GDL/IDL or other visualization
 software.
 
 =head2 Methods
@@ -300,7 +302,7 @@ Options are
 =item B<format>=I<format>
 
 Set the output format.
-Currently supported formats are `f90' (default), and `idl'.
+Currently supported formats are `f90' (default), 'python', and `idl'.
 
 =item B<name>=I<name>
 
@@ -416,7 +418,7 @@ Wolfgang Dobler <wdobler [at] cpan.org>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2007, Wolfgang Dobler <wdobler [at] cpan.org>.
+Copyright (c) 2014, Wolfgang Dobler <wdobler [at] cpan.org>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
@@ -471,12 +473,13 @@ use constant  DOUBLE    => 7;
 use constant  COMPLEX   => 8;
 use constant  DCOMPLEX  => 9;
 use constant  MULTIPLE  => 20;
+use constant  EMPTY     => 21;
 #
 use constant  ID        => 100; # variable name (_not_ a data type)
 
 ##use critic
 
-$VERSION = '0.5.2';
+$VERSION = '0.6.1';
 
 ## Regexps for integer and floating-point numbers
 # general float:
@@ -537,6 +540,7 @@ my %stypes = ( UNKNOWN   + 0 => 'unknown',
                COMPLEX   + 0 => 'complex number',
                DCOMPLEX  + 0 => 'double precision complex number',
                MULTIPLE  + 0 => 'multiple data (array)',
+               EMPTY     + 0 => 'empty array data',
              );
 
 # Global variables related to output() method:
@@ -882,7 +886,7 @@ sub output {
     my $self = shift();
 
     # Optional arguments:
-    #   format   => format   ('f90' [default], 'idl', or 'python')
+    #   format   => format   ('f90' [default], 'python', or 'idl')
     #   name     => nl_name  (name of nlist/struct [default: get from nlist])
     #   trim     => 0/1      (trim trailing whitespace off strings)
     #   double   => 0/1      (mark all floats as double precision)
@@ -945,7 +949,7 @@ sub output {
         $indent  = "";
     } else {
         $newline = "\n";
-        $indent  = "  ";
+        $indent  = "    ";
     }
 
     if      (lc($format) eq 'f90') {
@@ -960,6 +964,19 @@ sub output {
         $last_suff  = "$newline";
         $foot_pref  = "";
         $foot_suff  = "\n";
+    } elsif (lc($format) eq 'python') {
+        $header = "class $name:";
+        $footer = "";
+        #
+        $head_pref = "";
+        $head_suff = "$newline";
+        $slot_pref = "$indent";
+        $slot_join = ", ";
+        $slot_suff = "$newline";
+        $last_suff = "$newline";
+        $foot_pref = "";
+        $foot_suff = "";
+        $cmplx_pref = "complex"; # complex number prefix
     } elsif (lc($format) eq 'idl') {
         $header = "$name = {";
         $footer = "}";
@@ -980,16 +997,6 @@ sub output {
         }
         #
         $cmplx_pref = "complex"; # complex number prefix
-    } elsif (lc($format) eq 'python') {
-	$header    = "class $name:\n";
-	$footer    = "\n\n";
-	$head_pref = "";
-        $head_suff = "\n";
-	$slot_pref = "\t";
-	$slot_suff = "\n";
-        $last_suff = "\n\n";
-        $foot_pref = "";
-        $foot_suff = "\n";
     } else                         {
         croak "output(): Format <$format> unknown";
     }
@@ -1092,7 +1099,7 @@ sub parse_namelist {
 
             # Get values and check
             @values = get_value(\$text,\$type,$var,$debug); # drop $debug here..
-            if (@values) {
+            if (@values or $type == EMPTY) {
                 $nslots++;
                 push @$slotsref, $var;
             } else {
@@ -1197,6 +1204,19 @@ sub get_value {
     my $debug   = shift;    # Need to somewhow get rid of this argument...
 
     my $text = $$txtptr;
+
+    # Sshortcut for special case of empty array, e.g. 'BCX='
+    my $id = $regexp[ID];       # allowed namelist/variable names
+    if ($text =~ m{^($id)(\([0-9, \t]+\))?\s*=\s*}s
+        # string starts with <var=...> or <var(idx,idy,...)=...>
+        or
+        $text =~ m{^\s*(/|\$end)\s*}
+        # string is </> or <$end>
+       ) {
+        $$typeptr = EMPTY;
+        return ();
+    }
+
     my @values;
 
     strip_space_and_comment($text); # (are comments really allowed here?)
@@ -1295,6 +1315,7 @@ sub elucidate_type {
     $tp[COMPLEX  ] = 'COMPLEX';
     $tp[DCOMPLEX ] = 'DCOMPLEX';
     $tp[MULTIPLE ] = 'MULTIPLE';
+    $tp[EMPTY    ] = 'EMPTY';
 
     return $tp[$type];
 }
@@ -1388,16 +1409,23 @@ sub assign_slot_val {
     } elsif ($format eq 'idl') {
         $assmnt .= ": ";        # structure syntax
     } elsif ($format eq 'python') {
-        $assmnt .= "=";
+        $assmnt .= " = ";        # structure syntax
     } else {
         croak "assign_slot_val: Unknown format <$format>\n";
     }
 
     encapsulate_values(\@vals,$format,$type); # preprocess values
-    if (@vals > 1) {
-        $assmnt .= add_array_bracket(join(",", @vals), $format);
-    } else {
+    if ($format eq 'idl' and @vals == 0) {
+        # IDL not only lacks empty arrays, but even a usable 'undef'
+        # concept (we cannot assign '[]' or '!NULL' to a structure slot).
+        # So we follow
+        #   http://objectmix.com/idl-pvwave/785581-empty-arrays.html
+        # and use an empty pointer instead.
+        $assmnt .= 'ptr_new(/allocate_heap)';
+    } elsif (@vals == 1) {  # scalar
         $assmnt .= $vals[0];
+    } else {           # array
+        $assmnt .= add_array_bracket(join(",", @vals), $format);
     }
 
     return $assmnt;
@@ -1417,46 +1445,15 @@ sub encapsulate_values {
 
     ## Actions for all formats
     if ($type==COMPLEX or $type==DCOMPLEX) {
-
-use Data::Dumper;
         @vals = map { "${cmplx_pref}$_${cmplx_suff}" } @vals;
     }
 
     ## Actions specific for some formats
-    if ($format eq 'f90') {
-        #
-        #  F90 output format:
-        #  - quote strings
-        #
-        if      ($type==SQ_STRING or $type==DQ_STRING) {
-            @vals = map { quote_string_f90($_) } @vals;
-        }
-    } elsif ($format eq 'idl') {
-        #
-        #  IDL output format:
-        #  - convert logicals to integers
-        #  - quote strings
-        #
-        if      ($type==LOGICAL) {
-            @vals = map { encaps_logical_idl($_) } @vals;
-        } elsif ($type==SQ_STRING or $type==DQ_STRING) {
-            @vals = map { quote_string_f90($_) } @vals;
-        }
-    } elsif ($format eq 'python') {
-        #
-        #  python output format:
-        #  - quote strings
-        #  - convert logicals to python True/Fase constants
-        if      ($type==LOGICAL) {
-            @vals = map { encaps_logical_python($_) } @vals;
-        } elsif ($type==SQ_STRING or $type==DQ_STRING) {
-            @vals = map { quote_string_f90($_) } @vals;
-        }
-    } else {
-        #
-        #  Invalid format
-        #
-        croak "encapsulate_values: Unknown format <$format>\n";
+    if ($type==SQ_STRING or $type==DQ_STRING) {
+        @vals = map { quote_string($_, $format) } @vals;
+    }
+    if ($type==LOGICAL) {
+        @vals = map { encaps_logical($_, $format) } @vals;
     }
 
     @$valref = @vals;
@@ -1496,9 +1493,6 @@ sub format_slots {
                 ($type == DOUBLE)  ||
                 ($type == COMPLEX) ||
                 ($type == DCOMPLEX))  {
-#               @vals = map { s/[eEdD]/D/; $_ } @vals;
-#               @vals = map { s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g; $_ } @vals;
-#               @vals = map { s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g; $_ } @vals;
                 for (@vals) {
                     s/[eEdD]/D/;
                     s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
@@ -1552,14 +1546,11 @@ sub add_array_bracket {
 
     if     ($format eq 'f90') {
         # No delimiters
-    } elsif ($format eq 'idl') {
-        $string = "[$string]";
     } elsif ($format eq 'python') {
         $string = "[$string]";
+    } elsif ($format eq 'idl') {
+        $string = "[$string]";
     } else {
-        #
-        #  Invalid format
-        #
         croak "add_array_bracket: Unknown format <$format>\n";
     }
 
@@ -1568,45 +1559,43 @@ sub add_array_bracket {
 
 # ---------------------------------------------------------------------- #
 
-sub encaps_logical_idl {
-# Convert logical string to integer for IDL
-    my $val = shift;
+sub encaps_logical {
+# Represent logical
+    my ($val, $format) = @_;
 
-    $val =~ s/(\.false\.|F)/0L/i;
-    $val =~ s/(\.true\.|T)/-1L/i;
+    my ($false, $true);
+    if ($format eq 'f90') {
+        ($false, $true) = ('F', 'T');
+    } elsif ($format eq 'python') {
+        ($false, $true) = ('False', 'True');
+    } elsif ($format eq 'idl') {
+        ($false, $true) = ('0L', '-1L');
+    } else {
+        croak "encaps_logical: Unknown format <$format>\n";
+    }
+
+    $val =~ s{ (\.false\. | F ) }{$false}xi;
+    $val =~ s{ (\.true\.  | T ) }{$true}xi;
 
     return $val;
-}
-
-# ---------------------------------------------------------------------- #
-
-sub encaps_logical_python {
-# Convert logical string to integer for python
-    my $val = shift;
-
-    $val =~ s/(\.false\.|F)/0/i;
-    $val =~ s/(\.true\.|T)/-1/i;
-
-    return $val;
-}
-
-# ---------------------------------------------------------------------- #
-
-sub quote_string_f90 {
-# Enclose string by quotation marks, doubling any existing quotation marks
-# for Fortran and IDL
-    my $val = shift;
-
-    $val =~ s/'/''/g;
-
-    return quote_string($val);
 }
 
 # ---------------------------------------------------------------------- #
 
 sub quote_string {
-# Enclose string by quotation marks
-    return "'$_[0]'";
+# Enclose string by quotation marks, doubling any existing quotation marks
+# for Fortran and IDL
+    my ($val, $format) = @_;
+
+    if ($format eq 'f90' or $format eq 'idl') {
+        $val =~ s/'/''/g;
+    } elsif ($format eq 'python') {
+        $val =~ s/'/\\'/g;
+    } else {
+        croak "quote_strings: Unknown format <$format>\n";
+    }
+
+    return "'$val'";
 }
 
 # ---------------------------------------------------------------------- #

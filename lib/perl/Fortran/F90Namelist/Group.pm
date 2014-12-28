@@ -22,7 +22,7 @@ Fortran::F90Namelist::Group - Parse F90 namelist groups and export in different 
   use Fortran::F90Namelist::Group;
   my $nlgrp = Fortran::F90Namelist::Group->new() or die "Couldn't get object\n";
 
-  $nlgrp->parse(<<'  HERE');
+  $nlgrp->parse(<<'HERE');
     &runpars
       x=2,y=3
       vec1=1,2,3
@@ -329,7 +329,7 @@ use Carp;
 use vars qw($VERSION);
 use Fortran::F90Namelist;
 
-$VERSION = '0.5.2';
+$VERSION = '0.6.1';
 
 # ---------------------------------------------------------------------- #
 ##
