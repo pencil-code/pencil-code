@@ -40,7 +40,6 @@ module InitialCondition
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
       ladd_noise_propto_cs, ampluu_cs_factor, ladd_field
-  
 !
   real :: ksi=1.
 !
@@ -108,8 +107,10 @@ module InitialCondition
         nullify(iglobal_cs2)
         call farray_use_global('cs2',iglobal_cs2)
         ics2=iglobal_cs2 
-      else
+      elseif (lentropy) then
         ics2=iss
+      elseif (ltemperature) then 
+        ics2=iTT
       endif
 !
 !  Analytical expression that leads to an equilibrium configuration. 
@@ -201,8 +202,10 @@ module InitialCondition
         nullify(iglobal_cs2)
         call farray_use_global('cs2',iglobal_cs2)
         ics2=iglobal_cs2 
-      else
+      elseif (lentropy) then 
         ics2=iss
+      elseif (ltemperature) then 
+        ics2=iTT
       endif
 !
 !  Pencilize the density allocation.
@@ -422,20 +425,25 @@ module InitialCondition
       real, dimension (nx) :: cs2,lnrho
       real :: cp1
 !
-!  SAMPLE IMPLEMENTATION
-!
-      !set_sound_speed set cs2 in the slot of iss, rewrite
-!
       call get_cp1(cp1)
 !
       do m=m1,m2; do n=n1,n2
-        cs2=f(l1:l2,m,n,iss)
         if (ldensity_nolog) then 
           lnrho=log(f(l1:l2,m,n,irho))
         else
           lnrho=f(l1:l2,m,n,ilnrho)
         endif     
-        f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+!
+!  The sound speed is stored in the energy slot
+!
+        if (lentropy) then 
+          cs2=f(l1:l2,m,n,iss)
+          f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+        elseif (ltemperature) then 
+          cs2=f(l1:l2,m,n,iTT)
+          f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
+        endif
+!
       enddo;enddo
 !
     endsubroutine initial_condition_ss
@@ -466,8 +474,10 @@ module InitialCondition
         call farray_use_global('cs2',iglobal_cs2);ics2=iglobal_cs2
         nullify(iglobal_glnTT)
         call farray_use_global('glnTT',iglobal_glnTT);iglnTT=iglobal_glnTT
-      else
-        ics2=iss
+      elseif (lentropy) then 
+          ics2=iss
+      elseif (ltemperature) then 
+          ics2=iTT
       endif
 !
 !  Set the sound speed - a power law in cylindrical radius.
