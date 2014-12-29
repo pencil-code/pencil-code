@@ -37,6 +37,7 @@ module Forcing
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
+  real :: wff2_ampl=0.,zff2_ampl=0.
   real :: dtforce=0., dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
@@ -120,6 +121,7 @@ module Forcing
        omega_ff,location_fixed,lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
+       wff2_ampl,zff2_ampl, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
        lxxcorr_forcing, lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
@@ -440,17 +442,17 @@ module Forcing
         profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
         profz_hel=1.
 !
-! turn on forcing in the bulk of the convection zone
-      elseif (iforce_profile=='forced_convection') then
+! turn on forcing in a certain layer (generalization of 'forced_convection')
+!
+      elseif (iforce_profile=='zlayer') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
-        profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
-        profz_hel=1.
-!
-!  turn off forcing intensity above x=x0, and
+        profz_ampl=.5*(1.+erfunc((z-zff_ampl)/wff_ampl)) &
+                  -.5*(1.+erfunc((z-zff2_ampl)/wff2_ampl))
         profz_hel=1.
 !
 ! turn on forcing in the bulk of the convection zone
+!
       elseif (iforce_profile=='forced_convection') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
