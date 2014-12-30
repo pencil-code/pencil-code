@@ -987,14 +987,12 @@ module Energy
 !
       c = cv1 / rho
       temp = c * eth
-      hot: if (temp > TTref) then
-        x = dt / tau_cool
-        a = exp(-x)
-        b = 1. - a
-        if (b == 0.) b = x * (1. - 0.5 * x)
-        temp = temp * a + TTref * b
-        eth = temp / c
-      endif hot
+      x = dt / tau_cool
+      a = exp(-x)
+      b = 1.0 - a
+      if (b == 0.0) b = x * (1.0 - 0.5 * x)
+      temp = temp * a + TTref * b
+      eth = temp / c
 !
     endsubroutine const_cooling_time
 !***********************************************************************
