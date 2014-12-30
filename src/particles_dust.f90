@@ -3076,7 +3076,7 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
+      real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
       real, dimension(:), allocatable :: rep,stocunn
