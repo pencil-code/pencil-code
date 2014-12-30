@@ -4479,7 +4479,8 @@ module Initcond
     endsubroutine power_randomphase
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
-      cutoff,ncutoff,kpeak,f,i1,i2,relhel,lskip_projection,lscale_tobox)
+      cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
+      lskip_projection,lscale_tobox)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4502,7 +4503,7 @@ module Initcond
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
-      real :: nfact=4.,kpeak21,nexp1,nexp2,ncutoff
+      real :: nfact=4.,kpeak21,nexp1,nexp2,ncutoff,kgaussian
 !
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
@@ -4595,6 +4596,10 @@ module Initcond
 !  cutoff (changed to hyperviscous cutoff filter)
 !
         if (cutoff /= 0.) r=r*exp(-(k2/cutoff**2.)**ncutoff)
+!
+!  apply Gaussian on top of everything
+!
+        if (kgaussian /= 0.) r=r*exp(-.5*(k2/kgaussian**2.-1.))
 !
 !  scale with r
 !
