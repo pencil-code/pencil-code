@@ -265,17 +265,17 @@ def pdim(datadir='./data'):
         datadir
             Name of the data directory
     """
-    # Chao-Chin Yang, 2014-02-11
+    # Chao-Chin Yang, 2014-12-31
     from collections import namedtuple
     # Read pdim.dat.
     f = open(datadir.strip() + '/pdim.dat')
     a = f.read().rsplit()
     f.close()
     # Extract the numbers.
-    npar, mpvar, npar_stalk = (int(b) for b in a)
+    npar, mpvar, npar_stalk, mpaux = (int(b) for b in a)
     # Define and return a named tuple.
-    ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk'])
-    return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk)
+    ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk', 'mpaux'])
+    return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk, mpaux=mpaux)
 #=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
