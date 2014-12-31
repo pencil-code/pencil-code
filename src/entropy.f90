@@ -2564,6 +2564,7 @@ module Energy
         lpenc_requested(i_gshock)=.true.
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_glnTT)=.true.
+        if (pretend_lnTT) lpenc_requested(i_del2lnrho)=.true.
       endif
       if (lheatc_shock_profr) then
         lpenc_requested(i_glnrho)=.true.
