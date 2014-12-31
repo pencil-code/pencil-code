@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth; heth(3,3)
 ! PENCILS PROVIDED eths; geths(3)
@@ -762,7 +762,8 @@ module EquationOfState
 !
       if (lpencil(i_cv1)) p%cv1=cv1
       if (lpencil(i_cp1)) p%cp1=cp1
-      if (lpencil(i_cp))  p%cp=1/p%cp1
+      if (lpencil(i_cv))  p%cv=1/cv1
+      if (lpencil(i_cp))  p%cp=1/cp1
       if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
 !
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.0

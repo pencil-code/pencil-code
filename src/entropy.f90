@@ -2413,6 +2413,10 @@ module Energy
         lpenc_requested(i_cs2)=.true.
         if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
         if (cooltype=='two-layer') lpenc_requested(i_rho)=.true.
+        if (cooltype=='corona') then
+          lpenc_requested(i_cv)=.true.
+           lpenc_requested(i_rho)=.true.
+        endif
         if (cooling_profile=='surface_pp') lpenc_requested(i_pp)=.true.
       endif
       if (lgravz .and. (luminosity/=0.0 .or. cool/=0.0)) &
@@ -4769,6 +4773,8 @@ module Energy
       endif
 !
 !  Add "coronal" heating (to simulate a hot corona).
+!  AB: I guess this should be disabled soon, in favor of using
+!      lcooling_general=T, cooling_profile='cubic_step', cooltype='corona'
 !
       if (tau_cor>0) call get_heat_cool_corona(heat,p)
 !
@@ -4881,13 +4887,16 @@ module Energy
 !  gravity.
 !
 !  17-may-10/dhruba: coded
+!  16-nov-13/nishant: two-layer (jumps) at arb heights and arb temperatures
+!  31-dec-14/axel: added cubic_step (as in corona of temperature_ionization)
 !
-      use Sub, only: erfunc
+      use Sub, only: erfunc, cubic_step
 !
       real, dimension (nx) :: heat
       type (pencil_case) :: p
 !
       real, dimension (nx) :: prof,prof2
+      real :: ztop
 !
       intent(in) :: p
 !
@@ -4918,6 +4927,11 @@ module Energy
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
         prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
 !
+!  add "coronal" heating (to simulate a hot corona; see temperature_ionization)
+!
+      case ('cubic_step')
+        ztop=xyz0(3)+Lxyz(3)
+        prof = cubic_step(z(n),(ztop+z_cor)/2,(ztop-z_cor)/2)
 !
 !  Error function cooling profile with respect to pressure.
 !
@@ -4931,10 +4945,13 @@ module Energy
 !  'Temp' used in other parts of this subroutine. I have introduced
 !  'Temp2' which is the same as the 'Temp' elsewhere. Later runs
 !  will clarify this. - Dhruba
+!  AB: not sure; in general we need to multiply with cv, as in 'corona'
 !
      select case (cooltype)
      case('constant')
        heat=heat-cool*prof
+     case('corona')
+       heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
      case ('Temp')
        if (headtt) print*, 'calc_heat_cool: cs20,cs2cool=', cs20, cs2cool
        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
@@ -4942,11 +4959,9 @@ module Energy
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
      case('rho_cs2')
        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
-!   16-nov-13/nishant: coded
-! two layers (jumps) at arb heights and arb temperatures
-      case ('two-layer')
-        heat = heat - cool*prof*p%rho*(p%cs2-cs2cool)-cool2*prof2*p%rho*(p%cs2-cs2cool2)
-!
+     case ('two-layer')
+       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) &
+                   - cool2*prof2*p%rho*(p%cs2-cs2cool2)
      case('plain')
        heat=heat-cool*prof
      case default
