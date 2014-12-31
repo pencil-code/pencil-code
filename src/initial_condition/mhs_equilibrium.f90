@@ -156,6 +156,7 @@ module InitialCondition
           OO2=OOK2*tmp
 !
           f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*(sqrt(OO2)-OOcorot)
+!
         enddo;enddo
 !
       endif
@@ -257,7 +258,6 @@ module InitialCondition
 !
       use FArrayManager, only: farray_use_global
       use Sub, only: gij,curl_mn,get_radial_distance
-      use EquationOfState, only: cs20,rho0
       use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -438,7 +438,11 @@ module InitialCondition
 !
         if (lentropy) then 
           cs2=f(l1:l2,m,n,iss)
-          f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+          if (pretend_lnTT) then
+            f(l1:l2,m,n,iss)=log(cs2*cp1/gamma_m1)
+          else
+            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+          endif
         elseif (ltemperature) then 
           cs2=f(l1:l2,m,n,iTT)
           f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
