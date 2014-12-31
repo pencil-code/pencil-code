@@ -265,11 +265,16 @@ module Forcing
 !  sign change of helicity about z=0
 !
       elseif (iforce_profile=='equator_hel=z') then
+        call fatal_error("initialize_forcing","use equator_hel=z/L instead")
+!
+!  Linear profile of helicity, normalized by ztop (or -zbot, if it is bigger)
+!
+      elseif (iforce_profile=='equator_hel=z/L') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
-          profz_hel(n)=z(n)
+          profz_hel(n)=z(n)/max(-xyz0(3),xyz1(3))
         enddo
 !
 !  cosine profile of helicity about z=0
@@ -1372,12 +1377,6 @@ print*,'NS: z_center=',z_center_fcont
 !  to a delta function of the time difference
 !
       fact=force/ffnorm*sqrt(dt)
-!
-!  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
-!  case one needs to scale by 2pi/Lx, etc.
-!DM: the previous comments seems to be wrong because we have already used
-! scale_kvector_to_box option above. Axel, what do you think ?
-!
       fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
       fy=exp(cmplx(0.,ky*k1_ff*y))
 !

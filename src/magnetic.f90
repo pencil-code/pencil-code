@@ -714,6 +714,9 @@ module Magnetic
   integer :: idiag_axmxz=0      ! YAVG_DOC: $\left< A_x \right>_{y}$
   integer :: idiag_aymxz=0      ! YAVG_DOC: $\left< A_y \right>_{y}$
   integer :: idiag_azmxz=0      ! YAVG_DOC: $\left< A_z \right>_{y}$
+  integer :: idiag_bx1mxz=0     ! YAVG_DOC: $\left<|B_x|\right>_{y}$
+  integer :: idiag_by1mxz=0     ! YAVG_DOC: $\left<|B_y|\right>_{y}$
+  integer :: idiag_bz1mxz=0     ! YAVG_DOC: $\left<|B_z|\right>_{y}$
   integer :: idiag_bxmxz=0      ! YAVG_DOC: $\left< B_x \right>_{y}$
   integer :: idiag_bymxz=0      ! YAVG_DOC: $\left< B_y \right>_{y}$
   integer :: idiag_bzmxz=0      ! YAVG_DOC: $\left< B_z \right>_{y}$
@@ -727,6 +730,7 @@ module Magnetic
   integer :: idiag_bxbzmxz=0    ! YAVG_DOC: $\left< B_x B_z \right>_{y}$
   integer :: idiag_bybzmxz=0    ! YAVG_DOC: $\left< B_y B_z \right>_{y}$
   integer :: idiag_uybxmxz=0    ! YAVG_DOC: $\left< U_y B_x \right>_{y}$
+  integer :: idiag_uybzmxz=0    ! YAVG_DOC: $\left< U_y B_z \right>_{y}$
   integer :: idiag_Exmxz=0      ! YAVG_DOC: $\left<{\cal E}_x\right>_{y}$
   integer :: idiag_Eymxz=0      ! YAVG_DOC: $\left<{\cal E}_y\right>_{y}$
   integer :: idiag_Ezmxz=0      ! YAVG_DOC: $\left<{\cal E}_z\right>_{y}$
@@ -4374,6 +4378,9 @@ module Magnetic
         if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
         if (idiag_aymxz/=0)  call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
         if (idiag_azmxz/=0)  call ysum_mn_name_xz(p%aa(:,3),idiag_azmxz)
+        if (idiag_bx1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,1)),idiag_bx1mxz)
+        if (idiag_by1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,2)),idiag_by1mxz)
+        if (idiag_bz1mxz/=0) call ysum_mn_name_xz(abs(p%bb(:,3)),idiag_bz1mxz)
         if (idiag_bxmxz/=0)  call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
         if (idiag_bymxz/=0)  call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
         if (idiag_bzmxz/=0)  call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
@@ -4423,6 +4430,8 @@ module Magnetic
             call ysum_mn_name_xz(p%bb(:,2)*p%bb(:,3),idiag_bybzmxz)
         if (idiag_uybxmxz/=0) &
             call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,1),idiag_uybxmxz)
+        if (idiag_uybzmxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,3),idiag_uybzmxz)
         if (idiag_Exmxz/=0) call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
         if (idiag_Eymxz/=0) call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
         if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
@@ -7145,7 +7154,8 @@ module Magnetic
         idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0; idiag_beta1mxy=0
         idiag_StokesImxy=0; idiag_StokesQmxy=0; idiag_StokesUmxy=0
         idiag_StokesQ1mxy=0; idiag_StokesU1mxy=0
-        idiag_bybzmxz=0; idiag_uybxmxz=0
+        idiag_bybzmxz=0; idiag_uybxmxz=0; idiag_uybzmxz=0
+        idiag_bx1mxz=0; idiag_by1mxz=0; idiag_bz1mxz=0
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0; idiag_jbmxy=0
         idiag_jxmxz=0; idiag_jymxz=0; idiag_jzmxz=0
         idiag_abmxy=0; idiag_b2mxz=0;
@@ -7588,6 +7598,9 @@ module Magnetic
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'axmxz',idiag_axmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'aymxz',idiag_aymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'azmxz',idiag_azmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bx1mxz',idiag_bx1mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'by1mxz',idiag_by1mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bz1mxz',idiag_bz1mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',idiag_bxmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',idiag_bymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',idiag_bzmxz)
@@ -7601,6 +7614,7 @@ module Magnetic
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxbzmxz',idiag_bxbzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bybzmxz',idiag_bybzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uybxmxz',idiag_uybxmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uybzmxz',idiag_uybzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Exmxz',idiag_Exmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Eymxz',idiag_Eymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Ezmxz',idiag_Ezmxz)
