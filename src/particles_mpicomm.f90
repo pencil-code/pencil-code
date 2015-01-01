@@ -145,9 +145,9 @@ module Particles_mpicomm
             nfracz = (xyz1_loc(3) - xyz0_loc(3))/(xyz1(3) - xyz0(3))
             npar_loc_array(i)=npar * nfracx * nfracy * nfracz
           enddo
-          npar_loc=npar_loc_array(iproc)
 !
         endif
+        npar_loc=npar_loc_array(iproc)
 !
         if (lroot) print*, 'dist_particles_evenly_procs: npar_loc_array     =',&
             npar_loc_array
