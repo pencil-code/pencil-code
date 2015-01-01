@@ -47,7 +47,7 @@ module Dustdensity
   real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
-  real, dimension(ndustspec0) :: dsize0, BB
+  real, dimension(ndustspec0) :: dsize0, BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
