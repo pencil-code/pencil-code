@@ -33,6 +33,7 @@ module Sub
   public :: sine_step, interp1
   public :: hypergeometric2F1
   public :: gamma_function
+  public :: one_minus_exp
 !
   public :: get_nseed
 !
@@ -5075,6 +5076,22 @@ nameloop: do
       do i=1,3; pencil_subtract2(:,i) = v(:,i) - s(:); enddo
 !
     endfunction pencil_subtract2
+!***********************************************************************
+    elemental real function one_minus_exp(x)
+!
+!  Returns 1 - exp(-x).
+!
+!  03-jan-15/ccyang: coded.
+!
+      real, intent(in) :: x
+!
+      if (x * x > epsilon(1.0)) then
+        one_minus_exp = 1.0 - exp(-x)
+      else
+        one_minus_exp = x * (1.0 - 0.5 * x)
+      endif
+!
+    endfunction one_minus_exp
 !***********************************************************************
     elemental real function erfunc(x)
 !
