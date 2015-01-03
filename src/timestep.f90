@@ -35,7 +35,7 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: ds
+      real :: ds, dtsub
       real :: dt1, dt1_local, dt1_last=0.0
       integer :: j
 !
@@ -103,6 +103,7 @@ module Timestep
 !
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
+        dtsub = ds * dt_beta_ts(itsub)
 !
 !  Add artificial damping at the location of SN explosions for a short time
 !  after insertion.
@@ -129,14 +130,14 @@ module Timestep
         advec: if (lshear) then
           call impose_floors_ceilings(f)
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
-          call advance_shear(f, df, dt_beta_ts(itsub)*ds)
+          call advance_shear(f, df, dtsub)
         endif advec
 !
-        if (lspecial) call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+        if (lspecial) call special_after_timestep(f, df, dtsub)
 !
 !  Increase time.
 !
-        t = t + dt_beta_ts(itsub)*ds
+        t = t + dtsub
 !
       enddo
 !
