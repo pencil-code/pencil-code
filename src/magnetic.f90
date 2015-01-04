@@ -118,8 +118,8 @@ module Magnetic
   real :: rescale_aa=0.0
   real :: ampl_B0=0.0, D_smag=0.17, B_ext2, B_ext21, B_ext11
   real :: nu_ni=0.0, nu_ni1, hall_term=0.0, battery_term=0.0
-  real :: initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff=1.
-  real :: kpeak=10., kgaussian_aa=0., brms_target=1.0, rescaling_fraction=1.0
+  real :: initpower_aa=0.0, initpower2_aa=-11./3., cutoff_aa=0.0, ncutoff_aa=1.
+  real :: kpeak_aa=10., kgaussian_aa=0., brms_target=1.0, rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
   real :: bmz=0, bmz_beltrami_phase=0.0
   real :: taareset=0.0, daareset=0.0
@@ -185,7 +185,7 @@ module Magnetic
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
-  logical :: lskip_projection=.false.
+  logical :: lskip_projection_aa=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -194,8 +194,9 @@ module Magnetic
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
-      initpower_aa, initpower2_aa, cutoff_aa, ncutoff, kpeak, kgaussian_aa, &
-      lcheck_positive_va2, lskip_projection, &
+      initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
+      kgaussian_aa, &
+      lcheck_positive_va2, lskip_projection_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
@@ -1451,8 +1452,8 @@ module Magnetic
           call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
-            cutoff_aa,ncutoff,kpeak,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection)
+            cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
+            lskip_projection_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
