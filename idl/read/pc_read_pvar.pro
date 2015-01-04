@@ -161,6 +161,26 @@ varcontent[iaps].variable = 'Particle sink radius (aps)'
 varcontent[iaps].idlvar   = 'aps'
 varcontent[iaps].idlinit  = INIT_SCALAR
 ;
+;  Check if there is other pvar data written by the special module. 
+;
+file_special=datadir+'/index_special_particles.pro'
+exist_specialvar=file_test(file_special)
+if (exist_specialvar eq 1) then begin
+  openr, 1, file_special
+  line=''
+  while (not eof(1)) do begin
+    readf, 1, line
+    str_tmp=strsplit(line," ",/extract)
+    str=str_tmp[0] & istr=fix(str_tmp[1])
+    if (istr gt 0) then begin
+      varcontent[istr].variable   = strtrim(str,2)
+      varcontent[istr].idlvar     = strtrim(str,2)
+      varcontent[istr].idlinit    = INIT_SCALAR
+    endif
+  endwhile
+  close, 1
+endif
+;
 varcontent = varcontent[1:*]
 ;
 ;  Put variable names in array
