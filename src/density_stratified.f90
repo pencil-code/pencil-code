@@ -208,14 +208,6 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-  endsubroutine calc_ldensity_pars
-!***********************************************************************
     subroutine pencil_criteria_density()
 !
 !  All pencils that the Density module depends on are specified here.
@@ -398,14 +390,6 @@ module Density
       endif sglnrho
 !
     endsubroutine calc_pencils_density
-!***********************************************************************
-    subroutine density_before_boundary(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine density_before_boundary
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
@@ -837,43 +821,6 @@ module Density
 !
     endsubroutine get_slices_density
 !***********************************************************************
-    subroutine get_slices_pressure(f,slices)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_pressure
-!***********************************************************************
-    subroutine get_init_average_density(f,init_average_density)
-!
-!  10-dec-09/piyali: added to pass initial average density
-!
-    real, dimension (mx,my,mz,mfarray):: f
-    real:: init_average_density
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(init_average_density)
-!
-    endsubroutine get_init_average_density
-!***********************************************************************
-    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
-!
-!  Dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(1) :: mass_per_proc
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(mass_per_proc)
-!
-    endsubroutine anelastic_after_mn
-!***********************************************************************
     subroutine dynamical_diffusion(umax)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
@@ -888,16 +835,11 @@ module Density
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
-    subroutine boussinesq(f)
+!***********************************************************************
 !
-!  23-mar-2012/dintrans: coded
-!  dummy routine for the Boussinesq approximation
+!  LOCAL ROUTINES GO BELOW HERE.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine boussinesq
+!***********************************************************************
 !***********************************************************************
     real function total_mass(f)
 !
@@ -921,5 +863,74 @@ module Density
       call mpiallreduce_sum(mass_loc, total_mass)
 !
     endfunction total_mass
+!***********************************************************************
+!***********************************************************************
+!
+!  DUMMY BUT PUBLIC ROUTINES GO BELOW HERE.
+!
+!***********************************************************************
+!***********************************************************************
+    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+!
+!  Dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(in) :: df
+      real, dimension(1), intent(in) :: mass_per_proc
+      type(pencil_case), intent(in) :: p
+!
+      call keep_compiler_quiet(f, df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mass_per_proc)
+!
+    endsubroutine anelastic_after_mn
+!***********************************************************************
+    subroutine boussinesq(f)
+!
+!  dummy routine for the Boussinesq approximation
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine boussinesq
+!***********************************************************************
+    subroutine calc_ldensity_pars(f)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+  endsubroutine calc_ldensity_pars
+!***********************************************************************
+    subroutine density_before_boundary(f)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine density_before_boundary
+!***********************************************************************
+    subroutine get_init_average_density(f, init_average_density)
+!
+!  10-dec-09/piyali: added to pass initial average density
+!
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f
+    real, intent(in) :: init_average_density
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(init_average_density)
+!
+    endsubroutine get_init_average_density
+!***********************************************************************
+    subroutine get_slices_pressure(f, slices)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      type(slice_data), intent(in) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_slices_pressure
 !***********************************************************************
 endmodule Density
