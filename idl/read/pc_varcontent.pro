@@ -950,7 +950,7 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
   endif
 endif
 ;
-; Check if there is other var data written by the special module. 
+;  Check if there is other var data written by the special module. 
 ;
 file_special=datadir+'/index_special.pro'
 exist_specialvar=file_test(file_special)
@@ -962,7 +962,7 @@ if (exist_specialvar eq 1) then begin
     str_tmp=strsplit(line," ",/extract)
     str=str_tmp[0] & istr=fix(str_tmp[1])
     if (istr gt 0) then begin
-      varcontent[istr].variable   = 'Special variable'
+      varcontent[istr].variable   = 'Special ('+strtrim(str,2)+')'
       varcontent[istr].idlvar     = strtrim(str,2)
       varcontent[istr].idlinit    = INIT_SCALAR
       varcontent[istr].idlvarloc  = strtrim(str,2)+'_loc'
