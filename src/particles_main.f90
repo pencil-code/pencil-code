@@ -51,6 +51,8 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
+      use Special, only: register_particles_special
+!
       integer :: ipvar
 !
       call register_particles              ()
@@ -70,6 +72,7 @@ module Particles_main
       call register_particles_surfspec     ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
+      call register_particles_special      (npvar)
 !
 !  Print summary of variable names.
 !
@@ -639,7 +642,7 @@ module Particles_main
 !
       use Special, only: special_calc_particles
 !
-      call special_calc_particles(fp)
+      call special_calc_particles(fp,ineargrid,npar_loc)
       if (lparticles_nbody) call particles_nbody_special
 !
     endsubroutine particles_special

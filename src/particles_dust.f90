@@ -688,10 +688,10 @@ module Particles
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
-        write (1,*) 'np_swarm=', np_swarm
-        write (1,*) 'mpmat=', mpmat
-        write (1,*) 'mp_swarm=', mp_swarm
-        write (1,*) 'rhop_swarm=', rhop_swarm
+          write (1,*) 'np_swarm=', np_swarm
+          write (1,*) 'mpmat=', 0.0
+          write (1,*) 'mp_swarm=', mp_swarm
+          write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
 !
@@ -4701,7 +4701,7 @@ module Particles
 !
       vel_call=.true.
       uup_shared=fp(k1,ixp:izp)
-      call special_calc_particles(fp)
+!      call special_calc_particles(fp,ineargrid,npar_loc)
       uup=uup_shared
 !
     endsubroutine calc_gas_velocity_shell_call

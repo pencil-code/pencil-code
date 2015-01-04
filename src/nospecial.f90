@@ -112,6 +112,22 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
+    subroutine register_particles_special(npvar)
+!
+!  Set up indices for particle variables in special modules.
+!
+!  4-jan-14/tony: coded
+!
+      integer :: npvar
+!
+      if (lroot) call svn_id( &
+           "$Id$")
+!
+!!      iqp=npvar+1
+!!      npvar=npvar+1
+!
+    endsubroutine register_particles_special
+!***********************************************************************
     subroutine initialize_special(f)
 !
 !  Called after reading parameters, but before the time loop.
@@ -484,14 +500,17 @@ module Special
 !
     endsubroutine special_calc_pscalar
 !***********************************************************************
-    subroutine special_calc_particles(fp)
+    subroutine special_calc_particles(f,fp,ineargrid,npar_loc)
 !
 !  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
 !
 !  20-nov-08/wlad: coded
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (:,:), intent(in) :: fp
+      integer, dimension(:,:) :: ineargrid
+      integer :: npar_loc
 !
       call keep_compiler_quiet(fp)
 !
