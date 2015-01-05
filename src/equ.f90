@@ -208,9 +208,9 @@ module Equ
       if (lparticles)    call particles_before_boundary(f)
       if (ldetonate)     call detonate_before_boundary(f)
 !
-!  Fetch fp to the special module
+!  Fetch fp to the special module.
 !
-      if (lparticles.and.lspecial) call particles_special
+      if (lparticles.and.lspecial) call particles_special(f)
 !
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.

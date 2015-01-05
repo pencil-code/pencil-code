@@ -634,7 +634,7 @@ module Particles_main
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
-    subroutine particles_special
+    subroutine particles_special(f)
 !
 !  Fetch fp (and fsp) array to special module.
 !
@@ -642,7 +642,9 @@ module Particles_main
 !
       use Special, only: special_calc_particles
 !
-      call special_calc_particles(fp,ineargrid,npar_loc)
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call special_calc_particles(f,fp,ineargrid,npar_loc)
       if (lparticles_nbody) call particles_nbody_special
 !
     endsubroutine particles_special
