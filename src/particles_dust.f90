@@ -4701,7 +4701,7 @@ module Particles
 !
       vel_call=.true.
       uup_shared=fp(k1,ixp:izp)
-!      call special_calc_particles(fp,ineargrid,npar_loc)
+!      call special_calc_particles(fp,ineargrid)
       uup=uup_shared
 !
     endsubroutine calc_gas_velocity_shell_call

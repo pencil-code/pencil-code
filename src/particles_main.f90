@@ -644,7 +644,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call special_calc_particles(f,fp,ineargrid,npar_loc)
+      call special_calc_particles(f,fp,ineargrid)
       if (lparticles_nbody) call particles_nbody_special
 !
     endsubroutine particles_special

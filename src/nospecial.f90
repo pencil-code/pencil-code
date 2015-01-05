@@ -500,7 +500,7 @@ module Special
 !
     endsubroutine special_calc_pscalar
 !***********************************************************************
-    subroutine special_calc_particles(f,fp,ineargrid,npar_loc)
+    subroutine special_calc_particles(f,fp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
@@ -510,7 +510,6 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (:,:), intent(in) :: fp
       integer, dimension(:,:) :: ineargrid
-      integer :: npar_loc
 !
       call keep_compiler_quiet(fp)
 !
