@@ -115,7 +115,7 @@ module Hydro
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
-  logical :: lskip_projection=.false.
+  logical :: lskip_projection=.false., lno_second_ampl=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -139,7 +139,7 @@ module Hydro
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
-      lskip_projection, &
+      lskip_projection, lno_second_ampl, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -1500,8 +1500,9 @@ module Hydro
 ! initial spectrum k^power
 !
         case ('power_randomphase_hel')
-          call power_randomphase_hel(ampluu(j),initpower,initpower2,cutoff, &
-            ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, lskip_projection)
+          call power_randomphase_hel(ampluu(j),initpower,initpower2, &
+            cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
+            lskip_projection, lno_second_ampl)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

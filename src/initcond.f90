@@ -4480,7 +4480,7 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lscale_tobox)
+      lskip_projection,lno_second_ampl,lscale_tobox)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4496,7 +4496,7 @@ module Initcond
       use Fourier, only: fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
-      logical :: lscale_tobox1, lskip_projection
+      logical :: lscale_tobox1, lskip_projection, lno_second_ampl
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
@@ -4591,7 +4591,17 @@ module Initcond
         nexp1=.25*nfact*(initpower-initpower2)
         nexp2=1./nfact
         kpeak21=1./kpeak**2
-        r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+!
+!  By mistake, a second ampl factor got introduced, so
+!  the resulting amplitudes depended quadratically on ampl.
+!  To keep continuity, we must keep this, but we can avoid
+!  this by setting lno_second_ampl=T in the call.
+!
+        if (lno_second_ampl) then
+          r=((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+        else
+          r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+        endif
 !
 !  cutoff (changed to hyperviscous cutoff filter)
 !
