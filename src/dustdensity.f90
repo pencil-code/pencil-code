@@ -191,6 +191,8 @@ module Dustdensity
         close(3)
       endif
 !
+!  Is this executed in all cases? Why ndustspec0 here?
+!
       do k=1,ndustspec
         sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''

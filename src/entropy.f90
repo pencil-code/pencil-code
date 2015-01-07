@@ -194,6 +194,8 @@ module Energy
                                 ! DIAG_DOC:   \quad(mean thermal
                                 ! DIAG_DOC:   [=internal] energy)
   integer :: idiag_ethdivum=0   ! DIAG_DOC:
+  integer :: idiag_ssruzm=0     ! DIAG_DOC: $\left<s \varrho u_z/c_p\right>$
+  integer :: idiag_ssuzm=0      ! DIAG_DOC: $\left<s u_z/c_p\right>$
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
   integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
@@ -2635,9 +2637,9 @@ module Energy
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
-      if (idiag_ssm/=0 .or. idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. &
-          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ssmr/=0) &
-           lpenc_diagnos(i_ss)=.true.
+      if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
+          idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0 .or. &
+          idiag_ssmx/=0 .or. idiag_ssmr/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
          lpenc_diagnos(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
@@ -2646,7 +2648,9 @@ module Energy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
-      if (idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. idiag_fconvxmx/=0) then
+      if (idiag_ssuzm/=0) lpenc_diagnos(i_uu)=.true.
+      if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
+          idiag_fconvxmx/=0) then
           lpenc_diagnos(i_cp)=.true.
           lpenc_diagnos(i_uu)=.true.
           lpenc_diagnos(i_rho)=.true.
@@ -3039,6 +3043,8 @@ module Energy
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
+        if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
+        if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
@@ -5533,7 +5539,8 @@ module Energy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_ssm=0; idiag_ss2m=0
+        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0
+        idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
@@ -5567,6 +5574,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'ssruzm',idiag_ssruzm)
+        call parse_name(iname,cname(iname),cform(iname),'ssuzm',idiag_ssuzm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)

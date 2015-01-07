@@ -51,6 +51,7 @@ module Dustvelocity
   real :: rhods=1.0, nd0=1.0, md0=1.0, rhod0=1.0, mu_ext=0.
   real :: ad0=0.0, ad1=0.0, dimd1=0.333333, deltamd=1.0
   real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
+  real :: viscd_exponent=0.0
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: gravx_dust=0.0
@@ -73,14 +74,15 @@ module Dustvelocity
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
-  character (len=labellen) :: draglaw='epstein_cst'
+  character (len=labellen) :: draglaw='epstein_cst', viscd_law='const'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
   character (len=labellen) :: iefficiency_type='nothing'
 !
   namelist /dustvelocity_init_pars/ &
       uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, &
       phase_udx, phase_udy, phase_udz, rhods, mu_ext, &
-      md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
+      md0, ad0, ad1, deltamd, draglaw, viscd_law, viscd_exponent, &
+      ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, gravx_dust, &
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
@@ -90,6 +92,7 @@ module Dustvelocity
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
+      viscd_law, viscd_exponent, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
@@ -322,11 +325,20 @@ module Dustvelocity
 !  If *_all set, make all primordial *(:) = *_all
 !
       if (nud_all /= 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: nud_all=',nud_all
-        do k=1,ndustspec
-          if (nud(k) == 0.) nud(k)=nud_all
-        enddo
+        select case (viscd_law)
+        case ('const')
+!         if (lroot .and. ip<6) &
+!             print*, 'initialize_dustvelocity: nud_all=',nud_all
+          do k=1,ndustspec
+            if (nud(k) == 0.) nud(k)=nud_all
+          enddo
+        case ('md_exponential')
+          nud=nud_all*md**viscd_exponent
+        case default
+          if (lroot) print*, 'No such value for viscd_law: ', trim(viscd_law)
+          call fatal_error('initialize_dustvelocity','')
+        endselect
+        if (lroot) print*, 'initialize_dustvelocity: nud=',nud
       endif
 !
       if (betad_all /= 0.) then

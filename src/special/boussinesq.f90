@@ -84,9 +84,10 @@ module Special
 !
 !!  namelist /special_init_pars/ dummy
 !
-  real :: gravz_boussinesq, betaz_boussinesq
+  real :: gravz_boussinesq=0., gravz_boussinesq_lnrho=0., betaz_boussinesq=0.
 !
-    namelist /special_run_pars/ gravz_boussinesq, betaz_boussinesq
+    namelist /special_run_pars/ gravz_boussinesq, gravz_boussinesq_lnrho, &
+      betaz_boussinesq
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -168,10 +169,11 @@ module Special
 !  25-dec-14/axel: adapted from nospecial
 !
       if (lhydro.and.lentropy) then
-        lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_cp)=.true.
-        lpenc_requested(i_ss)=.true.
         lpenc_requested(i_uu)=.true.
+        if (gravz_boussinesq/=0.) lpenc_requested(i_ss)=.true.
+        if (gravz_boussinesq/=0.) lpenc_requested(i_cp1)=.true.
+        if (gravz_boussinesq_lnrho/=0.) lpenc_requested(i_lnrho)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -359,7 +361,11 @@ module Special
 !  gravz_boussineq term
 !
       if (lhydro.and.lentropy) then
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%ss*p%cp1*gravz_boussinesq
+        if (gravz_boussinesq_lnrho/=0.) then
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%lnrho*gravz_boussinesq_lnrho
+        elseif (gravz_boussinesq/=0.) then
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%cp1*gravz_boussinesq
+        endif
       endif
 !
       call keep_compiler_quiet(f)

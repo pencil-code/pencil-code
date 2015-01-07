@@ -843,6 +843,46 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  modified Taylor-Green flow with (x,y,z) -> tilde(y,z,x), i.e., the y direction became z
+!
+      case ('TGmodY')
+        if (headtt) print*,'modified Taylor-Green flow-Y; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,2)=+sin(ky_uukin*y(m))*cos(kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)) &
+            +ABC_A*sin(2*ky_uukin*y(m))*cos(2*kx_uukin*x(l1:l2)) &
+            +ABC_B*(sin(ky_uukin*y(m))*cos(3*kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)) &
+            +5./13.*sin(3*ky_uukin*y(m))*cos(kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)))
+          p%uu(:,3)=-cos(ky_uukin*y(m))*sin(kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)) &
+            +ABC_A*sin(2*kz_uukin*z(n))*cos(2*kx_uukin*x(l1:l2)) &
+            -ABC_B*(cos(3*ky_uukin*y(m))*sin(kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)) &
+            +5./13.*cos(ky_uukin*y(m))*sin(3*kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)))
+          p%uu(:,1)=-ABC_A*(cos(2*ky_uukin*y(m))+cos(2*kz_uukin*z(n)))*sin(2*kx_uukin*x(l1:l2)) &
+            +ABC_B*2./13.*(cos(ky_uukin*y(m))*cos(3*kz_uukin*z(n)) &
+                          -cos(3*ky_uukin*y(m))*cos(kz_uukin*z(n)))*sin(kx_uukin*x(l1:l2))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  modified Taylor-Green flow with (y,z,x) -> tilde(z,x,y), i.e., the x direction became z
+!
+      case ('TGmodX')
+        if (headtt) print*,'modified Taylor-Green flow-X; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,3)=+sin(kz_uukin*z(n))*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
+            +ABC_A*sin(2*kz_uukin*z(n))*cos(2*ky_uukin*y(m)) &
+            +ABC_B*(sin(kz_uukin*z(n))*cos(3*kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
+            +5./13.*sin(3*kz_uukin*z(n))*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)))
+          p%uu(:,1)=-cos(kz_uukin*z(n))*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
+            +ABC_A*sin(2*kx_uukin*x(l1:l2))*cos(2*ky_uukin*y(m)) &
+            -ABC_B*(cos(3*kz_uukin*z(n))*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
+            +5./13.*cos(kz_uukin*z(n))*sin(3*kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)))
+          p%uu(:,2)=-ABC_A*(cos(2*kz_uukin*z(n))+cos(2*kx_uukin*x(l1:l2)))*sin(2*ky_uukin*y(m)) &
+            +ABC_B*2./13.*(cos(kz_uukin*z(n))*cos(3*kx_uukin*x(l1:l2)) &
+                          -cos(3*kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)))*sin(ky_uukin*y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  Galloway-Proctor flow, U=-z x grad(psi) - z k psi, where
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin
