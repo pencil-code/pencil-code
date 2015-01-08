@@ -2682,6 +2682,130 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux_condturb_x
 !***********************************************************************
+    subroutine bc_ss_flux_condturb_mean_x(f,topbot)
+!
+!   Constant conductive + turbulent flux through the surface applied on
+!   the spherically symmetric part, zero gradient for the fluctuation
+!   at the boundary.
+!
+!   18-dec-2014/pete: coded
+!
+      use Mpicomm, only: stop_it, mpiallreduce_sum
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
+      real, pointer :: Fbot, Ftop
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: dsdx_yz, dlnrhodx_yz
+      real, dimension (mx) :: cs2mx, cs2mx_tmp, lnrmx, lnrmx_tmp
+      real :: fac, fact, dlnrmxdx, tmp1, tmp2
+      integer :: i=0,l=0,ierr
+!
+      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Get the shared variables
+!
+      call get_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chi_t")
+      call get_shared_variable('chit_prof1',chit_prof1,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chit_prof1")
+      call get_shared_variable('chit_prof2',chit_prof2,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting chit_prof2")
+      call get_shared_variable('hcondxbot',hcondxbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting hcondxbot")
+      call get_shared_variable('hcondxtop',hcondxtop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting hcondxtop")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting Fbot")
+      call get_shared_variable('Ftop',Ftop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+           "there was a problem when getting Ftop")
+!
+      select case (topbot)
+!
+!  Check whether we want to do top or bottom (this is precessor dependent)
+!
+!  bottom boundary
+!  ===============
+!
+      case ('bot')
+!
+! Do the pretend_lnTT=T case first
+!
+        if (pretend_lnTT) then
+           call stop_it("bc_ss_flux_condturb_mean_x: not implemented for pretend_lnTT=T")
+        else
+!
+!  Compute yz-averaged density and sound speed
+!
+          lnrmx=0.; cs2mx=0.
+          fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
+          do l=1,mx
+            tmp1=0.; tmp2=0.
+            do n=n1,n2
+              tmp1=tmp1+sum(f(l,m1:m2,n,ilnrho)*dVol_y(m1:m2))*dVol_z(n)
+              tmp2=tmp2+sum(cs20*exp(gamma_m1*(f(l,m1:m2,n,ilnrho) &
+                   -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+            enddo
+            lnrmx(l)=lnrmx(l)+tmp1
+            cs2mx(l)=cs2mx(l)+tmp2
+          enddo
+          lnrmx=fact*lnrmx; cs2mx=fact*cs2mx
+!
+!  Communication over all processors in the yz plane.
+!
+          if (nprocy>1.or.nprocz>1) then
+            call mpiallreduce_sum(lnrmx,lnrmx_tmp,mx,idir=23)
+            call mpiallreduce_sum(cs2mx,cs2mx_tmp,mx,idir=23)
+            lnrmx=lnrmx_tmp
+            cs2mx=cs2mx_tmp
+          endif
+!
+          do l=1,nghost; lnrmx(l1-i)=2.*lnrmx(l1)-lnrmx(l1+i); enddo
+!
+!  Compute x-derivative of mean lnrho
+!
+          fac=(1./60)*dx_1(l1)
+          dlnrmxdx=fac*(+ 45.0*(lnrmx(l1+1)-lnrmx(l1-1)) &
+                        -  9.0*(lnrmx(l1+2)-lnrmx(l1-2)) &
+                        +      (lnrmx(l1+3)-lnrmx(l1-3)))
+!
+!  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot, i.e.
+!  enforce:
+!    ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
+!
+          dsdx_yz=(-cp*gamma_m1*Fbot/cs2mx(l1))/ &
+               (chit_prof1*chi_t*exp(lnrmx(l1)) + hcondxbot*gamma) - &
+              gamma_m1/gamma*dlnrmxdx
+!
+          do i=1,nghost
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz
+          enddo
+        endif
+!
+!  top boundary
+!  ============
+!
+      case ('top')
+!
+         call stop_it("bc_ss_flux_condturb_mean_x: not implemented for the top boundary")
+!
+!  capture undefined entries
+!
+      case default
+        call fatal_error('bc_ss_flux_condturb_mean_x','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_condturb_mean_x
+!***********************************************************************
     subroutine bc_ss_flux_condturb_z(f,topbot)
 !
 !   Constant conductive + turbulent flux through the surface

@@ -1068,6 +1068,18 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine bc_ss_flux_condturb_x
 !***********************************************************************
+    subroutine bc_ss_flux_condturb_mean_x(f,topbot)
+!
+!   07-jan-2015/pete: dummy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_condturb_mean_x
+!***********************************************************************
     subroutine bc_ss_flux_condturb_z(f,topbot)
 !
 !   15-jul-2014/pete: dummy
