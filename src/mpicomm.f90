@@ -292,6 +292,7 @@ module Mpicomm
 !
   interface mpirecv_wait_real
     module procedure mpirecv_wait_real_arr
+    module procedure mpirecv_wait_real_arr2
     module procedure mpirecv_wait_real_arr4
   endinterface
 !
@@ -1832,10 +1833,9 @@ module Mpicomm
       integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_src, tag_id, ireq
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+          tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_wait_int_scl
 !***********************************************************************
@@ -1848,10 +1848,9 @@ module Mpicomm
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id, ireq
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+          tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_wait_int_arr
 !***********************************************************************
@@ -1864,16 +1863,15 @@ module Mpicomm
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id, ireq
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+          tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_wait_real_arr
 !***********************************************************************
-    subroutine mprecv_wait_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_wait_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array(:,:) from other processor, with non-blocking communication.
 !
@@ -1882,16 +1880,15 @@ module Mpicomm
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id, nbcast, ireq
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
      nbcast=nbcast_array(1)*nbcast_array(2)
 !
       call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+          tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mprecv_wait_real_arr2
+    endsubroutine mpirecv_wait_real_arr2
 !***********************************************************************
     subroutine mpirecv_wait_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
@@ -1903,14 +1900,13 @@ module Mpicomm
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, nbcast, ireq
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
 !
       call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
+          tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_wait_real_arr4
 !***********************************************************************
