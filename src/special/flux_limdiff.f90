@@ -58,14 +58,11 @@ module Special
 !
   include '../special.h'
 !
-  real :: temperature_unit_cgs = 8166.20   ! 1 in code units is 8166.20K
-  real :: density_unit_cgs = 2d-11         ! 1 in code units is 2e9 g/cm3 
-  real :: length_unit_cgs = 7.785d13       ! 5.2 AU (Jupiter's position)
-  real :: velocity_unit_cgs = 1.306d6      ! cm/s (Jupiter'r orbital velocity)
+  real :: dummy
 !
-  namelist /special_init_pars/ temperature_unit_cgs,density_unit_cgs,length_unit_cgs
+  namelist /special_init_pars/ dummy
 !
-  namelist /special_run_pars/ temperature_unit_cgs,density_unit_cgs,length_unit_cgs
+  namelist /special_run_pars/ dummy
 !
   type InternalPencils
      real, dimension(nx,3) :: gkappa,glambda,glnkappa,glnlambda,gksi
@@ -74,13 +71,12 @@ module Special
 !
   type (InternalPencils) :: q
 !
-  real :: sigma_stbz,mass_unit_cgs,energy_unit_cgs,time_unit_cgs,flux_unit_cgs
-!
   integer :: ikappar,ilambda
-
-  !integer :: ipotturb
-  !integer :: idiag_potturbm=0,idiag_potturbmax=0,idiag_potturbmin=0
-  !integer :: idiag_gpotturbx2m=0,idiag_gpotturby2m=0,idiag_gpotturbz2m=0
+!
+  integer :: idiag_kappam=0,idiag_kappamax=0,idiag_kappamin=0
+  integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
+  integer :: idiag_divfluxm=0,idiag_divflux2m=0
+  integer :: idiag_divfluxmax=0,idiag_divfluxmin=0
 !
   contains
 !***********************************************************************
@@ -116,20 +112,8 @@ module Special
 !  14-jul-09/wlad: coded
 !
       use Cdata 
-      !use EquationOfState, only: cs0
-      !use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      !integer :: ierr
-!
-!  Set the potential at start time, for debugging purposes.
-!
-      mass_unit_cgs   = density_unit_cgs*length_unit_cgs**3
-      energy_unit_cgs = mass_unit_cgs*velocity_unit_cgs**2
-      time_unit_cgs   = length_unit_cgs/velocity_unit_cgs
-      flux_unit_cgs   = energy_unit_cgs/(length_unit_cgs**2*time_unit_cgs)
-!
-      sigma_stbz=sigmaSB_cgs/(flux_unit_cgs/temperature_unit_cgs**4)
 !
       call keep_compiler_quiet(f)
 !
@@ -153,11 +137,11 @@ module Special
 !
       use EquationOfState, only: cs20,rho0,gamma_m1,get_cp1,get_cv1
       use Sub, only: grad,dot
+      !use Boundcond, only: update_ghosts
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,3) :: grho,gss,glnrho,glnTT
-      real, dimension(nx) :: rho,rho1,TT
-      real, dimension(nx) :: modglnTT,tmp,RR
+      real, dimension(nx) :: rho,TT,modglnTT,tmp,RR,rho1
       real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs
       integer :: i,j      
 !
@@ -180,16 +164,21 @@ module Special
 ! TT_csg = exp(lnTT) * temperature_unit_cgs
 !
         do i=1,nx 
-          call calc_opacity(TT(i)*temperature_unit_cgs,&
-                           rho(i)*density_unit_cgs,&
+          ! spits out opacity in cgs units
+          call calc_opacity(TT(i)*unit_temperature,&
+                           rho(i)*unit_density,&
                            kappa_cgs)
 !
-! kappa0 = kappa0_cgs * unit_density / unit_length
+! kappa_code = kappa_cgs/ unit_kappa
+! unit_kappa = 1/(unit_density*unit_length)
 !
-          f(i+l1-1,m,n,ikappar) = kappa_cgs * density_unit_cgs/length_unit_cgs
+          f(i+l1-1,m,n,ikappar) = kappa_cgs * (unit_density*unit_length)
         enddo
+      !enddo;enddo
 !
 !  Calculate now flux limiter.
+!
+      !do n=n1,n2; do m=m1,m2
 !
         call grad(f,irho,grho)
         call grad(f,iss,gss)
@@ -208,7 +197,42 @@ module Special
 !
       enddo; enddo
 !
+!  Boundaries for limiter (gradient will be needed)
+!
+      call update_ghosts_local(f)
+!
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine update_ghosts_local(f)
+!
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i
+!
+!  Do 's' boundary
+!
+      do i=1,nghost
+        !call bc_sym_x(f,+1,'bot',ivar)
+        f(l1-i,:,:,ikappar:ilambda)=f(l1+i,:,:,ikappar:ilambda)
+        !call bc_sym_x(f,+1,'top',ivar)
+        f(l2+i,:,:,ikappar:ilambda)=f(l2-i,:,:,ikappar:ilambda)
+      enddo
+!
+      call initiate_isendrcv_bdry(f,ikappar)
+      call finalize_isendrcv_bdry(f,ilambda)
+!
+      do i=1,nghost
+        f(:,m1-i,:,ikappar:ilambda)=f(:,m1+i,:,ikappar:ilambda)
+        f(:,m2+i,:,ikappar:ilambda)=f(:,m2-i,:,ikappar:ilambda)
+      enddo
+!
+      do i=1,nghost
+        f(:,:,n1-i,ikappar:ilambda)=f(:,:,n1+i,ikappar:ilambda)
+        f(:,:,n2+i,ikappar:ilambda)=f(:,:,n2-i,ikappar:ilambda)
+      enddo
+!
+    endsubroutine update_ghosts_local
 !***********************************************************************
     subroutine pencils_criteria_special(f,p)
 !
@@ -236,9 +260,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer :: j
-      !real :: sigma_bltz=1.0
-      !get sigma_bltz in real units
+      integer :: j,i
 !
       q%kappa=f(l1:l2,m,n,ikappar)
       q%kappa1=1./q%kappa
@@ -258,13 +280,10 @@ module Special
 !
       call dot(p%gTT,q%gksi,q%gTTgksi)
 !      
-      q%divflux = -16*sigma_stbz*q%lambda*p%TT**3*p%rho1*q%kappa1*(p%del2TT+q%gTTgksi)
-      !kappa is not differentiable...
-!
-      !if (ldiagnos .and. (idiag_potturbm   /=0 .or. &
-      !                    idiag_potturbmax /=0 .or. & 
-      !                    idiag_potturbmin /=0) &
-      !    ) q%potturb = f(l1:l2,m,n,ipotturb)
+      q%divflux = -16*sigmaSB*q%lambda*p%TT**3*p%rho1*q%kappa1*(p%del2TT+q%gTTgksi)
+      do i=1,nx 
+        print*,i,m,n,q%divflux(i)
+      enddo
 !
       call keep_compiler_quiet(p)
 !
@@ -386,26 +405,42 @@ endsubroutine read_special_run_pars
 !  Write information to index.pro
 !
       if (lreset) then
-        !idiag_potturbm=0;idiag_potturbmax=0;idiag_potturbmin=0 
-        !idiag_gpotturbx2m=0;idiag_gpotturby2m=0;idiag_gpotturbz2m=0
+        idiag_kappam=0;idiag_kappamax=0;idiag_kappamin=0 
+!
+        idiag_lambdam=0;idiag_lambdamax=0;idiag_lambdamin=0 
+!
+        idiag_divfluxm=0;idiag_divflux2m=0
+        idiag_divfluxmin=0;idiag_divfluxmax=0
       endif
 !
       do iname=1,nname
-        !call parse_name(iname,cname(iname),cform(iname),'potturbm',idiag_potturbm)
-        !call parse_name(iname,cname(iname),cform(iname),'potturbmax',idiag_potturbmax)
-        !call parse_name(iname,cname(iname),cform(iname),'potturbmin',idiag_potturbmin)
-        !call parse_name(iname,cname(iname),cform(iname),'gpotturbx2m',idiag_gpotturbx2m)
-        !call parse_name(iname,cname(iname),cform(iname),'gpotturby2m',idiag_gpotturby2m)
-        !call parse_name(iname,cname(iname),cform(iname),'gpotturbz2m',idiag_gpotturbz2m)
+        call parse_name(iname,cname(iname),cform(iname),'kappam',idiag_kappam)
+        call parse_name(iname,cname(iname),cform(iname),'kappamax',idiag_kappamax)
+        call parse_name(iname,cname(iname),cform(iname),'kappamin',idiag_kappamin)
+!
+        call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
+        call parse_name(iname,cname(iname),cform(iname),'lambdamax',idiag_lambdamax)
+        call parse_name(iname,cname(iname),cform(iname),'lambdamin',idiag_lambdamin)
+!
+        call parse_name(iname,cname(iname),cform(iname),'divfluxm',idiag_divfluxm)
+        call parse_name(iname,cname(iname),cform(iname),'divflux2m',idiag_divflux2m)
+        call parse_name(iname,cname(iname),cform(iname),'divfluxmax',idiag_divfluxmax)
+        call parse_name(iname,cname(iname),cform(iname),'divfluxmin',idiag_divfluxmin)
       enddo
 !
       if (lwr) then
-        !write(3,*) 'i_potturbm=',idiag_potturbm
-        !write(3,*) 'i_potturbmax=',idiag_potturbmax
-        !write(3,*) 'i_potturbmin=',idiag_potturbmin
-        !write(3,*) 'i_gpotturbx2m=',idiag_gpotturbx2m
-        !write(3,*) 'i_gpotturby2m=',idiag_gpotturby2m
-        !write(3,*) 'i_gpotturbz2m=',idiag_gpotturbz2m
+        write(3,*) 'i_kappam=',idiag_kappam
+        write(3,*) 'i_kappamax=',idiag_kappamax
+        write(3,*) 'i_kappamin=',idiag_kappamin
+!
+        write(3,*) 'i_lambdam=',idiag_lambdam
+        write(3,*) 'i_lambdamax=',idiag_lambdamax
+        write(3,*) 'i_lambdamin=',idiag_lambdamin
+!
+        write(3,*) 'i_divfluxm=',idiag_divfluxm
+        write(3,*) 'i_divflux2m=',idiag_divflux2m
+        write(3,*) 'i_divfluxmax=',idiag_divfluxmax
+        write(3,*) 'i_divfluxmin=',idiag_divfluxmin
       endif
 !
     endsubroutine rprint_special
@@ -430,12 +465,18 @@ endsubroutine read_special_run_pars
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - q%divflux*p%rho1*p%TT1
 !
       if (ldiagnos) then 
-        !if (idiag_potturbm/=0)   call sum_mn_name(q%potturb,idiag_potturbm)
-        !if (idiag_potturbmax/=0) call max_mn_name(q%potturb,idiag_potturbmax)
-        !if (idiag_potturbmin/=0) call max_mn_name(-q%potturb,idiag_potturbmin,lneg=.true.)
-        !f (idiag_gpotturbx2m/=0) call sum_mn_name(q%gpotturb(:,1)**2,idiag_gpotturbx2m)
-        !if (idiag_gpotturby2m/=0) call sum_mn_name(q%gpotturb(:,2)**2,idiag_gpotturby2m)
-        !if (idiag_gpotturbz2m/=0) call sum_mn_name(q%gpotturb(:,3)**2,idiag_gpotturbz2m)
+        if (idiag_kappam/=0)    call sum_mn_name(q%kappa,idiag_kappam)
+        if (idiag_kappamax/=0)  call max_mn_name(q%kappa,idiag_kappamax)
+        if (idiag_kappamin/=0)  call max_mn_name(-q%kappa,idiag_kappamin,lneg=.true.)
+!
+        if (idiag_lambdam/=0)   call sum_mn_name(q%lambda,idiag_lambdam)
+        if (idiag_lambdamax/=0) call max_mn_name(q%lambda,idiag_lambdamax)
+        if (idiag_lambdamin/=0) call max_mn_name(-q%lambda,idiag_lambdamin,lneg=.true.)
+!
+        if (idiag_divfluxm/=0)  call sum_mn_name(q%divflux,idiag_divfluxm)
+        if (idiag_divflux2m/=0) call sum_mn_name(q%divflux**2,idiag_divflux2m)
+        if (idiag_divfluxmax/=0)  call max_mn_name(q%divflux,idiag_divfluxmax)
+        if (idiag_divfluxmin/=0)  call max_mn_name(-q%divflux,idiag_divfluxmin,lneg=.true.)
       endif
 !
       call keep_compiler_quiet(f)
