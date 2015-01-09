@@ -719,8 +719,8 @@ module Particles_map
           call mpirecv_wait_real(ab_recv(:,:,:,iblock1:iblock2),&
                (/mxb,myb,mzb,nblock_recv/),&
                iproc_recv,&
-               ireq,&
-               tag_id+iproc_recv)
+               tag_id+iproc_recv,&
+               ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
@@ -757,8 +757,8 @@ module Particles_map
           call mpisend_wait_real(ab_send(:,:,:,ibrick1_send:ibrick2_send),&
                (/mxb,myb,mzb,nbrick_send/),&
                iproc_send,&
-               ireq,&
-               tag_id+iproc)
+               tag_id+iproc,&
+               ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
           ibrick1_send=ibrick2_send+1
@@ -896,8 +896,8 @@ module Particles_map
           call mpirecv_wait_real(ab_recv(:,:,:,ibrick1_recv:ibrick2_recv),&
                (/mxb,myb,mzb,nbrick_recv/),&
                iproc_recv,&
-               ireq,&
-               tag_id+iproc_recv)
+               tag_id+iproc_recv,&
+               ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
           ibrick1_recv=ibrick2_recv+1
@@ -934,8 +934,8 @@ module Particles_map
           call mpisend_wait_real(ab_send(:,:,:,iblock1_send:iblock2_send),&
                (/mxb,myb,mzb,nblock_send/),&
                iproc_send,&
-               ireq,&
-               tag_id+iproc)
+               tag_id+iproc,&
+               ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
           iblock1_send=iblock2_send+1
