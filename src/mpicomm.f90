@@ -1909,7 +1909,7 @@ module Mpicomm
 !
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
 !
-      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ireq, mpierr)
 !
     endsubroutine mpirecv_wait_real_arr4
