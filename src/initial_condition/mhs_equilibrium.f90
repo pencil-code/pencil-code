@@ -217,7 +217,7 @@ module InitialCondition
 !  Midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          lnrhomid=log(rho0)+p*log(rr_cyl) 
+          lnrhomid=log(rho0)+p*log(rr_cyl/r_ref) 
           f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+lnrhomid
 !
 !  Vertical stratification
@@ -489,7 +489,7 @@ module InitialCondition
       do m=1,my
         do n=1,mz
           call get_radial_distance(rr_sph,rr_cyl)
-          cs2=cs20*rr_cyl**q
+          cs2=cs20*(rr_cyl/r_ref)**q
 !
 !  Store cs2 in one of the free slots of the f-array
 !
