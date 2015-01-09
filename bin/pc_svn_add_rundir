@@ -12,6 +12,7 @@
 #   newrundir>  cvs-add-rundir
 set rundir = `pwd`
 set commit = 0
+set extended = 0
 set cmdname = $0
 set cmdname = $cmdname:t
 
@@ -22,12 +23,24 @@ if ($#argv > 0) then
   if (("$1" == "-c") || ("$1" == "--commit")) then
     set commit = 1
   endif
+  if (("$1" == "-x") || ("$1" == "--extended")) then
+    set extended = 1
+  endif
 endif
 
 (cd ..; svn add -N $rundir:t)
 svn add *.in
 svn add -N src
 svn propset svn:keywords "Id" *.in
+
+if ($extended) then
+    svn add k.dat
+    svn add -N ./data/
+    svn add ./data/*.nml
+    svn add ./data/time_series.dat
+    svn add ./data/pdim.dat
+    svn add ./data/dim.dat
+endif
 
 svn add src/*.local
 svn propset svn:keywords "Id" src/*.local
@@ -46,5 +59,7 @@ echo "  $cmdname [-c|--commit]"
 echo "Add the current run directory to the SVN repository. Assumes that the"
 echo "directory above (..) is already under SVN."
 echo "With -c (--commit) do 'svn commit', too."
+echo "With -x (-extended) add the data directory, the timeseries, and "
+echo "    namelists and dimensional data for basic postprocessing"
 
 # End of file svn-add-rundir
