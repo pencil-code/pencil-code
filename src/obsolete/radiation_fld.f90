@@ -1,28 +1,30 @@
 ! $Id$
-
+!
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
 !  (still experimental) module radiation_ray.f90 for a more
 !  sophisticated approach.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 5
-! MAUX CONTRIBUTION 0
+! CPARAM logical, parameter :: lradiation = .true.
+!
+! MVAR CONTRIBUTION 1
+! MAUX CONTRIBUTION 4
 !
 !***************************************************************
-
-
 module Radiation
-
+!
   use Cparam
   use Messages
-
+  use General, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'radiation.h'
-
+!
   real :: c_gam=100
   real :: opas=1e-8
   real :: mbar=1.  !mbar*m_unit in to not get to big numbers
@@ -34,26 +36,22 @@ module Radiation
   real :: inflow=2
   real, dimension(mx,my,mz) :: DFF_new=0. ! Nils, do we need to initialize here?
                                           ! this makes compilation much slower
-
-  ! init parameteres
+!
   character (len=labellen) :: initrad='equil',pertee='none'
-
-  ! run parameters
   character (len=labellen) :: flim='LP'
-
-  ! input parameters
+!
   namelist /radiation_init_pars/ &
        initrad,c_gam,opas,kappa_es_radiation,mbar,k_B_radiation,a_SB,amplee,pertee,ampl_pert
-  ! run parameters
+!
   namelist /radiation_run_pars/ &
        c_gam,opas,kappa_es_radiation,mbar,k_B_radiation,a_SB,flim,inflow
-
-  ! other variables (needs to be consistent with reset list below)
+!
+! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0
-
+!
   contains
-
 !***********************************************************************
     subroutine register_radiation()
 !
@@ -65,46 +63,39 @@ module Radiation
       use Cdata
       use Mpicomm
       use Sub
+      use FArrayManager
 !
       logical, save :: first=.true.
 !
       if (.not. first) call stop_it('register_rad called twice')
       first = .false.
 !
-      lradiation = .true.
       lradiation_fld = .true.
 !
-      ie = nvar+1
-      iff = nvar+2
-      ifx = iff
-      ify = iff+1
-      ifz = iff+2
-      nvar = nvar+4             ! added 4 variables
+      call farray_register_pde('Erad',iErad)
+      call farray_register_auxiliary('KR_FRad',iKR_Frad,vector=3)
+      iKR_Fradx = iKR_Frad
+      iKR_Frady = iKR_Frad+1
+      iKR_Fradz = iKR_Frad+2
 !
-      idd=nvar+1
-      nvar=nvar+1   !added extra variable due to diffusion coefficient
+      call farray_register_auxiliary('dd',idd)
 !
       if ((ip<=8) .and. lroot) then
         print*, 'Register_rad:  nvar = ', nvar
-        print*, 'ie,iff,ifx,ify,ifz = ', ie,iff,ifx,ify,ifz
+        print*, 'iErad,iKR_Frad,iKR_Fradx,iKR_Frady,iKR_Fradz = ', iErad,iKR_Frad,iKR_Fradx,iKR_Frady,iKR_Fradz
       endif
 !
 !  Put variable names in array
 !
-      varname(ie)  = 'e'
-      varname(ifx) = 'fx'
-      varname(ify) = 'fy'
-      varname(ifz) = 'fz'
+      varname(iErad)  = 'Erad'
+      varname(iKR_Fradx) = 'fx'
+      varname(iKR_Frady) = 'fy'
+      varname(iKR_Fradz) = 'fz'
 !
-!  identify version number
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_rad: nvar > mvar')
-      endif
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -119,8 +110,9 @@ module Radiation
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(ALWAYS_FALSE) print*,f !(keep compiler quiet)
-    endsubroutine radtransfer
+      call keep_compiler_quiet(f)
+!
+   endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
 !
@@ -145,7 +137,9 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(ALWAYS_FALSE) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine radiative_cooling
 !***********************************************************************
@@ -161,11 +155,13 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(ALWAYS_FALSE) print*,f,df,p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine radiative_pressure
 !***********************************************************************
-    subroutine init_rad(f,xx,yy,zz)
+    subroutine init_rad(f)!,xx,yy,zz)
 !
 !  initialise radiation; called from start.f90
 !  We have an init parameter (initrad) to stear radiation i.c. independently.
@@ -178,34 +174,34 @@ module Radiation
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      !real, dimension (mx,my,mz)      :: xx,yy,zz
       real :: nr1,nr2
       integer :: l12
 !
       select case (initrad)
 
       case ('zero', '0') 
-         f(:,:,:,ifx:ifz) = 0.
-         f(:,:,:,ie     ) = 1.
-      case ('gaussian-noise','1'); call gaunoise(amplee,f,iE)
+         f(:,:,:,iKR_Fradx:iKR_Fradz) = 0.
+         f(:,:,:,iErad     ) = 1.
+      case ('gaussian-noise','1'); call gaunoise(amplee,f,iErad)
       case ('equil','2'); call init_equil(f)
-      case ('cos', '3')
-         f(:,:,:,ie) = -amplee*(cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)-1)
+      !case ('cos', '3')
+      !   f(:,:,:,ie) = -amplee*(cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)-1)
       case ('step', '4')
          l12=(l1+l2)/2
-         f(1    :l12,:,:,ie) = 1.
-         f(l12+1: mx,:,:,ie) = 2.
+         f(1    :l12,:,:,iErad) = 1.
+         f(l12+1: mx,:,:,iErad) = 2.
       case ('substep', '5')
          l12=(l1+l2)/2
          nr1=1.
          nr2=2.
-         f(1    :l12-2,:,:,ie) = nr1
-         f(l12-1      ,:,:,ie) = ((nr1+nr2)/2+nr1)/2
-         f(l12+0      ,:,:,ie) = (nr1+nr2)/2
-         f(l12+1      ,:,:,ie) = ((nr1+nr2)/2+nr2)/2
-         f(l12+2: mx  ,:,:,ie) = nr2
-      case ('lamb', '6')
-         f(:,:,:,ie) = 2+(sin(2*pi*xx)*sin(2*pi*zz))
+         f(1    :l12-2,:,:,iErad) = nr1
+         f(l12-1      ,:,:,iErad) = ((nr1+nr2)/2+nr1)/2
+         f(l12+0      ,:,:,iErad) = (nr1+nr2)/2
+         f(l12+1      ,:,:,iErad) = ((nr1+nr2)/2+nr2)/2
+         f(l12+2: mx  ,:,:,iErad) = nr2
+      !case ('lamb', '6')
+      !   f(:,:,:,iErad) = 2+(sin(2*pi*xx)*sin(2*pi*zz))
       case default
         !
         !  Catch unknown values
@@ -221,9 +217,9 @@ module Radiation
       case ('none', '0') 
       case ('left','1')
          l12=(l1+l2)/2
-         f(l1:l12,m1:m2,n1:n2,ie) = ampl_pert*f(l1:l12,m1:m2,n1:n2,ie)
+         f(l1:l12,m1:m2,n1:n2,iErad) = ampl_pert*f(l1:l12,m1:m2,n1:n2,iErad)
       case ('whole','2')
-         f(:,m1:m2,n1:n2,ie) = ampl_pert*f(:,m1:m2,n1:n2,ie)
+         f(:,m1:m2,n1:n2,iErad) = ampl_pert*f(:,m1:m2,n1:n2,iErad)
       case ('ent','3') 
          !
          !  For perturbing the entropy after haveing found the 
@@ -240,7 +236,6 @@ module Radiation
          
       endselect
 !
-      if(ALWAYS_FALSE) print*,yy !(keep compiler quiet)
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()
@@ -267,7 +262,7 @@ module Radiation
 ! 
       logical, dimension (npencils) :: lpencil_in
 ! 
-      if (ALWAYS_FALSE) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 ! 
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
@@ -283,7 +278,8 @@ module Radiation
 !      
       intent(in) :: f,p
 !
-      if (ALWAYS_FALSE) print*, f !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 ! 
     endsubroutine calc_pencils_radiation
 !********************************************************************
@@ -297,6 +293,8 @@ module Radiation
       use Sub
       use Cdata
       use Mpicomm
+      use Diagnostics
+      use Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -315,18 +313,12 @@ module Radiation
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE dee_dt'
-      if (headtt) then
-        call identify_bcs('e ',ie )
-        call identify_bcs('fx',ifx)
-        call identify_bcs('fy',ify)
-        call identify_bcs('fz',ifz)
-      endif
 !
 !  some abbreviations and physical quantities
 !
 !      if (.NOT. ldensity) rho1=1  ! now set in equ.f90
       gamma_m1=gamma-1
-      E_rad=f(l1:l2,m,n,iE)
+      E_rad=f(l1:l2,m,n,iErad)
       if (lentropy) then
          E_gas=1.5*k_B_radiation/(p%rho1*mbar*p%TT1)
          kappa_abs=opas*p%rho**(9./2)*E_gas**(-7./2)
@@ -341,9 +333,9 @@ module Radiation
 !  calculating some values needed for momentum equation
 !
       Edivu=E_rad*p%divu
-      call grad(f,iE,gradE)
+      call grad(f,iErad,gradE)
       call dot_mn(p%uu,gradE,ugradE)
-      call div(f,iff,divF)
+      call div(f,iKR_Frad,divF)
 !
 !  Flux-limited diffusion app.
 !
@@ -351,18 +343,18 @@ module Radiation
 !
 !  calculate graduP
 !
-      call multmm_sc_mn(P_tens,p%uij,graduP)
+      call multmm_sc(P_tens,p%uij,graduP)
 !
 !  calculate dE/dt
 !
-      df(l1:l2,m,n,iE)=df(l1:l2,m,n,iE)-ugradE-Edivu-divF-graduP+cooling
+      df(l1:l2,m,n,iErad)=df(l1:l2,m,n,iErad)-ugradE-Edivu-divF-graduP+cooling
 !
 !  add (kappa F)/c to momentum equation
 !
       if (lhydro) then
-         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+kappa*f(l1:l2,m,n,iFx)/c_gam
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+kappa*f(l1:l2,m,n,iFy)/c_gam
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+kappa*f(l1:l2,m,n,iFz)/c_gam
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+kappa*f(l1:l2,m,n,iKR_Frady)/c_gam
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+kappa*f(l1:l2,m,n,iKR_Frady)/c_gam
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+kappa*f(l1:l2,m,n,iKR_Fradz)/c_gam
       endif
 !
 !  add cooling to entropy equation
@@ -384,7 +376,7 @@ module Radiation
 !  Calculate diagnostic values
 !
       if (ldiagnos) then
-        f2=f(l1:l2,m,n,ifx)**2+f(l1:l2,m,n,ify)**2+f(l1:l2,m,n,ifz)**2
+        f2=f(l1:l2,m,n,iKR_Fradx)**2+f(l1:l2,m,n,iKR_Frady)**2+f(l1:l2,m,n,iKR_Fradz)**2
         if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
         if (idiag_frms/=0) call sum_mn_name(f2,idiag_frms,lsqrt=.true.)
         if (idiag_fmax/=0) call max_mn_name(f2,idiag_fmax,lsqrt=.true.)
@@ -400,7 +392,7 @@ module Radiation
          !
          !  Speed of sound
          !
-         UUmax=max(UUmax,c_gam)
+         advec_crad2=c_gam
          !
          !  Adding extra time step criterion due to the stiffness in the 
          !  radiative entropy equation
@@ -408,7 +400,7 @@ module Radiation
          if (lentropy) then
             c_entr=2*gamma_m1**4*p%rho1**(4*gamma_m1)/(p%TT1*c_gam*kappa_abs*a_SB*4*gamma)
             c_entr=dxmin/c_entr
-            UUmax=max(UUmax,maxval(c_entr))
+            advec_crad2=max(advec_crad2,maxval(c_entr))
          endif
       endif
 !
@@ -464,6 +456,7 @@ module Radiation
 !
       use Cdata
       use Sub
+      use Diagnostics
 !
       integer :: iname
       logical :: lreset,lwr
@@ -506,10 +499,10 @@ module Radiation
         write(3,*) 'i_Egas_rms=',idiag_Egas_rms
         write(3,*) 'i_Egas_max=',idiag_Egas_max
         write(3,*) 'nname=',nname
-        write(3,*) 'ie=',ie
-        write(3,*) 'ifx=',ifx
-        write(3,*) 'ify=',ify
-        write(3,*) 'ifz=',ifz
+        write(3,*) 'iErad=',iErad
+        write(3,*) 'iKR_Fradx=',iKR_Fradx
+        write(3,*) 'iKR_Frady=',iKR_Frady
+        write(3,*) 'iKR_Fradz=',iKR_Fradz
       endif
 !
     endsubroutine rprint_radiation
@@ -523,7 +516,8 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (ALWAYS_FALSE) print*, f(1,1,1,1), slices%ready
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
 !
     endsubroutine get_slices_radiation
 !***********************************************************************
@@ -546,7 +540,6 @@ module Radiation
       real, dimension (nx) :: f_sc,kappa,divF,del2E
       integer :: i,j,teller
 !
-
       call dot2_mn(gradE,absgradE)
       lgamma=rho1/kappa
       absgradE=sqrt(absgradE)
@@ -574,8 +567,8 @@ module Radiation
          print*,'There are no such flux-limiter:', flim
       end if
       f_sc=DFF+DFF**2*RF**2
-      call multvs_mn(gradE,1./absgradE,n_vec)
-      call multvv_mat_mn(n_vec,n_vec,n_mat)
+      call multvs(gradE,1./absgradE,n_vec)
+      call multvv_mat(n_vec,n_vec,n_mat)
 !
 !  calculate P_tens
 !
@@ -606,20 +599,19 @@ module Radiation
 !
 !  calculate the flux
 !
-      call multvs_mn(gradE,-DFF*rho1*c_gam/kappa,tmp)
-      f(l1:l2,m,n,ifx:ifz)=tmp
-      df(l1:l2,m,n,ifx:ifz)=0
+      call multvs(gradE,-DFF*rho1*c_gam/kappa,tmp)
+      f(l1:l2,m,n,iKR_Fradx:iKR_Fradz)=tmp
 !
       DFF_new(l1:l2,m,n)=DFF*c_gam*rho1/kappa
       call grad(f,idd,gradDFF) 
-      call del2(f,ie,del2E)
+      call del2(f,iErad,del2E)
       call dot_mn(gradDFF,gradE,var1)
       divF=-f(l1:l2,m,n,idd)*del2E-var1
 !
 !  Time step criterion due to diffusion
 !
       diffus_speed=4*c_gam*rho1*DFF/(3*kappa*dxmin)
-      UUmax=max(UUmax,maxval(diffus_speed))
+      diffus_chi=max(diffus_chi,maxval(diffus_speed))
 !
     end subroutine flux_limiter
 !***********************************************************************
@@ -631,7 +623,7 @@ module Radiation
 !  18-jul-02/nils: coded
 !
       use Cdata
-      use Density, only:cs20, lnrho0,gamma
+      use EquationOfState, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: cs2,lnrho,gamma_m1,TT1,source
@@ -644,7 +636,7 @@ module Radiation
             cs2=cs20*exp(gamma_m1*(lnrho-lnrho0)+gamma*f(:,i,j,iss))
             TT1=gamma_m1/cs2
             source=a_SB*TT1**(-4)
-            f(:,i,j,ie) = source
+            f(:,i,j,iErad) = source
          enddo
       enddo
 !
@@ -664,14 +656,14 @@ module Radiation
       integer :: i
 !
       if (topbot=='bot') then
-         !f(1:l1-1,:,:,ie) = inflow
+         !f(1:l1-1,:,:,iErad) = inflow
          do i=1,nghost
-            f(l1-i,:,:,ie) = 2*inflow - f(l1+i,:,:,ie)
+            f(l1-i,:,:,iErad) = 2*inflow - f(l1+i,:,:,iErad)
          enddo
       else
-         !f(l2+1:mx,:,:,ie) = inflow
+         !f(l2+1:mx,:,:,iErad) = inflow
          do i=1,nghost
-            f(l2+i,:,:,ie) = 2*inflow - f(l2-i,:,:,ie)
+            f(l2+i,:,:,iErad) = 2*inflow - f(l2-i,:,:,iErad)
          enddo
       endif
 !
@@ -692,22 +684,18 @@ module Radiation
 !
       if (topbot=='bot') then 
          do i=1,nghost
-           ! f(i,:,:,ie) = 1 
-            f(l1-i,:,:,ie) = 2*f(l1,:,:,ie) - f(l1+i,:,:,ie)  
+           ! f(i,:,:,iErad) = 1 
+            f(l1-i,:,:,iErad) = 2*f(l1,:,:,iErad) - f(l1+i,:,:,iErad)  
          enddo
       else
          do i=1,nghost
-            !f(l2+i,:,:,ie) =  1
-            f(l2+i,:,:,ie) = 2*f(l2,:,:,ie) - f(l2-i,:,:,ie) 
+            !f(l2+i,:,:,iErad) =  1
+            f(l2+i,:,:,iErad) = 2*f(l2,:,:,iErad) - f(l2-i,:,:,iErad) 
          enddo
       endif
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************
-
-
-
-
 endmodule Radiation
 
 
