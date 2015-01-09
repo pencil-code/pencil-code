@@ -65,7 +65,7 @@ module Dustdensity
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot
-  real :: nd_reuni,init_x1, init_x2, a0, a1
+  real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
