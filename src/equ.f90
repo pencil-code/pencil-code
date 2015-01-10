@@ -39,7 +39,6 @@ module Equ
       use Dustvelocity
       use Dustdensity
       use Energy
-      use Energy
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
                          forcing_continuous
@@ -316,7 +315,7 @@ module Equ
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
-      if (lentropy)               call calc_lenergy_pars(f)
+      if (lenergy)                call calc_lenergy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
@@ -599,7 +598,7 @@ module Equ
 !
 !  Add radiative cooling and radiative pressure (for ray method)
 !
-        if (lradiation_ray.and.(lentropy.or.ltemperature)) then
+        if (lradiation_ray.and.lenergy) then
           call radiative_cooling(f,df,p)
           call radiative_pressure(f,df,p)
         endif
@@ -1071,7 +1070,7 @@ module Equ
         if (lshear)           print*, 'advec_shear=',advec_shear
         if (lmagnetic)        print*, 'advec_hall =',advec_hall
         if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
-        if (lentropy)         print*, 'advec_cs2  =',advec_cs2
+        if (lenergy)          print*, 'advec_cs2  =',advec_cs2
         if (lmagnetic)        print*, 'advec_va2  =',advec_va2
         if (lradiation)       print*, 'advec_crad2=',advec_crad2
         if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
@@ -1196,17 +1195,17 @@ module Equ
 !
 !  18-jul-14/ccyang: coded.
 !
-      use Density, only: dynamical_diffusion
-      use Magnetic, only: dynamical_resistivity
-      use Energy, only: dynamical_thermal_diffusion
+      use Density,   only: dynamical_diffusion
+      use Magnetic,  only: dynamical_resistivity
+      use Energy,    only: dynamical_thermal_diffusion
       use Viscosity, only: dynamical_viscosity
 !
       real, intent(in) :: us
 !
-      if (ldensity) call dynamical_diffusion(us)
+      if (ldensity)                      call dynamical_diffusion(us)
       if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(us)
-      if (lenergy) call dynamical_thermal_diffusion(us)
-      if (lviscosity) call dynamical_viscosity(us)
+      if (lenergy)                       call dynamical_thermal_diffusion(us)
+      if (lviscosity)                    call dynamical_viscosity(us)
 !
     endsubroutine set_dyndiff_coeff
 !***********************************************************************
