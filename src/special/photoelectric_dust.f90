@@ -157,7 +157,7 @@ module Special
           lpenc_requested(i_rhodsum)=.true.
           lpenc_requested(i_glnrhodsum)=.true.
         else          
-          call fatal_error("pencils_criteria_special",&
+          call fatal_error("pencil_criteria_special",&
                "the world is flat, and we never got here")
         endif
       endif  
