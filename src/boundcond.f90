@@ -1995,9 +1995,10 @@ module Boundcond
       real, dimension(mx) :: rad,za,zg,H,lnrho
       integer :: i,in,j
 !
-      if (j/=irho) call fatal_error("bc_stratified_y","This boundary condition is specific for density")
-      if (.not.ldensity_nolog) call fatal_error("bc_stratified_y","This boudary condition has not been coded for log density yet")
-      if (.not.lspherical_coords) call fatal_error("bc_stratified_y","This boudary condition is for spherical coordinates only")
+      if (.not.(j==irho.or.j==ilnrho)) &
+           call fatal_error("bc_stratified_y","This boundary condition is specific for density")
+      if (.not.lspherical_coords) &
+           call fatal_error("bc_stratified_y","This boudary condition is for spherical coordinates only")
 !
       rad=x
 !
@@ -2008,8 +2009,13 @@ module Boundcond
         do i=1,nghost
           zg=rad*costh(m1-i)
           do in=1,mz
-            lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
-            f(:,m1-i,in,j) = exp(lnrho)
+            if (ldensity_nolog) then 
+              lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,m1-i,in,j) = exp(lnrho)
+            else
+              lnrho = f(:,m1,in,j) - (zg**2-za**2)/(2*H**2)
+              f(:,m1-i,in,j) = lnrho
+            endif
           enddo
         enddo
 !
@@ -2019,8 +2025,13 @@ module Boundcond
         do i=1,nghost
           zg=rad*costh(m2+i)
           do in=1,mz
-            lnrho = alog(f(:,m2,in,j)) - (zg**2-za**2)/(2*H**2)
-            f(:,m2+i,in,j) = exp(lnrho)
+            if (ldensity_nolog) then
+              lnrho = alog(f(:,m2,in,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,m2+i,in,j) = exp(lnrho)
+            else
+              lnrho = f(:,m2,in,j) - (zg**2-za**2)/(2*H**2)
+              f(:,m2+i,in,j) = lnrho
+            endif
           enddo
         enddo
 !
