@@ -256,24 +256,24 @@ module Mpicomm
     module procedure unmap_from_pencil_yz_4D
   endinterface
 !
-  interface mpirecv_wait_real
-    module procedure mpirecv_wait_real_arr
-    module procedure mpirecv_wait_real_arr4
+  interface mpirecv_nonblock_real
+    module procedure mpirecv_nonblock_real_arr
+    module procedure mpirecv_nonblock_real_arr4
   endinterface
 !
-  interface mpisend_wait_real
-    module procedure mpisend_wait_real_arr
-    module procedure mpisend_wait_real_arr4
+  interface mpisend_nonblock_real
+    module procedure mpisend_nonblock_real_arr
+    module procedure mpisend_nonblock_real_arr4
   endinterface
 !
-  interface mpirecv_wait_int
-    module procedure mpirecv_wait_int_scl
-    module procedure mpirecv_wait_int_arr
+  interface mpirecv_nonblock_int
+    module procedure mpirecv_nonblock_int_scl
+    module procedure mpirecv_nonblock_int_arr
   endinterface
 !
-  interface mpisend_wait_int
-    module procedure mpisend_wait_int_scl
-    module procedure mpisend_wait_int_arr
+  interface mpisend_nonblock_int
+    module procedure mpisend_nonblock_int_scl
+    module procedure mpisend_nonblock_int_arr
   endinterface
 !
 !  interface mpigather_and_out
@@ -666,7 +666,7 @@ module Mpicomm
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
-    subroutine mpirecv_wait_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
@@ -674,9 +674,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id, ireq
 !
-    endsubroutine mpirecv_wait_real_arr
+    endsubroutine mpirecv_nonblock_real_arr
 !***********************************************************************
-    subroutine mpirecv_wait_real_arr4(bcast_array,nb,proc_src,ireq,tag_id)
+    subroutine mpirecv_nonblock_real_arr4(bcast_array,nb,proc_src,ireq,tag_id)
 !
       integer, dimension(4) :: nb
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
@@ -684,9 +684,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
 !
-    endsubroutine mpirecv_wait_real_arr4
+    endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
-    subroutine mpirecv_wait_int_scl(bcast_array,nb,proc_src,ireq,tag_id)
+    subroutine mpirecv_nonblock_int_scl(bcast_array,nb,proc_src,ireq,tag_id)
 !
       integer :: nb
       integer :: bcast_array
@@ -694,9 +694,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
 !
-    endsubroutine mpirecv_wait_int_scl
+    endsubroutine mpirecv_nonblock_int_scl
 !***********************************************************************
-    subroutine mpirecv_wait_int_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_int_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
@@ -704,9 +704,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id, ireq
 !
-    endsubroutine mpirecv_wait_int_arr
+    endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
-    subroutine mpisend_wait_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
@@ -714,9 +714,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, ireq
 !
-    endsubroutine mpisend_wait_real_arr
+    endsubroutine mpisend_nonblock_real_arr
 !***********************************************************************
-    subroutine mpisend_wait_int_scl(bcast_array,nb,proc_rec,ireq,tag_id)
+    subroutine mpisend_nonblock_int_scl(bcast_array,nb,proc_rec,ireq,tag_id)
 !
       integer :: nb
       integer :: bcast_array
@@ -724,9 +724,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
 !
-    endsubroutine mpisend_wait_int_scl
+    endsubroutine mpisend_nonblock_int_scl
 !***********************************************************************
-    subroutine mpisend_wait_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,iref)
+    subroutine mpisend_nonblock_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,iref)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
@@ -734,9 +734,9 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, iref
 !
-    endsubroutine mpisend_wait_int_arr
+    endsubroutine mpisend_nonblock_int_arr
 !***********************************************************************
-    subroutine mpisend_wait_real_arr4(bcast_array,nb,proc_rec,ireq,tag_id)
+    subroutine mpisend_nonblock_real_arr4(bcast_array,nb,proc_rec,ireq,tag_id)
 !
       integer, dimension(4) :: nb
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
@@ -744,7 +744,7 @@ module Mpicomm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
 !
-    endsubroutine mpisend_wait_real_arr4
+    endsubroutine mpisend_nonblock_real_arr4
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,sendcnt,proc_dest,sendtag, &
       recv_array,recvcnt,proc_src,recvtag)

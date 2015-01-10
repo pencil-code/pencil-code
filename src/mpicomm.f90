@@ -290,25 +290,25 @@ module Mpicomm
     module procedure unmap_from_pencil_yz_4D
   endinterface
 !
-  interface mpirecv_wait_real
-    module procedure mpirecv_wait_real_arr
-    module procedure mpirecv_wait_real_arr2
-    module procedure mpirecv_wait_real_arr4
+  interface mpirecv_nonblock_real
+    module procedure mpirecv_nonblock_real_arr
+    module procedure mpirecv_nonblock_real_arr2
+    module procedure mpirecv_nonblock_real_arr4
   endinterface
 !
-  interface mpisend_wait_real
-    module procedure mpisend_wait_real_arr
-    module procedure mpisend_wait_real_arr4
+  interface mpisend_nonblock_real
+    module procedure mpisend_nonblock_real_arr
+    module procedure mpisend_nonblock_real_arr4
   endinterface
 !
-  interface mpirecv_wait_int
-    module procedure mpirecv_wait_int_scl
-    module procedure mpirecv_wait_int_arr
+  interface mpirecv_nonblock_int
+    module procedure mpirecv_nonblock_int_scl
+    module procedure mpirecv_nonblock_int_arr
   endinterface
 !
-  interface mpisend_wait_int
-    module procedure mpisend_wait_int_scl
-    module procedure mpisend_wait_int_arr
+  interface mpisend_nonblock_int
+    module procedure mpisend_nonblock_int_scl
+    module procedure mpisend_nonblock_int_arr
   endinterface
 !
 !  interface mpigather_and_out
@@ -1824,7 +1824,7 @@ module Mpicomm
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpirecv_wait_int_scl(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_int_scl(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive integer scalar from other processor, with non-blocking communication.
 !
@@ -1837,9 +1837,9 @@ module Mpicomm
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpirecv_wait_int_scl
+    endsubroutine mpirecv_nonblock_int_scl
 !***********************************************************************
-    subroutine mpirecv_wait_int_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_int_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive integer array from other processor, with non-blocking communication.
 !
@@ -1852,9 +1852,9 @@ module Mpicomm
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpirecv_wait_int_arr
+    endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
-    subroutine mpirecv_wait_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array from other processor, with non-blocking communication.
 !
@@ -1869,9 +1869,9 @@ module Mpicomm
       call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpirecv_wait_real_arr
+    endsubroutine mpirecv_nonblock_real_arr
 !***********************************************************************
-    subroutine mpirecv_wait_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array(:,:) from other processor, with non-blocking communication.
 !
@@ -1888,9 +1888,9 @@ module Mpicomm
       call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpirecv_wait_real_arr2
+    endsubroutine mpirecv_nonblock_real_arr2
 !***********************************************************************
-    subroutine mpirecv_wait_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array(:,:,:,:) from other processor, with non-blocking communication.
 !
@@ -1908,9 +1908,9 @@ module Mpicomm
       call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpirecv_wait_real_arr4
+    endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
-    subroutine mpisend_wait_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send real array to other processor, with non-blocking communication.
 !
@@ -1923,9 +1923,9 @@ module Mpicomm
       call MPI_ISEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpisend_wait_real_arr
+    endsubroutine mpisend_nonblock_real_arr
 !***********************************************************************
-    subroutine mpisend_wait_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send real array(:,:,:,:) to other processor, with non-blocking communication.
 !
@@ -1941,9 +1941,9 @@ module Mpicomm
       call MPI_ISEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
           tag_id, MPI_COMM_WORLD,ireq,mpierr)
 !
-    endsubroutine mpisend_wait_real_arr4
+    endsubroutine mpisend_nonblock_real_arr4
 !***********************************************************************
-    subroutine mpisend_wait_int_scl(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_int_scl(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send integer scalar to other processor, with non-blocking communication.
 !
@@ -1956,9 +1956,9 @@ module Mpicomm
       call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpisend_wait_int_scl
+    endsubroutine mpisend_nonblock_int_scl
 !***********************************************************************
-    subroutine mpisend_wait_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send integer array to other processor, with non-blocking communication.
 !
@@ -1971,7 +1971,7 @@ module Mpicomm
       call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
-    endsubroutine mpisend_wait_int_arr
+    endsubroutine mpisend_nonblock_int_arr
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !

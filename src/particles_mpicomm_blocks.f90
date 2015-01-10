@@ -1712,7 +1712,7 @@ module Particles_mpicomm
             print*, 'iproc, ibrick, iproc_foster_brick(ibrick)', &
                 iproc, ibrick, iproc_foster_brick(ibrick)
           endif
-          call mpisend_wait_int(iproc_foster_old(ibrick), 1, &
+          call mpisend_nonblock_int(iproc_foster_old(ibrick), 1, &
               iproc_foster_brick(ibrick), tag_id+ibrick, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1729,7 +1729,7 @@ module Particles_mpicomm
           print*, 'iproc, iblock, iproc_parent_block(iblock)', &
               iproc, iblock, iproc_parent_block(iblock)
         endif
-        call mpirecv_wait_int(iproc_grandparent(iblock), 1, &
+        call mpirecv_nonblock_int(iproc_grandparent(iblock), 1, &
             iproc_parent_block(iblock), tag_id+ibrick_parent_block(iblock), ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -1757,7 +1757,7 @@ module Particles_mpicomm
             print*, 'iproc, ibrick, iproc_foster_old(ibrick)', &
                 iproc, ibrick, iproc_foster_old(ibrick)
           endif
-          call mpisend_wait_int(iproc_foster_brick(ibrick), 1, & 
+          call mpisend_nonblock_int(iproc_foster_brick(ibrick), 1, & 
               iproc_foster_old(ibrick), tag_id+ibrick, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1775,7 +1775,7 @@ module Particles_mpicomm
           print*, 'iproc, iblock, iproc_parent_old(iblock)', &
               iproc, iblock, iproc_parent_old(iblock)
         endif
-        call mpirecv_wait_int(iproc_grandchild(iblock), 1, &
+        call mpirecv_nonblock_int(iproc_grandchild(iblock), 1, &
             iproc_parent_old(iblock), tag_id+ibrick_parent_old(iblock), ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -1822,7 +1822,7 @@ module Particles_mpicomm
               print*, 'iproc, iblock, iproc_recv, tag', &
                   iproc, iblock, iproc_recv, tag_id+ibrick_global
             endif
-            call mpirecv_wait_real(fp(npar_loc_tmp+1:npar_loc_tmp+npar_recv,ipvar), &
+            call mpirecv_nonblock_real(fp(npar_loc_tmp+1:npar_loc_tmp+npar_recv,ipvar), &
                  npar_recv, iproc_recv, tag_id+ibrick_global, ireq)
             nreq=nreq+1
             ireq_array(nreq)=ireq
@@ -1846,7 +1846,7 @@ module Particles_mpicomm
               print*, 'iproc, iblock, iproc_send, tag', &
                   iproc, iblock, iproc_send, tag_id+ibrick_global
             endif
-            call mpisend_wait_real(fp(k1_send:k2_send,ipvar),(k2_send-k1_send+1), &
+            call mpisend_nonblock_real(fp(k1_send:k2_send,ipvar),(k2_send-k1_send+1), &
                  iproc_send, tag_id+ibrick_global, ireq)
             nreq=nreq+1
             ireq_array(nreq)=ireq
@@ -1874,7 +1874,7 @@ module Particles_mpicomm
         if (iproc/=iproc_recv) then
           ibrick_global= &
               iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
-          call mpirecv_wait_int(ipar(npar_loc_tmp+1:npar_loc_tmp+npar_recv), &
+          call mpirecv_nonblock_int(ipar(npar_loc_tmp+1:npar_loc_tmp+npar_recv), &
               npar_recv, iproc_recv, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1891,7 +1891,7 @@ module Particles_mpicomm
         if (iproc_send/=iproc .and. iproc_send/=-1) then
           ibrick_global= &
               iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
-          call mpisend_wait_int(ipar(k1_send:k2_send),(k2_send-k1_send+1), &
+          call mpisend_nonblock_int(ipar(k1_send:k2_send),(k2_send-k1_send+1), &
               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1922,15 +1922,15 @@ module Particles_mpicomm
         iproc_recv=iproc_grandparent(iblock)
         ibrick_global= &
             iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
-        call mpirecv_wait_real(xb_recv(:,iblock), mxb, &
+        call mpirecv_nonblock_real(xb_recv(:,iblock), mxb, &
              iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dx1b_recv(:,iblock), mxb, &
+        call mpirecv_nonblock_real(dx1b_recv(:,iblock), mxb, &
              iproc_recv, tag_id2+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dVol1xb_recv(:,iblock), mxb, &
+        call mpirecv_nonblock_real(dVol1xb_recv(:,iblock), mxb, &
              iproc_recv, tag_id3+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -1943,15 +1943,15 @@ module Particles_mpicomm
         if (iproc_send/=-1) then
           ibrick_global= &
               iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
-          call mpisend_wait_real(xb(:,iblock), mxb, &
+          call mpisend_nonblock_real(xb(:,iblock), mxb, &
                iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dx1b(:,iblock), mxb, &
+          call mpisend_nonblock_real(dx1b(:,iblock), mxb, &
                iproc_send, tag_id2+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dVol1xb(:,iblock), mxb, &
+          call mpisend_nonblock_real(dVol1xb(:,iblock), mxb, &
                iproc_send, tag_id3+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1975,15 +1975,15 @@ module Particles_mpicomm
         iproc_recv=iproc_grandparent(iblock)
         ibrick_global= &
             iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
-        call mpirecv_wait_real(yb_recv(:,iblock), &
+        call mpirecv_nonblock_real(yb_recv(:,iblock), &
             myb, iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dy1b_recv(:,iblock), &
+        call mpirecv_nonblock_real(dy1b_recv(:,iblock), &
             myb, iproc_recv, tag_id2+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dVol1yb_recv(:,iblock), &
+        call mpirecv_nonblock_real(dVol1yb_recv(:,iblock), &
             myb, iproc_recv, tag_id3+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -1996,15 +1996,15 @@ module Particles_mpicomm
         if (iproc_send/=-1) then
           ibrick_global= &
               iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
-          call mpisend_wait_real(yb(:,iblock), myb, &
+          call mpisend_nonblock_real(yb(:,iblock), myb, &
               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dy1b(:,iblock), myb, &
+          call mpisend_nonblock_real(dy1b(:,iblock), myb, &
               iproc_send, tag_id2+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dVol1yb(:,iblock), myb, &
+          call mpisend_nonblock_real(dVol1yb(:,iblock), myb, &
               iproc_send, tag_id3+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -2028,15 +2028,15 @@ module Particles_mpicomm
         iproc_recv=iproc_grandparent(iblock)
         ibrick_global= &
             iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
-        call mpirecv_wait_real(zb_recv(:,iblock), mzb, &
+        call mpirecv_nonblock_real(zb_recv(:,iblock), mzb, &
             iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dz1b_recv(:,iblock), mzb, &
+        call mpirecv_nonblock_real(dz1b_recv(:,iblock), mzb, &
              iproc_recv, tag_id2+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_wait_real(dVol1zb_recv(:,iblock), mzb, &
+        call mpirecv_nonblock_real(dVol1zb_recv(:,iblock), mzb, &
             iproc_recv, tag_id3+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -2049,15 +2049,15 @@ module Particles_mpicomm
         if (iproc_send/=-1) then
           ibrick_global= &
               iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
-          call mpisend_wait_real(zb(:,iblock), mzb, &
+          call mpisend_nonblock_real(zb(:,iblock), mzb, &
               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dz1b(:,iblock), mzb, &
+          call mpisend_nonblock_real(dz1b(:,iblock), mzb, &
               iproc_send, tag_id2+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-          call mpisend_wait_real(dVol1zb(:,iblock), mzb, &
+          call mpisend_nonblock_real(dVol1zb(:,iblock), mzb, &
               iproc_send, tag_id3+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq

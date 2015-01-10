@@ -647,7 +647,7 @@ module Particles_map
 !
 !  04-nov-09/anders: coded
 !
-      use Mpicomm, only: mpirecv_wait_real,mpisend_wait_real,mpiwait
+      use Mpicomm, only: mpirecv_nonblock_real,mpisend_nonblock_real,mpiwait
 !
       integer :: marray, ivar
       real, dimension (mx,my,mz,marray) :: a
@@ -716,7 +716,7 @@ module Particles_map
         enddo
         if (iproc_parent_block(iblock)/=iproc) then
           nblock_recv=iblock2-iblock1+1
-          call mpirecv_wait_real(ab_recv(:,:,:,iblock1:iblock2),&
+          call mpirecv_nonblock_real(ab_recv(:,:,:,iblock1:iblock2),&
                (/mxb,myb,mzb,nblock_recv/),&
                iproc_recv,&
                tag_id+iproc_recv,&
@@ -754,7 +754,7 @@ module Particles_map
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_send=ibrick2_send-ibrick1_send+1
 !          
-          call mpisend_wait_real(ab_send(:,:,:,ibrick1_send:ibrick2_send),&
+          call mpisend_nonblock_real(ab_send(:,:,:,ibrick1_send:ibrick2_send),&
                (/mxb,myb,mzb,nbrick_send/),&
                iproc_send,&
                tag_id+iproc,&
@@ -804,7 +804,7 @@ module Particles_map
 !
 !  04-nov-09/anders: coded
 !
-      use Mpicomm, only: mpirecv_wait_real,mpisend_wait_real,mpiwait
+      use Mpicomm, only: mpirecv_nonblock_real,mpisend_nonblock_real,mpiwait
 !
       integer :: marray, ivar
       real, dimension (mx,my,mz,marray) :: a
@@ -893,7 +893,7 @@ module Particles_map
         if (iproc_foster_brick(ibrick)/=iproc .and. &
             iproc_foster_brick(ibrick)/=-1) then
           nbrick_recv=ibrick2_recv-ibrick1_recv+1
-          call mpirecv_wait_real(ab_recv(:,:,:,ibrick1_recv:ibrick2_recv),&
+          call mpirecv_nonblock_real(ab_recv(:,:,:,ibrick1_recv:ibrick2_recv),&
                (/mxb,myb,mzb,nbrick_recv/),&
                iproc_recv,&
                tag_id+iproc_recv,&
@@ -931,7 +931,7 @@ module Particles_map
         if (iproc_parent_block(iblock)/=iproc .and. &
             iproc_parent_block(iblock)/=-1) then
           nblock_send=iblock2_send-iblock1_send+1
-          call mpisend_wait_real(ab_send(:,:,:,iblock1_send:iblock2_send),&
+          call mpisend_nonblock_real(ab_send(:,:,:,iblock1_send:iblock2_send),&
                (/mxb,myb,mzb,nblock_send/),&
                iproc_send,&
                tag_id+iproc,&

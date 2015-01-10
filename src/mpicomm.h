@@ -29,8 +29,8 @@
             mpigather_and_out_cmplx, mpigather_and_out_real
   public :: mpiwtime, mpiwtick
 !
-  public :: mpisend_wait_real,mpisend_wait_int
-  public :: mpirecv_wait_real,mpirecv_wait_int
+  public :: mpisend_nonblock_real,mpisend_nonblock_int
+  public :: mpirecv_nonblock_real,mpirecv_nonblock_int
 !
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
