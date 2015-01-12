@@ -15,19 +15,21 @@ from npfile import npfile
 from param import read_param 
 from dim import read_dim 
 
-def read_zaver(datadir='data/',format='native',point=(-1,-1)):
+def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1):
 
-    """read 2D zaverage.dat file.
+    """read 2D zaverage.dat file. If proc < 0, then load all data
+    and assemble. Otherwise, load VAR file from specified processor.
 
     point -- an array of 2-tuples (iy,ix) representing discrete
              points to be returned in an output array (not implemented yet)
+    
+    proc -- Read data from proc if proc > -1, otherwise load all and assemble.
     
     returns a tuple (zavg, t), zavg has shape (noutputs,nvars,ny,nx)
 
     """
     datadir = os.path.expanduser(datadir)
     datatopdir = re.sub('data\/*$','',datadir)
-    filename = datadir+'proc0/zaverages.dat'
 
     # which variables are averaged?
     infile = open(datatopdir+'zaver.in')
@@ -35,39 +37,70 @@ def read_zaver(datadir='data/',format='native',point=(-1,-1)):
     infile.close()
 
     # global dim
-    dim = read_dim(datadir) 
+    dim = read_dim(datadir, proc=proc)
     if dim.precision == 'D':
         precision = 'd'
     else:
         precision = 'f'
 
-    infile = npfile(filename,endian=format)
-    
-    t = N.zeros(1,dtype=precision)
-    zaver = []
-    zaver_shape = (len(variables),dim.ny,dim.nx)
-    ntime = 0
-    
-    while 1:
+    if proc < 0:
+        procdirs = filter(lambda s:s.startswith('proc'),
+                            os.listdir(datadir))
+    else:
+        procdirs = ['proc'+str(proc)]
+            
+    for directory in procdirs:
+        ntime = 0
+        # local dimensions
+        core = int(directory[4:]) # SC: needed to rename proc to core to keep function argument
+        procdim = read_dim(datadir,core)
+        nxloc = procdim.nx
+        nyloc = procdim.ny
+        zaver_local = []
+        zaver_loc_shape = (len(variables),procdim.ny,procdim.nx)
+
+        #read data
+        filename = os.path.join(datadir,directory,'zaverages.dat')
         try:
-            raw_data = infile.fort_read(precision,shape=1)
-        except ValueError:
-            break
-        except TypeError:
-            break
+            infile = npfile(filename,endian=format)
+            t = N.zeros(1,dtype=precision)
+        except:
+            continue
 
-        t = N.concatenate((t,raw_data))
+        while 1:
+            try:
+                raw_data = infile.fort_read(precision,shape=1)
+            except ValueError:
+                break
+            except TypeError:
+                break
 
+            t = N.concatenate((t,raw_data))
+
+            try:
+                raw_data = infile.fort_read(precision,shape=zaver_loc_shape)
+            except ValueError:
+                print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
+                break
+            except TypeError:
+                print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
+                break
+            zaver_local.append(raw_data)
+            ntime += 1
+        
         try:
-            raw_data = infile.fort_read(precision,shape=zaver_shape)
-        except ValueError:
-            print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
-            break
-        except TypeError:
-            print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
-            break
-        zaver.append(raw_data)
-        ntime += 1
-
-    output = N.array(zaver)
-    return output,t[1:]
+            zaver
+            pass
+        except:
+            zaver = N.zeros((ntime,len(variables),dim.ny,dim.nx))
+        
+        if (proc < 0):
+            # append to the global zaver
+            for i in range(ntime):
+                zaver[i,:,procdim.ipy*procdim.ny:(procdim.ipy+1)*procdim.ny,
+                    procdim.ipx*procdim.nx:(procdim.ipx+1)*procdim.nx] = zaver_local[i]
+        else:
+            for i in range(ntime):
+                zaver[i,:,:,:] = zaver_local[i]
+        
+    return zaver,t[1:]
