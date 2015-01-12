@@ -1366,39 +1366,41 @@ module Special
         ! Load first frame and use it as fixed magnetogram
         time_l = -time_offset
         time_r = huge (1.0)
+        if (.not. lfirst_call) return
         call read_mag_field (1, field_dat, A_l)
         A = A_l(:,:,1,:)
         deallocate (A_l)
+        lfirst_call = .false.
         return
       endif
 !
       time = t - time_offset
 !
       if (lfirst_call) then
-! Load previous (l) frame and store it in (r), will be shifted later
+        ! Load previous (l) frame and store it in (r), will be shifted later
         call find_frame (time, times_dat, 'l', pos_l, time_l)
         if (pos_l == 0) then
-! The simulation started before the first frame of the time series
-! start with a fixed magnetogram using the first frame
+          ! The simulation started before the first frame of the time series
+          ! start with a fixed magnetogram using the first frame
           pos_l = 1
           time_l = -time_offset
         endif
         call read_mag_field (pos_l, field_dat, A_r)
-! Make sure that the following (r) frame will get loaded:
+        ! Make sure that the following (r) frame will get loaded:
         time_r = time_l
         lfirst_call = .false.
       endif
 !
       if (time >= time_r) then
-! Shift data from following (r) to previous (l) frame
+        ! Shift data from following (r) to previous (l) frame
         A_l = A_r
         time_l = time_r
-! Read new following (r) frame
+        ! Read new following (r) frame
         call find_frame (time, times_dat, 'r', pos_r, time_r)
         call read_mag_field (pos_r, field_dat, A_r)
       endif
 !
-! Store interpolated values to initial vector potential
+      ! Store interpolated values to initial vector potential
       A = 0.0
       call add_interpolated (time, time_l, time_r, A_l(:,:,1,:), A_r(:,:,1,:), A)
 !
@@ -1428,7 +1430,7 @@ module Special
             'Could not allocate memory for tmp variables.', .true.)
 !
         ! Read 2D vector field from file
-        inquire (IOLENGTH=rec_len) unit_velocity
+        inquire (IOLENGTH=rec_len) 1.0d0
         rec_len = rec_len * nxgrid * nygrid
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
         read (unit, rec=2*(frame-1)+1) tmp_x
@@ -1493,7 +1495,7 @@ module Special
 !
       if (lfirst_proc_xy) then
         ! Read Bz field from file and send to remote processors
-        inquire (iolength=rec_len) unit_magnetic
+        inquire (iolength=rec_len) 1.0d0
         rec_len = rec_len * bnx * bny
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
         do py = 1, nprocxy-1
@@ -1548,7 +1550,6 @@ module Special
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
 !
-      real :: dummy=1.
       integer :: px, py, partner, rec_len, ierr
       real :: time_l, delta_t
       integer, parameter :: unit=12, tag_pos=314, tag_time=315
@@ -1562,7 +1563,7 @@ module Special
           frame_time = huge (0.0)
         else
           ! Read the time table from file
-          inquire (iolength=rec_len) dummy
+          inquire (iolength=rec_len) time
           open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
 !
           delta_t = 0.0
@@ -2403,7 +2404,7 @@ module Special
           11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, &
           12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
           14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
-          15.6576,  69.0776 /)
+          15.6576, 69.0776 /)
       real, parameter, dimension(37) :: intlnQ = (/ &
           -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
           -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
