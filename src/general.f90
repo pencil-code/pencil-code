@@ -38,6 +38,7 @@ module General
   public :: operator(.IN.)
   public :: loptest, ioptest, roptest, doptest
   public :: indgen
+  public :: rewind
 !
   include 'record_types.h'
 !
@@ -103,6 +104,11 @@ module General
 !
   interface operator (.IN.)
     module procedure string_in_array
+  endinterface
+!
+  interface rewind
+    module procedure rewind_ext
+    module procedure rewind_int
   endinterface
 !
 !  State and default generator of random numbers.
@@ -3335,5 +3341,29 @@ module General
       enddo
 
     endfunction indgen
+!****************************************************************************
+    subroutine rewind_ext(unit)
+!
+! Envelope for rewind. Needed if unit can also be an internal one.
+!
+! 11-jan-15/MR: coded
+!
+      integer, intent(IN) :: unit
+
+      rewind(unit)
+
+    endsubroutine rewind_ext
+!****************************************************************************
+    subroutine rewind_int(unit)
+!
+!  Dummy for rewind on an internal unit.
+!
+! 11-jan-15/MR: coded
+!
+      character(LEN=*), intent(IN) :: unit
+
+      call keep_compiler_quiet(unit)
+
+    endsubroutine rewind_int
 !****************************************************************************
 endmodule General
