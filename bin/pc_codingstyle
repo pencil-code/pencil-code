@@ -55,6 +55,7 @@ my $quiet = 0;
 my $summary_only = 0;
 my $backup = 0;
 my $verbose = 0;
+my $faulty = 0;
 while ($ARGV[0] =~ /^-/) {
 	my $argument = shift ();
 	if ($argument =~ s/^(-.)(.+)$/${1}/s) { unshift (@ARGV, '-'.$2); }
@@ -82,11 +83,15 @@ while ($ARGV[0] =~ /^-/) {
 		$old_style = 1;
 	}
 	else {
-		usage ('Option "'.$argument.'" unkown ...');
+		warn ('ERROR: Option "'.$argument.'" unkown ...'."\n");
+		$faulty = 1;
 	}
 }
 my $num_files = @ARGV;
-if ($num_files == 0) { usage (''); }
+if ($faulty || !$num_files) {
+	usage ('');
+	exit (1);
+}
 
 # initialize globals and scan file
 if ($indent_after_contains) {
