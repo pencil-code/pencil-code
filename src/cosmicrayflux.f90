@@ -29,12 +29,15 @@ module Cosmicrayflux
   real, dimension (nx) :: vKperp,vKpara
   real, dimension (nx) :: b_exp
   logical :: lbb_dependent_perp_diff = .false.
+  logical :: lcosmicrayflux_diffus_dt = .false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       tau, kpara, kperp, lbb_dependent_perp_diff, bmin
+       tau, kpara, kperp, lbb_dependent_perp_diff, &
+       bmin,lcosmicrayflux_diffus_dt
 !
   namelist /cosmicrayflux_run_pars/ &
-       tau, kpara, kperp, lbb_dependent_perp_diff, bmin
+       tau, kpara, kperp, lbb_dependent_perp_diff, bmin, &
+       lcosmicrayflux_diffus_dt
 !
   contains
 !***********************************************************************
@@ -160,7 +163,7 @@ module Cosmicrayflux
 !  Cosmicray Flux evolution
 !
 !  08-mar-05/snod: adapted from daa_dt
-!  31-oct-14/luiz:
+!  12-jan-15/luiz: diffusion/advection contribution to the timestep
 !
       use Sub
       use Slices
@@ -224,13 +227,26 @@ module Cosmicrayflux
             - (kpara - kperp)*BuiBujgecr
       endif
 !
-!  For the timestep calculation, needs maximum diffusion
+!  For the timestep calculation, needs maximum diffusion or advection.
+!  Unless the switch lcosmicrayflux_diffus_dt is used, kpara and kperp are
+!  treated as an advection contribution. Otherwise, tau*kperp/tau*kpara are
+!  used as cosmic ray diffusivities.
 !
-      if (ldt) then
-        if (lbb_dependent_perp_diff)then
-          diffus_cr=max(diffus_cr,maxval(vKperp)*tau*dxyz_2,maxval(vKpara)*tau*dxyz_2)
-        elseif (lfirst) then
-          diffus_cr=max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
+      if (lfirst.and.ldt) then
+        if (lcosmicrayflux_diffus_dt) then
+          if (lbb_dependent_perp_diff) then
+            diffus_cr=max(diffus_cr,maxval(vKperp)*tau*dxyz_2, &
+                maxval(vKpara)*tau*dxyz_2)
+          else
+            diffus_cr=max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
+          endif
+        else
+          if (lbb_dependent_perp_diff) then
+            advec_kfcr=max(advec_kfcr,maxval(vKperp)*dxyz_2, &
+                maxval(vKpara)*dxyz_2)
+          else
+            advec_kfcr=max(advec_kfcr,kperp*dxyz_2,kpara*dxyz_2)
+          endif
         endif
       endif
 !

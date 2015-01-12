@@ -430,6 +430,9 @@ module Equ
             diffus_cr=0.0
             advec_cs2cr=0.0
           endif
+          if (lcosmicrayflux) then
+            advec_kfcr=0.0
+          endif
           if (lneutraldensity) then
             diffus_diffrhon=0.0; diffus_diffrhon3=0.0
           endif
@@ -663,13 +666,14 @@ module Equ
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
           if (lspecial) maxadvec=maxadvec+advec_special
-          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
+          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) then
             advec2=0.0
             if (ldensity) advec2=advec2+advec_cs2
             if (lmagnetic) advec2=advec2+advec_va2+advec_hall**2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2
             if (lcosmicray) advec2=advec2+advec_cs2cr
+            if (lcosmicrayflux) advec2=advec2+advec_kfcr
             if (lpolymer) advec2=advec2+advec_poly
             maxadvec=maxadvec+sqrt(advec2)
           endif
@@ -1075,6 +1079,7 @@ module Equ
         if (lradiation)       print*, 'advec_crad2=',advec_crad2
         if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
         if (lpolymer)         print*, 'advec_poly =',advec_poly
+        if (lcosmicrayflux)   print*, 'advec_kfcr =',advec_kfcr
         call fatal_error_local('pde','')
       endif
 !
