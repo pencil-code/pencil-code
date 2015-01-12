@@ -104,7 +104,7 @@ def sigma0(datadir='./data'):
         s = sqrt(0.5 * pi) * h * par.rho0 * (erf(z1) - erf(z0))
     return s
 #=======================================================================
-def stratz(datadir='./data', trim=False):
+def stratz(datadir='./data', par=None, trim=False):
     """Finds the vertical background stratification.
 
     Returned Values:
@@ -113,15 +113,18 @@ def stratz(datadir='./data', trim=False):
     Keyword Arguments:
         datadir
             Name of the data directory.
+        par
+            If not None, parameters given by read.parameters().
         trim
             Whether or not to trim ghost cells.
     """
-    # Chao-Chin Yang, 2014-11-03
+    # Chao-Chin Yang, 2015-01-12
     from . import read
     import numpy as np
     # Read the dimensions and the parameters.
     dim = read.dimensions(datadir=datadir)
-    par = read.parameters(datadir=datadir)
+    if par is None:
+        par = read.parameters(datadir=datadir)
     z = read.grid(datadir=datadir).z
     if trim:
         z = z[dim.nghost:-dim.nghost]
