@@ -5197,7 +5197,7 @@ module Initcond
         inquire (file=mag_field_dat, exist=exists)
         call stop_it_if_any(.not. exists, &
             'mag_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
-        inquire (iolength=rec_len) unit_magnetic
+        inquire (iolength=rec_len) 1.0d0
         open (unit, file=mag_field_dat, form='unformatted', recl=rec_len*bnx*bny, access='direct')
         do py = 1, nprocxy-1
           partner = py + ipz*nprocxy
