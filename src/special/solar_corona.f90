@@ -371,7 +371,7 @@ module Special
       use Mpicomm, only: mpibcast_real
       use Syscalls, only: file_exists
 !
-      integer :: i, ierr
+      integer :: i
       integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
@@ -400,9 +400,7 @@ module Special
               'setup_profiles', 'Stratification file not found', .true.)
           open (unit,file=stratification_dat)
           do i = 1, nzgrid
-            read (unit,*,iostat=ierr) var_z, var_lnrho, var_lnTT
-            if (ierr /= 0) call fatal_error ('setup_profiles', &
-                'Error reading stratification file: "'//trim(stratification_dat)//'"', .true.)
+            read (unit,*) var_z, var_lnrho, var_lnTT
             prof_z(i) = var_z
             prof_lnTT(i) = var_lnTT
             prof_lnrho(i) = var_lnrho
@@ -463,7 +461,7 @@ module Special
       integer :: n_data
 !
       integer, parameter :: unit=12
-      integer :: lend, lend_b8, ierr
+      integer :: lend, lend_b8
 !
 !
       inquire (IOLENGTH=lend) 1.0
@@ -486,10 +484,8 @@ module Special
       if (lroot) then
         ! read profile
         open (unit, file=filename, form='unformatted', recl=lend*n_data)
-        read (unit, iostat=ierr) data
-        read (unit, iostat=ierr) data_z
-        if (ierr /= 0) call fatal_error ('read_profile', &
-            'Error reading profile data in "'//trim(filename)//'"', .true.)
+        read (unit) data
+        read (unit) data_z
         close (unit)
 !
         if (llog) then
@@ -695,10 +691,8 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      integer :: ierr
-!
-      read (unit, NML=special_init_pars, IOSTAT=ierr)
-      if (present (iostat)) iostat = ierr
+      read (unit, NML=special_init_pars)
+      if (present (iostat)) iostat = 0
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -715,11 +709,8 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      integer :: ierr
-!
-      read (unit, NML=special_run_pars, IOSTAT=ierr)
-      if (present (iostat)) iostat = ierr
-      if (ierr /= 0) return
+      read (unit, NML=special_run_pars)
+      if (present (iostat)) iostat = 0
 !
       if (Kgpara /= 0.0) then
         call warning('calc_heatcond_grad', &
@@ -1550,7 +1541,7 @@ module Special
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
 !
-      integer :: px, py, partner, rec_len, ierr
+      integer :: px, py, partner, rec_len, io_error
       real :: time_l, delta_t
       integer, parameter :: unit=12, tag_pos=314, tag_time=315
 !
@@ -1566,24 +1557,24 @@ module Special
           inquire (iolength=rec_len) time
           open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
 !
+          io_error = 0
           delta_t = 0.0
           frame_pos = 1
-          read (unit, rec=frame_pos, iostat=ierr) time_l
-          if (ierr /= 0) call fatal_error ('find_frame', trim (filename)//' seems empty.', .true.)
+          read (unit, rec=frame_pos) time_l
           time_l = time_l / unit_time
           if (time_l < 0.0) call fatal_error ('find_frame', trim (filename)//' first frame must be >= 0.', .true.)
           if (time < time_l) then
             ! 'time' is still before the first frame
             ! => set following (r) frame to point to the first frame
-            ierr = -1
+            io_error = -1
             frame_time = time_l
             time_l = 0.0
           endif
 !
-          do while (ierr == 0)
+          do while (io_error == 0)
             frame_pos = frame_pos + 1
-            read (unit, rec=frame_pos, iostat=ierr) frame_time
-            if (ierr == 0) then
+            read (unit, rec=frame_pos, iostat=io_error) frame_time
+            if (io_error == 0) then
               frame_time = frame_time / unit_time + delta_t
               ! Test if correct time step has been reached
               if ((time >= time_l) .and. (time < frame_time)) exit
@@ -1598,7 +1589,7 @@ module Special
               ! EOF reached => read from beginning
               delta_t = delta_t + time_l
               frame_pos = 0
-              ierr = 0
+              io_error = 0
             endif
           enddo
           close (unit)
@@ -3085,7 +3076,7 @@ module Special
 !
       integer, intent(in) :: level
 !
-      integer :: ierr, pos, len
+      integer :: io_error, pos, len
       logical :: ex
       character(len=fnlen) :: filename
       integer, parameter :: unit=10
@@ -3101,8 +3092,8 @@ module Special
         open (unit, file=filename, access="direct", recl=len*6)
 !
         pos = 1
-        read (unit, iostat=ierr, rec=pos) buffer
-        do while (ierr == 0)
+        read (unit, iostat=io_error, rec=pos) buffer
+        do while (io_error == 0)
           call add_point
           current%pos_x = buffer(1)
           current%pos_y = buffer(2)
@@ -3112,7 +3103,7 @@ module Special
           current%t_life = buffer(6)
           call draw_update
           pos = pos + 1
-          read (unit, iostat=ierr, rec=pos) buffer
+          read (unit, iostat=io_error, rec=pos) buffer
         enddo
 !
         close (unit)
