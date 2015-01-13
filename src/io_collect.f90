@@ -449,6 +449,7 @@ module Io
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
+!  13-jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real
       use Syscalls, only: sizeof_real
@@ -463,7 +464,7 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
       integer :: pz, pa, z_start, io_len, alloc_err
-      integer(kind=8) :: rec_len, num_rec
+      integer(kind=8) :: rec_len
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -511,11 +512,11 @@ module Io
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-          num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
           close (lun_input)
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-          call fseek_pos (lun_input, rec_len, num_rec, 0)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old', position='append')
+          backspace(lun_input)
+          if (persist_initialized) backspace(lun_input)
+!
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
           deallocate (gx, gy, gz)
