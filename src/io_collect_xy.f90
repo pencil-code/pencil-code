@@ -341,6 +341,10 @@ module Io
           persist_initialized = .false.
         endif
         close (lun_output)
+!
+! MR: Philippe, why is the close inside the if clause? I cannot see that lun_output is
+!     closed somewhere else if ldistribute_persist .or. lfirst_proc_xy = .false.
+! 
       endif
 !
     endsubroutine output_snap_finalize
@@ -442,6 +446,7 @@ module Io
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
+!  13-Jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, stop_it_if_any
       use Syscalls, only: sizeof_real
@@ -455,7 +460,7 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
       integer :: io_len, alloc_err
-      integer(kind=8) :: rec_len, num_rec
+      integer(kind=8) :: rec_len
       logical :: lread_add
       real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
@@ -487,12 +492,14 @@ module Io
       ! read additional data
       if (lread_add) then
         if (lfirst_proc_xy) then
+!
           close (lun_input)
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-          num_rec = int (mz, kind=8) * int (nv*sizeof_real(), kind=8)
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-          call fseek_pos (lun_input, rec_len, num_rec, 0)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old', position='append')
+          backspace(lun_input); if (lroot) backspace(lun_input)
+          if (persist_initialized) backspace(lun_input)
+!
           read (lun_input) t_sp
+!
           if (lroot) then
             allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
@@ -502,6 +509,7 @@ module Io
           else
             call distribute_grid (x, y, z)
           endif
+!
         else
           call distribute_grid (x, y, z)
         endif
