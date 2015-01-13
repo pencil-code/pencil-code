@@ -461,18 +461,17 @@ module Special
       integer :: n_data
 !
       integer, parameter :: unit=12
-      integer :: lend, lend_b8
+      integer :: len_double
 !
 !
-      inquire (IOLENGTH=lend) 1.0
-      inquire (IOLENGTH=lend_b8) 1.0d0
+      inquire (IOLENGTH=len_double) 1.0d0
 !
       if (.not. parallel_file_exists (filename)) &
           call fatal_error ('read_profile', "can't find "//filename)
       ! file access is only done on the MPI root rank
       if (lroot) then
         ! determine the number of data points in the profile
-        n_data = (file_size (filename) - 2*2*4) / (lend*8/lend_b8 * 2)
+        n_data = (file_size (filename) - 2*2*4) / (len_double * 2)
       endif
       call mpibcast_int (n_data, 1)
 !
@@ -483,7 +482,7 @@ module Special
 !
       if (lroot) then
         ! read profile
-        open (unit, file=filename, form='unformatted', recl=lend*n_data)
+        open (unit, file=filename, form='unformatted', recl=len_double*n_data)
         read (unit) data
         read (unit) data_z
         close (unit)
