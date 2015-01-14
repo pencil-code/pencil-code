@@ -825,7 +825,7 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine read_NSCBC_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -844,7 +844,7 @@ include 'NSCBC.h'
 !
       use Sub, only : rdim
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
       integer :: stat
       logical :: exist

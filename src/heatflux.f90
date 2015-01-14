@@ -260,7 +260,7 @@ contains
 !***********************************************************************
   subroutine read_heatflux_init_pars(unit,iostat)
 !
-    integer, intent(in) :: unit
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 !
     if (present(iostat)) then
@@ -283,7 +283,7 @@ contains
 !***********************************************************************
   subroutine read_heatflux_run_pars(unit,iostat)
 !
-    integer, intent(in) :: unit
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 !
     if (present(iostat)) then

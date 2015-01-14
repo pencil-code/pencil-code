@@ -2423,7 +2423,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -2446,7 +2446,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then

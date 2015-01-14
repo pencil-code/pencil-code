@@ -332,7 +332,7 @@ module Particles_adaptation
 !
 !  03-apr-13/anders: adapted
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

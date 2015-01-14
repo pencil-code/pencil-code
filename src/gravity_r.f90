@@ -342,7 +342,8 @@ module Gravity
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -363,7 +364,8 @@ module Gravity
     endsubroutine write_gravity_init_pars
 !***********************************************************************
     subroutine read_gravity_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

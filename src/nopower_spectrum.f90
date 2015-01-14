@@ -30,7 +30,7 @@ module power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_runpars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

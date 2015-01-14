@@ -573,7 +573,7 @@ module Testflow
 !***********************************************************************
     subroutine read_testflow_init_pars(unit,iostat)     ! -> Default interface
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -595,7 +595,7 @@ module Testflow
 !***********************************************************************
     subroutine read_testflow_run_pars(unit,iostat)    ! -> Default interface
 !
-      integer, intent(in)              :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

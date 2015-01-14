@@ -4900,7 +4900,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -4918,7 +4918,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !***********************************************************************
     subroutine read_forcing_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

@@ -145,7 +145,7 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -167,7 +167,7 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
