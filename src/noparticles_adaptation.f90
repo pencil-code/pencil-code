@@ -61,7 +61,7 @@ module Particles_adaptation
 !
 !  03-apr-13/anders: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

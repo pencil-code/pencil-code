@@ -990,7 +990,7 @@ module Gravity
 !
 !  Read gravity init parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -1017,7 +1017,7 @@ module Gravity
 !
 !  Read gravity run parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

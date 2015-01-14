@@ -262,7 +262,7 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: adapted
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -289,7 +289,7 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: adapted
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then

@@ -109,7 +109,7 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -127,7 +127,7 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

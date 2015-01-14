@@ -102,7 +102,7 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -124,7 +124,7 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

@@ -343,7 +343,7 @@ module Particles_adsorbed
 !***********************************************************************
     subroutine read_particles_ads_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -366,7 +366,7 @@ module Particles_adsorbed
 !***********************************************************************
     subroutine read_particles_ads_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then

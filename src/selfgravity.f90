@@ -500,7 +500,7 @@ module Selfgravity
 !
 !  Read self gravity init parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -527,7 +527,7 @@ module Selfgravity
 !
 !  Read self gravity run parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

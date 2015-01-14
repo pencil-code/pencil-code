@@ -120,7 +120,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine read_neutralvelocity_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -138,7 +138,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine read_neutralvelocity_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

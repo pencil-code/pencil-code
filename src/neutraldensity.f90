@@ -212,7 +212,8 @@ module NeutralDensity
     endsubroutine initialize_neutraldensity
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
@@ -226,6 +227,7 @@ module NeutralDensity
     endsubroutine read_neutraldensity_init_pars
 !***********************************************************************
     subroutine write_neutraldensity_init_pars(unit)
+!
       integer, intent(in) :: unit
 
       write(unit,NML=neutraldensity_init_pars)
@@ -233,7 +235,8 @@ module NeutralDensity
     endsubroutine write_neutraldensity_init_pars
 !***********************************************************************
     subroutine read_neutraldensity_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then

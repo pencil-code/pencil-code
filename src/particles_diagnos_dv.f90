@@ -125,7 +125,7 @@ module Particles_diagnos_dv
 !
 !  01-dec-11/hubbard: adapted
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

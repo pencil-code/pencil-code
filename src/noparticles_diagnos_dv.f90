@@ -39,7 +39,7 @@ module Particles_diagnos_dv
 !***********************************************************************
     subroutine read_pars_diagnos_dv_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

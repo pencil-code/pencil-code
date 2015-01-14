@@ -1165,7 +1165,7 @@ module Io
         read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
         lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")
       endif
-
+!
     endsubroutine input_grid_single
 !***********************************************************************
     subroutine input_grid_double(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
@@ -1267,8 +1267,8 @@ module Io
 !  Fill pencil with maximum gridspacing. Will be overwritten
 !  during the mn loop in the non equidistant case
 !
-      dxmax_pencil(:) = dxmax
-      dxmin_pencil(:) = dxmin
+      dxmax_pencil = dxmax
+      dxmin_pencil = dxmin
 !
 !  debug output
 !

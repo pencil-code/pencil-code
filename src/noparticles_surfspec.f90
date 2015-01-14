@@ -52,7 +52,8 @@ module Particles_surfspec
 !
 
   subroutine read_particles_surf_run_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     call keep_compiler_quiet(unit)
@@ -62,7 +63,8 @@ module Particles_surfspec
 !  19.09.2014/Jonas:coded
 
   subroutine read_particles_surf_init_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     call keep_compiler_quiet(unit)

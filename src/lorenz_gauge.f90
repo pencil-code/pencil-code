@@ -246,7 +246,7 @@ module Lorenz_gauge
 !***********************************************************************
     subroutine read_lorenz_gauge_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
 !  read namelist
@@ -270,7 +270,8 @@ module Lorenz_gauge
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
     subroutine read_lorenz_gauge_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
 !  write name list

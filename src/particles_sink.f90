@@ -1488,7 +1488,7 @@ module Particles_sink
 !***********************************************************************
     subroutine read_particles_sink_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -1511,7 +1511,7 @@ module Particles_sink
 !***********************************************************************
     subroutine read_particles_sink_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then

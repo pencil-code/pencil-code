@@ -497,7 +497,8 @@ module Testfield
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
@@ -517,7 +518,8 @@ module Testfield
     endsubroutine write_testfield_init_pars
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then

@@ -930,7 +930,7 @@ module Particles_main
 !  01-sep-05/anders: coded
 !  17-aug-08/wlad: added individual check for the modules inside the wrap
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call read_particles_init_pars(unit,iostat)
@@ -1198,7 +1198,7 @@ module Particles_main
 !
 !  Read particle run parameters from run.in.
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       integer :: stat

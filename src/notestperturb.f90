@@ -43,7 +43,7 @@ module TestPerturb
 !
 !  Dummy routine
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -65,7 +65,7 @@ module TestPerturb
 !
 !  Dummy routine
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

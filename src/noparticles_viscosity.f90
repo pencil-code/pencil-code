@@ -76,7 +76,7 @@ module Particles_viscosity
 !
 !  07-oct-08/anders: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -98,7 +98,7 @@ module Particles_viscosity
 !
 !  07-oct-08/anders: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

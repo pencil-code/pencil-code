@@ -48,7 +48,7 @@ module Particles_stalker
 !***********************************************************************
     subroutine read_pstalker_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -66,7 +66,7 @@ module Particles_stalker
 !***********************************************************************
     subroutine read_pstalker_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

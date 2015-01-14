@@ -115,7 +115,7 @@ module Selfgravity
 !
 !  Read self gravity init parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -137,7 +137,7 @@ module Selfgravity
 !
 !  Read self gravity run parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

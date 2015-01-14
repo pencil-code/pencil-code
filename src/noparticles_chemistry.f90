@@ -263,7 +263,8 @@ module Particles_chemistry
 !***************************************************
 
   subroutine read_particles_chem_init_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     call keep_compiler_quiet(unit)
@@ -279,7 +280,8 @@ module Particles_chemistry
 ! ******************************************************************************
 
   subroutine read_particles_chem_run_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     call keep_compiler_quiet(unit)

@@ -483,7 +483,8 @@ module Chiral
     endsubroutine chiral_before_boundary
 !***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -503,7 +504,8 @@ module Chiral
     endsubroutine write_chiral_init_pars
 !***********************************************************************
     subroutine read_chiral_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

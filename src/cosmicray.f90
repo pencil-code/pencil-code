@@ -314,7 +314,8 @@ print*,"init_ecr: initecr = ", initecr
     endsubroutine decr_dt
 !***********************************************************************
     subroutine read_cosmicray_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -333,7 +334,8 @@ print*,"init_ecr: initecr = ", initecr
     endsubroutine write_cosmicray_init_pars
 !***********************************************************************
     subroutine read_cosmicray_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

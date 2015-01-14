@@ -137,7 +137,7 @@ module Shear
 !
 !  Read initial shear parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -164,7 +164,7 @@ module Shear
 !
 !  Read run shear parameters.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

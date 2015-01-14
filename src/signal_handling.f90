@@ -73,7 +73,7 @@ endsubroutine signal_prepare
 !***********************************************************************
     subroutine read_signal_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

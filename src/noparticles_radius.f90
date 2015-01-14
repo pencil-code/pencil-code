@@ -115,7 +115,7 @@ module Particles_radius
 !***********************************************************************
     subroutine read_particles_rad_init_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -133,7 +133,7 @@ module Particles_radius
 !***********************************************************************
     subroutine read_particles_rad_run_pars(unit,iostat)
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

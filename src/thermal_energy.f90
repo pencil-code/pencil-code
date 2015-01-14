@@ -600,7 +600,7 @@ module Energy
 !
 !  04-nov-10/anders+evghenii: coded
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -627,7 +627,7 @@ module Energy
 !
 !  04-nov-10/anders+evghenii: coded
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

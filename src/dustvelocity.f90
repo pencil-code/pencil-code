@@ -1549,7 +1549,8 @@ module Dustvelocity
     endsubroutine get_stoppingtime
 !***********************************************************************
     subroutine read_dustvelocity_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
@@ -1569,7 +1570,8 @@ module Dustvelocity
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
     subroutine read_dustvelocity_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then

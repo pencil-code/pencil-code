@@ -185,7 +185,8 @@ module Particles_surfspec
 ! ******************************************************************************
 
   subroutine read_particles_surf_init_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     if (present(iostat)) then
@@ -206,7 +207,8 @@ module Particles_surfspec
 ! ******************************************************************************
 
   subroutine read_particles_surf_run_pars(unit,iostat)
-    integer, intent(in) :: unit
+!
+    include 'unit.h'
     integer, intent(inout), optional :: iostat
 
     if (present(iostat)) then

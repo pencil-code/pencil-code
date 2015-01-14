@@ -1087,7 +1087,7 @@ module Interstellar
 !*****************************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -1109,7 +1109,7 @@ module Interstellar
 !*****************************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

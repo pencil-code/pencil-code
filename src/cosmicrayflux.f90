@@ -268,7 +268,7 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -291,7 +291,7 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine read_cosmicrayflux_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

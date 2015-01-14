@@ -67,7 +67,7 @@ module Poisson
 !
 !  18-oct-2007/anders: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -93,7 +93,7 @@ module Poisson
 !
 !  18-oct-2007/anders: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

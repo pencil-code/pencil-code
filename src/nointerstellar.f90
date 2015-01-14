@@ -91,7 +91,8 @@ module Interstellar
     endsubroutine get_slices_interstellar
 !***********************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -109,7 +110,7 @@ module Interstellar
 !***********************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

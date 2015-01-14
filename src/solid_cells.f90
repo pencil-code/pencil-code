@@ -2460,7 +2460,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     endsubroutine freeze_solid_cells
 !***********************************************************************
     subroutine read_solid_cells_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -2473,7 +2474,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
     subroutine read_solid_cells_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

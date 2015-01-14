@@ -50,7 +50,7 @@ module Detonate
 !
 !  13-feb-14/ccyang: dummy
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

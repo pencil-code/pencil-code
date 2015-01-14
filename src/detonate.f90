@@ -153,7 +153,7 @@ module Detonate
 !
 !  06-feb-14/ccyang: coded
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       integer :: stat

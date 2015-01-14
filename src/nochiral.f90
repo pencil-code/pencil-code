@@ -148,7 +148,7 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -166,7 +166,7 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

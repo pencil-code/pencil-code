@@ -777,7 +777,7 @@ module Particles_collisions
 !
 !  28-mar-09/anders: adapted
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

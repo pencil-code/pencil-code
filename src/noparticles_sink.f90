@@ -100,7 +100,7 @@ module Particles_sink
 !
 !  11-aug-12/anders: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -122,7 +122,7 @@ module Particles_sink
 !
 !  11-aug-12/anders: dummy
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
       integer, intent (inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

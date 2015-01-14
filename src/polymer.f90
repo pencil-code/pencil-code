@@ -526,7 +526,7 @@ module Polymer
 !***********************************************************************
     subroutine read_polymer_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -549,7 +549,7 @@ module Polymer
 !***********************************************************************
     subroutine read_polymer_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

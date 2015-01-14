@@ -322,7 +322,7 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -349,7 +349,7 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
