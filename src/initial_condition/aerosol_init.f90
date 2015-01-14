@@ -316,7 +316,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 
 !

@@ -161,7 +161,7 @@ module InitialCondition
 !
 !  20-nov-13/ccyang: coded
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

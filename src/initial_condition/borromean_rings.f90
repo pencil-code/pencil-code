@@ -242,7 +242,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -250,7 +250,7 @@ module InitialCondition
       else
         read(unit,NML=initial_condition_pars,ERR=99)
       endif
-      print*, 'nfoil: read initial conditions'
+      print*, 'Borromean rings: read initial conditions'
 !
 99    return
 !

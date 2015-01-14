@@ -51,7 +51,7 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-    integer, intent(in) :: unit
+    include '../unit.h'
     integer, intent(inout), optional :: iostat
 !
     if (present(iostat)) then
