@@ -161,12 +161,13 @@ module Param_IO
 !
 !   2-oct-02/wolf: coded
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
+!  14-jan-15/MR  : corrected call of mpibcast_char
 !
       use Mpicomm, only: mpibcast_logical, mpibcast_char
 !
       character (len=*) :: dir
       logical :: exists
-      integer :: unit=1
+      integer, parameter :: unit=1
 !
 !  Let root processor check for existence of datadir.in.
 !
@@ -185,7 +186,7 @@ module Param_IO
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
-      if (exists) call mpibcast_char(dir, len(dir))
+      if (exists) call mpibcast_char(dir)
 !
     endsubroutine get_datadir
 !***********************************************************************
@@ -231,10 +232,12 @@ module Param_IO
 !  31-oct-13/MR  : changed for use instead of rparam; shortened by use of read_pars
 !
       use Mpicomm, only: parallel_open, parallel_close
+      use General, only: rewind
 !
       logical, optional, intent(IN) :: print
 !
-      integer, parameter :: unit=1
+      include 'unit_loc.h'
+!
       integer :: ierr
       logical :: lierrl
 !
@@ -254,7 +257,8 @@ module Param_IO
         read(unit,NML=init_pars)
         lierrl=.false.
       endif
-      rewind(unit)
+!
+      call rewind(unit)
 !
       call read_pars(unit,read_initial_condition_pars   ,'initial_condition_pars',lierrl)
       call read_pars(unit,read_streamlines_init_pars    ,'streamlines',lierrl)
@@ -404,13 +408,16 @@ module Param_IO
 !  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
 !  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
 !
-    integer,          intent(IN):: unit
+    use General, only: rewind
+    include 'unit.h'
+!
     interface
       subroutine reader(unit, iostat)
-        integer, intent(in) :: unit
+        include 'unit.h'
         integer, intent(inout), optional :: iostat
       endsubroutine reader
     endinterface
+!
     character(LEN=*), intent(IN):: name
     logical,          intent(IN):: lierr
 !
@@ -431,8 +438,8 @@ module Param_IO
       ierr=0
       call reader(unit,ierr)
     endif
-!
-    rewind(unit)
+! 
+    call rewind(unit)
 !
     endsubroutine read_pars
 !***********************************************************************
@@ -519,7 +526,7 @@ module Param_IO
         if (present(label)) then
           msg = 'Found error in input namelist "'
           if (label=='') then
-            msg = trim(msg)//'_'//trim(partype(2:9))
+            msg = trim(msg)//trim(partype)
           else
             msg = trim(msg)//trim(label)//'_'//trim(partype)
           endif
@@ -551,8 +558,11 @@ module Param_IO
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
+      use General, only: rewind
 !
-      integer :: ierr, unit=1
+      include 'unit_loc.h'
+!
+      integer :: ierr
       logical, optional :: logging
 !
 !  Open namelist file.
@@ -564,7 +574,7 @@ module Param_IO
 !
       read(unit,NML=run_pars,IOSTAT=ierr)
       if (ierr/=0) call sample_pars(ierr,'')
-      rewind(unit)
+      call rewind(unit)
 !
       call read_pars(unit,read_streamlines_run_pars    ,'streamlines',.true.)
       call read_pars(unit,read_eos_run_pars            ,'eos',.true.)
@@ -605,8 +615,6 @@ module Param_IO
       call read_pars(unit,particles_read_runpars       ,'particles',.true.)
       call read_pars(unit,read_power_spectrum_runpars  ,'power_spectrum',.true.)
       call read_pars(unit,read_implicit_diffusion_pars ,'implicit_diffusion',.true.)
-!
-      rewind(unit)
 !
       call parallel_close(unit)
 !
