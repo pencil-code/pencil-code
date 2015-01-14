@@ -1,4 +1,4 @@
-
+! $Id$
 !
 !  A module for setting up the f-array and related variables (`register' the
 !  velocity, energy, magnetic, etc modules).
