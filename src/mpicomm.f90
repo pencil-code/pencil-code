@@ -311,16 +311,6 @@ module Mpicomm
     module procedure mpisend_nonblock_int_arr
   endinterface
 !
-  interface parallel_open
-    module procedure parallel_open_ext
-    module procedure parallel_open_int
-  endinterface
-!
-  interface parallel_close
-    module procedure parallel_close_ext
-    module procedure parallel_close_int
-  endinterface
-!
 !  interface mpigather_and_out
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
@@ -2291,7 +2281,7 @@ module Mpicomm
 !
 !  Communicate character scalar between processors.
 !
-      character(LEN=*) :: cbcast_array
+      character :: cbcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -2301,8 +2291,8 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(cbcast_array,len(cbcast_array),MPI_CHARACTER,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(cbcast_array,1,MPI_CHARACTER,ibcast_proc, &
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -6980,7 +6970,7 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine parallel_open_ext(unit,file,form)
+    subroutine parallel_open(unit,file,form)
 !
 !  Choose between two reading methods.
 !
@@ -6996,7 +6986,7 @@ module Mpicomm
         call true_parallel_open(unit,file,form)
       endif
 !
-    endsubroutine parallel_open_ext
+    endsubroutine parallel_open
 !***********************************************************************
     subroutine fake_parallel_open(unit,file,form)
 !
@@ -7025,26 +7015,11 @@ module Mpicomm
 !
     endsubroutine fake_parallel_open
 !***********************************************************************
-    subroutine parallel_open_int(unit,file,form)
-!
-!  primary reading of data by root and broadcasting; data provided in internal file unit 
-!
-!  11-jan-15/MR: implemented 
-!
-      character(len=:), allocatable :: unit
-      character(len=*) :: file
-      character(len=*), optional :: form
-!
-      call read_infile(file,unit)
-!
-    endsubroutine parallel_open_int
-!***********************************************************************
     subroutine true_parallel_open(unit,file,form,recl)
 !
 !  Read a global file in parallel.
 !
 !  17-mar-10/Bourdin.KIS: implemented
-!  11-jan-15/MR: primary reading of data by root outsourced to read_infile
 !
       use Cparam, only: fnlen
       use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
@@ -7054,12 +7029,52 @@ module Mpicomm
       character (len=*), optional :: form
       integer, optional :: recl
 !
-      integer :: pos
-      character (len=fnlen) :: filename
-      character(len=:), allocatable :: buffer
+      logical :: exists
+      integer :: bytes, pos
+      integer, parameter :: buf_len=fnlen
+      character (len=buf_len) :: filename
+      character, dimension(:), allocatable :: buffer
       character(len=fnlen) :: get_tmp_prefix_
 !
-      call read_infile(file,buffer)
+      if (lroot) then
+!
+!  Test if file exists.
+!
+        inquire(FILE=file,exist=exists)
+        if (.not. exists) call stop_it_if_any(.true., &
+            'true_parallel_open: file not found "'//trim(file)//'"')
+        bytes=file_size(file)
+        if (bytes < 0) call stop_it_if_any(.true., &
+            'true_parallel_open: could not determine file size "'//trim(file)//'"')
+        if (bytes == 0) call stop_it_if_any(.true., &
+            'true_parallel_open: file is empty "'//trim(file)//'"')
+      endif
+!
+!  Catch conditional errors of the MPI root rank.
+!
+      call stop_it_if_any(.false.,'')
+!
+!  Broadcast the file size.
+!
+      call mpibcast_int(bytes, 1)
+!
+!  Allocate temporary memory.
+!
+      allocate(buffer(bytes))
+      buffer=char(0)
+!
+      if (lroot) then
+!
+!  Read file content into buffer.
+!
+        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
+        read(unit, REC=1) buffer
+        close(unit)
+      endif
+!
+!  Broadcast buffer to all MPI ranks.
+!
+      call mpibcast_char(buffer, bytes)
 !
 !  Create unique temporary filename.
 !
@@ -7068,14 +7083,12 @@ module Mpicomm
         file(pos:pos)='_'
         pos=scan(file, '/')
       enddo
-!
       get_tmp_prefix_=get_tmp_prefix()
-      get_tmp_prefix_='/tmp/'
       write(filename,'(A,A,A,I0)') trim(get_tmp_prefix_), file, '-', iproc
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
-      call write_binary_file(filename, len(buffer), buffer)
+      call write_binary_file(filename, bytes, buffer)
       deallocate(buffer)
 !
 !  Open temporary file.
@@ -7095,97 +7108,7 @@ module Mpicomm
 !
     endsubroutine true_parallel_open
 !***********************************************************************
-    subroutine read_infile(file,buffer)
-!
-!  Primary reading of a global file by the root and its broadcasting.
-!
-!  11-jan-15/MR: outsourced from true_parallel_open
-!
-      use Syscalls, only: file_size
-      use General, only: itoa
-
-      character(len=*) :: file
-      character(len=:), allocatable :: buffer
-      character(len=4096) :: linebuf          ! fixed length problematic
-
-      integer, parameter :: unit=1
-      integer :: bytes,ind,lenbuf,ios
-      logical :: exists,l0
-
-      if (lroot) then
-!
-!  Test if file exists.
-!
-        inquire(FILE=file,exist=exists)
-        if (.not. exists) call stop_it_if_any(.true., &
-            'true_parallel_open: file not found "'//trim(file)//'"')
-        bytes=file_size(file)
-        if (bytes < 0) call stop_it_if_any(.true., &
-            'true_parallel_open: could not determine file size"'//trim(file)//'"')
-        if (bytes == 0) call stop_it_if_any(.true., &
-            'true_parallel_open: file is empty "'//trim(file)//'"')
-      endif
-!
-!  Catch conditional errors of the MPI root rank.
-!
-      call stop_it_if_any(.false.,'')
-!
-      if (lroot) then
-!
-!  Allocate temporary memory.
-!
-      allocate(character(bytes) :: buffer)
-!
-!  Read file content into buffer.
-!
-        !open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct',STATUS='old')
-        open(unit, FILE=file, STATUS='old')
-
-        l0=.true.; buffer=' '
-
-        do 
-          read(unit,'(a)',iostat=ios) linebuf
-          if (ios<0) exit
-
-          linebuf=adjustl(linebuf)
-          ind=index(linebuf,'!')
-!
-          if (ind==0) then
-            ind=len(trim(linebuf))
-          else
-            ind=ind-1
-            if (ind>0) ind=len(trim(linebuf(1:ind)))
-          endif
-!
-          if (ind==0) then        ! is a comment or empty line -> skip
-            cycle
-          elseif (l0) then
-            buffer=linebuf(1:ind)
-            lenbuf=ind
-            l0=.false.
-          else
-            buffer=buffer(1:lenbuf)//' '//linebuf(1:ind)
-            lenbuf=lenbuf+ind+1
-          endif
-            
-        !read(unit,REC=1) buffer
-        enddo
-
-        close(unit)
-      endif
-!
-!  Broadcast the file size.
-!
-      call mpibcast_int(lenbuf, 1)
-      if (.not.lroot) allocate(character(lenbuf) :: buffer)
-!
-!  Broadcast buffer to all MPI ranks.
-!
-      call mpibcast_char(buffer(1:lenbuf))
-!
-    endsubroutine read_infile
-!***********************************************************************
-    subroutine parallel_close_ext(unit)
+    subroutine parallel_close(unit)
 !
 !  Close a file unit opened by parallel_open and remove temporary file.
 !
@@ -7196,26 +7119,14 @@ module Mpicomm
       if (lfake_parallel_io) then
         call fake_parallel_close(unit)
       else
-        call true_parallel_close(unit)
-      endif
+         call true_parallel_close(unit)
+       endif
 !
-    endsubroutine parallel_close_ext
-!***********************************************************************
-    subroutine parallel_close_int(unit)
-!
-!  "Close" an inernal unit by deallocating it.
-!
-!  11-jan-15/MR: implemented
-!
-      character(len=*), allocatable :: unit
-!
-      if (allocated(unit)) deallocate(unit)
-!
-    endsubroutine parallel_close_int
+    endsubroutine parallel_close
 !***********************************************************************
     subroutine fake_parallel_close(unit)
 !
-!  Close a file unit opened by fake_parallel_open. 
+!  Close a file unit opened by parallel_open and remove temporary file.
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
@@ -7227,7 +7138,7 @@ module Mpicomm
 !***********************************************************************
     subroutine true_parallel_close(unit)
 !
-!  Close a file unit opened by true_parallel_open and remove temporary file.
+!  Close a file unit opened by parallel_open and remove temporary file.
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
@@ -7722,12 +7633,12 @@ module Mpicomm
       use General, only: itoa,safe_character_append,safe_character_prepend
 !
       logical,               intent(IN) :: flag
-      character (len=fnlen), intent(OUT):: message
+      character (LEN=fnlen), intent(OUT):: message
 !
       integer :: mpierr, i, ia, ie, count
       logical, dimension(:), allocatable:: flags
 !
-      character (len=intlen)  :: str
+      character (LEN=intlen)  :: str
 !
       if (lroot) allocate(flags(ncpus))
 !
