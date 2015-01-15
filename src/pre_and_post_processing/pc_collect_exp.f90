@@ -146,7 +146,7 @@ program pc_collect
 ! Read additional information and check consistency of timestamp
 !      
       open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
-      backspace(lun_input); backspace(lun_input)
+      backspace(lun_input); if (lroot) backspace(lun_input)
       read (lun_input) t_sp
 !
       if (lroot) then
