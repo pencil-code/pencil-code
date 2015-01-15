@@ -1012,11 +1012,9 @@ module Particles_chemistry
 !
       if (unit_system == 'cgs') then
         pre_Cg = 1e6
-        pre_Cs = 1e4
         pre_RR_hat = 1e-4
       else
         pre_Cg = 1.
-        pre_Cs = 1.
         pre_RR_hat = 1.
       endif
 !
@@ -1025,11 +1023,11 @@ module Particles_chemistry
           RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
           do i = 1,N_surface_reactants
             if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
-                (pre_Cg*Cg(k)*fp(k,isurf-1+i))**nu(i,j)
+                (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
           enddo
           if (N_adsorbed_species > 1) then
             do i = 1,N_adsorbed_species
-              if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
+              if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(Cs(k,i))**mu(i,j)
             enddo
           endif
           RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
