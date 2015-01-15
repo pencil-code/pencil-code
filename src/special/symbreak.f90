@@ -245,7 +245,7 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
 !  read namelist
@@ -271,7 +271,7 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
 !  write name list

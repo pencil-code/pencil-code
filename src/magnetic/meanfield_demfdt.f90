@@ -272,7 +272,7 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -295,7 +295,7 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_run_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

@@ -441,7 +441,7 @@ print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)

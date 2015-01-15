@@ -96,7 +96,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Dummy routine
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
@@ -118,7 +118,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Dummy routine
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
