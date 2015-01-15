@@ -122,6 +122,8 @@ module Special
 !
       if (lroot) call svn_id( &
            "$Id$")
+      call keep_compiler_quiet(npvar)
+!
 !
 !!      iqp=npvar+1
 !!      npvar=npvar+1
@@ -511,7 +513,9 @@ module Special
       real, dimension (:,:), intent(in) :: fp
       integer, dimension(:,:) :: ineargrid
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine special_calc_particles
 !***********************************************************************
