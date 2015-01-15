@@ -234,7 +234,7 @@ module Special
 !
     endsubroutine update_ghosts_local
 !***********************************************************************
-    subroutine pencils_criteria_special(f,p)
+    subroutine pencil_criteria_special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -247,10 +247,7 @@ module Special
       lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_glnrho)=.true.
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine pencils_criteria_special
+    endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -281,9 +278,6 @@ module Special
       call dot(p%gTT,q%gksi,q%gTTgksi)
 !      
       q%divflux = -16*sigmaSB*q%lambda*p%TT**3*p%rho1*q%kappa1*(p%del2TT+q%gTTgksi)
-      do i=1,nx 
-        print*,i,m,n,q%divflux(i)
-      enddo
 !
       call keep_compiler_quiet(p)
 !
