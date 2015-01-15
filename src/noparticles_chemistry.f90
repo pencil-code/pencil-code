@@ -206,11 +206,6 @@ module Particles_chemistry
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine get_total_carbon_sites()
-  endsubroutine get_total_carbon_sites
-! ******************************************************************************
-! 30.09.2014/Jonas:coded
-
   subroutine sort_compounds()
   endsubroutine sort_compounds
 ! ******************************************************************************

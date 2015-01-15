@@ -31,6 +31,7 @@ module Particles_chemistry
   use Particles_mpicomm
   use Particles_sub
   use EquationOfState
+  use Chemistry
   use SharedVariables, only: put_shared_variable
 !
   implicit none
@@ -54,9 +55,6 @@ module Particles_chemistry
   integer, dimension(:), allocatable :: dependent_reactant
   real, dimension(:,:), allocatable, save :: part_power
 !
-!  JONAS: implement something to calculate molar_mass of
-!  gas phase species
-!
   real, dimension(nchemspec) :: molar_mass=1.0
   real, dimension(50) :: reaction_enhancement=1
   character(len=3), dimension(:), allocatable, save :: reaction_direction
@@ -77,7 +75,7 @@ module Particles_chemistry
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
   integer :: iter=0
   integer, dimension(:), allocatable :: jmap
-  real :: x_s_total, rho_part
+  real :: x_s_total
   real :: effectiveness_factor_timeaver=1.
   real :: eta_int=0., delta_rho_surface=0.
   real :: A_p_first, rho_p_first
@@ -85,14 +83,11 @@ module Particles_chemistry
   real, target :: total_carbon_sites=1.08e-8 ! [mol/cm^2]
   real :: chemplaceholder=0.0
   real :: tortuosity=3.
-  real :: Init_density_part=1.300 ! g/cm^3
   real, target :: true_density_carbon=1.800 ! g/cm^3
   real :: structural_parameter=8. ! [-]
   real :: startup_time=0.
   real :: startup_quench
-!
-!  JONAS: implement something to calculate molar_mass of
-!  gas phase species
+  real :: pre_energy=1.0
 !
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
@@ -129,13 +124,11 @@ module Particles_chemistry
   real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
 !
-! Some physical constants
-! NILS: Must set up a system for these dimensional parameters
   real :: mol_mass_carbon=12.0
-  !real :: Sgc_init=3e5 ! m^2/kg
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
+!  this one is used for
 !
   real :: gas_constant=8.314 ![J/mol/K]
 !
@@ -174,6 +167,8 @@ module Particles_chemistry
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share total_carbon')
       call put_shared_variable('true_density_carbon',true_density_carbon,ierr)
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share true_density')
+!
+      call register_unit_system()
 !
     endsubroutine register_particles_chem
 ! ******************************************************************************
@@ -913,6 +908,8 @@ module Particles_chemistry
                   -mu(j,l)*adsorbed_species_entropy(k,j)
             enddo
           endif
+!  This is the cgs-SI switch
+          entropy_k(k,l) = entropy_k(k,l) * pre_energy
         enddo
       enddo
     endsubroutine calc_entropy_of_reaction
@@ -930,6 +927,9 @@ module Particles_chemistry
       real :: denominator, expo
       real, dimension(:,:) :: fp
 !
+!  This should be kept in SI units, therefore a prefactor to the pressure is
+!  introduced to keep interp_pp in SI units
+!
       if (unit_system == 'cgs') then
         pre_pressure = 0.1
       else
@@ -937,13 +937,13 @@ module Particles_chemistry
       endif
 !
         denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-        expo = denominator/(gas_constant*fp(k,iTp))
+        expo = denominator/(Rgas*fp(k,iTp))
         k_p = exp(-expo)
 !
 ! k_p == pressure independent equilibrium constant
 !
         k_c = k_p / (((gas_constant)*fp(k,iTp)/ &
-            (pre_pressure*interp_pp(k)))**(dngas(l-1)))
+            (pre_pressure * interp_pp(k)))**(dngas(l-1)))
 !
 ! k_c == pressure dependent equilibrium constant
 !
@@ -989,6 +989,7 @@ module Particles_chemistry
                   -mu(j,l)*adsorbed_species_enthalpy(k,j)
             enddo
           endif
+          heating_k(k,l)=heating_k(k,l) * pre_energy
         enddo
       enddo
     endsubroutine calc_enthalpy_of_reaction
@@ -1217,11 +1218,9 @@ module Particles_chemistry
 !
 !  Find effective diffusion coefficient (based on bulk and Knudsen diffusion)
 !
-!  JONAS: check which attributes change from particle to particle!!
-!
       do k = k1,k2
         do i = 1,N_surface_reactants
-          tmp3 = 8*gas_constant*fp(k,iTp)/(pi*molar_mass(jmap(i)))
+          tmp3 = 8*Rgas*fp(k,iTp)/(pi*molar_mass(jmap(i)))
           Knudsen = 2*pore_radius(k)*porosity(k)*sqrt(tmp3)/(3*tortuosity)
           tmp1 = 1./diff_coeff_reactants(i)
           tmp2 = 1./Knudsen
@@ -1854,7 +1853,7 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       do k = k1,k2
-        Cg(k) = interp_pp(k)/(R_cgs*interp_TT(k))
+        Cg(k) = interp_pp(k)/(Rgas*interp_TT(k))
       enddo
     endsubroutine calc_Cg
 ! ******************************************************************************
@@ -1899,22 +1898,18 @@ module Particles_chemistry
 !
     subroutine calc_q_reac()
 !
-      use SharedVariables, only: put_shared_variable
-!
       integer :: k, k1, k2, i, ierr
-      real, dimension(:,:), allocatable :: qk_reac
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      allocate(qk_reac(k1:k2,N_surface_reactions))
+      q_reac=0.0
       do k = k1,k2
-        qk_reac(k,:) = RR_hat(k,:)*St(k)*(-heating_k(k,:))
-        q_reac(k) = sum(qk_reac(k,:))
+        do i = 1,N_surface_reactions
+          q_reac(k) =q_reac(k)+RR_hat(k,i)*St(k)*(-heating_k(k,i))
+        enddo
       enddo
-      deallocate(qk_reac)
 !
-      if (allocated(qk_reac)) deallocate(qk_reac)
     endsubroutine calc_q_reac
 ! ******************************************************************************
 !
@@ -2136,10 +2131,12 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(ndot_targ)
-      real, dimension(:,:) :: ndot_targ
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ)
+      real, dimension(:,:),optional :: ndot_targ
+      real, dimension(:) :: Cg_targ
 !
-      ndot_targ = ndot
+      if(present(ndot_targ)) ndot_targ = ndot
+      Cg_targ = Cg
 !
     endsubroutine get_surface_chemistry
 ! ******************************************************************************
@@ -2174,5 +2171,22 @@ module Particles_chemistry
       if(allocated(part_power)) deallocate(part_power)
 !
     endsubroutine particles_chemistry_clean_up
+! ******************************************************************************
+    subroutine register_unit_system()
+!
+!  Switch some variables that are affected by the switch from SI to cgs.
+!  They are declared in cgs and need to be switched to SI. Do nothing if
+!  cgs
+!  Enthalpy and Entropie have to get a pre factor if cgs
+!
+      if (unit_system == 'cgs') then
+        pre_energy = pre_energy * 1.0e7 !J to ergs
+      else
+        true_density_carbon = true_density_carbon * 1000.0
+        total_carbon_sites = total_carbon_sites * 1.0e4
+        Sgc_init = Sgc_init * 0.1
+      endif
+!
+    end subroutine register_unit_system
 ! ******************************************************************************
 endmodule Particles_chemistry

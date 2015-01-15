@@ -313,12 +313,13 @@ module Particles_surfspec
     real, dimension(mpar_loc,mparray) :: fp
     real, dimension(mpar_loc,mpvar) :: dfp
     real, dimension(:,:), allocatable :: term,ndot
+    real, dimension(:), allocatable :: Cg
     real :: porosity
     type (pencil_case) :: p
     integer, dimension(mpar_loc,3) :: ineargrid
     integer :: k, k1, k2, i, ix0, iy0, iz0
     real :: weight, volume_cell, rho1_point
-    real :: mean_molar_mass, dmass, A_p, Cg
+    real :: mean_molar_mass, dmass, A_p
     integer :: ix1, iy1, iz1,ierr
     integer :: ixx, iyy, izz
     integer :: ixx0, iyy0, izz0
@@ -338,11 +339,12 @@ module Particles_surfspec
 
     allocate(term(k1:k2,1:N_surface_reactants))
     allocate(ndot(k1:k2,1:N_surface_species))
+    allocate(Cg(k1:k2))
 !    
     call get_shared_variable('true_density_carbon',true_density_carbon,ierr)
 !
     call calc_mass_trans_reactants()
-    call get_surface_chemistry(ndot)
+    call get_surface_chemistry(Cg,ndot)
 !
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
@@ -350,9 +352,8 @@ module Particles_surfspec
 !
     do k = k1,k2
       porosity = 1 - (fp(k,imp)/(fp(k,iap)**3*4./3.*pi))/true_density_carbon
-      Cg = interp_pp(k)/(R_cgs*interp_TT(k))
       A_p = fp(k1,iap)**2*4.*pi
-      mean_molar_mass = (interp_rho(k)*R_cgs*interp_TT(k)/ interp_pp(k))
+      mean_molar_mass = (interp_rho(k)*Rgas*interp_TT(k)/ interp_pp(k))
 
       if (lboundary_explicit) then
 !SOLVE explicitly
@@ -372,7 +373,7 @@ module Particles_surfspec
                 mean_molar_mass-fp(k,isurf+i-1))
 
             ! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
-            dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg*fp(k,iap))
+            dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
 
             ! JONAS: what was implemented was infinite diffusion, but without created species
           enddo
@@ -423,6 +424,7 @@ module Particles_surfspec
 
     deallocate(term)
     deallocate(ndot)
+    deallocate(Cg)
   endsubroutine dpsurf_dt_pencil
 ! ******************************************************************************
 !  Read and register print parameters relevant for
@@ -636,12 +638,13 @@ module Particles_surfspec
     integer :: ix0, iy0, iz0
     integer::spec_glob, spec_chem
     real, dimension(:,:), allocatable :: diff_coeff_species
-    real :: Cg
+    real, dimension(:), allocatable :: Cg
 
     k1 = k1_imn(imn)
     k2 = k2_imn(imn)
 
     allocate(diff_coeff_species(k1:k2,N_species))
+    allocate(Cg(k1:k2))
 
     do k = k1,k2
       ix0 = ineargrid(k,1)
@@ -651,15 +654,17 @@ module Particles_surfspec
         diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
       enddo
     enddo
-
+!
+    call get_surface_chemistry(Cg)
+!
     do k = k1,k2
-      Cg = interp_pp(k)/(R_cgs*interp_TT(k))
       do i = 1,N_surface_species
-        mass_trans_coeff_species(k,i) = Cg*diff_coeff_species(k,i)/ fp(k,iap)
+        mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species(k,i)/ fp(k,iap)
       enddo
     enddo
 
     deallocate(diff_coeff_species)
+    deallocate(Cg)
   endsubroutine calc_mass_trans_coeff
 ! ******************************************************************************
   subroutine particles_surfspec_clean_up()
