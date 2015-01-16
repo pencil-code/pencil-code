@@ -721,20 +721,25 @@ module Register
       integer,                          intent(out) :: nnamel
 !
       character (len=30) :: cname_tmp
-      integer, parameter :: unit=1
+      include 'unit_loc.h'
+
+      nnamel=0
 !
-      call parallel_open(unit,FILE=trim(in_file))
+      call parallel_open(unit,file=trim(in_file),form='formatted',nitems=nnamel)
 !
 !  Read names and formats.
 !
-      nnamel = 0
-      do
-        read(unit,*,end=99) cname_tmp
-        if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
-          nnamel=nnamel+1
-          cnamel(nnamel)=cname_tmp
-        endif
-      enddo
+      if (nnamel>0) then
+        read(unit,*) cnamel(1:nnamel)
+      else
+        do
+          read(unit,*,end=99) cname_tmp
+          if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
+            nnamel=nnamel+1
+            cnamel(nnamel)=cname_tmp
+          endif
+        enddo
+      endif
 !
 99    call parallel_close(unit)
 !
@@ -790,13 +795,13 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
-      use Mpicomm,         only: parallel_file_exists, parallel_count_lines, &
-                                 parallel_open, parallel_close
+      use Mpicomm,         only: parallel_file_exists, parallel_count_lines
 !
       integer :: unit=1
-      integer :: ierr,iadd,ios
+      integer :: i,ierr,iadd,ios
       logical :: lreset, ldummy
       character (len=30) :: cname_tmp
+      character (len=30), allocatable :: ctmp(:)
 !
       character (LEN=15)           :: print_in_file
       character (LEN=*), parameter :: video_in_file    = 'video.in'
@@ -966,29 +971,28 @@ module Register
 !
 !  Read in the list of variables for phi-averages.
 !
-      if (parallel_file_exists(phiaver_in_file)) then
-        call parallel_open(unit,file=phiaver_in_file)
+      nnamerz = parallel_count_lines(phiaver_in_file)
+!
+      if (nnamerz>0) then
+!
+        allocate(ctmp(nnamerz))
+        lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
+
         iadd=0
-!
-        do
-          read(unit,*,iostat=ierr) cname_tmp
-          if (ierr==0) then
-            nnamerz=nnamerz+1
-            if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
-                 cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
-                 cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
-              iadd=iadd+2
-          else
-            exit
-          endif
+        do i=1,nnamerz
+          cname_tmp=ctmp(i)
+          if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
+               cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
+               cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
+            iadd=iadd+2
         enddo
-        call parallel_close(unit)
+
+        call allocate_phiaverages(nnamerz+iadd)
+        cnamerz(1:nnamerz)=ctmp
+        deallocate(ctmp)
 !
-        if (nnamerz>0) then
-          call allocate_phiaverages(nnamerz+iadd)
-          lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz)
-        endif
       endif
+!
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
 !  Set logical for 2-D averages.
