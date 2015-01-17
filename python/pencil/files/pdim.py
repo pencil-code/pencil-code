@@ -13,11 +13,12 @@ class PcPdim:
     """
     a class to hold the pdim.dat data.
     """
-    def __init__(self,npar,mpvar,npar_stalk):
+    def __init__(self,npar,mpvar,npar_stalk,mpaux):
         #primative quantities read directly from file
         self.npar = npar
         self.mpvar = mpvar
         self.npar_stalk = npar_stalk
+	self.mpaux = mpaux
 
         
 def read_pdim(datadir='data',proc=-1):
@@ -40,9 +41,9 @@ def read_pdim(datadir='data',proc=-1):
     else:
         lines = file.readlines()
         file.close()
-        # 'npar','mpvar','npar_stalk'
-	npar,mpvar,npar_stalk = tuple(map(int,lines[0].split()))
+        # 'npar','mpvar','npar_stalk','mpaux'
+	npar,mpvar,npar_stalk,mpaux = tuple(map(int,lines[0].split()))
 
-    pdim = PcPdim(npar,mpvar,npar_stalk)
+    pdim = PcPdim(npar,mpvar,npar_stalk,mpaux)
 
     return pdim
