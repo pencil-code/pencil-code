@@ -2580,7 +2580,7 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine parallel_open(unit,file,form)
+    subroutine parallel_open(unit,file,form,nitems)
 !
 !  Read a global file.
 !
@@ -2589,8 +2589,11 @@ module Mpicomm
       integer :: unit
       character (len=*) :: file
       character (len=*), optional :: form
+      integer, optional :: nitems
 !
       logical :: exists
+!
+      if (present(nitems)) nitems=0
 !
 !  Test if file exists.
 !

@@ -6970,7 +6970,7 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine parallel_open(unit,file,form)
+    subroutine parallel_open(unit,file,form,nitems)
 !
 !  Choose between two reading methods.
 !
@@ -6979,6 +6979,9 @@ module Mpicomm
       integer :: unit
       character (len=*) :: file
       character (len=*), optional :: form
+      integer, optional :: nitems
+!
+      if (present(nitems)) nitems=0
 !
       if (lfake_parallel_io) then
         call fake_parallel_open(unit,file,form)
