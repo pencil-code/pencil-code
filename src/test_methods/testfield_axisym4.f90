@@ -498,7 +498,7 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
@@ -519,7 +519,7 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_run_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then

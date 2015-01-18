@@ -465,7 +465,7 @@ module Testscalar
 !***********************************************************************
     subroutine read_testscalar_init_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
@@ -486,7 +486,7 @@ module Testscalar
 !***********************************************************************
     subroutine read_testscalar_run_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then

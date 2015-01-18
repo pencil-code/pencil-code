@@ -484,7 +484,8 @@ module Testscalar
     endsubroutine pencil_interdep_testscalar
 !***********************************************************************
     subroutine read_testscalar_init_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -504,7 +505,8 @@ module Testscalar
     endsubroutine write_testscalar_init_pars
 !***********************************************************************
     subroutine read_testscalar_run_pars(unit,iostat)
-      integer, intent(in) :: unit
+!
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
