@@ -29,7 +29,7 @@ function div,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     i_sin = where(abs(sin_y) lt 1e-5) ; sinth_min=1e-5
     if (i_sin[0] ne -1) then cotth[i_sin]=0.
     corr = spread (cotth,0,nx) * spread(1.0/x[l1:l2],1,ny)
-    for n = n1, n2 do w[l1:l2,m1:m2,n] += (2*f[l1:l2,m1:m2,n,0]+f[l1:l2,m1:m2,n,1])*corr
+    for n = n1, n2 do w[l1:l2,m1:m2,n] += 2*f[l1:l2,m1:m2,n,0]+f[l1:l2,m1:m2,n,1]*corr
   endif
 ;
 ;  Set ghost zones.
