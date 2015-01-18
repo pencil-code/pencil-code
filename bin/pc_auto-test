@@ -932,7 +932,7 @@ sub call_sub_catch_output {
 
     pipe my $read_retval_handle, my $write_retval_handle;
 
-    my $child_id = open($comm, '-|') // die "can't fork: $!";
+    my $child_id = open($comm, '-|') or die "can't fork: $!";
     if ($child_id) { # parent --> read output from child
         while (<$comm>) {
             $output .= $_;
