@@ -17,8 +17,6 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-use feature 'say';
-
 ##use critic
 
 $VERSION = '0.1';

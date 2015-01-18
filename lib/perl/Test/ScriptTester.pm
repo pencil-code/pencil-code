@@ -22,8 +22,6 @@ use File::Find;
 use Test::NumericFileComparator;
 use vars qw($VERSION);
 
-use feature 'say';
-
 ##use critic
 
 $VERSION = '0.1';

@@ -27,7 +27,6 @@ use Test::NumberComparator;
 use vars qw($VERSION);
 
 use 5.010;                      # for the ~~ operator
-use feature 'say';
 
 ##use critic
 
@@ -48,9 +47,9 @@ Test::NumericFileComparator - Compare numbers in files.
   # Compare file to reference data
   my @message = $comparator->compare('actual.out');
   if (@message) {
-      say "not ok: @message";
+      print "not ok: @message\n";
   } else {
-      say 'ok';
+      print "ok\n";
   }
 
 =head1 DESCRIPTION
