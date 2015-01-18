@@ -424,7 +424,7 @@ module Testfield_general
 !
 !  27-jun-13/MR  : moved from testfield_xz
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
