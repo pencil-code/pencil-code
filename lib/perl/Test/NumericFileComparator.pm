@@ -26,8 +26,6 @@ use Test::NumberComparator;
 
 use vars qw($VERSION);
 
-use 5.010;                      # for the ~~ operator
-
 ##use critic
 
 $VERSION = '0.1';
