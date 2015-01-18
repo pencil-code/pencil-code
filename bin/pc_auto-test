@@ -1174,19 +1174,19 @@ sub interpreter_map_from {
         foreach my $type_spec (split(',', $types_arg)) {
             my $regex = qr{
                            ^ \s *            # leading whitespace
-                           (?<type>
+                           (
                                [^:] *
                            )
                            (?:               # don't group
                                \s * : \s *   # colon with optional whitespace
-                               (?<interpreter>
+                               (
                                    .*?
                                )
                            )?
                            \s * $            # trailing whitespace
                           }x;
             $type_spec =~ m/$regex/;
-            my ($type, $interpreter) = ($+{type}, $+{interpreter});
+            my ($type, $interpreter) = ($1, $2);
             if (! defined $interpreter) {
                 $interpreter = $default_interpreters{$type};
             }

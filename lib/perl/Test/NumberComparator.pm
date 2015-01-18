@@ -167,11 +167,11 @@ sub _compare_special_ieee {
         } else {
             return +1;          # NaN > other (abritrary, but must be != 0)
         }
-    } elsif ($a =~ m{ (?<sign_a> [-+])? Inf }ix) {
-        my $sign_a = $+{sign_a};
-        if ($b =~ m{ (?<sign_b> [-+])? Inf }ix) {
+    } elsif ($a =~ m{ ( [-+])? Inf }ix) {
+        my $sign_a = $1;
+        if ($b =~ m{ ( [-+])? Inf }ix) {
             # Comparing +/-Inf to +/-Inf or Inf
-            my $sign_b = $+{sign_b};
+            my $sign_b = $1;
             if (defined $sign_a && defined $sign_b) {
                 return $sign_a cmp $sign_b;
             } else {
