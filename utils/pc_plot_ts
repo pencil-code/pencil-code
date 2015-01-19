@@ -228,7 +228,7 @@ my ($var1, $var2);
 #
 
 $gnuplot ? open (GNUPLOT, ">-")  # Print to STDOUT.
-         : open (GNUPLOT, "|-", "gnuplot --persist");
+         : open (GNUPLOT, "|-", "gnuplot -persist");
 
 #
 # GUI selected?
