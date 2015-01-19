@@ -1670,8 +1670,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC_SLOPPY = $(FC) #(beskow*)
 #F90=$(FC) #(beskow*)
 #CC=cc #(beskow*)
-#FFLAGS=-O3 -ffree -e m -J experimental -J magnetic -J test_methods #(beskow*)
-#FFLAGS_DOUBLE=-r8 #(beskow)
+#FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(beskow*)
+#FFLAGS_DOUBLE=-s default64 #(beskow*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
 ##
 ##HP CP4000 BL Proliant supercluster
