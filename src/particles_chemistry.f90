@@ -947,8 +947,8 @@ module Particles_chemistry
 !
 ! k_c == pressure dependent equilibrium constant
 !
-        K_k(k,l) = (K_k(k,l-1) / k_c)
-      endsubroutine get_reverse_K_k
+      K_k(k,l) = (K_k(k,l-1) / k_c)
+    endsubroutine get_reverse_K_k
 ! ******************************************************************************
 !  Calculate the conversion of the particle
 !
@@ -1928,6 +1928,10 @@ module Particles_chemistry
 !  JONAS: access to some chemistry variables as well to particles_dust for rep(k)
 !  for Pr and Sc is needed, these are only placeholders!!!
 !
+      call fatal_error('calc_Nusselt',&
+          'Prandtl, Schmidt and Reynolds number are wrong!')
+      !NILS: We must do this correctly now, otherwise we are likely to
+      !NILS: forget and we will get wrong results.
       Pr_g = 0.7
       Sc_g = 0.65
       rep = 0.0002
