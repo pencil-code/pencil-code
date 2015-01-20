@@ -341,10 +341,6 @@ module Io
           persist_initialized = .false.
         endif
         close (lun_output)
-!
-! MR: Philippe, why is the close inside the if clause? I cannot see that lun_output is
-!     closed somewhere else if ldistribute_persist .or. lfirst_proc_xy = .false.
-! 
       endif
 !
     endsubroutine output_snap_finalize
