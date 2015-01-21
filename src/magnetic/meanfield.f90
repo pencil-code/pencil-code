@@ -1373,7 +1373,7 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine read_magn_mf_init_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -1404,7 +1404,7 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine read_magn_mf_run_pars(unit,iostat)
 !
-      include 'unit.h'
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
