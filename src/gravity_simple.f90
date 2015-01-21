@@ -537,6 +537,12 @@ module Gravity
 !
       call put_shared_variable('nu_epicycle',nu_epicycle)
       call put_shared_variable('gravz_zpencil',gravz_zpencil)
+
+      if (lreference_state) then
+        call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -610,7 +616,6 @@ module Gravity
 !
 !  Don't do anything
 !
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine init_gg
@@ -619,10 +624,12 @@ module Gravity
 !
 !  All pencils that the Gravity module depends on are specified here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
+!  20-jan-15/MR: pencil request for rho1 added when reference_state is used
 !
       lpenc_requested(i_gg)=.true.
       if (lanelastic) lpenc_requested(i_rho_anel)=.true.
+      if (lreference_state) lpenc_requested(i_rho1)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
           idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
@@ -689,17 +696,22 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !   5-dec-06/petri: added Boussinesq approximation
+!  20-jan-15/MR: changes for use of reference state
 !
       use Diagnostics
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: k
-!
       intent(in) :: f,p
       intent(inout) :: df
+!
+      integer :: k,ierr
+      real, dimension(nx,3) :: gg
+      real, dimension(nx) :: refac
+      real, dimension(:,:), pointer :: reference_state
 !
 !  Add gravity acceleration on gas.
 !
@@ -714,22 +726,37 @@ module Gravity
           endif
         else if (lanelastic) then
 ! Now works for the linear anelastic formulation only
-                if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ p%gg(:,1)*&
+                if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*&
                                 p%rho_anel
-                if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ p%gg(:,2)*&
+                if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*&
                                 p%rho_anel
                 if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
                                  (-p%ss)
 !                                p%rho_anel
         else
+          if (lgravx_gas) gg(:,1)=p%gg(:,1)
+          if (lgravy_gas) gg(:,2)=p%gg(:,2)
+          if (lgravz_gas) gg(:,3)=p%gg(:,3)
+!
+! When reference state is used, gravity needs a correction factor rho'/rho=1-rho_0/rho.
+! Note that the pencil case contains always the total quantities.
+!
+          if (lreference_state) then
+            call get_shared_variable('reference_state',reference_state,ierr)
+            refac=1.-reference_state(:,iref_rho)*p%rho1
+            if (lgravx_gas) gg(:,1)=gg(:,1)*refac
+            if (lgravy_gas) gg(:,2)=gg(:,2)*refac
+            if (lgravz_gas) gg(:,3)=gg(:,3)*refac
+          endif
+!
           if (lxyzdependence) then
-            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)
-            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)
-            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*xdep(l1:l2)
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)*zdep(n)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)*xdep(l1:l2)
           else
-            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)
-            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)
-            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)
           endif
         endif
       endif
