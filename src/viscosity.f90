@@ -1881,6 +1881,7 @@ module Viscosity
 !  the temperature equation. Divide by cv if pretend_lnTT.
 !
       if (lentropy) then
+!
         if (pretend_lnTT) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
         else

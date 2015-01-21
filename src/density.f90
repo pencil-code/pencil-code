@@ -25,7 +25,7 @@ module Density
 !
   use Cparam
   use Cdata
-  use General, only : keep_compiler_quiet
+  use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
 !
@@ -49,6 +49,11 @@ module Density
   real, dimension(nz) :: zmask_den
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
+! 
+! reference state, components:  1       2          3              4            5      6     7         8            9
+!                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
+  character(LEN=labellen) :: ireference_state='nothing'
+  real, dimension(nx,9) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
@@ -126,7 +131,7 @@ module Density
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
       lreduced_sound_speed, lscale_to_cs2top, density_zaver_range, &
-      lconserve_total_mass, total_mass
+      lconserve_total_mass, total_mass, ireference_state
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -145,7 +150,7 @@ module Density
       density_zaver_range, rss_coef1, rss_coef2, &
       lconserve_total_mass, total_mass, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
-      lsubtract_init_stratification
+      lsubtract_init_stratification, ireference_state
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -226,11 +231,12 @@ module Density
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !  14-apr-14/axel: lreinitialize_lnrho and lreinitialize_rho added
+!  21-jan-15/MR: changes for use of reference state.
 !
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
-      use Gravity, only: lnumerical_equilibrium
+      use Gravity, only: lnumerical_equilibrium, gravx
       use Sub, only: stepdown,der_stepdown, erfunc
       use SharedVariables, only: put_shared_variable
 !
@@ -238,6 +244,27 @@ module Density
 !
       integer :: i,j,ierr
       logical :: lnothing
+      real :: rho_bot,sref
+!
+      lreference_state = ireference_state/='nothing'
+!
+!  If density variable is actually deviation from reference state, log(density) cannot be used.
+!
+      if (lreference_state) then
+        if (.not.ldensity_nolog) & 
+          call fatal_error('initialize_density','use of reference state requires use of linear density')
+        lcalc_glnrhomean=.false.     !?
+        if (.not.lentropy) then
+!
+!  Use of reference state at the moment implemented only for entropy.
+!
+          call fatal_error('initialize_density','use of reference state requires use of entropy')
+          if (ltemperature) then
+            if (.not.ltemperature_nolog) &
+              call fatal_error('initialize_density','use of reference state requires use of linear temperature')
+          endif
+        endif
+      endif
 !
 !  Initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -275,7 +302,7 @@ module Density
              'initialize_density: 0-D run, turned off continuity equation'
       endif
 !
-!  If fargo is used, continuity is taken care of in special/fargo.f90
+!  If fargo is used, continuity is taken care of in special/fargo.f90.
 !
       if (lfargo_advection) then
         lcontinuity_gas=.false.
@@ -597,6 +624,28 @@ module Density
            reduce_cs2_profz=1.
         endif
         call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
+      endif
+!
+      if (lreference_state) then
+        select case(ireference_state)
+        case ('adiabatic_simple')
+!
+!  Simple adiabatic reference state s=sref=const., p ~ rho^gamma for gravity ~ 1/x^2 --> rho/rho_bottom = (x/x_bottom)^(1/(1-gamma))
+!
+          rho_bot=1.
+          sref=1.
+          reference_state(:,iref_rho  ) = rho_bot*(x(l1:l2)/xyz0(1))**(1/(1-gamma))
+          reference_state(:,iref_grho ) = rho_bot/(1-gamma)/xyz0(1)*(x(l1:l2)/xyz0(1))**(1/(1-gamma)-1)
+          reference_state(:,iref_gp   ) = gravx*reference_state(:,iref_rho )
+          reference_state(:,iref_s    ) = sref
+          reference_state(:,iref_d2rho) = 0.    ! yet missing
+          reference_state(:,iref_d6rho) = 0.    ! yet missing
+        case default
+          call fatal_error('initialize_density', &
+              'type of reference state "'//trim(ireference_state)//'" not implemented')
+        end select
+
+        call put_shared_variable('reference_state',reference_state,ierr)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1587,6 +1636,7 @@ module Density
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
       endif
 !
+      if (lreference_state) lpenc_requested(i_rho1) = .true.
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
@@ -1688,26 +1738,35 @@ module Density
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
+!  13-05-10/dhruba: stolen parts of earlier calc_pencils_density.
+!  21-jan-15/MR: changes for use of reference state.
 !
       use WENO_transport
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
-      integer :: i
-!
       intent(inout) :: f,p
+!
+      integer :: i,ierr
+      real, dimension(:,:), pointer :: reference_state
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
 ! rho
       p%rho=f(l1:l2,m,n,irho)
+      if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpencil(i_rho1)) p%rho1=1.0/p%rho
 ! lnrho
       if (lpencil(i_lnrho))p%lnrho=log(p%rho)
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+!
         call grad(f,irho,p%grho)
+        if (lreference_state) p%grho(:,1)=p%grho(:,1)+reference_state(:,iref_grho)
+! 
         if (lpencil(i_glnrho)) then
           do i=1,3
             p%glnrho(:,i)=p%rho1*p%grho(:,i)
@@ -1726,11 +1785,17 @@ module Density
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpencil(i_del2rho)) call del2(f,irho,p%del2rho)
+      if (lpencil(i_del2rho)) then
+        call del2(f,irho,p%del2rho)
+        if (lreference_state) p%del2rho=p%del2rho+reference_state(:,iref_d2rho)
+      endif
 ! del2lnrho
       if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
 ! del6rho
-      if (lpencil(i_del6rho)) call del6(f,irho,p%del6rho)
+      if (lpencil(i_del6rho)) then
+        call del6(f,irho,p%del6rho)
+        if (lreference_state) p%del6rho=p%del6rho+reference_state(:,iref_d6rho)
+      endif
 ! del6lnrho
       if (lpencil(i_del6lnrho)) call fatal_error('calc_pencils_density', &
           'del6lnrho not available for linear mass density')
@@ -1742,6 +1807,8 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 ! transprho
+! reference state not yet considered!
+!
       if (lpencil(i_transprho)) &
           call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
 !
@@ -1760,9 +1827,10 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      intent(inout) :: f,p
+!
       integer :: i
 !
-      intent(inout) :: f,p
 ! lnrho
       p%lnrho=f(l1:l2,m,n,ilnrho)
 ! rho1
@@ -1839,18 +1907,17 @@ module Density
       use Diagnostics
       use Special, only: special_calc_density
       use Sub
-      use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      intent(in)  :: p
+      intent(inout) :: df,f
+!
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
       real, dimension (nx) :: unitpencil=1., density_rhs
       integer :: j
-!
-      intent(in)  :: p
-      intent(inout) :: df,f
 !
 !  Identify module and boundary conditions.
 !
@@ -1865,7 +1932,7 @@ module Density
           .not. lffree .and. .not. lreduced_sound_speed .and. &
           ieos_profile=='nothing') then
         if (ldensity_nolog) then
-          density_rhs= density_rhs - p%ugrho   - p%rho*p%divu
+          density_rhs = density_rhs - p%ugrho - p%rho*p%divu
         else
           density_rhs= density_rhs - p%uglnrho - p%divu
         endif
