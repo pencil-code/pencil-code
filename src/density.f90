@@ -236,7 +236,7 @@ module Density
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
-      use Gravity, only: lnumerical_equilibrium, gravx
+      use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc
       use SharedVariables, only: put_shared_variable
 !
@@ -245,6 +245,7 @@ module Density
       integer :: i,j,ierr
       logical :: lnothing
       real :: rho_bot,sref
+      real, pointer :: gravx
 !
       lreference_state = ireference_state/='nothing'
 !
@@ -627,6 +628,11 @@ module Density
       endif
 !
       if (lreference_state) then
+
+        call get_shared_variable('gravx',gravx,ierr)
+        if (ierr/=0) call fatal_error("initialize_density: ", &
+                                      "there was a problem when getting gravx")
+!   
         select case(ireference_state)
         case ('adiabatic_simple')
 !

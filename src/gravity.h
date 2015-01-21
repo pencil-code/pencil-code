@@ -19,4 +19,3 @@
   public :: lnrho_bot,lnrho_top
   public :: ss_bot,ss_top
   public :: lnumerical_equilibrium
-
