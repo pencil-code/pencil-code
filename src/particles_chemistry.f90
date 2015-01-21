@@ -124,13 +124,13 @@ module Particles_chemistry
   real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
 !
-  real :: mol_mass_carbon=12.0
+  real :: mol_mass_carbon=12.0 !g/mol
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !  this one is used for
 !
-  real :: gas_constant=8.314 ![J/mol/K]
+  real :: gas_constant=8.3144727 ![J/mol/K] MUST ALWAYS BE IN SI UNITS!!!
 !
   namelist /particles_chem_init_pars/ &
       reaction_enhancement, &
@@ -989,6 +989,7 @@ module Particles_chemistry
                   -mu(j,l)*adsorbed_species_enthalpy(k,j)
             enddo
           endif
+!  This is the cgs-SI switch
           heating_k(k,l)=heating_k(k,l) * pre_energy
         enddo
       enddo
@@ -1012,9 +1013,11 @@ module Particles_chemistry
 !
       if (unit_system == 'cgs') then
         pre_Cg = 1e6
+        pre_Cs = 1e4
         pre_RR_hat = 1e-4
       else
         pre_Cg = 1.
+        pre_Cs = 1.
         pre_RR_hat = 1.
       endif
 !
@@ -1027,7 +1030,7 @@ module Particles_chemistry
           enddo
           if (N_adsorbed_species > 1) then
             do i = 1,N_adsorbed_species
-              if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(Cs(k,i))**mu(i,j)
+              if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
             enddo
           endif
           RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
@@ -1074,6 +1077,7 @@ module Particles_chemistry
           RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
         enddo
       endif
+!
     endsubroutine calc_RR_hat
 ! ******************************************************************************
 ! Then find the carbon consumption rate and molar flux of each gaseous
@@ -1484,7 +1488,12 @@ module Particles_chemistry
 !
       if (lreactive_heating) then
         call calc_q_reac()
-        call calc_Nusselt()
+!JONAS:  Commented out the calculation of the Nusselt number for now
+!JONAS:  since this has to be fixed before it can be used.
+!        call calc_Nusselt()
+Nu_p=2.
+!JONAS:  We also need to make a subroutine calculcating the Sherwood 
+!JONAS:  number.
       else
         q_reac = 0.0
       endif
@@ -1835,6 +1844,7 @@ module Particles_chemistry
         if (iter < 1) startup_quench = 0.
         K_k = K_k*startup_quench
       endif
+!
     endsubroutine calc_K_k
 ! ******************************************************************************
 !  Gas concentration in the cell of the particle
@@ -2182,11 +2192,11 @@ module Particles_chemistry
 !  Enthalpy and Entropie have to get a pre factor if cgs
 !
       if (unit_system == 'cgs') then
+        ! this must be used since the enthalpies and entropies are always
+        ! given in SI units
         pre_energy = pre_energy * 1.0e7 !J to ergs
       else
-        true_density_carbon = true_density_carbon * 1000.0
-        total_carbon_sites = total_carbon_sites * 1.0e4
-        Sgc_init = Sgc_init * 0.1
+        mol_mass_carbon=mol_mass_carbon/1000.
       endif
 !
     end subroutine register_unit_system
