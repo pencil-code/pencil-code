@@ -835,6 +835,7 @@ module Magnetic
 !  20-may-03/axel: reinitialize_aa added
 !  13-jan-11/MR: use subroutine 'register_report_aux' instead of repeated code
 !  26-feb-13/axel: reinitialize_aa added
+!  21-jan-15/MR: avoided double put_shared_variable for B_ext
 !
       use Sub, only: register_report_aux
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -851,9 +852,17 @@ module Magnetic
 !
 !  Share the external magnetic field with module Shear.
 !
-      if (lshock .or. (leos.and.lmagn_mf) .or. lspecial) then
+      if (lmagn_mf.or.lshock .or. leos .or. lspecial) then
         call put_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
+      endif
+!
+!  Share the external magnetic field with mean field module.
+!
+      if (lmagn_mf) then
+        call put_shared_variable('B_ext2', B_ext2, ierr)
+        if (ierr /= 0) call fatal_error('initialize_magnetic', &
+          'unable to share variable B_ext2')
       endif
 !
 !  Shear of B_ext,x is not implemented.
@@ -958,17 +967,6 @@ module Magnetic
 !  Note that the extra 1/2 factor is because we work with B^2.
 !
       exp_epspb=(gamma_epspb+1.)/4.
-!
-!  Share the external magnetic field with mean field module.
-!
-      if (lmagn_mf) then
-        call put_shared_variable('B_ext2', B_ext2, ierr)
-        if (ierr /= 0) call fatal_error('initialize_magnetic', &
-          'unable to share variable B_ext2')
-        call put_shared_variable('B_ext', B_ext, ierr)
-        if (ierr /= 0) call fatal_error('initialize_magnetic', &
-          'unable to share variable B_ext')
-      endif
 !
 !  Calculate lJ_ext (true if any of the 3 components in true).
 !
@@ -2448,7 +2446,6 @@ module Magnetic
 !
       use Sub
       use Diagnostics, only: sum_mn_name
-      use SharedVariables, only: put_shared_variable
       use EquationOfState, only: rho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
