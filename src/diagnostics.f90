@@ -2607,6 +2607,7 @@ module Diagnostics
         case (3); read(unit,*,iostat=istat,end=1) xsound,ysound,zsound
         case default
         end select
+!
         if (istat /= 0) then
           backspace unit
           read(unit,*) line
@@ -2631,7 +2632,6 @@ module Diagnostics
 !
           if (lval) then
             ncoords_sound=ncoords_sound+1
-            lwrite_sound = .true.
             temp_sound_coords(ncoords_sound,1) = lsound
             temp_sound_coords(ncoords_sound,2) = msound
             temp_sound_coords(ncoords_sound,3) = nsound
@@ -2639,12 +2639,13 @@ module Diagnostics
         endif
       enddo
 !
-  1   if (lwrite_sound) then
+ 1    lwrite_sound=ncoords_sound>0
+      if (lwrite_sound) then
 !
         if (.not. allocated(cname_sound)) then
           allocate(cname_sound(nnamel),stat=istat)
           if (istat>0) call fatal_error('allocate_sound', &
-              ' ') !!!'Could not allocate memory for cname_sound')
+              'Could not allocate memory for cname_sound')
         endif
 !
         if (.not. allocated(sound_coords_list)) then
