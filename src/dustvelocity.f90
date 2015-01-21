@@ -478,6 +478,7 @@ module Dustvelocity
 !  initialise uud; called from start.f90
 !
 !  18-mar-03/axel+anders: adapted from hydro
+!  21-jan-15/MR: changes for use for reference state.
 !
       use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
       use Sub
@@ -485,12 +486,17 @@ module Dustvelocity
       use Initcond
       use InitialCondition, only: initial_condition_uud
       use EquationOfState, only: pressure_gradient,cs20
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
       real :: eps,cs,eta_glnrho,v_Kepler
-      integer :: j,k,l
+      integer :: j,k,l,ierr
       logical :: lnothing
+      real, dimension(:,:), pointer :: reference_state
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
 !
 !  inituud corresponds to different initializations of uud (called from start).
 !
@@ -560,7 +566,11 @@ module Dustvelocity
             do m=m1,m2
               do n=n1,n2
                 if (ldensity_nolog) then
-                  rho = f(l1:l2,m,n,irho)
+                  if (lreference_state) then
+                    rho = f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
+                  else
+                    rho = f(l1:l2,m,n,irho)
+                  endif
                   lnrho = log(rho)
                 else
                   lnrho = f(l1:l2,m,n,ilnrho)

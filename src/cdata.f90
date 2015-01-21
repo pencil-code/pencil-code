@@ -208,7 +208,8 @@ module Cdata
 !
 !  Module flags.
 !
-  logical :: ldensity_nolog=.false., lwrite_stratification=.false.
+  logical :: ldensity_nolog=.false., lwrite_stratification=.false., &
+             lreference_state=.false.
   logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.

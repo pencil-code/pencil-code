@@ -972,10 +972,12 @@ print*,'NS: z_center=',z_center_fcont
 !   6-feb-13/MR: discard wavevectors [0,0,kz] if lavoid_yxmean
 !  06-dec-13/nishant: made kkx etc allocatable
 !  20-aug-14/MR: discard wavevectors [kx,0,kz] if lavoid_ymean, [kx,ky,0] if lavoid_zmean
+!  21-jan-15/MR: changes for use of reference state.
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
@@ -993,8 +995,9 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik,j,jf
+      integer :: ik,j,jf,ierr
       logical :: lk_dot_dat_exists
+      real, dimension(:,:), pointer :: reference_state
 !
       call keep_compiler_quiet(force_ampl)
 !
@@ -1097,6 +1100,9 @@ print*,'NS: z_center=',z_center_fcont
       ikk(2)=cmplx(0.,ky)
       ikk(3)=cmplx(0.,kz)
 !
+      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+!
 !  Loop over all directions, but skip over directions with no extent.
 !
       iqfm=0.
@@ -1107,7 +1113,11 @@ print*,'NS: z_center=',z_center_fcont
 !
         if (lmomentum_ff) then
           if (ldensity_nolog) then
-            rho1=1./f(l1:l2,m,n,irho)
+            if (lreference_state) then
+              rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+            else
+              rho1=1./f(l1:l2,m,n,irho)
+            endif
           else
             rho1=exp(-f(l1:l2,m,n,ilnrho))
           endif
@@ -1167,11 +1177,13 @@ print*,'NS: z_center=',z_center_fcont
 !  13-jun-13/axel: option of symmetry of forcing function about z direction
 !  06-dec-13/nishant: made kkx etc allocatable
 !  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
+!  21-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm
       use Sub
+      use SharedVariables, only: get_shared_variable
 !
       real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm
       real, save :: kav
@@ -1191,7 +1203,7 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik,j,jf,j2f
+      integer :: ik,j,jf,j2f,ierr
       real, save :: cs0eff
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
       real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
@@ -1199,6 +1211,7 @@ print*,'NS: z_center=',z_center_fcont
       real :: norm,phi
       real :: fd,fd2
       logical :: lk_dot_dat_exists
+      real, dimension(:,:), pointer :: reference_state
 !
 !  additional stuff for test fields
 !
@@ -1453,10 +1466,17 @@ print*,'NS: z_center=',z_center_fcont
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
 !
+      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+!
       if (ldensity) then
         if (lmomentum_ff) then
           if (ldensity_nolog) then
-            rho1=1./f(l1:l2,m,n,irho)
+            if (lreference_state) then
+              rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+            else
+              rho1=1./f(l1:l2,m,n,irho)
+            endif
           else
             rho1=exp(-f(l1:l2,m,n,ilnrho))
           endif
@@ -1583,7 +1603,11 @@ print*,'NS: z_center=',z_center_fcont
                 variable_rhs=f(l1:l2,m,n,iffx:iffz)
                 if (ldensity) then
                   if (ldensity_nolog) then
-                    rho=f(l1:l2,m,n,irho)
+                    if (lreference_state) then
+                      rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+                    else
+                      rho=f(l1:l2,m,n,irho)
+                    endif
                   else
                     rho=exp(f(l1:l2,m,n,ilnrho))
                   endif
@@ -4126,10 +4150,12 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  NB: This is still experimental. Use with care!
 !
 !  20-Nov-12/simon: coded
+!  21-jan-15/MR: changes for use of reference state.
 !
       use Diagnostics
       use Mpicomm
       use Sub
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -4139,8 +4165,9 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (nx) :: ruf,rho, rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
 !      real, dimension (nx,3) :: bb,fxb
-      integer :: j,jf,l
+      integer :: j,jf,l,ierr
       real :: fact, dist3
+      real, dimension(:,:), pointer :: reference_state
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -4155,13 +4182,20 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+!
       irufm=0
       do n=n1,n2
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           if (lmomentum_ff) then
             if (ldensity_nolog) then
-              rho1=1./f(l1:l2,m,n,irho)
+              if (lreference_state) then
+                rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+              else
+                rho1=1./f(l1:l2,m,n,irho)
+              endif
             else
               rho1=exp(-f(l1:l2,m,n,ilnrho))
             endif
