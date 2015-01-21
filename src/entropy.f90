@@ -1086,6 +1086,7 @@ module Energy
 !
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
+!  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
       use EquationOfState,  only: isothtop, get_cp1, &
@@ -1098,8 +1099,10 @@ module Energy
       use Initcond
       use InitialCondition, only: initial_condition_ss
       use Sub
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
 !
       real, dimension (nx) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,ss,r_mn
@@ -1110,8 +1113,10 @@ module Energy
       integer :: ierr
       integer :: j
       logical :: lnothing=.true., save_pretend_lnTT
+      real, dimension(:,:), pointer :: reference_state
 !
-      intent(inout) :: f
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
 !
 !  If pretend_lnTT is set then turn it off so that initial conditions are
 !  correctly generated in terms of entropy, but then restore it later
@@ -1188,6 +1193,8 @@ module Energy
             call blob(thermal_peak,f,iss,radius_ss, &
                 center2_x,center2_y,center2_z)
           case ('shock2d')
+            if (ldensity_nolog) &
+              call fatal_error('init_energy','shock2d only applicable for logarithmic density')
             call shock2d(f)
           case ('isobaric')
 !
@@ -1200,7 +1207,11 @@ module Energy
               pp=pp_const
               do n=n1,n2; do m=m1,m2
                 if (ldensity_nolog) then
-                  lnrho=alog(f(l1:l2,m,n,irho))
+                  if (lreference_state) then
+                    lnrho=alog(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+                  else
+                    lnrho=alog(f(l1:l2,m,n,irho))
+                  endif
                 else
                   lnrho=f(l1:l2,m,n,ilnrho)
                 endif
@@ -1306,6 +1317,7 @@ module Energy
             call polytropic_ss_z(f,mpoly0,z2,z1,z2,isothmid,cs2int,ssint)
 !  Stable layer.
             call polytropic_ss_z(f,mpoly1,z1,z0,z1,0,cs2int,ssint)
+
           case ('piecew-disc', '41')
 !
 !  Piecewise polytropic convective disc.
@@ -2089,9 +2101,11 @@ module Energy
 !  equilibrium. Constants g_A..D from gravz_profile.
 !
 !  12-feb-11/fred: older subroutine now use thermal_hs_equilibrium_ism.
+!  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState , only: eosperturb, getmu
       use Mpicomm, only: mpibcast_real
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho
@@ -2101,6 +2115,8 @@ module Energy
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B, g_D
       double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+      real, dimension(:,:), pointer :: reference_state
+      integer :: ierr
 !
 !  Set up physical units.
 !
@@ -2119,6 +2135,9 @@ module Energy
 !
       call getmu(f,muhs)
 !
+      if (ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+!
       if (lroot) print*, &
           'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
       T0=0.8    ! cs20/gamma_m1
@@ -2127,7 +2146,11 @@ module Energy
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
         lnrho=log(rho)
         if (ldensity_nolog) then
-          f(l1:l2,m,n,irho)=rho
+          if (lreference_state) then
+            f(l1:l2,m,n,irho)=rho-reference_state(:,iref_rho)
+          else
+            f(l1:l2,m,n,irho)=rho
+          endif
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
@@ -2166,6 +2189,7 @@ module Energy
 !
 !  22-mar-10/fred: coded
 !  12-aug-10/fred: moved to interstellar and added shared variables
+!  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
       use SharedVariables, only: get_shared_variable
@@ -2180,6 +2204,7 @@ module Energy
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
       integer :: ierr
+      real, dimension(:,:), pointer :: reference_state
 !
 !  identifier
 !
@@ -2209,6 +2234,8 @@ module Energy
       if (lroot) print*, &
           'thermal_hs_equilibrium_ism: zrho received', &
           ' from interstellar, T0hs =',T0hs
+      if (ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
 !
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
@@ -2216,7 +2243,13 @@ module Energy
       do n=n1,n2
         lnrho=log(zrho(n))
         if (ldensity_nolog) then
-          f(:,:,n,irho)=exp(lnrho)
+          if (lreference_state) then
+            do m=m1,m2
+              f(l1:l2,m,n,irho)=zrho(n)-reference_state(:,iref_rho)
+            enddo
+          else
+            f(:,:,n,irho)=zrho(n)
+          endif
         else
           f(:,:,n,ilnrho)=lnrho
         endif
@@ -2242,32 +2275,55 @@ module Energy
 !   equilibrium.
 !
 !   22-jan-10/fred
+!   20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: eosperturb
       use Mpicomm, only: mpibcast_real
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
       real, dimension(nx) :: rho,pp,lnrho,ss
       real, dimension(1) :: fmpi1
       real :: rho0hs,cs0hs,H0hs
+      real, dimension(:,:), pointer :: reference_state
+      integer :: ierr
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
 !
+      if (ldensity_nolog.and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+!
       do n=n1,n2
       do m=m1,m2
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
-        lnrho=log(rho)
-        f(l1:l2,m,n,ilnrho)=lnrho
+        if (ldensity_nolog) then
+          if (lreference_state) then
+            f(l1:l2,m,n,irho)=rho-reference_state(:,iref_rho)
+          else
+            f(l1:l2,m,n,irho)=rho
+          endif
+        else
+          f(l1:l2,m,n,ilnrho)=log(rho)
+        endif
+
         if (lentropy) then
+!
 !  Isothermal
+!
           pp=rho*cs0hs**2
           call eosperturb(f,nx,pp=pp)
           if (ldensity_nolog) then
-            ss=log(f(l1:l2,m,n,irho))
+            if (lreference_state) then
+              ss=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
+            else
+              ss=log(f(l1:l2,m,n,irho))
+            endif
           else
             ss=f(l1:l2,m,n,ilnrho)
           endif
+
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
           cs2bot=fmpi1(1)
@@ -2780,20 +2836,23 @@ module Energy
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
+!  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad, grad
       use WENO_transport, only: weno_transp
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension(nx,3) :: gradS
-      integer :: j
-!
       intent(in) :: f
       intent(inout) :: p
+!
+      real, dimension(nx,3) :: gradS
+      integer :: j,ierr
+      real, dimension(:,:), pointer :: reference_state
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
@@ -2828,6 +2887,13 @@ module Energy
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
             enddo
           endif
+        endif
+!
+!  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
+!
+        if (lreference_state) then
+          call get_shared_variable('reference_state',reference_state,ierr)
+          p%fpres(:,1)=p%fpres(:,1)+reference_state(:,iref_gp)*p%rho1
         endif
       endif
 !  transprhos
@@ -3250,13 +3316,13 @@ module Energy
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
       integer :: l,m,n
       real :: fact, cv1, tmp1
       real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
       real, dimension (mx) :: cs2mx_tmp, ssmx1_tmp
       real, dimension (mx,my) :: cs2mxy_tmp, ssmxy1_tmp
-!
-      intent(in) :: f
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3457,10 +3523,12 @@ module Energy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff, g2, chit_prof
-      real, dimension (nx,3) :: glnchit_prof
 !
       intent(inout) :: df
+      intent(in) :: p
+!
+      real, dimension(nx) :: thdiff, g2, chit_prof
+      real, dimension(nx,3) :: glnchit_prof
 !
       save :: chit_prof, glnchit_prof
 !

@@ -628,7 +628,10 @@ module Density
       endif
 !
       if (lreference_state) then
-
+!
+!  Fetch gravity amplitude. Requires that the gravity module is initialized before the density module
+!  which is presently the case.
+!
         call get_shared_variable('gravx',gravx,ierr)
         if (ierr/=0) call fatal_error("initialize_density: ", &
                                       "there was a problem when getting gravx")
@@ -3089,5 +3092,9 @@ module Density
       call keep_compiler_quiet(f)
 !
     endsubroutine boussinesq
+!***********************************************************************
+    subroutine update_reference_state
+!
+    endsubroutine update_reference_state
 !***********************************************************************
 endmodule Density
