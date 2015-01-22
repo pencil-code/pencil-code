@@ -21,7 +21,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
     call signature::
 
-      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim, head_size = 3)
+      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim = [], head_size = 3)
 
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
@@ -71,7 +71,8 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     # read the cpu structure
     dim = pc.read_dim(datadir = dataDir)
     if (dim.nprocz > 1):
-        print "error: number of cores in z-direction > 1"
+        print ": number of cores in z-direction > 1"
+        return -1
 
     # read the parameters
     params = pc.read_param(datadir = dataDir, quiet = True)
@@ -80,18 +81,17 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     grid = pc.read_grid(datadir = dataDir, quiet = True)
 
     # determine the file structure
-    n_proc = dim.nprocx*dim.nprocy
     if (post):
         n_proc = 1
         tracer_file = open(dataDir+fileName, 'rb')
         trace_sub = struct.unpack("f", tracer_file.read(4))[0]
         tracer_file.close()
+        n_times = int(np.round(os.path.getsize(dataDir+fileName)/(4*(7*dim.nx*dim.ny*trace_sub**2))))
     # sub sampling of the tracers
     if (not(post)):
+        n_proc = dim.nprocx*dim.nprocy
         trace_sub = params.trace_sub
         n_times = os.path.getsize(dataDir+'proc0/'+fileName)/(4*(head_size + 7*dim.nx*dim.ny*trace_sub**2/dim.nprocx/dim.nprocy))
-    else:
-        n_times = int(np.round(os.path.getsize(dataDir+fileName)/(4*(7*dim.nx*dim.ny*trace_sub**2))))
 
     # prepare the output arrays
     tracers = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 7))
@@ -99,8 +99,8 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
     # temporary arrays for one core
     if (post):
-        tracers_core = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 7))
-        mapping_core = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 3))
+        tracers_core = tracers
+        mapping_core = mapping
     else:
         tracers_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 7))
         mapping_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 3))
@@ -160,16 +160,17 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
                     mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [1,1,1]
 
             # copy single core data into total data arrays
-            tracers[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
-                    np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
-                    tracers_core[:,:,j,:]
-            mapping[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
-                    np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
-                    mapping_core[:,:,j,:]
+            if (not(post)):
+                tracers[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
+                        np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
+                        tracers_core[:,:,j,:]
+                mapping[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
+                        np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
+                        mapping_core[:,:,j,:]
 
-        # swap axes for post evaluation
-        tracers = tracers.swapaxes(0, 1)
-        mapping = mapping.swapaxes(0, 1)
+    # swap axes for post evaluation
+    tracers = tracers.swapaxes(0, 1)
+    mapping = mapping.swapaxes(0, 1)
 
     return tracers, mapping, t
 
