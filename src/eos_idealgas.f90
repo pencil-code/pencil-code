@@ -2560,6 +2560,7 @@ module EquationOfState
 !   31-may-2010/pete: adapted from bc_ss_flux_turb
 !   20-jul-2010/pete: expanded to take into account hcond/=0
 !   21-jan-2015/MR: changes for reference state.
+!   22-jan-2015/MR: corrected bug in branches for pretend_lnTT=T
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
@@ -2600,7 +2601,7 @@ module EquationOfState
 !
       select case (topbot)
 !
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
 !  bottom boundary
 !  ===============
@@ -2610,8 +2611,10 @@ module EquationOfState
 ! For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
 !
         if (pretend_lnTT) then
-            f(l1-1,:,:,iss)=f(l1+i,:,:,iss) + &     ! shouldn't this be a loop over all ghost zones?
+          do i=1,nghost
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &     ! MR: corrected, plus sign correct? 
                 2*i*dx*sigmaSBt*exp(f(l1,:,:,iss))**3/hcondxbot
+          enddo
         else
 !
 !  set ghost zones such that dsdx_yz obeys
@@ -2619,7 +2622,7 @@ module EquationOfState
 !
           if (ldensity_nolog) then
             rho_yz=f(l1,:,:,irho)
-            cs2_yz=f(l1,:,:,iss)       !here entropy
+            cs2_yz=f(l1,:,:,iss)       ! here entropy
             if (lreference_state) then
               rho_yz = rho_yz+reference_state(1,iref_rho) 
               cs2_yz = cs2_yz+reference_state(1,iref_s)
@@ -2676,8 +2679,10 @@ module EquationOfState
 !  For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
 !
         if (pretend_lnTT) then
-            f(l2-1,:,:,iss)=f(l2+i,:,:,iss) - &        ! shouldn't this be a loop over all ghost zones?
+          do i=1,nghost
+            f(l2+i,:,:,iss)=f(l2-i,:,:,iss) + &     ! MR: corrected, plus sign correct?
                 2*i*dx*sigmaSBt*exp(f(l2,:,:,iss))**3/hcondxtop
+          enddo
         else
 !
 !  set ghost zones such that dsdx_yz obeys
@@ -3032,7 +3037,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy, dlnrhodz_xy
       real :: fac
-      integer :: i=0,ierr
+      integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
