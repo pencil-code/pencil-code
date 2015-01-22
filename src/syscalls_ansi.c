@@ -61,12 +61,14 @@ void FTNIZE(write_binary_file_c)
 
   *result = -2;
   file = open (filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+
   if(file == -1) return;
 
   *result = -1;
-  written = (int) write (file, buffer, *bytes);
+
+  written = (int) write (file, buffer, (size_t) *bytes);
   close (file);
-  if(written != *bytes) return;
+  if (written != *bytes) return;
   *result = written;
 }
 
