@@ -22,6 +22,10 @@ module Syscalls
     module procedure is_nan_4D
   endinterface
 !
+  interface write_binary_file
+    module procedure write_binary_file_str
+    module procedure write_binary_file_carr
+  endinterface
   contains
 !***********************************************************************
     function file_exists(file, delete)
@@ -89,9 +93,9 @@ module Syscalls
 !
     endfunction file_size
 !***********************************************************************
-    subroutine write_binary_file(file,bytes,buffer)
+    subroutine write_binary_file_carr(file,bytes,buffer)
 !
-!  Writes a given buffer to a binary file.
+!  Writes a given buffer (vector of single characters) to a binary file.
 !
 !  06-Apr-2014/Bourdin.KIS: coded
 !
@@ -100,18 +104,44 @@ module Syscalls
       character, dimension(:) :: buffer
 !
       call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
+
       if (result /= bytes) then
         if (result < 0) then
           print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
         elseif (result == 0) then
           print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
         else
-          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"'
+          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
         endif
         stop
       endif
 !
-    endsubroutine write_binary_file
+    endsubroutine write_binary_file_carr
+!***********************************************************************
+    subroutine write_binary_file_str(file,bytes,buffer)
+!
+!  Writes a given buffer (string) to a binary file.
+!
+!  21-jan-2015/MR: copied from write_binary_file_carr 
+!
+      character(len=*) :: file
+      integer :: bytes, result
+      character(len=*) :: buffer
+!
+      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
+      
+      if (result /= bytes) then
+        if (result < 0) then
+          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
+        elseif (result == 0) then
+          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
+        else
+          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
+        endif
+        stop
+      endif
+!
+    endsubroutine write_binary_file_str
 !***********************************************************************
     function count_lines(file,comchars)
 !
