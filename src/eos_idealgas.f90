@@ -2664,7 +2664,6 @@ module EquationOfState
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
           do i=1,nghost
-!            f(l1-1,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz   !!! corrected!
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz
           enddo
         endif
@@ -2688,8 +2687,8 @@ module EquationOfState
             rho_yz=f(l2,:,:,irho)
             cs2_yz=f(l2,:,:,iss)    ! here entropy
             if (lreference_state) then
-              rho_yz = rho_yz+reference_state(2,iref_rho)
-              cs2_yz = cs2_yz+reference_state(2,iref_s)
+              rho_yz = rho_yz+reference_state(nx,iref_rho)
+              cs2_yz = cs2_yz+reference_state(nx,iref_s)
             endif
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
@@ -2709,8 +2708,8 @@ module EquationOfState
                              -  9.0*(f(l2+2,:,:,irho)-f(l2-2,:,:,irho)) &
                              +      (f(l2+3,:,:,irho)-f(l2-3,:,:,irho))) 
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(2,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(f(l2,:,:,irho) + reference_state(2,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(nx,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(f(l2,:,:,irho) + reference_state(nx,iref_rho))
             else
               dlnrhodx_yz=dlnrhodx_yz/f(l2,:,:,irho)
             endif
@@ -2726,7 +2725,7 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(2,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(nx,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2910,7 +2909,7 @@ module EquationOfState
       real, dimension (my,mz) :: dsdx_yz, dlnrhodx_yz
       real, dimension (mx) :: cs2mx, cs2mx_tmp, lnrmx, lnrmx_tmp
       real :: fac, fact, dlnrmxdx, tmp1, tmp2
-      integer :: i=0,l=0,ierr
+      integer :: i,l,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2978,7 +2977,7 @@ module EquationOfState
             cs2mx=cs2mx_tmp
           endif
 !
-          do l=1,nghost; lnrmx(l1-i)=2.*lnrmx(l1)-lnrmx(l1+i); enddo  !!! not dependent on index l
+          do i=1,nghost; lnrmx(l1-i)=2.*lnrmx(l1)-lnrmx(l1+i); enddo
 !
 !  Compute x-derivative of mean lnrho
 !
