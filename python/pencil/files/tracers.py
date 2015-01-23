@@ -85,25 +85,26 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         n_proc = 1
         tracer_file = open(dataDir+fileName, 'rb')
         trace_sub = struct.unpack("f", tracer_file.read(4))[0]
+        print "trace_sub = ", trace_sub
         tracer_file.close()
-        n_times = int(np.round(os.path.getsize(dataDir+fileName)/(4*(7*dim.nx*dim.ny*trace_sub**2))))
+        n_times = int(os.path.getsize(dataDir+fileName)/(4*7*int(dim.nx*trace_sub)*int(dim.ny*trace_sub)))
     # sub sampling of the tracers
     if (not(post)):
         n_proc = dim.nprocx*dim.nprocy
         trace_sub = params.trace_sub
-        n_times = os.path.getsize(dataDir+'proc0/'+fileName)/(4*(head_size + 7*dim.nx*dim.ny*trace_sub**2/dim.nprocx/dim.nprocy))
+        n_times = int(os.path.getsize(dataDir+'proc0/'+fileName)/(4*(head_size + 7*np.floor(dim.nx*trace_sub)*np.floor(dim.ny*trace_sub)/dim.nprocx/dim.nprocy)))
 
     # prepare the output arrays
-    tracers = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 7))
-    mapping = np.zeros((np.round(dim.nx*trace_sub), np.round(dim.ny*trace_sub), n_times, 3))
+    tracers = np.zeros((int(dim.nx*trace_sub), int(dim.ny*trace_sub), n_times, 7))
+    mapping = np.zeros((int(dim.nx*trace_sub), int(dim.ny*trace_sub), n_times, 3))
 
     # temporary arrays for one core
     if (post):
         tracers_core = tracers
         mapping_core = mapping
     else:
-        tracers_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 7))
-        mapping_core = np.zeros((np.round(dim.nx*trace_sub/dim.nprocx), np.round(dim.ny*trace_sub/dim.nprocy), n_times, 3))
+        tracers_core = np.zeros((int(dim.nx*trace_sub)/dim.nprocx, int(dim.ny*trace_sub)/dim.nprocy, n_times, 7))
+        mapping_core = np.zeros((int(dim.nx*trace_sub)/dim.nprocx, np.floor(dim.ny*trace_sub)/dim.nprocy, n_times, 3))
 
     # set the upper z-limit to the domain boundary
     if zlim == []:
@@ -118,7 +119,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
             dim_core.ipy = 0
         else:
             dim_core = pc.read_dim(datadir = dataDir, proc = i)
-        stride = int(np.round(dim_core.nx*dim_core.ny*trace_sub**2))
+        stride = int(dim_core.nx*trace_sub)*int(dim_core.ny*trace_sub)
         llen = head_size + 7*stride
 
         if (post):
@@ -126,7 +127,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         else:
             tracer_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = array.array('f')
-        tmp.read(tracer_file, int(np.round(head_size + 2*post + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times))
+        tmp.read(tracer_file, int((head_size + 2*post + 7*int(dim_core.nx*trace_sub)*int(dim_core.ny*trace_sub))*n_times))
         tracer_file.close()
 
         t = []
@@ -143,29 +144,29 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
             # Squeeze the data into 2d array. This make the visualization much faster.
             for l in range(len(data.xi)):
-                tracers_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = \
+                tracers_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = \
                 [data.xi[l], data.yi[l], data.xf[l], data.yf[l], data.zf[l], data.l[l], data.q[l]]
                 if data.zf[l] >= zlim:
                     if (data.xi[l] - data.xf[l]) > 0:
                         if (data.yi[l] - data.yf[l]) > 0:
-                            mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [0,1,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [0,1,0]
                         else:
-                            mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [1,1,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,1,0]
                     else:
                         if (data.yi[l] - data.yf[l]) > 0:
-                            mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [0,0,1]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [0,0,1]
                         else:
-                            mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [1,0,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,0,0]
                 else:
-                    mapping_core[l%(int(np.round(dim_core.nx*trace_sub))),l/(int(np.round(dim_core.nx*trace_sub))),j,:] = [1,1,1]
+                    mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,1,1]
 
             # copy single core data into total data arrays
             if (not(post)):
-                tracers[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
-                        np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
+                tracers[np.round(dim_core.ipx*int(dim_core.nx*trace_sub)):np.round((dim_core.ipx+1)*np.floor(dim_core.nx*trace_sub)), \
+                        np.round(dim_core.ipy*int(dim_core.ny*trace_sub)):np.round((dim_core.ipy+1)*np.floor(dim_core.ny*trace_sub)),j,:] = \
                         tracers_core[:,:,j,:]
-                mapping[np.round(dim_core.ipx*dim_core.nx*trace_sub):np.round((dim_core.ipx+1)*dim_core.nx*trace_sub), \
-                        np.round(dim_core.ipy*dim_core.ny*trace_sub):np.round((dim_core.ipy+1)*dim_core.ny*trace_sub),j,:] = \
+                mapping[np.round(dim_core.ipx*int(dim_core.nx*trace_sub)):np.round((dim_core.ipx+1)*np.floor(dim_core.nx*trace_sub)), \
+                        np.round(dim_core.ipy*int(dim_core.ny*trace_sub)):np.round((dim_core.ipy+1)*np.floor(dim_core.ny*trace_sub)),j,:] = \
                         mapping_core[:,:,j,:]
 
     # swap axes for post evaluation

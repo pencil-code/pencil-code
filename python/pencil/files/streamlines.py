@@ -14,24 +14,24 @@ import struct
 
 
 def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
-                interpolation = 'mean', sub = 1, intQ = [''], varfile = 'VAR0',
-                integration = 'simple', datadir = 'data/', destination = 'tracersPost.dat'):
+                interpolation = 'mean', trace_sub = 1, intQ = [''], varfile = '',
+                integration = 'simple', datadir = 'data/', destination = 'tracers.dat'):
     """
     Trace streamlines and integrate quantity 'intQ' along them.
 
     call signature::
     
       tracers(field = 'bb', hMin = 2e-3, hMax = 2e2, lMax = 500, tol = 2e-3,
-                interpolation = 'mean', sub = 1, intQ = '', varfile = 'VAR0',
-                datadir = 'data', destination = 'tracersPost.dat')
+                interpolation = 'mean', trace_sub = 1, intQ = '', varfile = 'VAR0',
+                datadir = 'data', destination = 'tracers.dat')
     
     Trace streamlines of the vectofield 'field' from z = z0 to z = z1 and integrate
     quantities 'intQ' along the lines. Creates a 2d mapping as in 'streamlines.f90'.
     
     Keyword arguments:
     
-      *traceField*:
-        Vector field used for the streamline tracing.
+     *traceField*:
+       Vector field used for the streamline tracing.
         
      *hMin*:
        Minimum step length for and underflow to occur.
@@ -50,7 +50,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
        'mean': takes the mean of the adjacent grid point.
        'weighted': weights the adjacent grid points according to their distance.
        
-     *sub*:
+     *trace_sub*:
        Number of sub-grid cells for the seeds.
        
      *intQ*:
@@ -89,8 +89,8 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     dim  = pc.read_dim(datadir = datadir)    
     tol2 = tol**2
     
-    tracers = np.zeros([6+len(intQ), sub*dim.nx, sub*dim.ny])
-    mapping = np.zeros([sub*dim.nx, sub*dim.ny,3])
+    tracers = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny),6+len(intQ)])
+    mapping = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny),3])
     
     # read the data
     var = pc.read_var(varfile = varfile, datadir = datadir, magic = magic, quiet = True, trimall = True)   
@@ -109,13 +109,13 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     p.nx = dim.nx; p.ny = dim.ny; p.nz = dim.nz
     
     # initialize the tracers
-    for ix in range(int(sub*dim.nx)):
-        for iy in range(int(sub*dim.ny)):
-            tracers[0, ix, iy] = grid.x[0] + grid.dx/sub*ix
-            tracers[2, ix, iy] = tracers[0, ix, iy]
-            tracers[1, ix, iy] = grid.y[0] + grid.dy/sub*iy
-            tracers[3, ix, iy] = tracers[1, ix, iy]
-            tracers[4, ix, iy] = grid.z[0]
+    for ix in range(int(trace_sub*dim.nx)):
+        for iy in range(int(trace_sub*dim.ny)):
+            tracers[ix, iy, 0] = grid.x[0] + grid.dx/trace_sub*ix
+            tracers[ix, iy, 2] = tracers[ix, iy, 0]
+            tracers[ix, iy, 1] = grid.y[0] + grid.dy/trace_sub*iy
+            tracers[ix, iy, 3] = tracers[ix, iy, 1]
+            tracers[ix, iy, 4] = grid.z[0]
         
     # declare vectors
     xMid    = np.zeros(3)
@@ -123,15 +123,15 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     xHalf   = np.zeros(3)
     xDouble = np.zeros(3)
     
-    for ix in range(int(sub*dim.nx)):
-        for iy in range(int(sub*dim.ny)):
+    for ix in range(int(trace_sub*dim.nx)):
+        for iy in range(int(trace_sub*dim.ny)):
             outside = False     # True if the streamlines hits the physical boundary
             dh = np.sqrt(hMax*hMin)
             
             # start the streamline tracing
-            xx = tracers[2:5, ix, iy].copy()
+            xx = tracers[ix, iy, 2:5].copy()
             if (integration == 'simple'):
-                while ((outside == False) and (abs(dh) >= hMin) and (tracers[5, ix, iy] < lMax)):
+                while ((outside == False) and (abs(dh) >= hMin) and (tracers[ix, iy, 5] < lMax)):
                     # (a) single step (midpoint method)    
                     xMid = xx + 0.5*dh*vecInt(xx, vv, p, interpolation)
                     xSingle = xx + dh*vecInt(xMid, vv, p, interpolation)
@@ -150,11 +150,11 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                             print "Error: stepsize underflow"
                             break
                     else:
-                        tracers[5, ix, iy] +=  np.sqrt(np.dot(xx - xDouble, xx - xDouble))
+                        tracers[ix, iy, 5] +=  np.sqrt(np.dot(xx - xDouble, xx - xDouble))
                         # integrate the requested quantity along the field line
                         if (any(intQ == 'curlyA')):
                             aaInt = vecInt((xDouble + xx)/2, aa, p, interpolation)
-                            tracers[6, ix, iy] += np.dot(aaInt, xDouble - xx)
+                            tracers[ix, iy, 6] += np.dot(aaInt, xDouble - xx)
                         xx = xDouble.copy()
                         if (dh < hMin):
                             dh = 2*dh
@@ -164,28 +164,33 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                         if ((xx[0] < p.Ox-p.dx) or (xx[0] > p.Ox+p.Lx+p.dx) or (xx[1] < p.Oy-p.dy) or (xx[1] > p.Oy+p.Ly+p.dy) or (xx[2] < p.Oz) or (xx[2] > p.Oz+p.Lz)):
                             outside = True
 
-            tracers[2:5, ix, iy] = xx.copy()
-            if (tracers[4, ix, iy] > grid.z[-2]):
-                if (tracers[0, ix, iy] - tracers[2, ix, iy]) > 0:
-                    if (tracers[1, ix, iy] - tracers[3, ix, iy]) > 0:
+            tracers[ix, iy, 2:5] = xx.copy()
+            if (tracers[ix, iy, 4] > grid.z[-2]):
+                if (tracers[ix, iy, 0] - tracers[ix, iy, 2]) > 0:
+                    if (tracers[ix, iy, 1] - tracers[ix, iy, 3]) > 0:
                         mapping[ix, iy, :] = [0,1,0]
                     else:
                         mapping[ix, iy, :] = [1,1,0]
                 else:
-                    if (tracers[1, ix, iy] - tracers[3, ix, iy]) > 0:
+                    if (tracers[ix, iy, 1] - tracers[ix, iy, 3]) > 0:
                         mapping[ix, iy, :] = [0,0,1]
                     else:
                         mapping[ix, iy, :] = [1,0,0]
             else:
                 mapping[ix, iy, :] = [1,1,1]
-                        
+
+    tracers = np.copy(tracers.swapaxes(0, 2), order = 'C')
 
     # write tracers into file
     f = open(datadir + destination, 'wb')
-    f.write(np.array(sub, dtype = 'float32'))
+    f.write(np.array(trace_sub, dtype = 'float32'))
     f.write(var.t)
     f.write(tracers.astype('float32'))
     f.close()
+    
+    tracers = tracers.swapaxes(0, 2)
+    tracers = tracers.swapaxes(0, 1)
+    mapping = mapping.swapaxes(0, 1)
     
     return tracers, mapping, var.t
 
