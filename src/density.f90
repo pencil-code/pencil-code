@@ -1749,6 +1749,7 @@ module Density
 !
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density.
 !  21-jan-15/MR: changes for use of reference state.
+!  22-jan-15/MR: removed unneeded get_shared_variable('reference_state,...
 !
       use WENO_transport
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
@@ -1758,11 +1759,8 @@ module Density
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
-      integer :: i,ierr
-      real, dimension(:,:), pointer :: reference_state
+      integer :: i
 !
-      if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 ! rho
       p%rho=f(l1:l2,m,n,irho)
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
@@ -1788,7 +1786,7 @@ module Density
 ! ugrho
       if (lpencil(i_ugrho)) then
         if (lupw_lnrho) call fatal_error('calc_pencils_density', &
-            'you switched lupw_lnrho instead of lupw_rho')
+            'you switched lupw_lnrho instead of lupw_rho')         ! Can't this be silently corrected?
         call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
       endif
 ! glnrho2
