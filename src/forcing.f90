@@ -178,6 +178,7 @@ module Forcing
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
       use Sub, only: step,step_scalar,erfunc,stepdown
 !
       real :: zstar
