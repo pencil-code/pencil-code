@@ -2639,8 +2639,8 @@ module Diagnostics
         endif
       enddo
 !
- 1    lwrite_sound=ncoords_sound>0
-      if (lwrite_sound) then
+ 1    if (ncoords_sound > 0) then
+        lwrite_sound = .true.
 !
         if (.not. allocated(cname_sound)) then
           allocate(cname_sound(nnamel),stat=istat)
