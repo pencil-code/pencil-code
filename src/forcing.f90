@@ -149,6 +149,10 @@ module Forcing
   integer :: idiag_ruxfym=0, idiag_ruyfxm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 !
+! Auxiliaries
+!
+  real, dimension(:,:), pointer :: reference_state
+!
   contains
 !
 !***********************************************************************
@@ -170,6 +174,7 @@ module Forcing
 !  nothing done from start.f90
 !
 !  25-sep-2014/MR: determine n_forcing_cont according to the actual selection
+!  23-jan-2015/MR: reference state now fetched here and stored in module variable
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -705,6 +710,14 @@ print*,'NS: z_center=',z_center_fcont
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
 !
+!  Get reference_state. Requires that density is initialized before forcing.
+!
+      if (lreference_state) then
+          call get_shared_variable('reference_state',reference_state,ierr)
+          if (ierr/=0) call fatal_error('initialize_forcing:',&
+               'failed to get reference_state from density')
+      endif
+!
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -977,7 +990,6 @@ print*,'NS: z_center=',z_center_fcont
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
@@ -995,9 +1007,8 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik,j,jf,ierr
+      integer :: ik,j,jf
       logical :: lk_dot_dat_exists
-      real, dimension(:,:), pointer :: reference_state
 !
       call keep_compiler_quiet(force_ampl)
 !
@@ -1100,9 +1111,6 @@ print*,'NS: z_center=',z_center_fcont
       ikk(2)=cmplx(0.,ky)
       ikk(3)=cmplx(0.,kz)
 !
-      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
-!
 !  Loop over all directions, but skip over directions with no extent.
 !
       iqfm=0.
@@ -1183,7 +1191,6 @@ print*,'NS: z_center=',z_center_fcont
       use General, only: random_number_wrapper
       use Mpicomm
       use Sub
-      use SharedVariables, only: get_shared_variable
 !
       real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm
       real, save :: kav
@@ -1203,7 +1210,7 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik,j,jf,j2f,ierr
+      integer :: ik,j,jf,j2f
       real, save :: cs0eff
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
       real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
@@ -1211,7 +1218,6 @@ print*,'NS: z_center=',z_center_fcont
       real :: norm,phi
       real :: fd,fd2
       logical :: lk_dot_dat_exists
-      real, dimension(:,:), pointer :: reference_state
 !
 !  additional stuff for test fields
 !
@@ -1465,9 +1471,6 @@ print*,'NS: z_center=',z_center_fcont
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
 !  For compatibility with earlier results, lmomentum_ff=.false. by default.
-!
-      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
       if (ldensity) then
         if (lmomentum_ff) then
@@ -4155,7 +4158,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       use Diagnostics
       use Mpicomm
       use Sub
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -4165,9 +4167,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (nx) :: ruf,rho, rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
 !      real, dimension (nx,3) :: bb,fxb
-      integer :: j,jf,l,ierr
+      integer :: j,jf,l
       real :: fact, dist3
-      real, dimension(:,:), pointer :: reference_state
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -4181,9 +4182,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
-!
-      if (lmomentum_ff.and.ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
       irufm=0
       do n=n1,n2
