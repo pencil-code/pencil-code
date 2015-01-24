@@ -2608,7 +2608,7 @@ module Diagnostics
         case default
         endselect
 !
-        if (istat < 0) then exit ! end-of-file
+        if (istat < 0) exit ! end-of-file
 !
         if (istat > 0) then
           backspace unit
