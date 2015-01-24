@@ -8,3 +8,9 @@ integer, parameter :: ncpus=262144, nprocx=64, nprocy=64, nprocz=64
 integer, parameter :: lb_nxgrid=12
 integer, parameter :: nxgrid=4096, nygrid=4096, nzgrid=4096
 integer, parameter :: npar=1024,nspar=2
+! 
+! [Bourdin.KIS]:
+! Just guessing njtest=1, because this autotest was broken and I don't find
+! any hints on what this variable is and what value it should have...
+! Also this variable 'njtest' should probably not be in cparam.local at all.
+integer, parameter :: njtest=1
