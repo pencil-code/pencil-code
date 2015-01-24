@@ -2576,13 +2576,13 @@ module Diagnostics
       integer, intent(in) :: nnamel
 !
       character (LEN=*), parameter :: sound_coord_file = 'sound.coords'
-      integer :: stat=0,isound
+      integer :: stat=0, isound
       logical :: lval
       integer :: unit=1, istat, il
       integer :: mcoords_sound
       integer, allocatable, dimension (:,:) :: temp_sound_coords
-      real    :: xsound,ysound,zsound
-      integer :: lsound,msound,nsound
+      real    :: xsound, ysound, zsound
+      integer :: lsound, msound, nsound
       character (LEN=80) :: line
 !
 !  Allocate and initialize to zero. Setting it to zero is only
@@ -2595,7 +2595,7 @@ module Diagnostics
       if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for temp_sound_coords')
 !
-      ncoords_sound=0
+      ncoords_sound = 0
 !
       call parallel_open(unit,file=sound_coord_file)
 !
@@ -2603,37 +2603,37 @@ module Diagnostics
 !
         select case (dimensionality)
         case (1); read(unit,*,iostat=istat) xsound
-        case (2); read(unit,*,iostat=istat) xsound,ysound
-        case (3); read(unit,*,iostat=istat) xsound,ysound,zsound
+        case (2); read(unit,*,iostat=istat) xsound, ysound
+        case (3); read(unit,*,iostat=istat) xsound, ysound, zsound
         case default
-        end select
+        endselect
 !
         if (istat < 0) then exit ! end-of-file
 !
         if (istat > 0) then
           backspace unit
-          read(unit,*) line
-          if (line(1:1)/=comment_char .and. line(1:1)/='!') then
+          read (unit,*) line
+          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
             print*, 'allocate_sound - Warning: unreadable data in line '// &
                     trim(itoa(isound))//' of '//trim(sound_coord_file)//' !'
           endif
           cycle
         endif
 !
-        if ( location_in_proc(xsound,ysound,zsound,lsound,msound,nsound) ) then
+        if (location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)) then
 !
-          lval=.true.
-          do il=1,ncoords_sound
-            if ( temp_sound_coords(il,1) == lsound .and. &
-                 temp_sound_coords(il,2) == msound .and. &
-                 temp_sound_coords(il,3) == nsound      )  then
+          lval = .true.
+          do il = 1, ncoords_sound
+            if ((temp_sound_coords(il,1) == lsound) .and. &
+                (temp_sound_coords(il,2) == msound) .and. &
+                (temp_sound_coords(il,3) == nsound) ) then
               lval = .false.
               exit
             endif
           enddo
 !
           if (lval) then
-            ncoords_sound=ncoords_sound+1
+            ncoords_sound = ncoords_sound + 1
             temp_sound_coords(ncoords_sound,1) = lsound
             temp_sound_coords(ncoords_sound,2) = msound
             temp_sound_coords(ncoords_sound,3) = nsound
@@ -2662,17 +2662,17 @@ module Diagnostics
           if (stat>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for fname_sound')
           if (ldebug) print*, 'allocate_sound: allocated memory for '// &
-            'fname_sound  with nname_sound  =', nnamel
+              'fname_sound  with nname_sound  =', nnamel
 !
         endif
-        fname_sound=0.
+        fname_sound = 0.0
 !
         if (.not. allocated(cform_sound)) then
           allocate(cform_sound(nnamel),stat=stat)
           if (stat>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for cform_sound')
         endif
-        cform_sound=' '
+        cform_sound = ' '
 !
       endif
 !
