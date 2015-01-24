@@ -72,6 +72,7 @@ module InitialCondition
 !
 !  02-sep-13/pete: coded
 !  06-oct-13/joern: add coronal layer
+!  25-jan-15/MR: extended case 'polytropic' to linear density
 !
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: gamma, gamma_m1, rho0, cs20
@@ -219,7 +220,11 @@ module InitialCondition
 !
       do m=m1,m2
       do n=n1,n2
-          f(l1:l2,m,n,ilnrho) = lnrho(l1:l2)
+          if (ldensity_nolog) then
+            f(l1:l2,m,n,irho) = exp(lnrho(l1:l2))
+          else
+            f(l1:l2,m,n,ilnrho) = lnrho(l1:l2)
+          endif
           f(l1:l2,m,n,iss) = ss_prof(l1:l2)
       enddo
       enddo
