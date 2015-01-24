@@ -2602,13 +2602,15 @@ module Diagnostics
       do isound=1,mcoords_sound
 !
         select case (dimensionality)
-        case (1); read(unit,*,iostat=istat,end=1) xsound
-        case (2); read(unit,*,iostat=istat,end=1) xsound,ysound
-        case (3); read(unit,*,iostat=istat,end=1) xsound,ysound,zsound
+        case (1); read(unit,*,iostat=istat) xsound
+        case (2); read(unit,*,iostat=istat) xsound,ysound
+        case (3); read(unit,*,iostat=istat) xsound,ysound,zsound
         case default
         end select
 !
-        if (istat /= 0) then
+        if (istat < 0) then exit ! end-of-file
+!
+        if (istat > 0) then
           backspace unit
           read(unit,*) line
           if (line(1:1)/=comment_char .and. line(1:1)/='!') then
@@ -2639,7 +2641,7 @@ module Diagnostics
         endif
       enddo
 !
- 1    if (ncoords_sound > 0) then
+      if (ncoords_sound > 0) then
         lwrite_sound = .true.
 !
         if (.not. allocated(cname_sound)) then
