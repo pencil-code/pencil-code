@@ -2630,7 +2630,7 @@ module General
 ! if element von range found in ranges(:,i) mark as deleted
 !
                 store(i2)=deleted
-                nstore=nstore-1.
+                nstore=nstore-1
                 exit
               endif
             enddo
