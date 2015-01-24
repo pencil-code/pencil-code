@@ -182,6 +182,7 @@ module Forcing
 !
       real :: zstar
       integer :: l,i
+      integer :: ierr
 !
       if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
