@@ -2653,7 +2653,7 @@ module Diagnostics
         if (.not. allocated(sound_coords_list)) then
           allocate(sound_coords_list(ncoords_sound,3),stat=stat)
           if (stat>0) call fatal_error('allocate_sound', &
-              ' ') !!!'Could not allocate memory for sound_coords_list')
+              'Could not allocate memory for sound_coords_list')
         endif
         sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
 !
