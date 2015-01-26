@@ -319,6 +319,10 @@ module Energy
                                ! ZAVG_DOC: turbulent heat flux)
   integer :: idiag_dcoolxy=0   ! ZAVG_DOC: surface cooling flux
 !
+! Auxiliaries
+!
+  real, dimension(:,:), pointer :: reference_state
+!
   contains
 !***********************************************************************
     subroutine register_energy()
@@ -999,6 +1003,14 @@ module Energy
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
 !
+!  Get reference_state. Requires that density is initialized before energy.
+!
+      if (lreference_state) then
+        call get_shared_variable('reference_state',reference_state,ierr)
+        if (ierr/=0) call fatal_error('initialize_energy:',&
+                                      'failed to get reference_state from density')
+      endif
+!
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine rescale_TT_in_ss(f)
@@ -1099,7 +1111,6 @@ module Energy
       use Initcond
       use InitialCondition, only: initial_condition_ss
       use Sub
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -1110,13 +1121,8 @@ module Energy
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext,cp1
       real, pointer :: fac_cs
       integer, pointer :: isothmid
-      integer :: ierr
-      integer :: j
+      integer :: j,ierr
       logical :: lnothing=.true., save_pretend_lnTT
-      real, dimension(:,:), pointer :: reference_state
-!
-      if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
 !  If pretend_lnTT is set then turn it off so that initial conditions are
 !  correctly generated in terms of entropy, but then restore it later
@@ -2105,7 +2111,6 @@ module Energy
 !
       use EquationOfState , only: eosperturb, getmu
       use Mpicomm, only: mpibcast_real
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho
@@ -2115,8 +2120,6 @@ module Energy
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B, g_D
       double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
-      real, dimension(:,:), pointer :: reference_state
-      integer :: ierr
 !
 !  Set up physical units.
 !
@@ -2134,9 +2137,6 @@ module Energy
 !  at solar radius.  (for interstellar runs)
 !
       call getmu(f,muhs)
-!
-      if (ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
       if (lroot) print*, &
           'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
@@ -2204,7 +2204,6 @@ module Energy
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
       integer :: ierr
-      real, dimension(:,:), pointer :: reference_state
 !
 !  identifier
 !
@@ -2234,8 +2233,6 @@ module Energy
       if (lroot) print*, &
           'thermal_hs_equilibrium_ism: zrho received', &
           ' from interstellar, T0hs =',T0hs
-      if (ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
@@ -2279,21 +2276,15 @@ module Energy
 !
       use EquationOfState, only: eosperturb
       use Mpicomm, only: mpibcast_real
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension(nx) :: rho,pp,lnrho,ss
       real, dimension(1) :: fmpi1
       real :: rho0hs,cs0hs,H0hs
-      real, dimension(:,:), pointer :: reference_state
-      integer :: ierr
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
-!
-      if (ldensity_nolog.and.lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
       do n=n1,n2
       do m=m1,m2
@@ -2851,8 +2842,7 @@ module Energy
       intent(inout) :: p
 !
       real, dimension(nx,3) :: gradS
-      integer :: j,ierr
-      real, dimension(:,:), pointer :: reference_state
+      integer :: j
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
@@ -2891,10 +2881,8 @@ module Energy
 !
 !  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
 !
-        if (lreference_state) then
-          call get_shared_variable('reference_state',reference_state,ierr)
+        if (lreference_state) &
           p%fpres(:,1)=p%fpres(:,1)+reference_state(:,iref_gp)*p%rho1
-        endif
       endif
 !  transprhos
       if (lpencil(i_transprhos)) &
