@@ -24,10 +24,10 @@ module InitialCondition
 ! ampl = amplitude of the magnetic field
 !
   real :: ampl = 1.0
-  logical :: strech = .false.
+  logical :: stretch = .false.
 !
   namelist /initial_condition_pars/ &
-    ampl, strech
+    ampl, stretch
 !
   contains
 !***********************************************************************
@@ -94,7 +94,7 @@ module InitialCondition
 !   clear the magnetic field to zero
     f(:,:,:,iax:iaz) = 0.
 
-    if (strech .eqv. .false.) then
+    if (stretch .eqv. .false.) then
         do n = 1, mz, 1
             do m = 1, my, 1
                 do l = 1, mx, 1
