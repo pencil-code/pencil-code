@@ -2045,14 +2045,22 @@ module Dustdensity
 !
         call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
 !
-!  Loop over mass bins
+!  Start with the first mass bin...
 !
-      fact=mfluxcond
-      do k=1,ndustspec-1
-        df(l1:l2,m,n,ind(k))=3*fact/ad(k)**2&
-            *(f(l1:l2,m,n,ind(k+1))*md(k+1)/md(k)-f(l1:l2,m,n,ind(k)))&
+        k=1
+        fact=-3*mfluxcond/ad(k)**2
+        df(l1:l2,m,n,ind(k))=fact&
+            *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k))*md(k)/md(k+1))&
             /(log(md(k+1)/md(k)))
-      enddo
+!
+!  ... then loop over mass bins
+!
+        do k=1,ndustspec-1
+          fact=-3*mfluxcond/ad(k+1)**2
+          df(l1:l2,m,n,ind(k+1))=fact&
+              *(f(l1:l2,m,n,ind(k+1))*md(k+1)/md(k)-f(l1:l2,m,n,ind(k)))&
+              /(log(md(k+1)/md(k)))
+        enddo
 !
     endsubroutine dust_condensation_nolmdvar
 !***********************************************************************
