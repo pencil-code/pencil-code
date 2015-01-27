@@ -231,6 +231,9 @@ module Dustvelocity
           mmon  = mumon*1.6733e-24
           unit_md = mmon
 
+        case ('simplified')
+          !AB: no action needed
+
         case default
           call fatal_error &
               ('initialize_dustvelocity','No valid dust chemistry specified.')

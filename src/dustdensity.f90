@@ -85,9 +85,10 @@ module Dustdensity
   logical :: latm_chemistry=.false., lsubstep=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
-  logical :: reinitialize_nd=.false.
+  logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   integer :: iadvec_ddensity=0
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
+  real    :: G_condensparam=0., supsatratio_given=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -99,15 +100,17 @@ module Dustdensity
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
-      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1
+      advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
+      ldustcondensation_simplified
 !
   namelist /dustdensity_run_pars/ &
-      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, &
+      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, deltavd_const, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
-      diffnd_anisotropic,reinitialize_nd
+      diffnd_anisotropic,reinitialize_nd, &
+      G_condensparam,supsatratio_given
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
@@ -247,7 +250,8 @@ module Dustdensity
           ldustcoagulation,ldustcondensation
 !
       if (ldustcondensation) then
-      if (.not. lchemistry .and. .not. lpscalar) &
+      if (.not. lchemistry .and. .not. lpscalar .and. &
+          .not. ldustcondensation_simplified) &
           call fatal_error('initialize_dustdensity', &
           'Dust growth only works with pscalar')
       endif
@@ -255,8 +259,12 @@ module Dustdensity
 !  Reinitialize dustdensity
 !
       if (reinitialize_nd) then
-        f(:,:,:,ind)=0.
-        call init_nd(f)
+        do j=1,ninit
+          select case (initnd(j))
+          case ('old'); f(:,:,:,ind)=0.; call init_nd(f)
+          case ('zero8'); f(:,:,:,ind(1):ind(8))=0.
+          endselect
+        enddo
       endif
 !
 !  Reinitializing dustdensity 
@@ -2006,6 +2014,48 @@ module Dustdensity
 !***********************************************************************
     subroutine dust_condensation(f,df,p,mfluxcond)
 !
+!  dust_condensation_lmdvar is the old dust_condensation routine.
+!  For lmdvar=.false., we use an advection formalism in mass space.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: mfluxcond
+!
+      if (lmdvar) then
+        call dust_condensation_lmdvar(f,df,p,mfluxcond)
+      else
+        call dust_condensation_nolmdvar(f,df,p,mfluxcond)
+      endif
+!
+    endsubroutine dust_condensation
+!***********************************************************************
+    subroutine dust_condensation_nolmdvar(f,df,p,mfluxcond)
+!
+!  Calculate condensation of dust on existing dust surfaces
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: mfluxcond, cc_tmp, fact
+      real :: dmdfac
+      integer :: k,l
+!
+!  Calculate mass flux of condensing monomers
+!
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
+!
+!  Loop over mass bins
+!
+      fact=mfluxcond
+      do k=1,ndustspec-1
+        df(l1:l2,m,n,ind(k))=fact*(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))
+      enddo
+!
+    endsubroutine dust_condensation_nolmdvar
+!***********************************************************************
+    subroutine dust_condensation_lmdvar(f,df,p,mfluxcond)
+!
 !  Calculate condensation of dust on existing dust surfaces
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2048,7 +2098,7 @@ module Dustdensity
         enddo
       enddo
 !
-    endsubroutine dust_condensation
+    endsubroutine dust_condensation_lmdvar
 !***********************************************************************
     subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc)
 !
@@ -2092,6 +2142,9 @@ module Dustdensity
           if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),idiag_ssrm)
           if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
         endif
+!
+      case ('simplified')
+        mfluxcond=G_condensparam*supsatratio_given
 !
       case default
         call fatal_error('get_mfluxcond','No valid dust chemistry specified.')
