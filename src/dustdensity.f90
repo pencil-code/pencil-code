@@ -2049,7 +2049,9 @@ module Dustdensity
 !
       fact=mfluxcond
       do k=1,ndustspec-1
-        df(l1:l2,m,n,ind(k))=fact*(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))
+        df(l1:l2,m,n,ind(k))=3*fact/ad(k)**2&
+            *(f(l1:l2,m,n,ind(k+1))*md(k+1)/md(k)-f(l1:l2,m,n,ind(k)))&
+            /(log(md(k+1)/md(k)))
       enddo
 !
     endsubroutine dust_condensation_nolmdvar
