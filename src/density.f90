@@ -245,7 +245,7 @@ module Density
       integer :: i,j,ierr
       logical :: lnothing
       real :: rho_bot,sref
-      real, pointer :: gravx
+      real, dimension(:), pointer :: gravx_xpencil
 !
       lreference_state = ireference_state/='nothing'
 !
@@ -629,23 +629,23 @@ module Density
 !
       if (lreference_state) then
 !
-!  Fetch gravity amplitude. Requires that the gravity module is initialized before the density module
-!  which is presently the case.
-!
-        call get_shared_variable('gravx',gravx,ierr)
-        if (ierr/=0) call fatal_error("initialize_density: ", &
-                                      "there was a problem when getting gravx")
-!   
         select case(ireference_state)
-        case ('adiabatic_simple')
+        case ('adiabatic_simple_x')
 !
 !  Simple adiabatic reference state s=sref=const., p ~ rho^gamma for gravity ~ 1/x^2 --> rho/rho_bottom = (x/x_bottom)^(1/(1-gamma))
 !
+!  Fetch gravity pencil. Requires that the gravity module is initialized before the density module
+!  which is presently the case.
+!
+          call get_shared_variable('gravx_xpencil',gravx_xpencil,ierr)
+          if (ierr/=0) call fatal_error("initialize_density: ", &
+                                        "there was a problem when getting gravx_xpencil")
+!   
           rho_bot=1.
           sref=1.
           reference_state(:,iref_rho  ) = rho_bot*(x(l1:l2)/xyz0(1))**(1/(1-gamma))
           reference_state(:,iref_grho ) = rho_bot/(1-gamma)/xyz0(1)*(x(l1:l2)/xyz0(1))**(1/(1-gamma)-1)
-          reference_state(:,iref_gp   ) = gravx*reference_state(:,iref_rho )
+          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
           reference_state(:,iref_s    ) = sref
           reference_state(:,iref_d2rho) = 0.    ! yet missing
           reference_state(:,iref_d6rho) = 0.    ! yet missing
