@@ -36,7 +36,7 @@ module General
   public :: backskip
   public :: lextend_vector
   public :: operator(.IN.)
-  public :: loptest, ioptest, roptest, doptest
+  public :: loptest, ioptest, roptest, doptest, coptest
   public :: indgen
   public :: rewind
 !
@@ -3228,6 +3228,26 @@ module General
       endif
 
     endfunction doptest
+!***********************************************************************
+      function coptest(copt,cdef)
+!
+!  returns value of optional character parameter copt if present,
+!  otherwise the default value cdef, if present, '', if not.
+!
+!  27-jan-15/MR: coded
+!
+      character(LEN=2*labellen) :: coptest
+      character(LEN=*), optional, intent(IN) :: copt, cdef
+
+      if (present(copt)) then
+        coptest=copt
+      elseif (present(cdef)) then
+        coptest=cdef
+      else
+        coptest=''
+      endif
+
+    endfunction coptest
 !***********************************************************************
     RECURSIVE SUBROUTINE quick_sort(list, order)
 !
