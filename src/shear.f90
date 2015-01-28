@@ -30,6 +30,7 @@ module Shear
   real, dimension(3) :: u0_advec = 0.0
   character(len=6) :: shear_method = 'fft'
   logical, dimension(mcom) :: lposdef = .false.
+  logical :: lshear_acceleration = .true.
   logical :: lshearadvection_as_shift=.false.
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
@@ -46,6 +47,7 @@ module Shear
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
+      lshear_acceleration, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
       norder_poly, ltvd_advection, lposdef_advection, lposdef, &
       lmagnetic_stretching, sini, lhyper3x_mesh, diff_hyper3x_mesh
@@ -222,7 +224,7 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      if (lhydro)    lpenc_requested(i_uu)=.true.
+      if (lhydro .and. lshear_acceleration) lpenc_requested(i_uu) = .true.
       if (lmagnetic .and. .not. lbfield) lpenc_requested(i_aa)=.true.
 !
     endsubroutine pencil_criteria_shear
@@ -323,7 +325,7 @@ module Shear
 !  to the Coriolis force, but is actually not related to the Coriolis
 !  force.
 !
-      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear1*p%uu(:,1)
+      if (lhydro .and. lshear_acceleration) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - Sshear1 * p%uu(:,1)
 !
 !  Hyper-diffusion in x-direction to damp aliasing.
 !
