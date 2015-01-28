@@ -31,7 +31,7 @@
 module SharedVariables
 !
   use Messages
-  use Cparam, only: linelen
+  use Cparam, only: linelen, labellen
 !
   implicit none
 !
@@ -150,537 +150,324 @@ module SharedVariables
 !
     endsubroutine initialize_shared_variables
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr)
+    function find_item(varname,type,item,ierr,caller)
+!  
+!  Retrieves the item from the shared-variables list which belongs to name 'varname'.
+!  If 'ierr' is set, returns error code in it, otherwise prints error message and launches fatal error.
+!  Optional parameter 'caller' can be used to indicate the calling function in the error messages.
+!
+!  27-jan-15/MR: derived from get_shared_variable routines
+!
+      use General, only: coptest
+
+      logical :: find_item
+      character (len=*),                    intent(in) :: varname
+      integer,                              intent(in) :: type
+      type (shared_variable_list), pointer, intent(out):: item
+      integer,           optional,          intent(out):: ierr
+      character (len=*), optional,          intent(in) :: caller
+
+      character(len=2*labellen) :: scaller
+      logical :: lnotass
+
+      find_item=.false.
+
+      scaller = '" in '//trim(coptest(caller))//':'
+      if (present(ierr)) ierr=0
+
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          if (item%vartype==type) then
+            select case (type)
+              case (iSHVAR_TYPE_REAL0D); lnotass=.not.associated(item%real0D) 
+              case (iSHVAR_TYPE_REAL1D); lnotass=.not.associated(item%real1D) 
+              case (iSHVAR_TYPE_REAL2D); lnotass=.not.associated(item%real2D) 
+              case (iSHVAR_TYPE_REAL3D); lnotass=.not.associated(item%real3D) 
+              case (iSHVAR_TYPE_REAL4D); lnotass=.not.associated(item%real4D) 
+              case (iSHVAR_TYPE_INT0D ); lnotass=.not.associated(item%int0d)
+              case (iSHVAR_TYPE_INT1D ); lnotass=.not.associated(item%int1d)
+              case (iSHVAR_TYPE_LOG0D ); lnotass=.not.associated(item%log0d)
+              case (iSHVAR_TYPE_LOG1D ); lnotass=.not.associated(item%log1d)
+              case (iSHVAR_TYPE_CHAR0D); lnotass=.not.associated(item%char0d)
+              case default
+                print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+                call fatal_error('', 'Data type is not implemented.')
+            end select
+            
+            if (lnotass) then
+              if (present(ierr)) then
+                ierr=iSHVAR_ERR_NOTASSOCIATED
+                return
+              endif
+              print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+              call fatal_error('', 'Data pointer is not associated.')
+            endif
+            find_item=.true.
+            return
+          else
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+            call fatal_error('', 'Shared variable has the wrong type!')
+          endif
+        endif
+        item=>item%next
+      enddo
+
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+!
+      print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+      call fatal_error('', 'Shared variable does not exist!')
+
+    endfunction find_item
+!***********************************************************************
+    subroutine get_variable_real0d(varname,variable,ierr,caller)
 !
 !  Comment me.
+!
+!  27-jan-15/MR: adapted to use of 'find_item'
 !
       character (len=*) :: varname
       real, pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_REAL0D) then
-            variable=>item%real0D
-            if (.not.associated(item%real0D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_REAL0D,item,ierr,caller)) then
+        variable=>item%real0D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real0d
 !***********************************************************************
-    subroutine get_variable_real1d(varname,variable,ierr)
+    subroutine get_variable_real1d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       real, dimension(:), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_REAL1D) then
-            variable=>item%real1D
-            if (.not.associated(item%real1D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_REAL1D,item,ierr,caller)) then
+        variable=>item%real1D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real1d
 !***********************************************************************
-    subroutine get_variable_real2d(varname,variable,ierr)
+    subroutine get_variable_real2d(varname,variable,ierr,caller)
 !
 !  get 2-D array
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       real, dimension(:,:), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_REAL2D) then
-            variable=>item%real2D
-            if (.not.associated(item%real2D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_REAL2D,item,ierr,caller)) then
+        variable=>item%real2D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real2d
 !***********************************************************************
-    subroutine get_variable_real3d(varname,variable,ierr)
+    subroutine get_variable_real3d(varname,variable,ierr,caller)
 !
 !  get 3-D array
 !
 !   6-sep-13/MR: derived from get_variable_real2d
-!
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       real, dimension(:,:,:), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_REAL3D) then
-            variable=>item%real3D
-            if (.not.associated(item%real3D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_REAL3D,item,ierr,caller)) then
+        variable=>item%real3D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real3d
 !***********************************************************************
-    subroutine get_variable_real4d(varname,variable,ierr)
+    subroutine get_variable_real4d(varname,variable,ierr,caller)
 !
 !  get 4-D array
 !
 !   6-sep-13/MR: derived from get_variable_real2d
+!  27-jan-15/MR: adapted to use of 'find_item'
 !
       character (len=*) :: varname
       real, dimension(:,:,:,:), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_REAL4D) then
-            variable=>item%real4D
-            if (.not.associated(item%real4D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_REAL4D,item,ierr,caller)) then
+        variable=>item%real4D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real4d
 !***********************************************************************
-    subroutine get_variable_int0d(varname,variable,ierr)
+    subroutine get_variable_int0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       integer, pointer :: variable
       integer, optional :: ierr
+!
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_INT0D) then
-            variable=>item%int0D
-            if (.not.associated(item%int0D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_INT0D,item,ierr,caller)) then
+        variable=>item%int0D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_int0d
 !***********************************************************************
-    subroutine get_variable_int1d(varname,variable,ierr)
+    subroutine get_variable_int1d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       integer, dimension(:), pointer :: variable
       integer, optional :: ierr
+!
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_INT1D) then
-            variable=>item%int1D
-            if (.not.associated(item%int1D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ',varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ',varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_INT1D,item,ierr,caller)) then
+        variable=>item%int1D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ',varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_int1d
 !***********************************************************************
-    subroutine get_variable_logical0d(varname,variable,ierr)
+    subroutine get_variable_logical0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       logical, pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_LOG0D) then
-            variable=>item%log0D
-            if (.not.associated(item%log0D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ', varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ', varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_LOG0D,item,ierr,caller)) then
+        variable=>item%log0D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ' ,varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_logical0d
 !***********************************************************************
-    subroutine get_variable_logical1d(varname,variable,ierr)
+    subroutine get_variable_logical1d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       logical, dimension(:), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_LOG1D) then
-            variable=>item%log1D
-            if (.not.associated(item%log1D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ', varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ', varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_LOG1D,item,ierr,caller)) then
+        variable=>item%log1D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ' ,varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_logical1d
 !***********************************************************************
-    subroutine get_variable_char0d(varname,variable,ierr)
+    subroutine get_variable_char0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
       character (len=*) :: varname
       character (len=linelen), pointer :: variable
       integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: variable,ierr
+!
       type (shared_variable_list), pointer :: item
-!
-      intent(in)  :: varname
-      intent(out) :: ierr
-!
-      if (present(ierr)) ierr=0
-!
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          if (item%vartype==iSHVAR_TYPE_LOG0D) then
-            variable=>item%char0D
-            if (.not.associated(item%char0D)) then
-              if (present(ierr)) then
-                ierr=iSHVAR_ERR_NOTASSOCIATED
-                return
-              endif
-              print*, 'Getting shared variable: ', varname
-              call fatal_error('get_variable', 'Data pointer is not associated.')
-            endif
-            return
-          else
-            nullify(variable)
-            if (present(ierr)) then
-              ierr=iSHVAR_ERR_WRONGTYPE
-              return
-            endif
-            print*, 'Getting shared variable: ', varname
-            call fatal_error('get_variable', 'Shared variable has the wrong type!')
-          endif
-        endif
-        item=>item%next
-      enddo
-!
-      nullify(variable)
-!
-      if (present(ierr)) then
-        ierr=iSHVAR_ERR_NOSUCHVAR
-        return
+
+      if (find_item(varname,iSHVAR_TYPE_CHAR0D,item,ierr,caller)) then
+        variable=>item%char0D
+      else
+        nullify(variable)
       endif
-!
-      print*, 'Getting shared variable: ' ,varname
-      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_char0d
 !***********************************************************************
@@ -1102,21 +889,15 @@ module SharedVariables
 !  fetches a function of a single variable together with its gradient.
 !
 !   6-sep-2013/MR: coded
+!  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cdata, only: labellen
+      use Cparam, only: labellen
 !
       character(LEN=*), intent(IN) :: name
       real, dimension(:),      pointer    :: prof, gprof    !intent(OUT)
 
-      integer :: ierr
-
-      call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_1d","shared "//trim(name))
-      call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_1d","shared g"//trim(name))
-      !!do n=n1,n2
-      !!  print*,ipz,z(n),prof(n),gprof(n)
-      !!enddo
+      call get_shared_variable(     trim(name),prof, caller="fetch_profile_1d")
+      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_1d")
 
     endsubroutine fetch_profile_1d
 !***********************************************************************
@@ -1124,20 +905,17 @@ module SharedVariables
 !
 !  fetches a function of two variables together with its gradient.
 !
-!   6-sep-2013/MR: coded
+!   6-sep-13/MR: coded
+!  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cdata, only: labellen
+      use Cparam, only: labellen
 !
       character(LEN=*), intent(IN) :: name
       real, dimension(:,:),    pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:),  pointer    :: gprof   !intent(OUT)
 
-      integer :: ierr
-
-      call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_2d","shared "//trim(name))
-      call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_2d","shared g"//trim(name))
+      call get_shared_variable(     trim(name),prof, caller="fetch_profile_2d")
+      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_2d")
 
     endsubroutine fetch_profile_2d
 !***********************************************************************
@@ -1145,20 +923,17 @@ module SharedVariables
 !
 !  fetches a function of three variables together with its gradient.
 !
-!   6-sep-2013/MR: coded
+!   6-sep-13/MR: coded
+!  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cdata, only: labellen
+      use Cparam, only: labellen
 !
       character(LEN=*),  intent(IN) :: name
       real, dimension(:,:,:),   pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:,:), pointer    :: gprof   !intent(OUT)
 
-      integer :: ierr
-
-      call get_shared_variable(trim(name),prof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_3d","shared "//trim(name))
-      call get_shared_variable('g'//trim(name),gprof,ierr)
-      if (ierr/=0) call fatal_error("fetch_profile_3d","shared g"//trim(name))
+      call get_shared_variable(     trim(name),prof, caller="fetch_profile_3d")
+      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_3d")
 
     endsubroutine fetch_profile_3d
 !***********************************************************************
