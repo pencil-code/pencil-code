@@ -163,7 +163,7 @@ module SharedVariables
       logical :: find_item
       character (len=*),                    intent(in) :: varname
       integer,                              intent(in) :: type
-      type (shared_variable_list), pointer, intent(out):: item
+      type (shared_variable_list), pointer             :: item     !intent(out)
       integer,           optional,          intent(out):: ierr
       character (len=*), optional,          intent(in) :: caller
 
@@ -239,7 +239,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -263,7 +263,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -287,7 +287,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -312,7 +312,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -337,7 +337,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -362,7 +362,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -387,7 +387,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -411,7 +411,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -435,7 +435,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
@@ -459,7 +459,7 @@ module SharedVariables
       character (len=*), optional :: caller
 !
       intent(in)  :: varname,caller
-      intent(out) :: variable,ierr
+      intent(out) :: ierr           !,variable
 !
       type (shared_variable_list), pointer :: item
 
