@@ -34,12 +34,13 @@ module InitialCondition
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
+  logical :: lref_state=.false.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile
+      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, lref_state
 !
   contains
 !***********************************************************************
@@ -87,7 +88,7 @@ module InitialCondition
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
       real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
-      real, dimension (nxgrid) :: ss_global, cs2_global
+      real, dimension (nxgrid) :: ss_global, cs2_global, drhodr_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
@@ -159,6 +160,7 @@ module InitialCondition
 !
       TT=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x - 1./Rsurf))
       TT_global=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./xglobal(nghost+1:nxgrid+nghost) - 1./Rsurf))
+      dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1.))
       T00=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x0 - 1./Rsurf))
       Tsurf=gravx/(cv*(gamma-1.))*xi0/Rstar
 !
@@ -181,7 +183,7 @@ module InitialCondition
 !
 !  global temperature derivative
 !
-        dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1))
+        dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1.))
         dTdrc_global=0
         dTdrc_global(nsurf_global:nxgrid)=(Tcor-Tsurf)*der_step(xglobal(nghost+nsurf_global:nxgrid+nghost),Rtran,wtran)
         dTdr_global(nsurf_global:nxgrid)=dTdr_global(nsurf_global:nxgrid)+(dTdrc_global(nsurf_global:nxgrid) - & 
@@ -197,6 +199,7 @@ module InitialCondition
       rho00=rho0*(T00/T00)**(1./(gamma-1.))
       rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
       rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
+      drhodr_global=(1./(gamma-1.))*rho_global*dTdr_global/TT_global
 !
       lnrho=log(rho_prof/rho0)
       lnrho_global=log(rho_global/rho0)
@@ -215,19 +218,36 @@ module InitialCondition
       cs2_global=cs20*TT_global*cv*gamma*(gamma-1.)
       ss_prof=log(cs2_prof/cs20)/gamma - & 
               (gamma-1.)/(gamma)*(lnrho-log(rho0))
+      ss_global=log(cs2_global/cs20)/gamma - & 
+              (gamma-1.)/(gamma)*(lnrho_global-log(rho0))
 !
 !  Put lnrho and ss into the f-array
 !
-      do m=m1,m2
-      do n=n1,n2
+      if (lref_state) then
+         f(l1:l2,:,:,ilnrho) = 0.
+         f(l1:l2,:,:,iss) = 0.
+!
+         if (iproc .eq. root) then 
+           call safe_character_assign(wfile,'reference_state.dat')
+           open(unit,file=wfile,status='unknown')
+           do ix=1,nxgrid
+              write(unit,'(3(2x,1pe15.8))') rho_global(ix),drhodr_global(ix),ss_global(1)
+           enddo
+           close(unit)
+         endif
+!
+      else
+        do m=m1,m2
+        do n=n1,n2
           if (ldensity_nolog) then
             f(l1:l2,m,n,irho) = exp(lnrho(l1:l2))
           else
             f(l1:l2,m,n,ilnrho) = lnrho(l1:l2)
           endif
           f(l1:l2,m,n,iss) = ss_prof(l1:l2)
-      enddo
-      enddo
+        enddo
+        enddo
+      endif
 !
 !  Compute hcond and glhcond using global x-array
 !

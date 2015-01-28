@@ -649,6 +649,20 @@ module Density
           reference_state(:,iref_s    ) = sref
           reference_state(:,iref_d2rho) = 0.    ! yet missing
           reference_state(:,iref_d6rho) = 0.    ! yet missing
+!
+        case ('file')
+!
+!  Read from a file
+!
+          call get_shared_variable('gravx_xpencil',gravx_xpencil,ierr)
+          if (ierr/=0) call fatal_error("initialize_density: ", &
+                                        "there was a problem when getting gravx_xpencil")
+          call read_reference_state(reference_state)
+          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho )
+          reference_state(:,iref_gs   ) = 0.
+          reference_state(:,iref_d2rho) = 0.    ! yet missing
+          reference_state(:,iref_d6rho) = 0.    ! yet missing
+!
         case default
           call fatal_error('initialize_density', &
               'type of reference state "'//trim(ireference_state)//'" not implemented')
@@ -3094,5 +3108,64 @@ module Density
     subroutine update_reference_state
 !
     endsubroutine update_reference_state
+!***********************************************************************
+    subroutine read_reference_state(reference_state)
+!
+!  Read reference state from a file
+!
+!  23-jan-2015/pete: aped from read_hcond
+!
+      use Mpicomm, only: mpibcast_real_arr
+!
+      real, dimension(nx,9), intent(inout) :: reference_state
+      integer, parameter :: ntotal=nx*nprocx
+      real, dimension(nx*nprocx) :: tmp1, tmp2, tmp3
+      real :: var1, var2, var3
+      logical :: exist
+      integer :: stat, nn
+!
+!  Read reference_state and write into an array.
+!  If file is not found in run directory, search under trim(directory).
+!
+      if (lroot ) then
+        inquire(file='reference_state.dat',exist=exist)
+        if (exist) then
+          open(36,file='reference_state.dat')
+        else
+          inquire(file=trim(directory)//'/reference_state.ascii',exist=exist)
+          if (exist) then
+            open(36,file=trim(directory)//'/reference_state.ascii')
+          else
+            call fatal_error('read_reference_state','*** error *** - no input file')
+          endif
+        endif
+!
+!  Read profiles.
+!
+        do nn=1,ntotal
+          read(36,*,iostat=stat) var1,var2,var3
+          if (stat<0) exit
+          if (ip<5) print*,'rho, grho, ss: ',var1,var2,var3
+          tmp1(nn)=var1
+          tmp2(nn)=var2
+          tmp3(nn)=var3
+        enddo
+        close(36)
+!
+      endif
+!
+      call mpibcast_real_arr(tmp1, ntotal)
+      call mpibcast_real_arr(tmp2, ntotal)
+      call mpibcast_real_arr(tmp3, ntotal)
+!
+!  Assuming no ghost zones in cooling_profile.dat
+!
+      do nn=l1,l2
+        reference_state(nn-nghost,iref_rho)=tmp1(ipx*nx+nn-nghost)
+        reference_state(nn-nghost,iref_grho)=tmp2(ipx*nx+nn-nghost)
+        reference_state(nn-nghost,iref_s)=tmp3(ipx*nx+nn-nghost)
+      enddo
+!
+    endsubroutine read_reference_state
 !***********************************************************************
 endmodule Density
