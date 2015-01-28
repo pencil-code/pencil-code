@@ -101,6 +101,7 @@ module Particles
   logical :: ldt_grav_par=.true., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
+  logical :: lshear_accel_par = .true.
   logical :: lcalc_uup=.false.
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
@@ -197,7 +198,7 @@ module Particles
       interp_pol_pp,interp_pol_species, &
       brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
-      rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
+      rsinkpoint, lshear_accel_par, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
@@ -2587,8 +2588,8 @@ module Particles
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-        if (lshear) dfp(1:npar_loc,ivpy) = &
-            dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
+        if (lshear .and. lshear_accel_par) &
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
       endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
