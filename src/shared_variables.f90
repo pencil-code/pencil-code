@@ -172,12 +172,7 @@ module SharedVariables
 
       find_item=.false.
 
-      if (present(caller)) then
-        scaller = '" in '//trim(caller)//':'
-      else
-        scaller = '" in:'
-      endif
-
+      !scaller = '" in '//trim(coptest(caller))//':'
       if (present(ierr)) ierr=0
 
       item=>thelist
