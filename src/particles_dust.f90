@@ -1082,7 +1082,7 @@ module Particles
             elseif (nygrid==1) then
               npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**dim1
               npar_loc_y=1
-              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**dim1
+              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(1))**dim1
             elseif (nzgrid==1) then
               npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**dim1
               npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**dim1
