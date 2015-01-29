@@ -32,6 +32,7 @@ module SharedVariables
 !
   use Messages
   use Cparam, only: linelen, labellen
+      use cdata
 !
   implicit none
 !
@@ -251,14 +252,13 @@ module SharedVariables
 !
     endsubroutine get_variable_real0d_alt
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr,caller)
+    subroutine get_variable_real0d(varname,variable,ierr)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       real, pointer :: variable
       integer, optional :: ierr
-      character (len=*), optional,          intent(in) :: caller
       type (shared_variable_list), pointer :: item
 !
       intent(in)  :: varname
@@ -968,8 +968,8 @@ module SharedVariables
       real, dimension(:,:),    pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:),  pointer    :: gprof   !intent(OUT)
 
-      call get_shared_variable(     trim(name),prof, caller="fetch_profile_2d")
-      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_2d")
+      call get_shared_variable(     trim(name),prof)    !, caller="fetch_profile_2d")
+      call get_shared_variable('g'//trim(name),gprof)   !,caller="fetch_profile_2d")
 
     endsubroutine fetch_profile_2d
 !***********************************************************************
@@ -986,8 +986,8 @@ module SharedVariables
       real, dimension(:,:,:),   pointer    :: prof    !intent(OUT)
       real, dimension(:,:,:,:), pointer    :: gprof   !intent(OUT)
 
-      call get_shared_variable(     trim(name),prof, caller="fetch_profile_3d")
-      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_3d")
+      call get_shared_variable(     trim(name),prof)   !, caller="fetch_profile_3d")
+      call get_shared_variable('g'//trim(name),gprof)  !,caller="fetch_profile_3d")
 
     endsubroutine fetch_profile_3d
 !***********************************************************************
