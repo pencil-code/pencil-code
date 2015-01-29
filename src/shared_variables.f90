@@ -227,7 +227,7 @@ module SharedVariables
 
     endfunction find_item
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr,caller)
+    subroutine get_variable_real0d_alt(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
@@ -248,6 +248,60 @@ module SharedVariables
       else
         nullify(variable)
       endif
+!
+    endsubroutine get_variable_real0d_alt
+!***********************************************************************
+    subroutine get_variable_real0d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      real, pointer :: variable
+      integer, optional :: ierr
+      character (len=*), optional,          intent(in) :: caller
+      type (shared_variable_list), pointer :: item
+!
+      intent(in)  :: varname
+      intent(out) :: ierr
+!
+      if (present(ierr)) ierr=0
+!
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          if (item%vartype==iSHVAR_TYPE_REAL0D) then
+            variable=>item%real0D
+            if (.not.associated(item%real0D)) then
+              if (present(ierr)) then
+                ierr=iSHVAR_ERR_NOTASSOCIATED
+                return
+              endif
+              print*, 'Getting shared variable: ',varname
+              call fatal_error('get_variable', 'Data pointer is not associated.')
+            endif
+            return
+          else
+            nullify(variable)
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*, 'Getting shared variable: ',varname
+            call fatal_error('get_variable', 'Shared variable has the wrong type!')
+          endif
+        endif
+        item=>item%next
+      enddo
+!
+      nullify(variable)
+!
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+!
+      print*, 'Getting shared variable: ',varname
+      call fatal_error('get_variable', 'Shared variable does not exist!')
 !
     endsubroutine get_variable_real0d
 !***********************************************************************
