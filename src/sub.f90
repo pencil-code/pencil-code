@@ -6188,16 +6188,16 @@ nameloop: do
 !
     endfunction find_xyrms_fvec
 !***********************************************************************
-   function mean_density(f)
+    function mean_density(f)
 !
 !  Calculate mean density
 !
-!   3-mar-14/MR: coded
+!  3-mar-14/MR: coded
 !
-     use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpiallreduce_sum
 !
-     real :: mean_density
-
+      real :: mean_density
+!
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
 !

@@ -5153,20 +5153,30 @@ module Hydro
 !  coordinates.
 !
 !  29-aug-13/pete: adapted from remove_mean_flow
+!  30-jan-15/pete: take reference state into account
 !
       use Mpicomm, only: mpiallreduce_sum
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer,                            intent (in)    :: induz
 !
       real, dimension (nx) :: uu, rho, rsint
       real :: um, angmom, angmom_tmp, rhosint, rhosint_tmp
-      integer :: m,n
+      integer :: m,n, ierr
       real    :: fac
+      real, dimension(:,:), pointer :: reference_state
 !
-!  initialize um and compute normalization factor fac
+!  Get the reference state if requested
+!
+      if (lreference_state) call get_shared_variable('reference_state',reference_state,ierr)
+        if (ierr/=0) call fatal_error("remove_mean_angmom: ", &
+            "there was a problem when getting reference_state")
+!
+!  Initialize um and compute normalization factor fac
 !
         um = 0.0
+        rho = 0.0
         angmom = 0.0
         rhosint = 0.0
         fac = 1./(Lxyz(1)*(cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
@@ -5178,9 +5188,17 @@ module Hydro
 !
 !  Compute volume integrals of angular momentum and rho*sin(theta)
 !
-            uu = f(l1:l2,m,n,induz)
-            rho = exp(f(l1:l2,m,n,ilnrho))
-            rsint = x(l1:l2)*sinth(m)
+            if (ldensity_nolog) then
+              if (lreference_state) then
+                rho=f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
+              else
+                rho=f(l1:l2,m,n,irho)
+              endif
+            else
+              rho=exp(f(l1:l2,m,n,ilnrho))
+            endif
+            uu=f(l1:l2,m,n,induz)
+            rsint=x(l1:l2)*sinth(m)
             angmom=angmom+sum(rho*rsint*uu*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
             rhosint=rhosint+sum(rho*rsint*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
           enddo

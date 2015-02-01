@@ -56,6 +56,7 @@ module Density
   real, dimension(nx,9) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
+  real :: reference_state_mass=0.
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
@@ -240,10 +241,12 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc
       use SharedVariables, only: put_shared_variable, get_shared_variable
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: tmp
 !
-      integer :: i,j,ierr
+      integer :: i,j,m,n,ierr
       logical :: lnothing
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
@@ -668,8 +671,24 @@ module Density
           call fatal_error('initialize_density', &
               'type of reference state "'//trim(ireference_state)//'" not implemented')
         end select
-
+!
+!  Compute the mass of the reference state for later use
+!
+        do n=n1,n2
+          tmp=0.
+          do m=m1,m2
+            tmp=tmp+sum(reference_state(:,iref_rho)*dVol_x(l1:l2))*dVol_y(m)
+          enddo
+          reference_state_mass=reference_state_mass+tmp*dVol_z(n)
+        enddo
+!
+        if (ncpus>1) then
+          call mpiallreduce_sum(reference_state_mass,tmp)
+          reference_state_mass=tmp
+        endif
+!
         call put_shared_variable('reference_state',reference_state,ierr)
+        call put_shared_variable('reference_state_mass',reference_state_mass,ierr)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1358,12 +1377,23 @@ module Density
         enddo
         call finalize_aver(nprocxy,12,glnrhomz)
       endif
-
+!
+!  Force mass conservation if requested
+!
       if (lconserve_total_mass .and. total_mass > 0.) then
 !
         fact=total_mass/(box_volume*mean_density(f))
         if (ldensity_nolog) then
-          f(:,:,:,irho) = f(:,:,:,irho)*fact
+          if (lreference_state) then
+            fact=total_mass/(box_volume*mean_density(f)+reference_state_mass)
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)*fact + (fact - 1.)*reference_state(:,iref_rho)
+              enddo
+            enddo
+          else
+            f(:,:,:,irho) = f(:,:,:,irho)*fact
+          endif
         else
           f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
         endif
