@@ -78,7 +78,7 @@ module InitialCondition
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: gamma, gamma_m1, rho0, cs20
       use General, only: safe_character_assign
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it, mpiallreduce_sum
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -95,7 +95,7 @@ module InitialCondition
       real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
-      real :: meanrho, volume, total_mass
+      real :: meanrho, volume, total_mass, tmp
       real, pointer :: gravx, cp, cv
       integer :: i, j, n, m, q, ix, ierr, unit=1, nsurf, nsurf_global
 !
@@ -335,13 +335,28 @@ module InitialCondition
 !
 !  Compute total mass.
 !
-      if (lcorona) then
-         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*exp(lnrho_global))/sum(xglobal(nghost+1:nxgrid+nghost)**2)
-      else
-         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+      total_mass=0.
+!
+      do n=n1,n2
+        tmp=0.
+        do m=m1,m2
+          tmp=tmp+sum(exp(lnrho(l1:l2))*dVol_x(l1:l2))*dVol_y(m)
+        enddo
+        total_mass=total_mass+tmp*dVol_z(n)
+      enddo
+!
+      if (ncpus>1) then
+        call mpiallreduce_sum(total_mass,tmp)
+        total_mass=tmp
       endif
-      volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
-      total_mass=meanrho*volume
+!
+!      if (lcorona) then
+!         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*exp(lnrho_global))/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+!      else
+!         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
+!      endif
+!      volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
+!      total_mass=meanrho*volume
 !
       if (iproc .eq. root) then
          print*,''
