@@ -832,8 +832,9 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
+
         if (lpencil(i_gTT)) then
-          do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
+          do j=1,3; p%gTT(:,j)=p%glnTT(:,j)*p%TT; enddo
         endif
         if (lpencil(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho+cv1*p%del2ss
         if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho+cv1*p%hss
@@ -1357,7 +1358,7 @@ module EquationOfState
 !  Set f(l1:l2,m,n,iss), depending on the values of ee and pp
 !  Adding pressure perturbations is not implemented
 !
-!  20-jan-15/MR: changes for us of reference state
+!  20-jan-15/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
 !
@@ -1368,6 +1369,11 @@ module EquationOfState
       real, dimension(psize) :: lnrho_
       real, dimension(:,:), pointer :: reference_state
 !
+      integer :: ierr
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,ierr)
+
       if (psize==nx) then
         if (ldensity_nolog) then
           if (lreference_state) then
