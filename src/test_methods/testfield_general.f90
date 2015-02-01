@@ -3,6 +3,10 @@ module Testfield_general
 !  27-jun-13/MR:  Created to centralize functionalities of testfield modules.
 !                 Everything to be used in individual testfield modules needs
 !                 to be public (or protected).
+!                 njtest = number of testfields, has to be set in cparam.local
+!                 and no longer in the individual testfield modules as it is used
+!                 already in testfield_general
+!
   use Cparam
   use Cdata, only: ninit, labellen
   use Messages
