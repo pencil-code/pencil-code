@@ -350,13 +350,7 @@ module InitialCondition
         total_mass=tmp
       endif
 !
-!      if (lcorona) then
-!         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*exp(lnrho_global))/sum(xglobal(nghost+1:nxgrid+nghost)**2)
-!      else
-!         meanrho=sum(xglobal(nghost+1:nxgrid+nghost)**2*rho_global)/sum(xglobal(nghost+1:nxgrid+nghost)**2)
-!      endif
-!      volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
-!      total_mass=meanrho*volume
+      volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
 !
       if (iproc .eq. root) then
          print*,''
@@ -370,7 +364,6 @@ module InitialCondition
          print*,'initial_condition: gratio     =',gratio
          print*,'initial_condition: rratio     =',rratio
          print*,'initial_condition: volume     =',volume
-         print*,'initial_condition: meanrho    =',meanrho
          print*,'initial_condition: total_mass =',total_mass
          if (lcorona) then
            print*, ''

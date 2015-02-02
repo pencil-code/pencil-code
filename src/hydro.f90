@@ -5169,58 +5169,60 @@ module Hydro
 !
 !  Get the reference state if requested
 !
-      if (lreference_state) call get_shared_variable('reference_state',reference_state,ierr)
+      if (lreference_state) then
+         call get_shared_variable('reference_state',reference_state,ierr)
         if (ierr/=0) call fatal_error("remove_mean_angmom: ", &
             "there was a problem when getting reference_state")
+      endif
 !
 !  Initialize um and compute normalization factor fac
 !
-        um = 0.0
-        rho = 0.0
-        angmom = 0.0
-        rhosint = 0.0
-        fac = 1./(Lxyz(1)*(cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
+      um = 0.0
+      rho = 0.0
+      angmom = 0.0
+      rhosint = 0.0
+      fac = 1./(Lxyz(1)*(cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
 !
 !  Go through all pencils.
 !
-        do n = n1,n2
-          do m = m1,m2
+      do n = n1,n2
+        do m = m1,m2
 !
 !  Compute volume integrals of angular momentum and rho*sin(theta)
 !
-            if (ldensity_nolog) then
-              if (lreference_state) then
-                rho=f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
-              else
-                rho=f(l1:l2,m,n,irho)
-              endif
+          if (ldensity_nolog) then
+            if (lreference_state) then
+              rho=f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
             else
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              rho=f(l1:l2,m,n,irho)
             endif
-            uu=f(l1:l2,m,n,induz)
-            rsint=x(l1:l2)*sinth(m)
-            angmom=angmom+sum(rho*rsint*uu*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
-            rhosint=rhosint+sum(rho*rsint*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
-          enddo
+          else
+            rho=exp(f(l1:l2,m,n,ilnrho))
+          endif
+          uu=f(l1:l2,m,n,induz)
+          rsint=x(l1:l2)*sinth(m)
+          angmom=angmom+sum(rho*rsint*uu*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
+          rhosint=rhosint+sum(rho*rsint*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
         enddo
+      enddo
 !
-        angmom=fac*angmom; rhosint=fac*rhosint
+      angmom=fac*angmom; rhosint=fac*rhosint
 !
 !  Compute total sum for all processors
 !
-        call mpiallreduce_sum(angmom,angmom_tmp)
-        call mpiallreduce_sum(rhosint,rhosint_tmp)
-        um=angmom_tmp/rhosint_tmp
+      call mpiallreduce_sum(angmom,angmom_tmp)
+      call mpiallreduce_sum(rhosint,rhosint_tmp)
+      um=angmom_tmp/rhosint_tmp
 !
 !  Go through all pencils and subtract out the excess u_phi
 !
-        do n = n1,n2
-          do m = m1,m2
-            f(l1:l2,m,n,induz) = f(l1:l2,m,n,induz) - um
-          enddo
+      do n = n1,n2
+        do m = m1,m2
+          f(l1:l2,m,n,induz) = f(l1:l2,m,n,induz) - um
         enddo
+      enddo
 !
-        if (lroot.and.ip<6) print*,'remove_mean_angmom: um=',um
+      if (lroot.and.ip<6) print*,'remove_mean_angmom: um=',um
 !
     endsubroutine remove_mean_angmom
 !***********************************************************************
