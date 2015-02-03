@@ -3,7 +3,7 @@
 # Reads the tracer files, composes a color map
 # and reads the fixed point values.
 #
-# Author: Simon Candelaresi (iomsn@physto.se, iomsn1@googlemail.com).
+# Author: Simon Candelaresi (iomsn1@googlemail.com).
 #
 #
 
@@ -21,7 +21,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
     call signature::
 
-      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim = [], head_size = 3)
+      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim = [], head_size = 3, post = False)
 
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
@@ -45,7 +45,11 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
       *head_size*:
         Size of the Fortran header in binary data. Most of the time this is 3.
         For the St Andrews cluster it is 5.
+      
+      *post*:
+        If True reads the post processed tracer file 'data/tracers.dat'.
     """
+    
     class data_struct:
         def __init__(self):
             self.xi = []
@@ -85,7 +89,6 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         n_proc = 1
         tracer_file = open(dataDir+fileName, 'rb')
         trace_sub = struct.unpack("f", tracer_file.read(4))[0]
-        print "trace_sub = ", trace_sub
         tracer_file.close()
         n_times = int(os.path.getsize(dataDir+fileName)/(4*7*int(dim.nx*trace_sub)*int(dim.ny*trace_sub)))
     # sub sampling of the tracers
@@ -176,104 +179,212 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     return tracers, mapping, t
 
 
-
-# keep this for the time being
-def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
+def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
+                interpolation = 'mean', trace_sub = 1, intQ = [''], varfile = '',
+                ti = -1, tf = -1,
+                integration = 'simple', datadir = 'data/', destination = 'tracers.dat'):
     """
-    Reads the fixed points files.
+    Trace streamlines from the VAR files and integrate quantity 'intQ' along them.
 
     call signature::
-
-      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
-
-    Reads from the fixed points files. Returns the fixed points positions.
-
+    
+      tracers(field = 'bb', hMin = 2e-3, hMax = 2e2, lMax = 500, tol = 2e-3,
+                interpolation = 'mean', trace_sub = 1, intQ = '', varfile = 'VAR0',
+                ti = -1, tf = -1,
+                datadir = 'data', destination = 'tracers.dat')
+    
+    Trace streamlines of the vectofield 'field' from z = z0 to z = z1 and integrate
+    quantities 'intQ' along the lines. Creates a 2d mapping as in 'streamlines.f90'.
+    
     Keyword arguments:
-
-      *dataDir*:
-        Data directory.
-
-      *fileName*:
-        Name of the fixed points file.
-
-      *hm*:
-        Header multiplication factor in case Fortran's binary data writes extra large
-        header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
+    
+     *traceField*:
+       Vector field used for the streamline tracing.
+        
+     *hMin*:
+       Minimum step length for and underflow to occur.
+       
+     *hMax*:
+       Parameter for the initial step length.
+       
+     *lMax*:
+       Maximum length of the streamline. Integration will stop if l >= lMax.
+       
+     *tol*:
+       Tolerance for each integration step. Reduces the step length if error >= tol.
+     
+     *interpolation*:
+       Interpolation of the vector field.
+       'mean': takes the mean of the adjacent grid point.
+       'weighted': weights the adjacent grid points according to their distance.
+       
+     *trace_sub*:
+       Number of sub-grid cells for the seeds.
+       
+     *intQ*:
+       Quantities to be integrated along the streamlines.
+     
+     *varfile*:
+       Varfile to be read.
+       
+      *integration*:
+        Integration method.
+        'simple': low order method.
+        'RK6': Runge-Kutta 6th order.
+        
+      *ti*:
+        Initial VAR file index for tracer time sequences.
+        
+      *tf*:
+        Final VAR file index for tracer time sequences.
+        
+      *datadir*:
+        Directory where the data is stored.
+        
+     *destination*:
+       Destination file.
     """
 
+    # read the data
+    # make sure to read the var files with the correct magic
+    if (traceField == 'bb'):
+        magic = 'bb'
+    if (traceField == 'jj'):
+        magic = 'jj'
+    if (traceField == 'vort'):
+        magic = 'vort'
+    
+    # convert intQ string into list
+    if (isinstance(intQ, list) == False):
+        intQ = [intQ]
+    intQ = np.array(intQ)
+    
+    grid = pc.read_grid(datadir = datadir, trim = True, quiet = True) 
+    dim  = pc.read_dim(datadir = datadir)    
+    tol2 = tol**2
+    
+    # check if user wants a tracer time series
+    if ((ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti)):
+        series = True
+        n_times = tf-ti+1
+    else:
+        series = False
+        n_times = 1
+    
+    tracers = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), n_times, 6+len(intQ)])
+    mapping = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), n_times, 3])
+    t = np.zeros(n_times)
+    
+    for tIdx in range(n_times):
+        print 'tIdx = ', tIdx
+        
+        if series:
+            varfile = 'VAR' + str(tIdx)
+        
+        # read the data
+        var = pc.read_var(varfile = varfile, datadir = datadir, magic = magic, quiet = True, trimall = True)   
+        grid = pc.read_grid(datadir = datadir, quiet = True, trim = True)
+        t[tIdx] = var.t
+        
+        # extract the requested vector traceField
+        vv = getattr(var, traceField)
+        if (any(intQ == 'curlyA')):
+            aa = var.aa
+        
+        # initialize the parameters
+        p = pc.pClass()
+        p.dx = var.dx; p.dy = var.dy; p.dz = var.dz
+        p.Ox = var.x[0]; p.Oy = var.y[0]; p.Oz = var.z[0]
+        p.Lx = grid.Lx; p.Ly = grid.Ly; p.Lz = grid.Lz
+        p.nx = dim.nx; p.ny = dim.ny; p.nz = dim.nz
+        
+        # initialize the tracers
+        for ix in range(int(trace_sub*dim.nx)):
+            for iy in range(int(trace_sub*dim.ny)):
+                tracers[ix, iy, tIdx, 0] = grid.x[0] + grid.dx/trace_sub*ix
+                tracers[ix, iy, tIdx, 2] = tracers[ix, iy, tIdx, 0]
+                tracers[ix, iy, tIdx, 1] = grid.y[0] + grid.dy/trace_sub*iy
+                tracers[ix, iy, tIdx, 3] = tracers[ix, iy, tIdx, 1]
+                tracers[ix, iy, tIdx, 4] = grid.z[0]
+            
+        # declare vectors
+        xMid    = np.zeros(3)
+        xSingle = np.zeros(3)
+        xHalf   = np.zeros(3)
+        xDouble = np.zeros(3)
+        
+        for ix in range(int(trace_sub*dim.nx)):
+            for iy in range(int(trace_sub*dim.ny)):
+                outside = False     # True if the streamlines hits the physical boundary
+                dh = np.sqrt(hMax*hMin)
+                
+                # start the streamline tracing
+                xx = tracers[ix, iy, tIdx, 2:5].copy()
+                if (integration == 'simple'):
+                    while ((outside == False) and (abs(dh) >= hMin) and (tracers[ix, iy, tIdx, 5] < lMax)):
+                        # (a) single step (midpoint method)    
+                        xMid = xx + 0.5*dh*pc.vecInt(xx, vv, p, interpolation)
+                        xSingle = xx + dh*pc.vecInt(xMid, vv, p, interpolation)
+                    
+                        # (b) two steps with half stepsize
+                        xMid = xx + 0.25*dh*pc.vecInt(xx, vv, p, interpolation)
+                        xHalf = xx + 0.5*dh*pc.vecInt(xMid, vv, p, interpolation)
+                        xMid = xHalf + 0.25*dh*pc.vecInt(xHalf, vv, p, interpolation)
+                        xDouble = xHalf + 0.5*dh*pc.vecInt(xMid, vv, p, interpolation)
+                    
+                        # (c) check error (difference between methods)
+                        dist2 = np.sum((xSingle-xDouble)**2)
+                        if (dist2 > tol2):
+                            dh = dh/2
+                            if (abs(dh) < hMin):
+                                print "Error: stepsize underflow"
+                                break
+                        else:
+                            tracers[ix, iy, tIdx, 5] +=  np.sqrt(np.dot(xx - xDouble, xx - xDouble))
+                            # integrate the requested quantity along the field line
+                            if (any(intQ == 'curlyA')):
+                                aaInt = pc.vecInt((xDouble + xx)/2, aa, p, interpolation)
+                                tracers[ix, iy, tIdx, 6] += np.dot(aaInt, xDouble - xx)
+                            xx = xDouble.copy()
+                            if (dh < hMin):
+                                dh = 2*dh
+                            if ((dh > hMax) or (np.isnan(dh))):
+                                dh = hMax
+                            # check if this point lies outside the domain
+                            if ((xx[0] < p.Ox-p.dx) or (xx[0] > p.Ox+p.Lx+p.dx) or (xx[1] < p.Oy-p.dy) or (xx[1] > p.Oy+p.Ly+p.dy) or (xx[2] < p.Oz) or (xx[2] > p.Oz+p.Lz)):
+                                outside = True
 
-    class data_struct:
-        def __init__(self):
-            self.t = []
-            self.fidx = [] # number of fixed points at this time
-            self.x = []
-            self.y = []
-            self.q = []
+                tracers[ix, iy, tIdx, 2:5] = xx.copy()
+                
+                # create the color mapping
+                if (tracers[ix, iy, tIdx, 4] > grid.z[-2]):
+                    if (tracers[ix, iy, tIdx, 0] - tracers[ix, iy, tIdx, 2]) > 0:
+                        if (tracers[ix, iy, tIdx, 1] - tracers[ix, iy, tIdx, 3]) > 0:
+                            mapping[ix, iy, tIdx, :] = [0,1,0]
+                        else:
+                            mapping[ix, iy, tIdx, :] = [1,1,0]
+                    else:
+                        if (tracers[ix, iy, tIdx, 1] - tracers[ix, iy, tIdx, 3]) > 0:
+                            mapping[ix, iy, tIdx, :] = [0,0,1]
+                        else:
+                            mapping[ix, iy, tIdx, :] = [1,0,0]
+                else:
+                    mapping[ix, iy, tIdx, :] = [1,1,1]
 
-    # read the cpu structure
-    dim = pc.read_dim()
-    if (dim.nprocz > 1):
-        print "error: number of cores in z-direction > 1"
+    tracers = np.copy(tracers.swapaxes(0, 3), order = 'C')
+    f = open(datadir + destination, 'wb')
+    f.write(np.array(trace_sub, dtype = 'float32'))
+    # write tracers into file
+    for tIdx in range(n_times):
+        f.write(t[tIdx].astype('float32'))
+        f.write(tracers[:,:,tIdx,:].astype('float32'))
+    f.close()
+        
+    tracers = tracers.swapaxes(0, 3)
+    tracers = tracers.swapaxes(0, 1)
+    mapping = mapping.swapaxes(0, 1)
 
-    # determine the file structure
-    n_proc = dim.nprocx*dim.nprocy
-
-    data = []
-
-    # total number of fixed points
-    n_fixed = 0
-
-    # read the data from all cores
-    for i in range(n_proc):
-        fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
-        tmp = fixed_file.read(4*hm)
-
-        data.append(data_struct())
-        eof = 0
-        if tmp == '':
-            eof = 1
-        while (eof == 0):
-            data[i].t.append(struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0])
-            n_fixed_core = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+hm/2])
-            n_fixed += n_fixed_core
-            data[-1].fidx.append(n_fixed_core)
-
-            x = list(np.zeros(n_fixed_core))
-            y = list(np.zeros(n_fixed_core))
-            q = list(np.zeros(n_fixed_core))
-            for j in range(n_fixed_core):
-                x[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[-1]
-                y[j] = struct.unpack("<f", fixed_file.read(4))[0]
-                q[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0]
-            data[i].x.append(x)
-            data[i].y.append(y)
-            data[i].q.append(q)
-
-            tmp = fixed_file.read(4*hm)
-            if tmp == '':
-                eof = 1
-
-        fixed_file.close()
-
-    fixed = data_struct()
-    for i in range(len(data[0].t)):
-        fixed.t.append(data[0].t[i])
-        x = []; y = []; q = []
-        for proc in range(n_proc):
-            x = x + data[proc].x[i]
-            y = y + data[proc].y[i]
-            q = q + data[proc].q[i]
-        fixed.x.append(x)
-        fixed.y.append(y)
-        fixed.q.append(q)
-
-    fixed.t = np.array(fixed.t)
-    fixed.x = np.array(fixed.x)
-    fixed.y = np.array(fixed.y)
-    fixed.q = np.array(fixed.q)
-
-    return fixed
-
+    return tracers, mapping, var.t
 
 
 def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
