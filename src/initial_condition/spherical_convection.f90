@@ -88,7 +88,8 @@ module InitialCondition
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
       real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
-      real, dimension (nxgrid) :: ss_global, cs2_global, drhodr_global
+      real, dimension (nxgrid) :: ss_global, cs2_global
+      real, dimension (nxgrid) :: drhodr_global, del2rho_global
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
@@ -200,6 +201,11 @@ module InitialCondition
       rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
       rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
       drhodr_global=(1./(gamma-1.))*rho_global*dTdr_global/TT_global
+      del2rho_global=(1./(gamma-1.))*(drhodr_global*dTdr_global/TT_global - &
+           rho_global*(dTdr_global/TT_global)**2. + &
+           rho_global*2.*gravx/(xglobal(nghost+1:nxgrid+nghost)**3.)/ &
+           (cv*(gamma-1.)*(npoly1+1.)*TT_global)) + &
+           (2./xglobal(nghost+1:nxgrid+nghost))*drhodr_global
 !
       lnrho=log(rho_prof/rho0)
       lnrho_global=log(rho_global/rho0)
@@ -231,7 +237,7 @@ module InitialCondition
            call safe_character_assign(wfile,'reference_state.dat')
            open(unit,file=wfile,status='unknown')
            do ix=1,nxgrid
-              write(unit,'(3(2x,1pe15.8))') rho_global(ix),drhodr_global(ix),ss_global(1)
+              write(unit,'(4(2x,1pe15.8))') rho_global(ix),drhodr_global(ix),del2rho_global(ix),ss_global(1)
            enddo
            close(unit)
          endif

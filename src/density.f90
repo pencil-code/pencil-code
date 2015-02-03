@@ -662,9 +662,8 @@ module Density
           if (ierr/=0) call fatal_error("initialize_density: ", &
                                         "there was a problem when getting gravx_xpencil")
           call read_reference_state(reference_state)
-          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho )
+          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
           reference_state(:,iref_gs   ) = 0.
-          reference_state(:,iref_d2rho) = 0.    ! yet missing
           reference_state(:,iref_d6rho) = 0.    ! yet missing
 !
         case default
@@ -3150,8 +3149,8 @@ module Density
 !
       real, dimension(nx,9), intent(inout) :: reference_state
       integer, parameter :: ntotal=nx*nprocx
-      real, dimension(nx*nprocx) :: tmp1, tmp2, tmp3
-      real :: var1, var2, var3
+      real, dimension(nx*nprocx) :: tmp1, tmp2, tmp3, tmp4
+      real :: var1, var2, var3, var4
       logical :: exist
       integer :: stat, nn
 !
@@ -3174,12 +3173,13 @@ module Density
 !  Read profiles.
 !
         do nn=1,ntotal
-          read(36,*,iostat=stat) var1,var2,var3
+          read(36,*,iostat=stat) var1,var2,var3,var4
           if (stat<0) exit
-          if (ip<5) print*,'rho, grho, ss: ',var1,var2,var3
+          if (ip<5) print*,'rho, grho, del2rho, ss: ',var1,var2,var3,var4
           tmp1(nn)=var1
           tmp2(nn)=var2
           tmp3(nn)=var3
+          tmp4(nn)=var4
         enddo
         close(36)
 !
@@ -3188,13 +3188,15 @@ module Density
       call mpibcast_real_arr(tmp1, ntotal)
       call mpibcast_real_arr(tmp2, ntotal)
       call mpibcast_real_arr(tmp3, ntotal)
+      call mpibcast_real_arr(tmp4, ntotal)
 !
 !  Assuming no ghost zones in cooling_profile.dat
 !
       do nn=l1,l2
         reference_state(nn-nghost,iref_rho)=tmp1(ipx*nx+nn-nghost)
         reference_state(nn-nghost,iref_grho)=tmp2(ipx*nx+nn-nghost)
-        reference_state(nn-nghost,iref_s)=tmp3(ipx*nx+nn-nghost)
+        reference_state(nn-nghost,iref_d2rho)=tmp3(ipx*nx+nn-nghost)
+        reference_state(nn-nghost,iref_s)=tmp4(ipx*nx+nn-nghost)
       enddo
 !
     endsubroutine read_reference_state
