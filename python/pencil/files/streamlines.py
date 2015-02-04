@@ -16,20 +16,20 @@ class stream:
     stream -- Holds the traced streamline.
     """
     
-    def __init__(self, var, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0])):
+    def __init__(self, vv, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0])):
         """
         Creates, and returns the traced streamline.
         
         call signature:
         
-          streamInit(var, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0]))
+          streamInit(vv, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0]))
         
         Trace magnetic streamlines.
         
         Keyword arguments:
         
-         *var*:
-            Object returned by read_var.
+         *vv*:
+            Vector field which is integrated over.
          
          *p*:
            Simulation parameters of class pClass.
@@ -62,8 +62,6 @@ class stream:
          *xx*:
             Initial seed.
         """
-        
-        bb = var.bb
         
         self.tracers = np.zeros([iterMax, 3], dtype = 'float32')  # tentative streamline length
         
@@ -99,14 +97,14 @@ class stream:
         if (integration == 'simple'):
             while ((l < lMax) and (sl < iterMax-1) and (not(np.isnan(xx[0]))) and (outside == False)):
                 # (a) single step (midpoint method)                    
-                xMid = xx + 0.5*dh*vecInt(xx, bb, p, interpolation)
-                xSingle = xx + dh*vecInt(xMid, bb, p, interpolation)
+                xMid = xx + 0.5*dh*vecInt(xx, vv, p, interpolation)
+                xSingle = xx + dh*vecInt(xMid, vv, p, interpolation)
             
                 # (b) two steps with half stepsize
-                xMid = xx + 0.25*dh*vecInt(xx, bb, p, interpolation)
-                xHalf = xx + 0.5*dh*vecInt(xMid, bb, p, interpolation)
-                xMid = xHalf + 0.25*dh*vecInt(xHalf, bb, p, interpolation)
-                xDouble = xHalf + 0.5*dh*vecInt(xMid, bb, p, interpolation)
+                xMid = xx + 0.25*dh*vecInt(xx, vv, p, interpolation)
+                xHalf = xx + 0.5*dh*vecInt(xMid, vv, p, interpolation)
+                xMid = xHalf + 0.25*dh*vecInt(xHalf, vv, p, interpolation)
+                xDouble = xHalf + 0.5*dh*vecInt(xMid, vv, p, interpolation)
             
                 # (c) check error (difference between methods)
                 dist2 = np.sum((xSingle-xDouble)**2)
@@ -130,12 +128,12 @@ class stream:
                         
         if (integration == 'RK6'):
             while ((l < lMax) and (sl < iterMax-1) and (not(np.isnan(xx[0]))) and (outside == False)):
-                k[0,:] = dh*vecInt(xx, bb, p, interpolation)                            
-                k[1,:] = dh*vecInt(xx + b[1,0]*k[0,:], bb, p, interpolation)
-                k[2,:] = dh*vecInt(xx + b[2,0]*k[0,:] + b[2,1]*k[1,:], bb, p, interpolation)
-                k[3,:] = dh*vecInt(xx + b[3,0]*k[0,:] + b[3,1]*k[1,:] + b[3,2]*k[2,:], bb, p, interpolation)
-                k[4,:] = dh*vecInt(xx + b[4,0]*k[0,:] + b[4,1]*k[1,:] + b[4,2]*k[2,:] + b[4,3]*k[3,:], bb, p, interpolation)
-                k[5,:] = dh*vecInt(xx + b[5,0]*k[0,:] + b[5,1]*k[1,:] + b[5,2]*k[2,:] + b[5,3]*k[3,:] + b[5,4]*k[4,:], bb, p, interpolation)
+                k[0,:] = dh*vecInt(xx, vv, p, interpolation)                            
+                k[1,:] = dh*vecInt(xx + b[1,0]*k[0,:], vv, p, interpolation)
+                k[2,:] = dh*vecInt(xx + b[2,0]*k[0,:] + b[2,1]*k[1,:], vv, p, interpolation)
+                k[3,:] = dh*vecInt(xx + b[3,0]*k[0,:] + b[3,1]*k[1,:] + b[3,2]*k[2,:], vv, p, interpolation)
+                k[4,:] = dh*vecInt(xx + b[4,0]*k[0,:] + b[4,1]*k[1,:] + b[4,2]*k[2,:] + b[4,3]*k[3,:], vv, p, interpolation)
+                k[5,:] = dh*vecInt(xx + b[5,0]*k[0,:] + b[5,1]*k[1,:] + b[5,2]*k[2,:] + b[5,3]*k[3,:] + b[5,4]*k[4,:], vv, p, interpolation)
 
                 xNew  = xx + c[0]*k[0,:]  + c[1]*k[1,:]  + c[2]*k[2,:]  + c[3]*k[3,:]  + c[4]*k[4,:]  + c[5]*k[5,:]
                 xNewS = xx + cs[0]*k[0,:] + cs[1]*k[1,:] + cs[2]*k[2,:] + cs[3]*k[3,:] + cs[4]*k[4,:] + cs[5]*k[5,:]

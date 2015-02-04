@@ -1,7 +1,6 @@
 # $Id: tracers.py,v 1.4 2012-03-21 09:55:49 iomsn Exp $
 #
-# Reads the tracer files, composes a color map
-# and reads the fixed point values.
+# Reads the tracer files, composes a color map.
 #
 # Author: Simon Candelaresi (iomsn1@googlemail.com).
 #
@@ -15,13 +14,13 @@ import pencil as pc
 import pylab as plt
 
 
-def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_size = 3, post = False):
+def read_tracers(datadir = 'data/', fileName = 'tracers.dat', zlim = [], head_size = 3, post = False):
     """
     Reads the tracer files, composes a color map.
 
     call signature::
 
-      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim = [], head_size = 3, post = False)
+      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', datadir = 'data/', zlim = [], head_size = 3, post = False)
 
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
@@ -32,7 +31,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
     Keyword arguments:
 
-      *dataDir*:
+      *datadir*:
         Data directory.
 
       *fileName*:
@@ -73,29 +72,29 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         off = 3
 
     # read the cpu structure
-    dim = pc.read_dim(datadir = dataDir)
+    dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
         print ": number of cores in z-direction > 1"
         return -1
 
     # read the parameters
-    params = pc.read_param(datadir = dataDir, quiet = True)
+    params = pc.read_param(datadir = datadir, quiet = True)
 
     # read the grid
-    grid = pc.read_grid(datadir = dataDir, quiet = True)
+    grid = pc.read_grid(datadir = datadir, quiet = True)
 
     # determine the file structure
     if (post):
         n_proc = 1
-        tracer_file = open(dataDir+fileName, 'rb')
+        tracer_file = open(datadir+fileName, 'rb')
         trace_sub = struct.unpack("f", tracer_file.read(4))[0]
         tracer_file.close()
-        n_times = int(os.path.getsize(dataDir+fileName)/(4*7*int(dim.nx*trace_sub)*int(dim.ny*trace_sub)))
+        n_times = int((os.path.getsize(datadir+fileName)-4)/(4*7*int(dim.nx*trace_sub)*int(dim.ny*trace_sub)))
     # sub sampling of the tracers
     if (not(post)):
         n_proc = dim.nprocx*dim.nprocy
         trace_sub = params.trace_sub
-        n_times = int(os.path.getsize(dataDir+'proc0/'+fileName)/(4*(head_size + 7*np.floor(dim.nx*trace_sub)*np.floor(dim.ny*trace_sub)/dim.nprocx/dim.nprocy)))
+        n_times = int(os.path.getsize(datadir+'proc0/'+fileName)/(4*(head_size + 7*np.floor(dim.nx*trace_sub)*np.floor(dim.ny*trace_sub)/dim.nprocx/dim.nprocy)))
 
     # prepare the output arrays
     tracers = np.zeros((int(dim.nx*trace_sub), int(dim.ny*trace_sub), n_times, 7))
@@ -117,20 +116,20 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     for i in range(n_proc):
         # read the cpu structure
         if (post):
-            dim_core = pc.read_dim(datadir = dataDir, proc = -1)
+            dim_core = pc.read_dim(datadir = datadir, proc = -1)
             dim_core.ipx = 0
             dim_core.ipy = 0
         else:
-            dim_core = pc.read_dim(datadir = dataDir, proc = i)
+            dim_core = pc.read_dim(datadir = datadir, proc = i)
         stride = int(dim_core.nx*trace_sub)*int(dim_core.ny*trace_sub)
-        llen = head_size + 7*stride
+        llen = head_size + 7*stride + post
 
         if (post):
-            tracer_file = open(dataDir+fileName, 'rb')
+            tracer_file = open(datadir+fileName, 'rb')
         else:
-            tracer_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
+            tracer_file = open(datadir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = array.array('f')
-        tmp.read(tracer_file, int((head_size + 2*post + 7*int(dim_core.nx*trace_sub)*int(dim_core.ny*trace_sub))*n_times))
+        tmp.read(tracer_file, int((head_size + post + 7*int(dim_core.nx*trace_sub)*int(dim_core.ny*trace_sub))*n_times)+post)
         tracer_file.close()
 
         t = []
@@ -180,7 +179,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
 
 def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
-                interpolation = 'mean', trace_sub = 1, intQ = [''], varfile = '',
+                interpolation = 'mean', trace_sub = 1, intQ = [''], varfile = 'VAR0',
                 ti = -1, tf = -1,
                 integration = 'simple', datadir = 'data/', destination = 'tracers.dat'):
     """
@@ -233,10 +232,10 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
         'RK6': Runge-Kutta 6th order.
         
       *ti*:
-        Initial VAR file index for tracer time sequences.
+        Initial VAR file index for tracer time sequences. Overrides 'varfile'.
         
       *tf*:
-        Final VAR file index for tracer time sequences.
+        Final VAR file index for tracer time sequences. Overrides 'varfile'.
         
       *datadir*:
         Directory where the data is stored.
@@ -318,7 +317,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                 
                 # start the streamline tracing
                 xx = tracers[ix, iy, tIdx, 2:5].copy()                
-                s = pc.stream(var, p, interpolation = interpolation, integration = integration, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, xx = xx)
+                s = pc.stream(vv, p, interpolation = interpolation, integration = integration, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, xx = xx)
                 tracers[ix, iy, tIdx, 2:5] = s.tracers[s.sl-1]
                 tracers[ix, iy, tIdx, 5] = s.l
                 if (any(intQ == 'curlyA')):
@@ -342,13 +341,14 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                     mapping[ix, iy, tIdx, :] = [1,1,1]
 
     tracers = np.copy(tracers.swapaxes(0, 3), order = 'C')
-    f = open(datadir + destination, 'wb')
-    f.write(np.array(trace_sub, dtype = 'float32'))
-    # write tracers into file
-    for tIdx in range(n_times):
-        f.write(t[tIdx].astype('float32'))
-        f.write(tracers[:,:,tIdx,:].astype('float32'))
-    f.close()
+    if (destination != ''):
+        f = open(datadir + destination, 'wb')
+        f.write(np.array(trace_sub, dtype = 'float32'))
+        # write tracers into file
+        for tIdx in range(n_times):
+            f.write(t[tIdx].astype('float32'))
+            f.write(tracers[:,:,tIdx,:].astype('float32'))
+        f.close()
         
     tracers = tracers.swapaxes(0, 3)
     tracers = tracers.swapaxes(0, 1)
@@ -357,104 +357,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     return tracers, mapping, var.t
 
 
-def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat', hm = 1):
-    """
-    Reads the fixed points files.
-
-    call signature::
-
-      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', hm = 1)
-
-    Reads from the fixed points files. Returns the fixed points positions.
-
-    Keyword arguments:
-
-      *dataDir*:
-        Data directory.
-
-      *fileName*:
-        Name of the fixed points file.
-
-      *hm*:
-        Header multiplication factor in case Fortran's binary data writes extra large
-        header. For most cases hm = 1 is sufficient. For the cluster in St Andrews use hm = 2.
-    """
-
-
-    class data_struct:
-        def __init__(self):
-            self.t = []
-            self.fidx = [] # number of fixed points at this time
-            self.x = []
-            self.y = []
-            self.q = []
-
-    # read the cpu structure
-    dim = pc.read_dim(datadir = dataDir)
-    if (dim.nprocz > 1):
-        print "error: number of cores in z-direction > 1"
-
-    # determine the file structure
-    n_proc = dim.nprocx*dim.nprocy
-
-    data = []
-
-    # read the data
-    fixed_file = open(dataDir+fileName, 'rb')
-    tmp = fixed_file.read(4*hm)
-
-    data = data_struct()
-    eof = 0
-    # length of longest array of fixed points
-    fixedMax = 0
-    if tmp == '':
-        eof = 1
-    while (eof == 0):
-        data.t.append(struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0])
-        n_fixed = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+hm/2])
-
-        x = list(np.zeros(n_fixed))
-        y = list(np.zeros(n_fixed))
-        q = list(np.zeros(n_fixed))
-        for j in range(n_fixed):
-            x[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[-1]
-            y[j] = struct.unpack("<f", fixed_file.read(4))[0]
-            q[j] = struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0]
-        data.x.append(x)
-        data.y.append(y)
-        data.q.append(q)
-        data.fidx.append(n_fixed)
-
-        tmp = fixed_file.read(4*hm)
-        if tmp == '':
-            eof = 1
-
-        if fixedMax < len(x):
-            fixedMax = len(x)
-
-    fixed_file.close()
-
-    # add NaN to fill up the times with smaller number of fixed points
-    fixed = data_struct()
-    for i in range(len(data.t)):
-        annex = list(np.zeros(fixedMax - len(data.x[i])) + np.nan)
-        fixed.t.append(data.t[i])
-        fixed.x.append(data.x[i] + annex)
-        fixed.y.append(data.y[i] + annex)
-        fixed.q.append(data.q[i] + annex)
-        fixed.fidx.append(data.fidx[i])
-
-    fixed.t = np.array(fixed.t)
-    fixed.x = np.array(fixed.x)
-    fixed.y = np.array(fixed.y)
-    fixed.q = np.array(fixed.q)
-    fixed.fidx = np.array(fixed.fidx)
-
-    return fixed
-
-
-
-def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
+def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
                  fixedFile = 'fixed_points.dat', zlim = [],
                  head_size = 3, hm = 1,
                  imageDir = './', movieFile = 'fixed_points.mpg',
@@ -465,7 +368,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
 
     call signature::
 
-      tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
+      tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
                  fixedFile = 'fixed_points.dat', zlim = [],
                  head_size = 3, hm = 1,
                  imageDir = './', movieFile = 'fixed_points.mpg',
@@ -474,7 +377,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     Plots the field line mapping together with the fixed points and creates
     a movie file.
 
-      *dataDir*:
+      *datadir*:
         Data directory.
 
       *tracerFile*:
@@ -511,8 +414,8 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
 
 
     # read the mapping and the fixed point positions
-    tracers, mapping, t = read_tracers(dataDir = dataDir, fileName = tracerFile, zlim = zlim, head_size = head_size)
-    fixed = read_fixed_points(dataDir = dataDir, fileName = fixedFile, hm = hm)
+    tracers, mapping, t = pc.read_tracers(datadir = datadir, fileName = tracerFile, zlim = zlim, head_size = head_size)
+    fixed = pc.read_fixed_points(datadir = datadir, fileName = fixedFile, hm = hm)
 
     # read the parameters for the domain boundaries
     params = pc.read_param(quiet = True)
