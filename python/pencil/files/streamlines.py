@@ -8,8 +8,6 @@
 
 import numpy as np
 import pencil as pc
-import vtk as vtk
-from vtk.util import numpy_support as VN
 import struct
 
 
@@ -18,21 +16,24 @@ class stream:
     stream -- Holds the traced streamline.
     """
     
-    def __init__(self, fileName = 'animation.vtk', interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0])):
+    def __init__(self, var, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0])):
         """
         Creates, and returns the traced streamline.
         
         call signature:
         
-          streamInit(fileName = 'animation.vtk', interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0]))
+          streamInit(var, p, interpolation = 'weighted', integration = 'simple', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, iterMax = 1e3, xx = np.array([0,0,0]))
         
         Trace magnetic streamlines.
         
         Keyword arguments:
         
-         *fileName*:
-            Name of the file with the field information.
-            
+         *var*:
+            Object returned by read_var.
+         
+         *p*:
+           Simulation parameters of class pClass.
+           
          *interpolation*:
             Interpolation of the vector field.
             'mean': takes the mean of the adjacent grid point.
@@ -62,29 +63,7 @@ class stream:
             Initial seed.
         """
         
-        # read the data
-        reader = vtk.vtkStructuredPointsReader()
-        reader.SetFileName(fileName)
-        reader.ReadAllVectorsOn()
-        reader.Update()
-        
-        data = reader.GetOutput()
-        
-        output = reader.GetOutput()
-        dim = output.GetDimensions()
-        origin = output.GetOrigin()
-        spacing = output.GetSpacing()
-        data = output.GetPointData()
-        
-        bb = VN.vtk_to_numpy(data.GetArray('bfield'))
-        bb = bb.reshape((dim[0],dim[1],dim[2],3))
-        bb = np.swapaxes(bb, 0, 2)
-        
-        p = pClass()
-        p.dx = spacing[0]; p.dy = spacing[1]; p.dz = spacing[2]
-        p.Ox = origin[0]; p.Oy = origin[1]; p.Oz = origin[2]
-        p.Lx = (dim[0]+1)*spacing[0]; p.Ly = (dim[1]+1)*spacing[1]; p.Lz = (dim[2]+1)*spacing[2]
-        p.nx = dim[0]; p.ny = dim[1]; p.nz = dim[2]
+        bb = var.bb
         
         self.tracers = np.zeros([iterMax, 3], dtype = 'float32')  # tentative streamline length
         
@@ -121,8 +100,6 @@ class stream:
             while ((l < lMax) and (sl < iterMax-1) and (not(np.isnan(xx[0]))) and (outside == False)):
                 # (a) single step (midpoint method)                    
                 xMid = xx + 0.5*dh*vecInt(xx, bb, p, interpolation)
-                #print "xx.shape = ", xx.shape
-                #print "xMid.shape = ", xMid.shape
                 xSingle = xx + dh*vecInt(xMid, bb, p, interpolation)
             
                 # (b) two steps with half stepsize

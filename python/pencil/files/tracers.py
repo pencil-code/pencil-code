@@ -276,8 +276,6 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     t = np.zeros(n_times)
     
     for tIdx in range(n_times):
-        print 'tIdx = ', tIdx
-        
         if series:
             varfile = 'VAR' + str(tIdx)
         
@@ -319,42 +317,14 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                 dh = np.sqrt(hMax*hMin)
                 
                 # start the streamline tracing
-                xx = tracers[ix, iy, tIdx, 2:5].copy()
-                if (integration == 'simple'):
-                    while ((outside == False) and (abs(dh) >= hMin) and (tracers[ix, iy, tIdx, 5] < lMax)):
-                        # (a) single step (midpoint method)    
-                        xMid = xx + 0.5*dh*pc.vecInt(xx, vv, p, interpolation)
-                        xSingle = xx + dh*pc.vecInt(xMid, vv, p, interpolation)
-                    
-                        # (b) two steps with half stepsize
-                        xMid = xx + 0.25*dh*pc.vecInt(xx, vv, p, interpolation)
-                        xHalf = xx + 0.5*dh*pc.vecInt(xMid, vv, p, interpolation)
-                        xMid = xHalf + 0.25*dh*pc.vecInt(xHalf, vv, p, interpolation)
-                        xDouble = xHalf + 0.5*dh*pc.vecInt(xMid, vv, p, interpolation)
-                    
-                        # (c) check error (difference between methods)
-                        dist2 = np.sum((xSingle-xDouble)**2)
-                        if (dist2 > tol2):
-                            dh = dh/2
-                            if (abs(dh) < hMin):
-                                print "Error: stepsize underflow"
-                                break
-                        else:
-                            tracers[ix, iy, tIdx, 5] +=  np.sqrt(np.dot(xx - xDouble, xx - xDouble))
-                            # integrate the requested quantity along the field line
-                            if (any(intQ == 'curlyA')):
-                                aaInt = pc.vecInt((xDouble + xx)/2, aa, p, interpolation)
-                                tracers[ix, iy, tIdx, 6] += np.dot(aaInt, xDouble - xx)
-                            xx = xDouble.copy()
-                            if (dh < hMin):
-                                dh = 2*dh
-                            if ((dh > hMax) or (np.isnan(dh))):
-                                dh = hMax
-                            # check if this point lies outside the domain
-                            if ((xx[0] < p.Ox-p.dx) or (xx[0] > p.Ox+p.Lx+p.dx) or (xx[1] < p.Oy-p.dy) or (xx[1] > p.Oy+p.Ly+p.dy) or (xx[2] < p.Oz) or (xx[2] > p.Oz+p.Lz)):
-                                outside = True
-
-                tracers[ix, iy, tIdx, 2:5] = xx.copy()
+                xx = tracers[ix, iy, tIdx, 2:5].copy()                
+                s = pc.stream(var, p, interpolation = interpolation, integration = integration, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, xx = xx)
+                tracers[ix, iy, tIdx, 2:5] = s.tracers[s.sl-1]
+                tracers[ix, iy, tIdx, 5] = s.l
+                if (any(intQ == 'curlyA')):
+                    for l in range(s.sl-1):
+                        aaInt = pc.vecInt((s.tracers[l+1] + s.tracers[l])/2, aa, p, interpolation)
+                        tracers[ix, iy, tIdx, 6] += np.dot(aaInt, (s.tracers[l+1] - s.tracers[l]))
                 
                 # create the color mapping
                 if (tracers[ix, iy, tIdx, 4] > grid.z[-2]):
