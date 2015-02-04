@@ -1,7 +1,7 @@
 %$Id$
 \documentclass[a4paper,12pt]{article}
 \usepackage[utf8]{inputenc}
-\usepackage{pslatex} %Para el pdf sea más mono.
+\usepackage{pslatex}
 \usepackage{eurosym}
 \usepackage{amssymb}
 \usepackage{latexsym}
@@ -14,7 +14,7 @@
 \usepackage{subfigure}
 \usepackage{multirow}
 \usepackage{fancyhdr}
-%\usepackage{tocbibind} % Para que incluya la bibliografia en el indice
+%\usepackage{tocbibind}
 %\usepackage{bibtex}
 \usepackage{wrapfig}
 \usepackage{color}
@@ -32,7 +32,7 @@
 
 \title{Pencil-code: quick reference guide.}
 
-\author{Illa R. Losada, Michiel Lambrechts, Elizabeth Cole }
+\author{Illa R. Losada, Michiel Lambrechts, Elizabeth Cole}
 
 
 \begin{document}
@@ -239,7 +239,7 @@ integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
 
 There are three basic configuration files where all the physics and outputs are specify: print.in, run.in and start.in.
 \begin{itemize}
- \item \verb|print.in|: write here all the input magnitudes you need.
+  \item \verb|print.in|: write here all the input magnitudes you need.
   \item \verb|run.in|: parameters values, number of timesteps,...
   \item \verb|start.in|: Initialisation parameters
 \end{itemize}
@@ -279,14 +279,14 @@ There are three basic configuration files where all the physics and outputs are 
 \subsection{Python modules requirements.}
 The basic needed modules are: numpy and matplotlib.
 \begin{itemize}
- \item numpy: all array definitions and operations.
+  \item numpy: all array definitions and operations.
   \item matplotlib: plotting.
 \end{itemize}
 
 Other really useful modules are: ipython and scipy.
 
 \begin{itemize}
- \item ipython: enhanced python interpreter.
+  \item ipython: enhanced python interpreter.
   \item scipy: science functions and utilities.
 \end{itemize}
 
