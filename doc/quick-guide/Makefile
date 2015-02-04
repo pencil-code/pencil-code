@@ -7,4 +7,4 @@ compile:  quick_start.tex
 	ps2pdf quick_start.ps quick_start.pdf
 	#xpdf hello_disk.pdf &
 clean:
-	rm -f *.log *.aux *.dvi *.ps *~
+	rm -f *.log *.aux *.dvi *.ps *.out *.pdf *.toc *~
