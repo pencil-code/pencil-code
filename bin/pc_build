@@ -39,6 +39,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
+#   -i
+#                   Show the host ID and exit.
 #   -D, --debug-config
 #                   Show the config files (existing or not) that would be
 #                   read, then exit
@@ -117,6 +119,7 @@ GetOptions(\%opts,
                     --cleanall
                -f=s --config-files=s
                -H=s --host-id=s
+               -i
                -D   --debug-config
                     --notify
                     --fast
@@ -139,10 +142,18 @@ my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
 my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
+my $show_host_id = ($opts{'i'}                            || '');
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
+
+if ($show_host_id) {
+    my $id = Pencil::ConfigFinder::get_host_id_system_info();
+    print $id."\n";
+    # The desired output is now printed
+    exit 0;
+}
 
 my @config_files;
 mention($Pencil::ConfigFinder::debug);

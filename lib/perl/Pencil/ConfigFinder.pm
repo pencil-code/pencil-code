@@ -252,12 +252,10 @@ sub add_host_id_from_fqdn {
 
 # ---------------------------------------------------------------------- #
 
-sub add_host_id_from_scraping_system_info {
+sub get_host_id_system_info {
 #
-# Try various sources of information to construct a host ID
+# Get host ID together with system info
 #
-    my ($ids_ref) = @_;
-
     my $hostname = first_line_from_cmd('uname -n');
 
     my $linux_type =
@@ -270,9 +268,20 @@ sub add_host_id_from_scraping_system_info {
     $id .= "-$os_name"    if $os_name;
     $id .= "-$linux_type" if $linux_type;
 
-    if ($id ne 'host') {
-        push @$ids_ref, $id;
-    }
+    if ($id eq 'host') { return ""; }
+    return $id;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub add_host_id_from_scraping_system_info {
+#
+# Try various sources of information to construct a host ID
+#
+    my ($ids_ref) = @_;
+
+    my $id = get_host_id_system_info();
+    if ($id) { push @$ids_ref, $id; }
 }
 
 # ---------------------------------------------------------------------- #
