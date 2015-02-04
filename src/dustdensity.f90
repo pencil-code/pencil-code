@@ -262,7 +262,7 @@ module Dustdensity
         do j=1,ninit
           select case (initnd(j))
           case ('old'); f(:,:,:,ind)=0.; call init_nd(f)
-          case ('zero8'); f(:,:,:,ind(1):ind(8))=0.
+          case ('zero8'); f(:,:,:,ind(1):ind(min(ndustspec,8)))=0.
           endselect
         enddo
       endif
