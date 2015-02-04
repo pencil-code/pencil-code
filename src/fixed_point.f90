@@ -1,10 +1,9 @@
 ! $Id$
 !
-!  DOCUMENT ME OR MOVE ME TO EXPERIMENTAL
-!
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this module
+!  Find the fixed points of a field line mapping.
+!  Field line mappings are maps of F(x,y) through field lines which trace point at z = z0
+!  to z = z1.
+!  Fixed points are such that F(x,y) = (x,y)
 !
 !***************************************************************
 module Fixed_point
@@ -83,8 +82,6 @@ module Fixed_point
           if (IOstatus == 0) then
             read(1) fidx_read
             fidx_all = int(fidx_read)
-!             write(*,*) "reading ", fidx_all, " many fixed points"
-!             allocate(fixed_points_all(fidx,3))
             do j=1,fidx_all
               read(1) fixed_points_all(j,:)
             enddo
@@ -108,35 +105,6 @@ module Fixed_point
         fixed_points(fidx,:) = fixed_points_all(j,:)
       endif
     enddo
-!     deallocate(fixed_points_all)
-!
-!     ==== old code ===
-!
-!     if (ifirst==0) then
-!       call read_snaptime(file,tfixed_points,ntracers,dtracers,t)
-! !     Read the previous fixed points from the file.
-!       write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
-!       write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-!       open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
-! !     loop until we find the last entry
-!       IOstatus = 0
-! !
-!       read(1,iostat = IOstatus) tfixed_points_write
-!       if (IOstatus == 0) then
-!         read(1) fidx_read
-!         fidx = int(fidx_read)
-!         allocate(fixed_tmp(fidx,3))
-!         do j=1,fidx
-!           read(1) fixed_tmp(j,:)
-!         enddo
-!         fixed_points(1:fidx,:) = fixed_tmp(:,:)
-!         deallocate(fixed_tmp)
-!         close(1)
-!       endif
-!       ifirst=1
-!     endif
-!
-!     ==== old code end ===
 !
 !  This routine sets lfixed_points=T whenever its time to write the fixed points
 !
@@ -242,7 +210,6 @@ module Fixed_point
       iter = iter + 1
     enddo
 !
-!     write(*,*) fixed_point
     deallocate(tracers)
   end subroutine get_fixed_point
 !***********************************************************************
