@@ -2086,19 +2086,31 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !
+! NILS: I don't undestand where cc_tmp comes from - it seems to me that
+! NILS: it is not defined anywhere.....
         call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
 !
 !  Loop over pencil
 !
-      do l=1,nx
-        do k=1,ndustspec
-          dmdfac = surfd(k)*mfluxcond(l)/unit_md
-          if (p%mi(l,k) + dt_beta_ts(itsub)*dmdfac < 0.) then
-            dmdfac = -p%mi(l,k)/dt_beta_ts(itsub)
-          endif
-          if (cc_tmp(l) < 1e-6 .and. dmdfac > 0.) dmdfac=0.
-          df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
-          df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
+        if (dust_chemistry=='simplified') then
+          do l=1,nx
+            do k=1,ndustspec
+              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) &
+                  + 4*pi*ad(k)*p%rho(l)*mfluxcond(l)
+            enddo
+          enddo
+        else
+          do l=1,nx
+            do k=1,ndustspec
+              dmdfac = surfd(k)*mfluxcond(l)/unit_md
+              if (lmice) then
+                if (p%mi(l,k) + dt_beta_ts(itsub)*dmdfac < 0.) then
+                  dmdfac = -p%mi(l,k)/dt_beta_ts(itsub)
+                endif
+              endif
+              if (cc_tmp(l) < 1e-6 .and. dmdfac > 0.) dmdfac=0.
+              if (lmice) df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
+              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
 !
 ! NB: it is should be changed for the chemistry case
 ! one needs to make the corresponding pencil
@@ -2111,8 +2123,9 @@ module Dustdensity
 !                p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
 !          endif
 !
-        enddo
-      enddo
+            enddo
+          enddo
+        endif
 !
     endsubroutine dust_condensation_lmdvar
 !***********************************************************************
