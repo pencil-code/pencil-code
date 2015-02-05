@@ -1984,7 +1984,7 @@ module Dustdensity
 !
 !  Top boundary overflows are ignored
 !
-            if (i_targ .ge. ndustspec) i_targ = ndustspec
+            if (i_targ >= ndustspec) i_targ = ndustspec
 !
 !  Put all overflowing grains into relevant interval
 !
