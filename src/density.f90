@@ -50,10 +50,10 @@ module Density
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
 ! 
-! reference state, components:  1       2          3              4            5      6     7         8            9
-!                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
+! reference state, components:  1       2          3              4            5      6     7         8            9            10
+!                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6  d lnrho/d r
   character(LEN=labellen) :: ireference_state='nothing'
-  real, dimension(nx,9) :: reference_state=0.
+  real, dimension(nx,nref_vars) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: reference_state_mass=0.
