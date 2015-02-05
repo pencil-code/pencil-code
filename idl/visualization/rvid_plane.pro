@@ -120,6 +120,48 @@ if ( (nx ne 1) and (ny ne 1) and (nz eq 1) ) then extension='xy'
 if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then extension='xz'
 if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then extension='yz'
 ;
+;  Consider non-equidistant grid
+;
+pc_read_param, obj=par, dim=dim, datadir=datatodir, /quiet
+if not all(par.lequidist) then begin
+  massage = 1
+;
+  if nx gt 1 and not par.lequidist[0] then begin
+    x0 = 0.5 * (grid.x[dim.l1-1] + grid.x[dim.l1])
+    x1 = 0.5 * (grid.x[dim.l2] + grid.x[dim.l2+1])
+    dx = (x1 - x0) / nx
+    iix = spline(grid.x, findgen(mx) - nghostx, x0 + (findgen(nx) + 0.5) * dx)
+  endif else $
+    iix = findgen(nx)
+;
+  if ny gt 1 and not par.lequidist[1] then begin
+    y0 = 0.5 * (grid.y[dim.m1-1] + grid.y[dim.m1])
+    y1 = 0.5 * (grid.y[dim.m2] + grid.y[dim.m2+1])
+    dy = (y1 - y0) / ny
+    iiy = spline(grid.y, findgen(my) - nghosty, y0 + (findgen(ny) + 0.5) * dy)
+  endif else $
+    iiy = findgen(ny)
+;
+  if nz gt 1 and not par.lequidist[2] then begin
+    z0 = 0.5 * (grid.z[dim.n1-1] + grid.z[dim.n1])
+    z1 = 0.5 * (grid.z[dim.n2] + grid.z[dim.n2+1])
+    dz = (z1 - z0) / nz
+    iiz = spline(grid.z, findgen(mz) - nghostz, z0 + (findgen(nz) + 0.5) * dz)
+  endif else $
+    iiz = findgen(nz)
+;
+  if extension eq 'xy' then begin
+    ii1 = iix
+    ii2 = iiy
+  endif else if extension eq 'xz' then begin
+    ii1 = iix
+    ii2 = iiz
+  endif else begin
+    ii1 = iiy
+    ii2 = iiz
+  endelse
+endif else massage = 0
+;
 if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
@@ -354,6 +396,8 @@ while (not eof(1)) do begin
   end else begin
     readu,1,plane,t,slice_z2pos
   end
+;
+  if massage then plane = interpolate(plane, ii1, ii2, /grid)
 ;
 ;  Rescale data with optional parameter zoom.
 ;  WARNING: the scaling can produce artifacts at shearing boundaries. Contour
