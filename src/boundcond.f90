@@ -5589,7 +5589,8 @@ module Boundcond
           if (ldensity_nolog) then
             if (lheatc_kramers) work_yz=f(l1,:,:,irho)
             if (lreference_state) then
-              tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0)+gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0) &
+                     +gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
             else
               tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
             endif
@@ -5640,7 +5641,8 @@ module Boundcond
           if (ldensity_nolog) then
             if (lheatc_kramers) work_yz=f(l2,:,:,irho)
             if (lreference_state) then
-              tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho)+reference_state(nx,iref_rho))-lnrho0)+gamma*(f(l2,:,:,iss)+reference_state(nx,iref_s)))
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho)+reference_state(nx,iref_rho))-lnrho0) &
+                     +gamma*(f(l2,:,:,iss)+reference_state(nx,iref_s)))
             else
               tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
             endif
