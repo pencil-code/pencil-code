@@ -35,7 +35,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    sample=sample,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
+    interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
     Beq=Beq,taud=taud
 ;
 COMMON pc_precision, zero, one
@@ -84,6 +84,7 @@ default,title,'rvid_plane'
 default,nlevels,30
 default,phi_shift,0.
 default,Beq,1.
+sample = ~keyword_set(interp)
 ;
 tini=1e-30 ; a small number
 ;
@@ -432,9 +433,9 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
      plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(cubic)) then begin
      if (cubic gt 0.0) then cubic = -0.5
-     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,cubic=cubic)
+     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,cubic=cubic,interp=interp)
   endif else begin
-     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center)
+     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,interp=interp)
   endelse
 ;
 ;  Do masking, if shell set.
