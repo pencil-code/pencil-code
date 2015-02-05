@@ -5516,6 +5516,7 @@ module Boundcond
 !  17-mar-07/dintrans: coded
 !  16-apr-12/MR: eliminated cs2_yz; allocation of rho_yz -> work_yz only if necessary;
 !                introduced heatflux_boundcond_x (necessary for nonequidistant grid)
+!   5-feb-15/MR: added reference state
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -5529,12 +5530,12 @@ module Boundcond
       logical, pointer :: lheatc_kramers
       integer :: i,ierr,stat
       integer, parameter :: BOT=1, TOP=2
+      real, dimension (:,:), pointer :: reference_state
+      real :: fac
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
-      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting lheatc_kramers")
+      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)       !caller='bc_ss_flux_x')
 !
 !  Allocate memory for large arrays.
 !
@@ -5544,20 +5545,19 @@ module Boundcond
 !
       if (lheatc_kramers) then
 !
-        call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting hcond0_kramers")
-        call get_shared_variable('nkramers',nkramers,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting nkramers")
-        call get_shared_variable('cp',cp,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting cp")
+        call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)    !caller='bc_ss_flux_x')
+        call get_shared_variable('nkramers',nkramers,ierr)                !caller='bc_ss_flux_x')
+        call get_shared_variable('cp',cp,ierr)                            !caller='bc_ss_flux_x')
 !
         allocate(work_yz(my,mz),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
             'Could not allocate memory for work_yz')
       endif
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_x')
+! 
+      fac=gamma_m1/gamma
 !
 ! Check whether we want to do top or bottom (this is processor dependent)
 !
@@ -5568,9 +5568,7 @@ module Boundcond
 !
       case ('bot')
 !
-        call get_shared_variable('FbotKbot',FbotKbot,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting FbotKbot")
+        call get_shared_variable('FbotKbot',FbotKbot,ierr)     !caller='bc_ss_flux_x')
         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5590,16 +5588,18 @@ module Boundcond
 !
           if (ldensity_nolog) then
             if (lheatc_kramers) work_yz=f(l1,:,:,irho)
-            tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
+            if (lreference_state) then
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0)+gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
+            else
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
+            endif
           else
             if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Fbot',Fbot,ierr)
-            if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-               "there was a problem when getting Fbot")
+            call get_shared_variable('Fbot',Fbot,ierr)      !caller='bc_ss_flux_x')
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
 !
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -5609,9 +5609,12 @@ module Boundcond
             tmp_yz=FbotKbot/tmp_yz
           endif
 !
+          if (lreference_state) &
+            tmp_yz = tmp_yz + reference_state(1,iref_gs) + fac*reference_state(1,iref_glnrho)
+!
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-          call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, BOT )
+          call heatflux_boundcond_x( f, tmp_yz, fac, BOT )
 !
         endif
 !
@@ -5620,10 +5623,7 @@ module Boundcond
 !
       case ('top')
 !
-        call get_shared_variable('FtopKtop',FtopKtop,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-            "there was a problem when getting FtopKtop")
-!
+        call get_shared_variable('FtopKtop',FtopKtop,ierr)     !caller='bc_ss_flux_x')
          if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5639,16 +5639,18 @@ module Boundcond
 !
           if (ldensity_nolog) then
             if (lheatc_kramers) work_yz=f(l2,:,:,irho)
-            tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
+            if (lreference_state) then
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho)+reference_state(nx,iref_rho))-lnrho0)+gamma*(f(l2,:,:,iss)+reference_state(nx,iref_s)))
+            else
+              tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
+            endif
           else
             if (lheatc_kramers) work_yz=exp(f(l2,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Ftop',Ftop,ierr)
-            if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-            "there was a problem when getting Ftop")
+            call get_shared_variable('Ftop',Ftop,ierr)     !caller='bc_ss_flux_x')
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
 !
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -5657,9 +5659,12 @@ module Boundcond
             tmp_yz=FtopKtop/tmp_yz
           endif
 !
+          if (lreference_state) &
+            tmp_yz = tmp_yz + reference_state(nx,iref_gs) + fac*reference_state(nx,iref_glnrho)
+!
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = gamma_m1/gamma*Ftop/(K*cs2)
 !
-          call heatflux_boundcond_x( f, -tmp_yz, gamma_m1/gamma, TOP )
+          call heatflux_boundcond_x( f, -tmp_yz, fac, TOP )
 !
         endif
 !
