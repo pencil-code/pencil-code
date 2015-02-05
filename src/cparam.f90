@@ -189,6 +189,7 @@ module Cparam
 !
 !  Indices of rho, d rho/d x, d^2 rho/d x^2, d^6 rho/d x^6, d p/d x, s, d s/d x, d^2 s/d x^2 and d^6 s/d x^6 in array reference_state.
 !
-  integer, parameter :: iref_rho=1, iref_grho=2, iref_d2rho=3, iref_d6rho=4, iref_gp=5, iref_s=6, iref_gs=7, iref_d2s=8, iref_d6s=9
+  integer, parameter :: iref_rho=1, iref_grho=2, iref_glnrho=10, iref_d2rho=3, iref_d6rho=4, iref_gp=5, iref_s=6, iref_gs=7, iref_d2s=8, iref_d6s=9
+  integer, parameter :: nref_vars=10
 !
 endmodule Cparam
