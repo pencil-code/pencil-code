@@ -110,7 +110,7 @@ module Dustdensity
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
-      G_condensparam,supsatratio_given
+      G_condensparam,supsatratio_given,ndmin_for_mdvar
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
@@ -1984,7 +1984,7 @@ module Dustdensity
 !
 !  Top boundary overflows are ignored
 !
-            if (i_targ == ndustspec+1) i_targ = ndustspec
+            if (i_targ .ge. ndustspec) i_targ = ndustspec
 !
 !  Put all overflowing grains into relevant interval
 !
@@ -2040,6 +2040,12 @@ module Dustdensity
       real, dimension (nx) :: mfluxcond, cc_tmp, fact
       real :: dmdfac
       integer :: k,l
+!
+!  This subroutine does not work correctly - must be fixed (if possible)
+!  before it can be used.
+!
+      call fatal_error('dust_condensation_nolmdvar',&
+          'This subroutine is not working correctly!')
 !
 !  Calculate mass flux of condensing monomers
 !
