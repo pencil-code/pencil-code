@@ -204,7 +204,15 @@ Welcome to the world of Pencil Code! Visualizing the output can be done with \ve
 % The goal of this section is to demonstrate the general work flow with a very
 % simple example.
 
-Start \verb|idl| from the command line. Several \verb|idl| have been written
+\subsubsection{GUI-based visualization}
+The most simple approach to visualize a cartesian grid setup is to run the Pencil Code GUI and to select the files and physical quantities you want to see:
+\begin{verbatim}
+IDL> .r pc_gui
+\end{verbatim}
+If you miss some physical quantities, you might want to extend the two IDL routines \verb|pc_get_quantity| and \verb|pc_check_quantities|. Anything implemented there will be available in the GUI, too.
+
+\subsubsection{Command-line based and scripting}
+Several \verb|idl|-procedures have been written
 (you can find them in \verb|pencil-code/idl| ) to facilitate inspecting the data
 (which can be found in raw format in \verb|jeans-x/data| directory).  For
 example, let us inspect the time series data
@@ -240,7 +248,7 @@ T X Y Z DX DY DZ UU LNRHO POTSELF
 \end{verbatim}
 so the logarithm of the density in the simulated domain can be inspected by
 \begin{verbatim}
-IDL>plot, ff.lnrho
+IDL> plot, ff.lnrho
 \end{verbatim}
 % TODO Include screen shot
 
