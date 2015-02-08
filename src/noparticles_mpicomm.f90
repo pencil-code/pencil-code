@@ -48,6 +48,13 @@ module Particles_mpicomm
 !
       if (lstart) call dist_particles_evenly_procs(ipar)
 !
+!  Set neighbor process ranks for particles.
+!
+      neighbors_par = root
+      if (bcpx /= 'p' .or. nxgrid == 1 .or. lshear .and. nygrid > 1) neighbors_par((/-1,1/),:,:) = -1
+      if (bcpy /= 'p' .or. nygrid == 1) neighbors_par(:,(/-1,1/),:) = -1
+      if (bcpz /= 'p' .or. nzgrid == 1) neighbors_par(:,:,(/-1,1/)) = -1
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_mpicomm

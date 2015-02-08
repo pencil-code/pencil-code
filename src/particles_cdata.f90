@@ -26,6 +26,7 @@ module Particles_cdata
   real :: t_nextinsert=0. !The time at which new particles are going to be inserted.
   real :: dustdensity_powerlaw=0.
 !
+  integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
   integer, dimension (mpar_loc) :: ipar

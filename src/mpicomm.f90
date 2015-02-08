@@ -432,6 +432,8 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
+      integer :: i, j, k
+!
 !  Announce myself for pc_run to detect.
 !
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
@@ -497,6 +499,11 @@ module Mpicomm
       llast_proc_yz = llast_proc_y .and. llast_proc_z
       llast_proc_xz = llast_proc_x .and. llast_proc_z
       llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
+!
+!  Set up all neighbors.
+!
+      forall(i=-1:1, j=-1:1, k=-1:1) &
+          neighbors(i,j,k) = modulo(ipx+i,nprocx) + modulo(ipy+j,nprocy) * nprocx + modulo(ipz+k,nprocz) * nprocxy
 !
 !  Set up `lower' and `upper' neighbours.
 !
