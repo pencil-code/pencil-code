@@ -36,6 +36,7 @@ module Sub
   public :: one_minus_exp
 !
   public :: get_nseed
+  public :: get_where
 !
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
   public :: curl_horizontal
@@ -4415,6 +4416,46 @@ nameloop: do
       endif
 !
     endsubroutine get_nseed
+!***********************************************************************
+    subroutine get_where(mask, indices, status)
+!
+!  Get the indices where mask are .true.
+!
+!  Note: The pointer argument indices will be reassociated with a newly
+!      allocated array.  It is the user's responsibility to pass in a
+!      disassociated pointer and deallocate it after use.
+!
+!  10-feb-15/ccyang: coded.
+!
+      logical, dimension(:), intent(in) :: mask
+      integer, dimension(:), pointer, intent(out) :: indices
+      integer, intent(out), optional :: status
+!
+      integer :: i, n, stat
+!
+!  Allocate the index array.
+!
+      allocate(indices(count(mask)), stat=stat)
+      error: if (stat /= 0) then
+        soft: if (present(status)) then
+          status = stat
+          return
+        endif soft
+        call fatal_error('get_where', 'unable to allocate the index array. ')
+      endif error
+!
+!  Scan through the elements of mask.
+!
+      n = 0
+      scan: do i = 1, size(mask)
+        true: if (mask(i)) then
+          n = n + 1
+          indices(n) = i
+        endif true
+      enddo scan
+      if (present(status)) status = 0
+!
+      endsubroutine get_where
 !***********************************************************************
     subroutine write_dx_general(file,x00,y00,z00)
 !
