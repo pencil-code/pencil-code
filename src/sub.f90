@@ -4428,7 +4428,7 @@ nameloop: do
 !  10-feb-15/ccyang: coded.
 !
       logical, dimension(:), intent(in) :: mask
-      integer, dimension(:), pointer, intent(out) :: indices
+      integer, dimension(:), pointer :: indices
       integer, intent(out), optional :: status
 !
       integer :: i, n, stat
