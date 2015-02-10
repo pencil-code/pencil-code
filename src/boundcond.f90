@@ -39,6 +39,8 @@ module Boundcond
     module procedure bc_pencil_vector
   endinterface
 !
+  integer, parameter :: BOT=1, TOP=2
+!
   contains
 !***********************************************************************
     subroutine update_ghosts_all(f)
@@ -5517,6 +5519,7 @@ module Boundcond
 !  16-apr-12/MR: eliminated cs2_yz; allocation of rho_yz -> work_yz only if necessary;
 !                introduced heatflux_boundcond_x (necessary for nonequidistant grid)
 !   5-feb-15/MR: added reference state
+!  11-feb-15/MR: corrected use of reference state
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -5529,7 +5532,6 @@ module Boundcond
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
       integer :: i,ierr,stat
-      integer, parameter :: BOT=1, TOP=2
       real, dimension (:,:), pointer :: reference_state
       real :: fac
 !
@@ -5549,6 +5551,9 @@ module Boundcond
         call get_shared_variable('nkramers',nkramers,ierr)                !caller='bc_ss_flux_x')
         call get_shared_variable('cp',cp,ierr)                            !caller='bc_ss_flux_x')
 !
+      endif
+!
+      if (lheatc_kramers.or.lreference_state) then
         allocate(work_yz(my,mz),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
             'Could not allocate memory for work_yz')
@@ -5610,12 +5615,17 @@ module Boundcond
             tmp_yz=FbotKbot/tmp_yz
           endif
 !
-          if (lreference_state) &
-            tmp_yz = tmp_yz + reference_state(1,iref_gs) + fac*reference_state(1,iref_glnrho)
+!  enforce ds/dx           + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
+!  or with reference state:
+!                + ds_0/dx + gamma_m1/gamma*d/dx(ln(rho'+rho_0)) = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-          call heatflux_boundcond_x( f, tmp_yz, fac, BOT )
+          if (lreference_state) then
+            work_yz= 1./(f(l1,:,:,irho)+reference_state(1,iref_rho))
+            tmp_yz = tmp_yz + reference_state(1,iref_gs)/fac + reference_state(1,iref_grho)*work_yz
+            call heatflux_boundcond_x( f, tmp_yz, fac, BOT, work_yz )
+          else
+            call heatflux_boundcond_x( f, tmp_yz, fac, BOT )
+          endif
 !
         endif
 !
@@ -5662,11 +5672,17 @@ module Boundcond
           endif
 !
           if (lreference_state) &
-            tmp_yz = tmp_yz + reference_state(nx,iref_gs) + fac*reference_state(nx,iref_glnrho)
+            tmp_yz = tmp_yz + reference_state(nx,iref_gs)
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = gamma_m1/gamma*Ftop/(K*cs2)
 !
-          call heatflux_boundcond_x( f, -tmp_yz, fac, TOP )
+          if (lreference_state) then
+            work_yz= 1./(f(l2,:,:,irho)+reference_state(nx,iref_rho))
+            tmp_yz = tmp_yz + reference_state(nx,iref_gs)/fac + reference_state(nx,iref_grho)*work_yz
+            call heatflux_boundcond_x( f, -tmp_yz, fac, TOP, work_yz )
+          else
+            call heatflux_boundcond_x( f, -tmp_yz, fac, TOP )
+          endif
 !
         endif
 !
@@ -5682,18 +5698,20 @@ module Boundcond
 !
     endsubroutine bc_ss_flux_x
 !************************************************************************
-    subroutine heatflux_boundcond_x( f, inh, fac, topbot )
+    subroutine heatflux_boundcond_x( f, inh, fac, topbot, coef )
 !
 !  encapsules BC 'prescribed heat flux at x boundary'
 !
 !  17-apr-12/MR: outsourced from bc_ss_flux_x
+!  11-feb-15/MR: optional parameter coef for correct use of reference state
 !
       use Deriv, only: heatflux_deriv_x
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
-      real, dimension(my,mz)  , intent(IN)   :: inh
-      real                    , intent(IN)   :: fac
-      integer                 , intent(IN)   :: topbot
+      real, dimension(my,mz)           , intent(IN)   :: inh
+      real, dimension(my,mz), optional , intent(IN)   :: coef
+      real                             , intent(IN)   :: fac
+      integer                          , intent(IN)   :: topbot
 !
       integer :: i,ll,ia,ie
 !
@@ -5701,16 +5719,21 @@ module Boundcond
         if ( heatflux_deriv_x( f, inh, fac, topbot ) ) return
       endif
 !
-      if (topbot==1) then
+      if (topbot==BOT) then
         ll=l1; ia=1; ie=nghost
       else
         ll=l2; ia=-nghost; ie=-1
       endif
-!
+
       do i=ia,ie
         if (ldensity_nolog) then
-          f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-              (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+(2*i*dx)*inh)
+          if (present(coef)) then
+            f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+                ( (f(ll+i,:,:,irho)-f(ll-i,:,:,irho))*coef + (2*i*dx)*inh )
+          else
+            f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+                (log(f(ll+i,:,:,irho)/f(ll-i,:,:,irho))+(2*i*dx)*inh)
+          endif
         else
           f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
               (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+(2*i*dx)*inh)

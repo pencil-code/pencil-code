@@ -34,13 +34,12 @@ module InitialCondition
   real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0,chiSGS_top=1.0
   real :: Fbottom, wtran=0.02,Tcor_jump=1.0
   logical :: lcorona=.false., lwrite_cooling_profile=.false.
-  logical :: lref_state=.false.
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly_jump, xi0, & 
       lcorona, Rtran, wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile, lref_state
+      npoly_exp, chiSGS_top, chit0, lwrite_cooling_profile
 !
   contains
 !***********************************************************************
@@ -67,13 +66,16 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call. This subroutine is called last.
 !
 !  02-sep-13/pete: coded
 !  06-oct-13/joern: add coronal layer
 !  25-jan-15/MR: extended case 'polytropic' to linear density
+!  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f):
+!                profiles are returned instead of set into f.
+!                Profiles hcond and glhcond not written then!
 !
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: gamma, gamma_m1, rho0, cs20
@@ -81,10 +83,11 @@ module InitialCondition
       use Mpicomm, only: stop_it, mpiallreduce_sum
       use FArrayManager
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
-      real, dimension (mx) :: TT, TTc, rho_prof, dTdr, dTdr_cor, dlnTdr 
-      real, dimension (mx) :: lnrho, ss_prof, cs2_prof, dlnrhodr
+      real, dimension (mx) :: TT, TTc, rho_prof, dTdr_cor, dlnTdr 
+      real, dimension (mx) :: lnrho, ss_prof, cs2_prof
       real, dimension (nxgrid) :: kappa, gkappa, npoly2, gnpoly2
       real, dimension (nxgrid) :: rho_global, TT_global, TTc_global, dTdr_global, dTdrc_global
       real, dimension (nxgrid) :: dlnTdr_global, dlnrhodr_global, lnrho_global
@@ -98,8 +101,9 @@ module InitialCondition
       real :: T00sun=2.23e6
       real :: meanrho, volume, total_mass, tmp
       real, pointer :: gravx, cp, cv
-      integer :: i, j, n, m, q, ix, ierr, unit=1, nsurf, nsurf_global
-!
+      integer :: i, j, n, m, q, ix, ierr, nsurf, nsurf_global
+      integer, parameter :: unit=1
+
       character (len=120) :: wfile
 !
 !     Retrieve cp, cv, and gravx
@@ -162,6 +166,7 @@ module InitialCondition
       TT=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x - 1./Rsurf))
       TT_global=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./xglobal(nghost+1:nxgrid+nghost) - 1./Rsurf))
       dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1.))
+
       T00=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x0 - 1./Rsurf))
       Tsurf=gravx/(cv*(gamma-1.))*xi0/Rstar
 !
@@ -229,11 +234,16 @@ module InitialCondition
 !
 !  Put lnrho and ss into the f-array
 !
-      if (lref_state) then
-         f(l1:l2,:,:,ilnrho) = 0.
-         f(l1:l2,:,:,iss) = 0.
+      if (present(profiles)) then
 !
-         if (iproc .eq. root) then 
+         profiles(:,iref_rho  ) = rho_prof(l1:l2)
+         profiles(:,iref_grho ) = drhodr_global (ipx*nx+1:(ipx+1)*nx)
+         profiles(:,iref_d2rho) = del2rho_global(ipx*nx+1:(ipx+1)*nx)
+         profiles(:,iref_s    ) = ss_global(1)
+
+         return
+
+         if (lroot) then 
            call safe_character_assign(wfile,'reference_state.dat')
            open(unit,file=wfile,status='unknown')
            do ix=1,nxgrid
@@ -242,7 +252,11 @@ module InitialCondition
            close(unit)
          endif
 !
+      elseif (lreference_state) then
+         f(l1:l2,:,:,irho) = 0.
+         f(l1:l2,:,:,iss) = 0.
       else
+!
         do m=m1,m2
         do n=n1,n2
           if (ldensity_nolog) then
@@ -253,6 +267,7 @@ module InitialCondition
           f(l1:l2,m,n,iss) = ss_prof(l1:l2)
         enddo
         enddo
+!
       endif
 !
 !  Compute hcond and glhcond using global x-array
@@ -281,35 +296,36 @@ module InitialCondition
         coef1=star_luminosity*rho0*sqrt(gravx*Rstar)*cv*(gamma-1.)/(4.*pi)
 !
         do n=1,nxgrid
-           npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
-           gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
+          npoly2(n)=npoly_jump*(xglobal(nghost+n)/x0)**(-15.)+nad-npoly_jump
+          gnpoly2(n)=15./xglobal(nghost+n)*(nad-npoly_jump-npoly2(n))
         enddo
 !
         kappa=coef1*(npoly2+1.)
         gkappa=coef1*gnpoly2
+!
       endselect
 !
 !  Write kappa and gkappa to file to be read by run.in
 !
       if (iproc .eq. root) then 
-         call safe_character_assign(wfile,'hcond_glhc.dat')
-         open(unit,file=wfile,status='unknown')
-         do ix=1,nxgrid
-            write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
-         enddo
-         close(unit)
+        call safe_character_assign(wfile,'hcond_glhc.dat')
+        open(unit,file=wfile,status='unknown')
+        do ix=1,nxgrid
+          write(unit,'(2(2x,1pe12.5))') kappa(ix),gkappa(ix)
+        enddo
+        close(unit)
       endif
 !
 !  Write cs2 to a file to be used in cooling
 !
       if (lwrite_cooling_profile) then
         if (iproc .eq. root) then 
-           call safe_character_assign(wfile,'cooling_profile.dat')
-           open(unit,file=wfile,status='unknown')
-           do ix=1,nxgrid
-              write(unit,'(3(2x,1pe17.10))') cs2_global(ix)
-           enddo
-           close(unit)
+          call safe_character_assign(wfile,'cooling_profile.dat')
+          open(unit,file=wfile,status='unknown')
+          do ix=1,nxgrid
+            write(unit,'(3(2x,1pe17.10))') cs2_global(ix)
+          enddo
+          close(unit)
         endif
       endif
 !

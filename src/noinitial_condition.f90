@@ -111,17 +111,24 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call.  This subroutine is called last.
 !
 !  21-dec-10/ccyang: coded
+!  15-feb-15/MR: optional parameter 'profiles' added
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
 !  SAMPLE IMPLEMENTATION
 !
       call keep_compiler_quiet(f)
+      if (present(profiles)) &
+        call fatal_error('initial_condition_all', &
+          'If profiles are asked for, a real initial condition must be specified')
 !
     endsubroutine initial_condition_all
 !***********************************************************************

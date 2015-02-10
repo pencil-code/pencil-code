@@ -49,10 +49,10 @@ module Density
   real, dimension(nz) :: zmask_den
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
-! 
-! reference state, components:  1       2          3              4            5      6     7         8            9            10
-!                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6  d lnrho/d r
   character(LEN=labellen) :: ireference_state='nothing'
+! 
+! reference state, components:  1       2          3              4            5      6     7         8            9        
+!                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
   real, dimension(nx,nref_vars) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
@@ -234,6 +234,8 @@ module Density
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !  14-apr-14/axel: lreinitialize_lnrho and lreinitialize_rho added
 !  21-jan-15/MR: changes for use of reference state.
+!  10-feb-15/MR: added getting reference state from initial condition.
+!                upwind switch according to log/nolog (with warning).
 !
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
@@ -241,6 +243,7 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc
       use SharedVariables, only: put_shared_variable, get_shared_variable
+      use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -251,14 +254,26 @@ module Density
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
 !
+      if (ldensity_nolog.and.lupw_lnrho) then
+        lupw_rho=.true.
+        call warning('initialize_density','enabled upwinding for linear density')
+      elseif (.not.ldensity_nolog.and.lupw_rho) then
+        lupw_lnrho=.true.
+        call warning('initialize_density','enabled upwinding for log density')
+      endif
+
       lreference_state = ireference_state/='nothing'
+      lfullvar_in_slices = lfullvar_in_slices.and.lreference_state
 !
 !  If density variable is actually deviation from reference state, log(density) cannot be used.
 !
       if (lreference_state) then
         if (.not.ldensity_nolog) & 
           call fatal_error('initialize_density','use of reference state requires use of linear density')
+
         lcalc_glnrhomean=.false.     !?
+        lcheck_negative_density=.false.
+
         if (.not.lentropy) then
 !
 !  Use of reference state at the moment implemented only for entropy.
@@ -638,38 +653,38 @@ module Density
 !
 !  Simple adiabatic reference state s=sref=const., p ~ rho^gamma for gravity ~ 1/x^2 --> rho/rho_bottom = (x/x_bottom)^(1/(1-gamma))
 !
-!  Fetch gravity pencil. Requires that the gravity module is initialized before the density module
-!  which is presently the case.
-!
-          call get_shared_variable('gravx_xpencil',gravx_xpencil,ierr)
-          if (ierr/=0) call fatal_error("initialize_density: ", &
-                                        "there was a problem when getting gravx_xpencil")
-!   
           rho_bot=1.
           sref=1.
-          reference_state(:,iref_rho  ) = rho_bot*(x(l1:l2)/xyz0(1))**(1/(1-gamma))
-          reference_state(:,iref_grho ) = rho_bot/(1-gamma)/xyz0(1)*(x(l1:l2)/xyz0(1))**(1/(1-gamma)-1)
-          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
-          reference_state(:,iref_s    ) = sref
-          reference_state(:,iref_d2rho) = 0.    ! yet missing
+          reference_state(:,iref_rho   ) =  rho_bot*(x(l1:l2)/xyz0(1))**(-1/gamma_m1)
+          reference_state(:,iref_grho  ) = -rho_bot/(gamma_m1*xyz0(1)) * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1)
+          reference_state(:,iref_s     ) =  sref
+          reference_state(:,iref_d2rho ) =  rho_bot*gamma/(gamma_m1*xyz0(1))**2 * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1-1)
+          reference_state(:,iref_d6rho ) =  0.    ! yet missing
+!
+        case ('from_initcond')
+!
+!  Get from initial condition.
+!
+          call initial_condition_all(profiles=reference_state)
+          reference_state(:,iref_gs   ) = 0.
           reference_state(:,iref_d6rho) = 0.    ! yet missing
 !
         case ('file')
 !
-!  Read from a file
+!  Read from a file.
 !
-          call get_shared_variable('gravx_xpencil',gravx_xpencil,ierr)
-          if (ierr/=0) call fatal_error("initialize_density: ", &
-                                        "there was a problem when getting gravx_xpencil")
-          call read_reference_state(reference_state)
-          reference_state(:,iref_gp   ) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
-          reference_state(:,iref_gs   ) = 0.
-          reference_state(:,iref_d6rho) = 0.    ! yet missing
+          call read_reference_state
 !
         case default
           call fatal_error('initialize_density', &
               'type of reference state "'//trim(ireference_state)//'" not implemented')
         end select
+!
+!  Fetch gravity pencil. Requires that the gravity module is initialized before the density module
+!  which is presently the case.
+!
+        call get_shared_variable('gravx_xpencil',gravx_xpencil,caller='initialize_density')
+        reference_state(:,iref_gp) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
 !
 !  Compute the mass of the reference state for later use
 !
@@ -1329,16 +1344,17 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
         call error('init_lnrho', 'Imaginary density values')
-      endif
 !
-      if (total_mass<0.) &
+      if (total_mass<0.) then
         total_mass=mean_density(f)*box_volume
+        if (lreference_state) total_mass=total_mass+reference_state_mass
+      endif
 !
     endsubroutine init_lnrho
 !***********************************************************************
@@ -1348,16 +1364,19 @@ module Density
 !    3-oct-12/MR: global averaging corrected
 !    3-mar-14/MR: correction of total mass added
 !   17-aug-14/MR: finalize_aver used
+!   10-feb-15/MR: extended calc of <grad(log(rho))> to linear density;
+!                 mass conservation slightly simplified
 !
       use Sub, only: grad, finalize_aver,mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
-      real :: fact
+      real :: fact,cur_mass
       real, dimension (nx,3) :: gradlnrho
+      real, dimension (nx) :: tmp
 !
-      integer :: nl
+      integer :: nl,j
 !
 !  Calculate mean gradient of lnrho.
 !
@@ -1370,6 +1389,12 @@ module Density
 !
           do m=m1,m2
             call grad(f,ilnrho,gradlnrho)
+            if (ldensity_nolog) then
+              tmp=1./f(l1:l2,m,n,irho)
+              do j=1,3 
+                gradlnrho(:,j) = gradlnrho(:,j)*tmp
+              enddo
+            endif
             glnrhomz(nl)=glnrhomz(nl)+fact*sum(gradlnrho(:,3))
           enddo
 !
@@ -1381,13 +1406,20 @@ module Density
 !
       if (lconserve_total_mass .and. total_mass > 0.) then
 !
-        fact=total_mass/(box_volume*mean_density(f))
+        cur_mass=box_volume*mean_density(f)
+!
+        if (lreference_state) then
+          fact=total_mass/(cur_mass+reference_state_mass)
+          tmp=(fact - 1.)*reference_state(:,iref_rho)
+        else
+          fact=total_mass/cur_mass
+        endif
+!
         if (ldensity_nolog) then
           if (lreference_state) then
-            fact=total_mass/(box_volume*mean_density(f)+reference_state_mass)
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)*fact + (fact - 1.)*reference_state(:,iref_rho)
+                f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)*fact + tmp
               enddo
             enddo
           else
@@ -1608,6 +1640,9 @@ module Density
       real, dimension (nx,3) :: gg_mn
       integer :: j
 !
+      if (ldensity_nolog) &
+        call fatal_error('numerical_equilibrium','not implemented for linear density')
+!
       do m=m1,m2
         do n=n1,n2
 !
@@ -1826,13 +1861,10 @@ module Density
       endif
 ! uglnrho
       if (lpencil(i_uglnrho)) call fatal_error('calc_pencils_density', &
-          'uglnrho not available for linear mass density')
+          'uglnrho not available for linear mass density')   ! Why not implementing it?
 ! ugrho
-      if (lpencil(i_ugrho)) then
-        if (lupw_lnrho) call fatal_error('calc_pencils_density', &
-            'you switched lupw_lnrho instead of lupw_rho')         ! Can't this be silently corrected?
+      if (lpencil(i_ugrho)) &
         call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
-      endif
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
@@ -2730,7 +2762,8 @@ module Density
 !  Impose a minimum density by setting all lower densities to the minimum
 !  value (density_floor). Useful for debugging purposes.
 !
-!  13-aug-2007/anders: implemented.
+!  13-aug-07/anders: implemented.
+!  10-feb-15/MR: adaptations for reference state
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2746,7 +2779,7 @@ module Density
           lfirstcall=.false.
         endif
 !
-        if (ldensity_nolog) then
+        if (ldensity_nolog.and..not.lreference_state) then
           where (f(:,:,:,irho)<density_floor) f(:,:,:,irho)=density_floor
         else
           where (f(:,:,:,ilnrho)<density_floor_log) &
@@ -3014,58 +3047,99 @@ module Density
 !  Write slices for animation of Density variables.
 !
 !  26-jul-06/tony: coded
+!  10-feb-15/MR: adaptations for reference state
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+      character(LEN=labellen) :: name
+      integer :: n,m
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      name=trim(slices%name)
+      if (name=='rho' .or. name=='lnrho') then
+!
+        slices%yz =f(ix_loc,m1:m2,n1:n2,irho) 
+        slices%xz =f(l1:l2,iy_loc,n1:n2,irho) 
+        slices%xy =f(l1:l2,m1:m2,iz_loc,irho) 
+        slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
+        if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
+        if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
+        if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,irho)
+
+        if (lfullvar_in_slices) then
+
+          slices%yz = slices%yz + reference_state(ix_loc-l1+1,iref_rho)
+          do n=1,nz
+            slices%xz(:,n) = slices%xz(:,n) + reference_state(:,iref_rho)
+          enddo
+          do m=1,ny
+            slices%xy(:,m) = slices%xy(:,m) + reference_state(:,iref_rho)
+          enddo
+          do m=1,ny
+            slices%xy2(:,m)= slices%xy2(:,m)+ reference_state(:,iref_rho)
+          enddo
+
+          if (lwrite_slice_xy3) then
+            do m=1,ny
+              slices%xy3(:,m)=slices%xy3(:,m)+reference_state(:,iref_rho)
+            enddo
+          endif
+          if (lwrite_slice_xy4) then
+            do m=1,ny
+              slices%xy4(:,m)=slices%xy4(:,m)+reference_state(:,iref_rho)
+            enddo
+          endif
+          if (lwrite_slice_xz2) then
+            do n=1,nz
+              slices%xz2(:,n)=slices%xz2(:,n)+reference_state(:,iref_rho)
+            enddo
+          endif
+        endif
+!
+        slices%ready=.true.
+!
+      else
+        return
+      endif
+
+      select case (name)
 !
 !  Density.
 !
         case ('rho')
-          if (ldensity_nolog) then
-            slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-            if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,irho)
-            slices%ready=.true.
-          else
-            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
-            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
-            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
-            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
-            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
-            if (lwrite_slice_xz2) slices%xz2=exp(f(l1:l2,iy2_loc,n1:n2,ilnrho))
-            slices%ready=.true.
+          if (.not.ldensity_nolog) then
+            slices%yz =exp(slices%yz)
+            slices%xz =exp(slices%xz)
+            slices%xy =exp(slices%xy)
+            slices%xy2=exp(slices%xy2)
+            if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
+            if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
+            if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
           endif
 !
 !  Logarithmic density.
 !
         case ('lnrho')
+!
           if (ldensity_nolog) then
-            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,irho))
-            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,irho))
-            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,irho))
-            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,irho))
-            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,irho))
-            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,irho))
-            if (lwrite_slice_xz2) slices%xz2=alog(f(l1:l2,iy2_loc,n1:n2,irho))
-            slices%ready=.true.
-          else
-            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
-            if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,ilnrho)
-            slices%ready=.true.
+            if (lreference_state.and..not.lfullvar_in_slices) then
+              slices%yz = abs(slices%yz)
+              slices%xz = abs(slices%xz)
+              slices%xy = abs(slices%xy)
+              slices%xy2= abs(slices%xy2)
+              if (lwrite_slice_xy3) slices%xy3=abs(slices%xy3)
+              if (lwrite_slice_xy4) slices%xy4=abs(slices%xy4)
+              if (lwrite_slice_xz2) slices%xz2=abs(slices%xz2)
+            endif
+
+            slices%yz =alog(slices%yz)
+            slices%xz =alog(slices%xz)
+            slices%xy =alog(slices%xy)
+            slices%xy2=alog(slices%xy2)
+            if (lwrite_slice_xy3) slices%xy3=alog(slices%xy3)
+            if (lwrite_slice_xy4) slices%xy4=alog(slices%xy4)
+            if (lwrite_slice_xz2) slices%xz2=alog(slices%xz2)
           endif
 !
       endselect
@@ -3139,7 +3213,7 @@ module Density
 !
     endsubroutine update_reference_state
 !***********************************************************************
-    subroutine read_reference_state(reference_state)
+    subroutine read_reference_state
 !
 !  Read reference state from a file
 !
@@ -3147,9 +3221,8 @@ module Density
 !
       use Mpicomm, only: mpibcast_real_arr
 !
-      real, dimension(nx,9), intent(inout) :: reference_state
       integer, parameter :: ntotal=nx*nprocx
-      real, dimension(nx*nprocx) :: tmp1, tmp2, tmp3, tmp4
+      real, dimension(ntotal) :: tmp1, tmp2, tmp3, tmp4
       real :: var1, var2, var3, var4
       logical :: exist
       integer :: stat, nn
@@ -3166,7 +3239,7 @@ module Density
           if (exist) then
             open(36,file=trim(directory)//'/reference_state.ascii')
           else
-            call fatal_error('read_reference_state','*** error *** - no input file')
+            call fatal_error('read_reference_state','no input file')
           endif
         endif
 !
