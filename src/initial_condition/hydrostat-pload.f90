@@ -48,14 +48,17 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call. This subroutine is called last.
+!
+!  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f)
 !
       use EquationOfState, only: cs20, rho0 
       use Gravity, only: gravz
 !      
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
 !      
       real :: rhoprof
       integer :: l,n  !loop indices for x and z direction

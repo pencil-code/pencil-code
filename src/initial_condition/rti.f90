@@ -32,15 +32,19 @@ module InitialCondition
 !
   contains
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call. This subroutine is called last.
 !  It's tested in 2D in x-y plane with gravy
 !
+!  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f)
+!
       use EquationOfState, only: gamma1,cs20,rho0
       use Gravity, only: gravx, gravy, gravz
 !      
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
+!
       real :: pp0, rhoprof, pprof
       real :: w1ro, ro_a, ro_b, kxro
       real :: kxu, w1u

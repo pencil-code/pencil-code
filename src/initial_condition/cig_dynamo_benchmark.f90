@@ -62,11 +62,12 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call. This subroutine is called last.
 !
 !  19-nov-13/joern: coded + adapted from spherical_convection.f90
+!  10-feb-15/MR   : added optional parameter 'profiles' (intended to replace f)
 !
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: gamma, gamma_m1, rho0, cs20
@@ -74,7 +75,8 @@ module InitialCondition
       use Mpicomm, only: stop_it
       use FArrayManager
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof, TT_prof
       real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, alpha, DeltaTad

@@ -74,23 +74,21 @@ contains
 !
   endsubroutine write_initial_condition_pars
 !***********************************************************************
-  subroutine initial_condition_all(f,df)
+  subroutine initial_condition_all(f,profiles)
 !
 !  Initialize logarithmic density.
 !
 !  04-sep-10/bing: coded
+!  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f)
 !
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (mx,my,mz,mfarray), intent(in) :: df
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
-print*,'f'
 print*,f(l1:l2,m1:m2,n1:n2,:)
 print*
-print*,'df'
-print*,df(l1:l2,m1:m2,n1:n2,:)
-print*
-    f=f+.0001*df
-print*,'f'
+!print*,df(l1:l2,m1:m2,n1:n2,:)
+!print*
+!    f=f+.0001*df
 print*,f(l1:l2,m1:m2,n1:n2,:)
 print*
 !

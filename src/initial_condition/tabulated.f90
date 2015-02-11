@@ -54,16 +54,18 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-    subroutine initial_condition_all(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initializes all the f arrays in one call.
 !
 !  21-dec-10/ccyang: coded
+!  10-feb-15/MR    : added optional parameter 'profiles' (intended to replace f)
 !
       use General, only: spline
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mfarray), intent(out) :: f
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
       real, dimension(:,:,:,:), allocatable :: ftab
       real, dimension(:), allocatable :: xtab, ytab, ztab
