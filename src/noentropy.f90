@@ -127,15 +127,9 @@ module Energy
         if (ierr/=0) call fatal_error('initialize_energy:',&
              'failed to get lffree from density')
         if (lffree) then
-          call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_energy:',&
-               'failed to get profx_ffree from density')
-          call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_energy:',&
-              'failed to get profy_ffree from density')
-          call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_energy:',&
-             'failed to get profz_ffree from density')
+          call get_shared_variable('profx_ffree',profx_ffree,caller='initialize_energy')
+          call get_shared_variable('profy_ffree',profy_ffree,caller='initialize_energy')
+          call get_shared_variable('profz_ffree',profz_ffree,caller='initialize_energy')
         endif
       endif
 !
