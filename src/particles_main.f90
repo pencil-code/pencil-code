@@ -378,6 +378,7 @@ module Particles_main
 !  Write npar and mpvar to file.
 !
 !  09-jan-05/anders: coded
+!  10-oct-14/jonas,nils: added the number of particle auxiliaries
 !
       character (len=*) :: filename
 !
