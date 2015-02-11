@@ -65,7 +65,8 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: rad_sphere=0.0
-  real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
+  real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
+  real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: particles_insert_rate=0.
@@ -106,6 +107,7 @@ module Particles
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
   logical :: lpscalar_sink=.false.
+  logical :: lsherwood_const=.true.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -207,7 +209,7 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink
+      lpscalar_sink, lsherwood_const
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3069,6 +3071,7 @@ module Particles
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
       use SharedVariables, only: get_shared_variable
+      use Viscosity, only: getnu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3090,6 +3093,10 @@ module Particles
       real, pointer :: pscalar_diff
       real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt
+!
+      real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
+      character (len=labellen) :: ivis=''
+      real :: nu_
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -3147,6 +3154,35 @@ module Particles
           if (lfirst.and.ldt) then
             dt1_drag_dust=0.0
             if (ldragforce_gas_par) dt1_drag_gas=0.0
+          endif
+!
+!  Get viscosity used to calculate the pscalar Schmidt number
+!
+          if (lpscalar .and. lpscalar_sink) then
+            if (.not. lsherwood_const) then
+              call getnu(nu_input=nu_,IVIS=ivis)
+              if (ivis=='nu-const') then
+                nu=nu_
+              elseif (ivis=='nu-mixture') then
+                nu=interp_nu
+              elseif (ivis=='rho-nu-const') then
+                nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
+              elseif (ivis=='sqrtrho-nu-const') then
+                nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+              elseif (ivis=='nu-therm') then
+                nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
+              elseif (ivis=='mu-therm') then
+                nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
+                  /interp_rho(k1_imn(imn):k2_imn(imn))
+              else
+                call fatal_error('dvvp_dt_pencil','No such ivis!')
+              endif
+            endif
+!
+!  Get the passive scalar diffusion rate
+!
+            call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
+
           endif
 !
 !  Loop over all particles in current pencil.
@@ -3246,8 +3282,20 @@ module Particles
 !                
                 if (lpscalar_sink .and. lpscalar) then
                   gas_consentration=0.1
-                  Sherwood=2.
-                  call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
+!
+!  JONAS: michaelides 2006,p122
+!  Nu/Sh = 0.922+Pe**0.33+0.1*Pe**0.33*Re**0.33
+!  Present: rep(k), needed: Pe(k)
+!  From Multiphase flows with Droplets and particles, p.62:
+!  Sh = 2+0.69*Re_rel**0.5 * Sc**0.33
+!  The long number is 0.7**(1/3)
+!  Sc = nu/pscalar_diff implement with getnu 
+! 
+                  if (lsherwood_const) then
+                    Sherwood = 2.
+                  else
+                    Sherwood = 2.0 + 0.69*sqrt(rep(k))*(nu(k)/pscalar_diff)**(1./3.)
+                  endif
                   mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
                       (2*fp(k,iap))
                   lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
