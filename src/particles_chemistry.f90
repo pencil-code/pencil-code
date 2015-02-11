@@ -128,7 +128,7 @@ module Particles_chemistry
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
-!  this one is used for
+!  this one is used for 
 !
   real :: gas_constant=8.3144727 ![J/mol/K] MUST ALWAYS BE IN SI UNITS!!!
 !
@@ -157,6 +157,8 @@ module Particles_chemistry
       if (lroot) call svn_id( &
           "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
+      call register_unit_system()
+!
       call get_pchem_info(species,'N_species',N_species,'quiet')
 !    print*, 'Number of species in mechanics file: ', N_species
 !    print*, 'Species found: ', species(:N_species)
@@ -167,8 +169,6 @@ module Particles_chemistry
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share total_carbon')
       call put_shared_variable('true_density_carbon',true_density_carbon,ierr)
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share true_density')
-!
-      call register_unit_system()
 !
     endsubroutine register_particles_chem
 ! ******************************************************************************
@@ -297,10 +297,6 @@ module Particles_chemistry
 !  Calculate the the molar flux of carbon from the particle surface
 !
 !  oct-14/Jonas: coded
-!
-!  JONAS talk to nils how to implement things from equ.f90
-!  JONAS implement right sequence so that mdot_ck is always calculated
-!  first
 !
     subroutine calc_R_c_hat()
       R_c_hat = 0.0
@@ -1491,7 +1487,7 @@ module Particles_chemistry
 !JONAS:  Commented out the calculation of the Nusselt number for now
 !JONAS:  since this has to be fixed before it can be used.
 !        call calc_Nusselt()
-Nu_p=2.
+        Nu_p=2.
 !JONAS:  We also need to make a subroutine calculcating the Sherwood 
 !JONAS:  number.
       else
