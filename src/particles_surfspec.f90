@@ -175,8 +175,7 @@ module Particles_surfspec
 !  parameters.
 !
 !  29-sep-14/jonas coded
-!  JONAS: needs to be filled with life
-
+!
   subroutine initialize_particles_surf(f)
     real, dimension(mx,my,mz,mfarray) :: f
 
@@ -286,7 +285,7 @@ module Particles_surfspec
     integer, dimension(mpar_loc,3) :: ineargrid
     integer :: i
 
-    ! JONAS: equations.tex eq 37
+!  equations.tex eq 37
     call keep_compiler_quiet(f)
     call keep_compiler_quiet(df)
 !      call keep_compiler_quiet(fp)

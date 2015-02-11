@@ -119,8 +119,6 @@ module Particles_adsorbed
         iads = npvar+1
         i=1
 !
-!  JONAS: commented for now, wait for own pvarnamespace
-!
         do while (i<=(N_adsorbed_species-1))
           if (adsorbed_species_names(i)/='Cf') then
             pvarname(iads+j-1) = adsorbed_species_names(i)
@@ -202,7 +200,6 @@ module Particles_adsorbed
 !  parameters.
 !
 !  29-aug-14/jonas coded
-!  JONAS: do i need this?
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -284,8 +281,6 @@ module Particles_adsorbed
 !     call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
-!
-!  JONAS look at dustdensity.f90 l.1897
 !
       if (ldiagnos) then
         do i=1,N_adsorbed_species
