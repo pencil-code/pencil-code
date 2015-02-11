@@ -126,9 +126,11 @@ module InitialCondition
 !  SAMPLE IMPLEMENTATION
 !
       call keep_compiler_quiet(f)
-      if (present(profiles)) &
+      if (present(profiles)) then
         call fatal_error('initial_condition_all', &
           'If profiles are asked for, a real initial condition must be specified')
+        call keep_compiler_quiet(profiles)
+      endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************
