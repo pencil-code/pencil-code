@@ -64,7 +64,8 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: rad_sphere=0.0
-  real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
+  real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0 
+  real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: particles_insert_rate=0.
   real :: avg_n_insert, remaining_particles=0.0

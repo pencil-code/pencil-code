@@ -62,7 +62,8 @@ module Particles
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
   real :: rad_sphere=0.0
-  real :: a_ellipsoid, b_ellipsoid, c_ellipsoid, a_ell2, b_ell2, c_ell2
+  real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
+  real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.

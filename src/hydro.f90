@@ -129,7 +129,7 @@ module Hydro
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
-  real :: amp_factor=0.,kx_uu_perturb
+  real :: amp_factor=0.,kx_uu_perturb=0.
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
