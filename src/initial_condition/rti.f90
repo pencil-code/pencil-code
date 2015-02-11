@@ -43,7 +43,7 @@ module InitialCondition
       use Gravity, only: gravx, gravy, gravz
 !      
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
       real :: pp0, rhoprof, pprof
       real :: w1ro, ro_a, ro_b, kxro
@@ -120,6 +120,12 @@ module InitialCondition
         f(l1:l2,m1:m2,n1:n2,iuz)=0.0
       end select
       if (.not.lzerow) f(l1:l2,m1:m2,n1:n2,iux)=0.0
+!
+     if (present(profiles)) then
+       call fatal_error('initial_condition_all', &
+                        'returning of profiles not implemented')
+       call keep_compiler_quiet(profiles)
+     endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************

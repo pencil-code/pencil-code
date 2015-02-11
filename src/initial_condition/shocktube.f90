@@ -61,11 +61,12 @@ module InitialCondition
 !  10-feb-15/MR    : added optional parameter 'profiles' (intended to replace f)
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
 !  SAMPLE IMPLEMENTATION
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(profiles)
 !
     endsubroutine initial_condition_all
 !***********************************************************************
@@ -128,7 +129,7 @@ module InitialCondition
 !
       real, dimension(:), pointer :: B_ext
       real, dimension(mx) :: penc
-      integer :: ierr, i
+      integer :: i
 !
       bfield: if (lbfield) then
         comp: do i = 1, 3
@@ -136,8 +137,7 @@ module InitialCondition
         enddo comp
       else bfield
         if (bb_left(1) /= bb_right(1)) call fatal_error('initial_condition_aa', 'discontinuity in bx is not allowed. ')
-        call get_shared_variable('B_ext', B_ext, ierr)
-        if (ierr /= 0) call fatal_error('initial_condition_aa', 'unable to get B_ext. ')
+        call get_shared_variable('B_ext', B_ext, caller='initial_condition_aa')
         B_ext(1) = bb_left(1)
         B_ext(2:3) = 0.0
         f(l1:l2,m1:m2,n1:n2,iax) = 0.0

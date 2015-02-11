@@ -61,9 +61,7 @@ module InitialCondition
       call get_shared_variable('hcond0',hcond0,ierr)
       if (ierr/=0) call stop_it(" initial_condition_ss: "//&
            "there was a problem when getting hcond0")
-      call get_shared_variable('star_params',star_params,ierr)
-      if (ierr/=0) call stop_it(" initial_condition_ss: "//&
-           "there was a problem when getting star_params")
+      call get_shared_variable('star_params',star_params,caller='initial_condition_ss')
       wheat=star_params(1)
       luminosity=star_params(2)
       r_bcz=star_params(3)

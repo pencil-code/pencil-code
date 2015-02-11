@@ -76,7 +76,7 @@ module InitialCondition
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof, TT_prof
       real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, alpha, DeltaTad
@@ -184,7 +184,6 @@ module InitialCondition
 !
       enddo
       enddo
-
 !
 !  print outs to put in run.in
 !
@@ -200,6 +199,12 @@ module InitialCondition
          print*,'B normalization =', Bnorm
          print*,''
        endif
+!
+     if (present(profiles)) then
+       call fatal_error('initial_condition_all', &
+                        'returning of profiles not implemented')
+       call keep_compiler_quiet(profiles)
+     endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************

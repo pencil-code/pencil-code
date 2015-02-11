@@ -82,7 +82,7 @@ contains
 !  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f)
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
 print*,f(l1:l2,m1:m2,n1:n2,:)
 print*
@@ -91,6 +91,8 @@ print*
 !    f=f+.0001*df
 print*,f(l1:l2,m1:m2,n1:n2,:)
 print*
+!
+     call keep_compiler_quiet(profiles)
 !
   endsubroutine initial_condition_all
 !***********************************************************************

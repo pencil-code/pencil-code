@@ -65,7 +65,7 @@ module InitialCondition
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:),              optional, intent(out)  :: profiles
 !
       real, dimension(:,:,:,:), allocatable :: ftab
       real, dimension(:), allocatable :: xtab, ytab, ztab
@@ -123,6 +123,12 @@ module InitialCondition
 !
       deallocate (ftab, xtab, ytab, ztab, fint, stat=status)
       if (status /= 0) call warning('initialize_initial_condition','failed to deallocate memory')
+!
+     if (present(profiles)) then
+       call fatal_error('initial_condition_all', &
+                        'returning of profiles not implemented')
+       call keep_compiler_quiet(profiles)
+     endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************

@@ -36,7 +36,7 @@ module InitialCondition
       use Gravity, only: gravz
 !      
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (nx,*),             optional, intent(out)  :: profiles
+      real, dimension (:,:), optional, intent(out) :: profiles
 !      
       real :: P0, rhoprof, Pprof
       integer :: l,n  !loop indices for x and z direction
@@ -80,6 +80,12 @@ module InitialCondition
         f(l1:l2,m1:m2,n,iss) = &
             -log(rhoprof/rho0) + (gamma1)*log(Pprof/P0)
       enddo
+!
+     if (present(profiles)) then
+       call fatal_error('initial_condition_all', &
+                        'returning of profiles not implemented')
+       call keep_compiler_quiet(profiles)
+     endif
 !
     endsubroutine initial_condition_all
 !***********************************************************************
