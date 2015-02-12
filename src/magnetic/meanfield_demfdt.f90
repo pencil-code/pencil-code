@@ -114,13 +114,13 @@ module Magnetic_meanfield_demfdt
 !  adopt eta_emf profiles by rescaling etat
 !
       if (lrun) then
-        call get_shared_variable('kf_x',kf_x,ierr)
-        call get_shared_variable('kf_y',kf_y,ierr)
-        call get_shared_variable('kf_z',kf_z,ierr)
-        call get_shared_variable('kf_x1',kf_x1,ierr)
-        call get_shared_variable('etat_x',etat_x,ierr)
-        call get_shared_variable('etat_y',etat_y,ierr)
-        call get_shared_variable('etat_z',etat_z,ierr)
+        call get_shared_variable('kf_x',kf_x,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('kf_y',kf_y,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('kf_z',kf_z,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('kf_x1',kf_x1,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('etat_x',etat_x,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('etat_y',etat_y,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('etat_z',etat_z,caller='initialize_magn_mf_demfdt')
         eta_emf_x=etat_x*eta_emf_over_etat
         eta_emf_y=etat_y*eta_emf_over_etat
         eta_emf_z=etat_z*eta_emf_over_etat

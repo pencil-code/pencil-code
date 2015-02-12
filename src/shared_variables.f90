@@ -942,15 +942,13 @@ module SharedVariables
 !
 !  fetches a function of a single variable together with its gradient.
 !
-!   6-sep-2013/MR: coded
+!   6-sep-13/MR: coded
 !  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cparam, only: labellen
-!
-      character(LEN=*), intent(IN) :: name
-      real, dimension(:),      pointer    :: prof, gprof    !intent(OUT)
+      character(LEN=*),           intent(IN) :: name
+      real, dimension(:), pointer            :: prof, gprof    !intent(OUT)
 
-      call get_shared_variable(     trim(name),prof, caller="fetch_profile_1d")
+      call get_shared_variable(     trim(name),prof ,caller="fetch_profile_1d")
       call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_1d")
 
     endsubroutine fetch_profile_1d
@@ -962,14 +960,12 @@ module SharedVariables
 !   6-sep-13/MR: coded
 !  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cparam, only: labellen
-!
-      character(LEN=*), intent(IN) :: name
-      real, dimension(:,:),    pointer    :: prof    !intent(OUT)
-      real, dimension(:,:,:),  pointer    :: gprof   !intent(OUT)
+      character(LEN=*),               intent(IN) :: name
+      real, dimension(:,:),   pointer            :: prof    !intent(OUT)
+      real, dimension(:,:,:), pointer            :: gprof   !intent(OUT)
 
-      call get_shared_variable(     trim(name),prof)    !, caller="fetch_profile_2d")
-      call get_shared_variable('g'//trim(name),gprof)   !,caller="fetch_profile_2d")
+      call get_shared_variable(     trim(name),prof ,caller="fetch_profile_2d")
+      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_2d")
 
     endsubroutine fetch_profile_2d
 !***********************************************************************
@@ -980,14 +976,12 @@ module SharedVariables
 !   6-sep-13/MR: coded
 !  27-jan-15/MR: use optional parameter 'caller'.
 !
-      use Cparam, only: labellen
-!
-      character(LEN=*),  intent(IN) :: name
-      real, dimension(:,:,:),   pointer    :: prof    !intent(OUT)
-      real, dimension(:,:,:,:), pointer    :: gprof   !intent(OUT)
+      character(LEN=*),                 intent(IN) :: name
+      real, dimension(:,:,:),   pointer            :: prof    !intent(OUT)
+      real, dimension(:,:,:,:), pointer            :: gprof   !intent(OUT)
 
-      call get_shared_variable(     trim(name),prof)   !, caller="fetch_profile_3d")
-      call get_shared_variable('g'//trim(name),gprof)  !,caller="fetch_profile_3d")
+      call get_shared_variable(     trim(name),prof ,caller="fetch_profile_3d")
+      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_3d")
 
     endsubroutine fetch_profile_3d
 !***********************************************************************

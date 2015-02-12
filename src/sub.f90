@@ -6231,7 +6231,8 @@ nameloop: do
 !***********************************************************************
     function mean_density(f)
 !
-!  Calculate mean density
+!  Calculate mean density from f-array. With lreference_state=T it is the mean
+!  density deviation.
 !
 !  3-mar-14/MR: coded
 !

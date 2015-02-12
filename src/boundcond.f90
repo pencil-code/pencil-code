@@ -2660,6 +2660,7 @@ module Boundcond
       logical, pointer :: llambda_effect
       integer :: ierr,k
       real :: lambda_exp
+!
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -2962,9 +2963,7 @@ module Boundcond
          call get_shared_variable('Lambda_H1',Lambda_H1,ierr)
          if (ierr/=0) call stop_it("bc_set_sfree_y: " &
               // "problem getting shared var Lambda_H1")
-         call get_shared_variable('LH1_rprof',LH1_rprof,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_y: " &
-              // "problem getting shared var LH1_rprof")
+         call get_shared_variable('LH1_rprof',LH1_rprof,caller='bc_set_sfree_y')
          LH1=Lambda_H1*LH1_rprof
       endif
 !
@@ -6729,15 +6728,10 @@ module Boundcond
 !
       logical, save :: lfirstcall=.true.
       logical, pointer, save, dimension (:) :: lfrozen_bb_bot, lfrozen_bb_top
-      integer :: ierr
 !
       if (lfirstcall) then
-        call get_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,ierr)
-        if (ierr/=0) call fatal_error('bc_frozen_in_bb', &
-            'there was a problem getting lfrozen_bb_bot')
-        call get_shared_variable('lfrozen_bb_top',lfrozen_bb_top,ierr)
-        if (ierr/=0) call fatal_error('bc_frozen_in_bb', &
-            'there was a problem getting lfrozen_bb_top')
+        call get_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,caller='bc_frozen_in_bb')
+        call get_shared_variable('lfrozen_bb_top',lfrozen_bb_top,caller='bc_frozen_in_bb')
       endif
 !
       select case (topbot)
@@ -6772,7 +6766,7 @@ module Boundcond
       real, dimension (:), pointer :: gravz_zpencil
 !
 !
-      call get_shared_variable ('gravz_zpencil', gravz_zpencil)
+      call get_shared_variable ('gravz_zpencil', gravz_zpencil, caller='bcz_hydrostatic_temp')
       call get_cp1 (cp_inv)
       inv_cp_cv = gamma / gamma_m1 * cp_inv
 !

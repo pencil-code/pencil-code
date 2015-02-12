@@ -708,7 +708,7 @@ module Gravity
       intent(in) :: f,p
       intent(inout) :: df
 !
-      integer :: k,ierr
+      integer :: k
       real, dimension(nx,3) :: gg
       real, dimension(nx) :: refac
       real, dimension(:,:), pointer :: reference_state
@@ -742,7 +742,7 @@ module Gravity
 ! Note that the pencil case contains always the total quantities.
 !
           if (lreference_state) then
-            call get_shared_variable('reference_state',reference_state,ierr)
+            call get_shared_variable('reference_state',reference_state,caller='duu_dt_grav')  ! shouldn't be within the mn loop
             refac=1.-reference_state(:,iref_rho)*p%rho1
             if (lgravx_gas) gg(:,1)=gg(:,1)*refac
             if (lgravy_gas) gg(:,2)=gg(:,2)*refac

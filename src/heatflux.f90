@@ -54,7 +54,6 @@ module Heatflux
   real, target, dimension (ny,nz) :: hflux_yz
 !
   real, dimension(:), pointer :: B_ext
-  integer :: ierr
   real :: tau_inv_spitzer=0.,Kspitzer_para=0.
   real :: saturation_fluxuration=0.,nu_ee,ln_unit_TT
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
@@ -96,11 +95,8 @@ contains
     real :: eps0,unit_ampere,e_charge
 !
 !  Get the external magnetic field if exists.
-    if (lmagnetic) then
-      call get_shared_variable('B_ext', B_ext, ierr)
-      if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
-          'unable to get shared variable B_ext')
-    endif
+    if (lmagnetic) &
+      call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
 !
 !  Set up some important constants
 !

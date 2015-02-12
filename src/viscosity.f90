@@ -502,18 +502,12 @@ module Viscosity
 !
       if (PrM_turb/=0.) then
         if (lmagn_mf) then
-          call get_shared_variable('etat_x',etat_x,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_x")
-          call get_shared_variable('etat_y',etat_y,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_y")
-          call get_shared_variable('etat_z',etat_z,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_z")
-          call get_shared_variable('detat_x',detat_x,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_x")
-          call get_shared_variable('detat_y',detat_y,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_y")
-          call get_shared_variable('detat_z',detat_z,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_z")
+          call get_shared_variable('etat_x',etat_x,caller='initialize_viscosity')
+          call get_shared_variable('etat_y',etat_y,caller='initialize_viscosity')
+          call get_shared_variable('etat_z',etat_z,caller='initialize_viscosity')
+          call get_shared_variable('detat_x',detat_x,caller='initialize_viscosity')
+          call get_shared_variable('detat_y',detat_y,caller='initialize_viscosity')
+          call get_shared_variable('detat_z',detat_z,caller='initialize_viscosity')
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2
             print*,ipz,z(n),etat_z(n),detat_z(n)
