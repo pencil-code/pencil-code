@@ -235,9 +235,11 @@ module Snapshot
 !  24-jun-05/tony: coded from snap reading code in run.f90
 !   5-jan-13/axel: allowed for lread_oldsnap_lnrho2rho=T
 !   8-mar-13/MR  : made f assumed-size to work properly with calls in run.f90
+!  12-feb-15/MR  : added substraction of reference state
 !
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
+      use SharedVariables, only: get_shared_variable
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
@@ -247,6 +249,7 @@ module Snapshot
       character (len=*) :: chsnap
 !
       integer :: ivar
+      real, dimension(:,:), pointer :: reference_state
 !
       if (ip<=6.and.lroot) print*,'reading var files'
 !
@@ -335,9 +338,18 @@ module Snapshot
 !
       if (lread_oldsnap_lnrho2rho) then
         print*,'convert lnrho -> rho',ilnrho,irho
-        if (irho>0) then
+        if (irho>0) &
           f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
-        endif
+      endif
+!
+      if (lsubstract_reference_state) then
+        call get_shared_variable('reference_state',reference_state,caller='rsnap')
+        do n=n1,n2
+        do m=m1,m2
+          f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-reference_state(:,iref_rho)
+          f(l1:l2,m,n,iss )=f(l1:l2,m,n,iss )-reference_state(:,iref_s)
+        enddo
+        enddo
       endif
 !
     endsubroutine rsnap

@@ -264,6 +264,7 @@ module Density
 
       lreference_state = ireference_state/='nothing'
       lfullvar_in_slices = lfullvar_in_slices.and.lreference_state
+      lsubstract_reference_state = lsubstract_reference_state.and.lreference_state
 !
 !  If density variable is actually deviation from reference state, log(density) cannot be used.
 !
@@ -666,7 +667,6 @@ module Density
 !  Get from initial condition.
 !
           call initial_condition_all(profiles=reference_state)
-          reference_state(:,iref_gs   ) = 0.
           reference_state(:,iref_d6rho) = 0.    ! yet missing
 !
         case ('file')
