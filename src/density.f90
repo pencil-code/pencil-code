@@ -3059,13 +3059,13 @@ module Density
       name=trim(slices%name)
       if (name=='rho' .or. name=='lnrho') then
 !
-        slices%yz =f(ix_loc,m1:m2,n1:n2,irho) 
-        slices%xz =f(l1:l2,iy_loc,n1:n2,irho) 
-        slices%xy =f(l1:l2,m1:m2,iz_loc,irho) 
-        slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-        if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-        if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-        if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,irho)
+        slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho) 
+        slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho) 
+        slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho) 
+        slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+        if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
+        if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+        if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,ilnrho)
 
         if (lfullvar_in_slices) then
 
