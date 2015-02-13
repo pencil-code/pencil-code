@@ -466,7 +466,6 @@ program start
 !
 !  If desired, the f array can be initialized in one call.
 !
-  !if (linitial_condition) call initial_condition_all(f,df)
   if (linitial_condition) call initial_condition_all(f)
 !
 !  If requested, write original (z-dependent) stratification to file.

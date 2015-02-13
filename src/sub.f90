@@ -2428,7 +2428,7 @@ module Sub
 !***********************************************************************
     subroutine del6fj(f,vec,k,del6f)
 !
-!  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
+!  Calculates fj*del6 (defined here as (vecx*d^6/dx^6 + vecy*d^6/dy^6 + vecz*d^6/dz^6)f )
 !  needed for hyperdissipation of a scalar (diffrho) with non-cubic cells where
 !  the coefficient depends on resolution. Returns scalar.
 !
