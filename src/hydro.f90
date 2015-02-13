@@ -563,6 +563,10 @@ module Hydro
   integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_y\right>_{z}$
 !
+!  Auxiliary variables
+!
+  real, dimension(:,:), pointer :: reference_state
+!
   interface calc_pencils_hydro
     module procedure calc_pencils_hydro_pencpar
     module procedure calc_pencils_hydro_std
@@ -909,17 +913,16 @@ module Hydro
         if (ierr/=0) call fatal_error('initialize_hydro:',&
              'failed to get lffree from density')
         if (lffree) then
-          call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_hydro:',&
-               'failed to get profx_ffree from density')
-          call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_hydro:',&
-              'failed to get profy_ffree from density')
-          call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_hydro:',&
-             'failed to get profz_ffree from density')
+          call get_shared_variable('profx_ffree',profx_ffree,caller='initialize_hydro')
+          call get_shared_variable('profy_ffree',profy_ffree,caller='initialize_hydro')
+          call get_shared_variable('profz_ffree',profz_ffree,caller='initialize_hydro')
         endif
       endif
+!
+!  Get the reference state if requested
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='initialize_hydro')
 !
       lcalc_uumeanz=lcalc_uumean                 ! for compatibility
 !
@@ -932,6 +935,7 @@ module Hydro
 ! calculates various means
 !
 !  14-oct-13/MR: outsourced from calc_lhydro_pars
+!  13-feb-15/MR: changes for use of reference_state
 !
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver
@@ -947,8 +951,6 @@ module Hydro
 !
 !  calculate averages of rho*ux and rho*uy
 !
-!AB: ldensity is now sufficient
-      !if (ldensity.or.lanelastic) then
       if (ldensity) then
         if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
           ruxm=0.
@@ -959,6 +961,7 @@ module Hydro
           do m=m1,m2
             if (ldensity_nolog) then
               rho=f(l1:l2,m,n,irho)
+              if (lreference_state) rho=rho+reference_state(:,iref_rho)
             else
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
@@ -1052,7 +1055,8 @@ module Hydro
 !  initialise velocity field ; called from start.f90
 !
 !  07-nov-01/wolf: coded
-!  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
+!  24-nov-02/tony: renamed for consistence (i.e. init_[variable name])
+!  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
       use Density, only: calc_pencils_density
@@ -1533,9 +1537,15 @@ module Hydro
             call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
             eta_sigma = (2. - qshear)*Omega
             do n=n1,n2; do m=m1,m2
-              f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* &
-                  (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
-                  sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
+              tmp = -kx_uu*ampl_uy(j)*eta_sigma* &
+                    (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
+                     sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
+              if (ldensity_nolog) then
+                f(l1:l2,m,n,irho)=exp(tmp)
+                if (lreference_state) f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) - reference_state(:,iref_rho)
+              else
+                f(l1:l2,m,n,ilnrho)=tmp
+              endif
             enddo; enddo
           endif
         case ( 'random-2D-eddies')
@@ -1619,8 +1629,10 @@ module Hydro
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/f(l1:l2,m,n,irho)
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/f(l1:l2,m,n,irho)
+            tmp=f(l1:l2,m,n,irho)
+            if (lreference_state) tmp=tmp+reference_state(:,iref_rho)
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/tmp
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/tmp
           enddo;enddo
           f(:,:,:,iuy)=0.
 !
@@ -2175,6 +2187,10 @@ module Hydro
       endif
 ! transpurho
       if (lpenc_loc(i_transpurho)) then
+        if (lreference_state) &
+          call fatal_error('calc_pencils_hydro_nonlinear:', &
+                           'weno transport not implemented with reference state')
+
         call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
         call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
         call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
@@ -2324,9 +2340,8 @@ module Hydro
 !
 ! transpurho
 !
-      if (lpenc_loc(i_transpurho)) then
+      if (lpenc_loc(i_transpurho)) &
         call fatal_error('calc_pencils_hydro_linearized:','no linearized weno transport ')
-      endif
 !
     endsubroutine calc_pencils_hydro_linearized
 !***********************************************************************
@@ -4998,6 +5013,7 @@ module Hydro
 !  15-nov-06/tobi: coded
 !  15-dec-10/MR  : added parameters indux, indrho to make routine applicable
 !                  to other velocities/densities
+!  13-feb-15/MR  : changes for use of reference_state (used for main run density only)
 !
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -5009,6 +5025,7 @@ module Hydro
       real :: fac
       real, dimension (indux:indux+2) :: rum, rum_tmp
       integer :: m,n,j,indrhol
+      logical :: lref
 !
 !  check if ldensity=T. Otherwise switch to remove_mean_flow.
 !
@@ -5016,6 +5033,7 @@ module Hydro
 !
 !  initialize mean momentum, rum, to zero
 !
+        lref=.false.
         if (present(indrho)) then
           indrhol = indrho
         else if (indux==iux) then
@@ -5025,8 +5043,12 @@ module Hydro
           else
             indrhol = ilnrho
           endif
+          lref=lreference_state
 !
         else
+!
+! for testflow
+!
           indrhol = indux+3
         endif
 !
@@ -5042,6 +5064,7 @@ module Hydro
 !
           if (ldensity_nolog) then
             rho = f(l1:l2,m,n,indrhol)
+            if (lref) rho=rho+reference_state(:,iref_rho)
           else
             rho = exp(f(l1:l2,m,n,indrhol))
           endif
@@ -5067,7 +5090,11 @@ module Hydro
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then
-            rho1 = 1.0/f(l1:l2,m,n,indrhol)
+            if (lref) then
+              rho1 = 1./(f(l1:l2,m,n,indrhol)+reference_state(:,iref_rho))
+            else
+              rho1 = 1./f(l1:l2,m,n,indrhol)
+            endif
           else
             rho1 = exp(-f(l1:l2,m,n,indrhol))
           endif
@@ -5103,7 +5130,7 @@ module Hydro
       integer,                            intent (in)    :: indux
 !
       real, dimension (nx) :: uu
-      real, dimension (indux:indux+2)  :: um, um_tmp
+      real, dimension (indux:indux+2) :: um, um_tmp
       integer :: m,n,j
       real    :: fac
 !
@@ -5154,34 +5181,23 @@ module Hydro
 !
 !  29-aug-13/pete: adapted from remove_mean_flow
 !  30-jan-15/pete: take reference state into account
+!  13-feb-15/MR  : some optimizations
 !
       use Mpicomm, only: mpiallreduce_sum
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer,                            intent (in)    :: induz
 !
-      real, dimension (nx) :: uu, rho, rsint
-      real :: um, angmom, angmom_tmp, rhosint, rhosint_tmp
-      integer :: m,n, ierr
-      real    :: fac
-      real, dimension(:,:), pointer :: reference_state
-!
-!  Get the reference state if requested
-!
-      if (lreference_state) then
-         call get_shared_variable('reference_state',reference_state,ierr)
-        if (ierr/=0) call fatal_error("remove_mean_angmom: ", &
-            "there was a problem when getting reference_state")
-      endif
+      real, dimension (nx) :: tmp, rho, wx
+      real :: um, angmom, angmom_tmp, rhosint, rhosint_tmp, fac, wmn
+      integer :: m,n
 !
 !  Initialize um and compute normalization factor fac
 !
-      um = 0.0
-      rho = 0.0
       angmom = 0.0
       rhosint = 0.0
       fac = 1./(Lxyz(1)*(cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
+      wx=x(l1:l2)*dVol_x(l1:l2)
 !
 !  Go through all pencils.
 !
@@ -5199,10 +5215,12 @@ module Hydro
           else
             rho=exp(f(l1:l2,m,n,ilnrho))
           endif
-          uu=f(l1:l2,m,n,induz)
-          rsint=x(l1:l2)*sinth(m)
-          angmom=angmom+sum(rho*rsint*uu*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
-          rhosint=rhosint+sum(rho*rsint*dVol_x(l1:l2))*dvol_y(m)*dVol_z(n)
+!
+          tmp=rho*wx
+          wmn=sinth(m)*dVol_y(m)*dVol_z(n)
+          angmom=angmom+sum(tmp*f(l1:l2,m,n,induz))*wmn
+          rhosint=rhosint+sum(tmp)*wmn
+!
         enddo
       enddo
 !
@@ -5216,11 +5234,7 @@ module Hydro
 !
 !  Go through all pencils and subtract out the excess u_phi
 !
-      do n = n1,n2
-        do m = m1,m2
-          f(l1:l2,m,n,induz) = f(l1:l2,m,n,induz) - um
-        enddo
-      enddo
+      f(l1:l2,m1:m2,n1:n2,induz) = f(l1:l2,m1:m2,n1:n2,induz) - um
 !
       if (lroot.and.ip<6) print*,'remove_mean_angmom: um=',um
 !
@@ -5682,6 +5696,7 @@ module Hydro
     endsubroutine expand_shands_hydro
 !***********************************************************************
     subroutine amp_lm(psi,psilm,rselect,p)
+
       use Sub, only: ylm
       type (pencil_case) :: p
       real,dimension(nx),intent(in):: psi,rselect
@@ -5698,6 +5713,7 @@ module Hydro
           psilm(:,imode) = psi(:)*rselect(:)*sph_har*one_by_rsqr(:)
         enddo
       enddo
+
     endsubroutine amp_lm
 !***********************************************************************
 endmodule Hydro
