@@ -1182,19 +1182,16 @@ module Particles_map
       use GhostFold,     only: fold_f
       use Particles_sub, only: get_rhopswarm
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      logical, optional :: lmapsink_opt
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+      logical, intent(in), optional :: lmapsink_opt
 !
       real, dimension(nx) :: rhop_swarm_mn
       real :: weight0, weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
       logical :: lnbody, lsink, lmapsink
-!
-      intent(in)  :: fp, ineargrid
-      intent(out) :: f
 !
 !  Possible to map sink particles by temporarily switching irhop to irhops.
 !
@@ -1430,18 +1427,15 @@ module Particles_map
       use GhostFold,     only: fold_f
       use Particles_sub, only: get_rhopswarm
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
       real, dimension(nx) :: rhop_swarm_mn
       real :: weight, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       logical :: lnbody
-!
-      intent(in)  :: fp, ineargrid
-      intent(out) :: f
 !
 !  Calculate the smooth velocity field of particles in each grid cell. Three
 !  methods are implemented for assigning a particle to the mesh (see Hockney &
