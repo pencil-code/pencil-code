@@ -295,9 +295,10 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (26), save :: iproc_comm=-1
       integer, save :: nproc_comm=0
+      integer, save :: nmig_max = 0
       integer :: dipx, dipy, dipz
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
-      integer :: nmig_leave_total, ileave_high_max
+      integer :: nmig_leave_total, nmig_left, ileave_high_max
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
 !
@@ -339,6 +340,7 @@ module Particles_mpicomm
 !
 !  Possible to iterate until all particles have migrated.
 !
+      nmig_left = 0
       lredo=.false.; lredo_all=.true.
       do while (lredo_all)
         lredo=.false.
@@ -701,6 +703,7 @@ module Particles_mpicomm
             enddo
           endif
         enddo
+        nmig_left = nmig_left + nmig_leave_total
 !
 !  Sum up processors that have not had place to let all migrating particles go.
 !
@@ -714,6 +717,14 @@ module Particles_mpicomm
 !  If sum is not zero, then the while loop will be executed once more.
 !
       enddo
+!
+!  Report maximum number of particles migrated per time step since the last report.
+!
+      nmig_max = max(nmig_max, nmig_left)
+      nmigmmax: if (ldiagnos .and. idiag_nmigmmax /= 0) then
+        call max_name(nmig_max, idiag_nmigmmax)
+        nmig_max = 0
+      endif nmigmmax
 !
     endsubroutine migrate_particles
 !***********************************************************************

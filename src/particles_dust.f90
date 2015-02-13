@@ -5217,7 +5217,7 @@ module Particles
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_epspmin=0; idiag_epspmax=0
-        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
+        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
@@ -5302,6 +5302,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'epspmax',idiag_epspmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+        call parse_name(iname,cname(iname),cform(iname),'nmigmmax',idiag_nmigmmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
         call parse_name(iname,cname(iname),cform(iname),'dvpx2m',idiag_dvpx2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpy2m',idiag_dvpy2m)

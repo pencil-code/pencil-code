@@ -44,7 +44,7 @@ module Particles_cdata
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
   integer :: inp=0, irhop=0, irhops=0
-  integer :: idiag_nmigmax=0, npart_radii=0
+  integer :: idiag_nmigmax=0, idiag_nmigmmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
   integer :: iads=0, iads_end=0
   integer :: isurf=0,isurf_end=0
