@@ -69,6 +69,7 @@ module Particles_cdata
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
   character (len=10), dimension(mparray) :: pvarname
+  character(len=labellen) :: particle_mesh = ''
 !
   type quant_interp_penc
 !

@@ -95,7 +95,7 @@ module Particles
       ldragforce_equi_global_eps, kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, &
       ky_xxp, kz_xxp, amplxxp, kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, &
       kz_vpx, kz_vpy, kz_vpz, phase_vpx, phase_vpy, phase_vpz, &
-      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
+      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, tausp_species, &
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, dustdensity_powerlaw, ldt_grav_par, &
@@ -115,8 +115,9 @@ module Particles
       ldragforce_gas_par, ldragforce_dust_par, mp_swarm, np_swarm, &
       eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
-      gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
-      tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, &
+      gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
+      tstart_dragforce_par, tstart_grav_par, &
+      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, &
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
       ldt_grav_par, lsinkpoint, rhopmat, &

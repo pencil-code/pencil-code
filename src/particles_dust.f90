@@ -146,7 +146,7 @@ module Particles
       ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, &
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
-      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
+      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lparticle_gravity,&
       tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
@@ -183,7 +183,7 @@ module Particles
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
       tstart_grav_par, tstart_grav_x_par, &
       tstart_grav_z_par, tstart_grav_r_par, lparticle_gravity, &
-      lparticlemesh_cic, lparticlemesh_tsc, taucool, &
+      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
