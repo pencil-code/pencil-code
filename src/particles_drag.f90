@@ -52,6 +52,22 @@ module Particles_drag
 !
     endsubroutine initialize_particles_drag
 !***********************************************************************
+    subroutine init_particles_drag(f, fp)
+!
+!  Set some initial conditions for the gas and the particles, if any.
+!
+!  14-feb-15/ccyang: stub.
+!
+      use General, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine init_particles_drag
+!***********************************************************************
     subroutine read_particles_drag_init_pars(unit, iostat)
 !
 !  Read initialization parameters from namelist particles_drag_init_pars.

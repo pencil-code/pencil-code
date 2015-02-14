@@ -265,6 +265,7 @@ module Particles_main
       if (lparticles_spin)          call init_particles_spin(f,fp)
       if (lparticles_temperature)   call init_particles_TT(f,fp)
       if (lparticles_mass)          call init_particles_mass(f,fp)
+      if (lparticles_drag)          call init_particles_drag(f,fp)
       if (lparticles_adsorbed)      call init_particles_ads(f,fp)
       if (lparticles_surfspec)      call init_particles_surf(f,fp)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
