@@ -21,9 +21,13 @@ module Particles_drag
 !
   include 'particles_drag.h'
 !
-!  Runtime parameters
+!  Initialization parameters
 !
   real :: taus = 0.0
+!
+  namelist /particles_drag_init_pars/ taus
+!
+!  Runtime parameters
 !
   namelist /particles_drag_run_pars/ taus
 !
@@ -47,6 +51,41 @@ module Particles_drag
 !  14-dec-14/ccyang: coded.
 !
     endsubroutine initialize_particles_drag
+!***********************************************************************
+    subroutine read_particles_drag_init_pars(unit, iostat)
+!
+!  Read initialization parameters from namelist particles_drag_init_pars.
+!
+!  14-feb-15/ccyang: coded.
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      integer :: stat
+!
+      read(unit, NML=particles_drag_init_pars, IOSTAT=stat)
+      if (present(iostat)) then
+        iostat = stat
+      else if (stat /= 0) then
+        call fatal_error('read_particles_drag_init_pars', 'cannot read particles_drag_init_pars. ')
+      endif
+!
+    endsubroutine read_particles_drag_init_pars
+!***********************************************************************
+    subroutine write_particles_drag_init_pars(unit)
+!
+!  Write initialization parameters to namelist particles_drag_init_pars.
+!
+!  14-feb-15/ccyang: coded.
+!
+      integer, intent(in) :: unit
+!
+      integer :: stat
+!
+      write(unit, NML=particles_drag_init_pars, IOSTAT=stat)
+      if (stat /= 0) call fatal_error('write_particles_drag_init_pars', 'cannot write particles_drag_init_pars. ')
+!
+    endsubroutine write_particles_drag_init_pars
 !***********************************************************************
     subroutine read_particles_drag_run_pars(unit, iostat)
 !

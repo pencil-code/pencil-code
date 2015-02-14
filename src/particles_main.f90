@@ -1044,6 +1044,16 @@ module Particles_main
         endif
       endif
 !
+      drag: if (lparticles_drag) then
+        call read_particles_drag_init_pars(unit, iostat)
+        soft: if (present(iostat)) then
+          err: if (iostat /= 0) then
+            call samplepar_startpars('read_particles_drag_init_pars', iostat)
+            return
+          endif err
+        endif soft
+      endif drag
+!
       if (lparticles_temperature) then
         call read_particles_TT_init_pars(unit,iostat)
         if (present(iostat)) then
@@ -1152,6 +1162,8 @@ module Particles_main
             print*,'&particles_stalker_init_pars/'
         if (lparticles_mass) &
             print*,'&particles_mass_init_pars/'
+        if (lparticles_drag) &
+            print*,'&particles_drag_init_pars    /'
         if (lparticles_temperature) &
             print*,'&particles_TT_init_pars/'
         if (lparticles_adsorbed) &
@@ -1189,6 +1201,7 @@ module Particles_main
       if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
+      if (lparticles_drag)        call write_particles_drag_init_pars(unit)
       if (lparticles_temperature) call write_particles_TT_init_pars(unit)
       if (lparticles_adsorbed)    call write_particles_ads_init_pars(unit)
       if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
