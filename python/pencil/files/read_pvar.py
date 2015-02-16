@@ -5,6 +5,7 @@ import numpy as np
 import pylab as pyl
 import mathgl as mgl
 import math as math
+import scipy.stats as stats
 
 from npfile import npfile
 import os
@@ -12,21 +13,45 @@ import sys
 from mpl_toolkits.mplot3d import axes3d as p3
 import mayavi.mlab as mlab
 
-testarray = np.array([np.arange(27)])
+def read_pvar(*args, **kwargs):
+	""" read pvar files from pencil code. if proc is not provided
+		read all processors, if proc is provided read pvar.dat of 
+		specified processor.
+		
+		Parameters:
+			varfile=''
+			datadir='data/'
+			proc=-1
+			casedir='.'
+	"""
+	return pcpvar(*args, **kwargs)
 
-np.set_printoptions(threshold='nan')
-
-class pcpvar:
+class pcpvar(object):
 		"""
 		a class to hold the pvar data
 		"""
-		def __init__(self,header,npar_loc,ipar,npar_data,footer):
-			self.ipar=ipar
-			self.npar_data=npar_data
-			self.header = header
-			self.npar_loc = npar_loc
-#			self.stuff = stuff
-			self.footer = footer
+		def __init__(self,varfile='',casedir='.',datadir='/data',proc=-1):
+			print 'i wont do nothing'
+			keys,places=get_pvarnames(casedir=casedir,datadir=datadir)
+			for i in places:
+				setattr(self,keys[int(i)-1],int(i)-1)
+			if (proc==-1):
+				procdirs = filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir))
+				nprocs=len(procdirs)
+				ipars,pvars = collect_class_pdata(casedir=casedir,datadir=datadir,nprocs=nprocs)
+			else:
+				ipars,pvars = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=proc)
+			
+			setattr(self,'ipars',ipars)
+			for i in places:
+				setattr(self,keys[int(i)-1][1:],pvars[int(i)-1,:])
+				
+				
+				
+				
+				
+				
+			
 			
 			
 def read_npar_loc(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
@@ -153,6 +178,37 @@ def plot_parts_full(datadir='/data'):
 	#ax = fig.gca(projection='3d')
 	#plot = ax.plot(part_pos[0,:],part_pos[1,:],part_pos[2,:],'.')
 #	mlab.points3d(part_pos[0,:],part_pos[1,:],part_pos[2,:])
+
+def test_it(cut=1):
+	poss = collect_all_part_pos(cut=cut)
+	poss = np.array(poss)
+	test = make_kde(poss,poss.T)
+
+def collect_all_part_pos(datadir='/data',cut=1):
+	
+	dummy,part_pos = collect_pdata(datadir=datadir)
+	values=[list(part_pos[0,:]),list(part_pos[1,:]),list(part_pos[2,:])]
+	values = np.array(values)
+	values = values[:,0::cut]
+	return values
+	
+def make_kde(values,data):
+	kde = stats.gaussian_kde(values)
+
+# Create a regular 3D grid with 50 points in each dimension
+	xmin, ymin, zmin = data.min(axis=0)
+	xmax, ymax, zmax = data.max(axis=0)
+	xi, yi, zi = np.mgrid[xmin:xmax:50j, ymin:ymax:50j, zmin:zmax:50j]
+
+# Evaluate the KDE on a regular grid...
+	coords = np.vstack([item.ravel() for item in [xi, yi, zi]])
+	density = kde(coords).reshape(xi.shape)
+
+# Visualize the density estimate as isosurfaces
+	mlab.contour3d(xi, yi, zi, density, opacity=0.5)
+	mlab.axes()
+	mlab.show()
+	
 	
 
 def plot_hist(cell_array):
@@ -178,6 +234,14 @@ def plot_isosurf(datadir='/data',blocklength=2,surfaces=[1.0],smooth=False,smoot
                             plane_orientation='z_axes',
                             slice_index=10,
                         )
+	mlab.show()
+	
+def plot_var_isosurf():
+	test = pc.read_var()
+	scalar = np.array(test.lncc)
+	src = mlab.pipeline.scalar_field(scalar)
+	avg = test.lncc.mean()
+	mlab.pipeline.iso_surface(src,contours=[avg],opacity=0.7)
 	mlab.show()
 
 
@@ -258,45 +322,69 @@ def read_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
 	ipar = np.squeeze(p_data['ipar'])
 	part_pos = np.array([partpars[0,:],partpars[1,:],partpars[2,:]])
 	return ipar,part_pos
-	
-def smoothTriangle(data,degree,dropVals=False):
-        """performs moving triangle smoothing with a variable degree."""
-        """note that if dropVals is False, output length will be identical
-        to input length, but with copies of data at the flanking regions"""
-        triangle=np.array(range(degree)+[degree]+range(degree)[::-1])+1
-        smoothed=[]
-        for i in range(degree,len(data)-degree*2):
-                point=data[i:i+len(triangle)]*triangle
-                smoothed.append(sum(point)/sum(triangle))
-        if dropVals: return smoothed
-        smoothed=[smoothed[0]]*(degree+degree/2)+smoothed
-        while len(smoothed)<len(data):smoothed.append(smoothed[-1])
-        return smoothed
 
-def trid_smooth(cell_array,nx,ny,nz,smoothing=5):
-#  smoothing along the x-axis
-	arrayx = smoothTriangle(cell_array,smoothing,dropVals=False)
-#  assembling the scalar field and swapping x with y axis
-	arrayy = np.reshape(cell_array,(nx,ny,nz))
-	arrayy = np.swapaxes(arrayy,0,1)
-	arrayy = np.reshape(arrayy,(nx*ny*nz))
-#  smoothing along y axis
-	arrayy = smoothTriangle(arrayy,smoothing,dropVals=False)
-	arrayy = np.reshape(arrayy,(ny,nx,nz))
-	arrayy = np.swapaxes(arrayy,0,1)
-	arrayy = np.reshape(arrayy,(nx*ny*nz))
-#  reassembling and swapping first axis (y) with z axis
-	arrayz = np.reshape(cell_array,(nx,ny,nz))
-	arrayz = np.swapaxes(arrayz,0,2)
-	arrayz = np.reshape(arrayz,(nx*ny*nz))
-#  smoothing along z axis
-	arrayz = smoothTriangle(arrayz,smoothing,dropVals=False)
-#  reassembling
-	arrayz = np.reshape(arrayz,(nz,ny,nx))
-	arrayz = np.swapaxes(arrayz,0,2)
-	arrayz = np.reshape(arrayz,(nx*ny*nz))
-	target = (arrayx[:]+arrayy[:]+arrayz[:])/3.
-	return target
+def get_pvarnames(casedir='.',datadir='/data'):
+	with open(casedir+datadir+'/pvarname.dat') as file:
+		lines = [line.rstrip('\n') for line in file]
+	keys = []
+	places = []
+	for line in lines:
+		place, key = tuple(line.split())
+		keys.append(key)
+		places.append(place)
+	return keys,places
+
+def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
+	
+	dims = pc.read_dim(casedir+datadir,proc)
+	pdims = pc.read_pdim(casedir+datadir)
+	npar_loc = read_npar_loc(casedir=casedir,datadir=datadir,pfile=pfile,proc=proc)
+#	print npar_loc,' particles on processor: ',proc
+	mvars = pdims.mpaux+pdims.mpvar
+	ltot = npar_loc*mvars
+
+	array_shape= np.dtype([('header','<i4'),
+							('npar_loc','<i4'),
+							('footer','<i4'),
+							('header2','<i4'),
+							('ipar','<i4',npar_loc),
+							('footer2','<i4'),
+							('header3','<i4'),
+							('fp','<f8',ltot),
+							('footer3','<i4'),
+							('header4','<i4'),
+							('t','<f8'),
+							('x','<f8',dims.mx),
+							('y','<f8',dims.my),
+							('z','<f8',dims.mz),
+							('dx','<f8'),
+							('dy','<f8'),
+							('dz','<f8'),
+							('footer4','<i4')])
+	
+	p_data = np.fromfile(casedir+datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_shape)
+	partpars = np.array(p_data['fp'].reshape(mvars,npar_loc))
+	ipar = np.squeeze(p_data['ipar'])
+	return ipar,partpars
+	
+def collect_class_pdata(casedir='.',datadir='/data',nprocs='0'):
+	if (nprocs==0):
+		print "this should be greater than zero"
+	else:
+		procs=range(nprocs)
+	
+	for i in procs:
+		dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=i)
+		if i == 0:
+			ipars = dom_ipar
+			pvars = dom_pvar
+		else:
+			ipars = np.hstack((ipars,dom_ipar))
+			pvars = np.hstack((pvars,dom_pvar))
+
+	return ipars,pvars
+	
+
 	
 	
 
