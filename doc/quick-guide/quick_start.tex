@@ -210,9 +210,9 @@ If you miss some physical quantities, you might want to extend the two IDL routi
 
 \subsubsection{Command-line based and scripting}
 Several \verb|idl|-procedures have been written
-(you can find them in \verb|pencil-code/idl| ) to facilitate inspecting the data
-(which can be found in raw format in \verb|jeans-x/data| directory).  For
-example, let us inspect the time series data
+(see in \verb|pencil-code/idl| ) to facilitate inspecting the data
+that can be found in raw format in \verb|jeans-x/data| directory.
+For example, let us inspect the time series data
 \begin{verbatim}
 IDL> pc_read_ts, obj=ts
 \end{verbatim}
@@ -249,6 +249,21 @@ The logarithm of the density can be inspected by using a GUI:
 IDL> cslice, ff.lnrho
 \end{verbatim}
 
+Of course, for scripting one might use any quantity from the \verb|ff| structure, like calculating the average density:
+\begin{verbatim}
+IDL> print, mean(exp(ff.lnrho))
+\end{verbatim}
+
+Also one should check the documentation inside:
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+  \verb|pencil-code/idl/read/pc_read_var_raw.pro| & efficient reading of raw data\\\hline
+  \verb|pencil-code/idl/read/pc_read_subvol_raw.pro| & reading of sub-volumes\\\hline
+  \verb|pencil-code/idl/pc_get_quantity.pro| & compute physical quantities out of raw data\\\hline
+\end{tabular}
+\end{center}
+in order to read data efficiently and compute quantities in physical units.
+
 
 \subsection{Python visualization (optional)}
 \subsubsection{Python module requirements}
@@ -264,9 +279,9 @@ import pencil as pc
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-\verb|pc.read_ts| & read \verb|time_series.dat| file. Parameters are added as members of the class. \\\hline
-\verb|pc.read_slices| & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time). \\\hline
-\verb|pc.animate_interactive| & assemble a 2D animation from a 3D array. \\\hline
+\verb|pc.read_ts| & read \verb|time_series.dat| file. Parameters are added as members of the class\\\hline
+\verb|pc.read_slices| & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
+\verb|pc.animate_interactive| & assemble a 2D animation from a 3D array\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
