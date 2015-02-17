@@ -57,14 +57,12 @@ svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code
 
 The downloaded \verb|pencil-code| directory contains several sub-directories
 \begin{enumerate}
-  \item \verb|doc|: a very important directory containing the pencil-code
-    \verb|manual.tex|. The pdf of the latest version of the manual is created
-    simply by typing \verb|make| in the \verb|pencil-code/doc| directory. For
-    example, the code structure can be further explored in Section 4 of the
-    manual.
+  \item \verb|doc|: you may build the latest manual as PDF by issuing the command \verb|make| inside this directory
   \item \verb|samples|: contains many sample problems
   \item \verb|config|: has all the configuration files
-  \item \dots
+  \item \verb|src|: the actual source code
+  \item \verb|bin| and \verb|lib|: supplemental scripts
+  \item \verb|idl|, \verb|python|, \verb|julia|, etc.: data processing for diverse languages
 \end{enumerate}
 
 
@@ -201,8 +199,7 @@ It is time to run the code with --- be sure you have an empty \verb|data| direct
 Welcome to the world of Pencil Code! Visualizing the output can be done with \verb|IDL| or \verb|Python|, see below.
 
 \subsection{IDL visualization (optional)}
-% The goal of this section is to demonstrate the general work flow with a very
-% simple example.
+% The goal of this section is to demonstrate the general work flow with a very simple example.
 
 \subsubsection{GUI-based visualization}
 The most simple approach to visualize a cartesian grid setup is to run the Pencil Code GUI and to select the files and physical quantities you want to see:
@@ -253,37 +250,17 @@ IDL> plot, ff.lnrho
 % TODO Include screen shot
 
 
-\subsection{Setting up Python for data processing (optional)}
-\subsubsection{Python modules requirements}
-The basic needed modules are: numpy and matplotlib.
-\begin{itemize}
-  \item numpy: all array definitions and operations.
-  \item matplotlib: plotting.
-\end{itemize}
+\subsection{Python visualization (optional)}
+\subsubsection{Python module requirements}
+For this example we use the modules: \verb|numpy| and \verb|matplotlib|.
 
-Other really useful modules are: ipython and scipy.
+\subsubsection{Using the 'pencil' module}
+After executing the \verb|sourceme.sh| script (see above), you should be able to import the \verb|pencil| module:
 
-\begin{itemize}
-  \item ipython: enhanced python interpreter.
-  \item scipy: science functions and utilities.
-\end{itemize}
-
-
-\subsubsection{Installation}
-Untar the \texttt{tar.gz} file or go to the directory and simple type as root or sudoed:
-\begin{verbatim}
-python setup.py install
-\end{verbatim}
-For a user installation (no root permission):
-\begin{verbatim}
-python setup.py install --user
-\end{verbatim}
-
-\subsubsection{Using the Pencil module}
-Import the module:
 \begin{verbatim}
 import pencil as pc
 \end{verbatim}
+
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
@@ -297,9 +274,10 @@ Some useful functions:
 \end{center}
 
 
-\section{Another example: helically forced turbulence}
-
-\input{example2}
+% This is out of the scope of a "quick start" quide.
+% One might better implement this as an "highlight" on the website:
+% \section{Another example: helically forced turbulence}
+% \input{example2}
 
 
 \end{document}
