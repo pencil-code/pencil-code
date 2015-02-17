@@ -222,32 +222,32 @@ IDL> print, tag_names(ts)
 IT T UMAX RHOMAX
 \end{verbatim}
 The diagnostic \verb|UMAX|, the maximal velocity, is available since it was set
-in \verb|jeans-x/print.in| (more on diagnostic output can be found in section
-$5.4$ in the manual).  We can now plot the evolution of the maximal velocity in
-time
+in \verb|jeans-x/print.in|. Please check manual for more information.
+
+We can now plot the evolution of the maximal velocity after the initial perturbation we inserted in \verb|start.in|:
 \begin{verbatim}
 IDL> plot, ts.t, alog(ts.umax)
 \end{verbatim}
-after the initial perturbation we inserted in \verb|start.in|.
 % TODO Include screen shot
 
-The complete state of the simulation, a snapshot, is saved (as
-\verb|jeans-x/data/proc0/VAR$\dots|@, every \verb|dsnap|
-time units
-(see \verb|jeans-x/run.in|). These states can be inspected, for example
+The complete state of the simulation is saved as snapshots in
+\verb|jeans-x/data/proc0/VAR*| every \verb|dsnap| time units,
+as defined in \verb|jeans-x/run.in|.
+These states are loaded with, for example:
 \begin{verbatim}
 IDL> pc_read_var, obj=ff, ivar=1, /trimall
 \end{verbatim}
-Similarly \verb|tag_names| will provide us with the available variables, 
+
+Similarly \verb|tag_names| will provide us with the available variables:
 \begin{verbatim}
 IDL> print, tag_names(ff)
 T X Y Z DX DY DZ UU LNRHO POTSELF
 \end{verbatim}
-so the logarithm of the density in the simulated domain can be inspected by
+
+The logarithm of the density can be inspected by using a GUI:
 \begin{verbatim}
-IDL> plot, ff.lnrho
+IDL> cslice, ff.lnrho
 \end{verbatim}
-% TODO Include screen shot
 
 
 \subsection{Python visualization (optional)}
