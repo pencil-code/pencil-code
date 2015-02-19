@@ -175,6 +175,8 @@ module Forcing
 !
 !  25-sep-2014/MR: determine n_forcing_cont according to the actual selection
 !  23-jan-2015/MR: reference state now fetched here and stored in module variable
+!  15-feb-2015/MR: returning before entering continuous forcing section when
+!                  no such forcing is requested
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -603,6 +605,13 @@ module Forcing
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
 
       if (lstart) return
+!
+!  Get reference_state. Requires that density is initialized before forcing.
+!
+      if (lreference_state) &
+          call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
+
+      if (.not.lforcing_cont) return
       
       do i=1,n_forcing_cont_max
         if ( iforcing_cont(i)=='nothing' ) then
@@ -710,15 +719,8 @@ print*,'NS: z_center=',z_center_fcont
 !AB: this wasn't doing anything, so we might as well skip it
         endif
       enddo
-      if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
-!
-!  Get reference_state. Requires that density is initialized before forcing.
-!
-      if (lreference_state) then
-          call get_shared_variable('reference_state',reference_state,ierr)
-          if (ierr/=0) call fatal_error('initialize_forcing:',&
-               'failed to get reference_state from density')
-      endif
+      if (lroot .and. n_forcing_cont==0) &
+        call warning('forcing','no valid continuous iforcing_cont specified')
 !
     endsubroutine initialize_forcing
 !***********************************************************************
