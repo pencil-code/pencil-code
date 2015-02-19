@@ -5,6 +5,7 @@
 !
 module Register
 !
+  use Cdata
   use Messages
 !
   implicit none
@@ -25,7 +26,6 @@ module Register
 !
 !  6-nov-01/wolf: coded
 !
-      use Cdata
       use General,          only: setup_mm_nn
       use Io,               only: register_io
       use Mpicomm,          only: stop_it
@@ -331,13 +331,7 @@ module Register
 !
 !  print summary of variable names
 !
-      if (lroot) then
-        open(3,file=trim(datadir)//'/varname.dat',status='replace')
-        do ivar=1,nvar
-          write(3,"(i4,2x,a)") ivar,varname(ivar)
-        enddo
-        close(3)
-      endif
+      call write_varname()
 !
 !  Coordinate-related issues, initialize specific grid variables
 !
@@ -1126,5 +1120,34 @@ module Register
       endif
 !
     endsubroutine rprint_general
+!***********************************************************************
+!***********************************************************************
+! LOCAL SUBROUTINES START BELOW HERE.
+!***********************************************************************
+!***********************************************************************
+    subroutine write_varname()
+!
+!  Writes varname to file varname.dat.
+!
+!  19-feb-15/ccyang: coded.
+!
+      integer, parameter :: unit = 3
+      integer :: ivar
+!
+      root: if (lroot) then
+        open(unit, file=trim(datadir)//'/varname.dat', status='replace')
+        10 format (i4, 2x, a)
+        do ivar = 1, nvar
+          write(unit,10) ivar, varname(ivar)
+        enddo
+        aux: if (lwrite_aux) then
+          do ivar = nvar + 1, nvar + naux
+            write(unit,10) ivar, varname(ivar)
+          enddo
+        endif aux
+        close(unit)
+      endif root
+!
+    endsubroutine write_varname
 !***********************************************************************
 endmodule Register
