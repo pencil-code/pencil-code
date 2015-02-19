@@ -112,6 +112,7 @@ module Hydro
   logical :: lscale_tobox=.true.
   logical, target :: lpressuregradient_gas=.true.
   logical, target :: lcoriolis_force=.true.
+  logical         :: lshear_in_coriolis=.false.
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
@@ -210,7 +211,7 @@ module Hydro
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
-      uzjet, ydampint, ydampext, mean_momentum
+      uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -708,7 +709,7 @@ module Hydro
         endif
       endif
 !
-!  defining a r-depend profile for Omega. The coriolis force will be suppressed
+!  defining a r-depend profile for Omega. The Coriolis force will be suppressed
 !  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
 !  choose a negativ w_omega.
 !
@@ -799,6 +800,8 @@ module Hydro
         if (ierr/=0) call fatal_error('register_hydro',&
             'there was a problem sharing lcentrifugal_force')
       endif
+!
+      lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
 !  Compute mask for x-averaging where x is in hydro_xaver_range.
 !  Normalize such that the average over the full domain
@@ -3438,6 +3441,7 @@ module Hydro
 !  Coriolis terms for cartesian geometry.
 !
 !  30-oct-09/MR: outsourced, parameter velind added
+!  15-feb-15/MR: calculation of Coriolis force of shear flow added
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3),          intent(in)  :: uu
@@ -3495,6 +3499,12 @@ module Hydro
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           -s2*uu(:,2)
 !
+!  Add -2 \Omega \times U^shear, if requested.
+!
+          if (lshear_in_coriolis) then 
+            df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*Sshear*x(l1:l2)
+            df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)-s2*Sshear*x(l1:l2)
+          endif
         endif
 !
       endif
