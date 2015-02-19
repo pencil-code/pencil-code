@@ -256,10 +256,17 @@ module Density
 !
       if (ldensity_nolog.and.lupw_lnrho) then
         lupw_rho=.true.
-        call warning('initialize_density','enabled upwinding for linear density')
+        if (lroot) &
+          call warning('initialize_density','enabled upwinding for linear density')
       elseif (.not.ldensity_nolog.and.lupw_rho) then
         lupw_lnrho=.true.
-        call warning('initialize_density','enabled upwinding for log density')
+        if (lroot) &
+          call warning('initialize_density','enabled upwinding for log density')
+      endif
+!
+      if (.not.ldensity_nolog.and.lweno_transport) then
+        lweno_transport=.false.
+        call warning('initialize_density','disabled WENO transport for log density')
       endif
 
       lreference_state = ireference_state/='nothing'
@@ -1829,6 +1836,8 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density.
 !  21-jan-15/MR: changes for use of reference state.
 !  22-jan-15/MR: removed unneeded get_shared_variable('reference_state,...
+!  19-jan-15/MR: adapted weno transport for use with reference state. 
+!                suppressed weno for log density
 !
       use WENO_transport
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
@@ -1890,10 +1899,14 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 ! transprho
-! reference state not yet considered!
-!
-      if (lpencil(i_transprho)) &
+      if (lpencil(i_transprho)) then
+        if (lreference_state) then
+          call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1, &
+                           reference_state(:,iref_rho))
+        else
           call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
+        endif
+      endif
 !
     endsubroutine calc_pencils_linear_density
 !***********************************************************************
@@ -1960,9 +1973,6 @@ module Density
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
-! transprho
-      if (lpencil(i_transprho)) &
-          call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
 !
     endsubroutine calc_pencils_log_density
 !***********************************************************************
