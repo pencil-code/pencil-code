@@ -19,11 +19,11 @@ module WENO_transport
   public :: weno_transp
 !
   integer, parameter :: nw=3
-  real, allocatable, dimension(:,:) :: f, df
+  real, allocatable, dimension(:,:) :: f, df    ! Why module variables?
 !
   contains
 !***********************************************************************
-    subroutine weno_transp(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1)
+    subroutine weno_transp(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1,ref,ref1)
 !
 !  Solve the equation dq/dt + div(u*q) = 0 using the WENO method.
 !
@@ -34,26 +34,31 @@ module WENO_transport
       integer, intent(in) :: iq, iq1, iux, iuy, iuz
       real, dimension(:), intent(out) :: dq
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
+      real, dimension(:), optional, intent(in) :: ref,ref1
 !
-      call weno5(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1)
+      call weno5(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1,ref,ref1)
 !
     endsubroutine weno_transp
 !***********************************************************************
-    subroutine weno5(fq,m,n,iq,iq1,iux,iuy,iuz,dq_out,dx_1,dy_1,dz_1)
+    subroutine weno5(fq,m,n,iq,iq1,iux,iuy,iuz,dq_out,dx_1,dy_1,dz_1,ref,ref1)
 !
 !  Fifth order implementation of WENO scheme. This wrapper takes care of all
 !  three directions.
 !
 !  29-dec-09/evghenii: coded
+!  19-feb-15/MR: adapted to use of reference state; for x direction ghost
+!                values of it still missing
 !
       real, dimension(:,:,:,:), intent(in ) :: fq
       integer, intent(in) :: m, n
       integer, intent(in) :: iq, iq1, iux, iuy, iuz
       real, dimension(:), intent(out) :: dq_out
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
+      real, dimension(:), optional, intent(in) :: ref,ref1
 !
-      real, allocatable, dimension(:) :: vsig, dq, fl, fr
-      integer :: i, mx, my, mz, nghost
+      real, dimension(size(fq,1)) :: vsig, dq, fl, fr, tmp
+      integer :: i, mx, nghost
+      logical :: lref,lref1
 !
 !  Possible to multiply transported variable by another variables, e.g. to
 !  transport the momentum rho*u.
@@ -63,22 +68,17 @@ module WENO_transport
         STOP
       endif
 !
+      lref=present(ref); lref1=present(ref1)
+!
 !  Educated guess at grid dimensions.
 !
-      mx=size(fq(:,1,1,iq))
-      my=size(fq(1,:,1,iq))
-      mz=size(fq(1,1,:,iq))
+      mx=size(fq,1)
+      nghost=(mx-size(dq_out))/2
 !
 !  Allocate arrays.
 !
-      if (.not. allocated(vsig)) allocate(vsig(mx))
-      if (.not. allocated(dq))   allocate(dq  (mx))
-      if (.not. allocated(fl))   allocate(fl(mx))
-      if (.not. allocated(fr))   allocate(fr(mx))
-      if (.not. allocated(f))    allocate( f  (-nw:nw,mx))
-      if (.not. allocated(df))   allocate(df  (-nw:nw,mx))
-!
-      dq(:)=0.0
+      if (.not. allocated(f))  allocate( f(-nw:nw,mx))
+      if (.not. allocated(df)) allocate(df(-nw:nw,mx))
 !
 !  WENO transport in x-direction.
 !
@@ -88,13 +88,19 @@ module WENO_transport
           cshift(vsig,+1), cshift(vsig,+2), cshift(vsig,+3))
 !
       do i=-nw-1+1,nw-1
-        if (iq1<0) then
-          df(i+1,:)=vsig                   *cshift(fq(:,m,n,iq),i)
-          f (i+1,:)=cshift(fq(:,m,n,iux),i)*cshift(fq(:,m,n,iq),i)
-        else
-          df(i+1,:)=vsig                   *cshift(fq(:,m,n,iq)*fq(:,m,n,iq1),i)
-          f (i+1,:)=cshift(fq(:,m,n,iux),i)*cshift(fq(:,m,n,iq)*fq(:,m,n,iq1),i)
+
+        tmp = fq(:,m,n,iq)
+        if (lref) tmp(nghost+1:mx-nghost)=tmp(nghost+1:mx-nghost)+ref  ! ghost zones not corrected!
+
+        if (iq1>0) then
+          fr = fq(:,m,n,iq1)
+          if (lref1) fr(nghost+1:mx-nghost) = fr(nghost+1:mx-nghost) + ref1
+          tmp=tmp*fr
         endif
+ 
+        df(i+1,:)=vsig                   *cshift(tmp,i)
+        f (i+1,:)=cshift(fq(:,m,n,iux),i)*cshift(tmp,i)
+
       enddo
 !
       call weno5_1d(fl)
@@ -114,13 +120,19 @@ module WENO_transport
 !  Left fluxes.
 !
       do i=-nw-1+1,nw-1
-        if (iq1<0) then
-          df(i+1,:)=vsig           *fq(:,m+i,n,iq)
-          f (i+1,:)=fq(:,m+i,n,iuy)*fq(:,m+i,n,iq)
-        else
-          df(i+1,:)=vsig           *fq(:,m+i,n,iq)*fq(:,m+i,n,iq1)
-          f (i+1,:)=fq(:,m+i,n,iuy)*fq(:,m+i,n,iq)*fq(:,m+i,n,iq1)
+
+        tmp = fq(:,m+i,n,iq)
+        if (lref) tmp(nghost+1:mx-nghost)=tmp(nghost+1:mx-nghost)+ref
+
+        if (iq1>0) then
+          fr = fq(:,m+i,n,iq1)
+          if (lref1) fr(nghost+1:mx-nghost) = fr(nghost+1:mx-nghost) + ref1
+          tmp=tmp*fr
         endif
+ 
+        df(i+1,:)=vsig           *tmp
+        f (i+1,:)=fq(:,m+i,n,iuy)*tmp
+
       enddo
 !
       call weno5_1d(fl)
@@ -128,13 +140,19 @@ module WENO_transport
 !  Right fluxes.
 !
       do i=-nw-1+1,nw-1
-        if (iq1<0) then
-          df(i+1,:)=vsig             *fq(:,m+i+1,n,iq)
-          f (i+1,:)=fq(:,m+i+1,n,iuy)*fq(:,m+i+1,n,iq)
-        else
-          df(i+1,:)=vsig             *fq(:,m+i+1,n,iq)*fq(:,m+i+1,n,iq1)
-          f (i+1,:)=fq(:,m+i+1,n,iuy)*fq(:,m+i+1,n,iq)*fq(:,m+i+1,n,iq1)
+
+        tmp = fq(:,m+i+1,n,iq)
+        if (lref) tmp(nghost+1:mx-nghost)=tmp(nghost+1:mx-nghost)+ref
+
+        if (iq1>0) then
+          fr=fq(:,m+i+1,n,iq1)
+          if (lref1) fr(nghost+1:mx-nghost) = fr(nghost+1:mx-nghost) + ref1
+          tmp=tmp*fr
         endif
+ 
+        df(i+1,:)=vsig             *tmp
+        f (i+1,:)=fq(:,m+i+1,n,iuy)*tmp
+
       enddo
 !
       call weno5_1d(fr)
@@ -151,13 +169,19 @@ module WENO_transport
           abs(fq(:,m,n+1,iuz)), abs(fq(:,m,n+2,iuz)), abs(fq(:,m,n+3,iuz)) )
 !
       do i=-nw-1+1,nw-1
-        if (iq1<0) then
-          df(i+1,:)=vsig           *fq(:,m,n+i,iq)
-          f (i+1,:)=fq(:,m,n+i,iuz)*fq(:,m,n+i,iq)
-        else
-          df(i+1,:)=vsig           *fq(:,m,n+i,iq)*fq(:,m,n+i,iq1)
-          f (i+1,:)=fq(:,m,n+i,iuz)*fq(:,m,n+i,iq)*fq(:,m,n+i,iq1)
+
+        tmp = fq(:,m,n+i,iq)
+        if (lref) tmp(nghost+1:mx-nghost)=tmp(nghost+1:mx-nghost)+ref
+
+        if (iq1>0) then
+          fr=fq(:,m,n+i,iq1)
+          if (lref1) fr(nghost+1:mx-nghost) = fr(nghost+1:mx-nghost) + ref1
+          tmp=tmp*fr
         endif
+
+        df(i+1,:)=vsig           *tmp
+        f (i+1,:)=fq(:,m,n+i,iuz)*tmp
+
       enddo
 !
 !      dl_1=dz_1(n)
@@ -165,17 +189,11 @@ module WENO_transport
 !
 !  Return transport pencil without ghost cells.
 !
-      nghost=(mx-size(dq_out))/2
       dq_out(:)=dq(nghost+1:mx-nghost)
 !
 !  Deallocate arrays.
 !
-      if (allocated(vsig)) deallocate(vsig)
-      if (allocated(dq))   deallocate(dq)
-      if (allocated(fl))   deallocate(fl)
-      if (allocated(fr))   deallocate(fr)
-      if (allocated(f))    deallocate(f)
-      if (allocated(df))   deallocate(df)
+      deallocate(f,df)
 !
     endsubroutine weno5
 !***********************************************************************

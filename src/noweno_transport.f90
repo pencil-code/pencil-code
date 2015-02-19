@@ -13,7 +13,7 @@ module WENO_transport
 !
   contains
 !***********************************************************************
-    subroutine weno_transp(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1)
+    subroutine weno_transp(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1,ref,ref1)
 !
 !  Solve the equation dq/dt + div(u*q) = 0 using the WENO method.
 !
@@ -26,6 +26,7 @@ module WENO_transport
       integer, intent(in) :: iq, iq1, iux, iuy, iuz
       real, dimension(:), intent(out) :: dq
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
+      real, dimension(:), optional, intent(in) :: ref,ref1
 !
       dq = impossible
 !

@@ -2030,6 +2030,7 @@ module Hydro
 !  20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
 !                    for which pencils are calculated, default: all
 !  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc
+!  19-feb-15/MR    : adapted weno transport to use of reference state
 !
       use Deriv
       use Sub
@@ -2190,13 +2191,18 @@ module Hydro
       endif
 ! transpurho
       if (lpenc_loc(i_transpurho)) then
-        if (lreference_state) &
-          call fatal_error('calc_pencils_hydro_nonlinear:', &
-                           'weno transport not implemented with reference state')
-
-        call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
-        call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
-        call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
+        if (lreference_state) then
+          call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1, &
+                           ref1=reference_state(:,iref_rho))
+          call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1, &
+                           ref1=reference_state(:,iref_rho))
+          call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1, &
+                           ref1=reference_state(:,iref_rho))
+        else
+          call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
+          call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
+          call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
+        endif
       endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
