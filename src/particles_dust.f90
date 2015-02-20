@@ -1896,7 +1896,7 @@ module Particles
       dzp=Lxyz_loc(3)/npar_loc_z
       do i=1,npar_loc_x
         i1=(i-1)*npar_loc_z+1; i2=i*npar_loc_z
-        fp(i1:i2,ixp)=mod(i*dxp,Lxyz_loc(1))+dxp/2
+        fp(i1:i2,ixp) = xyz0_loc(1) + (real(i) - 0.5) * dxp
         do j=i1,i2
           fp(j,izp)=xyz0_loc(3)+dzp/2+(j-i1)*dzp
         enddo
