@@ -420,6 +420,28 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
     return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
+def time_series(datadir='./data'):
+    """Returns a NumPy recarray from the time series.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory
+    """
+    # Chao-Chin Yang, 2013-05-13
+    from numpy import recfromtxt
+    from io import BytesIO
+    # Save the data path.
+    path = datadir.strip()
+    # Read legend.dat.
+    f = open(path + '/legend.dat')
+    names = f.read().replace('-', ' ').split()
+    f.close()
+    # Read time_series.dat.
+    f = open(path + '/time_series.dat')
+    ts = recfromtxt(BytesIO(f.read().encode()), names=names)
+    f.close()
+    return ts
+#=======================================================================
 def var(datadir='./data', varfile='var.dat'):
     """Returns one snapshot.
 
@@ -504,28 +526,6 @@ def var(datadir='./data', varfile='var.dat'):
         values.append(f[:,:,:,i].reshape(fdim))
     Var = namedtuple('Var', keys)
     return Var(**dict(zip(keys, values)))
-#=======================================================================
-def time_series(datadir='./data'):
-    """Returns a NumPy recarray from the time series.
-
-    Keyword Arguments:
-        datadir
-            Name of the data directory
-    """
-    # Chao-Chin Yang, 2013-05-13
-    from numpy import recfromtxt
-    from io import BytesIO
-    # Save the data path.
-    path = datadir.strip()
-    # Read legend.dat.
-    f = open(path + '/legend.dat')
-    names = f.read().replace('-', ' ').split()
-    f.close()
-    # Read time_series.dat.
-    f = open(path + '/time_series.dat')
-    ts = recfromtxt(BytesIO(f.read().encode()), names=names)
-    f.close()
-    return ts
 #=======================================================================
 def varname(datadir='./data', filename='varname.dat'):
     """Returns the names of variables.
