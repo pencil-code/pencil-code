@@ -363,7 +363,7 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
-def proc_snapshot(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
+def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     """Returns the patch of one snapshot saved by one process.
 
     Keyword Arguments:
@@ -380,7 +380,7 @@ def proc_snapshot(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat
         varfile
             Name of the snapshot file.
     """
-    # Chao-Chin Yang, 2014-12-04
+    # Chao-Chin Yang, 2015-02-20
     from collections import namedtuple
     import numpy as np
     from struct import unpack, calcsize
@@ -417,10 +417,10 @@ def proc_snapshot(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat
     f.read(hsize)
     f.close()
     # Define and return a named tuple.
-    Snapshot = namedtuple('Snapshot', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
-    return Snapshot(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
+    Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
+    return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
-def snapshot(datadir='./data', varfile='var.dat'):
+def var(datadir='./data', varfile='var.dat'):
     """Returns one snapshot.
 
     Keyword Arguments:
@@ -429,7 +429,7 @@ def snapshot(datadir='./data', varfile='var.dat'):
         varfile
             Name of the snapshot file.
     """
-    # Chao-Chin Yang, 2014-11-04
+    # Chao-Chin Yang, 2015-02-20
     from collections import namedtuple
     import numpy as np
     # Get the dimensions.
@@ -475,7 +475,7 @@ def snapshot(datadir='./data', varfile='var.dat'):
         # Read data.
         print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
         dim1 = proc_dim(datadir=datadir, proc=proc)
-        snap1 = proc_snapshot(datadir=datadir, par=par, proc=proc, varfile=varfile) 
+        snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
         # Assign the data to the corresponding block.
         l1 = dim1.iprocx * dim1.nx
         l2 = l1 + dim1.nx
@@ -502,8 +502,8 @@ def snapshot(datadir='./data', varfile='var.dat'):
     values = [t, x, y, z, dx, dy, dz, deltay]
     for i in range(len(var)):
         values.append(f[:,:,:,i].reshape(fdim))
-    Snapshot = namedtuple('Snapshot', keys)
-    return Snapshot(**dict(zip(keys, values)))
+    Var = namedtuple('Var', keys)
+    return Var(**dict(zip(keys, values)))
 #=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
