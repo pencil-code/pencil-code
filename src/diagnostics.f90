@@ -589,9 +589,13 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count)
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
+      if (nmax_count>0) &
+        call mpireduce_max(fmax_tmp,fmax,nmax_count)
+!
+      if (nsum_count>0) then
+        call mpireduce_sum(fsum_tmp,fsum,nsum_count)
+        if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
+      endif
 !
 !  The result is present only on the root processor.
 !
