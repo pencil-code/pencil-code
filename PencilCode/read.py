@@ -195,7 +195,7 @@ def grid(datadir='./data', trim=False):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
-def parameters(datadir='./data', par2=False):
+def parameters(datadir='./data', par2=False, warning=True):
     """Returns runtime parameters.
 
     Keyword Arguments:
@@ -203,8 +203,10 @@ def parameters(datadir='./data', par2=False):
             Name of the data directory.
         par2
             Read param2.nml if True; read param.nml otherwise.
+        warning
+            Give warning messages or not.
     """
-    # Chao-Chin Yang, 2014-06-18
+    # Chao-Chin Yang, 2015-02-23
     # Function to convert a string to the correct type.
     def convert(v):
         if v == 'T' or v == ".TRUE.":
@@ -247,7 +249,7 @@ def parameters(datadir='./data', par2=False):
             if k not in keys:
                 keys.append(k)
                 values.append(parse(v.strip(" ,\n")))
-            else:
+            elif warning:
                 print("Duplicate parameter:", k, '=', v.strip(" ,\n"))
     f.close()
     # Define a container class and return the parameters in it.
@@ -442,7 +444,7 @@ def time_series(datadir='./data'):
     f.close()
     return ts
 #=======================================================================
-def var(datadir='./data', varfile='var.dat'):
+def var(datadir='./data', varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
@@ -450,12 +452,14 @@ def var(datadir='./data', varfile='var.dat'):
             Name of the data directory.
         varfile
             Name of the snapshot file.
+        verbose
+            Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-02-20
+    # Chao-Chin Yang, 2015-02-23
     from collections import namedtuple
     import numpy as np
     # Get the dimensions.
-    par = parameters(datadir=datadir)
+    par = parameters(datadir=datadir, warning=verbose)
     dim = dimensions(datadir=datadir)
     var = varname(datadir=datadir)
     if par.lwrite_aux:
@@ -495,7 +499,8 @@ def var(datadir='./data', varfile='var.dat'):
     # Loop over each process.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         # Read data.
-        print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
+        if verbose:
+            print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
         dim1 = proc_dim(datadir=datadir, proc=proc)
         snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
         # Assign the data to the corresponding block.
