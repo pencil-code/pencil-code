@@ -1860,13 +1860,13 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use EquationOfState, only: beta_glnrho_global, cs0
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: eta_glnrho, v_Kepler, ampluug, dxp, dzp
+      real :: eta_vK, ampluug, dxp, dzp
       integer :: i, i1, i2, j, k, npar_loc_x, npar_loc_z
 !
 !  The number of particles per grid cell must be a quadratic number.
@@ -1884,9 +1884,8 @@ module Particles
 !
 !  Define a few disc parameters.
 !
-      eta_glnrho = -0.5*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
-      v_Kepler   =  1.0/abs(beta_glnrho_global(1))
-      if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
+      eta_vK = -0.5 * beta_glnrho_global(1) * cs0
+      if (lroot) print*, 'streaming: eta * v_K = ', eta_vK
 !
 !  Place particles equidistantly.
 !
@@ -1922,13 +1921,13 @@ module Particles
       enddo
 !  Set particle velocity.
       do k=1,npar_loc
-        fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
+        fp(k,ivpx) = fp(k,ivpx) + eta_vK*amplxxp* &
             ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
              aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
-        fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
+        fp(k,ivpy) = fp(k,ivpy) + eta_vK*amplxxp* &
             ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
              aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
-        fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
+        fp(k,ivpz) = fp(k,ivpz) + eta_vK*(-amplxxp)* &
             (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
               real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
       enddo
@@ -1951,17 +1950,17 @@ module Particles
              aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
         f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-            eta_glnrho*v_Kepler*ampluug* &
+            eta_vK*ampluug* &
             ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            eta_glnrho*v_Kepler*ampluug* &
+            eta_vK*ampluug* &
             ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
         f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-            eta_glnrho*v_Kepler*(-ampluug)* &
+            eta_vK*(-ampluug)* &
             (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
               real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
       enddo; enddo
