@@ -1250,7 +1250,7 @@ module Testfield
             'need bcosphz, bsinphz in print.in for lphase_adjust=T')
           endif
         endif
-        call mpibcast_real(phase_testfield,1)
+        call mpibcast_real(phase_testfield)
         c=cos(z+phase_testfield)
         s=sin(z+phase_testfield)
         c2z=c**2

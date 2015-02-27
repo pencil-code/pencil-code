@@ -1063,9 +1063,9 @@ module InitialCondition
             partner = px + nprocx*ipy + nprocxy*ipz
             if (iproc/=partner) then 
                !Send to all processors in this row.
-               call mpisend_real(out,1,partner,111)
+               call mpisend_real(out,partner,111)
                !Receive from all processors in the same row.
-               call mpirecv_real(in,1,partner,111)
+               call mpirecv_real(in,partner,111)
                proc_store(px)=in
             else !data is local
                proc_store(px) = out
@@ -1418,7 +1418,7 @@ module InitialCondition
       do ll=-xmodes,xmodes ; do mm=0,ymodes ; do nn=-zmodes,zmodes
 !
         if (lroot) call random_number_wrapper(phase)
-        call mpibcast_real(phase,1)
+        call mpibcast_real(phase)
 !
         do i=1,nx ; do m=1,ny ; do n=1,nz
           ll1=i+l1-1 ; xi=x(ll1)
@@ -1468,8 +1468,8 @@ module InitialCondition
 !
       call mpireduce_sum(fmeantmp_rho2,fmean_rho2)
       call mpireduce_sum(fmeantmp_rho,fmean_rho)
-      call mpibcast_real(fmean_rho2,1)
-      call mpibcast_real(fmean_rho,1)
+      call mpibcast_real(fmean_rho2)
+      call mpibcast_real(fmean_rho)
 !
       unnormalized_rho_rms=sqrt(fmean_rho2-fmean_rho**2)
       normalization_factor=rho_rms/unnormalized_rho_rms

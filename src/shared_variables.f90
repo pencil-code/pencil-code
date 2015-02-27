@@ -228,7 +228,7 @@ module SharedVariables
 
     endfunction find_item
 !***********************************************************************
-    subroutine get_variable_real0d_alt(varname,variable,ierr,caller)
+    subroutine get_variable_real0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
@@ -250,9 +250,9 @@ module SharedVariables
         nullify(variable)
       endif
 !
-    endsubroutine get_variable_real0d_alt
+    endsubroutine get_variable_real0d
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr)
+    subroutine get_variable_real0d_alt(varname,variable,ierr)
 !
 !  Comment me.
 !
@@ -303,7 +303,7 @@ module SharedVariables
       print*, 'Getting shared variable: ',varname
       call fatal_error('get_variable', 'Shared variable does not exist!')
 !
-    endsubroutine get_variable_real0d
+    endsubroutine get_variable_real0d_alt
 !***********************************************************************
     subroutine get_variable_real1d(varname,variable,ierr,caller)
 !

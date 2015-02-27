@@ -92,7 +92,7 @@ module Particles_diagnos_dv
           col_radius1=1./col_radius
 !
           if (lroot) t_nextcol=max(t,t_nextcol)
-          call mpibcast_real(t_nextcol,1)
+          call mpibcast_real(t_nextcol)
 !
           if (.not. allocated(ineargrid_c)) then !allocate collisional grid arrays
             allocate(ineargrid_c(mpar_loc,3))
@@ -244,7 +244,7 @@ module Particles_diagnos_dv
       call mpireduce_sum(compdat, compdat2,(/colspace,colvel,ncoltypes/))
       if (lroot) call write_collisions()
       if (lroot) call get_t_nextcol(t_nextcol,fp)
-      call mpibcast_real(t_nextcol, 1)
+      call mpibcast_real(t_nextcol)
 !
     endsubroutine collisions
 !***********************************************************************

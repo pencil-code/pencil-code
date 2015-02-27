@@ -317,7 +317,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real, mpi_precision
+      use Mpicomm, only: globalize_xy, mpirecv_real, mpi_precision
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -457,7 +457,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, mpi_precision
+      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -646,7 +646,7 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpirecv_logical (buffer, 1, partner, tag_log_0D)
+              call mpirecv_logical (buffer, partner, tag_log_0D)
               global(px+1,py+1,pz+1) = buffer
             enddo
           enddo
@@ -656,7 +656,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpisend_logical (value, 1, 0, tag_log_0D)
+        call mpisend_logical (value, 0, tag_log_0D)
       endif
 !
       write_persist_logical_0D = .false.
@@ -744,7 +744,7 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpirecv_int (buffer, 1, partner, tag_int_0D)
+              call mpirecv_int (buffer, partner, tag_int_0D)
               global(px+1,py+1,pz+1) = buffer
             enddo
           enddo
@@ -754,7 +754,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpisend_int (value, 1, 0, tag_int_0D)
+        call mpisend_int (value, 0, tag_int_0D)
       endif
 !
       write_persist_int_0D = .false.
@@ -842,7 +842,7 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpirecv_real (buffer, 1, partner, tag_real_0D)
+              call mpirecv_real (buffer, partner, tag_real_0D)
               global(px+1,py+1,pz+1) = buffer
             enddo
           enddo
@@ -852,7 +852,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpisend_real (value, 1, 0, tag_real_0D)
+        call mpisend_real (value, 0, tag_real_0D)
       endif
 !
       write_persist_real_0D = .false.
@@ -1001,14 +1001,14 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1), 1, partner, tag_log_0D)
+              call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
             enddo
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_logical (value, 1, 0, tag_log_0D)
+        call mpirecv_logical (value, 0, tag_log_0D)
       endif
 !
       read_persist_logical_0D = .false.
@@ -1087,14 +1087,14 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1), 1, partner, tag_int_0D)
+              call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
             enddo
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_int (value, 1, 0, tag_int_0D)
+        call mpirecv_int (value, 0, tag_int_0D)
       endif
 !
       read_persist_int_0D = .false.
@@ -1173,14 +1173,14 @@ module Io
             do pz = 0, nprocz-1
               partner = px + py*nprocx + pz*nprocxy
               if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1), 1, partner, tag_real_0D)
+              call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
             enddo
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_real (value, 1, 0, tag_real_0D)
+        call mpirecv_real (value, 0, tag_real_0D)
       endif
 !
       read_persist_real_0D = .false.

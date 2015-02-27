@@ -553,19 +553,19 @@ module Particles_mpicomm
         if (lstart .or. present(linsert)) then
           do i=0,ncpus-1
             if (iproc/=i) then
-              call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
+              call mpirecv_int(nmig_enter(i),i,itag_nmig)
             else
               do j=0,ncpus-1
-                if (iproc/=j) call mpisend_int(nmig_leave(j),1,j,itag_nmig)
+                if (iproc/=j) call mpisend_int(nmig_leave(j),j,itag_nmig)
               enddo
             endif
           enddo
         else
           do i=1,nproc_comm
-            call mpisend_int(nmig_leave(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc)
+            call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
           enddo
           do i=1,nproc_comm
-            call mpirecv_int(nmig_enter(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc_comm(i))
+            call mpirecv_int(nmig_enter(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc_comm(i))
           enddo
         endif
 !
@@ -709,7 +709,7 @@ module Particles_mpicomm
 !
         if (lstart.or.lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_or(lredo, lredo_all)
-          call mpibcast_logical(lredo_all, 1)
+          call mpibcast_logical(lredo_all)
         else
           lredo_all=.false.
         endif

@@ -209,7 +209,7 @@ module Shear
             call random_number_wrapper(x0_shear)
             x0_shear=x0_shear*Lxyz(1)+xyz0(1)
           endif
-          call mpibcast_real(x0_shear,1,0)
+          call mpibcast_real(x0_shear,0)
           uy0 = Sshear * (x(l1:l2) - x0_shear)
         endif
       endif

@@ -133,7 +133,7 @@ module InitialCondition
       do ll=-xmodes,xmodes ; do mm=0,ymodes ; do nn=-zmodes,zmodes
 !
         if (lroot) call random_number_wrapper(phase)
-        call mpibcast_real(phase,1)
+        call mpibcast_real(phase)
 !
         do i=1,nx ; do m=1,ny ; do n=1,nz
           ll1=i+l1-1 ; xi=x(ll1)
@@ -179,8 +179,8 @@ module InitialCondition
 !
       call mpireduce_sum(fmeantmp_rho2,fmean_rho2)
       call mpireduce_sum(fmeantmp_rho,fmean_rho)
-      call mpibcast_real(fmean_rho2,1)
-      call mpibcast_real(fmean_rho,1)
+      call mpibcast_real(fmean_rho2)
+      call mpibcast_real(fmean_rho)
 !
       unnormalized_rho_rms=sqrt(fmean_rho2-fmean_rho**2)
       normalization_factor=rho_rms/unnormalized_rho_rms

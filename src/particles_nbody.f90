@@ -1501,14 +1501,14 @@ module Particles_nbody
 !
           if (.not.lroot) then
             tagsend = mspar*iproc + ks
-            call mpisend_logical(lnbody(ks),1,root,tagsend)
+            call mpisend_logical(lnbody(ks),root,tagsend)
           else
 !
 !  The root receives all logicals. Same tag.
 !
             do j=1,ncpus-1
               tagrecv = mspar*j + ks
-              call mpirecv_logical(lnbody(ks),1,j,tagrecv)
+              call mpirecv_logical(lnbody(ks),j,tagrecv)
 !
 !  Test the received logicals
 !
@@ -2035,7 +2035,7 @@ module Particles_nbody
         close(1)
       endif
 !
-      call mpibcast_int(mspar,1)
+      call mpibcast_int(mspar)
       call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
       call mpibcast_int(ipar_nbody(1:mspar),mspar)
 !
@@ -2509,7 +2509,7 @@ module Particles_nbody
           if (lmpicomm) then
             if (.not.lroot) then
               if (ldebug) print*,'processor ',iproc,'sending ',nc_loc,' particles'
-              call mpisend_int(nc_loc,1,root,222)
+              call mpisend_int(nc_loc,root,222)
               if (nc_loc/=0) then
                 print*,'sending',fcsp_loc(1:nc_loc,:)
                 call mpisend_real(fcsp_loc(1:nc_loc,:),(/nc_loc,mspvar/),root,111)
@@ -2522,7 +2522,7 @@ module Particles_nbody
               nc=nc+nc_loc
               !get from the other processors
               do j=1,ncpus-1
-                call mpirecv_int(nc_proc,1,j,222)
+                call mpirecv_int(nc_proc,j,222)
                 if (ldebug) print*,'received ',nc_proc,'particles from processor,',j
 !                call fatal_error("","")
                 if (nc_proc/=0) then
@@ -2542,7 +2542,7 @@ module Particles_nbody
 !
 !  Call merge only if particles were created
 !
-          call mpibcast_int(nc,1)
+          call mpibcast_int(nc)
 !
           if (nc/=0) then
             call merge_and_share(fcsp,nc,fp)
@@ -2664,7 +2664,7 @@ module Particles_nbody
 !
 !  Broadcast mspar, ipar_nbody and pmass
 !
-      call mpibcast_int(mspar,1)
+      call mpibcast_int(mspar)
       call mpibcast_int(ipar_nbody(1:mspar),mspar)
       call mpibcast_real(pmass,mspar)
       call mpibcast_logical(ladd_mass,mspar)
@@ -2727,7 +2727,7 @@ module Particles_nbody
 !
           do j=1,ncpus-1
             ns=nsmig(j)
-            call mpisend_int(ns, 1, j, 111)
+            call mpisend_int(ns, j, 111)
             if (ns/=0) then
                call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
             endif
@@ -2737,7 +2737,7 @@ module Particles_nbody
 !
 !  The other processors receive the particles
 !
-          call mpirecv_int(nsmig(iproc), 1, root, 111)
+          call mpirecv_int(nsmig(iproc), root, 111)
           ns=nsmig(iproc)
           if (ns/=0) then
             call mpirecv_real(fp(npar_loc+1:npar_loc+ns,1:mpvar),(/ns,mpvar/),root,222)

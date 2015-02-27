@@ -2024,8 +2024,7 @@ module Energy
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6
       real :: T_c,T_w,T_i,T_h
       real, dimension(nx) :: rho,pp,lnrho
-      real, dimension(1) :: fmpi1
-      real :: kpc
+      real :: kpc,fmpi1
       double precision ::  rhoscale
 !
       if (lroot) print*,'ferriere: Ferriere density and entropy profile'
@@ -2083,12 +2082,12 @@ module Energy
 !
           call eosperturb(f,nx,pp=pp)
 !
-          fmpi1=(/ cs2bot /)
-          call mpibcast_real(fmpi1,1,0)
-          cs2bot=fmpi1(1)
-          fmpi1=(/ cs2top /)
-          call mpibcast_real(fmpi1,1,ncpus-1)
-          cs2top=fmpi1(1)
+          fmpi1=cs2bot
+          call mpibcast_real(fmpi1,0)
+          cs2bot=fmpi1
+          fmpi1=cs2top
+          call mpibcast_real(fmpi1,ncpus-1)
+          cs2top=fmpi1
 !
         endif
       enddo
@@ -2114,8 +2113,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho
-      real, dimension(1) :: fmpi1
-      real :: rho0hs,muhs
+      real :: rho0hs,muhs,fmpi1
       real :: g_A, g_C
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B, g_D
@@ -2159,12 +2157,12 @@ module Energy
           pp=rho*gamma_m1/gamma*T0
           call eosperturb(f,nx,pp=pp)
 !
-          fmpi1=(/ cs2bot /)
-          call mpibcast_real(fmpi1,1,0)
-          cs2bot=fmpi1(1)
-          fmpi1=(/ cs2top /)
-          call mpibcast_real(fmpi1,1,ncpus-1)
-          cs2top=fmpi1(1)
+          fmpi1=cs2bot
+          call mpibcast_real(fmpi1,0)
+          cs2bot=fmpi1
+          fmpi1=cs2top
+          call mpibcast_real(fmpi1,ncpus-1)
+          cs2top=fmpi1
 !
          endif
        enddo
@@ -2280,8 +2278,7 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension(nx) :: rho,pp,lnrho,ss
-      real, dimension(1) :: fmpi1
-      real :: rho0hs,cs0hs,H0hs
+      real :: rho0hs,cs0hs,H0hs,fmpi1
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
@@ -2315,12 +2312,12 @@ module Energy
             ss=f(l1:l2,m,n,ilnrho)
           endif
 
-          fmpi1=(/ cs2bot /)
-          call mpibcast_real(fmpi1,1,0)
-          cs2bot=fmpi1(1)
-          fmpi1=(/ cs2top /)
-          call mpibcast_real(fmpi1,1,ncpus-1)
-          cs2top=fmpi1(1)
+          fmpi1=cs2bot
+          call mpibcast_real(fmpi1,0)
+          cs2bot=fmpi1
+          fmpi1=cs2top
+          call mpibcast_real(fmpi1,ncpus-1)
+          cs2top=fmpi1
 !
         endif
       enddo

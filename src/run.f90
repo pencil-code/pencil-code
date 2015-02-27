@@ -768,7 +768,7 @@ program run
 !
     if (max_walltime>0.0) then
       if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover,1)
+      call mpibcast_logical(timeover)
       if (timeover) then
         if (lroot) then
           print*

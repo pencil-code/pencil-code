@@ -3886,11 +3886,11 @@ module Particles
           call mpireduce_sum(rhop_swarm_removed_send,rhop_swarm_removed)
           call mpireduce_sum(momp_swarm_removed_send,momp_swarm_removed,3)
           if (lroot) then
-            call mpisend_real(rhop_swarm_removed,1,iproc_sink,itag1)
+            call mpisend_real(rhop_swarm_removed,iproc_sink,itag1)
             call mpisend_real(momp_swarm_removed,3,iproc_sink,itag2)
           endif
           if (iproc==iproc_sink) then
-            call mpirecv_real(rhop_swarm_removed,1,0,itag1)
+            call mpirecv_real(rhop_swarm_removed,0,itag1)
             call mpirecv_real(momp_swarm_removed,3,0,itag2)
 !
 !  Need to find sink particle again since particle removal may have shifted

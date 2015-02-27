@@ -182,7 +182,7 @@ module Param_IO
 !
 !  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
-      call mpibcast_logical(exists, 1)
+      call mpibcast_logical(exists)
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !

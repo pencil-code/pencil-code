@@ -1432,19 +1432,18 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
-    subroutine mpirecv_logical_scl(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_logical_scl(bcast_array,proc_src,tag_id)
 !
 !  Receive logical scalar from other processor.
 !
 !  04-sep-06/wlad: coded
 !
-      integer :: nbcast_array
       logical :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, 1, MPI_LOGICAL, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
@@ -1459,26 +1458,27 @@ module Mpicomm
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      if (nbcast_array==0) return
+!
       call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
-    subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id)
 !
 !  Receive real scalar from other processor.
 !
 !  02-jul-05/anders: coded
 !
-      integer :: nbcast_array
       real :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
-      call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, 1, MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_scl
 !***********************************************************************
@@ -1495,8 +1495,10 @@ module Mpicomm
 !
       intent(out) :: bcast_array
 !
+      if (nbcast_array==0) return
+!
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr
 !***********************************************************************
@@ -1508,15 +1510,15 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast
+      integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
-     nbcast=nbcast_array(1)*nbcast_array(2)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, product(nbcast_array), MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
@@ -1529,15 +1531,15 @@ module Mpicomm
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast
+      integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
-     nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, product(nbcast_array), MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -1550,31 +1552,30 @@ module Mpicomm
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast
+      integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, product(nbcast_array), MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
-    subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
 !
 !  02-jul-05/anders: coded
 !
-      integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
@@ -1589,8 +1590,10 @@ module Mpicomm
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      if (nbcast_array==0) return
+!
       call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
@@ -1602,29 +1605,29 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast
+      integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
-      nbcast = nbcast_array(1)*nbcast_array(2)
 !
-      call MPI_RECV(bcast_array, nbcast, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, mpierr)
+      if (any(nbcast_array==0)) return
+!
+      call MPI_RECV(bcast_array, product(nbcast_array), MPI_INTEGER, proc_src, &
+                    tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_arr2
 !***********************************************************************
-    subroutine mpisend_logical_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_logical_scl(bcast_array,proc_rec,tag_id)
 !
 !  Send logical scalar to other processor.
 !
 !  04-sep-06/wlad: coded
 !
-      integer :: nbcast_array
       logical :: bcast_array
       integer :: proc_rec, tag_id
 !
-      call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, mpierr)
+      call MPI_SEND(bcast_array, 1, MPI_LOGICAL, proc_rec, &
+                    tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_logical_scl
 !***********************************************************************
@@ -1638,23 +1641,24 @@ module Mpicomm
       logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
+      if (nbcast_array==0) return
+!
       call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, mpierr)
+                    tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
-    subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_scl(bcast_array,proc_rec,tag_id)
 !
 !  Send real scalar to other processor.
 !
 !  02-jul-05/anders: coded
 !
-      integer :: nbcast_array
       real :: bcast_array
       integer :: proc_rec, tag_id
 !
-      call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, mpierr)
+      call MPI_SEND(bcast_array, 1, MPI_REAL, proc_rec, &
+                    tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_real_scl
 !***********************************************************************
@@ -1668,8 +1672,10 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
+      if (nbcast_array==0) return
+!
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
@@ -1681,12 +1687,12 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_rec, tag_id, nbcast
+      integer :: proc_rec, tag_id
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+      call MPI_SEND(bcast_array, product(nbcast_array), MPI_REAL, proc_rec, &
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
@@ -1699,12 +1705,12 @@ module Mpicomm
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3)) :: bcast_array
-      integer :: proc_rec, tag_id, nbcast
+      integer :: proc_rec, tag_id
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+      call MPI_SEND(bcast_array, product(nbcast_array), MPI_REAL, proc_rec, &
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -1717,132 +1723,136 @@ module Mpicomm
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_rec, tag_id, nbcast
+      integer :: proc_rec, tag_id
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+      call MPI_SEND(bcast_array, product(nbcast_array), MPI_REAL, proc_rec, &
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
-    subroutine mpisendrecv_real_scl(send_array,sendcnt,proc_dest,sendtag, &
-      recv_array,recvcnt,proc_src,recvtag)
+    subroutine mpisendrecv_real_scl(send_array,proc_dest,sendtag, &
+                                    recv_array,proc_src,recvtag)
 
-    integer :: sendcnt, recvcnt
-    real :: send_array, recv_array
-    integer :: proc_src, proc_dest, sendtag, recvtag
-    integer, dimension(MPI_STATUS_SIZE) :: stat
+      real :: send_array, recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag
+      integer, dimension(MPI_STATUS_SIZE) :: stat
 
-    intent(out) :: recv_array
+      intent(out) :: recv_array
 
-    call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-          recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-          MPI_COMM_WORLD,stat,mpierr)
+      call MPI_SENDRECV(send_array,1,MPI_REAL,proc_dest,sendtag, &
+                        recv_array,1,MPI_REAL,proc_src,recvtag, &
+                        MPI_COMM_WORLD,stat,mpierr)
+
     endsubroutine mpisendrecv_real_scl
 !***********************************************************************
     subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
-      recv_array,recvcnt,proc_src,recvtag)
+                                    recv_array,proc_src,recvtag)
 
-    integer :: sendcnt, recvcnt
-    real, dimension(sendcnt) :: send_array
-    real, dimension(recvcnt) :: recv_array
-    integer :: proc_src, proc_dest, sendtag, recvtag
-    integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendcnt
+      real, dimension(sendcnt) :: send_array
+      real, dimension(sendcnt) :: recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag
+      integer, dimension(MPI_STATUS_SIZE) :: stat
 
-    intent(out) :: recv_array
+      intent(out) :: recv_array
+!
+      if (sendcnt==0) return
 
-    call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-          recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-          MPI_COMM_WORLD,stat,mpierr)
+      call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
+                        MPI_COMM_WORLD,stat,mpierr)
+!
     endsubroutine mpisendrecv_real_arr
 !***********************************************************************
     subroutine mpisendrecv_real_arr2(send_array,sendcnt_arr,proc_dest,sendtag, &
-     recv_array,recvcnt_arr,proc_src,recvtag)
+                                     recv_array,proc_src,recvtag)
 
-    integer, dimension(2) :: sendcnt_arr, recvcnt_arr
-    real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: send_array
-    real, dimension(recvcnt_arr(1),recvcnt_arr(2)) :: recv_array
-    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    integer, dimension(MPI_STATUS_SIZE) :: stat
-    intent(out) :: recv_array
+      integer, dimension(2) :: sendcnt_arr
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: send_array
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2)) :: recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      intent(out) :: recv_array
+ 
+      if (any(sendcnt_arr==0)) return
 
-    sendcnt = sendcnt_arr(1)*sendcnt_arr(2)
-    recvcnt = recvcnt_arr(1)*recvcnt_arr(2)
+      sendcnt = product(sendcnt_arr)
 
-    call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-          recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-          MPI_COMM_WORLD,stat,mpierr)
+      call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
+                        MPI_COMM_WORLD,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr2
 !***********************************************************************
     subroutine mpisendrecv_real_arr3(send_array,sendcnt_arr,proc_dest,sendtag, &
-     recv_array,recvcnt_arr,proc_src,recvtag)
+                                     recv_array,proc_src,recvtag)
 
-    integer, dimension(3) :: sendcnt_arr, recvcnt_arr
-    real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3)) :: send_array
-    real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3)) :: recv_array
-    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    integer, dimension(MPI_STATUS_SIZE) :: stat
-    intent(out) :: recv_array
+     integer, dimension(3) :: sendcnt_arr
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3)) :: send_array
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3)) :: recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      intent(out) :: recv_array
 
-    sendcnt = sendcnt_arr(1)*sendcnt_arr(2)*sendcnt_arr(3)
-    recvcnt = recvcnt_arr(1)*recvcnt_arr(2)*recvcnt_arr(3)
+      if (any(sendcnt_arr==0)) return
 
-    call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-          recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-          MPI_COMM_WORLD,stat,mpierr)
+      sendcnt = product(sendcnt_arr)
+
+      call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
+                        MPI_COMM_WORLD,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr3
 !***********************************************************************
     subroutine mpisendrecv_real_arr4(send_array,sendcnt_arr,proc_dest,sendtag, &
-     recv_array,recvcnt_arr,proc_src,recvtag)
+                                     recv_array,proc_src,recvtag)
 
-    integer, dimension(4) :: sendcnt_arr, recvcnt_arr
-    real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3), &
-      sendcnt_arr(4)) :: send_array
-    real, dimension(recvcnt_arr(1),recvcnt_arr(2),recvcnt_arr(3), &
-      recvcnt_arr(4)) :: recv_array
-    integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt, recvcnt
-    integer, dimension(MPI_STATUS_SIZE) :: stat
-    intent(out) :: recv_array
+      integer, dimension(4) :: sendcnt_arr
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3), &
+                      sendcnt_arr(4)) :: send_array
+      real, dimension(sendcnt_arr(1),sendcnt_arr(2),sendcnt_arr(3), &
+                      sendcnt_arr(4)) :: recv_array
+      integer :: proc_src, proc_dest, sendtag, recvtag, sendcnt
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      intent(out) :: recv_array
 
-    sendcnt = sendcnt_arr(1)*sendcnt_arr(2)*sendcnt_arr(3)*sendcnt_arr(4)
-    recvcnt = recvcnt_arr(1)*recvcnt_arr(2)*recvcnt_arr(3)*recvcnt_arr(4)
+      if (any(sendcnt_arr==0)) return
+ 
+      sendcnt = product(sendcnt_arr)
 
-    call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-          recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-          MPI_COMM_WORLD,stat,mpierr)
+      call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
+                        MPI_COMM_WORLD,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr4
 !***********************************************************************
-    subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_int_scl(bcast_array,proc_rec,tag_id)
 !
 !  Send integer scalar to other processor.
 !
 !  02-jul-05/anders: coded
 !
-      integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_rec, tag_id
 !
-      call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD, mpierr)
+      call MPI_SEND(bcast_array, 1, MPI_INTEGER, proc_rec, &
+                    tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpirecv_nonblock_int_scl(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+    subroutine mpirecv_nonblock_int_scl(bcast_array,proc_src,tag_id,ireq)
 !
 !  Receive integer scalar from other processor, with non-blocking communication.
 !
 !  12-dec-14/wlad: adapted
 !
-      integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_src, tag_id, ireq
 !
-      call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+      call MPI_IRECV(bcast_array, 1, MPI_INTEGER, proc_src, &
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_int_scl
 !***********************************************************************
@@ -1855,9 +1865,11 @@ module Mpicomm
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id, ireq
+
+      if (nbcast_array==0) return
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
@@ -1873,8 +1885,10 @@ module Mpicomm
 !
       intent(out) :: bcast_array
 !
+      if (nbcast_array==0) return
+!
       call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr
 !***********************************************************************
@@ -1886,14 +1900,14 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast, ireq
+      integer :: proc_src, tag_id, ireq
 !
       intent(out) :: bcast_array
+
+      if (any(nbcast_array==0)) return
 !
-     nbcast=nbcast_array(1)*nbcast_array(2)
-!
-      call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+      call MPI_IRECV(bcast_array, product(nbcast_array), MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr2
 !***********************************************************************
@@ -1906,14 +1920,14 @@ module Mpicomm
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_src, tag_id, nbcast, ireq
+      integer :: proc_src, tag_id, ireq
 !
       intent(out) :: bcast_array
+
+      if (any(nbcast_array==0)) return
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
-!
-      call MPI_IRECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+      call MPI_IRECV(bcast_array, product(nbcast_array), MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
@@ -1927,8 +1941,10 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id, ireq
 !
+      if (nbcast_array==0) return
+!
       call MPI_ISEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr
 !***********************************************************************
@@ -1941,27 +1957,26 @@ module Mpicomm
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2), &
                       nbcast_array(3),nbcast_array(4)) :: bcast_array
-      integer :: proc_rec, tag_id, nbcast, ireq
+      integer :: proc_rec, tag_id, ireq
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_ISEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ireq,mpierr)
+      call MPI_ISEND(bcast_array, product(nbcast_array), MPI_REAL, proc_rec, &
+                     tag_id, MPI_COMM_WORLD,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr4
 !***********************************************************************
-    subroutine mpisend_nonblock_int_scl(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+    subroutine mpisend_nonblock_int_scl(bcast_array,proc_rec,tag_id,ireq)
 !
 !  Send integer scalar to other processor, with non-blocking communication.
 !
 !  12-dec-14/wlad: adapted
 !
-      integer :: nbcast_array
       integer :: bcast_array
       integer :: proc_rec, tag_id, ireq
 !
-      call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+      call MPI_ISEND(bcast_array, 1, MPI_INTEGER, proc_rec, &
+                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_int_scl
 !***********************************************************************
@@ -1974,6 +1989,8 @@ module Mpicomm
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id, ireq
+!
+      if (nbcast_array==0) return
 !
       call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
           tag_id, MPI_COMM_WORLD, ireq, mpierr)
@@ -1990,8 +2007,10 @@ module Mpicomm
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
+      if (nbcast_array==0) return
+!
       call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -2003,22 +2022,22 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_rec, tag_id, nbcast
+      integer :: proc_rec, tag_id
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (any(nbcast_array==0)) return
 !
-      call MPI_SEND(bcast_array, nbcast, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD,mpierr)
+      call MPI_SEND(bcast_array, product(nbcast_array), MPI_INTEGER, proc_rec, &
+                    tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_int_arr2
 !***********************************************************************
-    subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_scl(lbcast_array,proc)
 !
 !  Communicate logical scalar between processors.
 !
       logical :: lbcast_array
-      integer, optional :: nbcast_array,proc
-      integer :: ibcast_proc,nbcast_arrayl
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
       if (present(proc)) then
         ibcast_proc=proc
@@ -2026,14 +2045,8 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      if (present(nbcast_array)) then
-        nbcast_arrayl=nbcast_array
-      else
-        nbcast_arrayl=1
-      endif
-!
-      call MPI_BCAST(lbcast_array,nbcast_arrayl,MPI_LOGICAL,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(lbcast_array,1,MPI_LOGICAL,ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
@@ -2046,6 +2059,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2053,7 +2068,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
@@ -2066,27 +2081,28 @@ module Mpicomm
       integer, dimension(2) :: nbcast_array
       logical, dimension(nbcast_array(1),nbcast_array(2)) :: lbcast_array
       integer, optional :: proc
-      integer :: ibcast_proc,nbcast
+      integer :: ibcast_proc
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (any(nbcast_array==0)) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(lbcast_array, nbcast, MPI_LOGICAL, ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(lbcast_array, product(nbcast_array), MPI_LOGICAL, ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
-    subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
+    subroutine mpibcast_int_scl(ibcast_array,proc)
 !
 !  Communicate integer scalar between processors.
 !
       integer :: ibcast_array
-      integer, optional :: nbcast_array,proc
-      integer :: ibcast_proc,nbcast_arrayl
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
       if (present(proc)) then
         ibcast_proc=proc
@@ -2094,14 +2110,8 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      if (present(nbcast_array)) then
-        nbcast_arrayl=nbcast_array
-      else
-        nbcast_arrayl=1
-      endif
-!
-      call MPI_BCAST(ibcast_array,nbcast_arrayl,MPI_INTEGER,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -2114,6 +2124,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2121,17 +2133,17 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_scl(bcast_array,proc)
 !
 !  Communicate real scalar between processors.
 !
       real :: bcast_array
-      integer, optional :: nbcast_array,proc
-      integer :: ibcast_proc,nbcast_arrayl
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
       if (present(proc)) then
         ibcast_proc=proc
@@ -2139,13 +2151,7 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      if (present(nbcast_array)) then
-        nbcast_arrayl=nbcast_array
-      else
-        nbcast_arrayl=1
-      endif
-!
-      call MPI_BCAST(bcast_array,nbcast_arrayl,MPI_REAL,ibcast_proc, &
+      call MPI_BCAST(bcast_array,1,MPI_REAL,ibcast_proc, &
           MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_scl
@@ -2159,6 +2165,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2166,7 +2174,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -2179,17 +2187,18 @@ module Mpicomm
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer, optional :: proc
-      integer :: ibcast_proc,nbcast
+      integer :: ibcast_proc
 !
-      nbcast=nbcast_array(1)*nbcast_array(2)
+      if (any(nbcast_array==0)) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array, product(nbcast_array), MPI_REAL, ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
@@ -2202,17 +2211,18 @@ module Mpicomm
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer, optional :: proc
-      integer :: ibcast_proc,nbcast
+      integer :: ibcast_proc
 !
-      nbcast=nb(1)*nb(2)*nb(3)
+      if (any(nb==0)) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array, product(nb), MPI_REAL, ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr3
 !***********************************************************************
@@ -2225,27 +2235,28 @@ module Mpicomm
       integer, dimension(4) :: nb
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer, optional :: proc
-      integer :: ibcast_proc,nbcast
+      integer :: ibcast_proc
 !
-      nbcast=nb(1)*nb(2)*nb(3)*nb(4)
+      if (any(nb==0)) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array, product(nb), MPI_REAL, ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr4
 !***********************************************************************
-    subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_double_scl(bcast_array,proc)
 !
 !  Communicate real scalar between processors.
 !
       double precision :: bcast_array
-      integer, optional :: nbcast_array,proc
-      integer :: ibcast_proc,nbcast_arrayl
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
       if (present(proc)) then
         ibcast_proc=proc
@@ -2253,14 +2264,8 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      if (present(nbcast_array)) then
-        nbcast_arrayl=nbcast_array
-      else
-        nbcast_arrayl=1
-      endif
-!
-      call MPI_BCAST(bcast_array,nbcast_arrayl,MPI_DOUBLE_PRECISION,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array,1,MPI_DOUBLE_PRECISION,ibcast_proc, &
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_double_scl
 !***********************************************************************
@@ -2273,6 +2278,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2280,7 +2287,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
@@ -2299,7 +2306,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(cbcast_array,1,MPI_CHARACTER,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -2312,6 +2319,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2319,7 +2328,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
@@ -2332,6 +2341,8 @@ module Mpicomm
       integer, optional :: proc
       integer :: ibcast_proc
 !
+      if (nbcast_array==0) return
+!
       if (present(proc)) then
         ibcast_proc=proc
       else
@@ -2339,7 +2350,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_COMPLEX,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_dbl
 !***********************************************************************
@@ -2348,9 +2359,11 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex, dimension(nbcast_array) :: bcast_array
+      complex(KIND=4), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
       integer :: ibcast_proc
+!
+      if (nbcast_array==0) return
 !
       if (present(proc)) then
         ibcast_proc=proc
@@ -2359,7 +2372,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_COMPLEX,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_sgl
 !***********************************************************************
@@ -2399,6 +2412,8 @@ module Mpicomm
 !
       integer :: mpiprocs
 !
+      if (nreduce==0) return
+!
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
@@ -2421,6 +2436,8 @@ module Mpicomm
       integer, optional :: idir
 !
       integer :: mpiprocs
+!
+      if (any(nreduce==0)) return
 !
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
@@ -2445,6 +2462,8 @@ module Mpicomm
 !
       integer :: mpiprocs
 !
+      if (any(nreduce==0)) return
+!
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
@@ -2467,6 +2486,8 @@ module Mpicomm
       integer, optional :: idir
 !
       integer :: mpiprocs
+!
+      if (any(nreduce==0)) return
 !
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
@@ -2491,6 +2512,8 @@ module Mpicomm
 !
       integer :: mpiprocs
 !
+      if (any(nreduce==0)) return
+!
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
@@ -2509,7 +2532,7 @@ module Mpicomm
       integer :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
-          MPI_COMM_WORLD, mpierr)
+                         MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
@@ -2520,8 +2543,10 @@ module Mpicomm
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
 !
+      if (nreduce==0) return
+
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-          MPI_COMM_WORLD, mpierr)
+                         MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
@@ -2532,7 +2557,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
-          MPI_COMM_WORLD, mpierr)
+                         MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
@@ -2565,8 +2590,10 @@ module Mpicomm
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
+      if (nreduce==0) return
+!
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
-          MPI_COMM_WORLD, mpierr)
+                         MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
@@ -2594,7 +2621,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
-          MPI_COMM_WORLD, mpierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
@@ -2605,7 +2632,7 @@ module Mpicomm
       integer :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_INTEGER, MPI_MAX, root, &
-          MPI_COMM_WORLD, mpierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
@@ -2616,8 +2643,10 @@ module Mpicomm
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
+      if (nreduce==0) return
+!
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
-          MPI_COMM_WORLD, mpierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
@@ -2628,7 +2657,7 @@ module Mpicomm
       real :: fmin_tmp,fmin
 !
       call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
-          MPI_COMM_WORLD, mpierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_min_scl
 !***********************************************************************
@@ -2639,8 +2668,10 @@ module Mpicomm
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp,fmin
 !
+      if (nreduce==0) return
+!
       call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
-          MPI_COMM_WORLD, mpierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
@@ -2654,7 +2685,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, mpierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_scl
@@ -2666,11 +2697,13 @@ module Mpicomm
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
 !
+      if (nreduce==0) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, mpierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr
@@ -2682,11 +2715,13 @@ module Mpicomm
       integer, dimension(2) :: nreduce
       integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr2
@@ -2698,11 +2733,13 @@ module Mpicomm
       integer, dimension(3) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr3
@@ -2714,11 +2751,13 @@ module Mpicomm
       integer, dimension(4) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr4
@@ -2765,6 +2804,8 @@ module Mpicomm
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
 !
+      if (nreduce==0) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
@@ -2774,7 +2815,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-            mpiprocs, mpierr)
+                        mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr
@@ -2795,6 +2836,8 @@ module Mpicomm
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
@@ -2810,10 +2853,10 @@ module Mpicomm
         endif
         if (inplace_opt) then
           call MPI_REDUCE(MPI_IN_PLACE, fsum, product(nreduce), MPI_REAL, &
-              MPI_SUM, root, mpiprocs, mpierr)
+                          MPI_SUM, root, mpiprocs, mpierr)
         else
           call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-              root, mpiprocs, mpierr)
+                          root, mpiprocs, mpierr)
         endif
       endif
 !
@@ -2832,6 +2875,8 @@ module Mpicomm
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
@@ -2841,7 +2886,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, mpierr)
+                        root, mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr3
@@ -2859,6 +2904,8 @@ module Mpicomm
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
 !
+      if (any(nreduce==0)) return
+!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
@@ -2868,7 +2915,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, mpierr)
+                        root, mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr4
@@ -2898,6 +2945,8 @@ module Mpicomm
 !
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
+!
+      if (nreduce==0) return
 !
       if (nprocs==1) then
         flor=flor_tmp
@@ -2933,6 +2982,8 @@ module Mpicomm
 !
       integer :: nreduce
       logical, dimension(nreduce) :: fland_tmp, fland
+!
+      if (nreduce==0) return
 !
       if (nprocs==1) then
         fland=fland_tmp
@@ -3013,6 +3064,7 @@ module Mpicomm
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
+      !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
 !***********************************************************************
@@ -4106,7 +4158,6 @@ module Mpicomm
       integer :: px, py, partner
       integer, parameter :: tag=114
 !
-!
       if (lfirst_proc_xy) then
         ! initialize sum with the local data
         sum = in
@@ -4115,13 +4166,13 @@ module Mpicomm
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
             if (iproc == partner) cycle
-            call mpirecv_real (buffer, 1, partner, tag)
+            call mpirecv_real (buffer, partner, tag)
             sum = sum + buffer
           enddo
         enddo
       else
         ! send data to collector
-        call mpisend_real (in, 1, ipz*nprocxy, tag)
+        call mpisend_real (in, ipz*nprocxy, tag)
         sum = 0.0
       endif
 !
@@ -7066,7 +7117,7 @@ module Mpicomm
 !
 !  Broadcast the file size.
 !
-      call mpibcast_int(bytes, 1)
+      call mpibcast_int(bytes)
 !
 !  Allocate temporary memory.
 !
@@ -7177,7 +7228,7 @@ module Mpicomm
       integer :: parallel_count_lines
 !
       if (lroot) parallel_count_lines = count_lines(file,comchars)
-      call mpibcast_int(parallel_count_lines, 1)
+      call mpibcast_int(parallel_count_lines)
 !
     endfunction
 !***********************************************************************
@@ -7207,7 +7258,7 @@ module Mpicomm
       ! Let the root node do the dirty work
       if (lroot) parallel_file_exists = file_exists(file,ldelete)
 !
-      call mpibcast_logical(parallel_file_exists, 1)
+      call mpibcast_logical(parallel_file_exists)
 !
     endfunction
 !***********************************************************************
@@ -7588,6 +7639,8 @@ module Mpicomm
 !
       integer                            :: mpiprocs,merge
       real, dimension(nk)                :: recvbuf
+!
+      if (nk==0) return
 !
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)

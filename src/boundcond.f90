@@ -4928,16 +4928,16 @@ module Boundcond
            do px=0, nprocx-1
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
-                 call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
-                 call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
-                 call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
+                 call mpisend_real (tl, px+py*nprocx, tag_tl)
+                 call mpisend_real (tr, px+py*nprocx, tag_tr)
+                 call mpisend_real (delta_t, px+py*nprocx, tag_dt)
                endif
              enddo
            enddo
          else
-           call mpirecv_real (tl, 1, 0, tag_tl)
-           call mpirecv_real (tr, 1, 0, tag_tr)
-           call mpirecv_real (delta_t, 1, 0, tag_dt)
+           call mpirecv_real (tl, 0, tag_tl)
+           call mpirecv_real (tr, 0, tag_tr)
+           call mpirecv_real (delta_t, 0, tag_dt)
          endif
 !
 ! Read velocity field
@@ -5193,9 +5193,9 @@ module Boundcond
 !
         do i=1,nprocxy-1
           if (lroot) then
-            call mpisend_logical(luse_vel_field,1,i,i)
+            call mpisend_logical(luse_vel_field,i,i)
           elseif (iproc==i) then
-            call mpirecv_logical(luse_vel_field,1,0,iproc)
+            call mpirecv_logical(luse_vel_field,0,iproc)
           endif
         enddo
 !
@@ -5326,9 +5326,9 @@ module Boundcond
             ! send Bz data to remote
             call mpisend_real (Bz0_l, (/ bnx, bny /), partner, tag_l)
             call mpisend_real (Bz0_r, (/ bnx, bny /), partner, tag_r)
-            call mpisend_real (t_l, 1, partner, tag_l)
-            call mpisend_real (t_r, 1, partner, tag_r)
-            call mpisend_real (delta_t, 1, partner, tag_dt)
+            call mpisend_real (t_l, partner, tag_l)
+            call mpisend_real (t_r, partner, tag_r)
+            call mpisend_real (delta_t, partner, tag_dt)
           enddo
           ! read local Bz data
           read (10,rec=rec_l) Bz0_l
@@ -5348,9 +5348,9 @@ module Boundcond
           ! wait for Bz data from root processor
           call mpirecv_real (Bz0_l, (/ bnx, bny /), ipz*nprocxy, tag_l)
           call mpirecv_real (Bz0_r, (/ bnx, bny /), ipz*nprocxy, tag_r)
-          call mpirecv_real (t_l, 1, ipz*nprocxy, tag_l)
-          call mpirecv_real (t_r, 1, ipz*nprocxy, tag_r)
-          call mpirecv_real (delta_t, 1, ipz*nprocxy, tag_dt)
+          call mpirecv_real (t_l, ipz*nprocxy, tag_l)
+          call mpirecv_real (t_r, ipz*nprocxy, tag_r)
+          call mpirecv_real (delta_t, ipz*nprocxy, tag_dt)
 !
         endif
 !
@@ -7552,8 +7552,8 @@ module Boundcond
       if (iproc/=nroot) then
         ! send to first processor at given height
         !
-        call mpisend_real(local_flux,1,nroot,111+iproc)
-        call mpisend_real(local_mass,1,nroot,211+iproc)
+        call mpisend_real(local_flux,nroot,111+iproc)
+        call mpisend_real(local_mass,nroot,211+iproc)
       else
         total_flux=local_flux
         total_mass=local_mass
@@ -7561,8 +7561,8 @@ module Boundcond
           do j=0,nprocy-1
             ipt = i+nprocx*j+ipz*nprocx*nprocy
             if (ipt/=nroot) then
-              call mpirecv_real(get_lf,1,ipt,111+ipt)
-              call mpirecv_real(get_lm,1,ipt,211+ipt)
+              call mpirecv_real(get_lf,ipt,111+ipt)
+              call mpirecv_real(get_lm,ipt,211+ipt)
               total_flux=total_flux+get_lf
               total_mass=total_mass+get_lm
             endif
@@ -7579,13 +7579,13 @@ module Boundcond
 !  now distribute u_add
 !
       if (iproc/=nroot) then
-        call mpirecv_real(u_add,1,nroot,311+iproc)
+        call mpirecv_real(u_add,nroot,311+iproc)
       else
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j+ipz*nprocx*nprocy
             if (ipt/=nroot) then
-              call mpisend_real(u_add,1,ipt,311+ipt)
+              call mpisend_real(u_add,ipt,311+ipt)
             endif
           enddo
         enddo

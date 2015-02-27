@@ -649,23 +649,23 @@ module Special
             do i=0,nprocx-1;  do j=0,nprocy-1
               ipt = i+nprocx*j
               if (ipt /= 0) then
-                call mpirecv_real(tmp,1,ipt,556+ipt)
+                call mpirecv_real(tmp,ipt,556+ipt)
                 Bzflux = Bzflux+tmp
               endif
             enddo; enddo
           else
-            call mpisend_real(Bzflux,1,0,556+iproc)
+            call mpisend_real(Bzflux,0,556+iproc)
           endif
 !  Distribute the result
           if (iproc == 0) then
             do i=0,nprocx-1;  do j=0,nprocy-1
               ipt = i+nprocx*j
               if (ipt /= 0) then
-                call mpisend_real(Bzflux,1,ipt,556+ipt)
+                call mpisend_real(Bzflux,ipt,556+ipt)
               endif
             enddo; enddo
           else
-            call mpirecv_real(Bzflux,1,0,556+iproc)
+            call mpirecv_real(Bzflux,0,556+iproc)
           endif
 !
           if (nxgrid /= 1 .and. nygrid /= 1) then
@@ -3001,12 +3001,12 @@ module Special
         do i=0,nprocx-1; do j=0,nprocy-1
           ipt = i+nprocx*j
           if (ipt /= 0) then
-            call mpirecv_logical(ltmp,1,ipt,ipt+222)
+            call mpirecv_logical(ltmp,ipt,ipt+222)
             if (ltmp) new_points=.true.
           endif
         enddo; enddo
       else
-        call mpisend_logical(lnew_point,1,0,iproc+222)
+        call mpisend_logical(lnew_point,0,iproc+222)
       endif
 !
 !  root sends
@@ -3015,11 +3015,11 @@ module Special
         do i=0,nprocx-1; do j=0,nprocy-1
           ipt = i+nprocx*j
           if (ipt /= 0) then
-            call mpisend_logical(new_points,1,ipt,ipt+222)
+            call mpisend_logical(new_points,ipt,ipt+222)
           endif
         enddo; enddo
       else
-        call mpirecv_logical(new_points,1,0,iproc+222)
+        call mpirecv_logical(new_points,0,iproc+222)
       endif
 !
     endfunction new_points
@@ -3686,9 +3686,9 @@ module Special
           do px=0, nprocx-1
             do py=0, nprocy-1
               if ((px == 0) .and. (py == 0)) cycle
-              call mpisend_real(tl, 1, px+py*nprocx, tag_tl)
-              call mpisend_real(tr, 1, px+py*nprocx, tag_tr)
-              call mpisend_real(delta_t, 1, px+py*nprocx, tag_dt)
+              call mpisend_real(tl, px+py*nprocx, tag_tl)
+              call mpisend_real(tr, px+py*nprocx, tag_tr)
+              call mpisend_real(delta_t, px+py*nprocx, tag_dt)
               call mpisend_real(Ux_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uxl)
               call mpisend_real(Uy_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uyl)
               call mpisend_real(Ux_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uxr)
@@ -3698,9 +3698,9 @@ module Special
 !
         else
           if (lfirst_proc_z) then
-            call mpirecv_real(tl, 1, 0, tag_tl)
-            call mpirecv_real(tr, 1, 0, tag_tr)
-            call mpirecv_real(delta_t, 1, 0, tag_dt)
+            call mpirecv_real(tl, 0, tag_tl)
+            call mpirecv_real(tr, 0, tag_tr)
+            call mpirecv_real(delta_t, 0, tag_dt)
             call mpirecv_real(Ux_e_g_l,(/nxgrid,nygrid/),0,tag_uxl)
             call mpirecv_real(Uy_e_g_l,(/nxgrid,nygrid/),0,tag_uyl)
             call mpirecv_real(Ux_e_g_r,(/nxgrid,nygrid/),0,tag_uxr)
@@ -3795,13 +3795,13 @@ module Special
           do i=0,nprocx-1; do j=0,nprocy-1
             ipt = i+nprocx*J
             if (ipt /= 0) then
-              call mpisend_real(tl,1,ipt,tag_left)
-              call mpisend_real(tr,1,ipt,tag_right)
+              call mpisend_real(tl,ipt,tag_left)
+              call mpisend_real(tr,ipt,tag_right)
             endif
           enddo; enddo
         else
-          call mpirecv_real(tl,1,0,tag_left)
-          call mpirecv_real(tr,1,0,tag_right)
+          call mpirecv_real(tl,0,tag_left)
+          call mpirecv_real(tr,0,tag_right)
         endif
 !
         if (lroot) then

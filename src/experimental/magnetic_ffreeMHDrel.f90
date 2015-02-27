@@ -723,7 +723,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
       if (idiag_brms/=0) then
         if (iproc==0) brms=fname(idiag_brms)
-        call mpibcast_real(brms,1)
+        call mpibcast_real(brms)
       endif
 
       if (.not.lroot) return

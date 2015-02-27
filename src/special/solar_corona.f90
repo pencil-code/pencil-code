@@ -356,8 +356,8 @@ module Special
           endif
           rho0 = exp (lnrho0)
         endif
-        call mpibcast_real (lnrho0, 1)
-        call mpibcast_real (rho0, 1)
+        call mpibcast_real(lnrho0)
+        call mpibcast_real (rho0)
       endif
 !
     endsubroutine setup_profiles
@@ -473,7 +473,7 @@ module Special
         ! determine the number of data points in the profile
         n_data = (file_size (filename) - 2*2*4) / (len_double * 2)
       endif
-      call mpibcast_int (n_data, 1)
+      call mpibcast_int (n_data)
 !
       ! allocate memory
       allocate (data(n_data), data_z(n_data), stat=alloc_err)
@@ -1604,14 +1604,14 @@ module Special
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
             if (partner == iproc) cycle
-            call mpisend_int (frame_pos, 1, partner, tag_pos)
-            call mpisend_real (frame_time, 1, partner, tag_time)
+            call mpisend_int (frame_pos, partner, tag_pos)
+            call mpisend_real (frame_time, partner, tag_time)
           enddo
         enddo
       else
         ! Receive results
-        call mpirecv_int (frame_pos, 1, ipz*nprocxy, tag_pos)
-        call mpirecv_real (frame_time, 1, ipz*nprocxy, tag_time)
+        call mpirecv_int (frame_pos, ipz*nprocxy, tag_pos)
+        call mpirecv_real (frame_time, ipz*nprocxy, tag_time)
       endif
 !
     endsubroutine find_frame

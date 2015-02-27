@@ -1059,7 +1059,7 @@ module Grid
 !  for iprocy=0 and iprocz=0) for broadcasting.
 !
             if (r_ext==impossible) &
-                 call mpirecv_real(r_ext,1,nprocx-1,111)
+                 call mpirecv_real(r_ext,nprocx-1,111)
           endif
 !
 !  The last x-processor knows the value of r_ext, and sends
@@ -1068,13 +1068,13 @@ module Grid
           if ((r_ext==impossible).and.&
                (llast_proc_x.and.lfirst_proc_y.and.lfirst_proc_z)) then
             r_ext=x(l2)
-            call mpisend_real(r_ext,1,0,111)
+            call mpisend_real(r_ext,0,111)
           endif
 !
 !  Broadcast the values of r_int and r_ext
 !
-          call mpibcast_real(r_int,1)
-          call mpibcast_real(r_ext,1)
+          call mpibcast_real(r_int)
+          call mpibcast_real(r_ext)
         else
 !
 !  Serial-x. Just get the local grid values.

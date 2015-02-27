@@ -431,12 +431,12 @@ module Particles_sink
           npar_sink_proc(0)=npar_sink_loc
           npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
-            call mpirecv_int(npar_sink_proc(iproc_recv),1, &
+            call mpirecv_int(npar_sink_proc(iproc_recv), &
                 iproc_recv,itag_npar+iproc_recv)
             npar_sink=npar_sink+npar_sink_proc(iproc_recv)
           enddo
         else
-          call mpisend_int(npar_sink_loc,1,0,itag_npar+iproc)
+          call mpisend_int(npar_sink_loc,0,itag_npar+iproc)
         endif
 !
 !  Let the processors know how many sink particles there are.
@@ -865,8 +865,8 @@ module Particles_sink
             j2=1
           else
             npar_sink=0
-            call mpisend_int(npar_sink_loc,1,iproc_send,itag_npar+iproc)
-            call mpirecv_int(npar_sink,1,iproc_recv,itag_npar+iproc_recv)
+            call mpisend_int(npar_sink_loc,iproc_send,itag_npar+iproc)
+            call mpirecv_int(npar_sink,iproc_recv,itag_npar+iproc_recv)
             do i=0,ncpus-1
               if (i==iproc) then
                 if (npar_sink_loc/=0) &

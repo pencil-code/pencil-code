@@ -635,7 +635,7 @@ module Hydro
 !
       if (idiag_orms/=0) then
         if (iproc==0) orms=fname(idiag_orms)
-        call mpibcast_real(orms,1)
+        call mpibcast_real(orms)
       endif
 
       if (.not.lroot) return

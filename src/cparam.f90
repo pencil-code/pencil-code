@@ -193,5 +193,6 @@ module Cparam
   integer, parameter :: iref_rho=1, iref_grho=2, iref_d2rho=3, iref_d6rho=4, &
                         iref_gp=5, iref_s=6, iref_gs=7, iref_d2s=8, iref_d6s=9
   integer, parameter :: nref_vars=9
+ 
 !
 endmodule Cparam

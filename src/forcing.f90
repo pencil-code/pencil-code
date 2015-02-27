@@ -998,8 +998,7 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
       real :: phase,ffnorm,iqfm
-      real, save :: kav
-      real, dimension (1) :: fsum_tmp,fsum
+      real, save :: kav,fsum,fsum_tmp
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,qf
       real, dimension (nx,3) :: forcing_rhs,curlo
@@ -1160,10 +1159,10 @@ print*,'NS: z_center=',z_center_fcont
 !
       if (lout) then
         if (idiag_qfm/=0) then
-          fsum_tmp(1)=iqfm/(nwgrid)
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iqfm=fsum(1)
-          call mpibcast_real(iqfm,1)
+          fsum_tmp=iqfm/(nwgrid)
+          call mpireduce_sum(fsum_tmp,fsum)
+          iqfm=fsum
+          call mpibcast_real(iqfm)
           fname(idiag_qfm)=iqfm
           itype_name(idiag_qfm)=ilabel_sum
         endif
@@ -1197,8 +1196,7 @@ print*,'NS: z_center=',z_center_fcont
       use Sub
 !
       real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm
-      real, save :: kav
-      real, dimension (1) :: fsum_tmp,fsum
+      real, save :: kav,fsum_tmp,fsum
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,ruf,rho
       real, dimension (mz) :: tmpz
@@ -1679,50 +1677,50 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !
       if (lout) then
         if (idiag_rufm/=0) then
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
         endif
         if (idiag_ruxfxm/=0) then
-          fsum_tmp(1)=iruxfxm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iruxfxm=fsum(1)
-          call mpibcast_real(iruxfxm,1)
+          fsum_tmp=iruxfxm
+          call mpireduce_sum(fsum_tmp,fsum)
+          iruxfxm=fsum
+          call mpibcast_real(iruxfxm)
           fname(idiag_ruxfxm)=iruxfxm
           itype_name(idiag_ruxfxm)=ilabel_sum
         endif
         if (idiag_ruxfym/=0) then
-          fsum_tmp(1)=iruxfym
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iruxfym=fsum(1)
-          call mpibcast_real(iruxfym,1)
+          fsum_tmp=iruxfym
+          call mpireduce_sum(fsum_tmp,fsum)
+          iruxfym=fsum
+          call mpibcast_real(iruxfym)
           fname(idiag_ruxfym)=iruxfym
           itype_name(idiag_ruxfym)=ilabel_sum
         endif
         if (idiag_ruyfxm/=0) then
-          fsum_tmp(1)=iruyfxm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iruyfxm=fsum(1)
-          call mpibcast_real(iruyfxm,1)
+          fsum_tmp=iruyfxm
+          call mpireduce_sum(fsum_tmp,fsum)
+          iruyfxm=fsum
+          call mpibcast_real(iruyfxm)
           fname(idiag_ruyfxm)=iruyfxm
           itype_name(idiag_ruyfxm)=ilabel_sum
         endif
         if (idiag_ruyfym/=0) then
-          fsum_tmp(1)=iruyfym
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iruyfym=fsum(1)
-          call mpibcast_real(iruyfym,1)
+          fsum_tmp=iruyfym
+          call mpireduce_sum(fsum_tmp,fsum)
+          iruyfym=fsum
+          call mpibcast_real(iruyfym)
           fname(idiag_ruyfym)=iruyfym
           itype_name(idiag_ruyfym)=ilabel_sum
         endif
         if (idiag_ruzfzm/=0) then
-          fsum_tmp(1)=iruzfzm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          iruzfzm=fsum(1)
-          call mpibcast_real(iruzfzm,1)
+          fsum_tmp=iruzfzm
+          call mpireduce_sum(fsum_tmp,fsum)
+          iruzfzm=fsum
+          call mpibcast_real(iruzfzm)
           fname(idiag_ruzfzm)=iruzfzm
           itype_name(idiag_ruzfzm)=ilabel_sum
         endif
@@ -2744,12 +2742,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use Sub
 !
       real :: irufm
-      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: cosx,sinx
-      real :: cost,sint,cosym,sinym
+      real :: cost,sint,cosym,sinym,fsum_tmp,fsum
       integer :: j,jf
       real :: fact
 !
@@ -2805,10 +2802,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           !  on different processors, irufm needs to be communicated
           !  to other processors
           !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
           !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -2828,8 +2825,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use Mpicomm
       use Sub
 !
-      real :: irufm
-      real, dimension (1) :: fsum_tmp,fsum
+      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2902,10 +2898,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           !  on different processors, irufm needs to be communicated
           !  to other processors
           !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
           !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -2928,8 +2924,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: irufm
-      real, dimension (1) :: fsum_tmp,fsum
+      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
       real, dimension (mx), save :: sinx,cosx
@@ -2997,10 +2992,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           !  on different processors, irufm needs to be communicated
           !  to other processors
           !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
           !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -3029,8 +3024,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use Mpicomm
       use Sub
 !
-      real :: irufm
-      real, dimension (1) :: fsum_tmp,fsum
+      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3101,10 +3095,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           !  on different processors, irufm needs to be communicated
           !  to other processors
           !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
           !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -3130,13 +3124,12 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl, force_tmp
 !
-      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       logical, dimension (3), save :: extent
       integer :: j,jf
-      real :: irufm,fact,width_ff21
+      real :: irufm,fact,width_ff21,fsum_tmp,fsum
 !
 !  check length of time step
 !
@@ -3297,10 +3290,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  on different processors, irufm needs to be communicated
 !  to other processors
 !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
 !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -3323,11 +3316,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl
+      real :: ampl,fsum_tmp,fsum
 !
       real, dimension (nx) :: r,p,tmp,rho,ruf
       real, dimension (nx,3) :: force_all,variable_rhs,forcing_rhs
-      real, dimension (1) :: fsum_tmp,fsum
       logical, dimension (3), save :: extent
       integer :: j,jf
       real :: irufm
@@ -3410,10 +3402,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  on different processors, irufm needs to be communicated
 !  to other processors
 !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
+          fsum_tmp=irufm
+          call mpireduce_sum(fsum_tmp,fsum)
+          irufm=fsum
+          call mpibcast_real(irufm)
 !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
@@ -3437,12 +3429,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho,udotf
-      real, dimension (1) :: fsum_tmp,fsum
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
-      real :: rho_uu_ff,force_ampl
+      real :: rho_uu_ff,force_ampl,fsum_tmp,fsum
       integer :: j
 !
       rho_uu_ff=0.
@@ -3461,11 +3452,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  on different processors, this result needs to be communicated
 !  to other processors
 !
-      fsum_tmp(1)=rho_uu_ff
-      call mpireduce_sum(fsum_tmp,fsum,1)
-      if (lroot) rho_uu_ff=fsum(1)/nwgrid
+      fsum_tmp=rho_uu_ff
+      call mpireduce_sum(fsum_tmp,fsum)
+      if (lroot) rho_uu_ff=fsum/nwgrid
 !      if (lroot) rho_uu_ff=rho_uu_ff/nwgrid
-      call mpibcast_real(rho_uu_ff,1)
+      call mpibcast_real(rho_uu_ff)
 !
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
@@ -4036,8 +4027,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
       real :: kx01,ky1,kz1,kx02,ky2,kz2
-      real :: mulforce_vec,irufm
-      real, dimension (1) :: fsum_tmp,fsum
+      real :: mulforce_vec,irufm,fsum_tmp,fsum
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
@@ -4120,10 +4110,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  on different processors, irufm needs to be communicated
 !  to other processors
 !
-        fsum_tmp(1)=irufm
-        call mpireduce_sum(fsum_tmp,fsum,1)
-        irufm=fsum(1)
-        call mpibcast_real(irufm,1)
+        fsum_tmp=irufm
+        call mpireduce_sum(fsum_tmp,fsum)
+        irufm=fsum
+        call mpibcast_real(irufm)
 !
 ! What should be added to force_vec in order to make the energy
 ! input equal to work_ff?
@@ -4166,8 +4156,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: force_ampl
-      real :: irufm
-!      real, dimension (1) :: fsum_tmp,fsum
+      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho, rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
 !      real, dimension (nx,3) :: bb,fxb
@@ -4240,10 +4229,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !           !  on different processors, irufm needs to be communicated
 !           !  to other processors
 !           !
-!           fsum_tmp(1)=irufm
-!           call mpireduce_sum(fsum_tmp,fsum,1)
-!           irufm=fsum(1)
-!           call mpibcast_real(irufm,1)
+!           fsum_tmp=irufm
+!           call mpireduce_sum(fsum_tmp,fsum)
+!           irufm=fsum
+!           call mpibcast_real(irufm)
 !           !
 !           fname(idiag_rufm)=irufm
 !           itype_name(idiag_rufm)=ilabel_sum

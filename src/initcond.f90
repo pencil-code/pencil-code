@@ -2594,7 +2594,7 @@ module Initcond
       real :: delS,ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
       real :: gamma,cs20,gamma_m1,eps2,radius2,width
       real :: lnrhosum_thisbox,rho0
-      real, dimension (1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
+      real :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
       integer :: l
 !
 !  calculate sigma
@@ -2689,18 +2689,18 @@ module Initcond
 !
 !  Must put sum_thisbox in 1-dimensional array
 !
-      lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
+      lnrhosum_thisbox_tmp = lnrhosum_thisbox
 !
 !  Add sum_thisbox up for all processors, deliver to root
 !
-      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox,1)
+      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox)
       if (lroot .and. ip<14) &
         print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
 !
 !  Calculate <rho> and send to all processors
 !
-      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/nwgrid)
-      call mpibcast_real(rho0,1)
+      if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
+      call mpibcast_real(rho0)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -2723,7 +2723,7 @@ module Initcond
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
       real :: gamma_m1,ztop,cs20,hh0
       real :: lnrhosum_thisbox,rho0
-      real, dimension (1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
+      real :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
 !
 !  calculate sigma
 !
@@ -2804,18 +2804,18 @@ module Initcond
 !
 !  Must put sum_thisbox in 1-dimensional array
 !
-      lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
+      lnrhosum_thisbox_tmp = lnrhosum_thisbox
 !
 !  Add sum_thisbox up for all processors, deliver to root
 !
-      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox,1)
+      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox)
       if (lroot .and. ip<14) &
           print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
 !
 !  Calculate <rho> and send to all processors
 !
-      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/nwgrid)
-      call mpibcast_real(rho0,1)
+      if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
+      call mpibcast_real(rho0)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -5392,8 +5392,7 @@ module Initcond
 !
       integer :: i,icpu
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,tmp1
-      real, dimension(1)::tmp3
+      real :: ampl,tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
       tmp2(:)=0.0
@@ -5409,8 +5408,8 @@ module Initcond
 !
       do icpu=1,ncpus
         tmp3=tmp1
-        call mpibcast_real(tmp3,1,icpu-1)
-        tmp2(icpu)=tmp3(1)
+        call mpibcast_real(tmp3,icpu-1)
+        tmp2(icpu)=tmp3
       enddo
 !
 !  If nprocz is 1 then start summing mass below from zero (sumtmp above).
@@ -5465,8 +5464,7 @@ module Initcond
 !
       integer :: i ,icpu
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,tmp1
-      real, dimension(1)::tmp3
+      real :: ampl,tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
       tmp2(:)=0.0
@@ -5482,8 +5480,8 @@ module Initcond
 !
       do icpu=1,ncpus
         tmp3=tmp1
-        call mpibcast_real(tmp3,1,icpu-1)
-        tmp2(icpu)=tmp3(1)
+        call mpibcast_real(tmp3,icpu-1)
+        tmp2(icpu)=tmp3
       enddo
 !
 !  If nprocz is 1 then start summing mass below from zero (sumtmp above).

@@ -514,20 +514,20 @@ module Diagnostics
 !   1-dec-09/dhruba+piyali: adapted from diagnostic
 !   3-may-12/axel+MR: to divide by box_volume, not nw
 !
-      real, dimension(1) :: mass_per_proc,mass
-      real:: average_density
-!
+      real :: mass_per_proc,average_density
       intent(out) :: average_density
       intent(in) :: mass_per_proc
 !
+      real :: mass
+!
 !  Communicate over all processors.
 !
-      call mpireduce_sum(mass_per_proc,mass,1)
+      call mpireduce_sum(mass_per_proc,mass)
 !
 !  The result is present everywhere
 !
-      average_density=mass(1)/box_volume
-      call mpibcast_real(average_density,1)
+      average_density=mass/box_volume
+      call mpibcast_real(average_density)
 !
     endsubroutine get_average_density
 !**********************************************************************

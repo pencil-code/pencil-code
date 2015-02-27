@@ -199,9 +199,9 @@ module Particles_mpicomm
         yref_par=y(m1)
         zref_par=z(n1)
       endif
-      call mpibcast_real(xref_par,1)
-      call mpibcast_real(yref_par,1)
-      call mpibcast_real(zref_par,1)
+      call mpibcast_real(xref_par)
+      call mpibcast_real(yref_par)
+      call mpibcast_real(zref_par)
 !
       call keep_compiler_quiet(f)
 !
@@ -594,12 +594,12 @@ module Particles_mpicomm
 !
         do i=1,nproc_parent
           if (iproc_parent_list(i)/=iproc) &
-              call mpisend_int(nmig_leave(iproc_parent_list(i)),1, &
+              call mpisend_int(nmig_leave(iproc_parent_list(i)), &
               iproc_parent_list(i),itag_nmig+iproc)
         enddo
         do i=1,nproc_foster
           if (iproc_foster_list(i)/=iproc) &
-              call mpirecv_int(nmig_enter(iproc_foster_list(i)),1, &
+              call mpirecv_int(nmig_enter(iproc_foster_list(i)), &
               iproc_foster_list(i),itag_nmig+iproc_foster_list(i))
         enddo
 !
@@ -707,7 +707,7 @@ module Particles_mpicomm
 !
         if (lstart.or.lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_or(lredo, lredo_all)
-          call mpibcast_logical(lredo_all, 1)
+          call mpibcast_logical(lredo_all)
         else
           lredo_all=.false.
         endif
@@ -932,19 +932,19 @@ module Particles_mpicomm
         if (lstart.or.lreblocking) then
           do i=0,ncpus-1
             if (iproc/=i) then
-              call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
+              call mpirecv_int(nmig_enter(i),i,itag_nmig)
             else
               do j=0,ncpus-1
-                if (iproc/=j) call mpisend_int(nmig_leave(j),1,j,itag_nmig)
+                if (iproc/=j) call mpisend_int(nmig_leave(j),j,itag_nmig)
               enddo
             endif
           enddo
         else
           do i=1,nproc_comm
-            call mpisend_int(nmig_leave(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc)
+            call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
           enddo
           do i=1,nproc_comm
-            call mpirecv_int(nmig_enter(iproc_comm(i)),1,iproc_comm(i),itag_nmig+iproc_comm(i))
+            call mpirecv_int(nmig_enter(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc_comm(i))
           enddo
         endif
 !
@@ -1096,7 +1096,7 @@ module Particles_mpicomm
 !
         if (lstart.or.lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_or(lredo, lredo_all)
-          call mpibcast_logical(lredo_all, 1)
+          call mpibcast_logical(lredo_all)
         else
           lredo_all=.false.
         endif
@@ -1321,14 +1321,14 @@ module Particles_mpicomm
         if (nproc_foster/=0) then
           do i=1,nproc_foster
             if (iproc_foster_list(i)/=iproc) &
-                call mpisend_int(nmig_leave(iproc_foster_list(i)),1, &
+                call mpisend_int(nmig_leave(iproc_foster_list(i)), &
                 iproc_foster_list(i),itag_nmig+iproc)
           enddo
         endif
         if (nproc_parent/=0) then
           do i=1,nproc_parent
             if (iproc_parent_list(i)/=iproc) &
-                call mpirecv_int(nmig_enter(iproc_parent_list(i)),1, &
+                call mpirecv_int(nmig_enter(iproc_parent_list(i)), &
                 iproc_parent_list(i),itag_nmig+iproc_parent_list(i))
           enddo
         endif
@@ -1436,7 +1436,7 @@ module Particles_mpicomm
 !
         if (lstart.or.lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_or(lredo, lredo_all)
-          call mpibcast_logical(lredo_all, 1)
+          call mpibcast_logical(lredo_all)
         else
           lredo_all=.false.
         endif
@@ -1605,8 +1605,8 @@ module Particles_mpicomm
         npar_want=0
         if (npar_sum<npar_target) npar_want=npar_target-npar_sum
 !
-        call mpisend_int(npar_want, 1, iproc_right, tag_id)
-        call mpirecv_int(npar_requ, 1, iproc_left, tag_id)
+        call mpisend_int(npar_want, iproc_right, tag_id)
+        call mpirecv_int(npar_requ, iproc_left, tag_id)
         if (ip<=6) then
           print*, 'iproc, iproc_left, iproc_right, npar_want, npar_requ='
           print*, iproc, iproc_left, iproc_right, npar_want, npar_requ
@@ -1636,12 +1636,12 @@ module Particles_mpicomm
 !  Inform the left processor of which bricks it may adopt.
 !
         npar_recv=0
-        call mpisend_int(nbrick_give, 1, iproc_left, tag_id)
-        call mpirecv_int(nbrick_recv, 1, iproc_right, tag_id)
+        call mpisend_int(nbrick_give, iproc_left, tag_id)
+        call mpirecv_int(nbrick_recv, iproc_right, tag_id)
         call mpisend_int(ibrick_give(0:nbrick_give-1), nbrick_give, iproc_left, tag_id)
         call mpirecv_int(ibrick_recv(0:nbrick_recv-1), nbrick_recv, iproc_right, tag_id)
-        call mpisend_int(npar_give, 1, iproc_left, tag_id)
-        call mpirecv_int(npar_recv, 1, iproc_right, tag_id)
+        call mpisend_int(npar_give, iproc_left, tag_id)
+        call mpirecv_int(npar_recv, iproc_right, tag_id)
 !
 !  Stop the code if load balancing puts too many blocks at any processor.
 !
@@ -1712,7 +1712,7 @@ module Particles_mpicomm
             print*, 'iproc, ibrick, iproc_foster_brick(ibrick)', &
                 iproc, ibrick, iproc_foster_brick(ibrick)
           endif
-          call mpisend_nonblock_int(iproc_foster_old(ibrick), 1, &
+          call mpisend_nonblock_int(iproc_foster_old(ibrick), &
               iproc_foster_brick(ibrick), tag_id+ibrick, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1729,7 +1729,7 @@ module Particles_mpicomm
           print*, 'iproc, iblock, iproc_parent_block(iblock)', &
               iproc, iblock, iproc_parent_block(iblock)
         endif
-        call mpirecv_nonblock_int(iproc_grandparent(iblock), 1, &
+        call mpirecv_nonblock_int(iproc_grandparent(iblock), &
             iproc_parent_block(iblock), tag_id+ibrick_parent_block(iblock), ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -1757,7 +1757,7 @@ module Particles_mpicomm
             print*, 'iproc, ibrick, iproc_foster_old(ibrick)', &
                 iproc, ibrick, iproc_foster_old(ibrick)
           endif
-          call mpisend_nonblock_int(iproc_foster_brick(ibrick), 1, & 
+          call mpisend_nonblock_int(iproc_foster_brick(ibrick), & 
               iproc_foster_old(ibrick), tag_id+ibrick, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
@@ -1775,7 +1775,7 @@ module Particles_mpicomm
           print*, 'iproc, iblock, iproc_parent_old(iblock)', &
               iproc, iblock, iproc_parent_old(iblock)
         endif
-        call mpirecv_nonblock_int(iproc_grandchild(iblock), 1, &
+        call mpirecv_nonblock_int(iproc_grandchild(iblock), &
             iproc_parent_old(iblock), tag_id+ibrick_parent_old(iblock), ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
@@ -2379,7 +2379,7 @@ module Particles_mpicomm
       npar_found=0
 !
       call mpireduce_sum_int(npar_loc,npar_found)
-      call mpibcast_int(npar_found,1)
+      call mpibcast_int(npar_found)
 !
       if (npar_found/=npar) then
         if (lroot) then

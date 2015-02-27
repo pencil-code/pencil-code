@@ -176,7 +176,7 @@ module Messages
 !
       if (.not.llife_support) then
         call mpireduce_sum_int(fatal_errors,fatal_errors_total)
-        call mpibcast_int(fatal_errors_total,1)
+        call mpibcast_int(fatal_errors_total)
 !
         if (fatal_errors_total/=0) then
           if (lroot) then

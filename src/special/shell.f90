@@ -410,7 +410,7 @@ module Special
           endselect
           deltm1=1./deltmbase
         endif
-        call mpibcast_real(deltm1,1)
+        call mpibcast_real(deltm1)
       endif
 !
       if (ldiagnos) then

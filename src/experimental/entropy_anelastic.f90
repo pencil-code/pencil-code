@@ -1214,8 +1214,7 @@ module Energy
 !      real, dimension(nx) :: pp
 !     double precision :: pp0
 !      real, dimension(2) :: fmpi2
-      real, dimension(1) :: fmpi1
-      real :: kpc
+      real :: kpc,fmpi1
       double precision ::  rhoscale
 !      integer :: iproctop
 !
@@ -1272,12 +1271,12 @@ module Energy
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
 !
-          fmpi1=(/ cs2bot /)
-          call mpibcast_real(fmpi1,1,0)
-          cs2bot=fmpi1(1)
-          fmpi1=(/ cs2top /)
-          call mpibcast_real(fmpi1,1,ncpus-1)
-          cs2top=fmpi1(1)
+          fmpi1=cs2bot
+          call mpibcast_real(fmpi1,0)
+          cs2bot=fmpi1
+          fmpi1=cs2top
+          call mpibcast_real(fmpi1,ncpus-1)
+          cs2top=fmpi1
 !
         endif
        enddo
@@ -1300,8 +1299,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho,ss
-      real, dimension(1) :: fmpi1
-      real :: rho0hs,cs0hs,H0hs
+      real :: rho0hs,cs0hs,H0hs,fmpi1
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
@@ -1316,12 +1314,12 @@ module Energy
           pp=rho*cs0hs**2
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
-          fmpi1=(/ cs2bot /)
-          call mpibcast_real(fmpi1,1,0)
-          cs2bot=fmpi1(1)
-          fmpi1=(/ cs2top /)
-          call mpibcast_real(fmpi1,1,ncpus-1)
-          cs2top=fmpi1(1)
+          fmpi1=cs2bot
+          call mpibcast_real(fmpi1,0)
+          cs2bot=fmpi1
+          fmpi1=cs2top
+          call mpibcast_real(fmpi1,ncpus-1)
+          cs2top=fmpi1
 !
          endif
        enddo

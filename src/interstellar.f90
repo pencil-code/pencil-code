@@ -2001,7 +2001,7 @@ module Interstellar
       real :: t_interval, surface_massII, mu
       integer :: iz
       real, dimension(nx,ny,nz) :: disk_massII
-      real, dimension(1) :: MmpiII, msumtmpII
+      real :: MmpiII, msumtmpII
       logical :: l_SNI
 !
       intent(IN) :: f, l_SNI
@@ -2030,10 +2030,10 @@ module Interstellar
       enddo
 !
       surface_massII=sum(disk_massII)
-      msumtmpII=(/ surface_massII /)
-      call mpireduce_sum(msumtmpII,MmpiII,1)
-      call mpibcast_real(MmpiII,1)
-      surface_massII=MmpiII(1)*dv
+      msumtmpII=surface_massII
+      call mpireduce_sum(msumtmpII,MmpiII)
+      call mpibcast_real(MmpiII)
+      surface_massII=MmpiII*dv
 !
       call getmu(f,mu)
 !
@@ -2064,7 +2064,7 @@ module Interstellar
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho, rho_cloud, lnTT, TT, yH
       real :: cloud_mass, cloud_mass_dim, freq_SNII, prob_SNII
-      real, dimension(1) :: franSN, fsum1, fsum1_tmp, fmpi1
+      real :: franSN, fsum1, fsum1_tmp, fmpi1
       real, dimension(ncpus) :: cloud_mass_byproc
       integer :: icpu, m, n, iSNR, ierr
       logical :: l_SNI
@@ -2115,17 +2115,17 @@ module Interstellar
 !
 !  Sum the total over all processors and multiply by dv to find total mass.
 !
-        fsum1_tmp=(/ cloud_mass /)
-        call mpireduce_sum(fsum1_tmp,fsum1,1)
-        call mpibcast_real(fsum1,1)
-        cloud_mass_dim=fsum1(1)*dv
+        fsum1_tmp=cloud_mass
+        call mpireduce_sum(fsum1_tmp,fsum1)
+        call mpibcast_real(fsum1)
+        cloud_mass_dim=fsum1*dv
 !
         if (ip<14) print*, &
             'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
         if (lroot .and. ip < 14) &
             print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
-            cloud_mass_dim,fsum1(1),dv
+            cloud_mass_dim,fsum1,dv
 !
 !  Additional contraint on the interval between SNII events. The total time
 !  elapsed since last SNII is dtsn. Probability of next event increases with
@@ -2141,9 +2141,9 @@ module Interstellar
         call random_number_wrapper(franSN)
 !
         if (lroot.and.ip<20) then
-        if (cloud_mass_dim>0.0.and.franSN(1)<=2.0*prob_SNII) then
+        if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
           print*,'check_SNII: freq,prob,rnd,dtsn:', &
-              freq_SNII,prob_SNII,franSN(1),dtsn
+              freq_SNII,prob_SNII,franSN,dtsn
           print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,', &
               'mass_SN,cloud_tau',&
               frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
@@ -2152,7 +2152,7 @@ module Interstellar
 !
 !  If likelihood of SNII greater than random number locate SNII.
 !
-        if (franSN(1) <= prob_SNII) then
+        if (franSN <= prob_SNII) then
 !
 !  The position_SN_bycloudmass needs the cloud_masses for each processor.
 !  Communicate and store them here, to avoid recalculation.
@@ -2163,8 +2163,8 @@ module Interstellar
 !
           do icpu=1,ncpus
             fmpi1=cloud_mass
-            call mpibcast_real(fmpi1,1,icpu-1)
-            cloud_mass_byproc(icpu)=fmpi1(1)
+            call mpibcast_real(fmpi1,icpu-1)
+            cloud_mass_byproc(icpu)=fmpi1
           enddo
 !
 !  Locate the next explosion.
@@ -2275,7 +2275,7 @@ module Interstellar
     real, dimension(nprocz) :: tmp3
     real, dimension(nz) :: rhotmp
     real :: zdisk, rhomax, maxrho, rhosum
-    real, dimension(1) :: mpirho, mpiz
+    real :: mpirho, mpiz
     real, dimension(ncpus):: tmp2
     integer :: yzproc, itmp, icpu, lm_range, previous_SNl, previous_SNm
 !
@@ -2308,9 +2308,9 @@ module Interstellar
       endif
 !
       do icpu=1,ncpus
-        mpirho=(/rhosum/)
-        call mpibcast_real(mpirho,1,icpu-1)
-        tmp2(icpu)=mpirho(1)
+        mpirho=rhosum
+        call mpibcast_real(mpirho,icpu-1)
+        tmp2(icpu)=mpirho
       enddo
 !
       do i=1,nprocz
@@ -2338,10 +2338,10 @@ module Interstellar
           rhomax=maxrho
           if (rhotmp(i-nghost) == rhomax) zdisk = z(i)
         enddo
-        mpiz=(/zdisk/)
+        mpiz=zdisk
       endif
-      call mpibcast_real(mpiz,1,yzproc)
-      zdisk = mpiz(1)
+      call mpibcast_real(mpiz,yzproc)
+      zdisk = mpiz
     endif
 !
 !  Pick SN position (SNR%l,SNR%m,SNR%n).
@@ -2582,7 +2582,7 @@ module Interstellar
         enddo find_SN
       endif
 !
-      call mpibcast_int(ierr,1,SNR%iproc)
+      call mpibcast_int(ierr,SNR%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
         if (ip<18) print*, &
           'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
@@ -2796,8 +2796,8 @@ module Interstellar
 !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
                                  ilnrho_ss, irho_ss
-      use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_real,&
-                         mpireduce_sum, mpibcast_int, mpireduce_sum
+      use Mpicomm, only: mpireduce_max, mpibcast_real, &
+                         mpireduce_sum, mpibcast_int
       use General, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
@@ -2817,10 +2817,9 @@ module Interstellar
       real, dimension(nx) :: deltarho, deltaEE
       real, dimension(nx,3) :: deltauu
       real, dimension(2) :: dmpi2, dmpi2_tmp
-      real, dimension(1) :: mmpi, mpi_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu
-      real :: maxlnTT, site_mass, maxTT=0.
+      real :: maxlnTT, site_mass, maxTT=0.,mmpi, mpi_tmp
       real :: radiusA, radiusB, t_interval_SN
       integer :: i
 !
@@ -3176,7 +3175,7 @@ module Interstellar
           where (dr2_SN > SNR%radius**2.0) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
-          call mpibcast_real(maxlnTT,1,SNR%iproc)
+          call mpibcast_real(maxlnTT,SNR%iproc)
           maxTT=exp(maxlnTT)
 !
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
@@ -3194,7 +3193,7 @@ module Interstellar
       enddo
 !
       if (present(ierr)) then
-        call mpibcast_int(ierr,1,SNR%iproc)
+        call mpibcast_int(ierr,SNR%iproc)
         if (ierr==iEXPLOSION_TOO_HOT) return
       endif
 !
@@ -3208,14 +3207,14 @@ module Interstellar
       endif
 !
       if (present(ierr)) then
-        call mpibcast_int(ierr,1,SNR%iproc)
+        call mpibcast_int(ierr,SNR%iproc)
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
       endif
 !
-      mpi_tmp=(/ site_mass /)
-      call mpireduce_sum(mpi_tmp,mmpi,1)
-      call mpibcast_real(mmpi,1)
-      site_mass=mmpi(1)*dv
+      mpi_tmp=site_mass
+      call mpireduce_sum(mpi_tmp,mmpi)
+      call mpibcast_real(mmpi)
+      site_mass=mmpi*dv
 !
       SNR%EE=0.
       SNR%MM=0.
@@ -3512,18 +3511,17 @@ module Interstellar
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: profile, ee_old, rho, lnrho
-      real :: factor
-      real, dimension(1) :: fmpi, fmpi_tmp
+      real :: factor, fmpi, fmpi_tmp
       integer :: i, iSNR
 !
       do i=1,nSNR
         iSNR=SNR_index(i)
         if (SNRs(iSNR)%state/=SNstate_damping) cycle
 !
-        fmpi_tmp(1)=SNRs(iSNR)%heat_energy
-        call mpireduce_sum(fmpi_tmp,fmpi,1)
-        call mpibcast_real(fmpi,1)
-        SNRs(iSNR)%heat_energy=fmpi(1)
+        fmpi_tmp=SNRs(iSNR)%heat_energy
+        call mpireduce_sum(fmpi_tmp,fmpi)
+        call mpibcast_real(fmpi)
+        SNRs(iSNR)%heat_energy=fmpi
 !
         factor = SNRs(iSNR)%heat_energy &
             / (cnorm_gaussian_SN(dimensionality)*SNRs(iSNR)%radius**dimensionality)
@@ -3733,7 +3731,7 @@ module Interstellar
 !
       tmp=-exp(rho_lowest)
       call mpireduce_max(tmp,rho_lowest)
-      call mpibcast_real(rho_lowest,1)
+      call mpibcast_real(rho_lowest)
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
@@ -3839,7 +3837,7 @@ module Interstellar
       real, intent(out) :: mass_removed
       real, dimension(nx) :: lnrho, lnrho_old
       real, dimension(nx) :: rho
-      real, dimension(1) :: dmpi1, dmpi1_tmp
+      real :: dmpi1, dmpi1_tmp
       real, dimension(nx) :: profile_cavity
 !
 !  Obtain distance to SN
@@ -3878,10 +3876,10 @@ module Interstellar
 !
       enddo
       enddo
-      dmpi1_tmp=(/ mass_removed /)
-      call mpireduce_sum(dmpi1_tmp,dmpi1,1)
-      call mpibcast_real(dmpi1,1)
-      mass_removed=dmpi1(1)*dv
+      dmpi1_tmp=mass_removed
+      call mpireduce_sum(dmpi1_tmp,dmpi1)
+      call mpibcast_real(dmpi1)
+      mass_removed=dmpi1*dv
 !
     endsubroutine calc_cavity_mass_lnrho
 !***********************************************************************
@@ -4221,9 +4219,9 @@ module Interstellar
 !      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !!
 !      real :: prec_factor=1.0E-6
-!      real, dimension(1) :: sum_tmp, rmpi
+!      real :: sum_tmp, rmpi
 !      real :: bflux, bmass, add_ratio, rhosum
-!      real, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
+!      real :: bfmpi, sum_1tmp, nmpi, sum_3tmp
 !      real :: newmass, oldmass
 !      integer :: l,m,n
 !!
@@ -4239,10 +4237,10 @@ module Interstellar
 !      else
 !        rhosum = sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
 !      endif
-!      sum_tmp=(/ rhosum /)
-!      call mpireduce_sum(sum_tmp,rmpi,1)
-!      call mpibcast_real(rmpi,1)
-!      rhosum=rmpi(1)
+!      sum_tmp=rhosum
+!      call mpireduce_sum(sum_tmp,rmpi)
+!      call mpibcast_real(rmpi)
+!      rhosum=rmpi
 !      oldmass=rhosum*dv
 !!
 !!  Calculate mass loss through the vertical boundaries rho*u_z
@@ -4272,16 +4270,16 @@ module Interstellar
 !          enddo
 !        endif
 !      enddo
-!      sum_1tmp=(/ bflux /)
+!      sum_1tmp=bflux
 !!
 !      if (ip<45.and.bflux /=0.0) print*,'addmassflux: bflux on iproc =', &
 !                                                     bflux, iproc
 !!
 !!  Sum over all processors and communicate total to all.
 !!
-!      call mpireduce_sum(sum_1tmp,bfmpi,1)
-!      call mpibcast_real(bfmpi,1)
-!      bflux=bfmpi(1)
+!      call mpireduce_sum(sum_1tmp,bfmpi)
+!      call mpibcast_real(bfmpi)
+!      bflux=bfmpi
 !      if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
 !      if (bflux>0.0) then
 !!
@@ -4322,11 +4320,11 @@ module Interstellar
 !          else
 !            rhosum=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
 !          endif
-!          sum_3tmp=(/ rhosum /)
-!          call mpireduce_sum(sum_3tmp,nmpi,1)
-!          call mpibcast_real(nmpi,1)
-!          rhosum=nmpi(1)
-!          newmass=nmpi(1)*dv
+!          sum_3tmp=rhosum
+!          call mpireduce_sum(sum_3tmp,nmpi)
+!          call mpibcast_real(nmpi)
+!          rhosum=nmpi
+!          newmass=nmpi*dv
 !          if (lroot.and.ip<45) print*,'addmassflux: oldmass, newmass =', &
 !              oldmass, newmass
 !          if (lroot.and.ip<70) print*, &

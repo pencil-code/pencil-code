@@ -1127,17 +1127,17 @@ module Equ
 !
 !      if (idiag_rhoccm/=0) then
 !        if (iproc==0) rhoccm=fname(idiag_rhoccm)
-!        call mpibcast_real(rhoccm,1)
+!        call mpibcast_real(rhoccm)
 !      endif
 !
 !      if (idiag_cc2m/=0) then
 !        if (iproc==0) cc2m=fname(idiag_cc2m)
-!        call mpibcast_real(cc2m,1)
+!        call mpibcast_real(cc2m)
 !      endif
 !
 !      if (idiag_gcc2m/=0) then
 !        if (iproc==0) gcc2m=fname(idiag_gcc2m)
-!        call mpibcast_real(gcc2m,1)
+!        call mpibcast_real(gcc2m)
 !      endif
 !
 !  Reset lwrite_prof.

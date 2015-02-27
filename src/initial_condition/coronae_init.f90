@@ -204,7 +204,7 @@ contains
           prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
         endif
         call stop_it_if_any(.false.,'')
-        call mpibcast_int (prof_nz,1)
+        call mpibcast_int (prof_nz)
 !
         allocate (prof_z(prof_nz), prof_lnrho(prof_nz), stat=ierr)
 !
@@ -292,7 +292,7 @@ contains
           prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
         endif
         call stop_it_if_any(.false.,'')
-        call mpibcast_int(prof_nz,1)
+        call mpibcast_int(prof_nz)
 !
         allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
 !
@@ -439,7 +439,7 @@ contains
       endif
 !
       call stop_it_if_any(.false.,'')
-      call mpibcast_int (prof_nz,1)
+      call mpibcast_int (prof_nz)
 !
       allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
       if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
@@ -547,12 +547,12 @@ contains
           do j=0,nprocx-1
             do k=0,nprocy-1
               ipt=j + nprocx*k+nprocxy*(ii+1)
-              call mpisend_real(f(l1,m1,n2+1,ilnrho),1,ipt,ipt)
+              call mpisend_real(f(l1,m1,n2+1,ilnrho),ipt,ipt)
             enddo
           enddo
         endif
       elseif (ipz==ii+1.and.ii<nprocz-1) then
-        call mpirecv_real(lnrho_0,1,nprocxy*(ipz-1),iproc)
+        call mpirecv_real(lnrho_0,nprocxy*(ipz-1),iproc)
         f(:,:,n1,ilnrho) = lnrho_0
       endif
     enddo
@@ -618,7 +618,7 @@ contains
     endif
 !
     call stop_it_if_any(.false.,'')
-    call mpibcast_int (prof_nx,1)
+    call mpibcast_int (prof_nx)
 !
     allocate (prof_x(prof_nx), prof_lnTT(prof_nx), stat=ierr)
     if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &

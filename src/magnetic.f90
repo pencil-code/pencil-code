@@ -5316,7 +5316,7 @@ module Magnetic
 !
       if (idiag_brms/=0) then
         if (iproc==0) brms=fname(idiag_brms)
-        call mpibcast_real(brms,1)
+        call mpibcast_real(brms)
       endif
 !
 !  The following calculation involving spatial averages
@@ -5348,7 +5348,7 @@ module Magnetic
 !  A = Atarget - factor*(Aactual-Atarget).
 !
       ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfact*(bmz-ampl_ff)
-      call mpibcast_real(ampl_beltrami,1)
+      call mpibcast_real(ampl_beltrami)
 !
     endsubroutine calc_mfield
 !***********************************************************************
