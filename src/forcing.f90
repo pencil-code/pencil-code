@@ -997,8 +997,8 @@ print*,'NS: z_center=',z_center_fcont
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
-      real :: phase,ffnorm,iqfm
-      real, save :: kav,fsum,fsum_tmp
+      real :: phase,ffnorm,iqfm,fsum,fsum_tmp
+      real, save :: kav
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,qf
       real, dimension (nx,3) :: forcing_rhs,curlo
@@ -1195,8 +1195,8 @@ print*,'NS: z_center=',z_center_fcont
       use Mpicomm
       use Sub
 !
-      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm
-      real, save :: kav,fsum_tmp,fsum
+      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm,fsum_tmp,fsum
+      real, save :: kav
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,ruf,rho
       real, dimension (mz) :: tmpz
