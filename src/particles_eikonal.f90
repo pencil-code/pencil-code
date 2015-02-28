@@ -43,7 +43,7 @@ module Particles
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: sphere_theta1=0.0, sphere_theta2=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0

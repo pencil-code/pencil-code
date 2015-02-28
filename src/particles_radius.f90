@@ -36,7 +36,7 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0, qplaw=0.0, eps_dtog=0.01
+  real :: ap1=1.0, qplaw=0.0
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'

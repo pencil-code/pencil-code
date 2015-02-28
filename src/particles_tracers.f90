@@ -28,7 +28,7 @@ module Particles
 !
   include 'particles.h'
 !
-  real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01, tausp=0.0
+  real :: xp0=0.0, yp0=0.0, zp0=0.0, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.

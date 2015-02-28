@@ -26,7 +26,6 @@ module Particles_density
 !
   real :: rhop_swarm0=1.0, rhop_swarm1=1.0, rhop_swarm2, rhop_swarm3
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
-  real :: eps_dtog=0.01
   real :: dummy=0.0
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
