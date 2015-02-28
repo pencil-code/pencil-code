@@ -2295,7 +2295,7 @@ module Mpicomm
 !
 !  Communicate character scalar between processors.
 !
-      character :: cbcast_array
+      character(LEN=*) :: cbcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -2305,7 +2305,7 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(cbcast_array,1,MPI_CHARACTER,ibcast_proc, &
+      call MPI_BCAST(cbcast_array,len(cbcast_array),MPI_CHARACTER,ibcast_proc, &
                      MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_scl
@@ -2315,7 +2315,7 @@ module Mpicomm
 !  Communicate character array between processors.
 !
       integer :: nbcast_array
-      character, dimension(nbcast_array) :: cbcast_array
+      character(LEN=*), dimension(nbcast_array) :: cbcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -2327,8 +2327,8 @@ module Mpicomm
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(cbcast_array,len(cbcast_array(1))*nbcast_array,MPI_CHARACTER, &
+                     ibcast_proc,MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
