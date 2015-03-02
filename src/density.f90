@@ -1374,7 +1374,7 @@ module Density
 !   10-feb-15/MR: extended calc of <grad(log(rho))> to linear density;
 !                 mass conservation slightly simplified
 !
-      use Sub, only: grad, finalize_aver,mean_density
+      use Sub, only: grad, finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -3283,5 +3283,45 @@ module Density
       enddo
 !
     endsubroutine read_reference_state
+!***********************************************************************
+    function mean_density(f)
+!
+!  Calculate mean density from f-array. With lreference_state=T it is the mean
+!  density deviation.
+!
+!  3-mar-14/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real :: mean_density
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      integer :: n,m
+      real :: tmp
+!
+      mean_density=0.
+!
+      do n=n1,n2
+        tmp=0.
+        do m=m1,m2
+          if (ldensity_nolog) then
+            tmp=tmp+sum(f(l1:l2,m,n,irho)*dVol_x(l1:l2))*dVol_y(m)
+          else
+            tmp=tmp+sum(exp(f(l1:l2,m,n,ilnrho))*dVol_x(l1:l2))*dVol_y(m)
+          endif
+        enddo
+        mean_density=mean_density+tmp*dVol_z(n)
+      enddo
+!
+      mean_density = mean_density/box_volume
+!
+      if (ncpus>1) then
+        call mpiallreduce_sum(mean_density,tmp)
+        mean_density=tmp
+      endif
+!
+    endfunction mean_density
 !***********************************************************************
 endmodule Density

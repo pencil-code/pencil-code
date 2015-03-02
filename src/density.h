@@ -13,6 +13,7 @@
   public :: calc_pencils_density
   public :: get_init_average_density, anelastic_after_mn,calc_ldensity_pars
   public :: dynamical_diffusion, boussinesq
+  public :: mean_density
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

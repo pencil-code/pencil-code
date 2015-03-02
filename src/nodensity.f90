@@ -291,4 +291,23 @@ module Density
 !
     endsubroutine boussinesq
 !***********************************************************************
+    function mean_density(f)
+!
+!  Return mean density as rho0 from eos
+!
+!  1-mar-15/MR: derived from mean_density in density
+!
+      use EquationOfState, only: rho0
+!
+      real :: mean_density
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      mean_density=rho0
+!
+      call keep_compiler_quiet(f)
+!
+    endfunction mean_density
+!***********************************************************************
 endmodule Density

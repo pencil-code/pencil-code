@@ -210,7 +210,7 @@ module Particles
       use EquationOfState, only: cs0, rho0, get_stratz
       use FArrayManager
       use SharedVariables, only: put_shared_variable
-      use Sub, only: mean_density
+      use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

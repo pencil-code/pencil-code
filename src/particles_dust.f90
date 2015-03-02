@@ -312,7 +312,7 @@ module Particles
 !
       use EquationOfState, only: rho0, cs0
       use SharedVariables, only: put_shared_variable
-      use Sub, only: mean_density
+      use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
