@@ -1318,4 +1318,46 @@ module Density
 !
     endsubroutine boussinesq
 !***********************************************************************
+    function mean_density(f)
+!
+!  Calculate mean density from f-array. With lreference_state=T it is the mean
+!  density deviation.
+!
+!  3-mar-14/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real :: mean_density
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      integer :: n,m,irhoxx
+      real :: tmp
+!
+      if (lanelastic_lin) then
+        irhoxx=irho_b
+      else
+        irhoxx=irho
+      endif
+!
+      mean_density=0.
+!
+      do n=n1,n2
+        tmp=0.
+        do m=m1,m2
+          tmp=tmp+sum(f(l1:l2,m,n,irhoxx)*dVol_x(l1:l2))*dVol_y(m)
+        enddo
+        mean_density=mean_density+tmp*dVol_z(n)
+      enddo
+!
+      mean_density = mean_density/box_volume
+!
+      if (ncpus>1) then
+        call mpiallreduce_sum(mean_density,tmp)
+        mean_density=tmp
+      endif
+!
+    endfunction mean_density
+!***********************************************************************
 endmodule Density
