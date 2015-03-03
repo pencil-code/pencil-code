@@ -59,6 +59,8 @@ module Grid
 !
 !  25-jun-04/tobi+wolf: coded
 !  20-aug-14/MR: minimal wavevectors k1xyz added
+!   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
+!                three neighbouring points from the boundary point
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -433,7 +435,7 @@ module Grid
         endselect
 !
 !  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary,
-!  this makes sure that the second derivertive is zero, if you choose a2 for example.
+!  this makes sure that the second derivative is zero, if you choose a2 for example.
 !  Still in the testing phase, that why it is commented out.
 !
 !        if ( .not.lequidist(1) ) then
@@ -463,6 +465,11 @@ module Grid
 !
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
+!
+        if (lfirst_proc_x) &
+          dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
+        if (llast_proc_x) &
+          dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
 !
       endif
 !
@@ -611,6 +618,12 @@ module Grid
 ! are estimated) are removed.
         dy_1=1./yprim
         dy_tilde=-yprim2/yprim**2
+!
+        if (lfirst_proc_y) &
+          dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
+        if (llast_proc_y) &
+          dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
+!
       endif
 !
 !  z coordinate
@@ -736,6 +749,12 @@ module Grid
 !
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
+!
+        if (lfirst_proc_z) &
+          dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
+        if (llast_proc_z) &
+          dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
+!
       endif
 !
 !  Compute averages across processor boundaries to calculate the physical

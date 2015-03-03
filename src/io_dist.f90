@@ -1212,6 +1212,8 @@ module Io
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  24-oct-13/MR  : handling of reading from different precision introduced
 !  28-oct-13/MR  : added overwriting of grid.dat if restart from different precision
+!   3-mar-15/MR  : calculation of d[xyz]2_bound added: contain twice the distances of
+!                  three neighbouring points from the boundary point
 !
       character (len=*) :: file
 !
@@ -1269,6 +1271,21 @@ module Io
 !
       dxmax_pencil = dxmax
       dxmin_pencil = dxmin
+!
+      if (lfirst_proc_x) &
+        dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
+      if (llast_proc_x) &
+        dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
+!
+      if (lfirst_proc_y) &
+        dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
+      if (llast_proc_y) &
+        dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
+!
+      if (lfirst_proc_z) &
+        dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
+      if (llast_proc_z) &
+        dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
 !
 !  debug output
 !
