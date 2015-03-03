@@ -561,7 +561,7 @@ module Dustdensity
           do k=1,ndustspec
             if (a1 == 0) then
               f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2)
+                  +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2)/md(k)
             else
               if (a1>ad(k)) then
                 fac=(ad(k)/a0-1.)**2/(ad(k)/a0-a1/a0)**2
@@ -2034,18 +2034,14 @@ module Dustdensity
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
+!  27-jan-15/axel+nils: coded
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: mfluxcond, cc_tmp, fact
+      real, dimension (nx) :: mfluxcond, cc_tmp, mdotk, mdotk1
       real :: dmdfac
       integer :: k,l
-!
-!  This subroutine does not work correctly - must be fixed (if possible)
-!  before it can be used.
-!
-      call fatal_error('dust_condensation_nolmdvar',&
-          'This subroutine is not working correctly!')
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -2054,18 +2050,18 @@ module Dustdensity
 !  Start with the first mass bin...
 !
         k=1
-        fact=-3*mfluxcond/ad(k)**2
-        df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k))+fact&
-            *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k))*md(k)/md(k+1))&
-            /(log(md(k+1)/md(k)))
-!
+        mdotk=-3*mfluxcond/ad(k)**2
+        df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+          +mdotk*f(l1:l2,m,n,ind(k))
+
 !  ... then loop over mass bins
 !
-        do k=1,ndustspec-1
-          fact=-3*mfluxcond/ad(k+1)**2
-          df(l1:l2,m,n,ind(k+1))=df(l1:l2,m,n,ind(k+1))+fact&
-              *(f(l1:l2,m,n,ind(k+1))*md(k+1)/md(k)-f(l1:l2,m,n,ind(k)))&
-              /(log(md(k+1)/md(k)))
+        do k=2,ndustspec
+          mdotk=-3*mfluxcond/ad(k)**2
+          mdotk1=-3*mfluxcond/ad(k-1)**2
+          df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+            +mdotk*f(l1:l2,m,n,ind(k))-mdotk1*f(l1:l2,m,n,ind(k-1))
+!
         enddo
 !
     endsubroutine dust_condensation_nolmdvar
@@ -2275,6 +2271,7 @@ module Dustdensity
 !
       real :: dndfac
       integer :: i,j,k,l
+      logical :: lmdvar_noevolve=.false.
 !
       do l=1,nx
         do i=1,ndustspec; do j=i,ndustspec
@@ -2290,11 +2287,13 @@ module Dustdensity
                   .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
                 if (lmdvar) then
                   df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
-                  if (p%nd(l,k) < ndmin_for_mdvar) then
-                    f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
-                  else
-                    df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
-                        (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
+                  if (.not.lmdvar_noevolve) then
+                    if (p%nd(l,k) < ndmin_for_mdvar) then
+                      f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
+                    else
+                      df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
+                          (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
+                    endif
                   endif
                   if (lmice) then
                     if (p%nd(l,k) == 0.) then
