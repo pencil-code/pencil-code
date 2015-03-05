@@ -309,15 +309,17 @@ module Particles
 !  parameters.
 !
 !  29-dec-04/anders: coded
+!   5-mar-15/MR: reference state included in calculation of mean density
 !
       use EquationOfState, only: rho0, cs0
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: rhom
       integer :: ierr, jspec
+      real, pointer :: reference_state_mass
 !
 !  This module is incompatible with particle block domain decomposition.
 !
@@ -415,6 +417,11 @@ module Particles
             rhom = rho0
           else
             rhom = mean_density(f)
+            if (lreference_state) then
+              call get_shared_variable('reference_state_mass',reference_state_mass, &
+                                       caller='initialize_particles')
+              rhom=rhom+reference_state_mass/box_volume
+            endif
           endif
         endif
         if (rhop_swarm==0.0) &
