@@ -7,6 +7,7 @@ import pylab as pyl
 from npfile import npfile
 import os
 import sys
+from string import maketrans
 
 def read_pvar(*args, **kwargs):
 	""" read pvar files from pencil code. if proc is not provided
@@ -28,7 +29,7 @@ class pcpvar(object):
 		def __init__(self,varfile='',casedir='.',datadir='/data',proc=-1):
 			keys,places=get_pvarnames(casedir=casedir,datadir=datadir)
 			for i in places:
-				setattr(self,keys[int(i)-1],int(i)-1)
+				setattr(self,keys[int(i)-1].replace('(','P').replace(')','P'),int(i)-1)
 			if (proc==-1):
 				procdirs = filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir))
 				nprocs=len(procdirs)
@@ -38,7 +39,7 @@ class pcpvar(object):
 			
 			setattr(self,'ipars',ipars)
 			for i in places:
-				setattr(self,keys[int(i)-1][1:],pvars[int(i)-1,:])
+				setattr(self,keys[int(i)-1][1:].replace('(','P').replace(')','P'),pvars[int(i)-1,:])
 				
 				
 				
