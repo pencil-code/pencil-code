@@ -1414,16 +1414,19 @@ module Dustvelocity
 !***********************************************************************
     subroutine get_dustcrosssection
 !
-!  Calculate surface of dust particles. Add collision efficiency, Xiangyu, 12/12/2014
+!  Calculate surface of dust particles. Add collision efficiency.
+!
+!  12-dec-14/Xiangyu: coded
+!   5-mar-15/nils+Xiangyu+axel: used actual interval size for ratio. radius
 !
       integer, parameter :: max_rows = 200, max_cols = 110
-      real, parameter :: step_radius =0.00000266, step_ratio = 0.00477
+      real :: step_radius, step_ratio
       
       integer :: i,j, row,col,ex,ey
       real, dimension(max_rows,max_cols) :: efficiency
-      real, dimension(max_cols,1) :: radius
-      real, dimension(max_rows,1) :: ratio
-      real ::  e,radius_ratio, adx, ady, radius1, radiusx, radiusy,  ratio1, ratiox, ratioy, scolld1
+      real, dimension(max_cols) :: radius
+      real, dimension(max_rows) :: ratio
+      real ::  e,radius_ratio, adx, ady, radius1, radiusx, radiusy,  ratio1, ratiox, ratioy
 
       logical :: luse_table
 !
@@ -1454,14 +1457,14 @@ module Dustvelocity
 !  read corresponding radius
 !
         do row = 1,max_cols
-          read(12,*) radius(row,1)
+          read(12,*) radius(row)
         enddo
         close(unit=12)
 !
 !  read corresponding radius ratio
 !
         do row = 1,max_rows
-          read(13,*) ratio(row,1)
+          read(13,*) ratio(row)
         enddo     
         close(unit=13)
       endselect
@@ -1472,41 +1475,78 @@ module Dustvelocity
         do j=1,ndustspec
           adx = ad(i)
           ady = ad(j)
-          scolld1 = scolld(i,j)
-
+!
           if (luse_table) then
             if (adx>=ady) then
-              do col = 1,max_cols
-                radius1 = radius(col,1)
-                radiusx = radius1+step_radius
-                radiusy = radius1-step_radius
-                  
-               ! if (radius1==adx) then
-                if (radius1>=radiusy .and. radius1<=radiusx) then
+!
+!  radius within interval
+!
+              do col = 2,max_cols-1
+                radius1 = radius(col)
+                radiusx = .5*(radius(col)+radius(col+1))
+                radiusy = .5*(radius(col)+radius(col-1))
+                if (adx>=radiusy .and. adx<radiusx) then
                   ey = col
                 end if
               end do
-  
+!
+!  lower end
+!
+              col = 1
+              radius1 = radius(col)
+              radiusx = .5*(radius(col)+radius(col+1))
+              if (adx<radiusx) then
+                ey = col
+              end if
+!
+!  upper end
+!
+              col = max_cols
+              radius1 = radius(col)
+              radiusy = .5*(radius(col)+radius(col-1))
+              if (adx>=radiusy) then
+                ey = col
+              end if
+!
+!  ratio within interval
+!
               radius_ratio = adx/ady
-              do row = 1,max_rows
-                 ratio1 = ratio(row,1)
-                 ratiox = ratio1+step_ratio
-                 ratioy = ratio1-step_ratio
-               ! if (ratio1==radius_ratio) then
-                 if (ratio1>=ratioy .and. ratio1<=ratiox) then
-                    ex = row
-                 end if
+              do row = 2,max_rows-1
+                ratio1 = ratio(row)
+                ratiox = .5*(ratio(row)+ratio(row+1))
+                ratioy = .5*(ratio(row)+ratio(row-1))
+                if (radius_ratio>=ratioy .and. radius_ratio<ratiox) then
+                  ex = row
+                end if
               end do
+!
+!  lower end
+!
+              row = 1
+              ratio1 = ratio(row)
+              ratiox = .5*(ratio(row)+ratio(row+1))
+              if (radius_ratio<ratiox) then
+                ex = row
+              end if
+!
+!  upper end
+!
+              row = max_rows
+              ratio1 = ratio(row)
+              ratioy = .5*(ratio(row)+ratio(row-1))
+              if (radius_ratio>=ratioy) then
+                ex = row
+              end if
+!
+!  set efficiency
+!
             endif
             e = efficiency(ex,ey)
           else
             e = 1.
           endif
-          scolld1 = e*pi*(adx+ady)**2
-
-         ! scolld(i,j) = e*pi*(adx+ady)**2
-           scolld(i,j) = scolld1
-
+          scolld(i,j) = e*pi*(adx+ady)**2
+!
         enddo
       enddo
 !
