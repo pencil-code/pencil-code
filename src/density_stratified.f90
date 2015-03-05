@@ -933,39 +933,35 @@ module Density
 !
     endsubroutine get_slices_pressure
 !***********************************************************************
-    function mean_density(f)
+    real function mean_density(f)
 !
-!  Calculate mean density from f-array. With lreference_state=T it is the mean
-!  density deviation.
+!  Calculate mean density of the whole box.
 !
-!  3-mar-14/MR: coded
+!  06-mar-15/ccyang: adapted.
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real :: mean_density
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      integer :: n,m
+      integer :: m, n
       real :: tmp
 !
-      mean_density=0.
+      mean_density = 0.0
 !
-      do n=n1,n2
-        tmp=0.
-        do m=m1,m2
-          tmp=tmp+sum(f(l1:l2,m,n,irho)*dVol_x(l1:l2))*dVol_y(m)
-        enddo
-        mean_density=mean_density+tmp*dVol_z(n)
-      enddo
+      zscan: do n = n1, n2
+        tmp = 0.0
+        yscan: do m = m1, m2
+          tmp = tmp + sum((1.0 + f(l1:l2,m,n,irho)) * dVol_x(l1:l2)) * dVol_y(m)
+        enddo yscan
+        mean_density = mean_density + tmp * rho0z(n) * dVol_z(n)
+      enddo zscan
 !
-      mean_density = mean_density/box_volume
+      mean_density = mean_density / box_volume
 !
-      if (ncpus>1) then
-        call mpiallreduce_sum(mean_density,tmp)
-        mean_density=tmp
-      endif
+      comm: if (ncpus > 1) then
+        call mpiallreduce_sum(mean_density, tmp)
+        mean_density = tmp
+      endif comm
 !
     endfunction mean_density
 !***********************************************************************
