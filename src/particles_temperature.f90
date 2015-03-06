@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 ! CPARAM logical, parameter :: lparticles_temperature=.true.
 !
-!! PENCILS PROVIDED TTp
+! PENCILS PROVIDED TTp
 !
 !***************************************************************
 module Particles_temperature
@@ -32,13 +32,12 @@ module Particles_temperature
 !
   logical :: lpart_temp_backreac=.true.
   real :: init_part_temp, emissivity, cp_part=0.711e7 ! wolframalpha, erg/(g*K)
-  character (len=labellen), dimension (ninit) :: init_particle_temperature='nothing'
+  character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
-  namelist /particles_TT_run_pars/ &
-      emissivity, cp_part, lpart_temp_backreac
+  namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -57,17 +56,17 @@ module Particles_temperature
 !
 !  Indices for particle position.
 !
-      iTp=npvar+1
-      pvarname(npvar+1)='iTp'
+      iTp = npvar+1
+      pvarname(npvar+1) = 'iTp'
 !
 !  Increase npvar accordingly.
 !
-      npvar=npvar+1
+      npvar = npvar+1
 !
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles_temp','npvar > mpvar')
       endif
 !
@@ -80,9 +79,9 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
-    end subroutine initialize_particles_TT
+    endsubroutine initialize_particles_TT
 !***********************************************************************
     subroutine init_particles_TT(f,fp)
 !
@@ -93,24 +92,24 @@ module Particles_temperature
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray) :: fp
       integer :: j
 !
-      intent (inout) :: f, fp
+      intent(inout) :: f, fp
 !
 !  Initial particle position.
 !
-      fp(1:npar_loc,iTp)=0.
-      do j=1,ninit
+      fp(1:npar_loc,iTp) = 0.
+      do j = 1,ninit
 !
         select case (init_particle_temperature(j))
 !
         case ('nothing')
-          if (lroot .and. j==1) print*, 'init_particles: nothing'
+          if (lroot .and. j == 1) print*, 'init_particles: nothing'
         case ('constant')
           if (lroot) print*, 'init_particles_temp: Constant temperature'
-          fp(1:npar_loc,iTp)=fp(1:npar_loc,iTp)+init_part_temp
+          fp(1:npar_loc,iTp) = fp(1:npar_loc,iTp)+init_part_temp
         case default
           if (lroot) &
               print*, 'init_particles_temp: No such such value for init_particle_temperature: ', &
@@ -137,22 +136,22 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_Tpm/=0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
-        if (idiag_etpm/=0) then
-          if (imp/=0) then
-            call sum_par_name(fp(1:npar_loc,iTp)*cp_part*&
+        if (idiag_Tpm /= 0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
+        if (idiag_etpm /= 0) then
+          if (imp /= 0) then
+            call sum_par_name(fp(1:npar_loc,iTp)*cp_part* &
                 fp(1:npar_loc,imp),idiag_etpm)
           else
-            call sum_par_name(fp(1:npar_loc,iTp)*cp_part*&
+            call sum_par_name(fp(1:npar_loc,iTp)*cp_part* &
                 4.*3.14*fp(1:npar_loc,iap)**3/3.*rhopmat,idiag_etpm)
           endif
         endif
@@ -174,44 +173,49 @@ module Particles_temperature
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
       real, dimension(:), allocatable :: q_reac, Nu_p
       real :: volume_cell
       real :: Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
-      integer :: k, inx0, ix0,iy0,iz0,ierr
+      integer :: k, inx0, ix0, iy0, iz0, ierr
       real :: rho1_point, weight
-      integer :: ixx0,ixx1,iyy0,iyy1,izz0,izz1
-      integer :: ixx,iyy,izz,k1,k2
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
+      integer :: ixx, iyy, izz, k1, k2
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: dfp, df
+      intent(in) :: f, fp, ineargrid
+      intent(inout) :: dfp, df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
-      feed_back=0.
-      k1=k1_imn(imn)
-      k2=k2_imn(imn)
+      feed_back = 0.
+!
+!  Do only if particles are present on the current pencil
+!
+      if (npar_imn(imn) /= 0) then
+!
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
 !  Allocate storage for variable transfer and call particles_chemistry
 !  for reactive heating of the particle if lreactive_heating is false,
 !  q_reac is set to zero in particles_chemistry
 !
-      allocate(Nu_p(k1:k2))
-      allocate(q_reac(k1:k2))
-      call get_temperature_chemistry(q_reac,Nu_p)
+        allocate(Nu_p(k1:k2))
+        allocate(q_reac(k1:k2))
+        call get_temperature_chemistry(q_reac,Nu_p)
 !
 !  Loop over all particles in current pencil.
 !
-      do k=k1,k2
+        do k = k1,k2
 !
 !  For a quiecent fluid the Nusselt number is equal to 2. This must be
 !  changed when there is a relative velocity between the partciles and
@@ -221,89 +225,91 @@ module Particles_temperature
 !
 !  Radiative heat transfer, has yet to be filled with life
 !
-        Qrad = 0.0
+          Qrad = 0.0
 !
 !  Calculate convective and conductive heat, all in CGS units
 !
-        ix0=ineargrid(k,1)
-        iy0=ineargrid(k,2)
-        iz0=ineargrid(k,3)
-        inx0=ix0-nghost
-        cond=p%tcond(inx0)
-        Ap=4.*pi*fp(k,iap)**2
-        heat_trans_coef=Nu_p(k)*cond/(2*fp(k,iap))
-        Qc=heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+          ix0 = ineargrid(k,1)
+          iy0 = ineargrid(k,2)
+          iz0 = ineargrid(k,3)
+          inx0 = ix0-nghost
+          cond = p%tcond(inx0)
+          Ap = 4.*pi*fp(k,iap)**2
+          heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))
+          Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-        dfp(k,iTp)=dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
+          dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
 !
 !  Calculate feed back from the particles to the gas phase
 !
-        if (lpart_temp_backreac) then
+          if (lpart_temp_backreac) then
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
-              fp,k,ix0,iy0,iz0)
+            call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                fp,k,ix0,iy0,iz0)
 !
 !  Loop over all neighbouring points
 !
-          do izz=izz0,izz1
-            do iyy=iyy0,iyy1
-              do ixx=ixx0,ixx1
+            do izz = izz0,izz1
+              do iyy = iyy0,iyy1
+                do ixx = ixx0,ixx1
 !
 !  Find the relative weight of the current grid point
 !
-                call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
 !  Find the volume of the grid cell of interest
 !
-                call find_grid_volume(ixx,iyy,izz,volume_cell)
+                  call find_grid_volume(ixx,iyy,izz,volume_cell)
 !
 !  Find the gas phase density
 !
-                if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                  rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                else
-                  rho1_point = p%rho1(ixx-nghost)
-                endif
+                  if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
+                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                  else
+                    rho1_point = p%rho1(ixx-nghost)
+                  endif
 !
 !  Add the source to the df-array
 !  NILS: The values of cv and Tg are currently found from the nearest grid
 !  NILS: point also for CIC and TSC. This should be fixed!
 !
-                if (ltemperature_nolog) then
-                  df(ixx,iyy,izz,iTT)=df(ixx,iyy,izz,iTT)&
-                      +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
-                else
-                  df(ixx,iyy,izz,ilnTT)=df(ixx,iyy,izz,ilnTT)&
-                      +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
-                endif
+                  if (ltemperature_nolog) then
+                    df(ixx,iyy,izz,iTT) = df(ixx,iyy,izz,iTT) &
+                        +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
+                  else
+                    df(ixx,iyy,izz,ilnTT) = df(ixx,iyy,izz,ilnTT) &
+                        +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                  endif
+                enddo
               enddo
             enddo
-          enddo
-        endif
-      enddo
+          endif
+        enddo
 !
-      deallocate(Nu_p)
-      deallocate(q_reac)
+        deallocate(Nu_p)
+        deallocate(q_reac)
+!
+      endif
 !
     endsubroutine dpTT_dt_pencil
 !***********************************************************************
     subroutine read_particles_TT_init_pars(unit,iostat)
 !
       include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_TT_init_pars,ERR=99, IOSTAT=iostat)
+        read (unit,NML=particles_TT_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_TT_init_pars,ERR=99)
+        read (unit,NML=particles_TT_init_pars,ERR=99)
       endif
 !
       99    return
@@ -312,21 +318,21 @@ module Particles_temperature
 !***********************************************************************
     subroutine write_particles_TT_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_TT_init_pars)
+      write (unit,NML=particles_TT_init_pars)
 !
     endsubroutine write_particles_TT_init_pars
 !***********************************************************************
     subroutine read_particles_TT_run_pars(unit,iostat)
 !
       include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_TT_run_pars,ERR=99, IOSTAT=iostat)
+        read (unit,NML=particles_TT_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=particles_TT_run_pars,ERR=99)
+        read (unit,NML=particles_TT_run_pars,ERR=99)
       endif
 !
       99    return
@@ -335,9 +341,9 @@ module Particles_temperature
 !***********************************************************************
     subroutine write_particles_TT_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_TT_run_pars)
+      write (unit,NML=particles_TT_run_pars)
 !
     endsubroutine write_particles_TT_run_pars
 !***********************************************************************
@@ -358,18 +364,18 @@ module Particles_temperature
 !  Write information to index.pro
 !
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (present(lwrite)) lwr = lwrite
+      if (lwr) write (3,*) 'iox=', iox
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_Tpm=0
-        idiag_etpm=0
+        idiag_Tpm = 0
+        idiag_etpm = 0
       endif
 !
-      if (lroot .and. ip<14) print*,'rprint_particles_TT: run through parse list'
-      do iname=1,nname
+      if (lroot .and. ip < 14) print*,'rprint_particles_TT: run through parse list'
+      do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'Tpm',idiag_Tpm)
         call parse_name(iname,cname(iname),cform(iname),'etpm',idiag_etpm)
       enddo
@@ -381,10 +387,10 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
-      real,dimension(mx,my,mz,mfarray),intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine particles_TT_prepencil_calc
 !***********************************************************************
-end module Particles_temperature
+endmodule Particles_temperature

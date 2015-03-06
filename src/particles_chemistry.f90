@@ -128,7 +128,7 @@ module Particles_chemistry
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
-!  this one is used for 
+!  this one is used for
 !
   real :: gas_constant=8.3144727 ![J/mol/K] MUST ALWAYS BE IN SI UNITS!!!
 !
@@ -299,8 +299,18 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_R_c_hat()
+!
+      integer :: k,k1,k2      
+!      
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
+!
       R_c_hat = 0.0
-      R_c_hat(:) = -sum(mdot_ck,DIM=2)/(St(:)*mol_mass_carbon)
+!
+      do k =k1,k2
+        R_c_hat(k) = -sum(mdot_ck(k,:))/(St(k)*mol_mass_carbon)
+      enddo
+!
     endsubroutine calc_R_c_hat
 ! ******************************************************************************
 !  Calculation of the modified surface area of a particle due to changes
@@ -310,7 +320,7 @@ module Particles_chemistry
 !
     subroutine calc_get_mod_surf_area(mod_surf_area,fp)
       real, dimension(:), allocatable :: mod_all, Sgc
-      real, dimension(:) :: mod_surf_area
+      real, dimension(k1_imn(imn):k2_imn(imn)) :: mod_surf_area
       real, dimension(:,:) :: fp
       integer :: k, k1, k2
 !
@@ -576,7 +586,7 @@ module Particles_chemistry
       enddo
 !
       species_list(:nlist) = temp_list(:nlist)
-      print*,'species_list=',species_list
+!      print*,'species_list=',species_list
     endsubroutine sort_compounds
 ! ******************************************************************************
 !  Create lists of adsorbed and solid species
@@ -729,11 +739,11 @@ module Particles_chemistry
         i = i + 1
 !
 !  NILS: real_number is not necessarily a number when done like this, this
-!  NILS: may cause problems for some compilers (e.g. 
+!  NILS: may cause problems for some compilers (e.g.
 !  NILS: hosts/nordita/norlx51-daily-test.conf)
 !
         read (string(i:i+7),*,iostat=numerical) real_number
-        if (numerical == 0) then 
+        if (numerical == 0) then
           if (real_number < 10.) then
             numerical = 1
           endif
@@ -932,14 +942,14 @@ module Particles_chemistry
         pre_pressure = 1.
       endif
 !
-        denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
-        expo = denominator/(Rgas*fp(k,iTp))
-        k_p = exp(-expo)
+      denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
+      expo = denominator/(Rgas*fp(k,iTp))
+      k_p = exp(-expo)
 !
 ! k_p == pressure independent equilibrium constant
 !
-        k_c = k_p / (((gas_constant)*fp(k,iTp)/ &
-            (pre_pressure * interp_pp(k)))**(dngas(l-1)))
+      k_c = k_p / (((gas_constant)*fp(k,iTp)/ &
+          (pre_pressure * interp_pp(k)))**(dngas(l-1)))
 !
 ! k_c == pressure dependent equilibrium constant
 !
@@ -986,7 +996,7 @@ module Particles_chemistry
             enddo
           endif
 !  This is the cgs-SI switch
-          heating_k(k,l)=heating_k(k,l) * pre_energy
+          heating_k(k,l) = heating_k(k,l) * pre_energy
         enddo
       enddo
     endsubroutine calc_enthalpy_of_reaction
@@ -1455,47 +1465,53 @@ module Particles_chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
+      integer :: k1,k2      
 !
-      if(allocated(part)) deallocate(part)
-      if(allocated(part_power)) deallocate(part_power)
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
 !
+      if (allocated(part)) deallocate(part)
+      if (allocated(part_power)) deallocate(part_power)
 !
 ! Routine to calcute quantities used for reactive particles
 !
-      call allocate_variable_pencils()
+      if (k1 /= 0 .and. k2 /= 0) then
+        call allocate_variable_pencils()
 !
-      call calc_rho_p(fp)
-      call calc_conversion(fp)
-      call calc_St(fp)
+        call calc_rho_p(fp)
+        call calc_conversion(fp)
+        call calc_St(fp)
 !
-      call calc_ads_entropy(fp)
-      call calc_ads_enthalpy(fp)
-      call calc_surf_entropy(fp)
-      call calc_surf_enthalpy(fp)
+        call calc_ads_entropy(fp)
+        call calc_ads_enthalpy(fp)
+        call calc_surf_entropy(fp)
+        call calc_surf_enthalpy(fp)
 !
-      call calc_enthalpy_of_reaction()
-      call calc_entropy_of_reaction()
+        call calc_enthalpy_of_reaction()
+        call calc_entropy_of_reaction()
 !
-      call calc_K_k(f,fp,p,ineargrid)
-      call calc_Cg(p,ineargrid)
-      if (N_adsorbed_species > 1) call calc_Cs(fp)
-      call calc_A_p(fp)
-      call calc_RR_hat(f,fp)
+        call calc_K_k(f,fp,p,ineargrid)
+        call calc_Cg(p,ineargrid)
+        if (N_adsorbed_species > 1) call calc_Cs(fp)
+        call calc_A_p(fp)
+        call calc_RR_hat(f,fp)
 !
-      if (lreactive_heating) then
-        call calc_q_reac()
+        if (lreactive_heating) then
+          call calc_q_reac()
 !JONAS:  Commented out the calculation of the Nusselt number for now
 !JONAS:  since this has to be fixed before it can be used.
 !        call calc_Nusselt()
-        Nu_p=2.
-!JONAS:  We also need to make a subroutine calculcating the Sherwood 
+          Nu_p = 2.
+!JONAS:  We also need to make a subroutine calculcating the Sherwood
 !JONAS:  number.
-      else
-        q_reac = 0.0
-      endif
+        else
+          q_reac = 0.0
+        endif
 !
-      call calc_ndot_mdot_R_j_hat(fp)
-      call calc_R_c_hat()
+        call calc_ndot_mdot_R_j_hat(fp)
+        call calc_R_c_hat()
+    endif
+!
     endsubroutine calc_pchemistry_pencils
 ! ******************************************************************************
 !  allocate variables used in the pencil variable calculation
@@ -1598,31 +1614,36 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine cleanup_chemistry_pencils()
-      deallocate(surface_species_enthalpy)
-      deallocate(surface_species_entropy)
-      deallocate(adsorbed_species_entropy)
-      deallocate(adsorbed_species_enthalpy)
-      deallocate(thiele)
-      deallocate(effectiveness_factor)
-      deallocate(effectiveness_factor_species)
-      deallocate(effectiveness_factor_reaction)
-      deallocate(ndot)
-      deallocate(conversion)
-      deallocate(ndot_total)
-      deallocate(Rck)
-      deallocate(RR_hat)
-      deallocate(Rck_max)
-      deallocate(R_j_hat)
-      deallocate(Cs)
-      deallocate(rho_p)
-      deallocate(St)
-      deallocate(K_k)
-      deallocate(Cg)
-      deallocate(A_p)
-      deallocate(q_reac)
-      deallocate(Nu_p)
-      deallocate(mdot_ck)
-      deallocate(mass_loss)
+!
+!  Do only if particles are present on the pencil
+!
+      if (npar_imn(imn) /= 0) then
+        deallocate(surface_species_enthalpy)
+        deallocate(surface_species_entropy)
+        deallocate(adsorbed_species_entropy)
+        deallocate(adsorbed_species_enthalpy)
+        deallocate(thiele)
+        deallocate(effectiveness_factor)
+        deallocate(effectiveness_factor_species)
+        deallocate(effectiveness_factor_reaction)
+        deallocate(ndot)
+        deallocate(conversion)
+        deallocate(ndot_total)
+        deallocate(Rck)
+        deallocate(RR_hat)
+        deallocate(Rck_max)
+        deallocate(R_j_hat)
+        deallocate(Cs)
+        deallocate(rho_p)
+        deallocate(St)
+        deallocate(K_k)
+        deallocate(Cg)
+        deallocate(A_p)
+        deallocate(q_reac)
+        deallocate(Nu_p)
+        deallocate(mdot_ck)
+        deallocate(mass_loss)
+      endif
     endsubroutine cleanup_chemistry_pencils
 ! ******************************************************************************
 !  Read input parameters for the particles_chemistry module in start.x
@@ -1907,10 +1928,10 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      q_reac=0.0
+      q_reac = 0.0
       do k = k1,k2
         do i = 1,N_surface_reactions
-          q_reac(k) =q_reac(k)+RR_hat(k,i)*St(k)*(-heating_k(k,i))
+          q_reac(k) = q_reac(k)+RR_hat(k,i)*St(k)*(-heating_k(k,i))
         enddo
       enddo
 !
@@ -1934,7 +1955,7 @@ module Particles_chemistry
 !  JONAS: access to some chemistry variables as well to particles_dust for rep(k)
 !  for Pr and Sc is needed, these are only placeholders!!!
 !
-      call fatal_error('calc_Nusselt',&
+      call fatal_error('calc_Nusselt', &
           'Prandtl, Schmidt and Reynolds number are wrong!')
       !NILS: We must do this correctly now, otherwise we are likely to
       !NILS: forget and we will get wrong results.
@@ -2140,10 +2161,10 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine get_surface_chemistry(Cg_targ,ndot_targ)
-      real, dimension(:,:),optional :: ndot_targ
+      real, dimension(:,:), optional :: ndot_targ
       real, dimension(:) :: Cg_targ
 !
-      if(present(ndot_targ)) ndot_targ = ndot
+      if (present(ndot_targ)) ndot_targ = ndot
       Cg_targ = Cg
 !
     endsubroutine get_surface_chemistry
@@ -2152,7 +2173,7 @@ module Particles_chemistry
 !  dec-11/Jonas: coded
 !
     subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ)
-      real, dimension(:) :: q_reac_targ,Nu_p_targ
+      real, dimension(:) :: q_reac_targ, Nu_p_targ
 !
       Nu_p_targ = Nu_p
       q_reac_targ = q_reac
@@ -2160,23 +2181,23 @@ module Particles_chemistry
     endsubroutine get_temperature_chemistry
 ! ******************************************************************************
     subroutine particles_chemistry_clean_up
-!      
-      if(allocated(dngas)) deallocate(dngas)
-      if(allocated(omega_pg_dbl)) deallocate(omega_pg_dbl)
-      if(allocated(B_k)) deallocate(B_k)
-      if(allocated(Er_k)) deallocate(Er_k)
-      if(allocated(sigma_k)) deallocate(sigma_k)
-      if(allocated(reaction_order)) deallocate(reaction_order)
-      if(allocated(effectiveness_factor_old)) deallocate(effectiveness_factor_old)
-      if(allocated(diff_coeff_reactants)) deallocate(diff_coeff_reactants)
-      if(allocated(reaction_direction)) deallocate(reaction_direction)
-      if(allocated(flags)) deallocate(flags)
-      if(allocated(T_k)) deallocate(T_k)
-      if(allocated(R_c_hat)) deallocate(R_c_hat)
-      if(allocated(heating_k)) deallocate(heating_k)
-      if(allocated(entropy_k)) deallocate(entropy_k)
-      if(allocated(part)) deallocate(part)
-      if(allocated(part_power)) deallocate(part_power)
+!
+      if (allocated(dngas)) deallocate(dngas)
+      if (allocated(omega_pg_dbl)) deallocate(omega_pg_dbl)
+      if (allocated(B_k)) deallocate(B_k)
+      if (allocated(Er_k)) deallocate(Er_k)
+      if (allocated(sigma_k)) deallocate(sigma_k)
+      if (allocated(reaction_order)) deallocate(reaction_order)
+      if (allocated(effectiveness_factor_old)) deallocate(effectiveness_factor_old)
+      if (allocated(diff_coeff_reactants)) deallocate(diff_coeff_reactants)
+      if (allocated(reaction_direction)) deallocate(reaction_direction)
+      if (allocated(flags)) deallocate(flags)
+      if (allocated(T_k)) deallocate(T_k)
+      if (allocated(R_c_hat)) deallocate(R_c_hat)
+      if (allocated(heating_k)) deallocate(heating_k)
+      if (allocated(entropy_k)) deallocate(entropy_k)
+      if (allocated(part)) deallocate(part)
+      if (allocated(part_power)) deallocate(part_power)
 !
     endsubroutine particles_chemistry_clean_up
 ! ******************************************************************************
@@ -2192,9 +2213,9 @@ module Particles_chemistry
         ! given in SI units
         pre_energy = pre_energy * 1.0e7 !J to ergs
       else
-        mol_mass_carbon=mol_mass_carbon/1000.
+        mol_mass_carbon = mol_mass_carbon/1000.
       endif
 !
-    end subroutine register_unit_system
+    endsubroutine register_unit_system
 ! ******************************************************************************
 endmodule Particles_chemistry

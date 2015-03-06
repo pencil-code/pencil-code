@@ -380,7 +380,7 @@ module Particles_radius
 !  is wholly consumed (equation 51 in Equations to be solved for DNS
 !  reactive particles in a turbulent flow)
 !
-      if (lparticles_chemistry) then
+      if (lparticles_chemistry .and. npar_imn(imn) /= 0) then
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
@@ -695,7 +695,7 @@ module Particles_radius
             call sum_par_name(rhop_swarm/ &
             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
         if (idiag_ieffp/=0) & 
-            call sum_par_name(fp(1:mpar_loc,ieffp),idiag_ieffp)
+            call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
       endif
 !
       call keep_compiler_quiet(f,df)

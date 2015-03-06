@@ -112,9 +112,9 @@ module Particles_mass
       real, dimension(mpar_loc,mparray) :: fp
 !
       real :: rhom
-      integer :: j, k
+      integer :: j, k,i
 !
-      ! Initial particle position.
+      ! Initial particle mass
       fp(1:mpar_loc,imp) = 0.
 !
       do j = 1,ninit
@@ -134,11 +134,16 @@ module Particles_mass
 !
         case ('rhopmat')
           if (lroot) then
-            print*, 'init_particles_mass: constant particle mass'
-            print*, 'init_particles_mass: mass_const=', mass_const
+            print*, 'init_particles_mass: volume times density'
+            print*, 'init_particles_mass: rhopmat,rp=', rhopmat,fp(1,iap)
           endif
           fp(1:mpar_loc,imp) = 4.*pi*fp(1:mpar_loc,iap)**3*rhopmat/3.
-! NILS og JONAS: Must make auxiallary slot in fp array for initial_mass!!!!
+!
+!  Set initial surface shell density
+!
+          do k = 1,mpar_loc
+            fp(k,irhosurf) = rhopmat
+          enddo
 !
         case default
           if (lroot) &
@@ -148,15 +153,11 @@ module Particles_mass
 !
         endselect
 !
+      enddo
+!
 !  Set the initial mass
 !
-        fp(1:mpar_loc,impinit) = fp(1:mpar_loc,imp)
-!
-!  Set initial surface shell density
-!
-        fp(1:mpar_loc,irhosurf) = fp(1:mpar_loc,imp)/ (fp(1:mpar_loc,iap)**3 * 4./3. * pi)
-!
-      enddo
+      fp(1:mpar_loc,impinit) = fp(1:mpar_loc,imp)
 !
     endsubroutine init_particles_mass
 !***********************************************************************
@@ -183,12 +184,12 @@ module Particles_mass
 !
       ! Diagnostic output
       if (ldiagnos) then
-        if (idiag_mpm /= 0)   call sum_par_name(fp(1:mpar_loc,imp),idiag_mpm)
-        if (idiag_convm /= 0) call sum_par_name(1.-fp(1:mpar_loc,imp) &
+        if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
+        if (idiag_convm /= 0) call sum_par_name(1.-fp(1:npar_loc,imp) &
             /fp(1:mpar_loc,impinit),idiag_convm)
-        if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:mpar_loc,irhosurf),idiag_rhosurf)
+        if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:npar_loc,irhosurf),idiag_rhosurf)
         if (idiag_chrhopm /= 0) then
-          call sum_par_name(fp(1:mpar_loc,imp)/(4./3.*pi*fp(1:mpar_loc,iap)**3),idiag_chrhopm) 
+          call sum_par_name(fp(1:npar_loc,imp)/(4./3.*pi*fp(1:npar_loc,iap)**3),idiag_chrhopm)
         endif
       endif
 !
@@ -215,7 +216,7 @@ module Particles_mass
       real, dimension(nx) :: volume_pencil
       real :: volume_cell, rho1_point, weight, dmass, Vp
       real :: mass_per_radius, rho_init
-      integer :: k, ix0, iy0, iz0, k1,k2
+      integer :: k, ix0, iy0, iz0, k1, k2
       integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
       real, dimension(:), allocatable :: mass_loss, St
       real, dimension(:,:), allocatable :: Rck_max
@@ -228,93 +229,97 @@ module Particles_mass
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
+      if (npar_imn(imn) /= 0) then
 !
-      allocate(mass_loss(k1:k2))
-      allocate(St(k1:k2))
-      allocate(Rck_max(k1:k2,1:N_surface_reactions))
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
-      call get_mass_chemistry(mass_loss,St,Rck_max)
+        allocate(mass_loss(k1:k2))
+        allocate(St(k1:k2))
+        allocate(Rck_max(k1:k2,1:N_surface_reactions))
+!
+        call get_mass_chemistry(mass_loss,St,Rck_max)
 !
 !  JONAS: this place is better for new "pencil-calling" of variables
 !
 !  Get total surface area and molar reaction rate of carbon
 !
 !
-      ! Loop over all particles in current pencil.
-      do k = k1,k2
+! Loop over all particles in current pencil.
+        do k = k1,k2
 !
-        ! Check if particles chemistry is turned on
-        if (lparticles_chemistry) then
+! Check if particles chemistry is turned on
+          if (lparticles_chemistry) then
 !
-          ! Calculate the change in particle mass
-          dmass = mass_loss(k)
+! Calculate the change in particle mass
+            dmass = mass_loss(k)
 !
-        else
-          dmass = -dmpdt
-        endif
+          else
+            dmass = -dmpdt
+          endif
 !
-        ! Add the change in particle mass to the dfp array
-        dfp(k,imp) = dfp(k,imp)+dmass
+! Add the change in particle mass to the dfp array
+          dfp(k,imp) = dfp(k,imp)+dmass
 !
 !  Evolve the density at the outer particle shell. This is used to
 !  determine how evolve the particle radius (it should not start to
 !  decrease before the outer shell is entirly consumed).
 !
-        Vp = 4*pi*fp(k,iap)**3/3.
-        dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
+          Vp = 4*pi*fp(k,iap)**3/3.
+          dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
 !
-        ! Calculate feed back from the particles to the gas phase
-        if (lpart_mass_backreac) then
+! Calculate feed back from the particles to the gas phase
+          if (lpart_mass_backreac) then
 !
-          ix0 = ineargrid(k,1)
-          iy0 = ineargrid(k,2)
-          iz0 = ineargrid(k,3)
+            ix0 = ineargrid(k,1)
+            iy0 = ineargrid(k,2)
+            iz0 = ineargrid(k,3)
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-          call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-              fp,k,ix0,iy0,iz0)
+            call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                fp,k,ix0,iy0,iz0)
 !
-          ! Loop over all neighbouring points
-          do izz = izz0,izz1
-            do iyy = iyy0,iyy1
-              do ixx = ixx0,ixx1
+! Loop over all neighbouring points
+            do izz = izz0,izz1
+              do iyy = iyy0,iyy1
+                do ixx = ixx0,ixx1
 !
-                ! Find the relative weight of the current grid point
-                call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+! Find the relative weight of the current grid point
+                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
 !
-                ! Find the volume of the grid cell of interest
-                call find_grid_volume(ixx,iyy,izz,volume_cell)
+! Find the volume of the grid cell of interest
+                  call find_grid_volume(ixx,iyy,izz,volume_cell)
 !
-                ! Find the gas phase density
-                if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
-                  rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                else
-                  rho1_point = p%rho1(ixx-nghost)
-                endif
+! Find the gas phase density
+                  if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
+                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                  else
+                    rho1_point = p%rho1(ixx-nghost)
+                  endif
 !
-                ! Add the source to the df-array
-                if (ldensity_nolog) then
-                  df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
-                      -dmass*weight/volume_cell
-                else
-                  df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
-                      -dmass*rho1_point*weight/volume_cell
-                endif
+! Add the source to the df-array
+                  if (ldensity_nolog) then
+                    df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
+                        -dmass*weight/volume_cell
+                  else
+                    df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
+                        -dmass*rho1_point*weight/volume_cell
+                  endif
+                enddo
               enddo
             enddo
-          enddo
-        endif
-      enddo
+          endif
+        enddo
 !
-      deallocate(mass_loss)
-      deallocate(St)
-      deallocate(Rck_max)
+        deallocate(mass_loss)
+        deallocate(St)
+        deallocate(Rck_max)
+!
+      endif
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
@@ -393,7 +398,7 @@ module Particles_mass
 !
       ! Reset everything in case of reset.
       if (lreset) then
-        idiag_mpm = 0 
+        idiag_mpm = 0
         idiag_convm = 0
         idiag_chrhopm = 0
         idiag_rhosurf = 0

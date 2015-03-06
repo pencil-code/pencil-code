@@ -1823,9 +1823,11 @@ module Particles_map
                  'sufficient memory for interp_pp'
           call fatal_error('interpolate_quantities','')
         endif
-        do k=k1,k2
-          interp_pp(k)=p%pp(ineargrid(k,1)-nghost)
-        enddo
+        if (npar_imn(imn) /= 0) then
+          do k=k1,k2
+            interp_pp(k)=p%pp(ineargrid(k,1)-nghost)
+          enddo
+        endif
       endif
 !
 !  Viscosity:
@@ -1837,9 +1839,11 @@ module Particles_map
                  'sufficient memory for interp_nu'
           call fatal_error('interpolate_quantities','')
         endif
-        do k=k1,k2
-          interp_nu(k)=p%nu(ineargrid(k,1)-nghost)
-        enddo
+        if (npar_imn(imn) /= 0) then
+          do k=k1,k2
+            interp_nu(k)=p%nu(ineargrid(k,1)-nghost)
+          enddo
+        endif
       endif
 !
 !  Species:
