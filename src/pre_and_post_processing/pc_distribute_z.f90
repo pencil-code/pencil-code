@@ -203,16 +203,10 @@ program pc_distribute_z
     call directory_names()
 !
     ! write data:
-    rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * int (mvar_io*io_len, kind=8)
-    open (lun_output, FILE=trim(directory_snap)//'/'//filename, access='direct', recl=rec_len, status='replace')
-    write (lun_output, rec=1) f(:,:,:,1:mvar_io)
-    close (lun_output)
+    open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace',form='unformatted')
+    write(lun_output) f(:,:,:,1:mvar_io)
 !
     ! write additional data:
-    rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-    num_rec = int (mz, kind=8) * int (mvar_io*sizeof_real(), kind=8)
-    open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='old')
-    call fseek_pos (lun_output, rec_len, num_rec, 0)
     write (lun_output) t_sp
     if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz, dz
     close (lun_output)
@@ -220,7 +214,7 @@ program pc_distribute_z
   enddo
 !
   close (lun_input)
-  print *, 'Writing snapshot for time t =', t
+  print *, 'Written snapshot for time t =', t
 !
 !  Gvie all modules the possibility to exit properly.
 !
