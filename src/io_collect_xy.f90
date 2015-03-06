@@ -261,6 +261,7 @@ module Io
 !
 !  10-Feb-2012/Bourdin.KIS: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
+!   6-mar-2015/MR: changed direct access writing to sequential
 !
       use Mpicomm, only: globalize_xy
 !
@@ -272,8 +273,7 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
-      integer :: io_len, alloc_err
-      integer(kind=8) :: rec_len
+      integer :: alloc_err
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -287,14 +287,11 @@ module Io
         allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
 !
-        inquire (IOLENGTH=io_len) t_sp
-        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-        rec_len = rec_len * nv * io_len
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=rec_len)
-!
         ! receive data from the xy-plane of the pz-layer
         call globalize_xy (a, ga)
-        write (lun_output, rec=1) ga
+        !
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', form='unformatted')
+        write(lun_output) ga
         deallocate (ga)
 !
       else
@@ -305,7 +302,6 @@ module Io
       ! write additional data:
       if (lwrite_add) then
         if (lfirst_proc_xy) then
-          close (lun_output)
           if (lroot) then
             allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
@@ -314,7 +310,6 @@ module Io
             call collect_grid (x, y, z)
           endif
 !
-          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
           write (lun_output) t_sp
           if (lroot) then
@@ -443,6 +438,7 @@ module Io
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
 !  13-Jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
+!   6-mar-2015/MR: changed direct access reading to sequential
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpibcast_real, stop_it_if_any
       use Syscalls, only: sizeof_real
@@ -455,8 +451,7 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
-      integer :: io_len, alloc_err
-      integer(kind=8) :: rec_len
+      integer :: alloc_err
       logical :: lread_add
       real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
@@ -468,31 +463,23 @@ module Io
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
         if (ip <= 8) print *, 'input_snap: open ', file
 !
-        inquire (IOLENGTH=io_len) t_sp
-        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-        rec_len = rec_len * nv * io_len
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=rec_len, status='old')
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, form='unformatted', status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mz, nv
         ! iterate through xy-leading processors in the z-direction
-        read (lun_input, rec=1) ga
+        read (lun_input) ga
         ! distribute data in the xy-plane of the pz-layer
         call localize_xy (a, ga)
         deallocate (ga)
 !
       else
-        ! receive data from root processor
+        ! receive data from root processor of pz-layer
         call localize_xy (a)
       endif
 !
       ! read additional data
       if (lread_add) then
         if (lfirst_proc_xy) then
-!
-          close (lun_input)
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old', position='append')
-          backspace(lun_input); if (lroot) backspace(lun_input)
-          if (persist_initialized) backspace(lun_input)
 !
           read (lun_input) t_sp
 !
@@ -509,6 +496,7 @@ module Io
         else
           call distribute_grid (x, y, z)
         endif
+!
         t_test = t_sp
         call mpibcast_real (t_sp)
         if (.not. lfirst_proc_xy) t_test = t_sp
