@@ -26,13 +26,11 @@ program pc_distribute_z
   real, dimension (mzgrid) :: gz
   logical :: ex
   integer :: mvar_in, pz, pa, io_len, alloc_err
-  integer(kind=8) :: rec_len, num_rec
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .true.
   lmpicomm = .false.
   root = 0
-  lroot = .true.
   ipx = 0
   ipy = 0
   ipz = 0
@@ -57,7 +55,7 @@ program pc_distribute_z
 !
 !  Identify version.
 !
-  if (lroot) call svn_id( &
+  call svn_id( &
       '$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
@@ -97,14 +95,12 @@ program pc_distribute_z
   lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
-    if (lroot) then
-      print *, ''
-      print *, 'lwrite_aux=T but lread_aux=F'
-      print *, 'The code will write the auxiliary variables to allprocs/VARN'
-      print *, ' without having read them from proc*/VARN'
-      print *, ''
-      call fatal_error("pc_distribute_z","Stop and check")
-    endif
+    print *, ''
+    print *, 'lwrite_aux=T but lread_aux=F'
+    print *, 'The code will write the auxiliary variables to allprocs/VARN'
+    print *, ' without having read them from proc*/VARN'
+    print *, ''
+    call fatal_error("pc_distribute_z","Stop and check")
   endif
 !
 !  Will we write all slots of f?
@@ -131,10 +127,10 @@ program pc_distribute_z
 !
 !  Print resolution and dimension of the simulation.
 !
-  if (lroot) write (*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-  if (lroot) print *, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-  if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
+  write (*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+  print *, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+  print *, 'Lx, Ly, Lz=', Lxyz
+  print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   inquire (file=trim(directory_in)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_distribute_z', 'File not found: '//trim(directory_in)//'/'//filename, .true.)
@@ -142,10 +138,8 @@ program pc_distribute_z
   if (.not. ex) call fatal_error ('pc_distribute_z', 'File not found: '//trim(directory_in)//'/grid.dat', .true.)
 !
   ! read time:
-  rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-  num_rec = int (mzgrid, kind=8) * int (mvar_io*sizeof_real(), kind=8)
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, FORM='unformatted', status='old')
-  call fseek_pos (lun_input, rec_len, num_rec, 0)
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, FORM='unformatted', status='old',position='append')
+  backspace(lun_input)
   read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
   close (lun_input)
   t = t_sp
