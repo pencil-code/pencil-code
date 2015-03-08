@@ -504,7 +504,11 @@ module Pscalar
 !  Passive scalar sink.
 !
         if (lpscalar_sink) then
-          bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          if (Rpscalar_sink==0) then
+            bump=pscalar_sink
+          else
+            bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          endif
           df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(bump,2,npscalar)*p%cc
         endif
 !
