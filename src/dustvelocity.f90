@@ -231,6 +231,9 @@ module Dustvelocity
           mmon  = mumon*1.6733e-24
           unit_md = mmon
 
+        case ('pscalar')
+          !AB: no action needed
+
         case ('simplified')
           !AB: no action needed
 
