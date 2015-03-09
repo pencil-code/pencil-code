@@ -15,6 +15,7 @@ program pc_collect
   use Register
   use Snapshot
   use Sub
+  use General, only: backskip_to_time
   use Syscalls, only: sizeof_real
 !
   implicit none
@@ -28,8 +29,8 @@ program pc_collect
   real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
   real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
   logical :: ex
-  integer :: mvar_in, io_len, pz, pa, start_pos, end_pos, alloc_err
-  integer(kind=8) :: rec_len, num_rec
+  integer :: mvar_in, io_len, pz, pa, start_pos, end_pos, alloc_err, len_in_rec
+  integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
@@ -48,7 +49,7 @@ program pc_collect
   uucorn = 0
   ulcorn = 0
 !
-  inquire (IOLENGTH=io_len) 1.0
+  inquire (IOLENGTH=io_len) t_sp
 !
   if (IO_strategy == "collect") call fatal_error ('pc_collect', &
       "Snapshots are already collected, when using the 'io_collect' module.")
@@ -171,23 +172,33 @@ program pc_collect
     llast_proc_z = (ipz == nprocz-1)
 !
     if (IO_strategy == "collect_xy") then
+
       ! Take the shortcut, files are well prepared for direct combination
 !
       ! Set up directory names 'directory' and 'directory_snap'
       call directory_names()
 !
       ! Read the data
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-      rec_len = rec_len * mvar_in * io_len
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
-      read (lun_input, rec=1) gf
-      close (lun_input)
+      if (ldirect_access) then
+!
+        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * mvar_in * io_len
+        ! on some systems record lengths are limited to 2^30
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+
+        read (lun_input, rec=1) len_in_rec     ! always 4 bytes?
+        if (len_in_rec==rec_len) &
+          call fatal_error('input_snap','snapshot file is sequentially written')
+
+        read (lun_input, rec=1) gf
+        close(lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
+        call backskip_to_time(lun_input,lroot)
+      else
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
+        read (lun_input) gf
+      endif
 !
       ! Read additional information and check consistency of timestamp
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-      num_rec = int (mz, kind=8) * int (mvar_in*sizeof_real(), kind=8)
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
-      call fseek_pos (lun_input, rec_len, num_rec, 0)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp
