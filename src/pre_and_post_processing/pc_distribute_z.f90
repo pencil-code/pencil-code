@@ -1,4 +1,4 @@
-! This tool distributes a global data cube in into the proc-directories.
+! This tool distributes a global data cube into the proc-directories.
 !
 ! $Id$
 !***********************************************************************
@@ -44,8 +44,6 @@ program pc_distribute_z
   ulcorn = 0
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
-!
-  inquire (IOLENGTH=io_len) 1.0
 !
   if (IO_strategy /= "collect_xy") call fatal_error ('pc_distribute_z', &
       "This tool only makes sense together with the 'io_collect_xy' module.")
@@ -138,12 +136,13 @@ program pc_distribute_z
   if (.not. ex) call fatal_error ('pc_distribute_z', 'File not found: '//trim(directory_in)//'/grid.dat', .true.)
 !
   ! read time:
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, FORM='unformatted', status='old',position='append')
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, FORM='unformatted', status='old', position='append')
   backspace(lun_input)
   read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
   close (lun_input)
   t = t_sp
 !
+  inquire (IOLENGTH=io_len) t_sp
   open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
@@ -201,9 +200,9 @@ program pc_distribute_z
     write(lun_output) f(:,:,:,1:mvar_io)
 !
     ! write additional data:
-    write (lun_output) t_sp
-    if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz, dz
-    close (lun_output)
+    write(lun_output) t_sp
+    if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
+    close(lun_output)
 !
   enddo
 !
