@@ -26,6 +26,7 @@ program pc_distribute_z
   real, dimension (mzgrid) :: gz
   logical :: ex
   integer :: mvar_in, pz, pa, io_len, alloc_err
+  integer(kind=8) :: rec_len
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .true.
@@ -195,11 +196,21 @@ program pc_distribute_z
 !
     call directory_names()
 !
-    ! write data:
-    open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace',form='unformatted')
-    write(lun_output) f(:,:,:,1:mvar_io)
+!  Write data.
 !
-    ! write additional data:
+    if (ldirect_access) then
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * mvar_io * io_len
+      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace', access='direct', recl=rec_len )
+      write(lun_output, rec=1) f(:,:,:,1:mvar_io)
+      close(lun_output)
+      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='old', form='unformatted', position='append')
+    else
+      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace',form='unformatted')
+      write(lun_output) f(:,:,:,1:mvar_io)
+    endif
+!
+!  Write additional data.
+!
     write(lun_output) t_sp
     if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
     close(lun_output)
@@ -209,7 +220,7 @@ program pc_distribute_z
   close (lun_input)
   print *, 'Written snapshot for time t =', t
 !
-!  Gvie all modules the possibility to exit properly.
+!  Give all modules the possibility to exit properly.
 !
   call finalize_modules (f)
 !
