@@ -10,7 +10,7 @@
 !  extra information in the var files along with the actual field information.
 !
 !  The integers representing the various block/record types are defined in a
-!  separate file, record_types.inc.  These numbers MUST remain unique and MUST
+!  separate file, record_types.h.  These numbers MUST remain unique and MUST
 !  not be altered, though adding new types is acceptable (else old var.dat
 !  files may become unreadable).
 !

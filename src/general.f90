@@ -39,6 +39,7 @@ module General
   public :: loptest, ioptest, roptest, doptest, coptest
   public :: indgen
   public :: rewind
+  public :: backskip_to_time
 !
   include 'record_types.h'
 !
@@ -3385,5 +3386,35 @@ module General
       call keep_compiler_quiet(unit)
 
     endsubroutine rewind_int
+!***********************************************************************
+    subroutine backskip_to_time(lun,lroot)
+!
+!  Skips over possible persistent data blocks from end of snapshot to time record.
+!
+!  9-mar-15/MR: coded
+!
+      integer, intent(in) :: lun
+      logical, intent(in) :: lroot
+
+      integer :: i,id
+
+      backspace(lun)
+      read(lun) id
+
+      if (id==id_block_PERSISTENT) then
+        backspace(lun)
+
+        do
+          do i=1,3; backspace(lun); enddo
+          read(lun) id
+          if (id==id_block_PERSISTENT) exit
+        enddo
+        backspace(lun)
+      endif
+
+      backspace(lun)
+      if (lroot) backspace(lun)
+
+    endsubroutine backskip_to_time
 !****************************************************************************
 endmodule General

@@ -447,12 +447,15 @@ module Io
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
+!
 !  10-Feb-2012/Bourdin.KIS: coded
 !  13-Jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !   6-mar-2015/MR: changed direct access reading to sequential
+!   9-mar-2015/MR: backskipping to time record corrected
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpibcast_real, stop_it_if_any
       use Syscalls, only: sizeof_real
+      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -492,8 +495,7 @@ module Io
           if (lread_add) then
             close(lun_input)
             open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old',position='append')
-            backspace(lun_input)
-            if (lroot) backspace(lun_input)
+            call backskip_to_time(lun_input,lroot)
           endif
         else
           open (lun_input, FILE=trim (directory_snap)//'/'//file, form='unformatted', status='old')
