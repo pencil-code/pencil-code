@@ -273,7 +273,7 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
-      integer :: alloc_err
+      integer :: alloc_err,rec_len,io_len
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -289,9 +289,20 @@ module Io
 !
         ! receive data from the xy-plane of the pz-layer
         call globalize_xy (a, ga)
-        !
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', form='unformatted')
-        write(lun_output) ga
+
+        if (ldirect_access) then
+          inquire (IOLENGTH=io_len) t_sp
+          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=rec_len)
+          write(lun_output, rec=1) ga
+          if (lwrite_add) then
+            close(lun_output)
+            open (lun_output, FILE=trim (directory_snap)//'/'//file, status='old', form='unformatted', position='append')
+          endif
+        else
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', form='unformatted')
+          write(lun_output) ga
+        endif
         deallocate (ga)
 !
       else
@@ -424,10 +435,10 @@ module Io
 ! Note: gfortran would be able to seek with a 64-bit integer value, though.
 ! (20-Feb-2012, Bourdin.KIS)
 !
-      call fseek (unit, rec_len, reference)
+      !!!call fseek (unit, rec_len, reference)
       if (num >= 2) then
         do i = 2, num
-          call fseek (unit, rec_len, 1)
+          !!!call fseek (unit, rec_len, 1)
         enddo
       endif
 !
@@ -451,7 +462,8 @@ module Io
       real, dimension (:,:,:,:), allocatable :: ga
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
-      integer :: alloc_err
+      integer :: alloc_err,io_len,len_in_rec
+      integer(kind=8) :: rec_len
       logical :: lread_add
       real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
@@ -461,13 +473,34 @@ module Io
       if (lfirst_proc_xy) then
         allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
+!
         if (ip <= 8) print *, 'input_snap: open ', file
 !
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, form='unformatted', status='old')
-!
-        if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mz, nv
-        ! iterate through xy-leading processors in the z-direction
-        read (lun_input) ga
+        if (ldirect_access) then
+          inquire (IOLENGTH=io_len) t_sp
+          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
+          ! on some systems record lengths are limited to 2^30
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=rec_len, status='old')
+
+          read (lun_input, rec=1) len_in_rec     ! always 4 bytes?
+          if (len_in_rec==rec_len) &
+            call fatal_error('input_snap','snapshot file is sequentially written')
+
+          if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mz, nv
+          read (lun_input, rec=1) ga
+
+          if (lread_add) then
+            close(lun_input)
+            open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old',position='append')
+            backspace(lun_input)
+            if (lroot) backspace(lun_input)
+          endif
+        else
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, form='unformatted', status='old')
+          if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mz, nv
+          read (lun_input) ga
+        endif
+
         ! distribute data in the xy-plane of the pz-layer
         call localize_xy (a, ga)
         deallocate (ga)
