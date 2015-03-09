@@ -18,7 +18,12 @@ from param import read_param
 from index import read_index
 from dim import read_dim
 from pencil.math.derivatives import curl, curl2
+import re
 
+def natural_sort(l): 
+    convert = lambda text: int(text) if text.isdigit() else text.lower() 
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    return sorted(l, key = alphanum_key) 
 
 def read_var(*args, **kwargs):
     """Read VAR files from Pencil Code. if proc < 0, then load all data
@@ -117,8 +122,8 @@ class DataCube(object):
                 varfile='VAR'+str(ivar)
 
         if proc < 0:
-            procdirs = filter(lambda s:s.startswith('proc'),
-                              os.listdir(datadir))
+            procdirs = natural_sort(filter(lambda s:s.startswith('proc'),
+                              os.listdir(datadir)))
         else:
             procdirs = ['proc'+str(proc)]
 
