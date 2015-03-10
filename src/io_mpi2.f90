@@ -420,12 +420,13 @@ module Io
 !  Close snapshot file.
 !
 !  11-Feb-2012/Bourdin.KIS: coded
+!  10-mar-2015/MR: corrected close
 !
       if (persist_initialized) then
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
         write (lun_output) id_block_PERSISTENT
         persist_initialized = .false.
-        close (lun_input)
+        close (lun_output)
       endif
 !
     endsubroutine output_snap_finalize
@@ -474,62 +475,14 @@ module Io
 !
     endsubroutine output_form_int_0D
 !***********************************************************************
-    subroutine fseek_pos(unit, rec_len, num_rec, reference)
-!
-!  Seeks to a given position in an opened file relative to a reference point.
-!  If reference=0, this is relative to the beginning of the file,
-!  if reference=1, this is relative to the current position in the file,
-!  and if reference=2, this is relative to the end of the file.
-!  'rec_len' and 'num_rec' are referring to a record length and a given number
-!  of records that one likes to seek, boths must be representable in integer.
-!  If 'num_rec' is negative, seeking is done backwards.
-!
-!  20-Feb-2012/Bourdin.KIS: coded
-!
-      use General, only: itoa
-!
-      integer, intent(in) :: unit
-      integer(kind=8) :: rec_len, num_rec
-      integer, intent(in) :: reference
-!
-      integer :: i, num, len
-!
-      if (num_rec < 0) then
-        num_rec = -num_rec
-        rec_len = -rec_len
-      endif
-!
-      ! all numbers must be representable as integer(kind=4)
-      len = rec_len
-      num = num_rec
-      if (len /= rec_len) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
-          "rec_len is not representable as integer(kind=4).", .true.)
-      if (num /= num_rec) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
-          "num_rec is not representable as integer(kind=4).", .true.)
-!
-! WORKAROUND:
-! Even though the ifort manual states that ifort would be able to fseek
-! with an 64-bit integer argument, this is NOT working!
-! Therefore, we have to iterate the fseek with a 32-bit integer to be save.
-! Note: gfortran would be able to seek with a 64-bit integer value, though.
-! (20-Feb-2012, Bourdin.KIS)
-!
-      call fseek (unit, rec_len, reference)
-      if (num >= 2) then
-        do i = 2, num
-          call fseek (unit, rec_len, 1)
-        enddo
-      endif
-!
-    endsubroutine fseek_pos
-!***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
+!  10-mar-2015/MR: avoided use of fseek
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, mpi_precision
-      use Syscalls, only: sizeof_real
+      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -538,7 +491,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
-      integer(kind=8) :: num_rec, rec_len
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -599,11 +551,8 @@ module Io
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-          num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
-          close (lun_input)
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-          call fseek_pos (lun_input, rec_len, num_rec, 0)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old',position='append')
+          call backskip_to_time(lun_input)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
           deallocate (gx, gy, gz)

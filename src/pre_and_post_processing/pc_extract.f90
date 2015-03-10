@@ -17,6 +17,7 @@ program pc_extract
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
+  use General, only: backskip_to_time
 !
   implicit none
 !
@@ -32,7 +33,7 @@ program pc_extract
   real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
   logical :: ex
   integer :: mvar_in, io_len, pz, pa, start_pos, end_pos, alloc_err
-  integer(kind=8) :: rec_len, num_rec
+  integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   real, dimension (:,:,:,:), allocatable :: global_output
@@ -208,10 +209,8 @@ program pc_extract
       close (lun_input)
 !
       ! Read additional information and check consistency of timestamp
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-      num_rec = int (mz, kind=8) * int (mvar_in*sizeof_real(), kind=8)
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
-      call fseek_pos (lun_input, rec_len, num_rec, 0)
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
+      call backskip_to_time(lun_input,lroot)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp

@@ -456,9 +456,11 @@ module Io
 !  Read snapshot file. Also read mesh and time, if mode==1.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  10-Mar-2015/MR: avoided use of fseek;
+!                  this subroutine seems not yet to be adapted to HDF5
 !
       use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
-      use Syscalls, only: sizeof_real
+      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -467,7 +469,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
-      integer(kind=8) :: num_rec, rec_len
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -528,11 +529,8 @@ module Io
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-          num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
-          close (lun_input)
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-          call fseek_pos (lun_input, rec_len, num_rec, 0)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old',position='append')
+          call backskip_to_time(lun_input)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
           deallocate (gx, gy, gz)

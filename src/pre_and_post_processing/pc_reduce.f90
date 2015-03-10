@@ -17,6 +17,7 @@ program pc_reduce
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
+  use General, only: backskip_to_time
 !
   implicit none
 !
@@ -35,7 +36,7 @@ program pc_reduce
   logical :: ex
   integer :: mvar_in, io_len, px, py, pz, pa, start_pos, end_pos, alloc_err
   integer :: iprocz_slowest = 0
-  integer(kind=8) :: rec_len, num_rec
+  integer(kind=8) :: rec_len
   real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
@@ -242,10 +243,8 @@ program pc_reduce
       if (lroot) then
 !
         ! Read additional information
-        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-        num_rec = int (mzgrid, kind=8) * int (mvar_in*sizeof_real(), kind=8)
-        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
-        call fseek_pos (lun_input, rec_len, num_rec, 0)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
+        call backskip_to_time(lun_input)
         read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
         close (lun_input)
         t = t_sp
@@ -293,10 +292,8 @@ program pc_reduce
       close (lun_input)
 !
       ! Read additional information and check consistency of timestamp
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-      num_rec = int (mz, kind=8) * int (mvar_in*sizeof_real(), kind=8)
       open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
-      call fseek_pos (lun_input, rec_len, num_rec, 0)
+      call backskip_to_time(lun_input, lroot)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp
