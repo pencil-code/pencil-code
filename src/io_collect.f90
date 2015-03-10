@@ -453,6 +453,7 @@ module Io
 !
       use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real
       use Syscalls, only: sizeof_real
+      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -514,8 +515,7 @@ module Io
 !
           close (lun_input)
           open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old', position='append')
-          backspace(lun_input)
-          if (persist_initialized) backspace(lun_input)
+          call backskip_to_time(lun_input)
 !
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)

@@ -3393,8 +3393,8 @@ module General
 !
 !  9-mar-15/MR: coded
 !
-      integer, intent(in) :: lun
-      logical, intent(in) :: lroot
+      integer,           intent(in) :: lun
+      logical, optional, intent(in) :: lroot
 
       integer :: i,id
 
@@ -3413,7 +3413,7 @@ module General
       endif
 
       backspace(lun)
-      if (lroot) backspace(lun)
+      if (loptest(lroot)) backspace(lun)
 
     endsubroutine backskip_to_time
 !****************************************************************************
