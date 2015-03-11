@@ -199,18 +199,23 @@ program pc_extract
       ! Take the shortcut, files are well prepared for direct combination
 !
       ! Set up directory names 'directory' and 'directory_snap'
-      call directory_names()
+      call directory_names
 !
       ! Read the data
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-      rec_len = rec_len * mvar_in * io_len
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
-      read (lun_input, rec=1) gf
-      close (lun_input)
+      if (ldirect_access) then
+        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
+        rec_len = rec_len * mvar_in * io_len
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+        read (lun_input, rec=1) gf
+        close (lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
+        call backskip_to_time(lun_input,lroot)
+      else
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, form='unformatted', status='old')
+        read (lun_input) gf
+      endif
 !
       ! Read additional information and check consistency of timestamp
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
-      call backskip_to_time(lun_input,lroot)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp

@@ -31,9 +31,11 @@ program pc_tecplot
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (:,:,:,:), allocatable :: gf
-  real, dimension (mxgrid) :: gx, gy, gz
+  real, dimension (mxgrid) :: gx, gdx_1, gdx_tilde
+  real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
+  real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
   logical :: ex
-  integer :: mvar_in, io_len, px, py, pz, alloc_err, start_pos, end_pos
+  integer :: mvar_in, io_len, px, py, pz, alloc_err, start_pos, end_pos, i, j, k
   integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
@@ -179,18 +181,23 @@ program pc_tecplot
       ! Take the shortcut, files are well prepared for direct combination
 !
       ! Set up directory names 'directory' and 'directory_snap'
-      call directory_names()
+      call directory_names
 !
       ! Read the data
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-      rec_len = rec_len * mvar_in * io_len
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
-      read (lun_input, rec=1) gf
-      close (lun_input)
+      if (ldirect_access) then
+        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
+        rec_len = rec_len * mvar_in * io_len
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+        read (lun_input, rec=1) gf
+        close (lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
+        call backskip_to_time(lun_input,lroot)
+      else
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, form='unformatted', status='old')
+        read (lun_input) gf
+      endif
 !
       ! Read additional information and check consistency of timestamp
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
-      call backskip_to_time(lun_input,lroot)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp
@@ -376,15 +383,12 @@ program pc_tecplot
     enddo
     close (lun_output)
   enddo
-  enddo
-  enddo
-  endif
 !
   print *, 'Writing snapshot for time t =', t
 !
 !  Give all modules the possibility to exit properly.
 !
-  call finalize_modules (f, .true.)
+  call finalize_modules (f)
 !
 !  Free any allocated memory.
 !

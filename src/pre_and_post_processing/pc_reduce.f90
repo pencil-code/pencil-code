@@ -76,7 +76,7 @@ program pc_reduce
   llast_proc_xz = llast_proc_x .and. llast_proc_z
   llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
-  inquire (IOLENGTH=io_len) 1.0
+  inquire (IOLENGTH=io_len) t_sp
 !
   if (IO_strategy == 'MPI-IO') call fatal_error ('pc_reduce', &
       "Reducing snapshots is not implemented for the 'io_mpi2'-module.")
@@ -178,7 +178,7 @@ program pc_reduce
   if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   iproc = 0
-  call directory_names()
+  call directory_names
   inquire (file=trim(directory_snap)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
   open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*io_len)
@@ -246,7 +246,7 @@ program pc_reduce
         open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old', position='append')
         call backskip_to_time(lun_input)
         read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
-        close (lun_input)
+        close(lun_input)
         t = t_sp
 !
         ! read grid:
@@ -256,7 +256,7 @@ program pc_reduce
         read (lun_input) Lx, Ly, Lz
         read (lun_input) gdx_1, gdy_1, gdz_1
         read (lun_input) gdx_tilde, gdy_tilde, gdz_tilde
-        close (lun_input)
+        close(lun_input)
 !
         ! reduce x coordinates:
         do px = 0, nxgrid-1, reduce
@@ -285,15 +285,20 @@ program pc_reduce
       call directory_names()
 !
       ! Read the data
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
-      rec_len = rec_len * mvar_in * io_len
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
-      read (lun_input, rec=1) gf
-      close (lun_input)
+      if (ldirect_access) then
+        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
+        rec_len = rec_len * mvar_in * io_len
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+        read (lun_input, rec=1) gf
+        close(lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old',position='append')
+        call backskip_to_time(lun_input, lroot)
+      else
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, form='unformatted', status='old')
+        read (lun_input) gf
+      endif
 !
       ! Read additional information and check consistency of timestamp
-      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
-      call backskip_to_time(lun_input, lroot)
       read (lun_input) t_sp
       if (lroot) then
         t_test = t_sp
@@ -332,7 +337,7 @@ program pc_reduce
         read (lun_input) Lx, Ly, Lz
         read (lun_input) gdx_1, gdy_1, gdz_1
         read (lun_input) gdx_tilde, gdy_tilde, gdz_tilde
-        close (lun_input)
+        close(lun_input)
 !
         ! reduce x coordinates:
         do px = 0, nxgrid-1, reduce
@@ -503,29 +508,29 @@ program pc_reduce
   rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
 !
   ! write additional data:
-  close (lun_output)
+  close(lun_output)
   open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
   if (lshear) write (lun_output) deltay
-  close (lun_output)
+  close(lun_output)
 !
   ! write global grid:
   open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
-  write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
-  write (lun_output) dx*reduce, dy*reduce, dz
-  write (lun_output) Lx, Ly, Lz
-  write (lun_output) rdx_1, rdy_1, gdz_1
-  write (lun_output) rdx_tilde, rdy_tilde, gdz_tilde
-  close (lun_output)
+  write(lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
+  write(lun_output) dx*reduce, dy*reduce, dz
+  write(lun_output) Lx, Ly, Lz
+  write(lun_output) rdx_1, rdy_1, gdz_1
+  write(lun_output) rdx_tilde, rdy_tilde, gdz_tilde
+  close(lun_output)
 !
   ! write global dim:
   open (lun_output, FILE=trim(directory_out)//'/dim.dat', FORM='formatted', status='replace')
-  write (lun_output, '(3I7,3I5)') nrx, nry, nzgrid+2*nghost, mvar, maux, mglobal
-  write (lun_output, '(A)') numeric_precision()
-  write (lun_output, '(3I5)') nghost, nghost, nghost
+  write(lun_output, '(3I7,3I5)') nrx, nry, nzgrid+2*nghost, mvar, maux, mglobal
+  write(lun_output, '(A)') numeric_precision()
+  write(lun_output, '(3I5)') nghost, nghost, nghost
   if (lprocz_slowest) iprocz_slowest = 1
-  write (lun_output, '(4I5)') nprocx, nprocy, nprocz, iprocz_slowest
+  write(lun_output, '(4I5)') nprocx, nprocy, nprocz, iprocz_slowest
   close(lun_output)
 !
   print*, 'Writing snapshot for time t =', t
