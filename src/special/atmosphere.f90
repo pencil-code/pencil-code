@@ -78,7 +78,7 @@ module Special
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
-  real :: lnTT1, lnTT2, Ntot_ratio=1.
+  real :: lnTT1, lnTT2, Ntot_ratio=1., Ntot_input, TT0, qwater0, aerosol_present=1.
 
 
 ! Keep some over used pencils
@@ -87,8 +87,8 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
-      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal
+      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input
 
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -417,7 +417,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real :: gg=9.81e2, TT0=293, qwater0=9.9e-3
+      real :: gg=9.81e2!, TT0=293, qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????
       real :: rho_water=1., const_tmp=0.
 !
@@ -455,7 +455,7 @@ module Special
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
              + gg*((p%TT(:)-TT0)/TT0 &
              + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
-             - p%fcloud(:) &
+             - p%fcloud(:)*aerosol_present &
             )      
       endif
 !
@@ -1302,9 +1302,9 @@ subroutine bc_satur_x(f,bc)
        real, dimension (1) ::   x2, s 
        real, dimension (6) ::   coeff
        real, dimension (76) :: nd_data,dsize_data
-       real :: Ntot_
       integer :: i,k
       real :: ddsize, tmp
+      real, intent(out) :: Ntot_
  !
        ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
        do i=0,(ndustspec-1)
@@ -1371,10 +1371,12 @@ subroutine bc_satur_x(f,bc)
                       * exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
              enddo
            elseif (llognormal) then
-             if ((r0 /= 0.) .and. (delta /=0.)) then
+             if ((r0 /= 0.) .and. (delta /=0.) .and. (Ntot_input /=0.)) then
                do k=1,ndustspec
-                  init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                  init_distr(:,k)=Ntot_input/(2.*pi)**0.5/dsize(k)/alog(delta) &
                      *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))!+0.0001
+                 init_distr2(k)=Ntot_input/(2.*pi)**0.5/dsize(k)/alog(delta) &
+                     *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
                enddo
              endif  
            endif
@@ -1391,14 +1393,21 @@ subroutine bc_satur_x(f,bc)
        endif
 !            
         if (lACTOS) then
-          if (llognormal) then
-            Ntot_=Ntot
-          else
+!          if (llognormal) then
+!
+! this value of  (ttt(ndustspec)) is real Ntot 
+!
+!            ttt=spline_integral(dsize,init_distr2)
+!            print*,' real Ntot=',ttt(ndustspec)
+!
+!            Ntot_=ttt(ndustspec)
+!
+!          else
             ttt=spline_integral(dsize,init_distr2)
             Ntot_=ttt(ndustspec)
             Ntot =Ntot_
             print*,'Ntot=',Ntot
-          endif
+!          endif
         else
           Ntot_=Ntot
         endif
