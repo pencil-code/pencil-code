@@ -28,6 +28,7 @@ module Density
   use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
+  use DensityMethods
 !
   implicit none
 !
@@ -50,13 +51,13 @@ module Density
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
   character(LEN=labellen) :: ireference_state='nothing'
+  real :: reference_state_mass=0.
 ! 
 ! reference state, components:  1       2          3              4            5      6     7         8            9        
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
   real, dimension(nx,nref_vars) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
-  real :: reference_state_mass=0.
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
@@ -663,11 +664,11 @@ module Density
 !
           rho_bot=1.
           sref=1.
-          reference_state(:,iref_rho   ) =  rho_bot*(x(l1:l2)/xyz0(1))**(-1/gamma_m1)
-          reference_state(:,iref_grho  ) = -rho_bot/(gamma_m1*xyz0(1)) * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1)
-          reference_state(:,iref_s     ) =  sref
-          reference_state(:,iref_d2rho ) =  rho_bot*gamma/(gamma_m1*xyz0(1))**2 * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1-1)
-          reference_state(:,iref_d6rho ) =  0.    ! yet missing
+          reference_state(:,iref_rho  ) =  rho_bot*(x(l1:l2)/xyz0(1))**(-1/gamma_m1)
+          reference_state(:,iref_grho ) = -rho_bot/(gamma_m1*xyz0(1)) * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1)
+          reference_state(:,iref_s    ) =  sref
+          reference_state(:,iref_d2rho) =  rho_bot*gamma/(gamma_m1*xyz0(1))**2 * (x(l1:l2)/xyz0(1))**(-gamma/gamma_m1-1)
+          reference_state(:,iref_d6rho) =  0.    ! yet missing
 !
         case ('from_initcond')
 !
@@ -710,6 +711,8 @@ module Density
 !
         call put_shared_variable('reference_state',reference_state,ierr)
         call put_shared_variable('reference_state_mass',reference_state_mass,ierr)
+
+        call initialize_density_methods
       endif
 !
       call keep_compiler_quiet(f)
@@ -1944,8 +1947,6 @@ module Density
       endif
 ! uglnrho
       if (lpencil(i_uglnrho)) then
-        if (lupw_rho) call fatal_error('calc_pencils_density', &
-            'you switched lupw_rho instead of lupw_lnrho')
         if (lupw_lnrho) then
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         else

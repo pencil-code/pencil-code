@@ -48,6 +48,7 @@ module Density
 !  24-nov-02/tony: coded
 !
       use EquationOfState, only: select_eos_variable
+      use DensityMethods, only: initialize_density_methods
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -55,6 +56,7 @@ module Density
 !  variable => isochoric (constant density).
 !
       call select_eos_variable('lnrho',-1)
+      call initialize_density_methods
 !
       call keep_compiler_quiet(f)
 !

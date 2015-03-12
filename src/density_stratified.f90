@@ -137,6 +137,7 @@ module Density
 !
       use EquationOfState, only: select_eos_variable, get_stratz
       use SharedVariables, only: put_shared_variable
+      use DensityMethods,  only: initialize_density_methods
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -145,6 +146,7 @@ module Density
 !  Tell the equation of state that we're here and what f variable we use.
 !
       call select_eos_variable('rho', irho)
+      call initialize_density_methods
 !
 !  Get density stratification.
 !
