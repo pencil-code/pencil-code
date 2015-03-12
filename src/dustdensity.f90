@@ -44,7 +44,7 @@ module Dustdensity
 !  integer, parameter :: ndustspec0=10 !8
 !  real, dimension(mx,my,mz,ndustspec,ndustspec0), SAVE :: nd_full
   real, dimension(nx,ndustspec,ndustspec0), SAVE :: dndr_full, ppsf_full
-  real, dimension(ndustspec0)  :: Ntot_i
+!  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB=0.
@@ -411,24 +411,24 @@ module Dustdensity
 !  Filling the array containing the dust size
 !  if the maximum size (dsize_max) of the dust grain is nonzero.
 !
-      if (latm_chemistry) then
+!      if (latm_chemistry) then
         if (lspecial)  call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !          if (ndustspec>4) then
 !            Ntot_tmp=spline_integral(dsize,init_distr)
 !           Ntot=Ntot_tmp(ndustspec)
 !          endif
 !
-        if (ldcore) then
-            print*,'delta0',delta0, delta
-          do i=1,ndustspec0; do k=1,ndustspec
-            init_distr_ki(k,i)=maxval(init_distr(:,k))/ndustspec0
-          enddo
-            Ntot_i(i)=Ntot/ndustspec0
-            print*,'Ntot_i', Ntot_i(i),i
-          enddo
-            print*,'N total= ', Ntot
-        endif
-      endif
+!        if (ldcore) then
+!            print*,'delta0',delta0, delta
+!          do i=1,ndustspec0; do k=1,ndustspec
+!            init_distr_ki(k,i)=maxval(init_distr(:,k))/ndustspec0
+!          enddo
+!!            Ntot_i(i)=Ntot/ndustspec0
+!            print*,'Ntot_i', Ntot_i(i),i
+!          enddo
+!            print*,'N total= ', Ntot
+!        endif
+!      endif
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
 !
@@ -1642,8 +1642,8 @@ module Dustdensity
           else
             do k=1,ndustspec
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                     - p%udropgnd(:,k)
-! + p%dndr(:,k)
+                     - p%udropgnd(:,k)  
+!                    + p%dndr(:,k)
 !
             enddo
           endif
