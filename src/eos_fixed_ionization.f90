@@ -158,6 +158,9 @@ module EquationOfState
 !
 !   2-feb-03/axel: adapted from Interstellar module
 !
+      use SharedVariables, only: put_shared_variable
+!
+      integer :: ierr
       real :: mu1yHxHe
 !
 !  ionization parameters
@@ -219,6 +222,11 @@ module EquationOfState
 !
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
           (1+yH0+xHe-xH2)-2.5)
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        call put_shared_variable('lnrho0',lnrho0,ierr)
+      endif
 !
       if (lroot) then
         print*,'initialize_eos: reference values for ionization'

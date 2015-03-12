@@ -71,6 +71,7 @@ module Density
 !  24-nov-02/tony: coded
 !
       use EquationOfState, only: select_eos_variable
+      use DensityMethods, only: initialize_density_methods
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -96,6 +97,8 @@ module Density
 !
       dx_2=1./dx**2
       dz_2=1./dz**2
+!
+      call initialize_density_methods
 !
       call keep_compiler_quiet(f)
 !

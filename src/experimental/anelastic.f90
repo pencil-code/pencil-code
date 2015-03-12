@@ -169,6 +169,7 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: initialize_density_methods
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ierr
@@ -246,6 +247,8 @@ module Density
          if (lroot) print*,'initializing global gravity in density'
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
+
+      call initialize_density_methods
 !
     endsubroutine initialize_density
 !***********************************************************************

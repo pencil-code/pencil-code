@@ -155,6 +155,10 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos()
 !
+      use SharedVariables, only: put_shared_variable
+!
+      integer :: ierr
+!
 ! Initialize variable selection code (needed for RELOADing)
 !
       ieosvars=-1
@@ -193,6 +197,11 @@ module EquationOfState
        nn1=1;  nn2=mz
       endif
      endif
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        call put_shared_variable('lnrho0',lnrho0,ierr)
+      endif
 !
     endsubroutine initialize_eos
 !***********************************************************************

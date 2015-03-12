@@ -294,6 +294,14 @@ ifdef ENTROPY
   ENERGY     =   $(ENTROPY)
 endif
 #
+ifeq ($(DENSITY),boussinesq)
+  DENSITY_METHODS_OBJ = nodensity_methods
+endif
+#
+ifeq ($(DENSITY),anelastic)
+  DENSITY_METHODS_OBJ = nodensity_methods
+endif
+#
 ifeq ($(TESTFIELD),notestfield)
   TESTFIELD_GENERAL_OBJ =
 else

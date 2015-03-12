@@ -140,8 +140,10 @@ module EquationOfState
       use General
       use Mpicomm, only: stop_it
       use Sub, only: register_report_aux
+      use SharedVariables,only: put_shared_variable
 !
       real :: mu1yHxHe
+      integer :: ierr
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -184,6 +186,11 @@ module EquationOfState
                 TT_ion,ss_ion,kappa0
         print*,'initialize_eos: lnrho_e,lnrho_H,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_He,lnrho_e_
+      endif
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        call put_shared_variable('lnrho0',lnrho0,ierr)
       endif
 !
 !  write scale non-free constants to file; to be read by idl
