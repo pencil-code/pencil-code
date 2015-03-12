@@ -155,8 +155,6 @@ include Makefile.local
 #
 include Makefile.inc
 #
-  DENSITY_METHODS = $(DENSITY)_methods
-#
 # Can someone explain this?
 #
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
@@ -294,12 +292,14 @@ ifdef ENTROPY
   ENERGY     =   $(ENTROPY)
 endif
 #
+DENSITY_METHODS = $(DENSITY)_methods
+#
 ifeq ($(DENSITY),boussinesq)
-  DENSITY_METHODS_OBJ = nodensity_methods
+  DENSITY_METHODS = nodensity_methods
 endif
 #
 ifeq ($(DENSITY),anelastic)
-  DENSITY_METHODS_OBJ = nodensity_methods
+  DENSITY_METHODS = nodensity_methods
 endif
 #
 ifeq ($(TESTFIELD),notestfield)
