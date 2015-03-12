@@ -144,6 +144,9 @@ module EquationOfState
 !  21-may-14/axel: adapted from eos_entropy
 !
       use Sub, only: register_report_aux
+      use SharedVariables, only: put_shared_variable
+ 
+      integer :: ierr
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -181,6 +184,11 @@ module EquationOfState
       if (lcs_as_aux) call register_report_aux('cs',ics)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        call put_shared_variable('lnrho0',lnrho0,ierr)
+      endif
 !
 !  write scale non-free constants to file; to be read by idl
 !
