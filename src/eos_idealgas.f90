@@ -300,6 +300,11 @@ module EquationOfState
       call put_shared_variable('fac_cs',fac_cs,ierr)
         if (ierr/=0) call stop_it("fac_cs: "//&
              "there was a problem when sharing fac_cs")
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        call put_shared_variable('lnrho0',lnrho0,ierr)
+      endif
 !
       if (lanelastic) then
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
