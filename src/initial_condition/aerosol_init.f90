@@ -61,7 +61,7 @@ module InitialCondition
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true., lcurved_xy=.false.
      logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
-     logical :: ladd_points=.false., lrho_const=.false.
+     logical :: ladd_points=.false., lrho_const=.false., lregriding=.false.
 
 !
     namelist /initial_condition_pars/ &
@@ -69,7 +69,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding
 !
   contains
 !***********************************************************************
@@ -502,7 +502,8 @@ module InitialCondition
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
       real, dimension (20000) ::  PP_data, rhow_data, TT_data, tmp_data
       real, dimension (20000) ::  PP_data_add, rhow_data_add, TT_data_add
-      real, dimension (20000) ::  ux_data, uy_data, uz_data, ttime2
+      real, dimension (20000) ::  ttime2
+      real, dimension (mx,my,mz) ::  ux_data, uy_data, uz_data
       real, dimension (1340) ::  ttime
       real, dimension (1300,6) ::  coeff_loc
       real, dimension (20000,7) :: coeff_loc2
@@ -635,6 +636,7 @@ module InitialCondition
 !   !
 
     if (lACTOS_read) then
+!
         open(143,file="ACTOS_new.out")
         do i=1,Ndata 
           read(143,'(29f15.6)') input_data
@@ -642,14 +644,26 @@ module InitialCondition
           PP_data(i)=input_data(7)*1e3   !dyn
           rhow_data(i)=input_data(16)*1e-6 !g/cm3
 !          uvert(i)=input_data(26)*1e2
-
 !          ux_data(i)=input_data(25)*1e2 
 !          uy_data(i)=input_data(26)*1e2 
 !          uz_data(i)=input_data(27)*1e2
 !          Ntot_data(i)=input_data(11)
-
         enddo
-      close(143)
+        close(143)
+!
+        if (lregriding) then
+          open(143,file="ux.dat")
+            do k=1,mz
+            do j=1,my
+            do i=1,mx
+              read(143,'(f8.5)') tmp2
+              ux_data(i,j,k)=tmp2
+              f(i,j,k,iux)=ux_data(i,j,k)
+            enddo 
+            enddo
+            enddo 
+          close(143)
+        endif
 !
 !      open(143,file="ACTOS_xyz_new.out")
 !        do i=1,Ndata
