@@ -294,11 +294,11 @@ endif
 #
 DENSITY_METHODS = $(DENSITY)_methods
 #
-ifeq ($(DENSITY),boussinesq)
+ifeq ($(DENSITY),experimental/boussinesq)
   DENSITY_METHODS = nodensity_methods
 endif
 #
-ifeq ($(DENSITY),anelastic)
+ifeq ($(DENSITY),experimental/anelastic)
   DENSITY_METHODS = nodensity_methods
 endif
 #
