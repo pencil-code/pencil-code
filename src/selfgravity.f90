@@ -64,6 +64,10 @@ module Selfgravity
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
 !
+!  Module Variables
+!
+  real, dimension(mz) :: rho0z = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_selfgravity()
@@ -92,10 +96,12 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: adapted
 !
+      use EquationOfState, only: get_stratz
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr=0
+      integer :: i
 !
 !  Initialize gravitational potential to zero.
 !
@@ -150,7 +156,8 @@ module Selfgravity
 !  Check that density and self-potential have consistent boundary conditions.
 !
       if (ldensity) then
-        if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
+        i = merge(irho, ilnrho, ldensity_nolog)
+        if (bcx(ipotself)=='p' .and. .not.(bcx(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -159,7 +166,7 @@ module Selfgravity
           endif
           call fatal_error('initialize_selfgravity','')
         endif
-        if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
+        if (bcy(ipotself)=='p' .and. .not.(bcy(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -168,7 +175,7 @@ module Selfgravity
           endif
           call fatal_error('initialize_selfgravity','')
         endif
-        if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
+        if (bcz(ipotself)=='p' .and. .not.(bcz(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -180,7 +187,7 @@ module Selfgravity
       endif
 !
       if (lneutraldensity) then
-        if (bcx(ipotself)=='p' .and. .not.(bcx(ilnrho)=='p')) then
+        if (bcx(ipotself)=='p' .and. .not.(bcx(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcx=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -189,7 +196,7 @@ module Selfgravity
           endif
           call fatal_error('initialize_selfgravity','')
         endif
-        if (bcy(ipotself)=='p' .and. .not.(bcy(ilnrho)=='p')) then
+        if (bcy(ipotself)=='p' .and. .not.(bcy(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcy=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -198,7 +205,7 @@ module Selfgravity
           endif
           call fatal_error('initialize_selfgravity','')
         endif
-        if (bcz(ipotself)=='p' .and. .not.(bcz(ilnrho)=='p')) then
+        if (bcz(ipotself)=='p' .and. .not.(bcz(i)=='p')) then
           if (lroot) then
             print*, 'initialize_selfgravity: potself has bcz=''p'', but the density is not'
             print*, '                        periodic! (you must set a proper boundary condition'
@@ -214,6 +221,10 @@ module Selfgravity
       if (kappa==0.0) kappa=Omega
       if (lroot.and.kappa/=0.0) &
           print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
+!
+!  Get the background density stratification, if any.
+!
+      if (lstratz) call get_stratz(z, rho0z)
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
@@ -321,12 +332,16 @@ module Selfgravity
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
+      integer :: k
+!
       if (t>=tstart_selfgrav) then
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
         if (ldensity.and.lselfgravity_gas) then
-          if (ldensity_nolog) then
+          if (lstratz) then
+            forall(k = n1:n2) rhs_poisson(:,:,k-nghost) = rho0z(k) * (1.0 + f(l1:l2,m1:m2,k,irho))
+          elseif (ldensity_nolog) then
             rhs_poisson = f(l1:l2,m1:m2,n1:n2,irho)
           else
             rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
