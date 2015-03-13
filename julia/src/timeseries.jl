@@ -94,8 +94,7 @@ function read_ts(;datadir="data")
     #
     ts = Dict()
     
-    file  = open(datadir * "/time_series.dat", "r")
-    lines = readlines(file)
+    lines = open(readlines, datadir * "/time_series.dat", "r")
     
     #
     # The first row is a header.

@@ -118,8 +118,8 @@ function read_2d_aver(axis,datadir,varfile,infile,var)
     # Best to avid readlines( ... varfile ... ) to conserve memory.
     #
 	aver = Dict()
-	vars = map( strip , readlines( open(datadir * "/../" * infile,"r") ) )
-	dim  = read_dim( datadir=datadir )
+	vars = map(strip, open(readlines, datadir * "/../" * infile,"r"))
+	dim  = read_dim(datadir=datadir)
 	
 	ngrid   = dim["n"*axis]                       # Size of the grid.
 	nvars   = length(vars)                        # Number of variables in infile.
@@ -174,7 +174,8 @@ function read_2d_aver(axis,datadir,varfile,infile,var)
 	        end
 	    end
 	end
-	
+	close(file)
+    
     #
     # Note: I choose to not transpose the data. I realize that this means an
     #       extra character when plotting:
@@ -229,7 +230,7 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     #
     # Variables.
     #
-    vars  = map( chomp , readlines( open(datadir * "/../" * infile,"r") ) )
+    vars  = map(chomp, open(readlines, datadir * "/../" * infile,"r"))
     nvars = length(vars)
     
     #
@@ -249,19 +250,36 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     data_len = sizeof(data_type) * size_a * size_b * nvars
     step_len = head_len * 4  +  time_len  +  data_len
     
-    nsteps::Int = filesize(datadir * "/proc0/" * varfile) / step_len
+    #
+    # Find out which proc directories have (y|z)averages.dat
+    #    y -->  dim["ipy"] == 0
+    #    z -->  dim["ipz"] == 0
+    # 
+    #    x -->  ??  I can't find xaverages.dat anywhere.
+    #
+    procs = Int[]
+    for proc = 0:(nproc-1)
+        dim = read_dim(datadir=datadir, proc=proc)
+        
+        if dim["ip$c"] == 0
+            push!(procs,proc)
+        end
+    end
     
     #
-    # Read the data.
+    # Allocate the space needed.
     #
+    nsteps::Int = filesize(datadir * "/proc0/" * varfile) / step_len
     aver = Dict()
     for k = 1:nvars
         #   ------>   IF (it < 1) THEN (read all iterations) ELSE (read only iteration "it")
         aver[vars[k]] =   it < 1    ?  zeros(na, nb, nsteps)   :    zeros(na, nb)
     end
     
-    
-    for proc = 0:(nproc-1)
+    #
+    # Read the data.
+    #
+    for proc in procs
         
         dim = read_dim(datadir=datadir, proc=proc)
         
@@ -320,9 +338,9 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     #
     # Transpose the data.
     #
-#    for k = 1:nvars
-#        aver[vars[k]] = aver[vars[k]]'
-#    end
+    #    for k = 1:nvars
+    #        aver[vars[k]] = aver[vars[k]]'
+    #    end
     
     #
     # List of keys.

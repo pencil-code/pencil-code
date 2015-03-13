@@ -123,7 +123,7 @@ function read_pdim(;datadir="data",proc=-1)
 	end
 	
 	pdim = Dict()
-	line = readline( open(filename,"r") )
+	line = open(readline, filename,"r")
 	
 	pdim["npar"],pdim["mpvar"],pdim["npar_stalk"] = int(split(line))
 	
@@ -141,7 +141,7 @@ function read_dim(;datadir="data",proc=-1)
 	end
 	
 	dim   = Dict()
-	lines = readlines( open(filename,"r") )
+	lines = open(readlines, filename,"r")
 	
 	#
 	# Read lines.
