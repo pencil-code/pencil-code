@@ -413,7 +413,7 @@ module Dustdensity
 !
 !      if (latm_chemistry) then
         if (lspecial)  call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
-        init_distr=0.
+        init_distr_ki=0.
 !          if (ndustspec>4) then
 !            Ntot_tmp=spline_integral(dsize,init_distr)
 !           Ntot=Ntot_tmp(ndustspec)
