@@ -13,6 +13,11 @@ If you cannot compile the text locally, you can get the
 pdf file of the latest version with
    wget http://www.nordita.org/software/pencil-code/doc/manual.pdf
 
+Since 1 Dec 2014, the web pages of the Pencil Code reside on a branch,
+so we recommend that in your directory pencil-code/doc you say:
+
+  svn checkout https://pencil-code.googlecode.com/svn/branches/www
+
 -------------------------------------------------------------------------------
 make faq
 can lead to problems. As root, edit the file texmf.cnf as follows:
