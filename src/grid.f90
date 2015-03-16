@@ -828,7 +828,7 @@ module Grid
 !  20-jul-10/wlad: moved here from register
 !  3-mar-14/MR: outsourced calculation of box_volume into box_vol
 !  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
-!                coordinates into coords_aux; set coordinate switsches at the
+!                coordinates into coords_aux; set coordinate switches at the
 !                beginning
 
       use Sub, only: remove_zprof
@@ -1373,6 +1373,8 @@ module Grid
         if (nzgrid/=1) box_volume = box_volume*Lxyz(3)
 !
       endif
+!
+!  Volume calculation for pipe coordinates missing!
 !
     endsubroutine box_vol
 !***********************************************************************

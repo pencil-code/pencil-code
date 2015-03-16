@@ -32,7 +32,7 @@ module SharedVariables
 !
   use Messages
   use Cparam, only: linelen, labellen
-      use cdata
+  use Cdata, only: lroot
 !
   implicit none
 !
@@ -159,7 +159,7 @@ module SharedVariables
 !
 !  27-jan-15/MR: derived from get_shared_variable routines
 !
-      use General, only: coptest
+      use General, only: coptest, itoa
 
       logical :: find_item
       character (len=*),                    intent(in) :: varname
@@ -174,26 +174,28 @@ module SharedVariables
       find_item=.false.
 
       scaller = '" in '//trim(coptest(caller))//':'
+      
       if (present(ierr)) ierr=0
 
       item=>thelist
       do while (associated(item))
         if (item%varname==varname) then
           if (item%vartype==type) then
+           
             select case (type)
-              case (iSHVAR_TYPE_REAL0D); lnotass=.not.associated(item%real0D) 
-              case (iSHVAR_TYPE_REAL1D); lnotass=.not.associated(item%real1D) 
-              case (iSHVAR_TYPE_REAL2D); lnotass=.not.associated(item%real2D) 
-              case (iSHVAR_TYPE_REAL3D); lnotass=.not.associated(item%real3D) 
-              case (iSHVAR_TYPE_REAL4D); lnotass=.not.associated(item%real4D) 
+              case (iSHVAR_TYPE_REAL0D); lnotass=.not.associated(item%real0D)
+              case (iSHVAR_TYPE_REAL1D); lnotass=.not.associated(item%real1D)
+              case (iSHVAR_TYPE_REAL2D); lnotass=.not.associated(item%real2D)
+              case (iSHVAR_TYPE_REAL3D); lnotass=.not.associated(item%real3D)
+              case (iSHVAR_TYPE_REAL4D); lnotass=.not.associated(item%real4D)
               case (iSHVAR_TYPE_INT0D ); lnotass=.not.associated(item%int0d)
               case (iSHVAR_TYPE_INT1D ); lnotass=.not.associated(item%int1d)
               case (iSHVAR_TYPE_LOG0D ); lnotass=.not.associated(item%log0d)
               case (iSHVAR_TYPE_LOG1D ); lnotass=.not.associated(item%log1d)
               case (iSHVAR_TYPE_CHAR0D); lnotass=.not.associated(item%char0d)
               case default
-                print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
-                call fatal_error('', 'Data type is not implemented.')
+                if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+                call fatal_error('', 'Data type '//itoa(type)//' is not implemented.')
             end select
             
             if (lnotass) then
@@ -201,7 +203,7 @@ module SharedVariables
                 ierr=iSHVAR_ERR_NOTASSOCIATED
                 return
               endif
-              print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+              if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
               call fatal_error('', 'Data pointer is not associated.')
             endif
             find_item=.true.
@@ -211,7 +213,7 @@ module SharedVariables
               ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
-            print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+            if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
             call fatal_error('', 'Shared variable has the wrong type!')
           endif
         endif
@@ -223,7 +225,7 @@ module SharedVariables
         return
       endif
 !
-      print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+      if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
       call fatal_error('', 'Shared variable does not exist!')
 
     endfunction find_item
@@ -525,29 +527,26 @@ module SharedVariables
 !
     endsubroutine get_variable_char0d
 !***********************************************************************
-    subroutine put_variable_int0d(varname,variable,ierr)
+    subroutine put_variable_int0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       integer, target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
+!
+      type (shared_variable_list), pointer :: new
 !
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%int0d,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -557,29 +556,48 @@ module SharedVariables
 !
     endsubroutine put_variable_int0d
 !***********************************************************************
-    subroutine put_variable_int1d(varname,variable,ierr)
+    subroutine put_error(varname,ierr,caller)
+
+      use General, only: coptest
+
+      character (len=*),           intent(in) :: varname
+      integer,           optional, intent(out):: ierr
+      character (len=*), optional, intent(in) :: caller
+
+      character (len=2*labellen) :: scaller
+
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_DUPLICATE
+        return
+      endif
+
+      scaller = '" in '//trim(coptest(caller))//':'
+
+      if (lroot) print*, 'Setting shared variable: "',trim(varname)//scaller
+      call fatal_error('', 'Shared variable name already exists!')
+
+    endsubroutine put_error
+!***********************************************************************
+    subroutine put_variable_int1d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       integer, dimension(:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
+!
+      type (shared_variable_list), pointer :: new
 !
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%int1d,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -589,29 +607,26 @@ module SharedVariables
 !
     endsubroutine put_variable_int1d
 !***********************************************************************
-    subroutine put_variable_real0d(varname,variable,ierr)
+    subroutine put_variable_real0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       real, target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%real0D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -621,29 +636,26 @@ module SharedVariables
 !
     endsubroutine put_variable_real0d
 !***********************************************************************
-    subroutine put_variable_real1d(varname,variable,ierr)
+    subroutine put_variable_real1d(varname,variable,ierr,caller)
 !
 !  put 1-D array into shared variable
 !
       character (len=*) :: varname
       real, dimension(:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%real1D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -653,29 +665,26 @@ module SharedVariables
 !
     endsubroutine put_variable_real1d
 !***********************************************************************
-    subroutine put_variable_real2d(varname,variable,ierr)
+    subroutine put_variable_real2d(varname,variable,ierr,caller)
 !
 !  put 2-D array into shared variable
 !
       character (len=*) :: varname
       real, dimension(:,:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%real2D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -685,7 +694,7 @@ module SharedVariables
 !
     endsubroutine put_variable_real2d
 !***********************************************************************
-    subroutine put_variable_real3d(varname,variable,ierr)
+    subroutine put_variable_real3d(varname,variable,ierr,caller)
 !
 !  put 3-D array into shared variable
 !
@@ -694,22 +703,19 @@ module SharedVariables
       character (len=*) :: varname
       real, dimension(:,:,:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%real3D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -719,7 +725,7 @@ module SharedVariables
 !
     endsubroutine put_variable_real3d
 !***********************************************************************
-    subroutine put_variable_real4d(varname,variable,ierr)
+    subroutine put_variable_real4d(varname,variable,ierr,caller)
 !
 !  put 4-D array into shared variable
 !
@@ -728,22 +734,19 @@ module SharedVariables
       character (len=*) :: varname
       real, dimension(:,:,:,:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%real4D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -753,29 +756,26 @@ module SharedVariables
 !
     endsubroutine put_variable_real4d
 !***********************************************************************
-    subroutine put_variable_logical0d(varname,variable,ierr)
+    subroutine put_variable_logical0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       logical, target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%log0D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -785,29 +785,26 @@ module SharedVariables
 !
     endsubroutine put_variable_logical0d
 !***********************************************************************
-    subroutine put_variable_logical1d(varname,variable,ierr)
+    subroutine put_variable_logical1d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       logical, dimension(:), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%log1D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)
@@ -817,29 +814,26 @@ module SharedVariables
 !
     endsubroutine put_variable_logical1d
 !***********************************************************************
-    subroutine put_variable_char0d(varname,variable,ierr)
+    subroutine put_variable_char0d(varname,variable,ierr,caller)
 !
 !  Comment me.
 !
       character (len=*) :: varname
       character (len=linelen), target :: variable
       integer, optional :: ierr
-      type (shared_variable_list), pointer :: new
+      character (len=*), optional :: caller
 !
-      intent(in)  :: varname
+      intent(in)  :: varname,caller
       intent(out) :: ierr
 !
+      type (shared_variable_list), pointer :: new
+
       if (present(ierr)) ierr=0
 !
       new=>find_variable(varname)
       if (associated(new)) then
         if (associated(new%char0D,target=variable)) return
-        if (present(ierr)) then
-          ierr=iSHVAR_ERR_DUPLICATE
-          return
-        endif
-        print*, 'Setting shared variable: ',varname
-        call fatal_error('get_variable', 'Shared variable name already exists!')
+        call put_error(varname,ierr,caller)
       endif
 !
       call new_item_atstart(thelist,new=new)

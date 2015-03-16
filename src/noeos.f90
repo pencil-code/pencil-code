@@ -98,8 +98,8 @@ module EquationOfState
       rho02 = rho0**2
 
       if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,ierr)
-        call put_shared_variable('lnrho0',lnrho0,ierr)
+        call put_shared_variable('rho0',rho0,caller='initialize_eos')
+        call put_shared_variable('lnrho0',lnrho0,caller='initialize_eos')
       endif
 !
     endsubroutine initialize_eos

@@ -97,7 +97,7 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       use EquationOfState, only: get_stratz
-      use SharedVariables
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr=0
