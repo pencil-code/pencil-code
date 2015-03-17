@@ -176,7 +176,8 @@ module Dustvelocity
 !
       call copy_bcs_dust
 !
-!  Output grain mass discretization type
+!  Output grain mass discretization type. ldustcoagulation must also
+!  be turned on for pure condensation, because we need the k bins.
 !
       if (lroot .and. ldustcoagulation) then
         if (lmdvar) then
