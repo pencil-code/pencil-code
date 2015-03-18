@@ -1608,10 +1608,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*val(j); enddo
+        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*val(j); enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*val(j); enddo
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound( i)*val(j); enddo
 !
       case default
         print*, "bc_symderset_x: ", topbot, " should be 'top' or 'bot'"
@@ -1764,7 +1764,7 @@ module Boundcond
                        +72.*x(l1_5)*f(l1_5,:,:,j)- 10.*x(l1_6)*f(l1_6,:,:,j) &
                       )/(147.*x(l1))
           do i=1,nghost
-            f(l1-i,:,:,j)=f(l1+i,:,:,j)+(2.*dx/x(l1))*i*f(l1,:,:,j)
+            f(l1-i,:,:,j)=f(l1+i,:,:,j)+dx2_bound(-i)/x(l1)*f(l1,:,:,j)
           enddo
         endif
 !
@@ -1780,7 +1780,7 @@ module Boundcond
                        +72.*x(l2_5)*f(l2_5,:,:,j)- 10.*x(l2_6)*f(l2_6,:,:,j) &
                       )/(147.*x(l2))
           do i=1,nghost
-            f(l2+i,:,:,j)=f(l2-i,:,:,j)-(2.*dx/x(l2))*i*f(l2,:,:,j)
+            f(l2+i,:,:,j)=f(l2-i,:,:,j)-dx2_bound(i)/x(l2)*f(l2,:,:,j)
           enddo
         endif
 !
@@ -1811,14 +1811,14 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do i=1,nghost
-          f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp((x(l1-i)-x(l1+i))/dist(j))
+          f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp(-dx2_bound(-i)/dist(j))
         enddo
 !
 !  top
 !
       case ('top')               ! top boundary
         do i=1,nghost
-          f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp((x(l2+i)-x(l2-i))/dist(j))
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp(dx2_bound(i))/dist(j)
         enddo
 !
 !  default
@@ -1850,14 +1850,14 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do i=1,nghost
-          f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp((z(n1-i)-z(n1+i))/dist(j))
+          f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp(-dz2_bound(-i)/dist(j))
         enddo
 !
 !  top
 !
       case ('top')               ! top boundary
         do i=1,nghost
-          f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp((z(n2+i)-z(n2-i))/dist(j))
+          f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp(dz2_bound(i)/dist(j))
         enddo
 !
 !  default
@@ -2109,10 +2109,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-2*i*dy*val(j); enddo
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-dy2_bound(-i)*val(j); enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+2*i*dy*val(j); enddo
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*val(j); enddo
 !
       case default
         print*, "bc_symderset_y: ", topbot, " should be 'top' or 'bot'"
@@ -2137,10 +2137,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-2*i*dy*derval; enddo
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-dy2_bound(-i)*derval; enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+2*i*dy*derval; enddo
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*derval; enddo
 !
       case default
         print*, "bc_csymderset_y: ", topbot, " should be 'top' or 'bot'"
@@ -2382,10 +2382,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j) - 2*i*dx*val; enddo
+        do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j) - dx2_bound(-i)*val; enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + 2*i*dx*val; enddo
+        do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + dx2_bound(i)*val; enddo
 !
       case default
         call warning('bc_set_der_x',topbot//" should be 'top' or 'bot'")
@@ -2515,11 +2515,11 @@ module Boundcond
         select case (topbot)
         case ('bot')               ! bottom boundary
         do i=1,nghost
-          f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*(val-f(l1,:,:,j)*r1_mn(1))
+          f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*(val-f(l1,:,:,j)*r1_mn(1))
         enddo
       case ('top')               ! top boundary
         do i=1,nghost
-          f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l2,:,:,j)*r1_mn(nx))
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound(i)*(val-f(l2,:,:,j)*r1_mn(nx))
         enddo
 !
       case default
@@ -3100,10 +3100,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j) - 2*i*dy*val; enddo
+        do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j) - dy2_bound(-i)*val; enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + 2*i*dy*val; enddo
+        do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + dy2_bound(i)*val; enddo
 !
       case default
         call warning('bc_set_der_y',topbot//" should be 'top' or 'bot'")
@@ -3128,10 +3128,10 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j) - 2*i*dz*val; enddo
+        do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j) - dz2_bound(-i)*val; enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + 2*i*dz*val; enddo
+        do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + dz2_bound(i)*val; enddo
 !
       case default
         call warning('bc_set_der_z',topbot//" should be 'top' or 'bot'")
@@ -4176,21 +4176,21 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: m
+      real, dimension (mx,my) :: slope
 !
 !
       select case (topbot)
       case ('bot')
         ! bottom (left end of the domain)
-        m = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1) 
         do i = 1, nghost
-          f(:,:,n1-i,j) = f(:,:,n1,j) + m * (z(n1-i) - z(n1))
+          f(:,:,n1-i,j) = f(:,:,n1,j) - slope * dz2_bound(-i) 
         enddo
       case ('top')
         ! top (right end of the domain)
-        m = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        slope = (f(:,:,n2,j) - f(:,:,n2-1,j)) / dz2_bound(1)
         do i = 1, nghost
-          f(:,:,n2+i,j) = f(:,:,n2,j) + m * (z(n2+i) - z(n2))
+          f(:,:,n2+i,j) = f(:,:,n2,j) + slope * dz2_bound(i) 
         enddo
       case default
         call fatal_error ('bcz_extrapol', 'invalid argument', lfirst_proc_xy)
@@ -4250,7 +4250,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: m
+      real, dimension (mx,my) :: slope
       real :: gamma_bot, gamma_top, tau, fade_fact
       real, pointer :: tdamp, tfade_start
       logical, pointer :: ldamp_fade
@@ -4287,20 +4287,18 @@ module Boundcond
       select case (topbot)
       case ('bot')
         ! bottom (left end of the domain)
-        m = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1)
         do i = 1, nghost
-          f(:,:,n1-i,j) = (f(:,:,n1,j) + m * (z(n1-i) - z(n1))) * gamma_bot**i
+          f(:,:,n1-i,j) = (f(:,:,n1,j) - slope * dz2_bound(-i)) * gamma_bot**i
         enddo
-        m = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
-        f(:,:,n1,j) = f(:,:,n1+1,j) + m * (z(n1) - z(n1+1))
+        f(:,:,n1,j) = 0.5*(f(:,:,n1-1,j) + f(:,:,n1+1,j))
       case ('top')
         ! top (right end of the domain)
-        m = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        slope = (f(:,:,n2,j) - f(:,:,n2-1,j)) / dz2_bound(1)
         do i = 1, nghost
-          f(:,:,n2+i,j) = (f(:,:,n2,j) + m * (z(n2+i) - z(n2))) * gamma_top**i
+          f(:,:,n2+i,j) = (f(:,:,n2,j) + slope * dz2_bound(i)) * gamma_top**i
         enddo
-        m = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
-        f(:,:,n2,j) = f(:,:,n2-1,j) + m * (z(n2) - z(n2-1))
+        f(:,:,n2,j) = 0.5*(f(:,:,n2-1,j) + f(:,:,n2+1,j))
       case default
         call fatal_error ('bcz_extrapol_damped', 'invalid argument', lfirst_proc_xy)
       endselect
@@ -4321,7 +4319,7 @@ module Boundcond
       integer, intent(in) :: j
 !
       integer :: i
-      real, dimension (mx,my) :: m, rho_ref
+      real, dimension (mx,my) :: slope, rho_ref
 !
 !
       select case (topbot)
@@ -4329,22 +4327,20 @@ module Boundcond
         ! bottom (left end of the domain)
         rho_ref = f(:,:,n1,j)
         call average_xy (rho_ref, 3)
-        m = (f(:,:,n1+1,j) - rho_ref) / (z(n1+1) - z(n1))
+        slope = (f(:,:,n1+1,j) - rho_ref) / dz2_bound(-1)
         do i = 1, nghost
-          f(:,:,n1-i,j) = rho_ref + m * (z(n1-i) - z(n1))
+          f(:,:,n1-i,j) = rho_ref - slope * dz2_bound(-i)
         enddo
-        m = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
-        f(:,:,n1,j) = f(:,:,n1+1,j) + m * (z(n1) - z(n1+1))
+        f(:,:,n1,j) = 0.5*(f(:,:,n1-1,j) + f(:,:,n1+1,j))
       case ('top')
         ! top (right end of the domain)
         rho_ref = f(:,:,n2,j)
         call average_xy (rho_ref, 3)
-        m = (rho_ref - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        slope = (rho_ref - f(:,:,n2-1,j)) / dz2_bound(1)
         do i = 1, nghost
-          f(:,:,n2+i,j) = rho_ref + m * (z(n2+i) - z(n2))
+          f(:,:,n2+i,j) = rho_ref + slope * dz2_bound(i)
         enddo
-        m = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
-        f(:,:,n2,j) = f(:,:,n2-1,j) + m * (z(n2) - z(n2-1))
+        f(:,:,n2,j) = 0.5*(f(:,:,n2-1,j) + f(:,:,n2+1,j))
       case default
         call fatal_error ('bcz_extrapol_mean', 'invalid argument', lfirst_proc_xy)
       endselect
@@ -4691,7 +4687,7 @@ module Boundcond
       endif
 !
     endsubroutine bc_force_axy_sin_cos
-!!***********************************************************************
+!***********************************************************************
     subroutine bc_one_x(f,topbot,j)
 !
 !  Set bdry values to 1 for debugging purposes
@@ -5438,7 +5434,7 @@ module Boundcond
 !  enforce dlnT/dx = - Fbot/(K*T)
 !
         do i=1,nghost
-          f(l1-i,:,:,ilnTT)=f(l1+i,:,:,ilnTT)-2*i*dx*tmp_yz
+          f(l1-i,:,:,ilnTT)=f(l1+i,:,:,ilnTT)-dx2_bound(-i)*tmp_yz
         enddo
 !
       case default
@@ -5496,7 +5492,7 @@ module Boundcond
           tmp_xy=-Fbot/hcond0/exp(f(:,:,n1,ilnTT))
         endif
         do i=1,nghost
-          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-2.*i*dz*tmp_xy
+          f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-dz2_bound(-i)*tmp_xy
         enddo
 !
       case default
@@ -5580,7 +5576,7 @@ module Boundcond
 !
         if (pretend_lnTT) then
           do i=1,nghost
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+2*i*dx*FbotKbot/exp(f(l1,:,:,iss))
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+dx2_bound(-i)*FbotKbot/exp(f(l1,:,:,iss))
           enddo
         else
 !
@@ -5593,7 +5589,7 @@ module Boundcond
           if (ldensity_nolog) then
             if (lheatc_kramers) work_yz=f(l1,:,:,irho)
             if (lreference_state) then
-              tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0) &
+              tmp_yz= cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0)  &
                      +gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
             else
               tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
@@ -5639,9 +5635,9 @@ module Boundcond
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
 !
-        if (pretend_lnTT) then      ! TODO: non-equidistant grid
+        if (pretend_lnTT) then
           do i=1,nghost
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)-2*i*dx*FtopKtop/exp(f(l2,:,:,iss))
+            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)-dx2_bound(i)*FtopKtop/exp(f(l2,:,:,iss))
           enddo
         else
 !
@@ -5728,14 +5724,14 @@ module Boundcond
         if (ldensity_nolog) then
           if (present(coef)) then
             f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-                ( (f(ll+i,:,:,irho)-f(ll-i,:,:,irho))*coef + (2*i*dx)*inh )
+                ( (f(ll+i,:,:,irho)-f(ll-i,:,:,irho))*coef + dx2_bound(-i)*inh )
           else
             f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-                (log(f(ll+i,:,:,irho)/f(ll-i,:,:,irho))+(2*i*dx)*inh)
+                (log(f(ll+i,:,:,irho)/f(ll-i,:,:,irho)) + dx2_bound(-i)*inh)
           endif
         else
           f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+(2*i*dx)*inh)
+              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho) + dx2_bound(-i)*inh)
         endif
       enddo
 !
@@ -5803,7 +5799,7 @@ module Boundcond
 ! Calculate delta_z based on z(), not on dz to improve behavior for
 ! non-equidistant grid (still not really correct, but could be OK)
 !
-          exp_fact = exp(-kappa*(z(n1+i)-z(n1-i)))
+          exp_fact = exp(-kappa*dz2_bound(-i))
 !
 !  Determine potential field in ghost zones
 !
@@ -5828,7 +5824,7 @@ module Boundcond
 ! Calculate delta_z based on z(), not on dz to improve behavior for
 ! non-equidistant grid (still not really correct, but could be OK)
 !
-          exp_fact = exp(-kappa*(z(n2+i)-z(n2-i)))
+          exp_fact = exp(-kappa*dz2_bound(i))
 !
 !  Determine potential field in ghost zones
 !
@@ -7622,7 +7618,7 @@ module Boundcond
       if (topbot=='bot') then
         tmp_x=-Fbot/hcondADI
         do i=1,nghost
-          f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-2.*i*dz*tmp_x
+          f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-dz2_bound(-i)*tmp_x
         enddo
       else
         call fatal_error('bc_ADI_flux_z', 'invalid argument')
