@@ -3374,21 +3374,46 @@ module Energy
         if (lcartesian_coords) then
           fact=1./nyzgrid
           do l=1,mx
-             cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
-                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+            if (ldensity_nolog) then
+              cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(alog(f(l,m1:m2,n1:n2,irho)) &
+                 -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+            else
+              cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
+                 -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+            endif
           enddo
         endif
+! 
         if (lspherical_coords) then
           cs2mx=0.
           fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
-          do l=1,mx
-            tmp1=0.
-            do n=n1,n2
-              tmp1=tmp1+sum(cs20*exp(gamma_m1*(f(l,m1:m2,n,ilnrho) &
-                   -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+          if (ldensity_nolog) then
+!            do l=1,mx
+            do l=l1,l2
+              tmp1=0.
+              do n=n1,n2
+                if (lreference_state) then
+                  tmp1=tmp1+sum(cs20*exp(gamma_m1*(alog(f(l,m1:m2,n,irho) &
+                      +reference_state(l-nghost,iref_rho))-lnrho0) &
+                      +cv1*(f(l,m1:m2,n,iss)+reference_state(l-nghost,iref_s))) &
+                      *dVol_y(m1:m2))*dVol_z(n)
+                else
+                  tmp1=tmp1+sum(cs20*exp(gamma_m1*(alog(f(l,m1:m2,n,irho)) &
+                      -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+                endif
+              enddo
+              cs2mx(l)=cs2mx(l)+tmp1
             enddo
-            cs2mx(l)=cs2mx(l)+tmp1
-          enddo
+          else
+            do l=1,mx
+              tmp1=0.
+              do n=n1,n2
+                tmp1=tmp1+sum(cs20*exp(gamma_m1*(f(l,m1:m2,n,ilnrho) &
+                    -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+              enddo
+              cs2mx(l)=cs2mx(l)+tmp1
+            enddo
+          endif
           cs2mx=fact*cs2mx
         endif
 !
