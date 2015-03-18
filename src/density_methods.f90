@@ -16,6 +16,11 @@ module DensityMethods
     module procedure putrho_v
   endinterface
 !
+  interface putlnrho
+    module procedure putlnrho_s
+    module procedure putlnrho_v
+  endinterface
+
   real, dimension(:,:), pointer :: reference_state
 
   contains
@@ -28,6 +33,24 @@ module DensityMethods
                                caller='initialize_density_methods')
 
     endsubroutine initialize_density_methods
+!***********************************************************************
+    function getrho_s(f,lf)
+
+      real                :: getrho_s
+      real,    intent(in) :: f
+      integer, intent(in) :: lf 
+
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          getrho_s=f+reference_state(lf-l1+1,iref_rho)
+        else
+          getrho_s=f
+        endif
+      else
+        getrho_s=exp(f)
+      endif
+
+    endfunction getrho_s
 !***********************************************************************
     subroutine getrho_1d(f,rho)
 
@@ -168,7 +191,7 @@ module DensityMethods
 
     endsubroutine putrho_s
 !***********************************************************************
-    subroutine putlnrho(f,lnrho)
+    subroutine putlnrho_v(f,lnrho)
 
       real, dimension(mx), intent(out):: f
       real, dimension(nx), intent(in) :: lnrho
@@ -180,7 +203,22 @@ module DensityMethods
       else
         f(l1:l2)=lnrho
       endif
-    endsubroutine putlnrho
+
+    endsubroutine putlnrho_v
+!***********************************************************************
+    subroutine putlnrho_s(f,lnrho)
+
+      real, dimension(mx,my), intent(out):: f
+      real,                   intent(in) :: lnrho
+!
+      if (ldensity_nolog) then
+        f(l1:l2,:)=exp(lnrho)
+        if (lreference_state) &
+          f(l1:l2,:)=f(l1:l2,:)-transpose(spread(reference_state(:,iref_rho),1,my))
+      else
+        f(l1:l2,:)=lnrho
+      endif
+    endsubroutine putlnrho_s
 !***********************************************************************
     subroutine getdlnrho_z(f,in,dlnrho)
 

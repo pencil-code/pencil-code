@@ -24,6 +24,16 @@ module DensityMethods
 !
     endsubroutine initialize_density_methods
 !***********************************************************************
+    function getrho_s(f,lf)
+
+      real                :: getrho_s
+      real,    intent(in) :: f
+      integer, intent(in) :: lf        ! here dummy parameter only
+
+      getrho_s = f
+
+    endfunction getrho_s
+!***********************************************************************
     subroutine getrho_1d(f,rho)
 
       real, dimension(mx), intent(in) :: f
