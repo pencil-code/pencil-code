@@ -250,7 +250,8 @@ program pc_distribute
         dz_tilde = gdz_tilde(1+ipz*nz:mz+ipz*nz)
 !
         ! write data:
-        call wsnap (filename, f(:,:,:,1:mvar_io), mvar_io, enum=.false., noghost=.true.)
+        if (mvar_io>0) &
+          call wsnap (filename, f(:,:,:,1:mvar_io), mvar_io, enum=.false., noghost=.true.)
 !
         ! write grid:
         call wgrid ('grid.dat')
