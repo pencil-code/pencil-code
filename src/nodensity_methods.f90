@@ -38,14 +38,24 @@ module DensityMethods
 
     endsubroutine getrho_1d
 !***********************************************************************
-    subroutine getlnrho_1d(f,lnrho)
+    subroutine getlnrho_1d_x(f,lnrho)
 
       real, dimension(mx), intent(in) :: f
       real, dimension(nx), intent(out):: lnrho
 
       lnrho=lnrho0
 
-    endsubroutine getlnrho_1d
+    endsubroutine getlnrho_1d_x
+!***********************************************************************
+    subroutine getlnrho_1d_y(f,lnrho,topbot)
+
+      real, dimension(my), intent(in) :: f
+      real, dimension(ny), intent(out):: lnrho
+      integer,             intent(in) :: topbot
+
+      lnrho=lnrho0
+
+    endsubroutine getlnrho_1d_y
 !***********************************************************************
     subroutine getlnrho_2dxy(f,lnrho)
 

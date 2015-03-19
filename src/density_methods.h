@@ -9,7 +9,8 @@
   endinterface
 !
   interface getlnrho
-    module procedure getlnrho_1d
+    module procedure getlnrho_1d_x
+    module procedure getlnrho_1d_y
     module procedure getlnrho_2dxy
     module procedure getlnrho_2dyz
   endinterface
