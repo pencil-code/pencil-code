@@ -52,8 +52,7 @@ module EquationOfState
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
-  real :: cs0=1.0, rho0=1.0, rho01=1.0, pp0=1.0
-  real :: cs20=1.0, lnrho0=0.0
+  real :: cs0=1.0, cs20=1.0, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -81,9 +80,9 @@ module EquationOfState
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
 !
-  real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
+  real, dimension(nchemspec,18):: species_constants
+  real, dimension(nchemspec,7) :: tran_data
+  real, dimension(nchemspec)   :: Lewis_coef, Lewis_coef1
 !
 !  Input parameters.
 !
@@ -105,6 +104,7 @@ module EquationOfState
   real, dimension(mz) :: rho0z = 0.0, dlnrho0dz = 0.0
   real, dimension(mz) :: eth0z = 0.0
   logical :: lstratset = .false.
+  integer, parameter :: BOT=1, TOP=nx
 !
   contains
 !***********************************************************************
@@ -304,6 +304,15 @@ module EquationOfState
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,ierr)
         call put_shared_variable('lnrho0',lnrho0,ierr)
+      endif
+!
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0,ierr)
+        if (ierr/=0) call stop_it("initialize_eos: "//&
+             "there was a problem when sharing rho0")
+        call put_shared_variable('lnrho0',lnrho0,ierr)      !caller='initialize_eos')
+        if (ierr/=0) call stop_it("initialize_eos: "//&
+             "there was a problem when sharing lnrho0")
       endif
 !
       if (lanelastic) then
@@ -751,7 +760,7 @@ module EquationOfState
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-apr-06/tony: coded
-!  20-jan-15/MR: changes for us of reference_state
+!  20-jan-15/MR: changes for use of reference_state
 !
       use Sub
       use SharedVariables, only: get_shared_variable
@@ -763,7 +772,7 @@ module EquationOfState
       intent(inout) :: p
 !
       real, dimension(nx) :: tmp
-      integer :: i,j,ierr
+      integer :: i,j
       real, dimension(:,:), pointer :: reference_state
 !
 !  Inverse cv and cp values.
@@ -805,14 +814,21 @@ module EquationOfState
               'not implemented for ilnrho_ss, try ilnrho_cs2')
         else
           if (lreference_state) &
-            call get_shared_variable('reference_state',reference_state,ierr)
+            call get_shared_variable('reference_state',reference_state,caller='calc_pencils_eos')
 
           if (lpencil(i_ss)) then
             p%ss=f(l1:l2,m,n,ieosvar2)
             if (lreference_state) p%ss=p%ss+reference_state(:,iref_s)
           endif
+
           if (lpencil(i_gss)) then
             call grad(f,ieosvar2,p%gss)
+if (notanumber(p%gss)) then
+          print*,'calc_penc_eos1: NaNs in p%gss'
+print*, 'n,m,iproc=', n,m,iproc
+print*, 'p%gss=', p%gss
+          stop
+        endif
             if (lreference_state) p%gss(:,1)=p%gss(:,1)+reference_state(:,iref_gs)
           endif
           if (lpencil(i_hss)) then
@@ -837,7 +853,10 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
-
+if (notanumber(p%glnrho)) then
+          print*,'calc_penc_eos: NaNs in p%glnrho'
+          stop
+        endif
         if (lpencil(i_gTT)) then
           do j=1,3; p%gTT(:,j)=p%glnTT(:,j)*p%TT; enddo
         endif
@@ -1167,26 +1186,19 @@ module EquationOfState
 !   20-jan-15/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
 !
       real, dimension(nx) :: lnrho,ss
       real, dimension(:,:), pointer :: reference_state
-      integer :: ierr
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
+        call get_shared_variable('reference_state',reference_state, &
+                                 caller='pressure_gradient_farray')
 !
-      if (ldensity_nolog) then
-        if (lreference_state) then
-          lnrho=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-        else 
-          lnrho=log(f(l1:l2,m,n,irho))
-        endif
-      else
-        lnrho=f(l1:l2,m,n,ilnrho)
-      endif
+      call getlnrho(f(:,m,n,ilnrho),lnrho)
 !
       ss=f(l1:l2,m,n,iss)
       if (lreference_state) ss=ss+reference_state(:,iref_s)
@@ -1366,6 +1378,7 @@ module EquationOfState
 !  20-jan-15/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
@@ -1374,21 +1387,11 @@ module EquationOfState
       real, dimension(psize) :: lnrho_
       real, dimension(:,:), pointer :: reference_state
 !
-      integer :: ierr
-!
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
+        call get_shared_variable('reference_state',reference_state,caller='eosperturb')
 
       if (psize==nx) then
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            lnrho_=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-          else
-            lnrho_=log(f(l1:l2,m,n,irho))
-          endif
-        else
-          lnrho_=f(l1:l2,m,n,ilnrho)
-        endif
+        call getlnrho(f(:,m,n,ilnrho),lnrho_)
         if (present(ee)) then
           if (pretend_lnTT) then
             f(l1:l2,m,n,iss)=log(cv1*ee)
@@ -1413,7 +1416,7 @@ module EquationOfState
 !
       elseif (psize==mx) then
 !
-!  Reference state not yet considered in this branch.
+!  Reference state not yet considered in this branch as undefined in ghost zones.
 !
         if (ldensity_nolog) then
           lnrho_=log(f(:,m,n,irho))
@@ -1454,10 +1457,10 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!
-!   Reference state not yet considered here (as this subroutine is never called).
+!   12-feb-15/MR  : changes for reference state
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -1468,6 +1471,7 @@ module EquationOfState
       real, dimension(psize) :: lnTT_, cs2_
       real, dimension(psize) :: lnrho_,ss_
       real, dimension(psize) :: rho, eth
+      real, dimension(:,:), pointer :: reference_state
 !
 !ajwm this test should be done at initialization
 !      if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
@@ -1477,14 +1481,21 @@ module EquationOfState
 ! Log rho and entropy
 !
       case (ilnrho_ss,irho_ss)
+        if (lreference_state) &
+          call get_shared_variable('reference_state',reference_state,caller='eoscalc_farray')
+
         select case (psize)
         case (nx)
           if (lstratz) then
             lnrho_ = log(rho0z(n)) + log(1.0 + f(l1:l2,m,n,ieosvar1))
-          elseif (ieosvars == ilnrho_ss) then
+          elseif (ieosvars == ilnrho_ss) then    ! use of getlnrho possible?
             lnrho_=f(l1:l2,m,n,ieosvar1)
           else
-            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+            if (lreference_state) then
+              lnrho_=log(f(l1:l2,m,n,ieosvar1)+reference_state(:,iref_rho))
+            else
+              lnrho_=log(f(l1:l2,m,n,ieosvar1))
+            endif
           endif
           if (leos_isentropic) then
             ss_=0
@@ -1492,6 +1503,7 @@ module EquationOfState
             ss_=-cv*gamma_m1*(lnrho_-lnrho0)
           else
             ss_=f(l1:l2,m,n,ieosvar2)
+            if (lreference_state) ss_ = ss_+reference_state(:,iref_s)
           endif
         case (mx)
           if (lstratz) then
@@ -1499,6 +1511,7 @@ module EquationOfState
           elseif (ieosvars == ilnrho_ss) then
             lnrho_=f(:,m,n,ieosvar1)
           else
+            !!!if (lreference_state) then
             lnrho_=log(f(:,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
@@ -1506,6 +1519,7 @@ module EquationOfState
           elseif (leos_isothermal) then
             ss_=-cv*gamma_m1*(lnrho_-lnrho0)
           else
+            !!!if (lreference_state) then
             ss_=f(:,m,n,ieosvar2)
           endif
         case default
@@ -1677,6 +1691,8 @@ module EquationOfState
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
+!   Reference state not yet considered here 
+!
       integer, intent(in) :: ivars
       integer, intent(in), optional :: iz
       real, intent(in) :: var1,var2
@@ -1835,6 +1851,8 @@ module EquationOfState
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
+!
+!   Reference state not yet considered here 
 !
       integer, intent(in) :: ivars
       integer, intent(in), optional :: iz
@@ -2033,13 +2051,13 @@ module EquationOfState
 !  20-jan-15/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
 !
       real, dimension(nx) :: lnrho,ss,lnTT
       real, dimension(:,:), pointer :: reference_state
-      integer :: i,ierr
 !
 !      real :: ss_offset=0.
 !
@@ -2049,19 +2067,11 @@ module EquationOfState
 !      if (T0/=1.) ss_offset=log(T0)/gamma
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
+        call get_shared_variable('reference_state',reference_state,caller='isothermal_entropy')
 !
       do n=n1,n2
       do m=m1,m2
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            lnrho=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-          else
-            lnrho=log(f(l1:l2,m,n,irho))
-          endif
-        else
-          lnrho=f(l1:l2,m,n,ilnrho)
-        endif
+        call getlnrho(f(:,m,n,ilnrho),lnrho)
         lnTT=log(T0)
           !+ other terms for sound speed not equal to cs_0
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
@@ -2133,12 +2143,13 @@ module EquationOfState
     subroutine bdry_magnetic(f,quench,task)
 !
 !  Calculate magnetic properties needed for z boundary conditions.
-!  This routine contails calls to more specialized routines.
+!  This routine contains calls to more specialized routines.
 !
 !   8-jun-13/axel: coded, originally in magnetic, but cyclic dependence
-!  21-jan-15/MR: changes for use of reference state.
+!  21-jan-15/MR  : changes for use of reference state.
 !
       use Sub, only: curl, dot2
+      use DensityMethods, only: getrho
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
       !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
@@ -2152,7 +2163,6 @@ module EquationOfState
       integer :: j
 !
       !character (len=linelen), pointer :: dummy
-      real, dimension(:,:), pointer :: reference_state
       integer :: ierr
 !
       if (lrun .and. lmagn_mf) then
@@ -2169,13 +2179,8 @@ module EquationOfState
         call get_shared_variable('uturb',uturb,ierr)
         if (ierr/=0) call stop_it("uturb: "//&
              "there was a problem when getting uturb")
-        call get_shared_variable('B_ext',B_ext,ierr)
-        if (ierr/=0) call stop_it("B_ext: "//&
-             "there was a problem when getting B_ext")
+        call get_shared_variable('B_ext',B_ext,caller='bdry_magnetic')
       endif
-!
-      if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
 !
       select case (task)
 !
@@ -2194,15 +2199,7 @@ module EquationOfState
           bb(:,j)=bb(:,j)!+B_ext(j)
         enddo
         call dot2(bb,b2)
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            rho=f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
-          else
-            rho=f(l1:l2,m,n,irho)
-          endif
-        else
-          rho=exp(f(l1:l2,m,n,ilnrho))
-        endif
+        call getrho(f(:,m,n,ilnrho),rho)
 !
 !  Call mean-field routine.
 !
@@ -2252,10 +2249,12 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getrho, getdlnrho
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
+      real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2306,6 +2305,9 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_kramers")
 !
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux')
+!
       select case (topbot)
 !
 !  bottom boundary
@@ -2323,15 +2325,18 @@ module EquationOfState
         if (pretend_lnTT) then
           tmp_xy=-FbotKbot/exp(f(:,:,n1,iss))
           do i=1,nghost
-             f(:,:,n1-i,iss)=f(:,:,n1+i,iss)-2.*i*dz*tmp_xy
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)-dz2_bound(-i)*tmp_xy
           enddo
         else
 !
+          call getrho(f(:,:,n1,ilnrho),rho_xy)
+!
           if (ldensity_nolog) then
-            rho_xy=f(:,:,n1,irho)
-            cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
+            cs2_xy = f(:,:,n1,iss)
+            if (lreference_state) &
+              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + transpose(spread(reference_state(:,iref_s),1,my))
+            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
-            rho_xy=exp(f(:,:,n1,ilnrho))
             cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
           endif
 !
@@ -2343,7 +2348,8 @@ module EquationOfState
           if (lheatc_chiconst) then
             tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
           else if (lheatc_kramers) then
-            tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+            tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
+                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
           else
             tmp_xy=FbotKbot/cs2_xy
           endif
@@ -2351,13 +2357,10 @@ module EquationOfState
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
           do i=1,nghost
-            if (ldensity_nolog) then
-              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-                (log(f(:,:,n1+i,irho)/f(:,:,n1-i,irho))+2*i*dz*tmp_xy)
-            else
-              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
-                (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
-            endif
+            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d ln(rho)
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+            if (lreference_state) &
+              f(:,:,n1-i,iss)=f(:,:,n1-i,iss) + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2371,14 +2374,17 @@ module EquationOfState
         if (pretend_lnTT) then
           tmp_xy=-FtopKtop/exp(f(:,:,n2,iss))
           do i=1,nghost
-             f(:,:,n2-i,iss)=f(:,:,n2+i,iss)-2.*i*dz*tmp_xy
+             f(:,:,n2-i,iss)=f(:,:,n2+i,iss)-dz2_bound(i)*tmp_xy
           enddo
         else
+!
+          call getrho(f(:,:,n2,ilnrho),rho_xy)
           if (ldensity_nolog) then
-            rho_xy=f(:,:,n2,irho)
-            cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n2,irho))-lnrho0)+cv1*f(:,:,n2,iss))
+            cs2_xy = f(:,:,n2,iss)		! here cs2_xy = ss
+            if (lreference_state) &
+              cs2_xy = cs2_xy + transpose(spread(reference_state(:,iref_s),1,my))
+            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
-            rho_xy=exp(f(:,:,n2,ilnrho))
             cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
           endif
 !
@@ -2390,7 +2396,8 @@ module EquationOfState
           if (lheatc_chiconst) then
             tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
           else if (lheatc_kramers) then
-            tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+            tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
+                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
           else
             tmp_xy=FtopKtop/cs2_xy
           endif
@@ -2398,13 +2405,10 @@ module EquationOfState
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
           do i=1,nghost
-            if (ldensity_nolog) then
-              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-                (log(f(:,:,n2-i,irho)/f(:,:,n2+i,irho))+2*i*dz*tmp_xy)
-            else
-              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
-                (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
-            endif
+            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)  ! rho_xy=d ln(rho)
+            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
+            if (lreference_state) &
+              f(:,:,n2+i,iss)=f(:,:,n2+i,iss) - dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2425,9 +2429,11 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho, getrho
 !
       logical, pointer :: lmeanfield_chitB
       real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
+      real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2477,6 +2483,9 @@ module EquationOfState
         endif
       endif
 !
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_turb')
+!
       select case (topbot)
 !
 !  Check whether we want to do top or bottom (this is precessor dependent)
@@ -2489,9 +2498,15 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-        rho_xy=exp(f(:,:,n1,ilnrho))
+        call getlnrho(f(:,:,n1,ilnrho),rho_xy)      ! here rho_xy=log(rho)
+        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss)
+        if (lreference_state) &
+          cs2_xy=cs2_xy+cv1*transpose(spread(reference_state(:,iref_s),1,my))
+        cs2_xy=cs20*exp(cs2_xy)
+
+        call getrho(f(:,:,n1,ilnrho),rho_xy)
         TT_xy=cs2_xy/(gamma_m1*cp)
+!
         fac=(1./60)*dz_1(n1)
         dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
                          -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
@@ -2502,7 +2517,8 @@ module EquationOfState
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+2*i*dz*dsdz_xy
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+dz2_bound(-i)*dsdz_xy
+          if (lreference_state) f(:,:,n1-i,iss)=f(:,:,n1-i,iss)   !!!+spread(dz2_bound(-i)*reference_state(:,iref_gs),1,my)
         enddo
 !
 !  top boundary
@@ -2513,9 +2529,15 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-        rho_xy=exp(f(:,:,n2,ilnrho))
+        call getlnrho(f(:,:,n2,ilnrho),rho_xy)      ! here rho_xy=log(rho)
+        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n2,iss)
+        if (lreference_state) &
+          cs2_xy=cs2_xy + cv1*transpose(spread(reference_state(:,iref_s),1,my))
+        cs2_xy=cs20*exp(cs2_xy)
+
+        call getrho(f(:,:,n2,ilnrho),rho_xy)
         TT_xy=cs2_xy/(gamma_m1*cp)
+
         fac=(1./60)*dz_1(n2)
         dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                          -  9.0*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
@@ -2551,7 +2573,8 @@ module EquationOfState
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+2*i*dz*dsdz_xy
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
+          if (lreference_state) f(:,:,n2-i,iss)=f(:,:,n2-i,iss)   !!!+spread(dz2_bound(i)*reference_state(:,iref_gs),1,my)
         enddo
 !
 !  capture undefined entries
@@ -2575,6 +2598,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getrho
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
@@ -2589,11 +2613,6 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      if (lreference_state) then
-        call get_shared_variable('reference_state',reference_state,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-             "there was a problem when getting reference_state")
-      endif
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
            "there was a problem when getting chi_t")
@@ -2610,6 +2629,9 @@ module EquationOfState
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
            "there was a problem when getting hcondxtop")
 !
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_turb_x')
+!
       select case (topbot)
 !
 !  Check whether we want to do top or bottom (this is processor dependent)
@@ -2624,48 +2646,43 @@ module EquationOfState
         if (pretend_lnTT) then
           do i=1,nghost
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &     ! MR: corrected, plus sign correct? 
-                2*i*dx*sigmaSBt*exp(f(l1,:,:,iss))**3/hcondxbot
+                dx2_bound(-i)*sigmaSBt*exp(f(l1,:,:,iss))**3/hcondxbot
           enddo
         else
 !
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
+          call getrho(f(l1,:,:,ilnrho),rho_yz,BOT)
+
           if (ldensity_nolog) then
-            rho_yz=f(l1,:,:,irho)
-            cs2_yz=f(l1,:,:,iss)       ! here entropy
-            if (lreference_state) then
-              rho_yz = rho_yz+reference_state(1,iref_rho) 
-              cs2_yz = cs2_yz+reference_state(1,iref_s)
-            endif
+            cs2_yz=f(l1,:,:,iss)       ! here cs2_yz = ss
+            if (lreference_state) cs2_yz = cs2_yz+reference_state(BOT,iref_s)
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
-            rho_yz=exp(f(l1,:,:,ilnrho))
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
           endif
 !
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
+!  Calculate d rho/d x    or   d ln(rho) / dx
+!
           fac=(1./60)*dx_1(l1)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
+                           -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
+                           +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
         
           if (ldensity_nolog) then
 !
-!  Calculate first d rho/d x, add gradient of reference density and divide by total density
+!  Add gradient of reference density and divide by total density
 !
-            dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,irho)-f(l1-1,:,:,irho)) &
-                             -  9.0*(f(l1+2,:,:,irho)-f(l1-2,:,:,irho)) &
-                             +      (f(l1+3,:,:,irho)-f(l1-3,:,:,irho))) 
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(1,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(f(l1,:,:,irho) + reference_state(1,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(BOT,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(BOT,iref_rho))
             else
-              dlnrhodx_yz=dlnrhodx_yz/f(l1,:,:,irho)
+              dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
 !
-          else
-            dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
-                             -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
-                             +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
           endif
 !
           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
@@ -2673,12 +2690,12 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(1,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(BOT,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
           do i=1,nghost
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-dx2_bound(-i)*dsdx_yz
           enddo
         endif
 !
@@ -2692,48 +2709,44 @@ module EquationOfState
         if (pretend_lnTT) then
           do i=1,nghost
             f(l2+i,:,:,iss)=f(l2-i,:,:,iss) + &     ! MR: corrected, plus sign correct?
-                2*i*dx*sigmaSBt*exp(f(l2,:,:,iss))**3/hcondxtop
+                dx2_bound(i)*sigmaSBt*exp(f(l2,:,:,iss))**3/hcondxtop
           enddo
         else
 !
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
+          call getrho(f(l2,:,:,ilnrho),rho_yz,TOP)
+
           if (ldensity_nolog) then
-            rho_yz=f(l2,:,:,irho)
             cs2_yz=f(l2,:,:,iss)    ! here entropy
-            if (lreference_state) then
-              rho_yz = rho_yz+reference_state(nx,iref_rho)
-              cs2_yz = cs2_yz+reference_state(nx,iref_s)
-            endif
+            if (lreference_state) &
+              cs2_yz = cs2_yz+reference_state(TOP,iref_s)
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
-            rho_yz=exp(f(l2,:,:,ilnrho))
             cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
           endif
 !            
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
+!  Calculate d rho/d x    or   d ln(rho) / dx
+!
           fac=(1./60)*dx_1(l2)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
+                           -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
+                           +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
 !
           if (ldensity_nolog) then
 !
-!  Calculate first d rho/d x, add gradient of reference density and divide by total density
+!  Add gradient of reference density to d rho/d x and divide by total density
 !
-            dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,irho)-f(l2-1,:,:,irho)) &
-                             -  9.0*(f(l2+2,:,:,irho)-f(l2-2,:,:,irho)) &
-                             +      (f(l2+3,:,:,irho)-f(l2-3,:,:,irho))) 
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(nx,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(f(l2,:,:,irho) + reference_state(nx,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(TOP,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(TOP,iref_rho))
             else
-              dlnrhodx_yz=dlnrhodx_yz/f(l2,:,:,irho)
+              dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
 
-          else
-            dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
-                             -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
-                             +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
           endif
 !
           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
@@ -2741,12 +2754,12 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(nx,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
           do i=1,nghost
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+2*i*dx*dsdx_yz
+            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+dx2_bound(i)*dsdx_yz
           enddo
         endif
 !
@@ -2767,6 +2780,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getrho,getdlnrho
 !
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
@@ -2782,11 +2796,8 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      if (lreference_state) then
-        call get_shared_variable('reference_state',reference_state,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-             "there was a problem when getting reference_state")
-      endif
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_condturb_x')
 !
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
@@ -2827,41 +2838,35 @@ module EquationOfState
 !
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
 !
+          call getrho(f(l1,:,:,ilnrho),rho_yz,BOT)
+
           if (ldensity_nolog) then
-            rho_yz=f(l1,:,:,irho)
             cs2_yz=f(l1,:,:,iss)      ! here entropy
-            if (lreference_state) then
-              rho_yz = rho_yz+reference_state(1,iref_rho)
-              cs2_yz = cs2_yz+reference_state(1,iref_s)
-            endif
+            if (lreference_state) &
+              cs2_yz = cs2_yz+reference_state(BOT,iref_s)
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
-            rho_yz=exp(f(l1,:,:,ilnrho))
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
           endif
 !
-          fac=(1./60)*dx_1(l1)
-!
 !  The following calculations in fact not needed (?).
+!  Calculate d rho/d x   or   d ln(rho)/ d x
 !
+          fac=(1./60)*dx_1(l1)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
+                           -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
+                           +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
           if (ldensity_nolog) then
 !
-!  Calculate first d rho/d x, add gradient of reference density and divide by total density
+!  Add gradient of reference density and divide by total density.
 !
-            dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,irho)-f(l1-1,:,:,irho)) &
-                             -  9.0*(f(l1+2,:,:,irho)-f(l1-2,:,:,irho)) &
-                             +      (f(l1+3,:,:,irho)-f(l1-3,:,:,irho)))
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(1,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(f(l1,:,:,irho) + reference_state(1,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(BOT,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(BOT,iref_rho))
             else
-              dlnrhodx_yz=dlnrhodx_yz/f(l1,:,:,irho)
+              dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
 !
-          else
-            dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
-                             -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
-                             +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
           endif
 !
           dsdx_yz=(cp*gamma_m1*Fbot/cs2_yz)/ &
@@ -2869,25 +2874,16 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(1,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(BOT,iref_gs)
 !
 !  Enforce ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            if (ldensity_nolog) then
-              dlnrhodx_yz=f(l1+i,:,:,irho)-f(l1-i,:,:,irho)
-              if (lreference_state) then
-                dlnrhodx_yz = (dlnrhodx_yz + 2*i*dx*reference_state(1,iref_grho)) &
-                              /(f(l1,:,:,irho)+reference_state(1,iref_rho))
-              else
-                dlnrhodx_yz = dlnrhodx_yz/f(l1,:,:,irho)
-              endif
-            else
-              dlnrhodx_yz=f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)
-            endif
+            call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,dx2_bound(-i),dlnrhodx_yz,BOT)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &
                 (hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
-                dlnrhodx_yz+2*i*dx*dsdx_yz
+                dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
+            if (lreference_state) f(l1-i,:,:,iss)=f(l1-i,:,:,iss) + reference_state(BOT,iref_s)
           enddo
         endif
 !
@@ -2916,6 +2912,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it, mpiallreduce_sum
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho
 !
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
@@ -2923,34 +2920,40 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz, dlnrhodx_yz
-      real, dimension (mx) :: cs2mx, cs2mx_tmp, lnrmx, lnrmx_tmp
-      real :: fac, fact, dlnrmxdx, tmp1, tmp2
+      real, dimension (mx) :: lnrmx, lnrmx_tmp
+      real :: cs2mx, cs2mx_tmp
+      real :: fac, fact, dlnrmxdx, tmp1
+      real, dimension(ny) :: tmp2
       integer :: i,l,ierr
+      real, dimension(:,:), pointer :: reference_state
 !
-      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_flux_condturb_mean_x: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Get the shared variables
 !
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_condturb_mean_x')
+!
       call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting chi_t")
       call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting chit_prof1")
       call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting chit_prof2")
       call get_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting hcondxbot")
       call get_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting hcondxtop")
       call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting Fbot")
       call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
+      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
            "there was a problem when getting Ftop")
 !
       select case (topbot)
@@ -2968,27 +2971,35 @@ module EquationOfState
            call stop_it("bc_ss_flux_condturb_mean_x: not implemented for pretend_lnTT=T")
         else
 !
-!  Compute yz-averaged density and sound speed
+!  Compute yz-averaged log density and sound speed
 !
-          lnrmx=0.; cs2mx=0.
+          fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
+          cs2mx=0.
+          do n=n1,n2
+            call getlnrho(f(l1,:,n,ilnrho),tmp2,BOT)
+            tmp2 = gamma_m1*(tmp2-lnrho0) + cv1*f(l1,m1:m2,n,iss)
+            if (lreference_state) tmp2 = tmp2 + cv1*reference_state(BOT,iref_s)
+            cs2mx = cs2mx+sum(cs20*exp(tmp2)*dVol_y(m1:m2))*dVol_z(n)
+          enddo
+          cs2mx=fact*cs2mx
+!
+          lnrmx=0.
           fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
           do l=1,mx
-            tmp1=0.; tmp2=0.
+            tmp1=0.
             do n=n1,n2
-              tmp1=tmp1+sum(f(l,m1:m2,n,ilnrho)*dVol_y(m1:m2))*dVol_z(n)
-              tmp2=tmp2+sum(cs20*exp(gamma_m1*(f(l,m1:m2,n,ilnrho) &
-                   -lnrho0)+cv1*f(l,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+              call getlnrho(f(l1,:,n,ilnrho),tmp2,BOT)    ! doubled call not yet optimal
+              tmp1=tmp1+sum(tmp2*dVol_y(m1:m2))*dVol_z(n)
             enddo
             lnrmx(l)=lnrmx(l)+tmp1
-            cs2mx(l)=cs2mx(l)+tmp2
           enddo
-          lnrmx=fact*lnrmx; cs2mx=fact*cs2mx
+          lnrmx=fact*lnrmx
 !
 !  Communication over all processors in the yz plane.
 !
           if (nprocy>1.or.nprocz>1) then
             call mpiallreduce_sum(lnrmx,lnrmx_tmp,mx,idir=23)
-            call mpiallreduce_sum(cs2mx,cs2mx_tmp,mx,idir=23)
+            call mpiallreduce_sum(cs2mx,cs2mx_tmp,idir=23)
             lnrmx=lnrmx_tmp
             cs2mx=cs2mx_tmp
           endif
@@ -3006,12 +3017,15 @@ module EquationOfState
 !  enforce:
 !    ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
-          dsdx_yz=(-cp*gamma_m1*Fbot/cs2mx(l1))/ &
+          dsdx_yz=(-cp*gamma_m1*Fbot/cs2mx)/ &
                (chit_prof1*chi_t*exp(lnrmx(l1)) + hcondxbot*gamma) - &
               gamma_m1/gamma*dlnrmxdx
 !
+          if (lreference_state) &
+            dsdx_yz = dsdx_yz - reference_state(BOT,iref_gs)
+!
           do i=1,nghost
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-dx2_bound(-i)*dsdx_yz
           enddo
         endif
 !
@@ -3038,6 +3052,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho, getrho, getdlnrho
 !
       real, pointer :: chi, hcondzbot, hcondztop
       real, pointer :: chi_t, chit_prof1, chit_prof2
@@ -3046,7 +3061,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy, dlnrhodz_xy
+      real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy
       real :: fac
       integer :: i,ierr
 !
@@ -3078,7 +3093,7 @@ module EquationOfState
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
            "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
+      call get_shared_variable('Ftop',Ftop,caller='bc_ss_flux_condturb_z')
       if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
            "there was a problem when getting Ftop")
 !
@@ -3099,37 +3114,31 @@ module EquationOfState
 !
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
 !
-          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
-          rho_xy=exp(f(:,:,n1,ilnrho))
+          call getlnrho(f(:,:,n1,ilnrho),rho_xy)      ! here rho_xy = ln(rho)
+          cs2_xy=cs20*exp(gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss))
 !
-          fac=(1./60)*dz_1(l1)
-          dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
-                           -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
-                           +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
+          call getrho(f(:,:,n1,ilnrho),rho_xy)        ! here rho_xy = rho
+!
+          !fac=(1./60)*dz_1(l1)
+          !dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
+          !                 -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
+          !                 +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
 !
           if (lheatc_chiconst) then
-             dsdz_xy=(gamma_m1*Fbot/cs2_xy)/ &
-                  (rho_xy*(chit_prof1*chi_t/cp + gamma*chi))
-!
-!  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
-!
-             do i=1,nghost
-                f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ &
-                     (chi*gamma_m1*rho_xy/(rho_xy*(chit_prof1*chi_t/cp+gamma*chi)))* &
-                     (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))+2*i*dz*dsdz_xy
-             enddo
+            dsdz_xy= (gamma_m1*Fbot/cs2_xy)/(rho_xy*(chit_prof1*chi_t/cp + gamma*chi))
+            rho_xy = (chi*gamma_m1*rho_xy/(rho_xy*(chit_prof1*chi_t/cp+gamma*chi)))
           else
-             dsdz_xy=(cp*gamma_m1*Fbot/cs2_xy)/ &
-                  (chit_prof1*chi_t*rho_xy + hcondzbot*gamma)
+            dsdz_xy= (cp*gamma_m1*Fbot/cs2_xy)/(chit_prof1*chi_t*rho_xy + hcondzbot*gamma)
+            rho_xy = (hcondzbot*gamma_m1/(chit_prof1*chi_t*rho_xy+gamma*hcondzbot))
+          endif
 !
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
-             do i=1,nghost
-                f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ &
-                     (hcondzbot*gamma_m1/(chit_prof1*chi_t*rho_xy+gamma*hcondzbot))* &
-                     (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))+2*i*dz*dsdz_xy
-             enddo
-          endif
+          do i=1,nghost
+            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,cs2_xy)
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + rho_xy*cs2_xy+dz2_bound(-i)*dsdz_xy
+          enddo
+
         endif
 !
 !  top boundary
@@ -3157,12 +3166,19 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
+      use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho
+
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
+      real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
+!
+      if (lreference_state) &
+         call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_old')
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -3170,43 +3186,51 @@ module EquationOfState
 !  tmp_xy = s(x,y) on the boundary.
 !  gamma*s/cp = [ln(cs2/cs20)-(gamma-1)ln(rho/rho0)]
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
 !  bottom boundary
 !
       case ('bot')
+!
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
-        if (ldebug) print*, &
-                'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) &
-              print*,'bc_ss_temp_old: cannot have cs2bot = ', cs2bot, ' <= 0'
-        tmp_xy = (-gamma_m1*(f(:,:,n1,ilnrho)-lnrho0) &
-             + log(cs2bot/cs20)) / gamma
+        if (ldebug) print*, 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*,'bc_ss_temp_old: cannot have cs2bot = ', cs2bot, ' <= 0'
+!
+        call getlnrho(f(:,:,n1,ilnrho),tmp_xy)
+        tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2bot/cs20)) / gamma
+
         f(:,:,n1,iss) = tmp_xy
+        if (lreference_state) f(:,:,n1,iss) = f(:,:,n1,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+
         do i=1,nghost
-          f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
+          f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)     ! reference_state?
         enddo
 !
 !  top boundary
 !
       case ('top')
+!
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
-        if (ldebug) print*, &
-                   'bc_ss_temp_old: set top temperature - cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                   'bc_ss_temp_old: cannot have cs2top = ',cs2top, ' <= 0'
+        if (ldebug) print*, 'bc_ss_temp_old: set top temperature - cs2top=',cs2top
+        if (cs2top<=0.) print*, 'bc_ss_temp_old: cannot have cs2top = ',cs2top, ' <= 0'
+!
   !     if (bcz1(ilnrho) /= 'a2') &
   !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
-        tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) &
-                 + log(cs2top/cs20)) / gamma
+        call getlnrho(f(:,:,n2,ilnrho),tmp_xy)
+        tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2top/cs20)) / gamma
+
         f(:,:,n2,iss) = tmp_xy
+        if (lreference_state) &
+          f(:,:,n2,iss) = f(:,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+!
         do i=1,nghost
-          f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
+          f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)     ! reference_state?
         enddo
+!
       case default
         call fatal_error('bc_ss_temp_old','invalid argument')
       endselect
@@ -3220,12 +3244,22 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
+      use SharedVariables, only: get_shared_variable
+      use DensityMethods, only: getlnrho 
+!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
+      real, dimension(my,mz) :: lnrho_yz
       integer :: i
+      real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
+!
+!  Get the shared variables
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -3239,26 +3273,37 @@ module EquationOfState
 !  bottom boundary
 !
       case ('bot')
-        if (ldebug) print*, &
-                   'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_x: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp_x: cannot have cs2bot<=0'
+!
         if (lentropy .and. .not. pretend_lnTT) then
-           tmp = 2*cv*log(cs2bot/cs20)
-!  Corrected for linear density
-           if (ldensity_nolog) then
-              f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l1,:,:,ilnrho)) - lnrho0)
-              do i=1,nghost
-                 f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-                      - (cp-cv)*(log(f(l1+i,:,:,ilnrho)*f(l1-i,:,:,ilnrho)) - 2*lnrho0)
-              enddo
-           else
-              f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
-              do i=1,nghost
-                 f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-                      - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
-              enddo
-           endif
+          tmp = 2*cv*log(cs2bot/cs20)
+          call getlnrho(f(l1,:,:,ilnrho),lnrho_yz,BOT)
+          f(l1,:,:,iss) =   0.5*tmp - (cp-cv)*(lnrho_yz - lnrho0)
+!
+          if (lreference_state) &
+            f(l1,:,:,iss) = f(l1,:,:,iss) - reference_state(BOT,iref_s)
+        
+          if (ldensity_nolog) then 
+            do i=1,nghost
+              if (lreference_state) then
+!
+! Reference state assumed symmetric about boundary point.
+!
+                f(l1-i,:,:,iss) = - f(l1+i,:,:,iss) + tmp - 2*reference_state(i,iref_s) &
+                                  - (cp-cv)*(log( (f(l1+i,:,:,irho)+reference_state(i,iref_rho)) &
+                                   *(f(l1-i,:,:,irho)+reference_state(i,iref_rho)) ) - 2*lnrho0)
+              else
+                f(l1-i,:,:,iss) = - f(l1+i,:,:,iss) + tmp &
+                                  - (cp-cv)*(log(f(l1+i,:,:,irho)*f(l1-i,:,:,irho)) - 2*lnrho0)
+              endif
+            enddo
+          else
+            do i=1,nghost
+              f(l1-i,:,:,iss) = - f(l1+i,:,:,iss) + tmp &
+                                - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
+            enddo
+          endif
 !
         elseif (lentropy .and. pretend_lnTT) then
            f(l1,:,:,iss) = log(cs2bot/gamma_m1)
@@ -3271,26 +3316,38 @@ module EquationOfState
 !  top boundary
 !
       case ('top')
-        if (ldebug) print*, &
-                       'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                       'bc_ss_temp_x: cannot have cs2top<=0'
+        if (ldebug) print*, 'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
+        if (cs2top<=0.) print*, 'bc_ss_temp_x: cannot have cs2top<=0'
+!
         if (lentropy .and. .not. pretend_lnTT) then
+
+          tmp = 2*cv*log(cs2top/cs20)
+          call getlnrho(f(l2,:,:,ilnrho),lnrho_yz,TOP)
+          f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_yz - lnrho0)
+!
+          if (lreference_state) &
+            f(l2,:,:,iss) = f(l2,:,:,iss) - reference_state(TOP,iref_s)
 !
 !  Distinguish cases for linear and logarithmic density
 !
-          tmp = 2*cv*log(cs2top/cs20)
           if (ldensity_nolog) then
-            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l2,:,:,ilnrho))-lnrho0)
             do i=1,nghost
-              f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-                - (cp-cv)*(log(f(l2-i,:,:,ilnrho)*f(l2+i,:,:,ilnrho))-2*lnrho0)
+              if (lreference_state) then
+!
+! Reference state assumed symmetric about boundary point.
+!
+                f(l2+i,:,:,iss) =-f(l2-i,:,:,iss) + tmp - 2.*reference_state(nx-i,iref_s) &
+                                 - (cp-cv)*(log((f(l2-i,:,:,irho)+reference_state(nx-i,iref_rho)) &
+                                               *(f(l2+i,:,:,irho)+reference_state(nx-i,iref_rho)))-2*lnrho0)
+              else
+                f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                                  -(cp-cv)*(log(f(l2-i,:,:,irho)*f(l2+i,:,:,irho))-2*lnrho0)
+              endif
             enddo
           else
-            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
             do i=1,nghost
               f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-                - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+                                - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
             enddo
           endif
         elseif (lentropy .and. pretend_lnTT) then
@@ -3335,8 +3392,8 @@ module EquationOfState
       case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_y: cannot have cs2bot<=0'
+        if (cs2bot<=0.) print*, 'bc_ss_temp_y: cannot have cs2bot<=0'
+!
         tmp = 2*cv*log(cs2bot/cs20)
         f(:,m1,:,iss) = 0.5*tmp - (cp-cv)*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -3349,8 +3406,8 @@ module EquationOfState
       case ('top')
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                     'bc_ss_temp_y: cannot have cs2top<=0'
+        if (cs2top<=0.) print*, 'bc_ss_temp_y: cannot have cs2top<=0'
+
         tmp = 2*cv*log(cs2top/cs20)
         f(:,m2,:,iss) = 0.5*tmp - (cp-cv)*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -3520,7 +3577,7 @@ module EquationOfState
         tmp=-gravz/cs2bot
         do i=1,nghost
           f(:,:,n1-i,ilnrho)=f(:,:,n1+i,ilnrho)+cp1*f(:,:,n1+i,iss) &
-                                               -cp1*f(:,:,n1-i,iss)+2*i*dz*tmp
+                                               -cp1*f(:,:,n1-i,iss)+dz2_bound(-i)*tmp
         enddo
 !
 !  top boundary
@@ -3543,7 +3600,7 @@ module EquationOfState
         tmp=gravz/cs2top
         do i=1,nghost
           f(:,:,n2+i,ilnrho)=f(:,:,n2-i,ilnrho)+cp1*f(:,:,n2-i,iss) &
-                                               -cp1*f(:,:,n2+i,iss)+2*i*dz*tmp
+                                               -cp1*f(:,:,n2+i,iss)+dz2_bound(i)*tmp
         enddo
 !
       case default
@@ -3682,12 +3739,11 @@ module EquationOfState
       case ('bot')
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp2_z: cannot have cs2bot<=0'
+        if (cs2bot<=0.) print*, 'bc_ss_temp2_z: cannot have cs2bot<=0'
+!
         tmp = cv*log(cs2bot/cs20)
         do i=0,nghost
-          f(:,:,n1-i,iss) = tmp &
-               - (cp-cv)*(f(:,:,n1-i,ilnrho)-lnrho0)
+          f(:,:,n1-i,iss) = tmp - (cp-cv)*(f(:,:,n1-i,ilnrho)-lnrho0)
         enddo
 !
 !  top boundary
@@ -3696,10 +3752,10 @@ module EquationOfState
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
+!
         tmp = cv*log(cs2top/cs20)
         do i=0,nghost
-          f(:,:,n2+i,iss) = tmp &
-               - (cp-cv)*(f(:,:,n2+i,ilnrho)-lnrho0)
+          f(:,:,n2+i,iss) = tmp - (cp-cv)*(f(:,:,n2+i,ilnrho)-lnrho0)
         enddo
       case default
         call fatal_error('bc_ss_temp2_z','invalid argument')
@@ -3729,32 +3785,33 @@ module EquationOfState
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
+!  Not yet adapted to reference_state
+!
       select case (topbot)
 !
 !  bottom boundary
 !
       case ('bot')
         dcs2bot=gamma*gravz/(mpoly+1.)
-        if (ldebug) print*, &
-            'bc_ss_temp3_z: set cs2bot,dcs2bot=',cs2bot,dcs2bot
-        if (cs2bot<=0.) print*, &
-            'bc_ss_temp3_z: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp3_z: set cs2bot,dcs2bot=',cs2bot,dcs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp3_z: cannot have cs2bot<=0'
+
         do i=0,nghost
-          f(:,:,n1-i,iss) = cv*log((cs2bot+(z(n1-i)-z(n1))*dcs2bot)/cs20) &
-               -(cp-cv)*(f(:,:,n1-i,ilnrho)-lnrho0)
+          f(:,:,n1-i,iss) =  cv*log((cs2bot-0.5*dz2_bound(-i)*dcs2bot)/cs20) &
+                           -(cp-cv)*(f(:,:,n1-i,ilnrho)-lnrho0)
         enddo
 !
 !  top boundary
 !
       case ('top')
-        if (ldebug) print*, &
-                     'bc_ss_temp3_z: set z top temperature: cs2top=',cs2top
+        if (ldebug) print*, 'bc_ss_temp3_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp3_z: cannot have cs2top<=0'
+
         tmp = cv*log(cs2top/cs20)
         do i=0,nghost
-          f(:,:,n2+i,iss) = tmp &
-               - (cp-cv)*(f(:,:,n2+i,ilnrho)-lnrho0)
+          f(:,:,n2+i,iss) = tmp - (cp-cv)*(f(:,:,n2+i,ilnrho)-lnrho0)
         enddo
+!
       case default
         call fatal_error('bc_ss_temp3_z','invalid argument')
       endselect
@@ -3768,15 +3825,24 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
+      use SharedVariables, only: get_shared_variable
+!
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: i
+      real, dimension(:,:), allocatable :: tmp
+      real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
+!
+      if (lreference_state) then
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        allocate(tmp(my,mz))
+      endif
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
@@ -3785,21 +3851,45 @@ module EquationOfState
 !  bottom boundary
 !
       case ('bot')
-        if (cs2bot<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2bot<=0'
+        if (cs2bot<=0.) print*, 'bc_ss_stemp_x: cannot have cs2bot<=0'
+
+        if (lreference_state) tmp=f(l1,:,:,irho)+reference_state(BOT,iref_rho)
+
         do i=1,nghost
-          f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
-               + (cp-cv)*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
+          if (ldensity_nolog) then
+            if (lreference_state) then
+              f(l1-i,:,:,iss) = f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(BOT,iref_gs) &
+                   + (cp-cv)*( f(l1+i,:,:,irho)-f(l1-i,:,:,irho)+dx2_bound(-i)*reference_state(BOT,iref_grho) )/tmp
+            else
+              f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) &
+                               + (cp-cv)*(log(f(l1+i,:,:,irho)/f(l1-i,:,:,irho)))
+            endif
+          else
+            f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) &
+                             + (cp-cv)*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
+          endif
         enddo
 !
 !  top boundary
 !
       case ('top')
-        if (cs2top<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2top<=0'
+        if (cs2top<=0.) print*, 'bc_ss_stemp_x: cannot have cs2top<=0'
+
+        if (lreference_state) tmp=f(l2,:,:,irho)+reference_state(TOP,iref_rho)
+
         do i=1,nghost
-          f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
-               + (cp-cv)*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
+          if (ldensity_nolog) then
+            if (lreference_state) then
+              f(l2+i,:,:,iss) = f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(TOP,iref_gs) &
+                 + (cp-cv)*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho) - dx2_bound(i)*reference_state(TOP,iref_grho) )/tmp
+            else
+              f(l2+i,:,:,iss) =   f(l2-i,:,:,iss) &
+                               + (cp-cv)*log(f(l2-i,:,:,ilnrho)/f(l2+i,:,:,ilnrho))
+            endif
+          else
+            f(l2+i,:,:,iss) =   f(l2-i,:,:,iss) &
+                             + (cp-cv)*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
+          endif
         enddo
 !
       case default
@@ -4132,7 +4222,7 @@ module EquationOfState
 !  This sets
 !    \partial_{r} \ln\rho
 !  such that
-!    \partial_{r} p = uphi**2/rad - \partial_{r} Phi
+!    (\partial_{r} p)/\rho = cs^2 \partial_{r} \ln\rho} = uphi**2/rad - \partial_{r} Phi
 !  where Phi is the gravitational potential
 !
 !  i.e. it enforces centrifugal balance at the boundary.
@@ -4163,11 +4253,11 @@ module EquationOfState
 !
           gravterm= -(potm-potp)/cs2
 !
-          step=-2*i*dx
+          step=-dx2_bound(-i)
           rad=x(l1-i)
           uphi=f(l1-i,:,:,iuy)
 !
-          centterm= uphi**2 * step/(rad*cs2)
+          centterm= uphi**2 * step/(rad*cs2)  !???
           if (ldensity_nolog) then
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,irho)*exp(gravterm + centterm)
           else
@@ -4191,7 +4281,7 @@ module EquationOfState
 !
           gravterm= -(potp-potm)/cs2
 !
-          step=2*i*dx
+          step=dx2_bound(i)
           rad=x(l2+i)
           uphi=f(l2+i,:,:,iuy)
 !
@@ -4261,14 +4351,14 @@ module EquationOfState
             endif
 !
             call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
-                cs2=cs2_point)
+                         cs2=cs2_point)
 !
             dlnrhodz =  gamma *gravz/cs2_point
             dssdz    = -gamma_m1*gravz/cs2_point
 !
             do i=1,nghost
-              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
-              f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - dz2_bound(-i)*dlnrhodz
+              f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - dz2_bound(-i)*dssdz
             enddo
           else if (lanelastic) then
             if (bcz1(iss_b)/='hs') then
@@ -4277,14 +4367,14 @@ module EquationOfState
                 "currently only correct for bcz1(iss)='hs'")
             endif
             call eoscalc(ipp_ss,log(f(l1,m1,n1,irho_b)),f(l1,m1,n1,iss_b), &
-                cs2=cs2_point)
+                         cs2=cs2_point)
 !
             dlnrhodz =  gamma *gravz/cs2_point
             dssdz    = gamma_m1*gravz/cs2_point
 !
             do i=1,nghost
-              f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - 2*i*dz*dlnrhodz*f(:,:,n1+1,irho_b)
-              f(:,:,n1-i,iss_b   ) = f(:,:,n1+i,iss_b   ) - 2*i*dz*dssdz
+              f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - dz2_bound(-i)*dlnrhodz*f(:,:,n1+1,irho_b)
+              f(:,:,n1-i,iss_b ) = f(:,:,n1+i,iss_b ) - dz2_bound(-i)*dssdz
             enddo
           endif
 !
@@ -4299,12 +4389,12 @@ module EquationOfState
           endif
 !
           call eoscalc(ilnrho_lntt,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilntt), &
-              cs2=cs2_point)
+                       cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost
-            f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+            f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - dz2_bound(-i)*dlnrhodz
           enddo
 !
         else
@@ -4352,14 +4442,14 @@ module EquationOfState
           endif
 !
           call eoscalc(ilnrho_ss,f(l2,m2,n2,ilnrho),f(l2,m2,n2,iss), &
-              cs2=cs2_point)
+                       cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
           dssdz    = -gamma_m1*gravz/cs2_point
 !
           do i=1,nghost
-            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
-            f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
+            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + dz2_bound(i)*dlnrhodz
+            f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + dz2_bound(i)*dssdz
           enddo
 !
         elseif (ltemperature) then
@@ -4373,12 +4463,12 @@ module EquationOfState
           endif
 !
           call eoscalc(ilnrho_lntt,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilntt), &
-              cs2=cs2_point)
+                       cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost
-            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + dz2_bound(i)*dlnrhodz
           enddo
 !
         else
