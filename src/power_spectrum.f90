@@ -805,7 +805,7 @@ module power_spectrum
 !  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
 !
        elseif (lcomplex) then
-         call mpigather_and_out_cmplx(spectrum3_cmplx,ncomp,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+         call mpigather_and_out_cmplx(spectrum3_cmplx,1,.not.(nygrid==1),kxrange,kyrange,zrange)
        else
          call mpigather_and_out_real(spectrum3,1,.not.(nygrid==1),kxrange,kyrange,zrange)
        endif
