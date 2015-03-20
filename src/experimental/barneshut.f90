@@ -50,6 +50,7 @@ module Poisson
                             ! approximation for sufficiently small octree_theta,
                             ! and provides a significant speedup.
   real :: octree_maxdist = huge(1.0)
+  real :: octree_smoothdist = 0.15
   real, dimension (nx,ny,nz) :: phi, vols
   integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
   integer, dimension (0:ncpus-1) :: sx, sy, sz
@@ -62,21 +63,23 @@ module Poisson
   real, dimension (nz,0:ncpus-1) :: zrecv
   integer, allocatable :: themap(:,:)
   real, allocatable :: regdist1(:)
+  real, allocatable :: regsmooth(:)
   integer :: nreg, ireg, irl, iru, jrl, jru, krl, kru
   integer, parameter :: nlt = 1e7 ! 1e5 for quad. interp.
   real :: lkmin, lkmax, dxlt
   real, dimension(nlt) :: xlt, sinlt, coslt
 !
   namelist /poisson_init_pars/ &
-      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist
+      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
+      octree_smoothdist
 !
   namelist /poisson_run_pars/ &
-      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist
+      octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
+      octree_smoothdist
 !
   contains
 !***********************************************************************
-    subroutine inverse_laplacian(f,phi)
-!
+    subroutine inverse_laplacian(phi)
 !
       use General, only: keep_compiler_quiet
 !
@@ -211,6 +214,8 @@ module Poisson
       if (lprecalc) then
         if (lroot) print*,"# regions on proc 0:",nreg
         allocate(themap(10,nreg))
+        allocate(regsmooth(nreg))
+        regsmooth = 1.0
         if (lprecalcdists) allocate(regdist1(nreg))
       endif
       nreg = 0 ! Advanced inside 'mkmap'
@@ -283,10 +288,10 @@ module Poisson
       k   = themap(3, ireg) ; krl = themap(8,ireg) ; kru = themap(9,ireg)
       pp  = themap(10,ireg)
       if (lprecalcdists) then
-        phi(i,j,k) = phi(i,j,k) - sum(phirecv(irl:iru,jrl:jru,krl:kru,pp)) &
-          *regdist1(ireg)
+        phi(i,j,k) = phi(i,j,k) - regsmooth(ireg)* &
+          sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(ireg)
       else
-        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
+        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(ireg)
         xreg = sum(xrecv(irl:iru,pp) &
           *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))/summreg
         yreg = sum(yrecv(jrl:jru,pp) &
@@ -360,6 +365,10 @@ module Poisson
           themap(:,nreg) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
             ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
           if (lprecalcdists) regdist1(nreg) = 1.0/dist
+          if (dist .gt. (octree_maxdist-octree_smoothdist)) then
+           regsmooth(nreg) = 0.5* &
+            (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
+          endif
         endif
       endif
     endsubroutine mkmap
