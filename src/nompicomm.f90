@@ -2691,28 +2691,29 @@ module Mpicomm
 !  21-dec-10/MR: coded
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !  10-may-11/MR: modified into real and complex flavors
+!  20-mar-15/MR: made potentially big arrays sendbuf* assumed-shape
 !
       use General, only: write_by_ranges_2d_real, write_by_ranges_2d_cmplx
 !
       implicit none
 !
-      integer,                                           intent(in) :: unit, ncomp
-      real,    dimension(nxgrid,nygrid,nzgrid),          intent(in) :: sendbuf
-      complex, dimension(nxgrid,nygrid,nzgrid,ncomp),    intent(in) :: sendbuf_cmplx
-      logical,                                 optional, intent(in) :: ltransp
-      integer, dimension(3,*),                 optional, intent(in) :: kxrange, kyrange,zrange
+      integer,                              intent(in) :: unit
+      real,    dimension(:,:,:),            intent(in) :: sendbuf
+      complex, dimension(:,:,:,:),          intent(in) :: sendbuf_cmplx
+      logical,                    optional, intent(in) :: ltransp
+      integer, dimension(3,*),    optional, intent(in) :: kxrange, kyrange,zrange
 !
-      integer :: k,kl,ncompl,ic
+      integer :: ncomp,k,kl,ic
       logical :: ltrans, lcomplex
       integer, dimension(3,nk_max) :: kxrangel,kyrangel
       integer, dimension(3,nz_max) :: zrangel
 !
       lcomplex = .false.
-      ncompl = 1
+      ncomp = 1
       goto 1
 !
-      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange, zrange )
-      ncompl = ncomp
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, unit, ltransp, kxrange, kyrange, zrange )
+      ncomp = size(sendbuf_cmplx,4)
       lcomplex = .true.
 !
    1  if ( .not.present(ltransp) ) then
@@ -2742,7 +2743,7 @@ module Mpicomm
         zrangel=zrange(:,1:nz_max)
       endif
 !
-      do ic=1,ncompl
+      do ic=1,ncomp
         do k=1,nz_max
           if ( zrangel(1,k) > 0 ) then
             do kl=zrangel(1,k),zrangel(2,k),zrangel(3,k)
