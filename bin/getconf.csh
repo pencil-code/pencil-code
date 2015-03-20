@@ -864,6 +864,7 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   set run_x=$cwd/src/run.x
   echo "*********************************"
   echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
+  set mpi = 1
   set mpirunops = ''
   set mpirun = 'aprun'
   set npops = "-n $ncpus"
