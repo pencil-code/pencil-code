@@ -2658,30 +2658,18 @@ module Boundcond
 !
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
-      integer :: ierr,k
+      integer :: k
       real :: lambda_exp
 !
 ! -------- Either case get the lambda variables first -----------
 !
-      call get_shared_variable('nu',nu,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
-          "there was a problem when getting nu")
-      call get_shared_variable('llambda_effect',llambda_effect,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
-          "there was a problem when getting llambda_effect")
+      call get_shared_variable('nu',nu,caller='bc_set_sfree_x')
+      call get_shared_variable('llambda_effect',llambda_effect,caller='bc_set_sfree_x')
       if (llambda_effect) then
-         call get_shared_variable('Lambda_V0t',Lambda_V0t,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-              // "problem getting shared var Lambda_V0t")
-         call get_shared_variable('Lambda_V1t',Lambda_V1t,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-              // "problem getting shared var Lambda_V1t")
-         call get_shared_variable('Lambda_V0b',Lambda_V0b,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-              // "problem getting shared var Lambda_V0b")
-         call get_shared_variable('Lambda_V1b',Lambda_V1b,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-              // "problem getting shared var Lambda_V1b")
+         call get_shared_variable('Lambda_V0t',Lambda_V0t,caller='bc_set_sfree_x')
+         call get_shared_variable('Lambda_V1t',Lambda_V1t,caller='bc_set_sfree_x')
+         call get_shared_variable('Lambda_V0b',Lambda_V0b,caller='bc_set_sfree_x')
+         call get_shared_variable('Lambda_V1b',Lambda_V1b,caller='bc_set_sfree_x')
       endif
 !
       select case (topbot)
@@ -2948,21 +2936,16 @@ module Boundcond
       real, pointer :: Lambda_H1,nu
       real, pointer :: LH1_rprof(:)
       logical, pointer :: llambda_effect
-      integer :: ierr,k,ix
+      integer :: k,ix
       real :: cos2thm_k,cos2thmpk,somega
       real,dimension(mx):: LH1
+!
 ! -------- Either case get the lambda variables first -----------
 !
-      call get_shared_variable('nu',nu,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_y: "//&
-          "there was a problem when getting nu")
-      call get_shared_variable('llambda_effect',llambda_effect,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_y: "//&
-          "there was a problem when getting llambda_effect")
+      call get_shared_variable('nu',nu,caller='bc_set_sfree_y')
+      call get_shared_variable('llambda_effect',llambda_effect,caller='bc_set_sfree_y')
       if (llambda_effect) then
-         call get_shared_variable('Lambda_H1',Lambda_H1,ierr)
-         if (ierr/=0) call stop_it("bc_set_sfree_y: " &
-              // "problem getting shared var Lambda_H1")
+         call get_shared_variable('Lambda_H1',Lambda_H1,caller='bc_set_sfree_y')
          call get_shared_variable('LH1_rprof',LH1_rprof,caller='bc_set_sfree_y')
          LH1=Lambda_H1*LH1_rprof
       endif
@@ -4260,11 +4243,11 @@ module Boundcond
       gamma_bot = 1.0 - abs (fbcz_bot(j))
       gamma_top = 1.0 - abs (fbcz_top(j))
 !
-      call get_shared_variable ('ldamp_fade', ldamp_fade)
+      call get_shared_variable ('ldamp_fade', ldamp_fade, caller='bcz_extrapol_damped')
       if (ldamp_fade) then
         ! fading of damping is active
-        call get_shared_variable ('tdamp', tdamp)
-        call get_shared_variable ('tfade_start', tfade_start)
+        call get_shared_variable ('tdamp', tdamp, caller='bcz_extrapol_damped')
+        call get_shared_variable ('tfade_start', tfade_start, caller='bcz_extrapol_damped')
         if (t > tfade_start) then
           if (t < tdamp) then
             ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
@@ -4574,7 +4557,7 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, pointer :: ampl_forc, k_forc, w_forc
-      integer :: sgn, i, j, ierr
+      integer :: sgn, i, j
 !
       select case (topbot)
 !
@@ -4584,15 +4567,9 @@ module Boundcond
          select case (force_lower_bound)
          case ('vel_time')
            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
-           call get_shared_variable('ampl_forc', ampl_forc, ierr)
-           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-               "there was a problem when getting ampl_forc")
-           call get_shared_variable('k_forc', k_forc, ierr)
-           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-               "there was a problem when getting k_forc")
-           call get_shared_variable('w_forc', w_forc, ierr)
-           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-               "there was a problem when getting w_forc")
+           call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
+           call get_shared_variable('k_forc', k_forc, caller='bc_force_x')
+           call get_shared_variable('w_forc', w_forc, caller='bc_force_x')
            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                ampl_forc, k_forc, w_forc
            f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -4612,15 +4589,9 @@ module Boundcond
          select case (force_upper_bound)
          case ('vel_time')
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
-            call get_shared_variable('ampl_forc', ampl_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting ampl_forc")
-            call get_shared_variable('k_forc', k_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting k_forc")
-            call get_shared_variable('w_forc', w_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting w_forc")
+            call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
+            call get_shared_variable('k_forc', k_forc, caller='bc_force_x')
+            call get_shared_variable('w_forc', w_forc, caller='bc_force_x')
             if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                    ampl_forc, k_forc, w_forc
             f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -5400,7 +5371,7 @@ module Boundcond
 !
       real, pointer :: hcond0, hcond1, Fbot
       real, dimension (:,:), allocatable :: tmp_yz
-      integer :: i,ierr,stat
+      integer :: i,stat
 !
 !  Allocate memory for large array.
 !
@@ -5411,15 +5382,9 @@ module Boundcond
 !  Do the 'c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is processor dependent)
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
-           "there was a problem when getting hcond1")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
-           "there was a problem when getting Fbot")
+      call get_shared_variable('hcond0',hcond0,caller='bc_lnTT_flux_x')
+      call get_shared_variable('hcond1',hcond1,caller='bc_lnTT_flux_x')
+      call get_shared_variable('Fbot',Fbot,caller='bc_lnTT_flux_x')
 !
       if (headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 !
@@ -5462,7 +5427,7 @@ module Boundcond
 !
       real, dimension (:,:), allocatable :: tmp_xy
       real, pointer :: hcond0, Fbot
-      integer :: i,ierr,stat
+      integer :: i,stat
 !
 !  Allocate memory for large array.
 !
@@ -5475,12 +5440,8 @@ module Boundcond
 !  lnTT version: enforce dlnT/dz = - Fbot/(K*T)
 !    TT version: enforce   dT/dz = - Fbot/K
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting Fbot")
+      call get_shared_variable('hcond0',hcond0,caller='bc_lnTT_flux_z')
+      call get_shared_variable('Fbot',Fbot,caller='bc_lnTT_flux_z')
 !
       if (headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 !
@@ -5526,13 +5487,13 @@ module Boundcond
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
-      integer :: i,ierr,stat
+      integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
       real :: fac
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
-      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)       !caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
 !
 !  Allocate memory for large arrays.
 !
@@ -5542,9 +5503,9 @@ module Boundcond
 !
       if (lheatc_kramers) then
 !
-        call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)    !caller='bc_ss_flux_x')
-        call get_shared_variable('nkramers',nkramers,ierr)                !caller='bc_ss_flux_x')
-        call get_shared_variable('cp',cp,ierr)                            !caller='bc_ss_flux_x')
+        call get_shared_variable('hcond0_kramers',hcond0_kramers, caller='bc_ss_flux_x')
+        call get_shared_variable('nkramers',nkramers, caller='bc_ss_flux_x')
+        call get_shared_variable('cp',cp, caller='bc_ss_flux_x')
 !
       endif
 !
@@ -5568,7 +5529,7 @@ module Boundcond
 !
       case ('bot')
 !
-        call get_shared_variable('FbotKbot',FbotKbot,ierr)     !caller='bc_ss_flux_x')
+        call get_shared_variable('FbotKbot',FbotKbot, caller='bc_ss_flux_x')
         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5600,7 +5561,7 @@ module Boundcond
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Fbot',Fbot,ierr)      !caller='bc_ss_flux_x')
+            call get_shared_variable('Fbot',Fbot, caller='bc_ss_flux_x')
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
 !
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -5629,7 +5590,7 @@ module Boundcond
 !
       case ('top')
 !
-        call get_shared_variable('FtopKtop',FtopKtop,ierr)     !caller='bc_ss_flux_x')
+        call get_shared_variable('FtopKtop',FtopKtop, caller='bc_ss_flux_x')
          if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5657,7 +5618,7 @@ module Boundcond
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Ftop',Ftop,ierr)     !caller='bc_ss_flux_x')
+            call get_shared_variable('Ftop',Ftop, caller='bc_ss_flux_x')
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
 !
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -7606,11 +7567,9 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: tmp_x
-      integer :: i, ierr
+      integer :: i
 !
-      call get_shared_variable('Fbot', Fbot, ierr)
-      if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting Fbot")
+      call get_shared_variable('Fbot', Fbot, caller='bc_ADI_flux_z')
 !
       if (headtt) print*,'bc_ADI_flux_z: Fbot, hcondADI, dz=', &
            Fbot, hcondADI, dz
@@ -7637,7 +7596,7 @@ module Boundcond
       use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: idz, j, ierr
+      integer :: idz, j
       real    :: kx
       real, pointer, save :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
       logical, save :: l1st=.true.
@@ -7649,21 +7608,11 @@ module Boundcond
       endif
 !
       if (l1st) then
-        call get_shared_variable('ampl_forc', ampl_forc, ierr)
-        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-             "there was a problem when getting ampl_forc")
-        call get_shared_variable('k_forc', k_forc, ierr)
-        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-             "there was a problem when getting k_forc")
-        call get_shared_variable('w_forc', w_forc, ierr)
-        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-             "there was a problem when getting w_forc")
-        call get_shared_variable('x_forc', x_forc, ierr)
-        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-             "there was a problem when getting x_forc")
-        call get_shared_variable('dx_forc', dx_forc, ierr)
-        if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-             "there was a problem when getting dx_forc")
+        call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_ux_time')
+        call get_shared_variable('k_forc', k_forc, caller='bc_force_ux_time')
+        call get_shared_variable('w_forc', w_forc, caller='bc_force_ux_time')
+        call get_shared_variable('x_forc', x_forc, caller='bc_force_ux_time')
+        call get_shared_variable('dx_forc', dx_forc, caller='bc_force_ux_time')
         if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
              'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
              x_forc, dx_forc
