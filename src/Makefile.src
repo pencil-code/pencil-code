@@ -1684,9 +1684,20 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC_SLOPPY = $(FC) #(beskow*)
 #F90=$(FC) #(beskow*)
 #CC=cc #(beskow*)
-#FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(beskow*)
-#FFLAGS_DOUBLE=-s default64 #(beskow*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
+##
+##  the following 2 lines are for the default Cray compiler
+##  which has bugs!
+##
+##FFLAGS=-O1 -ffree -e m -J experimental -J magnetic #(beskow*)
+##FFLAGS_DOUBLE=-s default64 #(beskow*)
+##
+##  the following 2 lines are for the gnu compiler
+##  which works (use module swap PrgEnv-cray PrgEnv-gnu)
+##
+#FFLAGS=-O3 #(beskow*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(beskow*)
+##
 ##
 ##HP CP4000 BL Proliant supercluster
 ##Vuori - (Espoo, Finland)
