@@ -7326,8 +7326,8 @@ module Mpicomm
 !
 !  19-nov-10/MR: coded
 !
-      real, dimension(nxgrid,ny,nz)         :: sendbuf   ! nx=nxgrid !
-      real, dimension(nxgrid,nygrid,nzgrid) :: recvbuf
+      real, dimension(nxgrid,ny,nz):: sendbuf   ! nx=nxgrid !
+      real, dimension(:,:,:)       :: recvbuf
 !
       integer :: ncnt, nshift, nlayer, i
       integer, dimension(ncpus) :: counts, shifts
@@ -7357,7 +7357,7 @@ module Mpicomm
 !
       do i=1,nz
         call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
-                     MPI_REAL, root, MPI_COMM_WORLD, mpierr)
+                         MPI_REAL, root, MPI_COMM_WORLD, mpierr)
       enddo
 !
     endsubroutine mpigather
@@ -7375,29 +7375,29 @@ module Mpicomm
 !
       use General, only: write_full_columns, get_range_no
 !
-      integer,                               intent(in   ) :: unit, ncomp
-      real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
-      complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx
-      logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
-      integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
+      integer,                             intent(in   ) :: unit
+      real,    dimension(:,:,:),           intent(inout) :: sendbuf
+      complex, dimension(:,:,:,:),         intent(inout) :: sendbuf_cmplx
+      logical,                    optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
+      integer, dimension(3,*),    optional,intent(in   ) :: kxrange, kyrange, zrange
 !
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
-      integer :: k,ipz, ipy, ipx, ic, ncompl, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
+      integer :: k,ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, &
                  irz, iry, irx, iza, ize, izs, iya, iye, iys, ixa, ixe, ixs, nsend, tag, unfilled
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)
       complex, allocatable :: rowbuf_cmplx(:)
 !
       lcomplex = .false.
-      ncompl = 1
+      ncomp = 1
       goto 1
 !
-      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, unit, ltransp, kxrange, kyrange,zrange )
 !
       lcomplex = .true.
-      ncompl = ncomp
+      ncomp = size(sendbuf_cmplx,4)
 !
 1     if (ALWAYS_FALSE) print*,unit
 !
@@ -7438,7 +7438,7 @@ module Mpicomm
 !
 ! loop over all variables for which spectrum has been calculated
 !
-      do ic=1,ncompl
+      do ic=1,ncomp
 !
         n2g=0
 !
