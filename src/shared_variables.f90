@@ -134,6 +134,10 @@ module SharedVariables
 !
   type (shared_variable_list), pointer :: thelist
 !
+! The name of the calling subroutine.
+!
+  character(LEN=2*labellen) :: scaller=''
+!
   contains
 !
 !***********************************************************************
@@ -159,8 +163,8 @@ module SharedVariables
 !
 !  27-jan-15/MR: derived from get_shared_variable routines
 !
-      use General, only: coptest, itoa
-
+      use General, only: itoa
+!
       logical :: find_item
       character (len=*),                    intent(in) :: varname
       integer,                              intent(in) :: type
@@ -168,12 +172,13 @@ module SharedVariables
       integer,           optional,          intent(out):: ierr
       character (len=*), optional,          intent(in) :: caller
 
-      character(len=2*labellen) :: scaller
+      character(len=2*labellen) :: str
       logical :: lnotass
 
       find_item=.false.
 
-      scaller = '" in '//trim(coptest(caller))//':'
+      if (present(caller)) scaller=caller
+      str = '" in '//trim(scaller)//':'
       
       if (present(ierr)) ierr=0
 
@@ -194,7 +199,7 @@ module SharedVariables
               case (iSHVAR_TYPE_LOG1D ); lnotass=.not.associated(item%log1d)
               case (iSHVAR_TYPE_CHAR0D); lnotass=.not.associated(item%char0d)
               case default
-                if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+                if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(str)
                 call fatal_error('', 'Data type '//itoa(type)//' is not implemented.')
             end select
             
@@ -203,7 +208,7 @@ module SharedVariables
                 ierr=iSHVAR_ERR_NOTASSOCIATED
                 return
               endif
-              if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+              if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(str)
               call fatal_error('', 'Data pointer is not associated.')
             endif
             find_item=.true.
@@ -213,7 +218,7 @@ module SharedVariables
               ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
-            if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+            if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(str)
             call fatal_error('', 'Shared variable has the wrong type!')
           endif
         endif
@@ -225,7 +230,7 @@ module SharedVariables
         return
       endif
 !
-      if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(scaller)
+      if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(str)
       call fatal_error('', 'Shared variable does not exist!')
 
     endfunction find_item
@@ -558,22 +563,21 @@ module SharedVariables
 !***********************************************************************
     subroutine put_error(varname,ierr,caller)
 
-      use General, only: coptest
-
       character (len=*),           intent(in) :: varname
       integer,           optional, intent(out):: ierr
       character (len=*), optional, intent(in) :: caller
 
-      character (len=2*labellen) :: scaller
+      character (len=2*labellen) :: str
 
+      if (present(caller)) scaller = caller
       if (present(ierr)) then
         ierr=iSHVAR_ERR_DUPLICATE
         return
       endif
 
-      scaller = '" in '//trim(coptest(caller))//':'
+      str = '" in '//trim(scaller)//':'
 
-      if (lroot) print*, 'Setting shared variable: "',trim(varname)//scaller
+      if (lroot) print*, 'Setting shared variable: "',trim(varname)//str
       call fatal_error('', 'Shared variable name already exists!')
 
     endsubroutine put_error

@@ -143,7 +143,6 @@ module EquationOfState
       use Sub, only: erfunc
 !
       real :: Rgas_unit_sys, cp_reference
-      integer :: ierr
 !
 !  Set gamma_m1, cs20, and lnrho0, and rho01.
 !  (used currently for non-dimensional equation of state)
@@ -202,7 +201,7 @@ module EquationOfState
             cp_reference=Rgas/(mu*gamma_m1*gamma1)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
-            if (lroot) print*,'initialize_eos: consistency: cp=', cp , &
+            if (lroot) print*,'units_eos: consistency: cp=', cp , &
                 'while: cp_reference=', cp_reference
             call fatal_error('units_eos','cp is not correctly calculated')
           endif
@@ -225,14 +224,9 @@ module EquationOfState
 !
 ! Shared variables
 !
-      call put_shared_variable('cs20',cs20,ierr)
-      if (ierr/=0) call fatal_error('units_eos','problem when putting cs20')
-!
-      call put_shared_variable('mpoly',mpoly,ierr)
-      if (ierr/=0) call fatal_error('units_eos','problem when putting mpoly')
-!
-      call put_shared_variable('gamma',gamma,ierr)
-      if (ierr/=0) call fatal_error('units_eos','problem when putting gamma')
+      call put_shared_variable('cs20',cs20,caller='unit_eos')
+      call put_shared_variable('mpoly',mpoly)
+      call put_shared_variable('gamma',gamma)
 !
 !  Check that everything is OK.
 !
@@ -260,8 +254,6 @@ module EquationOfState
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
-      integer :: ierr
-!
 !  Perform any post-parameter-read initialization
 !
 !  Initialize variable selection code (needed for RELOADing).
@@ -288,38 +280,18 @@ module EquationOfState
       if (lcs_as_aux .or. lcs_as_comaux) &
           call register_report_aux('cs',ics,communicated=lcs_as_comaux)
 !
-      call put_shared_variable('cp',cp,ierr)
-        if (ierr/=0) call stop_it("cp: "//&
-             "there was a problem when sharing cp")
-      call put_shared_variable('cv',cv,ierr)
-        if (ierr/=0) call stop_it("cv: "//&
-             "there was a problem when sharing cv")
-      call put_shared_variable('isothmid',isothmid,ierr)
-        if (ierr/=0) call stop_it("isothmid: "//&
-             "there was a problem when sharing isothmid")
-      call put_shared_variable('fac_cs',fac_cs,ierr)
-        if (ierr/=0) call stop_it("fac_cs: "//&
-             "there was a problem when sharing fac_cs")
+      call put_shared_variable('cp',cp,caller='initialize_eos')
+      call put_shared_variable('cv',cv)
+      call put_shared_variable('isothmid',isothmid)
+      call put_shared_variable('fac_cs',fac_cs)
 
       if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,ierr)
-        call put_shared_variable('lnrho0',lnrho0,ierr)
+        call put_shared_variable('rho0',rho0)
+        call put_shared_variable('lnrho0',lnrho0)
       endif
 !
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,ierr)
-        if (ierr/=0) call stop_it("initialize_eos: "//&
-             "there was a problem when sharing rho0")
-        call put_shared_variable('lnrho0',lnrho0,ierr)      !caller='initialize_eos')
-        if (ierr/=0) call stop_it("initialize_eos: "//&
-             "there was a problem when sharing lnrho0")
-      endif
-!
-      if (lanelastic) then
-        call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
-        if (ierr/=0) call stop_it("lanelastic_lin: "//&
-             "there was a problem when sharing lanelastic_lin")
-      endif
+      if (lanelastic) &
+        call put_shared_variable('lanelastic_lin',lanelastic_lin)
 !
 !  Set background stratification, if any.
 !
@@ -2163,23 +2135,14 @@ if (notanumber(p%glnrho)) then
       integer :: j
 !
       !character (len=linelen), pointer :: dummy
-      integer :: ierr
 !
       if (lrun .and. lmagn_mf) then
-        !call get_shared_variable('meanfield_Beq_profile',dummy,ierr)
-        !if (ierr/=0) call stop_it("meanfield_Beq_profile: "//&
-        !     "there was a problem when getting meanfield_Beq_profile")
+        !call get_shared_variable('meanfield_Beq_profile',dummy,caller='bdry_magnetic')
         !meanfield_Beq_profile=dummy
-        call get_shared_variable('meanfield_Beq',meanfield_Beq,ierr)
-        if (ierr/=0) call stop_it("meanfield_Beq: "//&
-             "there was a problem when getting meanfield_Beq")
-        call get_shared_variable('chit_quenching',chit_quenching,ierr)
-        if (ierr/=0) call stop_it("chit_quenching: "//&
-             "there was a problem when getting chit_quenching")
-        call get_shared_variable('uturb',uturb,ierr)
-        if (ierr/=0) call stop_it("uturb: "//&
-             "there was a problem when getting uturb")
-        call get_shared_variable('B_ext',B_ext,caller='bdry_magnetic')
+        call get_shared_variable('meanfield_Beq',meanfield_Beq,caller='bdry_magnetic')
+        call get_shared_variable('chit_quenching',chit_quenching)
+        call get_shared_variable('uturb',uturb)
+        call get_shared_variable('B_ext',B_ext)
       endif
 !
       select case (task)
@@ -2259,7 +2222,7 @@ if (notanumber(p%glnrho)) then
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr
+      integer :: i
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2268,45 +2231,23 @@ if (notanumber(p%glnrho)) then
 !
 !  Get the shared variables
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond1")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting Ftop")
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FbotKbot")
-      call get_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting FtopKtop")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lmultilayer")
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lheatc_chiconst")
-      call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting hcond0_kramers")
-      call get_shared_variable('nkramers',nkramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting nkramers")
-      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux: "//&
-           "there was a problem when getting lheatc_kramers")
+      call get_shared_variable('hcond0',hcond0,caller='bc_ss_flux')
+      call get_shared_variable('hcond1',hcond1)
+      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Ftop',Ftop)
+      call get_shared_variable('FbotKbot',FbotKbot)
+      call get_shared_variable('FtopKtop',FtopKtop)
+      call get_shared_variable('chi',chi)
+      call get_shared_variable('lmultilayer',lmultilayer)
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+      endif
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux')
+        call get_shared_variable('reference_state',reference_state)
 !
       select case (topbot)
 !
@@ -2440,7 +2381,7 @@ if (notanumber(p%glnrho)) then
       real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
       real, dimension (nx) :: quench
       real :: fac
-      integer :: i,ierr
+      integer :: i
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -2449,42 +2390,26 @@ if (notanumber(p%glnrho)) then
 !  Ideally, one would like this to reside in magnetic/meanfield,
 !  but this leads currently to circular dependencies.
 !
-      call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-           "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chit_prof1")
-      call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chit_prof2")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('hcondzbot',hcondzbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-           "there was a problem when getting hcondzbot")
-      call get_shared_variable('hcondztop',hcondztop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-           "there was a problem when getting hcondztop")
+      call get_shared_variable('chi_t',chi_t,caller='bc_ss_flux_turb')
+      call get_shared_variable('chit_prof1',chit_prof1)
+      call get_shared_variable('chit_prof2',chit_prof2)
+      call get_shared_variable('chi',chi)
+      call get_shared_variable('hcondzbot',hcondzbot)
+      call get_shared_variable('hcondztop',hcondztop)
 !
 !  lmeanfield_chitB and chi_t0
 !
       if (lmagnetic) then
-        call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-             "there was a problem when getting lmeanfield_chitB")
+        call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
         if (lmeanfield_chitB) then
-          call get_shared_variable('chi_t0',chi_t0,ierr)
-          if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
-               "there was a problem when getting chi_t0")
+          call get_shared_variable('chi_t0',chi_t0)
         else
           lmeanfield_chitB=.false.
         endif
       endif
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_turb')
+        call get_shared_variable('reference_state',reference_state)
 !
       select case (topbot)
 !
@@ -2606,31 +2531,21 @@ if (notanumber(p%glnrho)) then
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       real :: fac
-      integer :: i,ierr
+      integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Get the shared variables
 !
-      call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chit_prof1")
-      call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting chit_prof2")
-      call get_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting hcondxbot")
-      call get_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
-           "there was a problem when getting hcondxtop")
+      call get_shared_variable('chi_t',chi_t,caller='bc_ss_flux_turb_x')
+      call get_shared_variable('chit_prof1',chit_prof1)
+      call get_shared_variable('chit_prof2',chit_prof2)
+      call get_shared_variable('hcondxbot',hcondxbot)
+      call get_shared_variable('hcondxtop',hcondxtop)
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_turb_x')
+        call get_shared_variable('reference_state',reference_state)
 !
       select case (topbot)
 !
@@ -2789,37 +2704,23 @@ if (notanumber(p%glnrho)) then
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz, cs2_yz, rho_yz, dlnrhodx_yz
       real :: fac
-      integer :: i,ierr
+      integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_condturb: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Get the shared variables
 !
+      call get_shared_variable('chi_t',chi_t,caller='bc_ss_flux_condturb_x')
+      call get_shared_variable('chit_prof1',chit_prof1)
+      call get_shared_variable('chit_prof2',chit_prof2)
+      call get_shared_variable('hcondxbot',hcondxbot)
+      call get_shared_variable('hcondxtop',hcondxtop)
+      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Ftop',Ftop)
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_condturb_x')
+        call get_shared_variable('reference_state',reference_state)
 !
-      call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting chit_prof1")
-      call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting chit_prof2")
-      call get_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting hcondxbot")
-      call get_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting hcondxtop")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_x: "//&
-           "there was a problem when getting Ftop")
 !
       select case (topbot)
 !
@@ -2924,37 +2825,23 @@ if (notanumber(p%glnrho)) then
       real :: cs2mx, cs2mx_tmp
       real :: fac, fact, dlnrmxdx, tmp1
       real, dimension(ny) :: tmp2
-      integer :: i,l,ierr
+      integer :: i,l
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_condturb_mean_x: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Get the shared variables
 !
-      if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_condturb_mean_x')
+      call get_shared_variable('chi_t',chi_t,caller='bc_ss_flux_condturb_mean_x')
+      call get_shared_variable('chit_prof1',chit_prof1)
+      call get_shared_variable('chit_prof2',chit_prof2)
+      call get_shared_variable('hcondxbot',hcondxbot)
+      call get_shared_variable('hcondxtop',hcondxtop)
+      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Ftop',Ftop)
 !
-      call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting chit_prof1")
-      call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting chit_prof2")
-      call get_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting hcondxbot")
-      call get_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting hcondxtop")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_mean_x: "//&
-           "there was a problem when getting Ftop")
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state)
 !
       select case (topbot)
 !
@@ -3063,39 +2950,21 @@ if (notanumber(p%glnrho)) then
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy
       real :: fac
-      integer :: i,ierr
+      integer :: i
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Get the shared variables
 !
-      call get_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting chi_t")
-      call get_shared_variable('chit_prof1',chit_prof1,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting chit_prof1")
-      call get_shared_variable('chit_prof2',chit_prof2,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting chit_prof2")
-      call get_shared_variable('hcondzbot',hcondzbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting hcondzbot")
-      call get_shared_variable('hcondztop',hcondztop,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting hcondztop")
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting lheatc_chiconst")
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting chi")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('Ftop',Ftop,caller='bc_ss_flux_condturb_z')
-      if (ierr/=0) call stop_it("bc_ss_flux_condturb_z: "//&
-           "there was a problem when getting Ftop")
+      call get_shared_variable('chi_t',chi_t,caller='bc_ss_flux_condturb_z')
+      call get_shared_variable('chit_prof1',chit_prof1)
+      call get_shared_variable('chit_prof2',chit_prof2)
+      call get_shared_variable('hcondzbot',hcondzbot)
+      call get_shared_variable('hcondztop',hcondztop)
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call get_shared_variable('chi',chi)
+      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Ftop',Ftop)
 !
       select case (topbot)
 !

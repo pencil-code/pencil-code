@@ -2664,12 +2664,12 @@ module Boundcond
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,caller='bc_set_sfree_x')
-      call get_shared_variable('llambda_effect',llambda_effect,caller='bc_set_sfree_x')
+      call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
-         call get_shared_variable('Lambda_V0t',Lambda_V0t,caller='bc_set_sfree_x')
-         call get_shared_variable('Lambda_V1t',Lambda_V1t,caller='bc_set_sfree_x')
-         call get_shared_variable('Lambda_V0b',Lambda_V0b,caller='bc_set_sfree_x')
-         call get_shared_variable('Lambda_V1b',Lambda_V1b,caller='bc_set_sfree_x')
+         call get_shared_variable('Lambda_V0t',Lambda_V0t)
+         call get_shared_variable('Lambda_V1t',Lambda_V1t)
+         call get_shared_variable('Lambda_V0b',Lambda_V0b)
+         call get_shared_variable('Lambda_V1b',Lambda_V1b)
       endif
 !
       select case (topbot)
@@ -2943,10 +2943,10 @@ module Boundcond
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,caller='bc_set_sfree_y')
-      call get_shared_variable('llambda_effect',llambda_effect,caller='bc_set_sfree_y')
+      call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
-         call get_shared_variable('Lambda_H1',Lambda_H1,caller='bc_set_sfree_y')
-         call get_shared_variable('LH1_rprof',LH1_rprof,caller='bc_set_sfree_y')
+         call get_shared_variable('Lambda_H1',Lambda_H1)
+         call get_shared_variable('LH1_rprof',LH1_rprof)
          LH1=Lambda_H1*LH1_rprof
       endif
 !
@@ -4246,8 +4246,8 @@ module Boundcond
       call get_shared_variable ('ldamp_fade', ldamp_fade, caller='bcz_extrapol_damped')
       if (ldamp_fade) then
         ! fading of damping is active
-        call get_shared_variable ('tdamp', tdamp, caller='bcz_extrapol_damped')
-        call get_shared_variable ('tfade_start', tfade_start, caller='bcz_extrapol_damped')
+        call get_shared_variable ('tdamp', tdamp)
+        call get_shared_variable ('tfade_start', tfade_start)
         if (t > tfade_start) then
           if (t < tdamp) then
             ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
@@ -4568,8 +4568,8 @@ module Boundcond
          case ('vel_time')
            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
            call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
-           call get_shared_variable('k_forc', k_forc, caller='bc_force_x')
-           call get_shared_variable('w_forc', w_forc, caller='bc_force_x')
+           call get_shared_variable('k_forc', k_forc)
+           call get_shared_variable('w_forc', w_forc)
            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                ampl_forc, k_forc, w_forc
            f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -4590,8 +4590,8 @@ module Boundcond
          case ('vel_time')
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
             call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
-            call get_shared_variable('k_forc', k_forc, caller='bc_force_x')
-            call get_shared_variable('w_forc', w_forc, caller='bc_force_x')
+            call get_shared_variable('k_forc', k_forc)
+            call get_shared_variable('w_forc', w_forc)
             if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                    ampl_forc, k_forc, w_forc
             f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -5383,8 +5383,8 @@ module Boundcond
 !  check whether we want to do top or bottom (this is processor dependent)
 !
       call get_shared_variable('hcond0',hcond0,caller='bc_lnTT_flux_x')
-      call get_shared_variable('hcond1',hcond1,caller='bc_lnTT_flux_x')
-      call get_shared_variable('Fbot',Fbot,caller='bc_lnTT_flux_x')
+      call get_shared_variable('hcond1',hcond1)
+      call get_shared_variable('Fbot',Fbot)
 !
       if (headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
 !
@@ -5441,7 +5441,7 @@ module Boundcond
 !    TT version: enforce   dT/dz = - Fbot/K
 !
       call get_shared_variable('hcond0',hcond0,caller='bc_lnTT_flux_z')
-      call get_shared_variable('Fbot',Fbot,caller='bc_lnTT_flux_z')
+      call get_shared_variable('Fbot',Fbot)
 !
       if (headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
 !
@@ -5503,9 +5503,9 @@ module Boundcond
 !
       if (lheatc_kramers) then
 !
-        call get_shared_variable('hcond0_kramers',hcond0_kramers, caller='bc_ss_flux_x')
-        call get_shared_variable('nkramers',nkramers, caller='bc_ss_flux_x')
-        call get_shared_variable('cp',cp, caller='bc_ss_flux_x')
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('cp',cp)
 !
       endif
 !
@@ -5516,7 +5516,7 @@ module Boundcond
       endif
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_flux_x')
+        call get_shared_variable('reference_state',reference_state)
 ! 
       fac=gamma_m1/gamma
 !
@@ -5529,7 +5529,7 @@ module Boundcond
 !
       case ('bot')
 !
-        call get_shared_variable('FbotKbot',FbotKbot, caller='bc_ss_flux_x')
+        call get_shared_variable('FbotKbot',FbotKbot)
         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5561,7 +5561,7 @@ module Boundcond
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Fbot',Fbot, caller='bc_ss_flux_x')
+            call get_shared_variable('Fbot',Fbot)
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
 !
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -5590,7 +5590,7 @@ module Boundcond
 !
       case ('top')
 !
-        call get_shared_variable('FtopKtop',FtopKtop, caller='bc_ss_flux_x')
+        call get_shared_variable('FtopKtop',FtopKtop)
          if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -5618,7 +5618,7 @@ module Boundcond
           endif
           if (lheatc_kramers) then
 !
-            call get_shared_variable('Ftop',Ftop, caller='bc_ss_flux_x')
+            call get_shared_variable('Ftop',Ftop)
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
 !
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
@@ -6688,7 +6688,7 @@ module Boundcond
 !
       if (lfirstcall) then
         call get_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,caller='bc_frozen_in_bb')
-        call get_shared_variable('lfrozen_bb_top',lfrozen_bb_top,caller='bc_frozen_in_bb')
+        call get_shared_variable('lfrozen_bb_top',lfrozen_bb_top)
       endif
 !
       select case (topbot)
@@ -7609,10 +7609,10 @@ module Boundcond
 !
       if (l1st) then
         call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_ux_time')
-        call get_shared_variable('k_forc', k_forc, caller='bc_force_ux_time')
-        call get_shared_variable('w_forc', w_forc, caller='bc_force_ux_time')
-        call get_shared_variable('x_forc', x_forc, caller='bc_force_ux_time')
-        call get_shared_variable('dx_forc', dx_forc, caller='bc_force_ux_time')
+        call get_shared_variable('k_forc', k_forc)
+        call get_shared_variable('w_forc', w_forc)
+        call get_shared_variable('x_forc', x_forc)
+        call get_shared_variable('dx_forc', dx_forc)
         if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
              'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
              x_forc, dx_forc
