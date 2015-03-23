@@ -2750,7 +2750,6 @@ if (notanumber(p%glnrho)) then
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
           endif
 !
-!  The following calculations in fact not needed (?).
 !  Calculate d rho/d x   or   d ln(rho)/ d x
 !
           fac=(1./60)*dx_1(l1)
