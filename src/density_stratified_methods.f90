@@ -50,7 +50,7 @@ module DensityMethods
 
       lnrho=log(f(l1:l2))
 
-    endsubroutine getlnrho_1_xd
+    endsubroutine getlnrho_1d_x
 !***********************************************************************
     subroutine getlnrho_1d_y(f,lnrho,topbot)
 
