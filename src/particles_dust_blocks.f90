@@ -1162,14 +1162,8 @@ k_loop:   do while (.not. (k>npar_loc))
           else
             call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
           endif
-!  Calculate average dust-to-gas ratio in box.
-          if (ldensity_nolog) then
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,irho))
-          else
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
-          endif
+!
+          if (ldragforce_equi_global_eps) eps = eps_dtog
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.

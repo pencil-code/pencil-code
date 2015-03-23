@@ -1548,14 +1548,9 @@ module Particles
             print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
           endif
           cs=sqrt(cs20)
-!  Calculate average dust-to-gas ratio in box.
-          if (ldensity_nolog) then
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,irho))
-          else
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
-          endif
+!
+          if (ldragforce_equi_global_eps) eps = eps_dtog
+!
           if (ldragforce_equi_noback) eps=0.0
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
