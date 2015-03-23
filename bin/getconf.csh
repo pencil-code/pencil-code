@@ -69,8 +69,7 @@ if (! -e "NEVERLOCK") touch LOCK
 # echo $$ > PID
 
 # Are we running the MPI version?
-set mpi = `fgrep -c 'MPI_INIT' src/start.x`
-if ($mpi == 0) set mpi = `fgrep -c 'mpi_init' src/start.x`
+set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
 # Determine number of CPUS
 set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
