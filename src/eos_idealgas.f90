@@ -2301,7 +2301,7 @@ if (notanumber(p%glnrho)) then
             call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
             if (lreference_state) &
-              f(:,:,n1-i,iss)=f(:,:,n1-i,iss) + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
+              f(l1:l2,:,n1-i,iss)=f(l1:l2,:,n1-i,iss) + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2321,9 +2321,9 @@ if (notanumber(p%glnrho)) then
 !
           call getrho(f(:,:,n2,ilnrho),rho_xy)
           if (ldensity_nolog) then
-            cs2_xy = f(:,:,n2,iss)		! here cs2_xy = ss
+            cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = ss
             if (lreference_state) &
-              cs2_xy = cs2_xy + transpose(spread(reference_state(:,iref_s),1,my))
+              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + transpose(spread(reference_state(:,iref_s),1,my))
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
             cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
@@ -2346,10 +2346,10 @@ if (notanumber(p%glnrho)) then
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)  ! rho_xy=d ln(rho)
+            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)                     ! rho_xy=d ln(rho)
             f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
             if (lreference_state) &
-              f(:,:,n2+i,iss)=f(:,:,n2+i,iss) - dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
+              f(l1:l2,:,n2+i,iss)=f(l1:l2,:,n2+i,iss) - dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2426,7 +2426,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n1,ilnrho),rho_xy)      ! here rho_xy=log(rho)
         cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss)
         if (lreference_state) &
-          cs2_xy=cs2_xy+cv1*transpose(spread(reference_state(:,iref_s),1,my))
+          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*transpose(spread(reference_state(:,iref_s),1,my))
         cs2_xy=cs20*exp(cs2_xy)
 
         call getrho(f(:,:,n1,ilnrho),rho_xy)
@@ -2443,7 +2443,9 @@ if (notanumber(p%glnrho)) then
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+dz2_bound(-i)*dsdz_xy
-          if (lreference_state) f(:,:,n1-i,iss)=f(:,:,n1-i,iss)   !!!+spread(dz2_bound(-i)*reference_state(:,iref_gs),1,my)
+          if (lreference_state) &
+            f(l1:l2,:,n1-i,iss)=  f(l1:l2,:,n1-i,iss) &
+                                + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
 !
 !  top boundary
@@ -2457,7 +2459,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n2,ilnrho),rho_xy)      ! here rho_xy=log(rho)
         cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n2,iss)
         if (lreference_state) &
-          cs2_xy=cs2_xy + cv1*transpose(spread(reference_state(:,iref_s),1,my))
+          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*transpose(spread(reference_state(:,iref_s),1,my))
         cs2_xy=cs20*exp(cs2_xy)
 
         call getrho(f(:,:,n2,ilnrho),rho_xy)
@@ -2499,7 +2501,9 @@ if (notanumber(p%glnrho)) then
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
-          if (lreference_state) f(:,:,n2-i,iss)=f(:,:,n2-i,iss)   !!!+spread(dz2_bound(i)*reference_state(:,iref_gs),1,my)
+          if (lreference_state) &
+            f(l1:l2,:,n2+i,iss)= f(l1:l2,:,n2+i,iss) &
+                                -dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
 !
 !  capture undefined entries
@@ -3071,7 +3075,9 @@ if (notanumber(p%glnrho)) then
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2bot/cs20)) / gamma
 
         f(:,:,n1,iss) = tmp_xy
-        if (lreference_state) f(:,:,n1,iss) = f(:,:,n1,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+        if (lreference_state) &
+          f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) &
+                             -transpose(spread(reference_state(:,iref_s),1,my))
 
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)     ! reference_state?
@@ -3093,7 +3099,7 @@ if (notanumber(p%glnrho)) then
 
         f(:,:,n2,iss) = tmp_xy
         if (lreference_state) &
-          f(:,:,n2,iss) = f(:,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+          f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
 !
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)     ! reference_state?
