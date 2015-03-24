@@ -204,14 +204,14 @@ export read_yzaver
 #################
 
 
-function read_xaver(;datadir="data",varfile="xaverages.dat",infile="xaver.in",it::Int=-1)
-    read_1d_aver("y","z","x",datadir,varfile,infile,it)
+function read_xaver(;datadir="data",varfile="xaverages.dat",infile="xaver.in",it::Int=-1,var="")
+    read_1d_aver("y","z","x",datadir,varfile,infile,it,var)
 end
-function read_yaver(;datadir="data",varfile="yaverages.dat",infile="yaver.in",it::Int=-1)
-    read_1d_aver("x","z","y",datadir,varfile,infile,it)
+function read_yaver(;datadir="data",varfile="yaverages.dat",infile="yaver.in",it::Int=-1,var="")
+    read_1d_aver("x","z","y",datadir,varfile,infile,it,var)
 end
-function read_zaver(;datadir="data",varfile="zaverages.dat",infile="zaver.in",it::Int=-1)
-    read_1d_aver("x","y","z",datadir,varfile,infile,it)
+function read_zaver(;datadir="data",varfile="zaverages.dat",infile="zaver.in",it::Int=-1,var="")
+    read_1d_aver("x","y","z",datadir,varfile,infile,it,var)
 end
 
 #
@@ -219,7 +219,7 @@ end
 #  read_yaver -->  (x,z ; y)  == (a,b ; c)
 #  read_zaver -->  (x,y ; z)  == (a,b ; c)
 #
-function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
+function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int,var)
     #
     # Global dims.
     #
@@ -230,8 +230,9 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     #
     # Variables.
     #
-    vars  = map(chomp, open(readlines, datadir * "/../" * infile,"r"))
-    nvars = length(vars)
+    vars    = map(chomp, open(readlines, datadir * "/../" * infile,"r"))
+    nvars   = length(vars)
+    allvars = var == ""   # Return all variables or just one?
     
     #
     # Derived parameters.
@@ -247,6 +248,7 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     #
     head_len = sizeof(head_type)
     time_len = sizeof(data_type) * 1
+    snap_len = sizeof(data_type) * size_a * size_b # One snapshot / vertical slice.
     data_len = sizeof(data_type) * size_a * size_b * nvars
     step_len = head_len * 4  +  time_len  +  data_len
     
@@ -305,14 +307,14 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
                 # Error checking.
                 rec_len = read(stream, head_type)
                 if time_len != rec_len
-                    error("Record length should be $time_len for 'time'. Received $rec_len b")
+                    error("Record length should be $time_len for 'time'. Received $rec_len")
                 end
                 
                 # Read the time.
-                t[i] = read(stream,data_type)
+                t[i] = read(stream, data_type)
                 
                 # Skip the repeated header.
-                skip(stream, sizeof(head_type))
+                skip(stream, head_len)
                 
                 
                 #
@@ -322,16 +324,24 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
                 # Does the header give the data length that I expect?
                 rec_len = read(stream, head_type)
                 if data_len != rec_len
-                    error("Shape does not match record length. Expected $data_len b, received $rec_len b")
+                    error("Record length should be $data_len. Received $rec_len")
                 end
                 
                 # Read the data.
                 for k = 1:nvars
-                     aver[vars[k]][a1:a2,b1:b2,i] = read(stream,data_type,size_a,size_b)
+                    #
+                    # Conserve memory if I only want to read one variable.
+                    #
+                    if allvars | (var == vars[k])
+                        aver[vars[k]][a1:a2,b1:b2,i] = read(stream,data_type,size_a,size_b)
+                    else
+                        # Skip the distance of a single variable / snapshot.
+                        skip(stream, snap_len)
+                    end
                 end
                 
                 # Skip repeated header
-                skip(stream, sizeof(head_type))
+                skip(stream, head_len)
             end
         else
             #
@@ -352,10 +362,10 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
             end
             
             # Read the time.
-            t = read(stream,data_type)
+            t = read(stream, data_type)
             
             # Skip the repeated header.
-            skip(stream, sizeof(head_type))
+            skip(stream, head_len)
             
             
             #
@@ -365,12 +375,17 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
             # Does the header give the data length that I expect?
             rec_len = read(stream, head_type)
             if data_len != rec_len
-                error("Shape does not match record length. Expected $data_len b, received $rec_len b")
+                error("Record length should be $data_len. Received $rec_len")
             end
             
             # Read the data.
             for k = 1:nvars
-                aver[ vars[k]][a1:a2,b1:b2] = read(stream,data_type,size_a, size_b)
+                if allvars | (var == vars[k])
+                    aver[vars[k]][a1:a2,b1:b2] = read(stream,data_type,size_a, size_b)
+                else
+                    # Skip the distance of a single variable / snapshot.
+                    skip(stream, snap_len)
+                end
             end
         end
         
@@ -383,7 +398,8 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     aver["t"] = t
     aver["keys"] = ["t", vars]
     
-    return aver
+#    return aver
+    return allvars ? aver : aver[var]
 end
 
 
