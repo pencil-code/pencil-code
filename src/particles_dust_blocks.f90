@@ -1169,13 +1169,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Set gas velocity field.
           do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) then
-              if (ldensity_nolog) then
-                eps=f(l,m,n,irhop)/f(l,m,n,irho)
-              else
-                eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
-              endif
-            endif
+            if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f, l, m, n)
 !
             f(l,m,n,iux) = f(l,m,n,iux) - &
                 beta_glnrho_global(1)*eps*Omega*tausp/ &
