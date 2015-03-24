@@ -276,6 +276,9 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
         aver[vars[k]] =   it < 1    ?  zeros(na, nb, nsteps)   :    zeros(na, nb)
     end
     
+    # Also allocate space for the time.
+    t = it < 1 ? zeros(nsteps) : zeros(1)
+    
     #
     # Read the data.
     #
@@ -295,8 +298,26 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
             # Read all slices.
             #
             for i = 1:nsteps
-                # Skip time.
-                skip(stream, time_len + 2*head_len)
+                #
+                # READ THE TIME
+                # 
+                
+                # Error checking.
+                rec_len = read(stream, head_type)
+                if time_len != rec_len
+                    error("Record length should be $time_len for 'time'. Received $rec_len b")
+                end
+                
+                # Read the time.
+                t[i] = read(stream,data_type)
+                
+                # Skip the repeated header.
+                skip(stream, sizeof(head_type))
+                
+                
+                #
+                # READ THE SNAPSHOT
+                # 
                 
                 # Does the header give the data length that I expect?
                 rec_len = read(stream, head_type)
@@ -310,15 +331,36 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
                 end
                 
                 # Skip repeated header
-                skip(stream, sizeof(head_type) )
+                skip(stream, sizeof(head_type))
             end
         else
             #
             # Read only one time step.
             #
             
-            # Example: it == 1 reads the very first record; skips only the time record.
-            skip(stream, step_len*(it-1) + time_len + 2*head_len)
+            # Example: it == 1 reads the very first record.
+            skip(stream, step_len*(it-1))
+            
+            #
+            # READ THE TIME
+            # 
+            
+            # Error checking.
+            rec_len = read(stream, head_type)
+            if time_len != rec_len
+                error("Record length should be $time_len for 'time'. Received $rec_len b")
+            end
+            
+            # Read the time.
+            t = read(stream,data_type)
+            
+            # Skip the repeated header.
+            skip(stream, sizeof(head_type))
+            
+            
+            #
+            # READ THE SNAPSHOT
+            # 
             
             # Does the header give the data length that I expect?
             rec_len = read(stream, head_type)
@@ -336,16 +378,10 @@ function read_1d_aver(a,b,c,datadir,varfile,infile,it::Int)
     end
     
     #
-    # Transpose the data.
+    # Add time and the list of keys.
     #
-    #    for k = 1:nvars
-    #        aver[vars[k]] = aver[vars[k]]'
-    #    end
-    
-    #
-    # List of keys.
-    #
-    aver["keys"] = vars
+    aver["t"] = t
+    aver["keys"] = ["t", vars]
     
     return aver
 end
