@@ -4,6 +4,7 @@
 %%
 %% Source files:
 %%   boundcond.f90
+%%   boundcond_alt.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.8\textwidth}}
@@ -44,6 +45,88 @@
                     conductive flux??) \\
   \var{Fgs}       & Fconv = - chi_t*rho*T*grad(s) \\
   \var{Fct}       & Fbot = - K*grad(T) - chi_t*rho*T*grad(s) \\
+  \var{Fcm}       & $Fbot = - K*grad(\overline{T})$
+                    $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$ \\
+  \var{sT}        & symmetric temperature, $T_{N-i}=T_{N+i}$;
+                    implies $T'(x_N)=T'''(x_0)=0$ \\
+  \var{asT}       & select entropy for uniform ghost temperature
+                    matching fluctuating boundary value,
+                    $T_{N-i}=T_{N}=$;
+                    implies $T'(x_N)=T'(x_0)=0$ \\
+  \var{f}         & ``freeze'' value, i.e. maintain initial \\
+  \var{fg}        & ``freeze'' value, i.e. maintain initial \\
+  \var{1}         & $f=1$ (for debugging) \\
+  \var{set}       & set boundary value to \var{fbcx12} \\
+  \var{der}       & set derivative on boundary to \var{fbcx12} \\
+  \var{slo}       & set slope at the boundary = \var{fbcx12} \\
+  \var{dr0}       & set boundary value [really??] \\
+  \var{ovr}       & overshoot boundary condition
+                    ie $(d/dx-1/\mathrm{dist}) f = 0.$ \\
+  \var{out}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards \\
+  \var{e1o}       & allow outflow, but no inflow
+                    uses the e1 extrapolation scheme \\
+  \var{ant}       & stops and prompts for adding documentation \\
+  \var{e1}        & extrapolation [describe] \\
+  \var{e2}        & extrapolation [describe] \\
+  \var{e3}        & extrapolation in log [maintain a power law] \\
+  \var{hat}       & top hat jet profile in spherical coordinate. \\
+  \var{jet}       & top hat jet profile in cartezian coordinate. \\
+  \var{spd}       & sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$ \\
+  \var{sfr}       & stress-free boundary condition
+                    for spherical coordinate system. \\
+  \var{nfr}       & Normal-field bc for spherical coordinate system.
+                    Some people call this the ``(angry) hedgehog bc''. \\
+  \var{sa2}       & $(d/dr)(r B_{\phi}) = 0$ imposes
+                    boundary condition on 2nd derivative of
+                    $r A_{\phi}$. Same applies to $\theta$ component. \\
+  \var{pfc}       & perfect-conductor in spherical
+                    coordinate: $d/dr( A_r) + 2/r = 0$. \\
+  \var{fix}       & set boundary value [really??] \\
+  \var{fil}       & set boundary value from a file \\
+  \var{g}         & set to given value(s) or function \\
+  \var{nil}       & do nothing; assume that everything is set \\
+  \var{ioc}       & inlet/outlet on western/eastern hemisphere
+                    in cylindrical coordinates \\
+  \var{}          & do nothing; assume that everything is set \\
+  \var{s}         & implies $f'(y_N)=f'''(y_0)=0$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{boundcond_alt.f90}} \\
+\midrule
+  \var{0}         & zero value in ghost zones, free value on boundary \\
+  \var{p}         & periodic \\
+  \var{s}         & symmetry, $f_{N+i}=f_{N-i}$;
+                    implies $f'(x_N)=f'''(x_0)=0$ \\
+  \var{ss}        & symmetry, plus function value given \\
+  \var{s0d}       & symmetry, function value such that df/dx=0 \\
+  \var{a}         & antisymmetry, $f_{N+i}=-f_{N-i}$;
+                    implies $f(x_N)=f''(x_0)=0$ \\
+  \var{a2}        & antisymmetry relative to boundary value,
+                    $f_{N+i}=2 f_{N}-f_{N-i}$;
+                    implies $f''(x_0)=0$ \\
+  \var{a2r}       & sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
+                    This is the replacement of zero second derivative
+                    in spherical coordinates, in radial direction. \\
+  \var{cpc}       & cylindrical perfect conductor
+                    implies $f''+f'/R=0$ \\
+  \var{cpp}       & cylindrical perfect conductor
+                    implies $f''+f'/R=0$ \\
+  \var{cpz}       & cylindrical perfect conductor
+                    implies $f''+f'/R=0$ \\
+  \var{spr}       & spherical perfect conductor
+                    implies $f''+2f'/R=0$ and $f(x_N)=0$ \\
+  \var{v}         & vanishing third derivative \\
+  \var{cop}       & copy value of last physical point to all ghost cells \\
+  \var{1s}        & onesided \\
+  \var{1so}       & onesided \\
+  \var{cT}        & constant temperature (implemented as
+                    condition for entropy $s$ or temperature $T$) \\
+  \var{c1}        & constant temperature (or maybe rather constant
+                    conductive flux??) \\
+  \var{Fgs}       & Fconv = - chi_t*rho*T*grad(s) \\
+  \var{Fct}       & Fbot = - K*grad(T) - chi_t*rho*T*grad(s) \\
+  \var{Fcm}       & $Fbot = - K*grad(\overline{T})$
+                    $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$ \\
   \var{sT}        & symmetric temperature, $T_{N-i}=T_{N+i}$;
                     implies $T'(x_N)=T'''(x_0)=0$ \\
   \var{asT}       & select entropy for uniform ghost temperature

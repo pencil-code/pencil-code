@@ -4,6 +4,7 @@
 %%
 %% Source files:
 %%   boundcond.f90
+%%   boundcond_alt.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.8\textwidth}}
@@ -11,6 +12,58 @@
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
   \multicolumn{2}{c}{Module \file{boundcond.f90}} \\
+\midrule
+  \var{sds}       & symmetric-derivative-set \\
+  \var{0}         & zero value in ghost zones, free value on boundary \\
+  \var{p}         & periodic \\
+  \var{pp}        & periodic across the pole \\
+  \var{ap}        & anti-periodic across the pole \\
+  \var{s}         & symmetry symmetry, $f_{N+i}=f_{N-i}$; \\
+  \var{ss}        & symmetry, plus function value given \\
+  \var{sds}       & symmetric-derivative-set \\
+  \var{cds}       & complex symmetric-derivative-set \\
+  \var{s0d}       & symmetry, function value such that df/dy=0 \\
+  \var{a}         & antisymmetry \\
+  \var{a2}        & antisymmetry relative to boundary value \\
+  \var{v}         & vanishing third derivative \\
+  \var{v3}        & vanishing third derivative \\
+  \var{out}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards \\
+  \var{1s}        & onesided \\
+  \var{cT}        & constant temp. \\
+  \var{sT}        & symmetric temp. \\
+  \var{asT}       & select entropy for uniform ghost temperature
+                    matching fluctuating boundary value,
+                    $T_{N-i}=T_{N}=$;
+                    implies $T'(x_N)=T'(x_0)=0$ \\
+  \var{f}         & freeze value \\
+  \var{s+f}       & freeze value \\
+  \var{fg}        & ``freeze'' value, i.e. maintain initial \\
+  \var{1}         & f=1 (for debugging) \\
+  \var{set}       & set boundary value \\
+  \var{sse}       & symmetry, set boundary value \\
+  \var{sep}       & set boundary value \\
+  \var{e1}        & extrapolation \\
+  \var{e2}        & extrapolation \\
+  \var{e3}        & extrapolation in log [maintain a power law] \\
+  \var{der}       & set derivative on the boundary \\
+  \var{cop}       & outflow: copy value of last physical point to
+                    all ghost cells \\
+  \var{c+k}       & no-inflow: copy value of last physical point
+                    to all ghost cells, but suppressing any inflow \\
+  \var{sfr}       & stress-free boundary condition for spherical
+                    coordinate system. \\
+  \var{nfr}       & Normal-field bc for spherical coordinate system.
+                    Some people call this the ``(angry) hedgehog bc''. \\
+  \var{spt}       & spherical perfect conducting boundary condition
+                    along $\theta$ boundary
+                    $f''+\cot\theta f'=0$ and $f(x_N)=0$ \\
+  \var{pfc}       & perfect conducting boundary condition
+                    along $\theta$ boundary \\
+  \var{nil','}    & do nothing; assume that everything is set \\
+  \var{sep}       & set boundary value \\
+\midrule
+  \multicolumn{2}{c}{Module \file{boundcond_alt.f90}} \\
 \midrule
   \var{sds}       & symmetric-derivative-set \\
   \var{0}         & zero value in ghost zones, free value on boundary \\

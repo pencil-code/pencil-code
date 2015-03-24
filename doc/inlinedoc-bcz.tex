@@ -4,6 +4,7 @@
 %%
 %% Source files:
 %%   boundcond.f90
+%%   boundcond_alt.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.8\textwidth}}
@@ -11,6 +12,102 @@
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
   \multicolumn{2}{c}{Module \file{boundcond.f90}} \\
+\midrule
+  \var{cfb}       & radial centrifugal balance \\
+  \var{fBs}       & frozen-in B-field (s) \\
+  \var{fB}        & frozen-in B-field (a2) \\
+  \var{0}         & zero value in ghost zones, free value on boundary \\
+  \var{p}         & periodic \\
+  \var{s}         & symmetry \\
+  \var{sf}        & symmetry with respect to interface \\
+  \var{s0d}       & symmetry, function value such that df/dz=0 \\
+  \var{0ds}       & symmetry, function value such that df/dz=0 \\
+  \var{a}         & antisymmetry \\
+  \var{a2}        & antisymmetry relative to boundary value \\
+  \var{af}        & antisymmetry with respect to interface \\
+  \var{a0d}       & antisymmetry with zero derivative \\
+  \var{v}         & vanishing third derivative \\
+  \var{v3}        & vanishing third derivative \\
+  \var{1s}        & one-sided \\
+  \var{fg}        & ``freeze'' value, i.e. maintain initial \\
+  \var{c1}        & complex \\
+  \var{Fgs}       & Fconv = - chi_t*rho*T*grad(s) \\
+  \var{Fct}       & Fbot = - K*grad(T) - chi_t*rho*T*grad(s) \\
+  \var{c3}        & constant flux at the bottom with a variable hcond \\
+  \var{pfe}       & potential field extrapolation \\
+  \var{p1D}       & potential field extrapolation in 1D \\
+  \var{pot}       & potential magnetic field \\
+  \var{pwd}       & a variant of 'pot' for nprocx=1 \\
+  \var{hds}       & hydrostatic equilibrium with a high-frequency filter \\
+  \var{cT}        & constant temp. \\
+  \var{cT2}       & constant temp. (keep lnrho) \\
+  \var{cT3}       & constant temp. (keep lnrho) \\
+  \var{hs}        & hydrostatic equilibrium \\
+  \var{hse}       & hydrostatic extrapolation
+                    rho or lnrho is extrapolated linearily and the
+                    temperature is calculated in hydrostatic equilibrium. \\
+  \var{cp}        & constant pressure
+                     \\
+  \var{sT}        & symmetric temp.
+                     \\
+  \var{ctz}       & for interstellar runs copy T \\
+  \var{cdz}       & for interstellar runs limit rho \\
+  \var{asT}       & select entropy for uniform ghost temperature
+                    matching fluctuating boundary value,
+                    $T_{N-i}=T_{N}=$;
+                    implies $T'(x_N)=T'(x_0)=0$ \\
+  \var{c2}        & complex
+                     \\
+  \var{db}        & complex
+                     \\
+  \var{ce}        & complex
+                     \\
+  \var{e1}        & extrapolation \\
+  \var{e2}        & extrapolation \\
+  \var{ex}        & simple linear extrapolation in first order \\
+  \var{exf}       & simple linear extrapolation in first order \\
+  \var{exd}       & simple linear extrapolation in first order \\
+  \var{exm}       & simple linear extrapolation in first order \\
+  \var{b1}        & extrapolation with zero value (improved 'a') \\
+  \var{b2}        & extrapolation with zero value (improved 'a') \\
+  \var{b3}        & extrapolation with zero value (improved 'a') \\
+  \var{f','fa}    & freeze value + antisymmetry \\
+  \var{fs}        & freeze value + symmetry \\
+  \var{fBs}       & frozen-in B-field (s) \\
+  \var{fB}        & frozen-in B-field (a2) \\
+  \var{g}         & set to given value(s) or function \\
+  \var{1}         & f=1 (for debugging) \\
+  \var{StS}       & solar surface boundary conditions \\
+  \var{set}       & set boundary value \\
+  \var{der}       & set derivative on the boundary \\
+  \var{div}       & set the divergence of $\uv$ to a given value
+                    use bc = 'div' for iuz \\
+  \var{ovr}       & set boundary value \\
+  \var{inf}       & allow inflow, but no outflow \\
+  \var{ouf}       & allow outflow, but no inflow \\
+  \var{in}        & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards \\
+  \var{out}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards \\
+  \var{in0}       & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards
+                    relaxes to vanishing 1st derivative at boundary \\
+  \var{ou0}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards
+                    relaxes to vanishing 1st derivative at boundary \\
+  \var{ind}       & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards
+                    creates inwards pointing or zero 1st derivative at boundary \\
+  \var{oud}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards
+                    creates outwards pointing or zero 1st derivative at boundary \\
+  \var{ubs}       & copy boundary outflow, \\
+  \var{win}       & forces massflux given as
+                    $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\
+  \var{cop}       & copy value of last physical point to all ghost cells \\
+  \var{nil}       & do nothing; assume that everything is set \\
+\midrule
+  \multicolumn{2}{c}{Module \file{boundcond_alt.f90}} \\
 \midrule
   \var{cfb}       & radial centrifugal balance \\
   \var{fBs}       & frozen-in B-field (s) \\
