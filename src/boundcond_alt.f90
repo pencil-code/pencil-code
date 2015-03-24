@@ -297,8 +297,8 @@ module Boundcond
                   ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
                   if (j==iss) call bc_ss_flux_condturb_x(f,topbot)
                 case ('Fcm')
-                  ! BCX_DOC: Fbot = - K*grad(\mean{T}) 
-                  ! BCX_DOC:        - chi_t*\mean{rho}*\mean{T}*grad(\mean{s})
+                  ! BCX_DOC: $Fbot = - K*grad(\overline{T})$
+                  ! BCX_DOC: $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$
                   if (j==iss) call bc_ss_flux_condturb_mean_x(f,topbot)
                 case ('sT')
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
