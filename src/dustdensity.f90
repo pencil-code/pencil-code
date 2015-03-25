@@ -573,6 +573,20 @@ module Dustdensity
               endif
             endif
           enddo
+        case ('lognormal')
+          if (headtt) then
+            print*, 'init_nd: lognormal distribution in particle radius'
+            print*, 'init_nd: amplnd   =',amplnd
+            print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
+          endif
+          do k=1,ndustspec
+            if (a1 == 0) then
+              f(:,:,:,ind(k))=f(:,:,:,ind(k))&
+                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2) !/md(k)
+            else
+              call fatal_error('initnd','no lognormal with a1/=1')
+            endif
+          enddo
         case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
           do k=1,ndustspec
@@ -2040,7 +2054,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: mfluxcond, cc_tmp, mdotk, mdotk1
+      real, dimension (nx) :: mfluxcond, cc_tmp, mdotk, mmodk
+      real, dimension (nx) :: mdotkp, mdotkm, mmodkp, mmodkm
       real :: dmdfac
       integer :: k,l
 !
@@ -2048,21 +2063,45 @@ module Dustdensity
 !
         call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
 !
+!  upwinding
+!
 !  Start with the first mass bin...
 !
         k=1
-        mdotk=-3*mfluxcond/ad(k)**2
+        mdotk=3*mfluxcond/ad(k)**2
+        mdotkp=3*mfluxcond/ad(k+1)**2
+        mmodk=abs(3*mfluxcond/ad(k)**2)
+        mmodkp=abs(3*mfluxcond/ad(k+1)**2)
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-          +mdotk*f(l1:l2,m,n,ind(k))
+          -.5*mdotkp*f(l1:l2,m,n,ind(k+1)) &
+          +.5*mmodkp*f(l1:l2,m,n,ind(k+1)) &
+              -mmodk*f(l1:l2,m,n,ind(k))
+!
+!  Finish with the last mass bin...
+!
+        k=ndustspec
+        mdotk=3*mfluxcond/ad(k)**2
+        mdotkm=3*mfluxcond/ad(k-1)**2
+        mmodk=abs(3*mfluxcond/ad(k)**2)
+        mmodkm=abs(3*mfluxcond/ad(k-1)**2)
+        df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+          -.5*(-mdotkm*f(l1:l2,m,n,ind(k-1))) &
+          +.5*(+mmodkm*f(l1:l2,m,n,ind(k-1))) &
+              -mmodk*f(l1:l2,m,n,ind(k))
 
 !  ... then loop over mass bins
 !
-        do k=2,ndustspec
-          mdotk=-3*mfluxcond/ad(k)**2
-          mdotk1=-3*mfluxcond/ad(k-1)**2
+        do k=2,ndustspec-1
+          mdotk=3*mfluxcond/ad(k)**2
+          mdotkm=3*mfluxcond/ad(k-1)**2
+          mdotkp=3*mfluxcond/ad(k+1)**2
+          mmodk=abs(3*mfluxcond/ad(k)**2)
+          mmodkm=abs(3*mfluxcond/ad(k-1)**2)
+          mmodkp=abs(3*mfluxcond/ad(k+1)**2)
           df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-            +mdotk*f(l1:l2,m,n,ind(k))-mdotk1*f(l1:l2,m,n,ind(k-1))
-!
+            -.5*(mdotkp*f(l1:l2,m,n,ind(k+1))-mdotkm*f(l1:l2,m,n,ind(k-1))) &
+            +.5*(mmodkp*f(l1:l2,m,n,ind(k+1))+mmodkm*f(l1:l2,m,n,ind(k-1))) &
+                -mmodk*f(l1:l2,m,n,ind(k))
         enddo
 !
     endsubroutine dust_condensation_nolmdvar
@@ -2205,6 +2244,9 @@ module Dustdensity
 !
       tl01=1/tl0
       teta1=1/teta
+!
+!  In the following, the "3" should be replaced by nghost,
+!  or one should use l1,l2 etc.
 !
       do l=1,nx
         if (lmdvar) md(:) = f(3+l,m,n,imd(:))
