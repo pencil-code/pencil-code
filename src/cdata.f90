@@ -43,6 +43,12 @@ module Cdata
   real :: kx_nyq,ky_nyq,kz_nyq
   integer :: dimensionality
 !
+!  Exact coefficients for non-equidistant grid at boundaries
+!
+  real, dimension(-nghost:nghost,2) :: coeffs_1_x
+  real, dimension(-nghost:nghost,2) :: coeffs_1_y
+  real, dimension(-nghost:nghost,2) :: coeffs_1_z
+!
 !  Alternative coordinate systems: spherical, cylindric.
 !
   character (len=9) :: coord_system='cartesian'

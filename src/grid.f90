@@ -37,6 +37,8 @@ module Grid
     module procedure grid_profile_1D
   endinterface
 !
+  integer, parameter :: BOT=1, TOP=2
+!
   contains
 !***********************************************************************
     !subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
@@ -471,6 +473,8 @@ module Grid
         if (llast_proc_x) &
           dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
 !
+        call calc_bound_coeffs(x,coeffs_1_x)
+
       endif
 !
 !  y coordinate
@@ -624,6 +628,8 @@ module Grid
         if (llast_proc_y) &
           dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
 !
+        call calc_bound_coeffs(y,coeffs_1_y)
+
       endif
 !
 !  z coordinate
@@ -755,6 +761,8 @@ module Grid
         if (llast_proc_z) &
           dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
 !
+        call calc_bound_coeffs(z,coeffs_1_z)
+
       endif
 !
 !  Compute averages across processor boundaries to calculate the physical
@@ -2123,5 +2131,68 @@ module Grid
       endif obsolete
 !
     endsubroutine get_grid_mn
+!***********************************************************************
+    subroutine calc_coeffs_1( grid, coeffs )
+!
+!  Calculates the coefficients of the 6th order difference formula for the first
+!  derivative on a 7-point stencil.
+!  The grid is provided in form of the stepsizes in grid.
+!
+!  26-mar-15/MR: extracted from deriv_alt.
+!
+      real, dimension(-2:3), intent(in ) :: grid
+      real, dimension(-3:3), intent(out) :: coeffs
+
+      real :: h1, h2, h3, hm1, hm2, hm3, h12, h23, h123, hm12, hm23, hm123, &
+              h1m1, h1m12, h1m123, h12m1, h123m1, h12m12, h123m12, h12m123, h123m123
+
+      h1    = grid(1);    h2     = grid(2);     h3      = grid(3)
+      hm1   = grid(0);    hm2    = grid(-1);    hm3     = grid(-2)
+      h12   = h1 + h2;    h23    = h2+h3;       h123    = h12+h3
+      hm12  = hm1 + hm2;  hm23   = hm2+hm3;     hm123   = hm12+hm3
+      h1m1  = h1 + hm1;   h1m12  = h1+hm12;     h1m123  = h1 + hm123
+      h12m1 = h12 + hm1;  h12m12 = h12 + hm12;  h12m123 = h12 + hm123
+      h123m1= h123 + hm1; h123m12= h123 + hm12; h123m123= h123 + hm123
+
+      coeffs(:) = (/-h1*h12*h123*hm1*hm12/(hm3*hm123*hm23*h1m123*h12m123*h123m123),&
+                     h1*h12*h123*hm1*hm123/(hm2*hm3*hm12*h1m12*h12m12*h123m12),    &
+                    -h1*h12*h123*hm12*hm123/(hm1*hm2*hm23*h1m1*h12m1*h123m1),      &
+                     0.,                                                           &
+                     h12*h123*hm1*hm12*hm123/(h1*h2*h23*h1m1*h1m12*h1m123),        &
+                    -h1*h123*hm1*hm12*hm123/(h2*h3*h12*h12m1*h12m12*h12m123),      &
+                     h1*h12*hm1*hm12*hm123/(h3*h123*h23*h123m1*h123m12*h123m123)    /)
+  
+      coeffs(0) = sum(coeffs)
+
+  endsubroutine calc_coeffs_1
+!***********************************************************************
+    subroutine calc_bound_coeffs(coors,coeffs)
+!
+!  Calculates the coefficients of the 6th order difference formula for the first
+!  derivative at the boundary points.
+!  The grid is provided in form of the coordinate vector coors.
+!
+!  26-mar-15/MR: extracted from deriv_alt.
+!
+      real, dimension(:),                intent(IN ) :: coors
+      real, dimension(-nghost:nghost,2), intent(OUT) :: coeffs
+
+      real, dimension(-nghost+1:nghost) :: dc
+      integer                           :: sc
+
+      sc=size(coors)
+
+      dc( 1:nghost)  = coors(nghost+2:2*nghost+1)-coors(nghost+1:2*nghost)
+      dc(-nghost+1:0)= dc(nghost:1:-1)
+!print*, 'DX,Y,Z=', dx,dy,dz
+      call calc_coeffs_1(dc,coeffs(:,BOT))
+!print*, 'coeffs(:,BOT)=', coeffs_1_x(:,BOT)
+      dc(-nghost+1:0)= coors(sc-2*nghost+1:sc-nghost)-coors(sc-2*nghost:sc-nghost-1)
+      dc( 1:nghost)  = dc(0:-nghost+1:-1)
+
+      call calc_coeffs_1(dc,coeffs(:,TOP))
+!print*, 'coeffs(:,TOP)=', coeffs(:,TOP)
+
+    endsubroutine calc_bound_coeffs
 !***********************************************************************
 endmodule Grid
