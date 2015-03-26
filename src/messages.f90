@@ -605,9 +605,11 @@ module Messages
 ! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
 ! 20-oct-13/MR: new options lcont,location introduced
 ! 28-oct-13/MR: handling of lcont modified: now only in effect when reading
-
+! 26-mar-15/MR: mode now saved across calls, reset by calls with mode=open and mode=close
+!               -> read or write needs not to be indicated in mode when set by call with mode=open
+!
     use Syscalls, only: system_cmd
-    use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
+    use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip,loptest
     use Mpicomm, only: report_clean_output
 !
     integer,                     intent(IN) :: code
@@ -619,24 +621,50 @@ module Messages
     character (LEN=fnlen), save :: curfile='', curloc=''
     ! default: file not distributed, no backskipping
     integer, save :: curdist=0, curback=0
+    logical, save :: lread=.false.
 !
-    integer :: unit=90, iostat, ind
+    integer, parameter :: unit=90
+    integer :: iostat, ind, len_mode
     character (LEN=intlen) :: date, codestr
     character (LEN=fnlen), dimension(2) :: strarr
     character (LEN=fnlen) :: filename, submsg, message
-    logical :: lopen, lclose, lread, lwrite, lsync, lexists, lcontl
+    logical :: lopen, lclose, lwrite, lsync, lexists, lcontl, lscan
+    character(LEN=4) :: modestr
+    character(LEN=labellen) :: item
 !
-    outlog = .false.
+    outlog = .false.; modestr=''
+    len_mode=len_trim(mode)
 !
-    lopen = mode(1:4)=='open'
-    lread = mode(1:4)=='read'
+    lopen = .false.; lclose=.false.; lscan=.true.
+    if (mode(1:4)=='open') then
+      lopen = .true.
+    elseif (mode(1:4)=='read') then
+      lread=.true.
+      if (len_mode>5) item=mode(6:)
+      lscan=.false.
+    endif
 
-    if (.not.lread .and. len_trim(mode)>4) then
-      lread = lread .or. (mode(1:5)=='openr')
-      lwrite = mode(1:5)=='write'.or. mode(1:5)=='openw'
+    if (lscan.and.len_mode>=5) then
+      if (mode(1:5)=='openr') then
+        lread = .true.
+      elseif (mode(1:5)=='openw') then
+        lread = .false.
+      elseif (mode(1:5)=='write') then
+        lread = .false.
+        if (len_mode>6) item=mode(7:)
+      elseif (mode(1:5)/='read ') then
+        item=mode
+      endif
+
       lclose = mode(1:5)=='close'
+    endif
+
+    lwrite=.not.lread
+    if (lclose) then
+      modestr='clos'
     else
-      lclose=.false.
+      if (lread ) modestr='read'
+      if (lwrite) modestr='writ'
     endif
 !
     if (present(file)) curfile = file
@@ -648,11 +676,7 @@ module Messages
 
     message = ""
     if (present (msg)) message = ': '//trim (msg)
-    if (present(lcont)) then
-      lcontl = lcont
-    else
-      lcontl=.false.
-    endif
+    lcontl = loptest(lcont)
 !
 ! Set the following expression to .false. to activate the experimental code
 !
@@ -743,21 +767,23 @@ module Messages
 !
       if ( code==0 .and. .not.lsync ) return
 !
-      call safe_character_prepend( errormsg, 'ERROR ' )
+      call safe_character_prepend( errormsg, 'ERROR' )
 !
       if ( lopen.or.lread.or.lwrite.or.lclose ) then
 !
-        call safe_character_append(errormsg,' when '//mode(1:4)//'ing ')
+        call safe_character_prepend( errormsg, ' when' )
+!
+        if (lopen) &
+          call safe_character_append(errormsg,' opening ')
 
-        if (mode(1:5)=='openr') then
-          call safe_character_append(errormsg,' for reading ')
-        elseif (mode(1:5)=='openw') then
-          call safe_character_append(errormsg,' for writing ')
-        endif
+        if (lread.or.lwrite) &
+          call safe_character_append(errormsg,' for ')
+          
+        call safe_character_append(errormsg,trim(modestr)//'ing ')
 
-        if ( lread .or. lwrite ) then
-          if (mode(1:5)/='openr'.and.mode(1:5)/='openw') &
-            call safe_character_append(errormsg,' '//trim(mode(6:)))
+        if ( .not.(lopen.or.lclose).and.(lread .or. lwrite) ) then
+          if (lread.or.lwrite) &
+            call safe_character_append(errormsg,' '//trim(item))
           if (lread) then
             call safe_character_append(errormsg,' from')
           else
