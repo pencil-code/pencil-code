@@ -37,7 +37,10 @@ nvar=n_elements(varnames)
 ;;
 spawn, 'wc -l '+datadir+'/'+varfile, nlines
 nlines=long(nlines[0])
-nit=nlines/(1+nvar*nr/8)
+nlin_per_time=1L+ceil(nvar*nr/8.)
+nit=nlines/nlin_per_time
+if nlines mod nlin_per_time ne 0 then $
+  print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!'
 
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 

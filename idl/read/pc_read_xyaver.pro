@@ -56,7 +56,10 @@ openr, file, filename
 ;;
 spawn, 'wc -l '+filename, nlines
 nlines=long(nlines[0])
-nit=nlines/(1L+nvar*nz/8L)
+nlin_per_time=1L+ceil(nvar*nz/8.)
+nit=nlines/nlin_per_time
+if nlines mod nlin_per_time ne 0 then $
+  print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!' 
 ;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 ;
