@@ -279,6 +279,84 @@ def pdim(datadir='./data'):
     ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk', 'mpaux'])
     return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk, mpaux=mpaux)
 #=======================================================================
+def proc_avg2d(datadir='./data', direction='z', proc=0):
+    """Returns the time series of one chunk of the 2D averages from one
+    process.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        direction
+            Direction of the average: 'x', 'y', or 'z'.
+        proc
+            Process ID.
+    """
+    # Chao-Chin Yang, 2015-03-27
+    import numpy as np
+    import os.path
+    from struct import unpack, calcsize
+    # Find the dimensions and the precision.
+    dim = proc_dim(datadir=datadir, proc=proc)
+    if dim.double_precision:
+        dtype = np.float64
+        fmt = 'd'
+    else:
+        dtype = np.float32
+        fmt = 'f'
+    nb = calcsize(fmt)
+    # Check the direction of average.
+    if direction == 'x':
+        n1 = dim.ny
+        n2 = dim.nz
+    elif direction == 'y':
+        n1 = dim.nx
+        n2 = dim.nz
+    elif direction == 'z':
+        n1 = dim.nx
+        n2 = dim.ny
+    else:
+        raise ValueError("Keyword direction only accepts 'x', 'y', or 'z'. ")
+    # Read the names of the averages.
+    var = varname(datadir=os.path.dirname(datadir.rstrip('/')), filename=direction.strip()+'aver.in')
+    nvar = len(var)
+    adim = np.array((n1, n2, nvar))
+    nbavg = nb * adim.prod()
+    # Open file and define data stream.
+    f = open(datadir.strip() + '/proc' + str(proc) + '/' + direction.strip() + 'averages.dat', 'rb')
+    def get_time():
+        if len(f.read(hsize)) > 0:
+            buf = f.read(nb)
+            if len(buf) > 0:
+                f.read(hsize)
+                return unpack(fmt, buf)[0]
+            else:
+                raise EOFError("incompatible data file")
+    def get_avg():
+        f.read(hsize)
+        try:
+            a = np.frombuffer(f.read(nbavg), dtype=dtype).reshape(adim, order='F')
+        except:
+            raise EOFError("incompatible data file")
+        f.read(hsize)
+        return a
+    # Check the data size.
+    nt = 0
+    while get_time() is not None:
+        get_avg()
+        nt += 1
+    f.seek(0)
+    # Read the data.
+    t = np.zeros(nt)
+    avg = np.core.records.array(nvar * [np.zeros((n1,n2,nt))], names=var)
+    for i in range(nt):
+        t[i] = get_time()
+        a = get_avg()
+        for j in range(nvar):
+            avg[var[j]][:,:,i] = a[:,:,j]
+    # Close file.
+    f.close()
+    return t, avg.view(np.recarray)
+#=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
 
