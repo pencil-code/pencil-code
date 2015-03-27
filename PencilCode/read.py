@@ -347,12 +347,12 @@ def proc_avg2d(datadir='./data', direction='z', proc=0):
     f.seek(0)
     # Read the data.
     t = np.zeros(nt)
-    avg = np.core.records.array(nvar * [np.zeros((n1,n2,nt))], names=var)
+    avg = np.core.records.array(nvar * [np.zeros((nt,n1,n2))], names=var)
     for i in range(nt):
         t[i] = get_time()
         a = get_avg()
         for j in range(nvar):
-            avg[var[j]][:,:,i] = a[:,:,j]
+            avg[var[j]][i,:,:] = a[:,:,j]
     # Close file.
     f.close()
     return t, avg.view(np.recarray)
