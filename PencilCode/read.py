@@ -81,6 +81,62 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
         t, avg = ti, avgi
     return t, avg.view(np.recarray)
 #=======================================================================
+def avg2d(datadir='./data', direction='z'):
+    """Returns the time series of the 2D averages.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        direction
+            Direction of average: 'x', 'y', or 'z'.
+    """
+    # Chao-Chin Yang, 2015-03-27
+    import numpy as np
+    # Get the dimensions.
+    dim = dimensions(datadir=datadir)
+    if direction == 'x':
+        n1 = dim.nygrid
+        n2 = dim.nzgrid
+    elif direction == 'y':
+        n1 = dim.nxgrid
+        n2 = dim.nzgrid
+    elif direction == 'z':
+        n1 = dim.nxgrid
+        n2 = dim.nygrid
+    else:
+        raise ValueError("Keyword direction only accepts 'x', 'y', or 'z'. ")
+    # Allocate data arrays.
+    t, avg1 = proc_avg2d(datadir=datadir, direction=direction)
+    nt = len(t)
+    var = avg1.dtype.names
+    avg = np.core.records.array(len(var) * [np.zeros((nt,n1,n2))], names=var)
+    # Read the averages from each process and assemble the data.
+    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+        dim1 = proc_dim(datadir=datadir, proc=proc)
+        if direction == 'x' and dim1.iprocx == 0:
+            iproc1 = dim1.iprocy
+            iproc2 = dim1.iprocz
+            n1 = dim1.ny
+            n2 = dim1.nz
+        elif direction == 'y' and dim1.iprocy == 0:
+            iproc1 = dim1.iprocx
+            iproc2 = dim1.iprocz
+            n1 = dim1.nx
+            n2 = dim1.nz
+        elif direction == 'z' and dim1.iprocz == 0:
+            iproc1 = dim1.iprocx
+            iproc2 = dim1.iprocy
+            n1 = dim1.nx
+            n2 = dim1.ny
+        else:
+            continue
+        t1, avg1 = proc_avg2d(datadir=datadir, direction=direction, proc=proc)
+        if any(t1 != t):
+            print("Warning: inconsistent time series. ")
+        avg[:,iproc1*n1:(iproc1+1)*n1,iproc2*n2:(iproc2+1)*n2] = avg1
+    # Return the time and the averages.
+    return t, avg
+#=======================================================================
 def dimensions(datadir='./data'):
     """Returns the dimensions of the Pencil Code data from datadir.
 
