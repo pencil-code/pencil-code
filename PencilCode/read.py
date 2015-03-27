@@ -23,7 +23,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
         verbose
             Whether or not to print information.
     """
-    # Chao-Chin Yang, 2014-11-27
+    # Chao-Chin Yang, 2015-03-27
     import numpy as np
     from scipy.interpolate import interp1d
     # Read the dimensions and check the plane of average.
@@ -79,7 +79,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
             for k in range(nc):
                 avgi[v][:,k] = interp1d(t, avg[v][:,k])(ti)
         t, avg = ti, avgi
-    return t, avg.view(np.recarray)
+    return t, avg
 #=======================================================================
 def avg2d(datadir='./data', direction='z'):
     """Returns the time series of the 2D averages.
@@ -411,7 +411,7 @@ def proc_avg2d(datadir='./data', direction='z', proc=0):
             avg[var[j]][i,:,:] = a[:,:,j]
     # Close file.
     f.close()
-    return t, avg.view(np.recarray)
+    return t, avg
 #=======================================================================
 def proc_dim(datadir='./data', proc=0):
     """Returns the dimensions of the data from one process.
