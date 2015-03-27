@@ -38,8 +38,9 @@ nvar=n_elements(varnames)
 spawn, 'wc -l '+datadir+'/'+varfile, nlines
 nlines=long(nlines[0])
 nlin_per_time=1L+ceil(nvar*nr/8.)
-nit=nlines/nlin_per_time
-if nlines mod nlin_per_time ne 0 then $
+nlin_rcyl = ceil(nr/8.)
+nit=(nlines-nlin_rcyl)/nlin_per_time
+if nlines-nlin_rcyl mod nlin_per_time ne 0 then $
   print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!'
 
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
@@ -70,7 +71,7 @@ openr, file, filename
 ;;  Read phiz-averages and put in arrays.
 ;;
 
-;; Read radius (first nr records)
+;; Read radius (first ceil(nr/8) records)
 readf, file, rcyl
 for it=0,nit-1 do begin
 ;; Read time
