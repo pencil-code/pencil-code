@@ -1,11 +1,23 @@
+Subject: Please update your user entry before the github transition
+
+Dear all,
+
 This is extremely urgent for all those below. In order to associate
 your previous check-in names (which were already not unique,
 e.g. AxelBrandenburg and brandenb) with your github account, please:
 
 1. generate a github account and use your standard email for this.
+
 2. make sure this github email address is indeed listed below for each
    incarnation of your name. Please do this soon, because otherwise we'll
    be nervous. All entries with "mycompany" are evidently not done yet.
+
+We will send out a more detailed mail about the transition soon, but
+editing this file is your first step, and it should happen soon.
+
+
+Axel, Tobi and Wolfgang
+
 
 Alex.I.Hubbard = Alex.I.Hubbard <Alex.I.Hubbard@mycompany.com>
 Alex.I.Hubbard@gmail.com = Alex I Hubbard <Alex.I.Hubbard@gmail.com>
