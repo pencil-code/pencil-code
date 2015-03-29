@@ -14,12 +14,11 @@ e.g. AxelBrandenburg and brandenb) with your github account, please:
    All entries with "mycompany" are evidently not done yet.
 
 Should you not be able to edit that file, please register with github and
-then send us the email associates with your github account.
-
+then send us the email associates with your github account, so we can
+check it in.
 
 We will send out a more detailed mail about the transition soon, but
 editing this file is your first step, and it should happen soon.
-
 
 Axel, Tobi and Wolfgang
 
