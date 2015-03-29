@@ -1,3 +1,12 @@
+This is extremely urgent for all those below. In order to associate
+your previous check-in names (which were already not unique,
+e.g. AxelBrandenburg and brandenb) with your github account, please:
+
+1. generate a github account and use your standard email for this.
+2. make sure this githut email address is indeed listed below for each
+   incarnation of your name. Please do this soon, because otherwise we'll
+   be nervious. All entries with mycompany are evidently not done yet.
+
 Alex.I.Hubbard = Alex.I.Hubbard <Alex.I.Hubbard@mycompany.com>
 Alex.I.Hubbard@gmail.com = Alex I Hubbard <Alex.I.Hubbard@gmail.com>
 AxelBrandenburg = Axel Brandenburg <brandenb@nordita.org>
