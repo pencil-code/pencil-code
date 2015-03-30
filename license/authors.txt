@@ -23,6 +23,22 @@ editing this file is your first step, and it should happen soon.
 Axel, Tobi and Wolfgang
 
 
+==============================================================================
+
+PS: People, before you commit your changes, please first have a look at the
+entries by Axel, Wolfgang, and myself and change your entries accordingly. Use
+the same *full name* in *clear text* and the same email address for all your
+entries and do *not*
+
+- modify the left hand side
+- remove any lines
+- add any lines
+
+Tobi
+
+==============================================================================
+
+
 Alex.I.Hubbard = Alex.I.Hubbard <ahubbard@amnh.org>
 Alex.I.Hubbard@gmail.com = Alex I Hubbard <ahubbard@amnh.org>
 AxelBrandenburg = Axel Brandenburg <brandenb@nordita.org>
