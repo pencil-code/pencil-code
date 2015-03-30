@@ -633,6 +633,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if (validate_variables) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
+	print, "Pal", tags
     for iv=0,n_elements(variables)-1 do begin
       if (tags[iv] eq variables[iv]) then continue
       res=execute(tags[iv]+'='+variables[iv])
