@@ -23,8 +23,8 @@ editing this file is your first step, and it should happen soon.
 Axel, Tobi and Wolfgang
 
 
-Alex.I.Hubbard = Alex.I.Hubbard <Alex.I.Hubbard@mycompany.com>
-Alex.I.Hubbard@gmail.com = Alex I Hubbard <Alex.I.Hubbard@gmail.com>
+Alex.I.Hubbard = Alex.I.Hubbard <ahubbard@amnh.org>
+Alex.I.Hubbard@gmail.com = Alex I Hubbard <ahubbard@amnh.org>
 AxelBrandenburg = Axel Brandenburg <brandenb@nordita.org>
 AxelBrandenburg@gmail.com = Axel Brandenburg <brandenb@nordita.org>
 Bourdin.KIS = Philippe Bourdin <git@Bourdin.ch>
