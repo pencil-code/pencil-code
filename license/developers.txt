@@ -54,7 +54,7 @@ Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           +49 5
 Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               +46 70 772 6604 (mob)
-
+Xiang-Yu LI           lixycuhk/gmail.com             ,
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
    $PENCIL_HOME/license

@@ -173,3 +173,4 @@ weezy = weezy <weezy@mycompany.com>
 wladimir.lyra = Wladimir Lyra <wladimir.lyra@gmail.com>
 wladimir.lyra@gmail.com = Wladimir Lyra <wladimir.lyra@gmail.com>
 wlyra = Wladimir Lyra <wladimir.lyra@gmail.com>
+xiang-yu = Xiang-Yu Li <lixycuhk@gmail.com>
