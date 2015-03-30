@@ -64,6 +64,19 @@ module Solid_Cells
 !
     endsubroutine update_solid_cells
 !***********************************************************************
+    subroutine update_solid_cells_pencil(f)
+!
+!  Set the boundary values of the solid area such that we get a
+!  correct fluid-solid interface.
+!
+!  30-mar-15/Jørgen+nils: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine update_solid_cells_pencil
+!***********************************************************************
     subroutine freeze_solid_cells(df)
 !
 !  If we are in a solid cell set df=0 for all variables

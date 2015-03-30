@@ -229,8 +229,9 @@ module Solid_Cells
 !  Prepare the solid geometry
 !
       call find_solid_cell_boundaries(f)
-      call calculate_shift_matrix
-!
+      if (interpolation_method=='staircase') then
+        call calculate_shift_matrix
+      endif
 !
 ! Find nearest grid point of the "forcepoints" on all cylinders. Arrays
 ! are only allocated if c_dragx, c_dragy or c_dragz is set in print.in.
@@ -1073,14 +1074,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension(3) :: xxp, phi,ppp
       character(len=10) :: form
 !
-!  Find ghost points based on the mirror interpolation method
-!
-      if (interpolation_method=='mirror') then
-!
 !  For fluid points very close to the solid surface the velocity and temperature
 !  is set from interpolation between the value at the closest grid line
 !  and the value at the solid surface.
 !
+      if (interpolation_method=='mirror' .or. &
+          interpolation_method=='line_ghost') then
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
@@ -1108,155 +1107,161 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         enddo
         enddo
         enddo
+      endif
 !
 !  Find ghost points based on the mirror interpolation method
 !
+      if (interpolation_method=='mirror') then
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
-          bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
-          bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
-          if (form=='sphere') then
-            baz=(ba(i,j,k,3) /= 0).and.(ba(i,j,k,3)/=9).and.(ba(i,j,k,3)/=10)
-          else
-            baz=.false.
-          endif
+          iobj=ba(i,j,k,4)
+          if (iobj > 0) then
+            form=objects(iobj)%form
+            bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
+            bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
+            if (form=='sphere') then
+              baz=(ba(i,j,k,3) /= 0).and.(ba(i,j,k,3)/=9).and.(ba(i,j,k,3)/=10)
+            else
+              baz=.false.
+            endif
 !
 !  Check if we are in a point which must be interpolated, i.e. we are inside
 !  a solid geometry AND we are not more than three grid points from the
 !  closest solid-fluid interface
 !
-          if (bax.or.bay.or.baz) then
+            if (bax.or.bay.or.baz) then
 !
 !  Find x, y and z values of mirror point
 !
-            iobj=ba(i,j,k,4)
-            x_obj=objects(iobj)%x(1)
-            y_obj=objects(iobj)%x(2)
-            z_obj=objects(iobj)%x(3)
-            r_obj=objects(iobj)%r
-            form=objects(iobj)%form
-            if (form=='cylinder') then
-              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
-              r_new=r_obj+(r_obj-r_point)
-              sin_theta=(y(j)-y_obj)/r_point
-              cos_theta=(x(i)-x_obj)/r_point
-              xmirror=cos_theta*r_new+x_obj
-              ymirror=sin_theta*r_new+y_obj
-              zmirror=z(k)
-            elseif (form=='sphere') then
-              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
-              r_new=r_obj+(r_obj-r_point)
-              xmirror=(x(i)-x_obj)*r_new/r_point+x_obj
-              ymirror=(y(j)-y_obj)*r_new/r_point+y_obj
-              zmirror=(z(k)-z_obj)*r_new/r_point+z_obj
+              iobj=ba(i,j,k,4)
+              x_obj=objects(iobj)%x(1)
+              y_obj=objects(iobj)%x(2)
+              z_obj=objects(iobj)%x(3)
+              r_obj=objects(iobj)%r
+              form=objects(iobj)%form
+              if (form=='cylinder') then
+                r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+                r_new=r_obj+(r_obj-r_point)
+                sin_theta=(y(j)-y_obj)/r_point
+                cos_theta=(x(i)-x_obj)/r_point
+                xmirror=cos_theta*r_new+x_obj
+                ymirror=sin_theta*r_new+y_obj
+                zmirror=z(k)
+              elseif (form=='sphere') then
+                r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+                r_new=r_obj+(r_obj-r_point)
+                xmirror=(x(i)-x_obj)*r_new/r_point+x_obj
+                ymirror=(y(j)-y_obj)*r_new/r_point+y_obj
+                zmirror=(z(k)-z_obj)*r_new/r_point+z_obj
 !
 ! Check if mirror point is inside domain
 !
-              if (xmirror<xyz0(1) .and. lperi(1)) xmirror=xmirror+Lxyz(1)
-              if (ymirror<xyz0(2) .and. lperi(2)) ymirror=ymirror+Lxyz(2)
-              if (zmirror<xyz0(3) .and. lperi(3)) zmirror=zmirror+Lxyz(3)
-              if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
-              if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
-              if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
-             endif
+                if (xmirror<xyz0(1) .and. lperi(1)) xmirror=xmirror+Lxyz(1)
+                if (ymirror<xyz0(2) .and. lperi(2)) ymirror=ymirror+Lxyz(2)
+                if (zmirror<xyz0(3) .and. lperi(3)) zmirror=zmirror+Lxyz(3)
+                if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
+                if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
+                if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
+              endif
 !
 !  Check that we are indeed inside the solid geometry
 !
-            if (r_point>r_obj) then
-              print*,'i,j,k=',i,j,k
-              print*,'x(i),x_obj=',x(i),x_obj
-              print*,'y(j),y_obj=',y(j),y_obj
-              print*,'z(k),z_obj=',z(k),z_obj
-              print*,'r_point,r_new,r_obj=',r_point,r_new,r_obj
-              call fatal_error('update_solid_cells:','r_point>r_obj')
-            endif
+              if (r_point>r_obj) then
+                print*,'i,j,k=',i,j,k
+                print*,'x(i),x_obj=',x(i),x_obj
+                print*,'y(j),y_obj=',y(j),y_obj
+                print*,'z(k),z_obj=',z(k),z_obj
+                print*,'r_point,r_new,r_obj=',r_point,r_new,r_obj
+                call fatal_error('update_solid_cells:','r_point>r_obj')
+              endif
 !
 !  Find i, j and k indeces for points to be used during interpolation
 !
-            ppp(1)=xmirror
-            ppp(2)=ymirror
-            ppp(3)=zmirror
-            call find_near_indeces(&
-                lower_i,upper_i,&
-                lower_j,upper_j,&
-                lower_k,upper_k,x,y,z,ppp)
+              ppp(1)=xmirror
+              ppp(2)=ymirror
+              ppp(3)=zmirror
+              call find_near_indeces(&
+                  lower_i,upper_i,&
+                  lower_j,upper_j,&
+                  lower_k,upper_k,x,y,z,ppp)
 !
 !  Issue with domain borders: A mirror point can be outside a
 !  processor's local domain (including ghost points). Some sort
 !  communication has to be implemented!
 !
-            if (lower_i == 0 .or. upper_i == 0) then
-              call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
-            endif
-            if (lower_j == 0 .or. upper_j == 0) then
-              call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
-            endif
-            if (form=='sphere') then
-              if (lower_k == 0 .or. upper_k == 0) then
-                call fatal_error('update_solid_cells:','lower_k==0 or upper_k==0')
+              if (lower_i == 0 .or. upper_i == 0) then
+                call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
               endif
-            endif
+              if (lower_j == 0 .or. upper_j == 0) then
+                call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
+              endif
+              if (form=='sphere') then
+                if (lower_k == 0 .or. upper_k == 0) then
+                  call fatal_error('update_solid_cells:','lower_k==0 or upper_k==0')
+                endif
+              endif
 !
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
-            if (objects(iobj)%form=='cylinder') then
-              ndims=2
-            elseif (objects(iobj)%form=='sphere') then
-              ndims=3
-            endif
-            if (close_interpolation_method .ge. 2) then
-              call interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
-              f(i,j,k,1:mvar)=f_tmp
-            elseif (close_interpolation_method==1) then
+              if (objects(iobj)%form=='cylinder') then
+                ndims=2
+              elseif (objects(iobj)%form=='sphere') then
+                ndims=3
+              endif
+              if (close_interpolation_method .ge. 2) then
+                call interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
+                    upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                f(i,j,k,1:mvar)=f_tmp
+              elseif (close_interpolation_method==1) then
 !
 !  Set zero velocity at the solid surface
 !
-              call interpolate_point(f,phi,iux,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
-              f(i,j,k,iux)=-phi(1)
-              call interpolate_point(f,phi,iuy,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
-              f(i,j,k,iuy)=-phi(1)
-              call interpolate_point(f,phi,iuz,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
-              f(i,j,k,iuz)=-phi(1)
+                call interpolate_point(f,phi,iux,lower_i,upper_i,lower_j,&
+                    upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                f(i,j,k,iux)=-phi(1)
+                call interpolate_point(f,phi,iuy,lower_i,upper_i,lower_j,&
+                    upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                f(i,j,k,iuy)=-phi(1)
+                call interpolate_point(f,phi,iuz,lower_i,upper_i,lower_j,&
+                    upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                f(i,j,k,iuz)=-phi(1)
 !
 !  Set constant temperature, equal to the solid temperature, at the solid surface
 !
-              if (ilnTT>0) then
-                call interpolate_point(f,phi,ilnTT,lower_i,upper_i,&
-                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims)
-                f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
-                mirror_temperature=phi(1)
-              endif
+                if (ilnTT>0) then
+                  call interpolate_point(f,phi,ilnTT,lower_i,upper_i,&
+                      lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                      zmirror,ndims)
+                  f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
+                  mirror_temperature=phi(1)
+                endif
 !
 !  Set pressure gradient to zero at the solid surface
 !
-              if (ilnrho>0) then
-                call interpolate_point(f,phi,ilnrho,lower_i,upper_i,&
-                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims)
-                f(i,j,k,ilnrho)=phi(1)
-                if (ilnTT>0 .or. iTT>0) then
-                  if (ltemperature_nolog) then
-                    f(i,j,k,ilnrho) = phi(1)&
-                        *mirror_temperature/f(i,j,k,ilnTT)
+                if (ilnrho>0) then
+                  call interpolate_point(f,phi,ilnrho,lower_i,upper_i,&
+                      lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                      zmirror,ndims)
+                  f(i,j,k,ilnrho)=phi(1)
+                  if (ilnTT>0 .or. iTT>0) then
+                    if (ltemperature_nolog) then
+                      f(i,j,k,ilnrho) = phi(1)&
+                          *mirror_temperature/f(i,j,k,ilnTT)
+                    else
+                      f(i,j,k,ilnrho) = phi(1)&
+                          *exp(mirror_temperature-f(i,j,k,ilnTT))
+                    endif
                   else
-                    f(i,j,k,ilnrho) = phi(1)&
-                        *exp(mirror_temperature-f(i,j,k,ilnTT))
+                    f(i,j,k,ilnrho) = phi(1)
                   endif
-                else
-                  f(i,j,k,ilnrho) = phi(1)
                 endif
+              else
+                call fatal_error('update_solid_cells',&
+                    'No such interpolation method!')
               endif
-            else
-              call fatal_error('update_solid_cells',&
-                  'No such interpolation method!')
             endif
           endif
         enddo
@@ -1265,9 +1270,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find ghost points based on the staircase interpolation method
 !
-      elseif (interpolation_method=='staircase') then
-        do i=l1,l2
-        do j=m1,m2
+  elseif (interpolation_method=='staircase') then
+    do i=l1,l2
+      do j=m1,m2
         do k=n1,n2
           do idir=1,3
             if (ba_shift(i,j,k,idir)/=0) then
@@ -1323,9 +1328,247 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         enddo
         enddo
         enddo
+      elseif (interpolation_method=='line_ghost') then
+        ! Do nothing
+      else
+        call fatal_error('update_solid_cells','No such interpolation_method')
       endif
 !
     endsubroutine update_solid_cells
+!***********************************************************************
+    subroutine update_solid_cells_pencil(f)
+!
+!  Set the boundary values of the solid area such that we get a
+!  correct fluid-solid interface.
+!
+!  30-mar-15/Jørgen+nils: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: bax, bay, baz      
+      character(len=10) :: form
+      real :: xs,xp,x0,x1,x2,x3,lag0,lag1,lag2,lag3,f0,f1,f2,f3
+      real :: ys,yp,y0,y1,y2,y3
+      real :: zs,zp,z0,z1,z2,z3
+      real :: deltax_surf,deltay_surf,deltaz_surf
+      integer :: sign_ba,ivar,i,j,k,iobj
+      real :: x_obj,y_obj,z_obj,r_obj
+
+!
+!  Do this only for the line_ghost interpolation method
+!
+      if (interpolation_method=='line_ghost') then
+!
+!  Find ghost points to be modified for this pencil
+!
+      do i=l1,l2
+        bax=((ba(i,m,n,1) /= 0).and.(ba(i,m,n,1)/=9).and.(ba(i,m,n,1)/=10))
+!
+!  Set ghost points in x-direction first
+!
+        if (bax) then
+          iobj=ba(i,m,n,4)
+          r_obj=objects(iobj)%r
+          x_obj=objects(iobj)%x(1)
+          y_obj=objects(iobj)%x(2)
+          z_obj=objects(iobj)%x(3)
+          form=objects(iobj)%form
+!
+!  Find x-position of the surface of the object for the y and z values of
+!  this pencil
+!
+          sign_ba=sign(1,ba(i,m,n,1))
+          if (form == 'sphere') then
+            xs = x_obj &
+                -sign_ba*sqrt(r_obj**2-(y(m)-y_obj)**2-(z(n)-z_obj)**2) 
+          else
+            xs = x_obj &
+                -sign_ba*sqrt(r_obj**2-(y(m)-y_obj)**2)
+          endif
+          deltax_surf=xs-x(i-ba(i,m,n,1))
+!
+!  Prepare Lagrange polynomials for extrapolation
+!
+          x3=x(i-ba(i,m,n,1)-sign_ba*2)
+          x2=x(i-ba(i,m,n,1)-sign_ba*1)
+          x1=x(i-ba(i,m,n,1))
+          x0=xs
+          xp=x(i)
+
+          lag0=(xp-x1)/(x0-x1) * (xp-x2)/(x0-x2) * (xp-x3)/(x0-x3)
+          lag1=(xp-x0)/(x1-x0) * (xp-x2)/(x1-x2) * (xp-x3)/(x1-x3)
+          lag2=(xp-x0)/(x2-x0) * (xp-x1)/(x2-x1) * (xp-x3)/(x2-x3)
+          lag3=(xp-x0)/(x3-x0) * (xp-x1)/(x3-x1) * (xp-x2)/(x3-x2)
+                
+          f3=f(i-ba(i,m,n,1)-sign_ba*2,m,n,ivar)
+          f2=f(i-ba(i,m,n,1)-sign_ba*1,m,n,ivar)
+          f1=f(i-ba(i,m,n,1)-sign_ba*0,m,n,ivar)
+
+          do ivar=1,mvar
+            if (ivar .le. iuz) then
+              f0=0.        
+            elseif (ivar == irho) then
+!
+!  Use mirror point inside the object to set the von Neuman boundary condition
+!
+              x0=x1+2*deltax_surf
+
+              lag0=(xp-x1)/(x0-x1) * (xp-x2)/(x0-x2) * (xp-x3)/(x0-x3)
+              lag1=(xp-x0)/(x1-x0) * (xp-x2)/(x1-x2) * (xp-x3)/(x1-x3)
+              lag2=(xp-x0)/(x2-x0) * (xp-x1)/(x2-x1) * (xp-x3)/(x2-x3)
+              lag3=(xp-x0)/(x3-x0) * (xp-x1)/(x3-x1) * (xp-x2)/(x3-x2)
+              f0=f1
+            else
+              call fatal_error('','No such ivar')
+            endif
+!
+!  Calculate the value of the ghost point 
+!
+            f(i,m,n,ivar)=lag0*f0+lag1*f1+lag2*f2+lag3*f3
+          enddo
+        endif
+!
+!  Loop over all relevant ghost points in y-direction
+!
+        do j=-3,3
+          if (j.ne.0) then
+            bay=(ba(i,m+j,n,2) /= 0).and.(ba(i,m+j,n,2)/=9).and.&
+                (ba(i,m+j,n,2)/=10).and.(.not.bax)
+            if (bay) then
+              iobj=ba(i,m,n,4)
+              r_obj=objects(iobj)%r
+              x_obj=objects(iobj)%x(1)
+              y_obj=objects(iobj)%x(2)
+              z_obj=objects(iobj)%x(3)
+              form=objects(iobj)%form
+!
+!  Find y-position of the surface of the object for the x and z values of
+!  this point
+!
+              sign_ba=sign(1,ba(i,m+j,n,2))
+              if (form == 'sphere') then
+                ys = y_obj &
+                    -sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2-(z(n)-z_obj)**2) 
+              else
+                ys = y_obj &
+                    -sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2)
+              endif
+              deltay_surf=ys-y(m+j-ba(i,m+j,n,2))
+!
+!  Prepare Lagrange polynomials for extrapolation
+!
+              y3=y(m+j-ba(i,m+j,n,2)-sign_ba*2)
+              y2=y(m+j-ba(i,m+j,n,2)-sign_ba*1)
+              y1=y(m+j-ba(i,m+j,n,2))
+              yp=y(m+j)
+              y0=ys
+
+              lag0=(yp-y1)/(y0-y1) * (yp-y2)/(y0-y2) * (yp-y3)/(y0-y3)
+              lag1=(yp-y0)/(y1-y0) * (yp-y2)/(y1-y2) * (yp-y3)/(y1-y3)
+              lag2=(yp-y0)/(y2-y0) * (yp-y1)/(y2-y1) * (yp-y3)/(y2-y3)
+              lag3=(yp-y0)/(y3-y0) * (yp-y1)/(y3-y1) * (yp-y2)/(y3-y2)
+                
+              f3=f(i,m+j-ba(i,m+j,n,2)-sign_ba*2,n,ivar)
+              f2=f(i,m+j-ba(i,m+j,n,2)-sign_ba*1,n,ivar)
+              f1=f(i,m+j-ba(i,m+j,n,2)-sign_ba*0,n,ivar)
+
+              do ivar=1,mvar
+                if (ivar .le. iuz) then
+                  f0=0.        
+                elseif (ivar == irho) then
+!
+!  Use mirror point inside the object to set the von Neuman boundary condition
+!
+                  y0=y1+2*deltay_surf
+
+                  lag0=(yp-y1)/(y0-y1) * (yp-y2)/(y0-y2) * (yp-y3)/(y0-y3)
+                  lag1=(yp-y0)/(y1-y0) * (yp-y2)/(y1-y2) * (yp-y3)/(y1-y3)
+                  lag2=(yp-y0)/(y2-y0) * (yp-y1)/(y2-y1) * (yp-y3)/(y2-y3)
+                  lag3=(yp-y0)/(y3-y0) * (yp-y1)/(y3-y1) * (yp-y2)/(y3-y2)
+                  f0=f1
+                else
+                  call fatal_error('','No such ivar')
+                endif
+!
+!  Calculate the value of the ghost point 
+!
+                f(i,m+j,n,ivar)=lag0*f0+lag1*f1+lag2*f2+lag3*f3
+              enddo              
+            endif
+          endif
+        enddo
+!
+!  Loop over all relevant ghost points in y-direction
+!
+        do k=-3,3
+          if (k.ne.0) then
+            iobj=ba(i,m,n+k,4)
+            if (objects(iobj)%form == 'sphere') then
+              baz=(ba(i,m,k+n,3) /= 0).and.(ba(i,m,k+n,3)/=9).and.&
+                  (ba(i,m,k+n,3)/=10).and.(.not.bax)
+            else
+              baz=.false.
+            endif
+            if (baz) then
+              r_obj=objects(iobj)%r
+              x_obj=objects(iobj)%x(1)
+              y_obj=objects(iobj)%x(2)
+              z_obj=objects(iobj)%x(3)
+!
+!  Find z-position of the surface of the object for the x and y values of
+!  this point
+!
+              sign_ba=sign(1,ba(i,m,n+k,3))
+              zs = z_obj &
+                  -sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2-(y(m)-y_obj)**2) 
+              deltaz_surf=zs-z(n+k-ba(i,m,n+k,3))
+!
+!  Prepare Lagrange polynomials for extrapolation
+!
+              z3=z(n+k-ba(i,m,n+k,3)-sign_ba*2)
+              z2=z(n+k-ba(i,m,n+k,3)-sign_ba*1)
+              z1=z(n+k-ba(i,m,n+k,3))
+              zp=z(n+k)
+              z0=zs
+
+              lag0=(zp-z1)/(z0-z1) * (zp-z2)/(z0-z2) * (zp-z3)/(z0-z3)
+              lag1=(zp-z0)/(z1-z0) * (zp-z2)/(z1-z2) * (zp-z3)/(z1-z3)
+              lag2=(zp-z0)/(z2-z0) * (zp-z1)/(z2-z1) * (zp-z3)/(z2-z3)
+              lag3=(zp-z0)/(z3-z0) * (zp-z1)/(z3-z1) * (zp-z2)/(z3-z2)
+                
+              f3=f(i,m,n+k-ba(i,m,n+k,3)-sign_ba*2,ivar)
+              f2=f(i,m,n+k-ba(i,m,n+k,3)-sign_ba*1,ivar)
+              f1=f(i,m,n+k-ba(i,m,n+k,3)-sign_ba*0,ivar)
+
+              do ivar=1,mvar
+                if (ivar .le. iuz) then
+                  f0=0.        
+                elseif (ivar == irho) then
+!
+!  Use mirror point inside the object to set the von Neuman boundary condition
+!
+                  z0=z1+2*deltaz_surf
+
+                  lag0=(zp-z1)/(z0-z1) * (zp-z2)/(z0-z2) * (zp-z3)/(z0-z3)
+                  lag1=(zp-z0)/(z1-z0) * (zp-z2)/(z1-z2) * (zp-z3)/(z1-z3)
+                  lag2=(zp-z0)/(z2-z0) * (zp-z1)/(z2-z1) * (zp-z3)/(z2-z3)
+                  lag3=(zp-z0)/(z3-z0) * (zp-z1)/(z3-z1) * (zp-z2)/(z3-z2)
+                  f0=f1
+                else
+                  call fatal_error('','No such ivar')
+                endif
+!
+!  Calculate the value of the ghost point 
+!
+                f(i,m,n+k,ivar)=lag0*f0+lag1*f1+lag2*f2+lag3*f3
+              enddo
+            endif
+          endif
+        enddo
+!
+      enddo
+      endif
+!
+    endsubroutine update_solid_cells_pencil
 !***********************************************************************
     subroutine find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
         lower_k,upper_k,x,y,z,ppp)

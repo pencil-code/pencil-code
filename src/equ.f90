@@ -68,7 +68,7 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
-          dsolid_dt,dsolid_dt_integrate
+          dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: special_before_boundary, calc_lspecial_pars, &
           calc_pencils_special, dspecial_dt
       use Sub
@@ -370,6 +370,11 @@ module Equ
           call boundconds_z(f)
         endif
         call timing('pde','finished boundconds_z',mnloop=.true.)
+!
+!  The solid cells may have to be updated at the beginning of every
+!  pencil calculation.
+!
+        call update_solid_cells_pencil(f)
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
