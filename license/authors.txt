@@ -90,6 +90,7 @@ emeric.bron = emeric.bron <emeric.bron@mycompany.com>
 eos_merger_tony = eos_merger_tony <eos_merger_tony@mycompany.com>
 fadiesis = fadiesis <fadiesis@mycompany.com>
 fred.gent.ncl = Frederick Gent <fred.gent.ncl@gmail.com>
+fredgent = Frederick Gent <fred.gent.ncl@gmail.com>
 g.dibernardo = g.dibernardo <g.dibernardo@mycompany.com>
 glesur = Geoffroy Lesur <geoffroy.lesur@obs.ujf-grenoble.fr>
 grsarson = Graeme R. Sarson <g.r.sarson@ncl.ac.uk>
