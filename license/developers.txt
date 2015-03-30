@@ -49,7 +49,7 @@ Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292 
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56  
-Joern Warnecke,       joern/nordita.org,             ,                     +46 8 5537 8277,   +46 72 7316111   
+Jörn Warnecke,       joern.warnecke/gmail.com,  joern.warnecke  , +49 551 384 979 398,   +49 176 31545191   
 Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           +49 5556 979 408,  +49 176 911 232 19
 Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515
