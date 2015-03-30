@@ -11622,7 +11622,8 @@ possible inputs to the file \file{video.in}.
   \var{u2}    & kinetic energy density $\uv^2$; writes
                 \file[]{u2.\{xz,yz,xy,xy2\}}  \\
   \var{oo}    & vorticity vector $\vec{\omega} = \curl\uv$;
-                writes \file[]{o[xyz].\{xz,yz,xy,xy2\}}  \\
+                writes all three components separately to files
+                \file[]{oo[xyz].\{xz,yz,xy,xy2\}}  \\
   \var{o2}    & enstrophy $\omega^2 = |\curl\uv|^2$;
                 writes \file[]{o2.\{xz,yz,xy,xy2\}}  \\
   \var{divu}  & $\Div\uv$;
