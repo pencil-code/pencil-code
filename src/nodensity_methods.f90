@@ -116,4 +116,14 @@ module DensityMethods
 
     endsubroutine getdlnrho_x
 !***********************************************************************
+    subroutine getdlnrho_y(f,im,dlnrho)
+
+      integer,                       intent(in) :: im
+      real, dimension(mx,-im:im,mz), intent(in) :: f
+      real, dimension(mx,mz),        intent(out):: dlnrho
+
+      dlnrho = 0.
+
+    endsubroutine getdlnrho_y
+!***********************************************************************
 endmodule DensityMethods
