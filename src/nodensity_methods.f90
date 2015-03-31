@@ -19,11 +19,11 @@ module DensityMethods
 
     endsubroutine initialize_density_methods
 !***********************************************************************
-    function getrho_s(f,lf)
+    function getrho_s(f,irf)
 
       real                :: getrho_s
       real,    intent(in) :: f
-      integer, intent(in) :: lf        ! here dummy parameter only
+      integer, intent(in) :: irf        ! here dummy parameter only
 
       getrho_s = rho0
 
@@ -47,26 +47,26 @@ module DensityMethods
 
     endsubroutine getlnrho_1d_x
 !***********************************************************************
-    subroutine getlnrho_1d_y(f,lnrho,topbot)
+    subroutine getlnrho_1d_y(f,ix,lnrho)
 
       real, dimension(my), intent(in) :: f
       real, dimension(ny), intent(out):: lnrho
-      integer,             intent(in) :: topbot
+      integer,             intent(in) :: ix
 
       lnrho=lnrho0
 
     endsubroutine getlnrho_1d_y
 !***********************************************************************
-    subroutine getlnrho_2dxy(f,lnrho)
+    subroutine getlnrho_2d(f,lnrho)
 
-      real, dimension(mx,my), intent(in) :: f
-      real, dimension(mx,my), intent(out):: lnrho
+      real, dimension(:,:), intent(in) :: f
+      real, dimension(:,:), intent(out):: lnrho
 
       lnrho=lnrho0
 
-    endsubroutine getlnrho_2dxy
+    endsubroutine getlnrho_2d
 !***********************************************************************
-    subroutine getlnrho_2dyz(f,lnrho,ix)
+    subroutine getlnrho_2dyz(f,ix,lnrho)
 
       real, dimension(my,mz), intent(in) :: f
       real, dimension(my,mz), intent(out):: lnrho
@@ -76,16 +76,16 @@ module DensityMethods
 
     endsubroutine getlnrho_2dyz
 !***********************************************************************
-    subroutine getrho_2dxy(f,rho)
+    subroutine getrho_2d(f,rho)
 
-      real, dimension(mx,my), intent(in) :: f
-      real, dimension(mx,my), intent(out):: rho
+      real, dimension(:,:), intent(in) :: f
+      real, dimension(:,:), intent(out):: rho
 
       rho=rho0
 
-    endsubroutine getrho_2dxy
+    endsubroutine getrho_2d
 !***********************************************************************
-    subroutine getrho_2dyz(f,rho,ix)
+    subroutine getrho_2dyz(f,ix,rho)
 
       real, dimension(my,mz), intent(in) :: f
       real, dimension(my,mz), intent(out):: rho
@@ -105,11 +105,11 @@ module DensityMethods
 !
     endsubroutine getdlnrho_z
 !***********************************************************************
-    subroutine getdlnrho_x(f,il,dx2,dlnrho,ix)
+    subroutine getdlnrho_x(f,il,ix,rho,dlnrho)
 
       integer,                       intent(in) :: il,ix
       real, dimension(-il:il,my,mz), intent(in) :: f
-      real,                          intent(in) :: dx2
+      real, dimension(my,mz),        intent(in) :: rho
       real, dimension(my,mz),        intent(out):: dlnrho
 
       dlnrho = 0.
