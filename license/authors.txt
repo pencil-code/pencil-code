@@ -98,6 +98,7 @@ dcarrera = Daniel Carrera <danielc@astro.lu.se>
 dhruba = dhruba <dhruba@mycompany.com>
 dhruba.mitra = dhruba.mitra <dhruba.mitra@mycompany.com>
 dintrans = Boris Dintrans <boris.dintrans@irap.omp.eu>
+bdintrans = Boris Dintrans <boris.dintrans@irap.omp.eu>
 dobler = Wolfgang Dobler <wdobler@gmail.com>
 dorch = dorch <dorch@mycompany.com>
 easy = easy <easy@mycompany.com>
