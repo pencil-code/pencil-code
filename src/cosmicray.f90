@@ -4,7 +4,9 @@
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation.
 !
-!  this module solves for ln(ecr).  ecr is used for lnecr
+!  NB: This module solves for ln(ecr):  ecr is here used for lnecr.
+!  The alternative module cosmicray_nolog.f90 works with ecr, 
+!   and the _nolog version has been more heavily used/developed.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -260,9 +262,11 @@ print*,"init_ecr: initecr = ", initecr
       if (headtt.or.ldebug) print*,'SOLVE decr_dt'
       if (headtt) call identify_bcs('ecr',iecr)
 !
-!  Evolution equation of cosmic ray energy density
+!  Evolution equation of cosmic ray energy density 
+!  (in terms of lnecr, as used in this module):
+!     d lnecr/dt = - u dot grad(ln ecr) - gammacr*(div u) [ + diffusion ]
 !
-      df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
+      df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%divu
 !
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
