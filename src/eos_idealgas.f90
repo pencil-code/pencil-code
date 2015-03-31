@@ -25,7 +25,7 @@ module EquationOfState
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use DensityMethods, only: getlnrho,getrho_s
+  use DensityMethods, only: getlnrho,getrho,getrho_s
   use SharedVariables, only: get_shared_variable
 !
   implicit none
@@ -796,12 +796,6 @@ module EquationOfState
 
           if (lpencil(i_gss)) then
             call grad(f,ieosvar2,p%gss)
-if (notanumber(p%gss)) then
-          print*,'calc_penc_eos1: NaNs in p%gss'
-print*, 'n,m,iproc=', n,m,iproc
-print*, 'p%gss=', p%gss
-          stop
-        endif
             if (lreference_state) p%gss(:,1)=p%gss(:,1)+reference_state(:,iref_gs)
           endif
           if (lpencil(i_hss)) then
@@ -2112,7 +2106,6 @@ if (notanumber(p%glnrho)) then
 !  21-jan-15/MR  : changes for use of reference state.
 !
       use Sub, only: curl, dot2
-      use DensityMethods, only: getrho
       use Mpicomm, only: stop_it
       !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
@@ -2201,7 +2194,7 @@ if (notanumber(p%glnrho)) then
 !  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getrho, getdlnrho
+      use DensityMethods, only: getdlnrho
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       real, pointer :: hcond0_kramers, nkramers
@@ -2287,10 +2280,8 @@ if (notanumber(p%glnrho)) then
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)   MR: factor c_p missing (in comment)?
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d ln(rho)
+            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
-            if (lreference_state) &
-              f(l1:l2,:,n1-i,iss)=f(l1:l2,:,n1-i,iss) + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2335,10 +2326,8 @@ if (notanumber(p%glnrho)) then
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)                     ! rho_xy=d ln(rho)
+            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)                     ! rho_xy=d_z ln(rho)
             f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
-            if (lreference_state) &
-              f(l1:l2,:,n2+i,iss)=f(l1:l2,:,n2+i,iss) - dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
           enddo
         endif
 !
@@ -2358,7 +2347,6 @@ if (notanumber(p%glnrho)) then
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getlnrho, getrho
 !
       logical, pointer :: lmeanfield_chitB
       real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
@@ -2430,9 +2418,6 @@ if (notanumber(p%glnrho)) then
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+dz2_bound(-i)*dsdz_xy
-          if (lreference_state) &
-            f(l1:l2,:,n1-i,iss)=  f(l1:l2,:,n1-i,iss) &
-                                + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
 !
 !  top boundary
@@ -2487,9 +2472,6 @@ if (notanumber(p%glnrho)) then
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
-          if (lreference_state) &
-            f(l1:l2,:,n2+i,iss)= f(l1:l2,:,n2+i,iss) &
-                                -dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
 !
 !  capture undefined entries
@@ -2512,7 +2494,6 @@ if (notanumber(p%glnrho)) then
 !   22-jan-2015/MR: corrected bug in branches for pretend_lnTT=T
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getrho
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
@@ -2568,7 +2549,7 @@ if (notanumber(p%glnrho)) then
 !
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
-!  Calculate d rho/d x    or   d ln(rho) / dx
+!  Calculate   d rho/d x    or   d ln(rho) / dx
 !
           dlnrhodx_yz= coeffs_1_x(1,1)*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
                       +coeffs_1_x(2,1)*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
@@ -2680,7 +2661,7 @@ if (notanumber(p%glnrho)) then
 !   21-jan-2015/MR: changes for reference state.
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getrho,getdlnrho
+      use DensityMethods, only: getdlnrho
 !
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
@@ -2917,7 +2898,7 @@ if (notanumber(p%glnrho)) then
 !   15-jul-2014/pete: adapted from bc_ss_flux_condturb_x
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getlnrho, getrho, getdlnrho
+      use DensityMethods, only: getdlnrho
 !
       real, pointer :: chi, hcondzbot, hcondztop
       real, pointer :: chi_t, chit_prof1, chit_prof2
@@ -2988,7 +2969,7 @@ if (notanumber(p%glnrho)) then
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,cs2_xy)
+            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,cs2_xy)             ! cs2_xy = d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + rho_xy*cs2_xy+dz2_bound(-i)*dsdz_xy
           enddo
 
@@ -3227,7 +3208,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_y')
 !
       if (ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
 !
@@ -3323,7 +3304,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_z')
 !
       if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -3451,7 +3432,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_lnrho_temp_z')
 !
       if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -3487,8 +3468,8 @@ if (notanumber(p%glnrho)) then
 !
         tmp=-gravz/cs2bot
         do i=1,nghost
-          f(:,:,n1-i,ilnrho)=f(:,:,n1+i,ilnrho)+cp1*f(:,:,n1+i,iss) &
-                                               -cp1*f(:,:,n1-i,iss)+dz2_bound(-i)*tmp
+          f(:,:,n1-i,ilnrho)=  f(:,:,n1+i,ilnrho)  &
+                             + cp1*(f(:,:,n1+i,iss)-f(:,:,n1-i,iss))+dz2_bound(-i)*tmp 
         enddo
 !
 !  top boundary
@@ -3514,8 +3495,8 @@ if (notanumber(p%glnrho)) then
 !
         tmp=gravz/cs2top
         do i=1,nghost
-          f(:,:,n2+i,ilnrho)=f(:,:,n2-i,ilnrho)+cp1*f(:,:,n2-i,iss) &
-                                               -cp1*f(:,:,n2+i,iss)+dz2_bound(i)*tmp
+          f(:,:,n2+i,ilnrho)=  f(:,:,n2-i,ilnrho) &
+                             + cp1*(f(:,:,n2-i,iss)-f(:,:,n2+i,iss))+dz2_bound(i)*tmp 
         enddo
 !
       case default
@@ -3540,7 +3521,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_lnrho_pressure_z')
 !
       if (ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
 !
@@ -3652,7 +3633,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp2_z')
 !
       if (ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
 !
@@ -3713,7 +3694,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp3_z')
 !
       if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
 !
@@ -3766,7 +3747,7 @@ if (notanumber(p%glnrho)) then
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use DensityMethods, only: getrho, getdlnrho
+      use DensityMethods, only: getdlnrho
 
       character (len=3) :: topbot
       real, dimension(mx,my,mz,mfarray) :: f
@@ -3800,7 +3781,7 @@ if (notanumber(p%glnrho)) then
           if (ldensity_nolog) then
 
             if (lreference_state) then
-              call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,BOT,rho_yz,dlnrho)
+              call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,BOT,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(BOT,iref_gs) &
                                + (cp-cv)*dlnrho 
             else
@@ -3823,7 +3804,7 @@ if (notanumber(p%glnrho)) then
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
-              call getdlnrho(f(l2-i:l2+i,:,:,ilnrho),i,TOP,rho_yz,dlnrho)
+              call getdlnrho(f(l2-i:l2+i,:,:,ilnrho),i,TOP,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
               f(l2+i,:,:,iss) =  f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(TOP,iref_gs) &
                                - (cp-cv)*dlnrho
             else
@@ -3859,7 +3840,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_y')
 
       if (ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
@@ -3877,10 +3858,8 @@ if (notanumber(p%glnrho)) then
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m1-i:m1+i,:,ilnrho),i,dlnrho)
+          call getdlnrho_y(f(:,m1-i:m1+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) + (cp-cv)*dlnrho
-          if (lreference_state) &
-            f(l1:l2,m1-i,:,iss) = f(l1:l2,m1-i,:,iss) + dy2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,mz))
         enddo
 !
 !  top boundary
@@ -3889,10 +3868,8 @@ if (notanumber(p%glnrho)) then
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m2-i:m2+i,:,ilnrho),i,dlnrho)
+          call getdlnrho_y(f(:,m2-i:m2+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) - (cp-cv)*dlnrho
-          if (lreference_state) &
-            f(l1:l2,m2+i,:,iss) = f(l1:l2,m2+i,:,iss) - dy2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,mz))
         enddo
 !
       case default
@@ -3917,7 +3894,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_z')
 !
       if (ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -3934,10 +3911,8 @@ if (notanumber(p%glnrho)) then
       case ('bot')
         if (cs2bot<=0.) print*, 'bc_ss_stemp_z: cannot have cs2bot<=0'
         do i=1,nghost
-          call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,dlnrho)
+          call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n1-i,iss) = f(:,:,n1+i,iss) + (cp-cv)*dlnrho
-          if (lreference_state) & 
-            f(l1:l2,:,n1-i,iss) = f(l1:l2,:,n1-i,iss) + dz2_bound(-i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
 !
 !  top boundary
@@ -3945,10 +3920,8 @@ if (notanumber(p%glnrho)) then
       case ('top')
         if (cs2top<=0.) print*, 'bc_ss_stemp_z: cannot have cs2top<=0'
         do i=1,nghost
-          call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,dlnrho)
+          call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) - (cp-cv)*dlnrho
-           if (lreference_state) & 
-             f(l1:l2,:,n2+i,iss) = f(l1:l2,:,n2+i,iss) - dz2_bound(i)*transpose(spread(reference_state(:,iref_gs),1,my))
         enddo
       case default
         call fatal_error('bc_ss_stemp_z','invalid argument')
@@ -3976,7 +3949,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_a2stemp_x')
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -4034,7 +4007,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_a2stemp_y')
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -4092,7 +4065,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_x')
+        call get_shared_variable('reference_state',reference_state,caller='bc_ss_a2stemp_z')
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -4213,15 +4186,22 @@ if (notanumber(p%glnrho)) then
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-      real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
+      real, dimension (my,mz) :: cs2,gravterm,centterm,uphi,rho
       real :: potp,potm,rad,step
       integer :: i
+      real, dimension(:,:), pointer :: reference_state
+!
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='bc_lnrho_cfb_r_iso')
 !
       select case (topbot)
 !
 !  Bottom boundary
 !
       case ('bot')
+        
+        if (ldensity_nolog) call getrho(f(l1,:,:,irho),BOT,rho)
+
         do i=1,nghost
 !
           cs2 = cs20
@@ -4236,7 +4216,10 @@ if (notanumber(p%glnrho)) then
 !
           centterm= uphi**2 * step/(rad*cs2)  !???
           if (ldensity_nolog) then
-            f(l1-i,:,:,irho)=f(l1+i,:,:,irho)*exp(gravterm + centterm)
+            f(l1-i,:,:,irho) = f(l1+i,:,:,irho) + rho*(gravterm + centterm)
+            if (lreference_state) &
+              f(l1-i,:,:,irho)=  f(l1-i,:,:,irho) &
+                               + dx2_bound(-i)*reference_state(BOT,iref_grho)
           else
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
           endif
@@ -4250,6 +4233,9 @@ if (notanumber(p%glnrho)) then
 !  Top boundary
 !
       case ('top')
+
+        if (ldensity_nolog) call getrho(f(l2,:,:,irho),TOP,rho)
+
         do i=1,nghost
 !
           cs2 = cs20
@@ -4264,7 +4250,11 @@ if (notanumber(p%glnrho)) then
 !
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
-            f(l2+i,:,:,irho)   = f(l2-i,:,:,irho)*exp(gravterm + centterm)
+
+            f(l2+i,:,:,irho) = f(l2-i,:,:,irho) + rho*(gravterm + centterm)
+            if (lreference_state) &
+              f(l2+i,:,:,irho)=  f(l2+i,:,:,irho) &
+                               - dx2_bound(i)*reference_state(TOP,iref_grho)
           else
             f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho) + gravterm + centterm
           endif
