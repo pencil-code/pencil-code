@@ -143,7 +143,9 @@ module DensityMethods
     endsubroutine getdlnrho_z
 !***********************************************************************
     subroutine getdlnrho_y(f,im,dlnrho)
-
+!
+      use Messages, only: fatal_error
+!
       integer,                       intent(in) :: im
       real, dimension(mx,-im:im,mz), intent(in) :: f
       real, dimension(mx,mz),        intent(out):: dlnrho
