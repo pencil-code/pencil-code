@@ -142,6 +142,16 @@ module DensityMethods
 !
     endsubroutine getdlnrho_z
 !***********************************************************************
+    subroutine getdlnrho_y(f,im,dlnrho)
+
+      integer,                       intent(in) :: im
+      real, dimension(mx,-im:im,mz), intent(in) :: f
+      real, dimension(mx,mz),        intent(out):: dlnrho
+!
+      call fatal_error('getdlnrho_y', 'not implemented')
+!
+    endsubroutine getdlnrho_y
+!***********************************************************************
     subroutine getdlnrho_x(f,il,ix,rho,dlnrho)
 
       integer,                       intent(in) :: il,ix
