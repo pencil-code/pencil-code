@@ -86,6 +86,7 @@ module Diagnostics
 !
 !  14-aug-03/axel: added dxy, dyz, and dxz
 !  26-aug-13/MR: removed switch first; moved calculation of dVol_rel1 from diagnostic
+!  31-mar-15/MR: added switch for proper volume averaging
 !
       integer :: i
       real :: dxeff,dyeff,dzeff
@@ -118,7 +119,9 @@ module Diagnostics
 !
 !  Calculate relative volume integral.
 !
-      if (lspherical_coords) then
+      if (lproper_averages) then
+        dVol_rel1=1./box_volume
+      elseif (lspherical_coords) then
 !
         intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
         intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
@@ -150,6 +153,7 @@ module Diagnostics
       else
         dVol_rel1=1./nwgrid
       endif
+!
       if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
 
     endsubroutine initialize_diagnostics
@@ -1021,7 +1025,7 @@ module Diagnostics
         if (outlog(iostat,'openw',trim(datadir)//'/phizaverages.dat',dist=-1, &
                    location='write_phizaverages')) return
 !
-        if (it==1) then
+        if (it==1) then     ! right question?
           write(1,'(1p,8e14.5e3)',IOSTAT=iostat) rcyl
           if (outlog(iostat,'rcyl')) return
         endif
@@ -1050,7 +1054,7 @@ module Diagnostics
       if (lfirst_proc_y.and.nnamexz>0) then
         open(1, file=trim(directory_dist)//'/yaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
-! file distributed, backskipping disabled
+! file distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(directory_dist)//'/yaverages.dat',dist=1, &
                    location='write_yaverages')) return
 !
@@ -1078,7 +1082,7 @@ module Diagnostics
       if (lfirst_proc_z.and.nnamexy>0) then
         open(1, file=trim(directory_dist)//'/zaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
-! file distributed, backskipping disabled
+! file distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(directory_dist)//'/zaverages.dat',dist=1, &
                    location='write_zaverages')) return
 !
@@ -1669,6 +1673,7 @@ module Diagnostics
 !  22-mar-08/axel: added ladd option, to add to previous values
 !  29-aug-11/Bourdin.KIS: added TODO and a comment about building the mean
 !  20-aug-13/MR: derived from sum_mn_name, made array of values fname a dummy argument
+!  31-mar-15/MR: added switch for proper volume averaging
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
@@ -1726,36 +1731,41 @@ module Diagnostics
 !  Normal method.
 !
         else
+
+          if (lproper_averages) then
+            call integrate_mn(a,fname(iname))
+          else
 !
 !  Scale "a" with volume differential if integration option is set.
 !
-          if (present(lint)) then
-            a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
-          else
-            a_scaled=a
-          endif
+            if (present(lint)) then
+              a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
+            else
+              a_scaled=a
+            endif
 !
 !  Add up contributions, taking coordinate system into acount (fluid).
+!  Initialize if one is on the first point, or add up otherwise.
 !
-          if (lfirstpoint) then
-            if (lspherical_coords) then
-              fname(iname)=sum(r2_weight*sinth_weight(m)*a_scaled)
-            elseif (lcylindrical_coords) then
-              fname(iname)=sum(rcyl_weight*a_scaled)
+            if (lfirstpoint) then
+              if (lspherical_coords) then
+                fname(iname)=sum(r2_weight*a_scaled)*sinth_weight(m)
+              elseif (lcylindrical_coords) then
+                fname(iname)=sum(rcyl_weight*a_scaled)
+              else
+                fname(iname)=sum(a_scaled)
+              endif
             else
-              fname(iname)=sum(a_scaled)
-            endif
-          else
-            if (lspherical_coords) then
-              fname(iname)=fname(iname)+sum(r2_weight*sinth_weight(m)*a_scaled)
-            elseif (lcylindrical_coords) then
-              fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled)
-            else
-              fname(iname)=fname(iname)+sum(a_scaled)
+              if (lspherical_coords) then
+                fname(iname)=fname(iname)+sum(r2_weight*a_scaled)*sinth_weight(m)
+              elseif (lcylindrical_coords) then
+                fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled)
+              else
+                fname(iname)=fname(iname)+sum(a_scaled)
+              endif
             endif
           endif
         endif
-!
       endif
 !
     endsubroutine sum_mn_name_real
@@ -2017,26 +2027,27 @@ module Diagnostics
 !
 !   1-dec-09/dhruba+piyali:
 !
-      real, dimension (nx) :: a,fac
+      real, dimension (nx) :: a
       real :: inta
 !
       intent(in) :: a
       intent(inout) :: inta
 !
+      real :: tmp
+!
 !  initialize by the volume element (which is different for different m and n)
 !
-      fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
+      tmp=sum(a*dVol_x(l1:l2))*dVol_y(m)*dVol_z(n)
 !
 !  initialize if one is on the first point, or add up otherwise
 !
       if (lfirstpoint) then
-        inta=sum(a*fac)
+        inta=tmp
       else
-        inta=inta+sum(a*fac)
+        inta=inta+tmp
       endif
 !
     endsubroutine integrate_mn
-!
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !
@@ -2051,23 +2062,14 @@ module Diagnostics
 !
 !   30-may-03/tony: adapted from sum_mn_name
 !   13-nov-06/tony: modified to handle stretched mesh
+!   31-mar-15/MR: use integrate_mn to avoid doubled code
 !
       real, dimension (nx) :: a,fac
       integer :: iname
 !
       if (iname==0) return
-!
-!  initialize by the volume element (which is different for different m and n)
-!
-      fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
-!
-!  initialize if one is on the first point, or add up otherwise
-!
-      if (lfirstpoint) then
-        fname(iname)=sum(a*fac)
-      else
-        fname(iname)=fname(iname)+sum(a*fac)
-      endif
+
+      call integrate_mn(a,fname(iname))
 !
 !  set corresponding entry in itype_name
 !

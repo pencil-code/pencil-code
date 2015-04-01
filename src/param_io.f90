@@ -152,7 +152,7 @@ module Param_IO
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
-      ldirect_access, &
+      ldirect_access, lproper_averages, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
 !
   contains

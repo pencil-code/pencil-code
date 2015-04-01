@@ -388,6 +388,7 @@ module Cdata
   logical :: ldiagnos_need_zaverages=.false.
   logical :: ltime_integrals=.false.
   logical :: lreset_seed=.false.
+  logical :: lproper_averages=.false.
   character (len=1) :: slice_position='p'
 ! averaging over smaller box
   logical :: lav_smallx=.false.,loutside_avg=.false.
