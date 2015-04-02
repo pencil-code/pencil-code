@@ -358,7 +358,7 @@ module Initcond
       else
         if (lroot) write(*,wave_fmt1) 'lnx_cosy_cosz: ampl,kx,ky,kz=', &
                                       ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(alog(   x),2,my),3,mz)&
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(log(    x),2,my),3,mz)&
                                    *spread(spread(cos(ky1*y),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
@@ -1408,7 +1408,7 @@ module Initcond
 !  alog(cosh(x/width)) =
 !
       case ('x')
-        alog_cosh_xwidth=abs(x/width)+alog(.5*(1.+exp(-2*abs(x/width))))
+        alog_cosh_xwidth=abs(x/width)+log(.5*(1.+exp(-2*abs(x/width))))
         profz=.5*(fyright+fyleft)*x &
              +.5*(fyright-fyleft)*width*alog_cosh_xwidth
         profy=.5*(fzright+fzleft)*x &
@@ -1438,7 +1438,7 @@ module Initcond
 !
       select case (dir)
       case ('z')
-        alog_cosh_zwidth=abs(z/width)+alog(.5*(1.+exp(-2*abs(z/width))))
+        alog_cosh_zwidth=abs(z/width)+log(.5*(1.+exp(-2*abs(z/width))))
         profx=.5*(fyright+fyleft)*z &
              +.5*(fyright-fyleft)*width*alog_cosh_zwidth
         profy=.5*(fxright+fxleft)*z &
@@ -2974,7 +2974,7 @@ module Initcond
 ! completely quenched "gaussian"
 !
         do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i1)=ampl*alog(cosh(eps*y(m)))
+          f(l1:l2,m,n,i1)=ampl*log(cosh(eps*y(m)))
         enddo; enddo
       endif
 !
@@ -4921,7 +4921,7 @@ module Initcond
                if (ltemperature) then
                   f(:,:,j,ilnTT) = tmp
                elseif (lentropy) then
-                  f(:,:,j,iss) = (alog(gamma_m1/cs20)+tmp- &
+                  f(:,:,j,iss) = (log(gamma_m1/cs20)+tmp- &
                        gamma_m1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
                endif
                exit
@@ -4935,7 +4935,7 @@ module Initcond
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
             elseif (lentropy) then
-               f(:,:,j,iss) = (alog(gamma_m1/cs20)+tmp- &
+               f(:,:,j,iss) = (log(gamma_m1/cs20)+tmp- &
                     gamma_m1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
             endif
          endif
@@ -5297,9 +5297,9 @@ module Initcond
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
 !
-      if (lnrho0 > 0.99*alog(impossible)) then
+      if (lnrho0 > 0.99*log(impossible)) then
         call warning("lnrho0 from eos module not useful","use rho_const from density instead")
-        lnrho_0 = alog(rho0)
+        lnrho_0 = log(rho0)
       else
         lnrho_0 = lnrho0
       endif
