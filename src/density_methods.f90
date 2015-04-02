@@ -42,8 +42,9 @@ module DensityMethods
 
       use SharedVariables, only: get_shared_variable
 
-      call get_shared_variable('reference_state',reference_state, &
-                               caller='initialize_density_methods')
+      if (lreference_state) &
+        call get_shared_variable('reference_state',reference_state, &
+                                 caller='initialize_density_methods')
 
     endsubroutine initialize_density_methods
 !***********************************************************************
@@ -124,8 +125,8 @@ module DensityMethods
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          lnrho(l1:l2,:)=log(f(l1:l2,:) &
-            +transpose(spread(reference_state(:,iref_rho),1,size(f,2))))  !!!
+          lnrho(l1:l2,:)= log(f(l1:l2,:) &
+                         +spread(reference_state(:,iref_rho),2,size(f,2)))  !!!
         else
           lnrho=log(f)
         endif
@@ -160,8 +161,8 @@ module DensityMethods
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          rho(l1:l2,:)=f(l1:l2,:) &
-            +transpose(spread(reference_state(:,iref_rho),1,size(f,2)))  !!!
+          rho(l1:l2,:)= f(l1:l2,:) &
+                       +spread(reference_state(:,iref_rho),2,size(f,2))  !!!
         else
           rho=f
         endif
@@ -247,7 +248,7 @@ module DensityMethods
       if (ldensity_nolog) then
         f(l1:l2,:)=exp(lnrho)
         if (lreference_state) &
-          f(l1:l2,:)=f(l1:l2,:)-transpose(spread(reference_state(:,iref_rho),1,my))
+          f(l1:l2,:)=f(l1:l2,:)-spread(reference_state(:,iref_rho),2,my)
       else
         f(l1:l2,:)=lnrho
       endif
@@ -262,7 +263,8 @@ module DensityMethods
       if (ldensity_nolog) then
         dlnrho = f(:,:,in)-f(:,:,-in)          ! = Delta \rho
         if (lreference_state) then
-          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,:,0)+transpose(spread(reference_state(:,iref_rho),1,my)))   !!!
+          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,:,0) &
+                           +spread(reference_state(:,iref_rho),2,my))   !!!
         else
           dlnrho = dlnrho/f(:,:,0)
         endif
@@ -283,7 +285,7 @@ module DensityMethods
       if (ldensity_nolog) then
         if (lreference_state) then
           dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,0,:) &
-                           +transpose(spread(reference_state(:,iref_rho),1,mz)))   !!!
+                           +spread(reference_state(:,iref_rho),2,mz))   !!!
         else
           dlnrho = dlnrho/f(:,0,:)
         endif

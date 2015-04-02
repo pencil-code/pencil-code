@@ -30,14 +30,16 @@ module DensityMethods
     module procedure putrho_v
   endinterface
 !
-  real, dimension(mz) :: rho0z
+  real, dimension(:), pointer :: rho0z
 
   contains
 !***********************************************************************
     subroutine initialize_density_methods
 !
-      rho0z = 0.0
-      if (lstratz) call get_stratz(z, rho0z)
+      use SharedVariables, only: get_shared_variable
+
+      call get_shared_variable('rh0z',rho0z, &
+                               caller='initialize_density_methods')
 !
     endsubroutine initialize_density_methods
 !***********************************************************************

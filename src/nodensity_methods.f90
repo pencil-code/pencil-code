@@ -26,9 +26,15 @@ module DensityMethods
     subroutine initialize_density_methods
 
       use SharedVariables, only: get_shared_variable
+      use Messages, only: warning
+      use Cdata, only: lstratz
+
+      if (lstratz) &
+        call warning('initialize_density_methods', &
+                     'density methods not yet implemented for density_stratified')
        
-      call get_shared_variable('rho0',rho0, caller='initialize_density_methods')
-      call get_shared_variable('lnrho0',lnrho0, caller='initialize_density_methods')
+      call get_shared_variable('rho0',rho0,caller='initialize_density_methods')
+      call get_shared_variable('lnrho0',lnrho0)
 
     endsubroutine initialize_density_methods
 !***********************************************************************
