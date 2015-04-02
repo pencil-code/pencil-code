@@ -5,6 +5,19 @@ module DensityMethods
   use Cparam
 
   include 'density_methods.h'
+!
+  interface getrho
+    module procedure getrho_1d
+    module procedure getrho_2dyz
+    module procedure getrho_2d
+  endinterface
+!
+  interface getlnrho
+    module procedure getlnrho_1d_x
+    module procedure getlnrho_1d_y
+    module procedure getlnrho_2dyz
+    module procedure getlnrho_2d
+  endinterface
 
   real, pointer :: rho0, lnrho0
 

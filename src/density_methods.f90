@@ -11,6 +11,19 @@ module DensityMethods
 
   public :: putrho, putlnrho
 
+  interface getrho
+    module procedure getrho_1d
+    module procedure getrho_2dyz
+    module procedure getrho_2d
+  endinterface
+!
+  interface getlnrho
+    module procedure getlnrho_1d_x
+    module procedure getlnrho_1d_y
+    module procedure getlnrho_2dyz
+    module procedure getlnrho_2d
+  endinterface
+!
   interface putrho
     module procedure putrho_s
     module procedure putrho_v
