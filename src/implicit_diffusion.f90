@@ -421,7 +421,8 @@ module ImplicitDiffusion
           call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
           yscan: do j = m1, m2
             do l = ivar1, ivar2
-              call implicit_pencil(f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, bcx1(l), bcx2(l))
+              call implicit_pencil( f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, &
+                                    bcx1(l), bcx2(l), dx2_bound(-1:1), (/x(l1),x(l2)/) )
             enddo
           enddo yscan
         enddo zscan
@@ -457,10 +458,19 @@ module ImplicitDiffusion
       real, dimension(0:nx+1) :: penc    ! assuming nxgrid = nygrid and nprocx = 1
       real, dimension(nygrid) :: a, b, c
       real, dimension(nygrid) :: adt, opbdt, ombdt, cdt
+      real, dimension(2) :: bound, boundl
+
       integer :: j, k, l
+!
+      bound = (/y(m1),y(m2)/)
 !
       int_y: if (nygrid > 1) then
         comp: do l = ivar1, ivar2
+
+          boundl=bound
+          if ( bcy1(l)(2:)=='fr' ) boundl(1) = tan(bound(1))
+          if ( bcy2(l)(2:)=='fr' ) boundl(2) = tan(bound(2))
+
           zscan: do k = n1, n2
             call set_diffusion_equations(get_diffus_coeff, 2, a, b, c, iz=ipz*nz+k-nghost)
             call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
@@ -468,7 +478,8 @@ module ImplicitDiffusion
             call transp_xy(axy)  ! assuming nxgrid = nygrid
             xscan: do j = 1, ny
               penc(1:nx) = axy(:,j)
-              call implicit_pencil(penc, nygrid, adt, opbdt, ombdt, cdt, bcy1(l), bcy2(l))
+              call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy1(l), bcy2(l), &
+                                    dy2_bound(-1:1), boundl )
               axy(:,j) = penc(1:nx)
             enddo xscan
             call transp_xy(axy)
@@ -518,7 +529,8 @@ module ImplicitDiffusion
           yscan: do j = 1, nyt
             xscan: do i = 1, nx
               penc(1:nzgrid) = ft(i,j,:)
-              call implicit_pencil(penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv))
+              call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv), &
+                                    dz2_bound(-1:1), (/z(n1),z(n2)/) )
               ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
           enddo yscan
@@ -559,7 +571,7 @@ module ImplicitDiffusion
 !
     endsubroutine get_tridiag
 !***********************************************************************
-    subroutine implicit_pencil(q, n, a, opb, omb, c, bc1, bc2)
+    subroutine implicit_pencil(q, n, a, opb, omb, c, bc1, bc2, d2_bound, bound)
 !
 ! Implicitly integrate a state variable along one pencil using the
 ! Crank-Nicolson method.  The (linear) system of equations read
@@ -597,15 +609,17 @@ module ImplicitDiffusion
       real, dimension(0:n+1), intent(inout) :: q
       real, dimension(n), intent(in) :: a, opb, omb, c
       character(len=*), intent(in) :: bc1, bc2
+      real, dimension(-1:1), optional :: d2_bound
+      real, dimension(2), optional :: bound
 !
-      real, dimension(n) :: r, omb1
+      real, dimension(n) :: r, omb1, a1, c1
       character(len=255) :: msg
       logical :: lcyclic, err
       real :: alpha, beta
 !
 ! Prepare the RHS of the linear system.
 !
-      call bc_pencil(q, n, 1, bc1, bc2)
+      call bc_pencil(q, n, 1, bc1, bc2, d2_bound, bound)
       r = a * q(0:n-1) + opb * q(1:n) + c * q(2:n+1)
 !
 ! Assume non-periodic boundary conditions first.
@@ -613,7 +627,7 @@ module ImplicitDiffusion
       lcyclic = .false.
       alpha = 0.0
       beta = 0.0
-      omb1 = omb
+      omb1 = omb; a1=a; c1=c
 !
 ! Check the lower boundary conditions.
 !
@@ -627,6 +641,14 @@ module ImplicitDiffusion
 !     Zeroth-order extrapolation
       case ('cop') lower
         omb1(1) = omb(1) - a(1)
+      case ('s') lower
+        c1(1) = c(1) + a(1)
+      case ('a') lower
+        c1(1) = c(1) - a(1)
+      case ('sfr') lower
+        call fatal_error('implicit_pencil', 'boundary condition "sfr" not yet implemented')
+      case ('nfr') lower
+        call fatal_error('implicit_pencil', 'boundary condition "nfr" not yet implemented')
 !     Unknown
       case default lower
         call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
@@ -644,6 +666,14 @@ module ImplicitDiffusion
 !     Zeroth-order extrapolation
       case ('cop') upper
         omb1(n) = omb(n) - c(n)
+      case ('s') upper
+        a1(n) = a(n) + c(n)
+      case ('a') upper
+        a1(n) = a(n) - c(n)
+      case ('sfr') upper
+        call fatal_error('implicit_pencil', 'boundary condition "sfr" not yet implemented')
+      case ('nfr') upper
+        call fatal_error('implicit_pencil', 'boundary condition "nfr" not yet implemented')
 !     Unknown
       case default upper
         call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
@@ -654,7 +684,7 @@ module ImplicitDiffusion
       if (lcyclic) then
         call cyclic(-a, omb1, -c, alpha, beta, r, q(1:n), n)
       else
-        call tridag(-a, omb1, -c, r, q(1:n), err, msg)
+        call tridag(-a1, omb1, -c1, r, q(1:n), err, msg)
         if (err) call warning('implicit_pencil', trim(msg))
       endif
 !

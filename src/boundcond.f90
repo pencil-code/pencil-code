@@ -378,6 +378,8 @@ module Boundcond
                 case ('sfr')
                   ! BCX_DOC: stress-free boundary condition
                   ! BCX_DOC: for spherical coordinate system.
+                  if (j==iux) call fatal_error('boundconds_x', &
+                             'stress-free BC at r boundary not allowed for uu_r')
                   call bc_set_sfree_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
@@ -628,6 +630,8 @@ module Boundcond
               case ('sfr')
                 ! BCY_DOC: stress-free boundary condition for spherical
                 ! BCY_DOC: coordinate system.
+                  if (j==iux.or.j==iuy) call fatal_error('boundconds_y', &
+                             'stress-free BC at theta boundary only allowed for uu_phi')
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
                 ! BCY_DOC: Normal-field bc for spherical coordinate system.
@@ -1020,11 +1024,13 @@ module Boundcond
 !
     endsubroutine boundconds_z
 !***********************************************************************
-    subroutine bc_pencil_scalar(penc, ncell, nghost, bc1, bc2)
+    subroutine bc_pencil_scalar(penc, ncell, nghost, bc1, bc2, d2_bound, bound)
 !
 ! Apply boundary conditions to a 1D scalar of arbitrary size.
 !
 ! 29-may-12/ccyang: coded
+!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free 
+!               and normal-field BCs added; these BCs, 'a' and 's' implemented
 !
 ! Input/Output Arguments
 !   penc - a scalar array to be applied boundary conditions
@@ -1034,10 +1040,17 @@ module Boundcond
 !   nghost - number of ghost cells in penc
 !   bc1 - boundary condition for the lower boundary
 !   bc2 - boundary condition for the upper boundary
+!   d2_bound - doubled cumulative cell sizes at boundary
+!              (d2_bound(-nghost:-1) - at lower, d2_bound(1:nghost) at upper)
+!   bound - boundary coordinates
 !
       integer, intent(in) :: ncell, nghost
       real, dimension(1-nghost:ncell+nghost), intent(inout) :: penc
       character(len=*), intent(in) :: bc1, bc2
+      real, dimension(-nghost:nghost), optional :: d2_bound
+      real, dimension(2), optional :: bound
+
+      integer :: i
 !
 ! Apply lower boundary condition.
 !
@@ -1053,6 +1066,19 @@ module Boundcond
 !     Zeroth-order extrapolation
       case ('cop') lower
         penc(1-nghost:0) = penc(1)
+      case ('s') lower
+        penc(1-nghost:0) = penc(2:nghost+1)
+      case ('a') lower
+        penc(1-nghost:0) = -penc(2:nghost+1)
+        penc(1) = 0.
+      case ('sfr') lower
+        do i=1,nghost
+          penc(1-i) = penc(1+i) - penc(1)*(d2_bound(-i)/bound(BOT))
+        enddo
+      case ('nfr') lower
+        do i=1,nghost
+          penc(1-i) = penc(1+i) + penc(1)*(d2_bound(-i)/bound(BOT))
+        enddo
 !     Unknown boundary condition
       case default lower
         call fatal_error('bc_pencil_scalar', 'unknown lower boundary condition')
@@ -1072,6 +1098,19 @@ module Boundcond
 !     Zeroth-order extrapolation
       case ('cop') upper
         penc(ncell+1:ncell+nghost) = penc(ncell)
+      case ('s') upper
+        penc(ncell+1:ncell+nghost) = penc(ncell-nghost:ncell-1) 
+      case ('a') upper
+        penc(ncell+1:ncell+nghost) = -penc(ncell-nghost:ncell-1)
+        penc(ncell) = 0.
+      case ('sfr') upper
+        do i=1,nghost
+          penc(1+i) = penc(1-i) + penc(ncell)*(d2_bound(i)/bound(TOP))
+        enddo
+      case ('nfr') upper
+        do i=1,nghost
+          penc(1+i) = penc(1-i) - penc(ncell)*(d2_bound(i)/bound(TOP))
+        enddo
 !     Unknown boundary condition
       case default upper
         call fatal_error('bc_pencil_scalar', 'unknown upper boundary condition')
@@ -1079,11 +1118,12 @@ module Boundcond
 !
     endsubroutine bc_pencil_scalar
 !***********************************************************************
-    subroutine bc_pencil_vector(penc, ncell, nghost, ncomp, bc1, bc2)
+    subroutine bc_pencil_vector(penc, ncell, nghost, ncomp, bc1, bc2, d2_bound, bound)
 !
 ! Apply boundary conditions to a 1D vector of arbitrary size.
 !
 ! 22-may-12/ccyang: coded
+!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free and normal-field BCs added
 !
 ! Input/Output Arguments
 !   penc - a vector array to be applied boundary conditions
@@ -1098,11 +1138,13 @@ module Boundcond
       integer, intent(in) :: ncell, nghost, ncomp
       real, dimension(1-nghost:ncell+nghost, ncomp), intent(inout) :: penc
       character(len=*), dimension(ncomp), intent(in) :: bc1, bc2
+      real, dimension(-nghost:nghost), optional :: d2_bound
+      real, dimension(2), optional :: bound
 !
       integer :: j
 !
       comp: do j = 1, ncomp
-        call bc_pencil_scalar(penc(:,j), ncell, nghost, bc1(j), bc2(j))
+        call bc_pencil_scalar(penc(:,j), ncell, nghost, bc1(j), bc2(j), d2_bound, bound)
       enddo comp
 !
     endsubroutine bc_pencil_vector
@@ -2588,12 +2630,12 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do k=1,nghost
-          f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
+          f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/(x(l1+k)-dx2_bound(-k)))
         enddo
 !
      case ('top')               ! top boundary
        do k=1,nghost
-         f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
+         f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2-k)/(x(l2-k)+dx2_bound(k)))
        enddo
 !
       case default
@@ -2659,7 +2701,7 @@ module Boundcond
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
       integer :: k
-      real :: lambda_exp
+      real :: fac,sth,lambda_exp
 !
 ! -------- Either case get the lambda variables first -----------
 !
@@ -2680,21 +2722,25 @@ module Boundcond
 !
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-            lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy))
+            sth=sinth(iy)
+            lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
             do k=1,nghost
+               fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
                if (Omega==0) then
-                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
-                     **(1-(lambda_exp/nu))
+                 f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
                else
-                 f(l1-k,iy,:,j)= (f(l1+k,iy,:,j)+Omega*x(l1+k)*sinth(iy)) &
-                      *(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu)) &
-                      -Omega*x(l1-k)*sinth(iy)
+                 f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
+                                 -Omega*(x(l1+k)-dx2_bound(-k))*sth
                endif
             enddo
           enddo
         else
           do k=1,nghost
-            f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))
+            f(l1-k,:,:,j) = f(l1+k,:,:,j)*(1.-dx2_bound(-k)/x(l1+k))
+!
+!  Alternative formulation
+!
+            !f(l1-k,:,:,j)= f(l1+k,:,:,j) - f(l1,:,:,j)*(dx2_bound(-k)/x(l1))
           enddo
         endif
 !
@@ -2703,21 +2749,25 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-            lambda_exp=-(Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy))
+            sth=sinth(iy)
+            lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
             do k=1,nghost
+              fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
               if (Omega==0) then
-                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
-                    **(1-(lambda_exp/nu)))
+                f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
               else
-                f(l2+k,iy,:,j)= (f(l2-k,iy,:,j)+Omega*x(l2-k)*sinth(iy)) &
-                     *(x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)) &
-                     -Omega*x(l2+k)*sinth(iy)
+                f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
+                                -Omega*(x(l2-k)+dx2_bound(k))*sth
               endif
             enddo
           enddo
         else
           do k=1,nghost
-            f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2+k)/x(l2-k))
+            f(l2+k,:,:,j)= f(l2-k,:,:,j)*(1.+dx2_bound(k)/x(l2-k))
+!
+!  Alternative formulation
+!
+            !f(l2+k,:,:,j)= f(l2-k,:,:,j) + f(l2,:,:,j)*(dx2_bound(k)/x(l2))
           enddo
         endif
 !
@@ -2904,12 +2954,12 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do k=1,nghost
-          f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1+k)*sin1th(m1-k)
+          f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sinth(m1+k)/sin(y(m1+k)-dy2_bound(-k)))
         enddo
-       case ('top')               ! top boundary
-         do k=1,nghost
-           f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2-k)*sin1th(m2+k)
-         enddo
+      case ('top')               ! top boundary
+        do k=1,nghost
+          f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sinth(m2-k)/sin(y(m2-k)+dy2_bound(k)))
+        enddo
 !
       case default
         call warning('bc_set_nfr_y',topbot//" should be 'top' or 'bot'")
@@ -2981,7 +3031,7 @@ module Boundcond
           enddo
         else
           do k=1,nghost
-            f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
+            f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sin(y(m1+k)-dy2_bound(-k))*sin1th(m1+k))
           enddo
         endif
       case ('top')               ! top boundary
@@ -3013,7 +3063,7 @@ module Boundcond
           enddo
         else
           do k=1,nghost
-            f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2+k)*sin1th(m2-k)
+            f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sin(y(m2-k)+dy2_bound(k))*sin1th(m2-k))
           enddo
         endif
 !

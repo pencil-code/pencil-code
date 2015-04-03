@@ -103,7 +103,8 @@ module EquationOfState
 !
 !  Module variables
 !
-  real, dimension(mz) :: rho0z = 0.0, dlnrho0dz = 0.0
+  real, dimension(mz), target :: rho0z = 0.0
+  real, dimension(mz) :: dlnrho0dz = 0.0
   real, dimension(mz) :: eth0z = 0.0
   logical :: lstratset = .false.
   integer, parameter :: BOT=1, TOP=nx
@@ -2257,7 +2258,7 @@ if (notanumber(p%glnrho)) then
           if (ldensity_nolog) then
             cs2_xy = f(:,:,n1,iss)         ! here cs2_xy = entropy
             if (lreference_state) &
-              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + transpose(spread(reference_state(:,iref_s),1,my))
+              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
             cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
@@ -2303,7 +2304,7 @@ if (notanumber(p%glnrho)) then
           if (ldensity_nolog) then
             cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
             if (lreference_state) &
-              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + transpose(spread(reference_state(:,iref_s),1,my))
+              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
             cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
@@ -2401,7 +2402,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n1,ilnrho),rho_xy)            ! here rho_xy=log(rho)
         cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss)
         if (lreference_state) &
-          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*transpose(spread(reference_state(:,iref_s),1,my))
+          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
 
         call getrho(f(:,:,n1,ilnrho),rho_xy)
@@ -2431,7 +2432,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n2,ilnrho),rho_xy)            ! here rho_xy=log(rho)
         cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n2,iss)
         if (lreference_state) &
-          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*transpose(spread(reference_state(:,iref_s),1,my))
+          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
 
         call getrho(f(:,:,n2,ilnrho),rho_xy)
@@ -2501,6 +2502,7 @@ if (notanumber(p%glnrho)) then
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       integer :: i
+      real :: fac
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2618,6 +2620,14 @@ if (notanumber(p%glnrho)) then
                       +coeffs_1_x(2,2)*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
                       +coeffs_1_x(3,2)*(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
 !
+!          fac=(1./60)*dx_1(l2)
+!          dlnrhodx_yz=(fac*45.0)*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
+!                    - (fac*9.0) *(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
+!                    +  fac      *(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
+!print*, 'coeffs(3)=',     fac, coeffs_1_x(3,2)
+!print*, 'coeffs(2)=', -9.*fac, coeffs_1_x(2,2)
+!print*, 'coeffs(1)=', 45.*fac, coeffs_1_x(1,2)
+
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density to d rho/d x and divide by total density
@@ -2948,12 +2958,12 @@ if (notanumber(p%glnrho)) then
           call getlnrho(f(:,:,n1,ilnrho),rho_xy)            ! here rho_xy = ln(rho)
           cs2_xy=f(:,:,n1,iss)                              ! here cs2_xy = entropy
           if (lreference_state) &
-            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + transpose(spread(reference_state(:,iref_s),1,my))
+            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
           cs2_xy=cs20*exp(gamma_m1*(rho_xy-lnrho0)+cv1*cs2_xy)
 !
           call getrho(f(:,:,n1,ilnrho),rho_xy)              ! here rho_xy = rho
 !
-          !fac=(1./60)*dz_1(l1)
+          !fac=(1./60)*dz_1(n1)
           !dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
           !                 -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
           !                 +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
@@ -3034,7 +3044,7 @@ if (notanumber(p%glnrho)) then
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2bot/cs20)) / gamma
 
         if (lreference_state) &
-          tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - transpose(spread(reference_state(:,iref_s),1,my))
+          tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - spread(reference_state(:,iref_s),2,my)
         f(:,:,n1,iss) = tmp_xy 
 
         do i=1,nghost
@@ -3056,7 +3066,7 @@ if (notanumber(p%glnrho)) then
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2top/cs20)) / gamma
 
         if (lreference_state) &
-          tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - transpose(spread(reference_state(:,iref_s),1,my))
+          tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - spread(reference_state(:,iref_s),2,my)
         f(:,:,n2,iss) = tmp_xy
 !
         do i=1,nghost
@@ -3233,15 +3243,15 @@ if (notanumber(p%glnrho)) then
 
         f(:,m1,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_xz-lnrho0)
         if (lreference_state) &
-          f(l1:l2,m1,:,iss) = f(l1:l2,m1,:,iss) - transpose(spread(reference_state(:,iref_s),1,mz))
+          f(l1:l2,m1,:,iss) = f(l1:l2,m1,:,iss) - spread(reference_state(:,iref_s),2,mz)
 
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
               ! not yet fully implemented
               f(l1:l2,m1-i,:,iss) =- f(l1:l2,m1+i,:,iss) + tmp &
-              - (cp-cv)*(log((f(l1:l2,m1+i,:,irho)+transpose(spread(reference_state(:,iref_rho),1,mz)))* &
-                             (f(l1:l2,m1-i,:,irho)+transpose(spread(reference_state(:,iref_rho),1,mz))))-2*lnrho0)
+              - (cp-cv)*(log((f(l1:l2,m1+i,:,irho)+spread(reference_state(:,iref_rho),2,mz))* &
+                             (f(l1:l2,m1-i,:,irho)+spread(reference_state(:,iref_rho),2,mz)))-2*lnrho0)
             else
               f(:,m1-i,:,iss) =- f(:,m1+i,:,iss) + tmp &
                                - (cp-cv)*(log(f(:,m1+i,:,irho)*f(:,m1-i,:,irho))-2*lnrho0)
@@ -3264,15 +3274,15 @@ if (notanumber(p%glnrho)) then
 
         f(:,m2,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_xz-lnrho0)
         if (lreference_state) &
-          f(l1:l2,m2,:,iss) = f(l1:l2,m2,:,iss) - transpose(spread(reference_state(:,iref_s),1,mz))
+          f(l1:l2,m2,:,iss) = f(l1:l2,m2,:,iss) - spread(reference_state(:,iref_s),2,mz)
 
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
               ! not yet fully implemented
               f(l1:l2,m2+i,:,iss) =- f(l1:l2,m2-i,:,iss) + tmp &
-              - (cp-cv)*(log((f(l1:l2,m2-i,:,irho)+transpose(spread(reference_state(:,iref_rho),1,mz)))* &
-                             (f(l1:l2,m2+i,:,irho)+transpose(spread(reference_state(:,iref_rho),1,mz))))-2*lnrho0)
+              - (cp-cv)*(log((f(l1:l2,m2-i,:,irho)+spread(reference_state(:,iref_rho),2,mz))* &
+                             (f(l1:l2,m2+i,:,irho)+spread(reference_state(:,iref_rho),2,mz)))-2*lnrho0)
             else
               f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
                    - (cp-cv)*(log(f(:,m2-i,:,irho)*f(:,m2+i,:,irho))-2*lnrho0)
@@ -3335,7 +3345,7 @@ if (notanumber(p%glnrho)) then
            if (ldensity_nolog) then
 
              if (lreference_state) &
-               f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+               f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 
              do i=1,nghost
                f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
@@ -3383,7 +3393,7 @@ if (notanumber(p%glnrho)) then
 
           if (ldensity_nolog) then
             if (lreference_state) &
-              f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+              f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
 
             do i=1,nghost
               f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
@@ -3459,7 +3469,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
         f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
         if (lreference_state) &
-          f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+          f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 
         do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
@@ -3486,7 +3496,7 @@ if (notanumber(p%glnrho)) then
         call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
         f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
         if (lreference_state) &
-          f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+          f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
 
         do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
@@ -3553,7 +3563,7 @@ if (notanumber(p%glnrho)) then
 !         enddo
           f(:,:,n2,iss)=ss_top
           if (lreference_state) &
-            f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+            f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
          
           do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
@@ -3592,7 +3602,7 @@ if (notanumber(p%glnrho)) then
 !         enddo
           f(:,:,n1,iss)=ss_bot
           if (lreference_state) &
-            f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - transpose(spread(reference_state(:,iref_s),1,my))
+            f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 
           do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
@@ -4740,7 +4750,10 @@ if (notanumber(p%glnrho)) then
 !
 !  13-oct-14/ccyang: coded.
 !
+      use SharedVariables, only: put_shared_variable
+
       call get_stratz(z, rho0z, dlnrho0dz, eth0z)
+      call put_shared_variable('rho0z',rho0z,caller='set_stratz')
 !
     endsubroutine set_stratz
 !***********************************************************************
