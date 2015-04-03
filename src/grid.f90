@@ -842,27 +842,8 @@ module Grid
       use Sub, only: remove_zprof
       use Mpicomm
 !
-      real, dimension (nz,nprocz) :: z_allprocs_tmp
       real :: fact
       integer :: xj,yj,zj,itheta
-!
-! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe
-! make this z_allprocs obsolete. Can you check if you can use zgrid
-! instead of z_allprocs? (19-oct-2010)
-! AB: I don't have a good test at hand and don't want to mess up things.
-!
-!  Set z_allprocs, which contains the z values from all processors
-!  ignore the ghost zones.
-!
-        z_allprocs(:,ipz+1)=z(n1:n2)
-!
-!  Communicate z_allprocs over all processors (if there are more than 1)
-!  the final result is only present on the root processor.
-!
-      if (nprocz>1) then
-        z_allprocs_tmp=z_allprocs
-        call mpireduce_sum(z_allprocs_tmp,z_allprocs,(/nz,nprocz/))
-      endif
 !
 ! Box volume
 !
