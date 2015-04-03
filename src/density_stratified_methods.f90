@@ -1,190 +1,191 @@
 module DensityMethods
 !
-!  11-mar-15/MR:  Created to avoid circular dependencies with EquationOfState.
-!                 Yet to be adapted to density_stratified.
-  use Cparam
-  use Cdata
-  use Messages, only: fatal_error
-
-  implicit none
-
-  include 'density_methods.h'  
+!  Dummy module for density_stratified, with which all density queries
+!  should be done in EquationOfState.
 !
-  public :: putrho, putlnrho
-
+  use Cparam
+  use General, only: keep_compiler_quiet
+  use Messages
+!
+  include 'density_methods.h'
+!
   interface getrho
     module procedure getrho_1d
-    module procedure getrho_2dxy
+    module procedure getrho_2dyz
     module procedure getrho_2d
   endinterface
 !
   interface getlnrho
     module procedure getlnrho_1d_x
     module procedure getlnrho_1d_y
-    module procedure getlnrho_2dxy
+    module procedure getlnrho_2dyz
     module procedure getlnrho_2d
   endinterface
-
-  interface putrho
-    module procedure putrho_s
-    module procedure putrho_v
-  endinterface
 !
-  real, dimension(:), pointer :: rho0z
-
   contains
 !***********************************************************************
     subroutine initialize_density_methods
 !
-      use SharedVariables, only: get_shared_variable
-
-      call get_shared_variable('rh0z',rho0z, &
-                               caller='initialize_density_methods')
+!  03-apr-15/ccyang: dummy.
 !
     endsubroutine initialize_density_methods
 !***********************************************************************
-    function getrho_s(f,iz)
-
-      real                :: getrho_s
-      real,    intent(in) :: f
-      integer, intent(in) :: iz
-
-      getrho_s = rho0z(iz)*(1.+f)
-
+    real function getrho_s(f, irf)
+!
+!  03-apr-15/ccyang: dummy.
+!
+      real, intent(in) :: f
+      integer, intent(in) :: irf        ! here dummy parameter only
+!
+      call fatal_error('getrho_s', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(irf)
+!
     endfunction getrho_s
 !***********************************************************************
-    subroutine getrho_1d(f,rho)
-
+    subroutine getrho_1d(f, rho)
+!
+!  03-apr-15/ccyang: dummy.
+!
       real, dimension(mx), intent(in) :: f
       real, dimension(nx), intent(out):: rho
-
-      call fatal_error('getrho_1d', 'not implemented')
-      rho=f(l1:l2)
-
+!
+      call fatal_error('getrho_1d', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rho)
+!
     endsubroutine getrho_1d
 !***********************************************************************
-    subroutine getlnrho_1d_x(f,lnrho)
-
+    subroutine getlnrho_1d_x(f, lnrho)
+!
+!  03-apr-15/ccyang: dummy.
+!
       real, dimension(mx), intent(in) :: f
       real, dimension(nx), intent(out):: lnrho
-
-      call fatal_error('getlnrho_1d_x', 'not implemented')
-      lnrho=log(f(l1:l2))
-
+!
+      call fatal_error('getlnrho_1d_x', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
     endsubroutine getlnrho_1d_x
 !***********************************************************************
-    subroutine getlnrho_1d_y(f,ix,lnrho)
-
+    subroutine getlnrho_1d_y(f, ix, lnrho)
+!
+!  03-apr-15/ccyang: dummy.
+!
       real, dimension(my), intent(in) :: f
       real, dimension(ny), intent(out):: lnrho
-      integer,             intent(in) :: ix
-
-      call fatal_error('getlnrho_1d_y', 'not implemented')
-      lnrho=log(f(m1:m2))
-
+      integer, intent(in) :: ix
+!
+      call fatal_error('getlnrho_1d_y', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(lnrho)
+!
     endsubroutine getlnrho_1d_y
 !***********************************************************************
-    subroutine getlnrho_2dxy(f,lnrho)
-
-      real, dimension(mx,my), intent(in) :: f
-      real, dimension(mx,my), intent(out):: lnrho
-
-      call fatal_error('getlnrho_2dxy', 'not implemented')
-      lnrho=log(f)
-
-    endsubroutine getlnrho_2dxy
-!***********************************************************************
-    subroutine getlnrho_2d(f,ix,lnrho)
-
+    subroutine getlnrho_2d(f, lnrho)
+!
+!  03-apr-15/ccyang: dummy.
+!
       real, dimension(:,:), intent(in) :: f
       real, dimension(:,:), intent(out):: lnrho
-      integer,                intent(in) :: ix
-
-      lnrho=spread(log(rho0z),1,size(f,1)) + log(1. + f)
-
+!
+      call fatal_error('getlnrho_2d', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
     endsubroutine getlnrho_2d
 !***********************************************************************
-    subroutine getrho_2dxy(f,rho)
-
-      real, dimension(mx,my), intent(in) :: f
-      real, dimension(mx,my), intent(out):: rho
-
-      call fatal_error('getrho_2dxy', 'not implemented')
-      rho=f
-
-    endsubroutine getrho_2dxy
+    subroutine getlnrho_2dyz(f, ix, lnrho)
+!
+!  03-apr-15/ccyang: dummy.
+!
+      real, dimension(my,mz), intent(in) :: f
+      real, dimension(my,mz), intent(out):: lnrho
+      integer, intent(in) :: ix
+!
+      call fatal_error('getlnrho_2dyz', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(lnrho)
+!
+    endsubroutine getlnrho_2dyz
 !***********************************************************************
-    subroutine getrho_2d(f,ix,rho)
-
+    subroutine getrho_2d(f, rho)
+!
+!  03-apr-15/ccyang: dummy.
+!
       real, dimension(:,:), intent(in) :: f
       real, dimension(:,:), intent(out):: rho
-      integer,              intent(in) :: ix
-
-      rho=spread(rho0z,1,size(f,1))*(1. + f)
-
+!
+      call fatal_error('getrho_2d', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rho)
+!
     endsubroutine getrho_2d
 !***********************************************************************
-    subroutine putrho_v(f,rho)
-
-      real, dimension(mx), intent(out):: f
-      real, dimension(nx), intent(in) :: rho
+    subroutine getrho_2dyz(f, ix, rho)
 !
-      call fatal_error('putrho_v', 'not implemented')
-      f(l1:l2)=rho
-
-    endsubroutine putrho_v
-!***********************************************************************
-    subroutine putrho_s(f,rho)
-
-      real, dimension(mx,my), intent(out):: f
-      real,                   intent(in) :: rho
+!  03-apr-15/ccyang: dummy.
 !
-      integer :: m
-
-      call fatal_error('putrho_s', 'not implemented')
-      f(l1:l2,:)=rho
-
-    endsubroutine putrho_s
-!***********************************************************************
-    subroutine putlnrho(f,lnrho)
-
-      real, dimension(mx), intent(out):: f
-      real, dimension(nx), intent(in) :: lnrho
+      real, dimension(my,mz), intent(in) :: f
+      real, dimension(my,mz), intent(out):: rho
+      integer, intent(in) :: ix
 !
-      call fatal_error('putlnrho', 'not implemented')
-      f(l1:l2)=exp(lnrho)
-      
-    endsubroutine putlnrho
+      call fatal_error('getrho_2dyz', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(rho)
+!
+    endsubroutine getrho_2dyz 
 !***********************************************************************
-    subroutine getdlnrho_z(f,in,dlnrho)
-
-      integer,                       intent(in) :: in
+    subroutine getdlnrho_z(f, in, dlnrho)
+!
+!  03-apr-15/ccyang: dummy.
+!
+      integer, intent(in) :: in
       real, dimension(mx,my,-in:in), intent(in) :: f
-      real, dimension(mx,my),        intent(out):: dlnrho
-
-      dlnrho = (f(:,:,in)-f(:,:,-in))/(1.+f(:,:,0))
+      real, dimension(mx,my), intent(out):: dlnrho
+!
+      call fatal_error('getdlnrho_z', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(in)
+      call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_z
 !***********************************************************************
-    subroutine getdlnrho_y(f,im,dlnrho)
+    subroutine getdlnrho_x(f, il, ix, rho, dlnrho)
 !
-      integer,                       intent(in) :: im
+!  03-apr-15/ccyang: dummy.
+!
+      integer, intent(in) :: il, ix
+      real, dimension(-il:il,my,mz), intent(in) :: f
+      real, dimension(my,mz), intent(in) :: rho
+      real, dimension(my,mz), intent(out):: dlnrho
+!
+      call fatal_error('getdlnrho_x', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(il)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(rho)
+      call keep_compiler_quiet(dlnrho)
+!
+    endsubroutine getdlnrho_x
+!***********************************************************************
+    subroutine getdlnrho_y(f, im, dlnrho)
+!
+!  03-apr-15/ccyang: dummy.
+
+      integer, intent(in) :: im
       real, dimension(mx,-im:im,mz), intent(in) :: f
-      real, dimension(mx,mz),        intent(out):: dlnrho
+      real, dimension(mx,mz), intent(out):: dlnrho
 !
-      dlnrho = (f(:,im,:)-f(:,-im,:))/(1.+f(:,0,:))
+      call fatal_error('getdlnrho_y', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(im)
+      call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_y
-!***********************************************************************
-    subroutine getdlnrho_x(f,il,ix,rho,dlnrho)
-
-      integer,                       intent(in) :: il,ix
-      real, dimension(-il:il,my,mz), intent(in) :: f
-      real, dimension(my,mz),        intent(in) :: rho
-      real, dimension(my,mz),        intent(out):: dlnrho
-
-      dlnrho = (f(il,:,:)-f(-il,:,:))*spread(rho0z,1,my)/rho
-
-    endsubroutine getdlnrho_x
 !***********************************************************************
 endmodule DensityMethods

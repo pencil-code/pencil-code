@@ -302,10 +302,6 @@ ifeq ($(DENSITY),experimental/anelastic)
   DENSITY_METHODS = nodensity_methods
 endif
 #
-ifeq ($(DENSITY),density_stratified)
-  DENSITY_METHODS = nodensity_methods
-endif
-#
 ifeq ($(TESTFIELD),notestfield)
   TESTFIELD_GENERAL_OBJ =
 else
