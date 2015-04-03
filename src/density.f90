@@ -712,9 +712,9 @@ module Density
         call put_shared_variable('reference_state',reference_state,ierr)
         call put_shared_variable('reference_state_mass',reference_state_mass,ierr)
 
-        call initialize_density_methods
       endif
 !
+      call initialize_density_methods
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_density
