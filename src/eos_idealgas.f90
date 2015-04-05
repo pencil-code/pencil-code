@@ -103,7 +103,7 @@ module EquationOfState
 !
 !  Module variables
 !
-  real, dimension(mz), target :: rho0z = 0.0
+  real, dimension(mz) :: rho0z = 0.0
   real, dimension(mz) :: dlnrho0dz = 0.0
   real, dimension(mz) :: eth0z = 0.0
   logical :: lstratset = .false.
@@ -4750,10 +4750,7 @@ if (notanumber(p%glnrho)) then
 !
 !  13-oct-14/ccyang: coded.
 !
-      use SharedVariables, only: put_shared_variable
-
       call get_stratz(z, rho0z, dlnrho0dz, eth0z)
-      call put_shared_variable('rho0z',rho0z,caller='set_stratz')
 !
     endsubroutine set_stratz
 !***********************************************************************
