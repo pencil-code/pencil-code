@@ -1,6 +1,6 @@
 ! This is a tool to collect distributed zaverages into one file.
 !
-! $Id: pc_meanfield_collect.f90 23199 2015-03-23 02:11:37Z st.tuomisto@gmail.com $
+! $Id: pc_meanfield_collect.f90 23201 2015-04-06 02:11:37Z st.tuomisto@gmail.com $
 !***********************************************************************
 program pc_meanfield_collect
 !
@@ -41,7 +41,7 @@ program pc_meanfield_collect
 !  Identify version.
 !
   if (lroot) call svn_id( &
-      '$Id: pc_meanfield_collect.f90 23199 2015-03-23 02:11:37Z st.tuomisto@gmail.com $')
+      '$Id: pc_meanfield_collect.f90 23201 2015-04-06 02:11:37Z st.tuomisto@gmail.com $')
 !
 !  Initialize the message subsystem, eg. color setting etc.a
 
@@ -170,9 +170,9 @@ program pc_meanfield_collect
 
     ! Do analysis for data
 
-    if (avg_analyzer) then
+    !if (avg_analyzer) then
 
-    end if
+    !end if
 
 
     ! Deallocate averages
