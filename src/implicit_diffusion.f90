@@ -33,6 +33,8 @@ module ImplicitDiffusion
   real, dimension(nygrid) :: ay_imp = 0.0, by_imp = 0.0, cy_imp = 0.0
   real, dimension(nzgrid) :: az_imp = 0.0, bz_imp = 0.0, cz_imp = 0.0
 !
+  integer, parameter :: BOT=1, TOP=2
+!
   contains
 !***********************************************************************
 !***********************************************************************
@@ -135,9 +137,11 @@ module ImplicitDiffusion
 !
 !  Sanity check
 !
-      if (nprocx /= 1) call fatal_error('integrate_diffusion', 'nprocx /= 1')
-      if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('integrate_diffusion', 'nxgrid /= nygrid')
-      if (nzgrid > 1 .and. mod(nxgrid, nprocz) /= 0) call fatal_error('integrate_diffusion', 'mod(nxgrid,nprocz) /= 0')
+      if (nprocx /= 1) call fatal_error('integrate_diffusion_full', 'nprocx /= 1')
+      if (nygrid > 1 .and. nxgrid /= nygrid) &
+        call fatal_error('integrate_diffusion_full', 'nxgrid /= nygrid')
+      if (nzgrid > 1 .and. mod(nxgrid, nprocz) /= 0) &
+        call fatal_error('integrate_diffusion_full', 'mod(nxgrid,nprocz) /= 0')
 !
 !  Get half the time step.
 !
@@ -422,7 +426,7 @@ module ImplicitDiffusion
           yscan: do j = m1, m2
             do l = ivar1, ivar2
               call implicit_pencil( f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, &
-                                    bcx1(l), bcx2(l), dx2_bound(-1:1), (/x(l1),x(l2)/) )
+                                    bcx1(l), bcx2(l), dx2_bound(-1:1), xgrid((/1,nxgrid/)) )
             enddo
           enddo yscan
         enddo zscan
@@ -459,12 +463,16 @@ module ImplicitDiffusion
       real, dimension(nygrid) :: a, b, c
       real, dimension(nygrid) :: adt, opbdt, ombdt, cdt
       real, dimension(2) :: bound, boundl
+      real, dimension(-1:1) :: d2_bound
 
       integer :: j, k, l
 !
-      bound = (/y(m1),y(m2)/)
-!
       int_y: if (nygrid > 1) then
+!
+        bound = ygrid((/1,nygrid/))
+        d2_bound(-1)= 2.*(ygrid(2)-ygrid(1))
+        d2_bound( 1)= 2.*(ygrid(nygrid)-ygrid(nygrid-1))
+!
         comp: do l = ivar1, ivar2
 
           boundl=bound
@@ -479,7 +487,7 @@ module ImplicitDiffusion
             xscan: do j = 1, ny
               penc(1:nx) = axy(:,j)
               call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy1(l), bcy2(l), &
-                                    dy2_bound(-1:1), boundl )
+                                    d2_bound, boundl )
               axy(:,j) = penc(1:nx)
             enddo xscan
             call transp_xy(axy)
@@ -520,8 +528,15 @@ module ImplicitDiffusion
       real, dimension(nzgrid) :: a, b, c
       real, dimension(nzgrid) :: adt, opbdt, ombdt, cdt
       integer :: i, j, iv
+      real, dimension(2) :: bound
+      real, dimension(-1:1) :: d2_bound
 !
       int_z: if (nzgrid > 1) then
+!
+        bound = zgrid((/1,nzgrid/))
+        d2_bound(-1)= 2.*(zgrid(2)-zgrid(1))
+        d2_bound( 1)= 2.*(zgrid(nzgrid)-zgrid(nzgrid-1))
+!
         call set_diffusion_equations(get_diffus_coeff, 3, a, b, c)
         call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
         comp: do iv = ivar1, ivar2
@@ -530,7 +545,7 @@ module ImplicitDiffusion
             xscan: do i = 1, nx
               penc(1:nzgrid) = ft(i,j,:)
               call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv), &
-                                    dz2_bound(-1:1), (/z(n1),z(n2)/) )
+                                    dz2_bound, bound )
               ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
           enddo yscan
@@ -584,7 +599,8 @@ module ImplicitDiffusion
 !   psi(q_{i-1},q_i,q_{i+1}) = a_i * q_{i-1} + b_i * q_i + c_i * q_{i+1}.
 !
 ! 30-may-12/ccyang: coded
-!
+!  1-apr-15/MR: parameters d2_bound and bound added
+! 
 ! Comments:
 !   Although this subroutine is currently only used by Magnetic module, it is
 ! general enough such that it can be considered moving to Sub or General
@@ -601,6 +617,9 @@ module ImplicitDiffusion
 !   c - array of c_i
 !   bc1 - lower boundary conditions
 !   bc2 - upper boundary conditions
+!   d2_bound - doubled cumulative cell sizes at boundary
+!              (d2_bound(-nghost:-1) - at lower, d2_bound(1:nghost) - at upper)
+!   bound - boundary coordinates
 !
       use Boundcond, only: bc_pencil
       use General, only: cyclic, tridag
@@ -646,9 +665,15 @@ module ImplicitDiffusion
       case ('a') lower
         c1(1) = c(1) - a(1)
       case ('sfr') lower
-        call fatal_error('implicit_pencil', 'boundary condition "sfr" not yet implemented')
+        c1(1) = c(1) + a(1)*(bound(BOT)-d2_bound(-1)/2.)/(bound(BOT)+d2_bound(-1)/2.)
+!
+! Alternative formulation
+!
+        !c1(1) = c(1) + a(1)
+        !omb1(1) = omb(1) + a(1)*(d2_bound(-1)/bound(BOT))
       case ('nfr') lower
-        call fatal_error('implicit_pencil', 'boundary condition "nfr" not yet implemented')
+        c1(1) = c(1) + a(1)
+        omb1(1) = omb(1) - a(1)*(d2_bound(-1)/bound(BOT))
 !     Unknown
       case default lower
         call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
@@ -671,9 +696,15 @@ module ImplicitDiffusion
       case ('a') upper
         a1(n) = a(n) - c(n)
       case ('sfr') upper
-        call fatal_error('implicit_pencil', 'boundary condition "sfr" not yet implemented')
+        a1(1) = a(n) + c(n)*(bound(TOP)+d2_bound(1)/2.)/(bound(TOP)-d2_bound(1)/2.)
+!
+! Alternative formulation
+!
+        !a1(n) = a(n) + c(n)
+        !omb1(n) = omb(n) - c(n)*(d2_bound(1)/bound(TOP))
       case ('nfr') upper
-        call fatal_error('implicit_pencil', 'boundary condition "nfr" not yet implemented')
+        a1(n) = a(n) + c(n)
+        omb1(n) = omb(n) + c(n)*(d2_bound(1)/bound(TOP))
 !     Unknown
       case default upper
         call fatal_error('implicit_pencil', 'generalize this subroutine to deal with your boundary conditions')
