@@ -304,7 +304,7 @@ program pc_tecplot
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
+        call rsnap (filename, f, mvar_in)
         t_sp = t
 !
         if (lroot) t_test = t_sp
