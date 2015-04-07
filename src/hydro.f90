@@ -587,8 +587,6 @@ module Hydro
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      integer :: ierr
-!
 !  indices to access uu
 !
       call farray_register_pde('uu',iuu,vector=3)
@@ -603,21 +601,15 @@ module Hydro
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
 !
       if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
-      call put_shared_variable('lpressuregradient_gas',&
-          lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_hydro',&
-          'there was a problem sharing lpressuregradient_gas')
+      call put_shared_variable('lpressuregradient_gas', &
+          lpressuregradient_gas,caller='register_hydro')
 !
 !  Special settings for lboussinesq.
 !
       if  (lboussinesq) then
         PrRa=Pr*Ra
-        call put_shared_variable('PrRa',PrRa,ierr)
-        if (ierr/=0) call fatal_error('register_hydro',&
-            'there was a problem sharing PrRa')
-        call put_shared_variable('Pr',Pr,ierr)
-        if (ierr/=0) call fatal_error('register_hydro',&
-            'there was a problem sharing Pr')
+        call put_shared_variable('PrRa',PrRa)
+        call put_shared_variable('Pr',Pr)
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -656,7 +648,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      integer :: ierr,j
+      integer :: j
 !
 ! set the right point in profile to unity.
 !
@@ -693,8 +685,8 @@ module Hydro
       ! Default value of 'tfade_start' is tdamp/2 for faded damping
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp)) &
-          call fatal_error ('register_hydro', 'Please set tfade_start < tdamp')
-      call put_shared_variable ('dampu', dampu)
+          call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
+      call put_shared_variable ('dampu', dampu, caller='initialize_hydro')
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)
       call put_shared_variable ('tfade_start', tfade_start)
@@ -790,15 +782,8 @@ module Hydro
 !  knows whether to apply them or not.
 !
       if (lparticles.and.Omega/=0.0) then
-        call put_shared_variable('lcoriolis_force',&
-            lcoriolis_force,ierr)
-        if (ierr/=0) call fatal_error('register_hydro',&
-            'there was a problem sharing lcoriolis_force')
-!
-        call put_shared_variable('lcentrifugal_force',&
-            lcentrifugal_force,ierr)
-        if (ierr/=0) call fatal_error('register_hydro',&
-            'there was a problem sharing lcentrifugal_force')
+        call put_shared_variable('lcoriolis_force', lcoriolis_force)
+        call put_shared_variable('lcentrifugal_force', lcentrifugal_force)
       endif
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
@@ -871,7 +856,7 @@ module Hydro
           iuzt=iuut+2
         endif
         if (iuut/=0.and.lroot) then
-          print*, 'initialize_velocity: iuut = ', iuut
+          print*, 'initialize_hydro: iuut = ', iuut
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'iuut=',iuut
           write(3,*) 'iuxt=',iuxt
@@ -889,7 +874,7 @@ module Hydro
           iozt=ioot+2
         endif
         if (ioot/=0.and.lroot) then
-          print*, 'initialize_velocity: ioot = ', ioot
+          print*, 'initialize_hydro: ioot = ', ioot
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ioot=',ioot
           write(3,*) 'ioxt=',ioxt
@@ -900,11 +885,11 @@ module Hydro
       endif
 !
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
-        call put_shared_variable('ampl_forc', ampl_forc, ierr)
-        call put_shared_variable('k_forc', k_forc, ierr)
-        call put_shared_variable('w_forc', w_forc, ierr)
-        call put_shared_variable('x_forc', x_forc, ierr)
-        call put_shared_variable('dx_forc', dx_forc, ierr)
+        call put_shared_variable('ampl_forc', ampl_forc)
+        call put_shared_variable('k_forc', k_forc)
+        call put_shared_variable('w_forc', w_forc)
+        call put_shared_variable('x_forc', x_forc)
+        call put_shared_variable('dx_forc', dx_forc)
       endif
 !
 !  Check if we are solving the force-free equations in parts of domain.
@@ -912,20 +897,18 @@ module Hydro
 !  boussinesq).
 !
       if (ldensity) then
-        call get_shared_variable('lffree',lffree,ierr)
-        if (ierr/=0) call fatal_error('initialize_hydro:',&
-             'failed to get lffree from density')
+        call get_shared_variable('lffree',lffree)
         if (lffree) then
-          call get_shared_variable('profx_ffree',profx_ffree,caller='initialize_hydro')
-          call get_shared_variable('profy_ffree',profy_ffree,caller='initialize_hydro')
-          call get_shared_variable('profz_ffree',profz_ffree,caller='initialize_hydro')
+          call get_shared_variable('profx_ffree',profx_ffree)
+          call get_shared_variable('profy_ffree',profy_ffree)
+          call get_shared_variable('profz_ffree',profz_ffree)
         endif
       endif
 !
 !  Get the reference state if requested
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='initialize_hydro')
+        call get_shared_variable('reference_state',reference_state)
 !
       lcalc_uumeanz=lcalc_uumean                 ! for compatibility
 !
@@ -943,6 +926,7 @@ module Hydro
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver
       use Deriv, only: der_z
+      use DensityMethods, only: getrho
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 !
@@ -962,12 +946,7 @@ module Hydro
           fact=1./nwgrid
           do n=n1,n2
           do m=m1,m2
-            if (ldensity_nolog) then
-              rho=f(l1:l2,m,n,irho)
-              if (lreference_state) rho=rho+reference_state(:,iref_rho)
-            else
-              rho=exp(f(l1:l2,m,n,ilnrho))
-            endif
+            call getrho(f(l1:l2,m,n,ilnrho),rho)
             rux=rho*f(l1:l2,m,n,iux)
             ruy=rho*f(l1:l2,m,n,iuy)
             ruz=rho*f(l1:l2,m,n,iuz)
@@ -1063,6 +1042,7 @@ module Hydro
 !
       use Boundcond, only:update_ghosts
       use Density, only: calc_pencils_density
+      use DensityMethods, only: getrho, putlnrho
       use EquationOfState, only: cs20, beta_glnrho_scaled
       use General
       use Gravity, only: gravz_const,z1
@@ -1543,12 +1523,7 @@ module Hydro
               tmp = -kx_uu*ampl_uy(j)*eta_sigma* &
                     (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
                      sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
-              if (ldensity_nolog) then
-                f(l1:l2,m,n,irho)=exp(tmp)
-                if (lreference_state) f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) - reference_state(:,iref_rho)
-              else
-                f(l1:l2,m,n,ilnrho)=tmp
-              endif
+              call putlnrho(f(l1:l2,m,n,ilnrho),tmp)
             enddo; enddo
           endif
         case ( 'random-2D-eddies')
@@ -1632,8 +1607,7 @@ module Hydro
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call grad(f,iuy,tmp_nx3)
-            tmp=f(l1:l2,m,n,irho)
-            if (lreference_state) tmp=tmp+reference_state(:,iref_rho)
+            call getrho(f(l1:l2,m,n,ilnrho),tmp)
             f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/tmp
             f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/tmp
           enddo;enddo
@@ -5200,6 +5174,7 @@ module Hydro
 !  13-feb-15/MR  : some optimizations
 !
       use Mpicomm, only: mpiallreduce_sum
+      use DensityMethods, only: getrho
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer,                            intent (in)    :: induz
@@ -5222,15 +5197,7 @@ module Hydro
 !
 !  Compute volume integrals of angular momentum and rho*sin(theta)
 !
-          if (ldensity_nolog) then
-            if (lreference_state) then
-              rho=f(l1:l2,m,n,irho)+reference_state(:,iref_rho)
-            else
-              rho=f(l1:l2,m,n,irho)
-            endif
-          else
-            rho=exp(f(l1:l2,m,n,ilnrho))
-          endif
+          call getrho(f(l1:l2,m,n,ilnrho),rho)
 !
           tmp=rho*wx
           wmn=sinth(m)*dVol_y(m)*dVol_z(n)

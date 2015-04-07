@@ -17,7 +17,7 @@ module Messages
   public :: fatal_error, inevitably_fatal_error, not_implemented
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
-  public :: outlog
+  public :: outlog, set_caller
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
   integer, public, parameter :: iterm_BRIGHT    = 1
@@ -51,6 +51,8 @@ module Messages
 !
   logical :: ltermcap_color=.false.
 !
+  character(LEN=2*labellen) :: scaller=''
+
   contains
 !***********************************************************************
     subroutine initialize_messages
@@ -63,10 +65,19 @@ module Messages
 !
     endsubroutine initialize_messages
 !***********************************************************************
+    subroutine set_caller(caller)
+
+     character(LEN=*) :: caller
+
+     scaller=caller
+
+    endsubroutine set_caller
+!***********************************************************************
     subroutine not_implemented(location,message)
 !
-      character(len=*)           :: location
-      character(len=*), optional :: message
+      character(len=*), optional :: location, message
+!
+      if (present(location)) scaller=location
 !
       if (.not.llife_support) then
         errors=errors+1
@@ -76,9 +87,9 @@ module Messages
           write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
           call terminal_defaultcolor()
           if (present(message)) then
-            write(*,*) trim(location) // ": " // trim(message)
+            write(*,*) trim(scaller) // ": " // trim(message)
           else
-            write(*,*) trim(location) // ": " // &
+            write(*,*) trim(scaller) // ": " // &
                 "Some feature waits to get implemented -- by you?"
           endif
         endif
@@ -91,11 +102,13 @@ module Messages
 !***********************************************************************
    subroutine fatal_error(location,message,force)
 !
-      character(len=*) :: location
-      character(len=*) :: message
-      logical, optional :: force
+      character(len=*), optional :: location
+      character(len=*)           :: message
+      logical,          optional :: force
 !
       logical :: fatal = .false.
+!
+      if (present(location)) scaller=location
 !
       if (.not.llife_support) then
         errors=errors+1
@@ -105,7 +118,7 @@ module Messages
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(location) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)
         endif
 !
         if (ldie_onfatalerror .and. fatal) call die_immediately
@@ -122,21 +135,24 @@ module Messages
 !  pencil_consistency_test
 !  07-26-2011: Julien\ Added forced exit if "force" is set to .true.
 !
-      character(len=*) :: location
-      character(len=*) :: message
+      use General, only: loptest
+
+      character(len=*), optional :: location
+      character(len=*)           :: message
+      logical,          optional :: force
 !
-      logical, optional :: force
+      logical :: fatal
 !
-      logical :: fatal = .false.
+      if (present(location)) scaller=location
 !
-      if (present(force)) fatal=force
+      fatal=loptest(force)
       errors=errors+1
 !
       if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(location) // ": " // trim(message)
+        write (*,*) trim(scaller) // ": " // trim(message)
       endif
 !
       if (fatal) call die_immediately()
@@ -151,8 +167,10 @@ module Messages
 !
 !  17-may-2006/anders: coded
 !
-      character(len=*) :: location
-      character(len=*) :: message
+      character(len=*), optional :: location
+      character(len=*)           :: message
+!
+      if (present(location)) scaller=location
 !
       if (.not.llife_support) then
         fatal_errors=fatal_errors+1
@@ -161,7 +179,7 @@ module Messages
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(location) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)
         endif
 !
       endif
@@ -196,9 +214,11 @@ module Messages
 !***********************************************************************
     subroutine error(location,message)
 !
-      character(len=*) :: location
-      character(len=*) :: message
+      character(len=*), optional :: location
+      character(len=*)           :: message
 !
+      if (present(location)) scaller=location
+
       if (.not.llife_support) then
         errors=errors+1
 !
@@ -206,7 +226,7 @@ module Messages
           call terminal_highlight_error()
           write (*,'(A7)',ADVANCE='NO') "ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(location) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)
         endif
 !
         if (ldie_onerror) call die_gracefully
@@ -221,15 +241,18 @@ module Messages
 !
 !  30-jun-05/tony: coded
 !
-      character (len=*) :: message,location
+      character (len=*), optional :: location
+      character (len=*)           :: message
       integer, optional :: ip
 !
+      if (present(location)) scaller=location
+
       if (.not.llife_support) then
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()
-          write (*,*) trim(location) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)
 !          call flush() ! has to wait until F2003
         endif
 !
@@ -247,13 +270,17 @@ module Messages
 !
 !  30-jun-05/tony: coded
 !
-      character (len=*) :: message,location
-      integer, optional :: level
+      character (len=*), optional :: location
+      character (len=*)           :: message
+      integer,           optional :: level
+
       integer :: level_ = iinformation_ip
 !
+      if (present(location)) scaller=location
+
       if (present(level)) level_=level
 !
-      if (ip<=level_) write (*,*) trim(location) // ": " // trim(message)
+      if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)
 !
     endsubroutine information
 !***********************************************************************
@@ -387,7 +414,7 @@ module Messages
 !  provided it=it_timing.
 !
       integer :: lun=9
-      character(len=*) :: location
+      character(len=*), optional :: location
       character(len=*) :: message
       double precision :: time
       double precision, save :: time_initial
@@ -395,6 +422,8 @@ module Messages
       logical, optional :: mnloop
       integer :: mul_fac,iostat
       logical, save :: opened=.true.
+!
+      if (present(location)) scaller=location
 !
 !  work on the timing only when it==it_timing
 !
@@ -426,7 +455,7 @@ module Messages
                 opened = .not.(outlog(iostat,'open',trim(datadir)//'/timing.dat'))
               endif
               if (opened) then
-                write(lun,*,IOSTAT=iostat) time,mul_fac,trim(location)//": "//trim(message)
+                write(lun,*,IOSTAT=iostat) time,mul_fac,trim(scaller)//": "//trim(message)
                 if (outlog(iostat,'write time,mul_fac etc.')) opened=.false.
               endif
             endif
@@ -593,7 +622,7 @@ module Messages
 !  msg(IN) : additional message text
 !  lcont(IN): flag for continue despite of READ error
 !  location(IN): name of program unit, in which error occurred
-!                if omitted assumed to be the one saved in curloc
+!                if omitted assumed to be the one saved in scaller
 !                usually set by the call with mode='open'
 !
 !  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
@@ -618,7 +647,7 @@ module Messages
     integer,           optional, intent(IN) :: dist
     logical,           optional, intent(IN) :: lcont
 !
-    character (LEN=fnlen), save :: curfile='', curloc=''
+    character (LEN=fnlen), save :: curfile=''
     ! default: file not distributed, no backskipping
     integer, save :: curdist=0, curback=0
     logical, save :: lread=.false.
@@ -672,7 +701,7 @@ module Messages
     if (curfile /= '' ) filename = ' "'//trim(curfile)//'"'
     if (lclose) curfile = ''
 
-    if (present(location)) curloc = location
+    if (present(location)) scaller = location
 
     message = ""
     if (present (msg)) message = ': '//trim (msg)
@@ -683,15 +712,15 @@ module Messages
     if (.true.) then
       if (code < 0 .and. .not.(lread.and.lcontl)) then
         if (.not.lstop_on_ioerror) then
-          call warning(curloc, 'End-Of-File'//trim (filename)//trim (message))          !add mode?
+          call warning(scaller,'End-Of-File'//trim (filename)//trim (message))          !add mode?
         else
           outlog = .true.
-          call fatal_error(curloc, 'End-Of-File'//trim (filename)//trim (message))      !add mode?
+          call fatal_error(scaller,'End-Of-File'//trim (filename)//trim (message))      !add mode?
         endif
       elseif (code > 0 .and. .not.(lread.and.lcontl)) then
         outlog = .true.
-        call fatal_error(curloc, 'I/O error (code '//trim (itoa (code))//')'// &
-                         trim (filename)//trim (message), .true.)  !add mode?
+        call fatal_error(scaller,'I/O error (code '//trim (itoa (code))//')'// &
+                         trim (filename)//trim (message), force=.true.)  !add mode?
       endif
       return
     endif
@@ -718,7 +747,7 @@ module Messages
 !
     lsync = .false.
 !
-    if (curdist/=0) then                               ! backskipping enabled
+    if (.not.lopen.and.curdist/=0) then                        ! backskipping enabled
 !
       if ( ncpus==1 .and. curdist>0 ) curdist = -curdist
 !
@@ -735,13 +764,12 @@ module Messages
 !
             if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
 !
-            if ( backskip(curdist,curback) ) then                                ! try to set back file pointer by curback records
-              if (lroot) submsg = trim(submsg)//' not synchronized!'
-            else
-              if (lroot) submsg = trim(submsg)//' synchronized.'
+            if ( backskip(curdist,curback) ) then              ! try to set back file pointer by curback records
+              if (lroot) submsg = trim(submsg)//' not'
             endif
+            if (lroot) submsg = trim(submsg)//' synchronized.'
 !
-            close(curdist,IOSTAT=iostat)               ! try to close file
+            close(curdist,IOSTAT=iostat)                       ! try to close file
             if (iostat/=0) call safe_character_append(submsg,'. File not closed!')
 !
           endif
@@ -812,7 +840,7 @@ module Messages
 ! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
 ! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerrors.log.
 !
-      if (lread) then
+      if (.not.lopen.and.lread) then
         lexists = .false.
       else
         strarr(1) = filename
@@ -832,7 +860,7 @@ module Messages
 !
         if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
-        if ( .not.lread .and. index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
+        if ( .not.lopen.and..not.lread .and. index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
           call system_cmd( &
                'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
       endif
@@ -840,8 +868,8 @@ module Messages
 !
     if (code/=0.or.lsync) then
       outlog = .true.
-      if (lstop_on_ioerror.or.(lread.and..not.lcontl)) &      ! stop on error if requested by user or read operation
-        call fatal_error(curloc, 'I/O error'//' due to '//trim(errormsg)//' with '//trim(filename), .true.)  !add mode?
+      if (lstop_on_ioerror.or.(.not.lopen.and.lread.and..not.lcontl)) &      ! stop on error if requested by user or read operation
+        call fatal_error(scaller, 'I/O error due to '//trim(errormsg)//' with '//trim(filename), force=.true.)  !add mode?
     endif
 !
   end function outlog
@@ -923,7 +951,7 @@ module Messages
       read(1,IOSTAT=iostat) a
       if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
       close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
+      if (outlog(iostat,'close',file,location='input_array')) continue
 !
     endsubroutine input_array
 !***********************************************************************

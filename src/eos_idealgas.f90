@@ -821,10 +821,6 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
-if (notanumber(p%glnrho)) then
-          print*,'calc_penc_eos: NaNs in p%glnrho'
-          stop
-        endif
         if (lpencil(i_gTT)) then
           do j=1,3; p%gTT(:,j)=p%glnTT(:,j)*p%TT; enddo
         endif
@@ -1429,6 +1425,7 @@ if (notanumber(p%glnrho)) then
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
       real, dimension(psize), intent(out), optional :: cs2
+!
       real, dimension(psize) :: lnTT_, cs2_
       real, dimension(psize) :: lnrho_,ss_
       real, dimension(psize) :: rho, eth

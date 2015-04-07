@@ -1921,7 +1921,7 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1939,6 +1939,8 @@ module Density
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
+        if (notanumber(f(:,m-nghost:m+nghost,n-nghost:n+nghost,ilnrho))) &
+          call fatal_error('calc_pencils_density','NaNs in f(:,:,:,ilnrho)')
         if (lpencil(i_grho)) then
           do i=1,3
             p%grho(:,i)=p%rho*p%glnrho(:,i)

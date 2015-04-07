@@ -1179,6 +1179,7 @@ module Particles_sub
 !  04-dec-14/ccyang: coded.
 !
       use EquationOfState, only: get_stratz
+      use DensityMethods , only: getrho_s
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix, iy, iz
@@ -1197,10 +1198,8 @@ module Particles_sub
 !
       if (lstratz) then
         rho = rho0z(iz) * (1.0 + f(ix, iy, iz, irho))
-      elseif (ldensity_nolog) then
-        rho = f(ix, iy, iz, irho)
       else
-        rho = exp(f(ix, iy, iz, ilnrho))
+        rho = getrho_s(f(ix, iy, iz, ilnrho),ix)
       endif
 !
     endfunction get_gas_density

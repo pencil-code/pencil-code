@@ -466,6 +466,7 @@ module ImplicitDiffusion
       real, dimension(-1:1) :: d2_bound
 
       integer :: j, k, l
+      real :: fac
 !
       int_y: if (nygrid > 1) then
 !
@@ -481,10 +482,15 @@ module ImplicitDiffusion
 
           zscan: do k = n1, n2
             call set_diffusion_equations(get_diffus_coeff, 2, a, b, c, iz=ipz*nz+k-nghost)
-            call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
+            if (.not.lspherical_coords) &
+              call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
             axy = f(l1:l2,m1:m2,k,l)
             call transp_xy(axy)  ! assuming nxgrid = nygrid
             xscan: do j = 1, ny
+              if (lspherical_coords) then
+                fac=1./xgrid(j)**2
+                call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
+              endif
               penc(1:nx) = axy(:,j)
               call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy1(l), bcy2(l), &
                                     d2_bound, boundl )
@@ -521,13 +527,14 @@ module ImplicitDiffusion
       real, intent(in) :: dt
       external :: get_diffus_coeff
 !
-      integer, parameter :: nyt = ny / nprocz
+      integer, parameter :: nyt = ny / nprocz    !!! dangerous
       real, dimension(nx,ny,nz) :: ff
       real, dimension(nx,nyt,nzgrid) :: ft
       real, dimension(0:nzgrid+1) :: penc
       real, dimension(nzgrid) :: a, b, c
       real, dimension(nzgrid) :: adt, opbdt, ombdt, cdt
       integer :: i, j, iv
+      real :: fac, facy
       real, dimension(2) :: bound
       real, dimension(-1:1) :: d2_bound
 !
@@ -538,11 +545,17 @@ module ImplicitDiffusion
         d2_bound( 1)= 2.*(zgrid(nzgrid)-zgrid(nzgrid-1))
 !
         call set_diffusion_equations(get_diffus_coeff, 3, a, b, c)
-        call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
+        if (.not.lspherical_coords) &
+          call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
         comp: do iv = ivar1, ivar2
           call remap_to_pencil_yz(f(l1:l2,m1:m2,n1:n2,iv), ft)
           yscan: do j = 1, nyt
+            if (lspherical_coords) facy=1./sin(ygrid(j))**2
             xscan: do i = 1, nx
+              if (lspherical_coords) then
+                fac=facy/xgrid(i)**2
+                call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
+              endif
               penc(1:nzgrid) = ft(i,j,:)
               call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv), &
                                     dz2_bound, bound )
@@ -569,10 +582,10 @@ module ImplicitDiffusion
 !   dt: time step
 !
 ! Output Arguments
-!   adt: array of dt * a_i
+!   adt  : array of dt * a_i
 !   opbdt: array of 1 + dt * b_i
 !   ombdt: array of 1 - dt * b_i
-!   cdt: array of dt * c_i
+!   cdt  : array of dt * c_i
 !
       real, dimension(:), intent(in) :: a, b, c
       real, dimension(:), intent(out) :: adt, opbdt, ombdt, cdt
