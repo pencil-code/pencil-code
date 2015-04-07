@@ -110,7 +110,10 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
+      use SharedVariables, only: put_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ierr
 !
 !  Calculate the number density of bodies within a superparticle.
 !
@@ -139,6 +142,8 @@ module Particles_radius
       diffusion_coefficient1=1/diffusion_coefficient
       if (tau_damp_evap/=0.0) tau_damp_evap1=1/tau_damp_evap
       if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
+!
+      call put_shared_variable('ap0',ap0,ierr)
 !
       call keep_compiler_quiet(f)
 !

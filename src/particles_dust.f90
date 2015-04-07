@@ -12,6 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop
+! PENCILS PROVIDED np_rad(5); npvz(5)
 ! PENCILS PROVIDED epsp; grhop(3)
 !
 !***************************************************************
@@ -240,6 +241,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
 !
   contains
 !***********************************************************************
@@ -2358,6 +2360,9 @@ module Particles
           lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
 !
+      if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
+      if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
+!
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
@@ -3088,10 +3093,10 @@ module Particles
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr
+      integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
-      real, pointer :: pscalar_diff
+      real, pointer :: pscalar_diff, ap0(:)
       real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt
 !
@@ -3106,6 +3111,11 @@ module Particles
       if (headtt) then
         if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
       endif
+!
+!  Initialize the pencils that are calculated within this subroutine
+!
+      if (lpenc_requested(i_npvz))    p%npvz=0.
+      if (lpenc_requested(i_np_rad)) p%np_rad=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -3201,6 +3211,20 @@ module Particles
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
+!
+!  Calculate required pencils
+!  NILS: Could this be moved to calc_pencils_particles
+              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad)) then
+                call get_shared_variable('ap0',ap0,ierr)
+                do irad=1,npart_radii
+                  if (&
+                      (fp(k,iap) > ap0(irad)*0.99) .and. &
+                      (fp(k,iap) < ap0(irad)*1.01)) then
+                    p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
+                    p%np_rad(ix0-nghost,irad)=p%np_rad(ix0-nghost,irad)+1.
+                  endif
+                enddo
+              endif
 !
 !  The interpolated gas velocity is either precalculated, and stored in
 !  interp_uu, or it must be calculated here.
@@ -3692,6 +3716,11 @@ module Particles
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+!
+        do k=1,ninit
+          if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
+          if (idiag_nptz(k)/=0)   call xysum_mn_name_z(p%np_rad(:,k),idiag_nptz(k))
+        enddo
       endif
 !
       if (l2davgfirst) then
@@ -5170,12 +5199,15 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use General,   only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
+      integer :: k
       logical :: lwr
+      character (len=intlen) :: srad
 !
 !  Write information to index.pro.
 !
@@ -5229,6 +5261,7 @@ module Particles
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
+        idiag_npvzmz=0; idiag_nptz=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -5347,6 +5380,14 @@ module Particles
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
+        do k=1,ninit
+          srad=itoa(k)
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
+              'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
+              'nptz'//trim(srad),idiag_nptz(k))
+        enddo
+
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
