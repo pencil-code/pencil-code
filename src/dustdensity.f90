@@ -2208,14 +2208,20 @@ module Dustdensity
           if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
         endif
 !
+!  Condensation obtained from passive scalar equation.
+!
       case ('pscalar')
         if (lpscalar_nolog) then
           mfluxcond=G_condensparam*supsatratio_given*f(l1:l2,m,n,icc)
         elseif (lpscalar) then
-          mfluxcond=G_condensparam*supsatratio_given*f(l1:l2,m,n,ilncc)
+          mfluxcond=G_condensparam*supsatratio_given*exp(f(l1:l2,m,n,ilncc))
         else
           call fatal_error("dustdensity","no icc or ilncc match")
         endif
+!
+!  Allow only positive values (but commented out now).
+!
+!       mfluxcond=max(mfluxcond, 0.)
 !
       case ('simplified')
         mfluxcond=G_condensparam*supsatratio_given
