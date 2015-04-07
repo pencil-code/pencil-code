@@ -5,7 +5,7 @@ module DensityMethods
 !
   use Cparam
   use General, only: keep_compiler_quiet
-  use Messages
+  use Messages, only: fatal_error
 !
   include 'density_methods.h'
 !
@@ -187,5 +187,27 @@ module DensityMethods
       call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_y
+!***********************************************************************
+   subroutine putrho(f,rho)
+
+      real, dimension(mx), intent(out):: f
+      real, dimension(nx), intent(in) :: rho
+
+      call fatal_error('putrho', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rho)
+!
+    endsubroutine putrho
+!***********************************************************************
+    subroutine putlnrho(f,lnrho)
+
+      real, dimension(mx), intent(out):: f
+      real, dimension(nx), intent(in) :: lnrho
+
+      call fatal_error('putlnrho', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
+    endsubroutine putlnrho
 !***********************************************************************
 endmodule DensityMethods

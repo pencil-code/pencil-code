@@ -787,7 +787,7 @@ module Viscosity
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
           lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_therm.or. &
-          (.not. limplicit_viscosity .and. lvisc_simplified.and.lboussinesq) ) then
+          (lvisc_simplified.and.lboussinesq) ) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
@@ -2148,10 +2148,8 @@ module Viscosity
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (limplicit_viscosity) then
-        if (lenergy) call fatal_error('split_update_viscosity', 'viscous heating with implicit update is not implemented. ')
+      if (limplicit_viscosity) &
         call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
-      endif
 !
     endsubroutine split_update_viscosity
 !***********************************************************************

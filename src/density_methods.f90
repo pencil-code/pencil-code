@@ -9,8 +9,6 @@ module DensityMethods
 
   include 'density_methods.h'  
 
-  public :: putrho, putlnrho
-
   interface getrho
     module procedure getrho_1d
     module procedure getrho_2dyz
