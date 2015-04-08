@@ -946,7 +946,7 @@ module Hydro
           fact=1./nwgrid
           do n=n1,n2
           do m=m1,m2
-            call getrho(f(l1:l2,m,n,ilnrho),rho)
+            call getrho(f(:,m,n,ilnrho),rho)
             rux=rho*f(l1:l2,m,n,iux)
             ruy=rho*f(l1:l2,m,n,iuy)
             ruz=rho*f(l1:l2,m,n,iuz)
@@ -1523,7 +1523,7 @@ module Hydro
               tmp = -kx_uu*ampl_uy(j)*eta_sigma* &
                     (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
                      sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
-              call putlnrho(f(l1:l2,m,n,ilnrho),tmp)
+              call putlnrho(f(:,m,n,ilnrho),tmp)
             enddo; enddo
           endif
         case ( 'random-2D-eddies')
@@ -1607,7 +1607,7 @@ module Hydro
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call grad(f,iuy,tmp_nx3)
-            call getrho(f(l1:l2,m,n,ilnrho),tmp)
+            call getrho(f(:,m,n,ilnrho),tmp)
             f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/tmp
             f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/tmp
           enddo;enddo
@@ -5197,7 +5197,7 @@ module Hydro
 !
 !  Compute volume integrals of angular momentum and rho*sin(theta)
 !
-          call getrho(f(l1:l2,m,n,ilnrho),rho)
+          call getrho(f(:,m,n,ilnrho),rho)
 !
           tmp=rho*wx
           wmn=sinth(m)*dVol_y(m)*dVol_z(n)
