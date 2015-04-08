@@ -84,7 +84,7 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Grid,            only: construct_grid, box_vol
+  use Grid,            only: construct_grid, box_vol, grid_bound_data
   use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
@@ -154,6 +154,7 @@ program run
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
+    call grid_bound_data
   else
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)

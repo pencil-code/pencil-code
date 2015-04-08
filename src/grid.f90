@@ -31,6 +31,7 @@ module Grid
   public :: box_vol
   public :: save_grid
   public :: inverse_grid
+  public :: grid_bound_data
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -2175,5 +2176,28 @@ module Grid
 !print*, 'coeffs(:,TOP)=', coeffs(:,TOP)
 
     endsubroutine calc_bound_coeffs
+!***********************************************************************
+    subroutine grid_bound_data
+
+     if (lfirst_proc_x) &
+        dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
+      if (llast_proc_x) &
+        dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
+!
+      if (lfirst_proc_y) &
+        dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
+      if (llast_proc_y) &
+        dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
+!
+      if (lfirst_proc_z) &
+        dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
+      if (llast_proc_z) &
+        dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
+!
+      call calc_bound_coeffs(x,coeffs_1_x)
+      call calc_bound_coeffs(y,coeffs_1_y)
+      call calc_bound_coeffs(z,coeffs_1_z)
+
+    endsubroutine grid_bound_data
 !***********************************************************************
 endmodule Grid
