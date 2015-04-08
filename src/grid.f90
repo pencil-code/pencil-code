@@ -2136,13 +2136,13 @@ module Grid
       h12m1 = h12 + hm1;  h12m12 = h12 + hm12;  h12m123 = h12 + hm123
       h123m1= h123 + hm1; h123m12= h123 + hm12; h123m123= h123 + hm123
 
-      coeffs(:) = (/-h1*h12*h123*hm1*hm12/(hm3*hm123*hm23*h1m123*h12m123*h123m123),&
-                     h1*h12*h123*hm1*hm123/(hm2*hm3*hm12*h1m12*h12m12*h123m12),    &
-                    -h1*h12*h123*hm12*hm123/(hm1*hm2*hm23*h1m1*h12m1*h123m1),      &
-                     0.,                                                           &
-                     h12*h123*hm1*hm12*hm123/(h1*h2*h23*h1m1*h1m12*h1m123),        &
-                    -h1*h123*hm1*hm12*hm123/(h2*h3*h12*h12m1*h12m12*h12m123),      &
-                     h1*h12*hm1*hm12*hm123/(h3*h123*h23*h123m1*h123m12*h123m123)    /)
+      coeffs = (/-h1*h12*h123*hm1*hm12/(hm3*hm123*hm23*h1m123*h12m123*h123m123),&
+                  h1*h12*h123*hm1*hm123/(hm2*hm3*hm12*h1m12*h12m12*h123m12),    &
+                 -h1*h12*h123*hm12*hm123/(hm1*hm2*hm23*h1m1*h12m1*h123m1),      &
+                  0.,                                                           &
+                  h12*h123*hm1*hm12*hm123/(h1*h2*h23*h1m1*h1m12*h1m123),        &
+                 -h1*h123*hm1*hm12*hm123/(h2*h3*h12*h12m1*h12m12*h12m123),      &
+                  h1*h12*hm1*hm12*hm123/(h3*h123*h23*h123m1*h123m12*h123m123)    /)
   
       coeffs(0) = sum(coeffs)
 
@@ -2179,24 +2179,32 @@ module Grid
 !***********************************************************************
     subroutine grid_bound_data
 
-     if (lfirst_proc_x) &
-        dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
-      if (llast_proc_x) &
-        dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
+      if (nxgrid>1) then
+        if (lfirst_proc_x) &
+          dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
+        if (llast_proc_x) &
+          dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
 !
-      if (lfirst_proc_y) &
-        dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
-      if (llast_proc_y) &
-        dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
+        call calc_bound_coeffs(x,coeffs_1_x)
+      endif
+
+      if (nygrid>1) then
+        if (lfirst_proc_y) &
+          dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
+        if (llast_proc_y) &
+          dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
 !
-      if (lfirst_proc_z) &
-        dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
-      if (llast_proc_z) &
-        dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
+        call calc_bound_coeffs(y,coeffs_1_y)
+      endif
+
+      if (nzgrid>1) then
+        if (lfirst_proc_z) &
+          dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
+        if (llast_proc_z) &
+          dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
 !
-      call calc_bound_coeffs(x,coeffs_1_x)
-      call calc_bound_coeffs(y,coeffs_1_y)
-      call calc_bound_coeffs(z,coeffs_1_z)
+        call calc_bound_coeffs(z,coeffs_1_z)
+      endif
 
     endsubroutine grid_bound_data
 !***********************************************************************
