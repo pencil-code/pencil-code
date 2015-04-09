@@ -141,7 +141,6 @@ module EquationOfState
 !  22-jun-06/axel: adapted from initialize_eos
 !   4-aug-09/axel: added possibility of vertical profile function
 !
-      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
       use Sub, only: erfunc
 !
@@ -253,7 +252,6 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos()
 !
-      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
@@ -2104,7 +2102,6 @@ module EquationOfState
 !  21-jan-15/MR  : changes for use of reference state.
 !
       use Sub, only: curl, dot2
-      use Mpicomm, only: stop_it
       !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       !use Magnetic_meanfield, only: meanfield_chitB
@@ -2191,7 +2188,6 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
 !
-      use Mpicomm, only: stop_it
       use DensityMethods, only: getdlnrho
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
@@ -2344,8 +2340,6 @@ module EquationOfState
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
 !
-      use Mpicomm, only: stop_it
-!
       logical, pointer :: lmeanfield_chitB
       real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
       real, dimension(:,:), pointer :: reference_state
@@ -2491,8 +2485,6 @@ module EquationOfState
 !   21-jan-2015/MR: changes for reference state.
 !   22-jan-2015/MR: corrected bug in branches for pretend_lnTT=T
 !
-      use Mpicomm, only: stop_it
-!
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
       character (len=3) :: topbot
@@ -2618,13 +2610,12 @@ module EquationOfState
                       +coeffs_1_x(3,2)*(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
 !
 !          fac=(1./60)*dx_1(l2)
-!          dlnrhodx_yz=(fac*45.0)*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
-!                    - (fac*9.0) *(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
-!                    +  fac      *(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
-!print*, 'coeffs(3)=',     fac, coeffs_1_x(3,2)
-!print*, 'coeffs(2)=', -9.*fac, coeffs_1_x(2,2)
+!          dlnrhodx_yz=fac*(45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
+!                    -       9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
+!                    +           (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
 !print*, 'coeffs(1)=', 45.*fac, coeffs_1_x(1,2)
-
+!print*, 'coeffs(2)=', -9.*fac, coeffs_1_x(2,2)
+!print*, 'coeffs(3)=',     fac, coeffs_1_x(3,2)
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density to d rho/d x and divide by total density
