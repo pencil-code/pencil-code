@@ -2491,7 +2491,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       integer :: i
-      real :: fac
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2778,7 +2777,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: dsdx_yz, dlnrhodx_yz
+      real, dimension (my,mz) :: dsdx_yz
       real, dimension (-nghost:nghost) :: lnrmx, lnrmx_tmp
       real :: cs2mx, cs2mx_tmp
       real :: fact, dlnrmxdx, tmp1
@@ -2906,7 +2905,6 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy
-      real :: fac
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !

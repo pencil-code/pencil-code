@@ -238,7 +238,6 @@ module Register
       use Grid,             only: initialize_grid
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: ivar
 !
 !  Defaults for some logicals; will later be set to true if needed.
 !
@@ -791,8 +790,7 @@ module Register
       use TestPerturb,     only: rprint_testperturb
       use Mpicomm,         only: parallel_file_exists, parallel_count_lines
 !
-      integer :: unit=1
-      integer :: i,ierr,iadd,ios
+      integer :: i,iadd,ios
       logical :: lreset, ldummy
       character (len=30) :: cname_tmp
       character (len=30), allocatable :: ctmp(:)

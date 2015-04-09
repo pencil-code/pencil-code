@@ -2538,7 +2538,6 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, parameter :: ntotal=nx*nprocx,mtotal=nx*nprocx+2*nghost
-      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
       real, dimension (nxgrid,nzgrid,mvar) :: slice
       logical :: exist
       integer :: stat

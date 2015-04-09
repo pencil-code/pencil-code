@@ -2825,7 +2825,6 @@ module Particles
 !  11-oct-12/dhruba: copied from dvvp_dt
 !
       use Diagnostics
-      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3072,7 +3071,6 @@ module Particles
 !  25-apr-06/anders: coded
 !
       use Diagnostics
-      use EquationOfState, only: cs20
       use Particles_spin, only: calc_liftforce
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check

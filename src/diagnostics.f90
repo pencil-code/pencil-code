@@ -2064,7 +2064,7 @@ module Diagnostics
 !   13-nov-06/tony: modified to handle stretched mesh
 !   31-mar-15/MR: use integrate_mn to avoid doubled code
 !
-      real, dimension (nx) :: a,fac
+      real, dimension (nx) :: a
       integer :: iname
 !
       if (iname==0) return

@@ -93,8 +93,6 @@ module Shear
       use SharedVariables, only: get_shared_variable
       use Messages, only: fatal_error
 !
-      integer :: ierr
-!
 !  Calculate the shear velocity.
 !
       if (qshear/=0.0) then

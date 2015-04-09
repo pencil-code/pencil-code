@@ -169,7 +169,6 @@ module Particles_mass
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro.
