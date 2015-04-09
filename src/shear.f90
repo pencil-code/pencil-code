@@ -90,9 +90,6 @@ module Shear
 !  the central host.  If Omega_p = Omega, the usual shearing approximation is
 !  recovered.
 !
-      use SharedVariables, only: get_shared_variable
-      use Messages, only: fatal_error
-!
 !  Calculate the shear velocity.
 !
       if (qshear/=0.0) then
@@ -464,7 +461,6 @@ module Shear
 !  05-jun-12/ccyang: move SAFI to subroutine sheared_advection_fft
 !
       use Diagnostics, only: save_name
-      use Messages, only: fatal_error
       use Mpicomm, only: isendrcv_bdry_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -540,7 +536,6 @@ module Shear
 !    dt_shear: time increment
 !
       use Fourier, only: fourier_shift_y, fft_y_parallel
-      use Messages, only: fatal_error
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       integer, intent(in) :: comp_start, comp_end
@@ -591,7 +586,7 @@ module Shear
 !    method: interpolation method
 !
       use General, only: cspline, polynomial_interpolation
-      use Messages, only: warning, fatal_error
+      use Messages, only: warning
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
 !
       real, dimension(:,:,:,:), intent(inout) :: a
@@ -716,7 +711,6 @@ module Shear
 !  02-oct-07/anders: coded
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
-      use Messages, only: fatal_error
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
@@ -839,7 +833,7 @@ module Shear
 !
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
       use General, only: cspline, polynomial_interpolation
-      use Messages, only: warning, fatal_error
+      use Messages, only: warning
 !
       real, dimension(nghost,ny,nz), intent(inout) :: a
       logical, intent(in) :: posdef
