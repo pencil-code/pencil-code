@@ -7587,10 +7587,10 @@ module Mpicomm
                               endif
                             else
                               if (ltrans) then
-                                call MPI_SEND(sendbuf(iy,ixa:ixe:ixs,iz-n1g+1), &
+                                call MPI_SEND(sendbuf(iy,ixa:ixe:ixs,iz), &
                                               nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                               else
-                                call MPI_SEND(sendbuf(ixa:ixe:ixs,iy,iz-n1g+1), &
+                                call MPI_SEND(sendbuf(ixa:ixe:ixs,iy,iz), &
                                               nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                               endif
                             endif
