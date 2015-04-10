@@ -96,7 +96,7 @@ module Param_IO
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
-      lcorotational_frame, rcorot, &
+      lcorotational_frame, rcorot, lproper_averages, &
       ldirect_access
 !
   namelist /run_pars/ &
