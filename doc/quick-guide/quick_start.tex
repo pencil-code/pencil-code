@@ -95,8 +95,8 @@ is for \verb|tcsh| and any \verb|csh|-compatible shell.
 A \verb|Fortran| and a \verb|C| compiler are needed to compile the code.
 Both compilers should belong to the same distribution package and version (e.g. GNU GCC 4.8.3, 64 bit Linux).
 
-\subsection{Fortran on a mac machine}
-For Mac, you first need to install \verb|Xcode| from the \verb|AppleDeveloper|
+\subsection{Fortran on a Mac}
+For \verb|Mac|, you first need to install \verb|Xcode| from the \verb|AppleDeveloper|
 site \url{http://developer.apple.com/}. This requires you to first register as a
 member. An easy to install \verb|gfortran| can be found at \newline
 \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download it and it comes
@@ -196,7 +196,38 @@ It is time to run the code with --- be sure you have an empty \verb|data| direct
   pc_run
 \end{verbatim}
 
-Welcome to the world of Pencil Code! Visualizing the output can be done with \verb|IDL| or \verb|Python|, see below.
+Welcome to the world of Pencil Code!
+
+\subsection{Troubleshooting...}
+
+If one of these steps fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
+In your report, please state the exact point in this quick start quide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
+
+In addition to that, please report your operating system (if not \verb|Linux|-based) and the shell you use (if not \verb|bash|).
+Also please give the full output of these commands:
+\begin{verbatim}
+  bash
+  cd path/to/your/pencil-code/
+  source sourceme.sh
+  echo $PENCIL_HOME
+  ls -la $PENCIL_HOME/bin
+  cd samples/1d-tests/jeans-x/
+  gcc --version
+  gfortran --version
+  pc_setupsrc
+  pc_build -d
+\end{verbatim}
+
+If you plan to use MPI, please also provide the full output of:
+\begin{verbatim}
+  mpicc --version
+  mpif90 --version
+  mpiexec --version
+\end{verbatim}
+
+\section{Data post-processing}
+
+Visualizing the output can be done with \verb|IDL| or \verb|Python|, see below.
 
 \subsection{IDL visualization (optional)}
 % The goal of this section is to demonstrate the general work flow with a very simple example.
