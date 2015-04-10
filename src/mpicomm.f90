@@ -7531,14 +7531,9 @@ module Mpicomm
 ! loop over all ranges of kx indices in kxrangel
 !
                       do irx=1,nk_max
-                        if ( kxrangel(1,irx) == 0 ) exit
 !
-                        ixs = kxrangel(3,irx)
-                        if (kxrangel(1,irx)>=l1g) then
-                          ixa = kxrangel(1,irx)-l1g+1
-                        else
-                          ixa = mod(ixs-mod(l1g-kxrangel(1,irx),ixs),ixs)+1
-                        endif
+                        if (get_limits( kxrangel(:,irx), l1g, l2g, ixa, ixe, ixs )) exit
+                        !if (lroot) print*, 'ipx,ipy,ix*=', ipx,ipy,ixa, ixe, ixs
 
                         ixe = min(l2g,kxrangel(2,irx))-l1g+1
 !
