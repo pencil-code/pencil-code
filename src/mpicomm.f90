@@ -3063,7 +3063,7 @@ module Mpicomm
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      mpiwtime = MPI_WTIME()
+      mpiwtime = 0.   !!!MPI_WTIME()
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -3073,7 +3073,7 @@ module Mpicomm
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      mpiwtick = MPI_WTICK()
+      mpiwtick = 0.   !!!MPI_WTICK()
 !
     endfunction mpiwtick
 !***********************************************************************
@@ -7362,6 +7362,28 @@ module Mpicomm
 !
     endsubroutine mpigather
 !***********************************************************************
+    logical function get_limits(range, k1g, k2g, ia, ie, is )
+
+      integer, dimension(3) :: range
+      integer :: k1g, k2g
+      integer :: ia, ie, is
+
+      get_limits=.true.
+
+      if ( range(1) == 0 ) return
+!
+      get_limits=.false.
+      is=range(3)
+      if (range(1)>=k1g) then
+        ia = range(1)-k1g+1
+      else
+        ia = mod(is-mod(k1g-range(1),is),is)+1
+      endif
+
+      ie = min(k2g,range(2))-k1g+1
+
+    endfunction get_limits
+!***********************************************************************
     subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange )
 !
 !  Transfers the chunks of a 3D array from each processor to root
@@ -7372,6 +7394,7 @@ module Mpicomm
 !  22-nov-10/MR: coded
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !  03-feb-14/MR: rewritten
+!  10-apr-15/MR: corrected for nx/=ny
 !
       use General, only: write_full_columns, get_range_no
 !
@@ -7389,6 +7412,7 @@ module Mpicomm
       logical :: ltrans, lcomplex
       real,    allocatable :: rowbuf(:)
       complex, allocatable :: rowbuf_cmplx(:)
+      integer, dimension(2) :: nprxy,nxy
 !
       lcomplex = .false.
       ncomp = 1
@@ -7434,6 +7458,14 @@ module Mpicomm
         allocate( rowbuf(nx) )
       endif
 !
+      if (ltrans) then
+        nxy(1)=ny; nxy(2)=nx
+        nprxy(1)=nprocy; nprxy(2)=nprocx
+      else
+        nxy(1)=nx; nxy(2)=ny
+        nprxy(1)=nprocx; nprxy(2)=nprocy
+      endif
+!
       unfilled=0
 !
 ! loop over all variables for which spectrum has been calculated
@@ -7453,16 +7485,7 @@ module Mpicomm
 ! loop over all ranges of z indices in zrangel
 !
           do irz=1,nz_max
-            if ( zrangel(1,irz) == 0 ) exit
-!
-            izs=zrangel(3,irz)
-            if (zrangel(1,irz)>=n1g) then
-              iza = zrangel(1,irz)-n1g+1
-            else
-              iza = mod(izs-mod(n1g-zrange(1,irz),izs),izs)+1
-            endif
-
-            ize = min(n2g,zrangel(2,irz))-n1g+1
+            if (get_limits( zrangel(:,irz), n1g, n2g, iza, ize, izs )) exit
 !
 ! loop over all z indices in range irz
 !
@@ -7472,43 +7495,38 @@ module Mpicomm
 !
               m2g=0
 
-              do ipy=0,nprocy-1
+              do ipy=0,nprxy(2)-1
 !
 ! global lower and upper y index bounds for beam ipy
 !
-                m1g=m2g+1; m2g=m2g+ny
+                m1g=m2g+1; m2g=m2g+nxy(2)
 !
 ! loop over all ranges of ky indices in kyrangel
 !
                 do iry=1,nk_max
-                  if ( kyrangel(1,iry) == 0 ) exit
-!
-                  iys=kyrangel(3,iry)
-                  if (kyrangel(1,iry)>=m1g) then
-                    iya = kyrangel(1,iry)-m1g+1
-                  else
-                    iya = mod(iys-mod(m1g-kyrangel(1,iry),iys),iys)+1
-                  endif
-
-                  iye = min(m2g,kyrangel(2,iry))-m1g+1
+                  if (get_limits( kyrangel(:,iry), m1g, m2g, iya, iye, iys )) exit
+                  !if (lroot) print*, 'ipy,ipz,iry,iy*=', ipy,ipz, iry, iya, iye, iys
 !
 ! loop over all ky indices in range iry
 !
                   do iy = iya, iye, iys
-                     !!if (lroot) print*, 'iy=', iy
 !
 ! loop over all processors in beam
 !
                     l2g=0
-                    do ipx=0,nprocx-1
+                    do ipx=0,nprxy(1)-1
 !
 ! global processor number
 !
-                      ig = ipz*nprocxy + ipy*nprocx + ipx
+                     if (ltrans) then
+                        ig = ipz*nprocxy + ipx*nprocx + ipy
+                      else
+                        ig = ipz*nprocxy + ipy*nprocx + ipx
+                      endif
 !
 ! global lower and upper x index bounds for processor ipx
 !
-                      l1g=l2g+1; l2g=l2g+nx
+                      l1g=l2g+1; l2g=l2g+nxy(1)
 !
 ! loop over all ranges of kx indices in kxrangel
 !
@@ -7547,6 +7565,7 @@ module Mpicomm
                             else
                               if (lcomplex) then
                                 call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, ig, tag, MPI_COMM_WORLD, status, mpierr)
+                                !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
                                 call MPI_RECV(rowbuf, nsend, MPI_REAL, ig, tag, MPI_COMM_WORLD, status, mpierr)
                               endif
@@ -7740,10 +7759,10 @@ module Mpicomm
 !
       endif
 !
-      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
-! broadcasts flag for
+! Broadcast flag for 'sychronization necessary'.
 !
-! 'sychronization necessary'
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
+!
     end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
