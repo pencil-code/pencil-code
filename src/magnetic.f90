@@ -37,6 +37,8 @@ module Magnetic
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use EquationOfState, only: gamma1
+  use SharedVariables, only: get_shared_variable  
+  use Mpicomm, only: stop_it
 !
   implicit none
 !
@@ -135,10 +137,12 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
+  real, pointer :: cp
   real :: dipole_moment=0.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
+  integer :: ierr
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
@@ -1746,6 +1750,11 @@ module Magnetic
         call finalize_isendrcv_bdry(f)
         call boundconds_y(f)
         call boundconds_z(f)
+!
+        call get_shared_variable('cp', cp, ierr)
+        if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
+             "there was a problem when getting cp")
+!
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
@@ -1759,22 +1768,20 @@ module Magnetic
               if (lpress_equil_alt) then
                 ssold=f(l1:l2,m,n,iss)
                 cs2old=cs20*exp(gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0) &
-                  +gamma*ssold)
+                  + gamma/cp*ssold)   ! generalised for cp /= 1
                 cs2=cs2old-gamma*b2/(beq2*exp(f(l1:l2,m,n,ilnrho)-lnrho0))
-                f(l1:l2,m,n,iss)=ssold+gamma1*(log(cs2/cs20)-log(cs2old/cs20))
+                f(l1:l2,m,n,iss)=ssold+cp*gamma1*(log(cs2/cs20)-log(cs2old/cs20))  ! generalised for cp /= 1
               else
                 f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
               endif
             else
               if (lpress_equil_alt) then
-!                cs2(1:nx)=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
                 lnrho_old=f(l1:l2,m,n,ilnrho)
                 cs2=cs20*exp(gamma_m1*(lnrho_old-lnrho0) &
-                  +gamma*f(l1:l2,m,n,iss))
-                f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
-                  (2*cs2(1:nx)))
-                f(l1:l2,m,n,iss)=gamma1*(log(cs2/cs20)-&
-                  gamma_m1*f(l1:l2,m,n,ilnrho))
+                  +gamma/cp*f(l1:l2,m,n,iss))   ! generalised for cp /= 1
+                f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/(2.*cs2))
+                f(l1:l2,m,n,iss)=cp*gamma1*(log(cs2/cs20)- &  ! generalised for cp /= 1
+                  gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))      ! lnrho0 added for generality
               else
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
               endif
@@ -1782,6 +1789,7 @@ module Magnetic
           endif
         enddo
         enddo
+!
       endif
 !
     endsubroutine init_aa
@@ -6598,6 +6606,10 @@ module Magnetic
 !
            case ('geo-benchmark-case2')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
+!
+           case ('nothing')
+              if (lroot .and. imn==1) print*, 'geo_benchmark_B: nothing more to add (in ninit loop).'
+              exit
 !
            case default
               if (lroot .and. imn==1) print*,'geo_benchmark_B: case not defined!'
