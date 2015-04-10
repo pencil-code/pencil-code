@@ -7534,8 +7534,6 @@ module Mpicomm
 !
                         if (get_limits( kxrangel(:,irx), l1g, l2g, ixa, ixe, ixs )) exit
                         !if (lroot) print*, 'ipx,ipy,ix*=', ipx,ipy,ixa, ixe, ixs
-
-                        ixe = min(l2g,kxrangel(2,irx))-l1g+1
 !
                         if (ixe>=ixa) then
 
