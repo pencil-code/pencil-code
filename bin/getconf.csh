@@ -1317,10 +1317,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
     setenv SCRATCH_DIR /var/tmp
   endif
 #----------------------------------------------------
-else if ($hn =~ rockall || $hn =~ valdivia) then
-  echo "rockall/valdivia - ngrs's laptop/desktop"
-  set mpirun = 'orterun'
-  set mpirunops = '-machinefile ~/machines'
+else if ($hn =~ stralsund || $hn =~ neolithic || $hn =~ maelmin || $hn =~ gefrin || $hn =~ astro) then
+#else if ($hn =~ rockall || $hn =~ valdivia) # older machines
+  echo "grsarson's machines in newcastle"
+  set mpirun = 'mpiexec'
+  set mpirunops = "-machinefile $PENCIL_HOME/machines"
 #-------------------------------------------------
 else if ($hn =~ kolmogorov) then
   echo "Kolmogorov on Wolfgang's desk"
