@@ -571,7 +571,7 @@ program start
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.true.)
+  call finalize_modules(f)
 !
 !  Stop MPI.
 !
