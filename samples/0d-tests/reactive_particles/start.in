@@ -3,6 +3,7 @@
 !
 
 &init_pars
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
   ip = 14
   unit_temperature=1.
   unit_velocity=1.
