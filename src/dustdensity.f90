@@ -232,6 +232,7 @@ module Dustdensity
       integer :: i,j,k
 !      real :: ddsize, ddsize0
       logical :: lnothing
+!
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustcoagulation,ldustcondensation =', &
           ldustcoagulation,ldustcondensation
