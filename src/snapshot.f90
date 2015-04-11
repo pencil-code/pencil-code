@@ -272,10 +272,11 @@ module Snapshot
 !  make sure that ghost zones are not set on df!
 !
         if (msnap==mfarray) then
-          if (.not.loptest(noghost)) call update_ghosts(a)
+          if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         endif
-        if (.not.loptest(noghost)) call update_ghosts(a)   ! MR: Why done twice?
+        ! update ghosts, because 'update_auxiliaries' may change the data
+        if (.not. loptest(noghost)) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
         call output_snap(a,msnap,file=file)
         call output_persistent(file)
