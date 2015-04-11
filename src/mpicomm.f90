@@ -692,10 +692,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_y .or. bcy1(j)=='p') then
+          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (.not. llast_proc_y .or. bcy2(j)=='p') then
+          if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
             f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -709,10 +709,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz1(j)=='p') then
+          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (.not. llast_proc_z .or. bcz2(j)=='p') then
+          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
             f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -728,19 +728,19 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz1(j)=='p') then
-            if (.not. lfirst_proc_y .or. bcy1(j)=='p') then
+          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
+            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
               f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
             endif
-            if (.not. llast_proc_y .or. bcy2(j)=='p') then
+            if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
               f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
             endif
           endif
-          if (.not. llast_proc_z .or. bcz2(j)=='p') then
-            if (.not. llast_proc_y .or. bcy2(j)=='p') then
+          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
+            if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
               f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
             endif
-            if (.not. lfirst_proc_y .or. bcy1(j)=='p') then
+            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
               f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
             endif
           endif
@@ -799,12 +799,12 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_x .or. bcx1(j)=='p' .or. &
-              (bcx1(j)=='she'.and.nygrid==1)) then
+          if (.not. lfirst_proc_x .or. bcx12(j,1)=='p' .or. &
+              (bcx12(j,1)=='she'.and.nygrid==1)) then
             f( 1:l1-1,m1:m2,n1:n2,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (.not. llast_proc_x .or. bcx2(j)=='p' .or. &
-              (bcx2(j)=='she'.and.nygrid==1)) then
+          if (.not. llast_proc_x .or. bcx12(j,2)=='p' .or. &
+              (bcx12(j,2)=='she'.and.nygrid==1)) then
             f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -841,12 +841,12 @@ module Mpicomm
              poleneigh,npole_tag,MPI_COMM_WORLD,isend_rq_npole,mpierr)
         call MPI_WAIT(irecv_rq_npole,irecv_stat_np,mpierr)
         do j=ivar1,ivar2
-          if (bcy1(j)=='pp') then
+          if (bcy12(j,1)=='pp') then
              f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j)
              f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j)
              f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j)
           endif
-          if (bcy1(j)=='ap') then
+          if (bcy12(j,1)=='ap') then
              f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j)
              f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j)
              f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)
@@ -884,9 +884,9 @@ module Mpicomm
              poleneigh,spole_tag,MPI_COMM_WORLD,isend_rq_spole,mpierr)
         call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
         do j=ivar1,ivar2
-          if (bcy2(j)=='pp') &
+          if (bcy12(j,2)=='pp') &
               f(l1:l2,m2+1:my,n1:n2,j)=spbufyi(:,:,:,j)
-          if (bcy2(j)=='ap') &
+          if (bcy12(j,2)=='ap') &
               f(l1:l2,m2+1:my,n1:n2,j)=-spbufyi(:,:,:,j)
         enddo
         call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
@@ -4115,12 +4115,12 @@ module Mpicomm
 !
         do j=1,3
 !
-          if (.not. lfirst_proc_z .or. bcz1(j-1+ivar)=='p') &
+          if (.not. lfirst_proc_z .or. bcz12(j-1+ivar,1)=='p') &
             vec(1:n1-1,j)=lbufi(:,j)
 !
 !  Read from buffer in lower ghostzones.
 !
-          if (.not. llast_proc_z .or. bcz2(j-1+ivar)=='p') &
+          if (.not. llast_proc_z .or. bcz12(j-1+ivar,2)=='p') &
             vec(n2+1:mz,j)=ubufi(:,j)
 !
 !  Read from buffer in upper ghostzones.
@@ -4133,7 +4133,7 @@ module Mpicomm
       else
 !
         do j=1,3
-          if ( bcz1(ivar+j-1)=='p' ) then
+          if ( bcz12(ivar+j-1,1)=='p' ) then
             vec(1   :n1-1     ,j) = vec(n2i:n2 ,j)
             vec(n2+1:n2+nghost,j) = vec(n1 :n1i,j)
           endif
