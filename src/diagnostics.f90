@@ -173,7 +173,7 @@ module Diagnostics
 !
       logical,save :: lfirst_call=.true.
       character (len=640) :: fform,legend,line
-      integer :: iname, iostat, nnamel
+      integer :: iname, iostat, nnamel,iop
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
 !
@@ -251,7 +251,9 @@ module Diagnostics
 !
 !  Append to diagnostics file.
 !
-        open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
+        inquire(lun,opened=iop)
+        if (iop==0) &
+          open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
 !  file not distributed, backskipping enabled
         if (.not. outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1)) then
 !
@@ -386,7 +388,7 @@ module Diagnostics
         endif
 !
         write(lun,'(a)',IOSTAT=iostat) trim(line)
-        if (outlog(iostat,'write line')) return
+        if (outlog(iostat,'line')) return
 !
         close(lun,IOSTAT=iostat)
         if (outlog(iostat,'close')) continue
@@ -923,11 +925,13 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
-      integer :: iostat
+      integer :: iostat, iop
 !
       if (lroot.and.nnamez>0) then
 !
-        open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
+        inquire(1,opened=iop)
+        if (iop==0) &
+          open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
                    location='write_xyaverages')) return
@@ -940,6 +944,7 @@ module Diagnostics
 !
         close(1,IOSTAT=iostat)
         if (outlog(iostat,'close')) continue
+          !!!flush(1)
 !
       endif
 !

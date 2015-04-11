@@ -467,8 +467,7 @@ module Energy
 !  Calculate Fbot if it has not been set in run.in.
 !
           if (Fbot==impossible) then
-            !!if (bcz12(iss,1)=='c1') then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Fbot = ', Fbot
@@ -486,8 +485,7 @@ module Energy
 !  Calculate Ftop if it has not been set in run.in.
 !
           if (Ftop==impossible) then
-            !!if (bcz12(iss,2)=='c1') then
-            if (bcz2(iss)=='c1') then
+            if (bcz12(iss,2)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Ftop = ',Ftop
@@ -511,8 +509,7 @@ module Energy
 !  Calculate Fbot if it has not been set in run.in.
 !
           if (Fbot==impossible) then
-            !!if (bcz12(iss,1)=='c1') then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                   'initialize_energy: Calculated Fbot = ', Fbot
@@ -531,8 +528,7 @@ module Energy
 !
 !  Define hcond0 from the given value of Fbot.
 !
-            !!if (bcz12(iss,1)=='c1') then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               hcond0=-gamma_m1/gamma*(mpoly0+1.)*Fbot/gravz
               Kbot=hcond0
               FbotKbot=-gravz*gamma/gamma_m1/(mpoly0+1.)
@@ -544,8 +540,7 @@ module Energy
 !  Calculate Ftop if it has not been set in run.in.
 !
           if (Ftop==impossible) then
-            !!if (bcz12(iss,2)=='c1') then
-            if (bcz2(iss)=='c1') then
+            if (bcz12(iss,2)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Ftop = ', Ftop
@@ -645,8 +640,7 @@ module Energy
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
         case ('cylind_layers')
-          !!if (bcx12(iss,1)=='c1') then
-          if (bcx1(iss)=='c1') then
+          if (bcx12(iss,1)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif

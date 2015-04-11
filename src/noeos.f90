@@ -93,13 +93,11 @@ module EquationOfState
 !
       use SharedVariables, only: put_shared_variable
 !
-      integer :: ierr
-!
       rho02 = rho0**2
 
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
-        call put_shared_variable('lnrho0',lnrho0,caller='initialize_eos')
+        call put_shared_variable('lnrho0',lnrho0)
       endif
 !
     endsubroutine initialize_eos
@@ -602,24 +600,25 @@ module EquationOfState
       use SharedVariables,only: get_shared_variable
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
       real, dimension (:,:), allocatable :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,ierr,stat
+      integer :: i,stat,iszx,iszy
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Allocate memory for large arrays.
 !
-      allocate(tmp_xy(mx,my),stat=stat)
+      iszx=size(f,1); iszy=size(f,2)
+      allocate(tmp_xy(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux', &
           'Could not allocate memory for tmp_xy')
-      allocate(cs2_xy(mx,my),stat=stat)
+      allocate(cs2_xy(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux', &
           'Could not allocate memory for cs2_xy')
-      allocate(rho_xy(mx,my),stat=stat)
+      allocate(rho_xy(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux', &
           'Could not allocate memory for rho_xy')
 !
@@ -629,33 +628,15 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-          'there was a problem when getting hcond0')
-      call get_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting hcond1')
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting Fbot')
-      call get_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting Ftop')
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting FbotKbot')
-      call get_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting FtopKtop')
-      call get_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting chi')
-      call get_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux' , &
-           'there was a problem when getting lmultilayer')
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call fatal_error('bc_ss_flux', &
-           'there was a problem when getting lheatc_chiconst')
+      call get_shared_variable('hcond0',hcond0,caller='bc_ss_flux')
+      call get_shared_variable('hcond1',hcond1)
+      call get_shared_variable('Fbot',Fbot)
+      call get_shared_variable('Ftop',Ftop)
+      call get_shared_variable('FbotKbot',FbotKbot)
+      call get_shared_variable('FtopKtop',FtopKtop)
+      call get_shared_variable('chi',chi)
+      call get_shared_variable('lmultilayer',lmultilayer)
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
 !
       select case (topbot)
 !
@@ -758,7 +739,7 @@ module EquationOfState
 !   4-may-2009/axel: dummy
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -770,7 +751,7 @@ module EquationOfState
 !   31-may-2010/pete: dummy
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -823,7 +804,7 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (:,:,:,:), intent(inout) :: f
       character (len=3), intent(in) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_xy
@@ -833,7 +814,7 @@ module EquationOfState
 !
 !  Allocate memory for large arrays.
 !
-      allocate(tmp_xy(mx,my),stat=stat)
+      allocate(tmp_xy(size(f,1),size(f,2)),stat=stat)
       if (stat>0) call fatal_error('bc_ss_temp_old', &
           'Could not allocate memory for tmp_xy')
 !
@@ -850,7 +831,7 @@ module EquationOfState
 !  bottom boundary
 !
       case ('bot')
-        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
@@ -870,13 +851,13 @@ module EquationOfState
 !  top boundary
 !
       case ('top')
-        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                    'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_old: cannot have cs2top<=0'
-  !     if (bcz1(ilnrho) /= 'a2') &
+  !     if (bcz12(ilnrho,1) /= 'a2') &
   !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4.')
 !
         if (ldensity_nolog) then
@@ -906,7 +887,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -985,7 +966,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1060,7 +1041,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1135,7 +1116,7 @@ module EquationOfState
       use Gravity, only: gravz
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1213,7 +1194,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
@@ -1312,7 +1293,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1372,7 +1353,7 @@ module EquationOfState
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z','not implemented in noeos.f90')
 !
@@ -1389,7 +1370,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
@@ -1446,7 +1427,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
@@ -1503,7 +1484,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -1558,7 +1539,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_x: cs20,cs0=',cs20,cs0
@@ -1626,7 +1607,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_y
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_y: cs20,cs0=',cs20,cs0
@@ -1694,7 +1675,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
@@ -1763,8 +1744,8 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: cs2_2d
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
@@ -1827,7 +1808,7 @@ module EquationOfState
     subroutine bc_stellar_surface(f,topbot)
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_stellar_surface','not implemented in noeos')
 !
@@ -1838,7 +1819,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call fatal_error('bc_lnrho_cfb_r_iso','not implemented in noeos')
@@ -1850,7 +1831,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call fatal_error('bc_lnrho_hds_z_iso','not implemented in noeos')
@@ -1862,7 +1843,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
 !
       call fatal_error('bc_lnrho_hdss_z_iso','not implemented in noeos')
@@ -1874,17 +1855,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_transport_data
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
-!
     endsubroutine read_transport_data
 !***********************************************************************
     subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine write_thermodyn
 !***********************************************************************

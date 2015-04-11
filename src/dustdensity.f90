@@ -468,7 +468,7 @@ module Dustdensity
       real, dimension (nx) :: eps
       real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del, fac
       real, pointer :: rhs_poisson_const
-      integer :: j, k, l, i, ierr
+      integer :: j, k, l, i
       logical :: lnothing
 !
 !  Different initializations of nd.
@@ -683,9 +683,7 @@ module Dustdensity
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine nd with nd_const=', nd_const
         case ('jeans-wave-dust-x')
-          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
-          if (ierr/=0) call stop_it("init_nd: "//&
-             "there was a problem when getting rhs_poisson_const")
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, caller='init_nd')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ind(1)) = 1.0 + amplnd*cos(kx_nd*x(l1:l2))
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) - amplnd* &
@@ -3007,36 +3005,35 @@ module Dustdensity
 !
 ! made from copy_bcs_dust. It is used if nodustvelocity
 !
-      if (ndustspec>1) then
-         bcx(ind)  =  bcx(ind(1))
-        bcx1(ind)  = bcx1(ind(1))
-        bcx2(ind)  = bcx2(ind(1))
-        if (lmdvar) then
-           bcx(imd) =  bcx(imd(1))
-          bcx1(imd) = bcx1(imd(1))
-          bcx2(imd) = bcx2(imd(1))
-        endif
+    integer :: k
 !
-        bcy(ind)  =  bcy(ind(1))
-        bcy1(ind)  = bcy1(ind(1))
-        bcy2(ind)  = bcy2(ind(1))
-        if (lmdvar) then
-           bcy(imd) =  bcy(imd(1))
-          bcy1(imd) = bcy1(imd(1))
-          bcy2(imd) = bcy2(imd(1))
-        endif
+    if (ndustspec>1) then
 !
-         bcz(ind)  =  bcz(ind(1))
-        bcz1(ind)  = bcz1(ind(1))
-        bcz2(ind)  = bcz2(ind(1))
-        if (lmdvar) then
-           bcz(imd) =  bcz(imd(1))
-          bcz1(imd) = bcz1(imd(1))
-          bcz2(imd) = bcz2(imd(1))
-        endif
-        if (lroot) print*, 'copy_bcs_dust: '// &
-            'Copied bcs on first dust species to all others'
+      bcx(ind) =  bcx(ind(1))
+      bcy(ind) =  bcy(ind(1))
+      bcz(ind) =  bcz(ind(1))
+!
+      if (lmdvar) then
+        bcx(imd) =  bcx(imd(1))
+        bcy(imd) =  bcy(imd(1))
+        bcz(imd) =  bcz(imd(1))
       endif
+!
+      do k=1,2
+!
+        bcx12(ind,k) = bcx12(ind(1),k)
+        bcy12(ind,k) = bcy12(ind(1),k)
+        bcz12(ind,k) = bcz12(ind(1),k)
+!
+        if (lmdvar) then
+          bcx12(imd,k) = bcx12(imd(1),k)
+          bcy12(imd,k) = bcy12(imd(1),k)
+          bcz12(imd,k) = bcz12(imd(1),k)
+        endif
+      enddo
+      if (lroot) print*, 'copy_bcs_dust: '// &
+          'Copied bcs on first dust species to all others'
+    endif
 !
     endsubroutine copy_bcs_dust_short
 !***********************************************************************

@@ -71,6 +71,12 @@ module Param_IO
 !
   logical :: lforce_shear_bc = .true.
 !
+! local quantities
+!
+  real, dimension(mcom) :: fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
+                           fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
+                           fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2
+
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
@@ -318,14 +324,25 @@ module Param_IO
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
-      call parse_bc(bcx,bcx1,bcx2)
-      call parse_bc(bcy,bcy1,bcy2)
-      call parse_bc(bcz,bcz1,bcz2)
+      call parse_bc(bcx,bcx12)
+      call parse_bc(bcy,bcy12)
+      call parse_bc(bcz,bcz12)
+!
+      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
+      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
+
+      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
+      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
+      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
+
+      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
+      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
+      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
 !
       if (lroot.and.ip<14) then
-        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
-        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
-        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
+        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
+        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
         print*, 'lperi= ', lperi
       endif
 !
@@ -567,6 +584,8 @@ module Param_IO
       integer :: ierr
       logical, optional :: logging
 !
+      tstart=impossible
+!
 !  Open namelist file.
 !
       call parallel_open(unit,'run.in','formatted')
@@ -637,14 +656,25 @@ module Param_IO
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
 !
-      call parse_bc(bcx,bcx1,bcx2)
-      call parse_bc(bcy,bcy1,bcy2)
-      call parse_bc(bcz,bcz1,bcz2)
+      call parse_bc(bcx,bcx12)
+      call parse_bc(bcy,bcy12)
+      call parse_bc(bcz,bcz12)
+!
+      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
+      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
+
+      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
+      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
+      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
+
+      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
+      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
+      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
 !
       if (lroot.and.ip<14) then
-        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
-        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
-        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
+        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
+        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
       endif
 !
       call check_consistency_of_lperi('read_runpars')
@@ -657,15 +687,17 @@ module Param_IO
         ldownsampl = .true.
         if (dsnap_down<=0.) dsnap_down=dsnap
 !
-        call get_downpars(1,nx,ipx,lfirst_proc_x,llast_proc_x)
-        call get_downpars(2,ny,ipy,lfirst_proc_y,llast_proc_y)
-        call get_downpars(3,nz,ipz,lfirst_proc_z,llast_proc_z)
+        call get_downpars(1,nx,ipx)
+        call get_downpars(2,ny,ipy)
+        call get_downpars(3,nz,ipz)
 !
       endif
 !
       contains
 !
-      subroutine get_downpars(ind,n,ip,lfirst_proc,llast_proc)
+!---------------------------------------------------------------------------------------
+!
+      subroutine get_downpars(ind,n,ip)
 !
 ! Calculates start indices & lengths for downsampled output
 !
@@ -676,7 +708,6 @@ module Param_IO
 ! coordinate direction, number of inner grid points, processor number
 !
         integer, intent(IN) :: ind, n, ip
-        logical, intent(IN) :: lfirst_proc,llast_proc
 !
       if ( downsampl(ind)>n ) then
         print*, 'read_startpars: Warning - stepsize for downsampling in '// &
@@ -689,22 +720,11 @@ module Param_IO
 !
         firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind))
 !
-! number of output items in direction ind without ghost zones
+! number of output items in direction ind *without* ghost zones
 !
-        ndowni(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
+        ndown(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
 !
         firstind(ind) = firstind(ind) + nghost
-!
-! number of output items in direction ind with ghost zones;
-! target index corresponing to firstind
-!
-        ndown(ind) = ndowni(ind)
-        if (lfirst_proc) then
-          ndown(ind) = ndown(ind)+nghost; startind(ind)=nghost+1
-        else
-          startind(ind)=1
-        endif
-        if (llast_proc) ndown(ind) = ndown(ind)+nghost
 !
       endsubroutine get_downpars
 !
@@ -941,7 +961,7 @@ module Param_IO
 ! the density in the x direction.
 !
         if  (lreset_boundary_values) then
-          call inverse_parse_bc(bcx,bcx1,bcx2)
+          call inverse_parse_bc(bcx,bcx12)
         endif
 !
 !  Write the param.nml file only from root processor.

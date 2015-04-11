@@ -30,6 +30,7 @@ module Grid
   public :: get_grid_mn
   public :: box_vol
   public :: save_grid
+  public :: coords_aux
   public :: inverse_grid
   public :: grid_bound_data
 !

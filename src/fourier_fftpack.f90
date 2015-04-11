@@ -1095,14 +1095,16 @@ module Fourier
 !
       use Mpicomm, only: transp_xy
 !
-      real, dimension (nx,ny), intent(inout) :: a_re,a_im
+      real, dimension (:,:), intent(inout) :: a_re,a_im
       logical, optional, intent(in) :: linv,lneed_im
 !
-      complex, dimension (nx) :: ax
-      real, dimension (4*nx+15) :: wsavex
-      real, dimension (ny) :: deltay_x
-      integer :: l,m,ibox
+      complex, dimension (size(a_re,1)) :: ax
+      real, dimension (4*size(a_re,1)+15) :: wsavex
+      real, dimension (size(a_re,2)) :: deltay_x
+      integer :: l,m,ibox,nyl
       logical :: lforward,lcompute_im
+!
+      nyl=size(a_re,2)
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
@@ -1115,7 +1117,7 @@ module Fourier
         return
       endif
 !
-      if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
+      if (lshear) deltay_x=-deltay*(x(m1+ipy*nyl:m2+ipy*nyl)-(x0+Lx/2))/Lx
 !
       if (lforward) then
 !
@@ -1134,7 +1136,7 @@ module Fourier
 !
           do ibox=0,nxgrid/nygrid-1
             iy=ibox*nygrid
-            do l=1,ny
+            do l=1,nyl
               ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
               call cfftf(nygrid,ay,wsavey)
               if (lshear) ay = ay*exp(cmplx(0.,+ky_fft*deltay_x(l)))
@@ -1154,7 +1156,7 @@ module Fourier
 !
           call cffti(nxgrid,wsavex)
 !
-          do m=1,ny
+          do m=1,nyl
             ax=cmplx(a_re(:,m),a_im(:,m))
             call cfftf(nxgrid,ax,wsavex)
             a_re(:,m)=real(ax)
@@ -1171,7 +1173,7 @@ module Fourier
 !
           call cffti(nxgrid,wsavex)
 !
-          do m=1,ny
+          do m=1,nyl
             ax=cmplx(a_re(:,m),a_im(:,m))
             call cfftb(nxgrid,ax,wsavex)
             a_re(:,m)=real(ax)
@@ -1191,7 +1193,7 @@ module Fourier
 !
           do ibox=0,nxgrid/nygrid-1
             iy=ibox*nygrid
-            do l=1,ny
+            do l=1,nyl
               ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
               if (lshear) ay = ay*exp(cmplx(0.,-ky_fft*deltay_x(l)))
               call cfftb(nygrid,ay,wsavey)

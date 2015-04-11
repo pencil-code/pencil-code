@@ -262,12 +262,12 @@ module Solid_Cells
 ! Try to find flow direction
 !
       flow_dir=0
-      if (fbcx1(1) > 0) flow_dir= 1
-      if (fbcx2(1) < 0) flow_dir=-1
-      if (fbcy1(2) > 0) flow_dir= 2
-      if (fbcy2(2) < 0) flow_dir=-2
-      if (fbcz1(3) > 0) flow_dir= 3
-      if (fbcz2(3) < 0) flow_dir=-3
+      if (fbcx(1,1) > 0) flow_dir= 1
+      if (fbcx(1,2) < 0) flow_dir=-1
+      if (fbcy(2,1) > 0) flow_dir= 2
+      if (fbcy(2,2) < 0) flow_dir=-2
+      if (fbcz(3,1) > 0) flow_dir= 3
+      if (fbcz(3,2) < 0) flow_dir=-3
       if (flow_dir > 0) then
         if (lroot) then
           print*,'By using fbc[x,y,z] I found the flow direction to be in the ',&
@@ -295,12 +295,12 @@ module Solid_Cells
 ! Find inlet temperature
 !
       if (ilnTT /= 0) then
-        if (flow_dir== 1) T0=fbcx1(ilnTT)
-        if (flow_dir==-1) T0=fbcx2(ilnTT)
-        if (flow_dir== 2) T0=fbcy1(ilnTT)
-        if (flow_dir==-2) T0=fbcy2(ilnTT)
-        if (flow_dir== 3) T0=fbcz1(ilnTT)
-        if (flow_dir==-3) T0=fbcz2(ilnTT)
+        if (flow_dir== 1) T0=fbcx(ilnTT,1)
+        if (flow_dir==-1) T0=fbcx(ilnTT,2)
+        if (flow_dir== 2) T0=fbcy(ilnTT,1)
+        if (flow_dir==-2) T0=fbcy(ilnTT,2)
+        if (flow_dir== 3) T0=fbcz(ilnTT,1)
+        if (flow_dir==-3) T0=fbcz(ilnTT,2)
         if (.not. ltemperature_nolog) T0=exp(T0)
       endif
 !

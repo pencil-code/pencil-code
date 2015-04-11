@@ -182,7 +182,7 @@ module Cdata
   logical :: loutput_varn_at_exact_tsnap=.false.
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
-  integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, ndowni=0, startind=1
+  integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
 !
 !  Units (need to be in double precision).
@@ -521,12 +521,9 @@ module Cdata
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !
   ! Auxiliary parameters for boundary conditions:
-  real, dimension(mcom) :: fbcx1=0., fbcx1_2=0.
-  real, dimension(mcom) :: fbcy1=0., fbcy1_1=0., fbcy1_2=0.
-  real, dimension(mcom) :: fbcz1=0., fbcz1_1=0., fbcz1_2=0.
-  real, dimension(mcom) :: fbcx2=0., fbcx2_2=0.
-  real, dimension(mcom) :: fbcy2=0., fbcy2_1=0., fbcy2_2=0.
-  real, dimension(mcom) :: fbcz2=0., fbcz2_1=0., fbcz2_2=0.
+  real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
+  real, dimension(mcom,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
+  real, dimension(mcom,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
   ! Auxiliary parameters for distinct use only with bottom or top boundary:
   real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
   real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.
@@ -536,9 +533,7 @@ module Cdata
 !
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
-                                            bcy1='',bcy2='', &
-                                            bcz1='',bcz2=''
+  character (len=bclen), dimension(mcom,2) :: bcx12='', bcy12='', bcz12=''
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
 !

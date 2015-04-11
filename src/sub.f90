@@ -1460,7 +1460,7 @@ module Sub
       call der(f, k1+1, tmp2, 2, ignoredx=igdx)
       g(:,3)=tmp1-tmp2
 !
-!  Adjustments for spherical corrdinate system.
+!  Adjustments for spherical coordinate system.
 !
       if (.not. igdx .and. lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
@@ -2946,15 +2946,20 @@ module Sub
 !
     endfunction numeric_precision
 !***********************************************************************
-    subroutine wdim(file,mxout,myout,mzout)
+    subroutine wdim(file,mxout,myout,mzout,lglobal)
 !
 !  Write dimension to file.
 !
 !   8-sep-01/axel: adapted to take myout,mzout
+!  30-sep-14/MR  : added parameter lglobal to be able to output
+!                  dimensions different from mx,my,mz both locally and globally
+!
+      use General, only: loptest
 !
       character (len=*) :: file
       character         :: prec
       integer, optional :: mxout,myout,mzout
+      logical, optional :: lglobal
       integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
 !
 !  Determine whether mxout=mx (as on each processor),
@@ -2989,13 +2994,13 @@ module Sub
 !  Write number of ghost cells (could be different in x, y and z).
 !
         write(1,'(3i5)') nghost, nghost, nghost
-        if (present(mzout)) then
+        if (loptest(lglobal)) then
           if (lprocz_slowest) iprocz_slowest=1
           write(1,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
         else
           write(1,'(3i5)') ipx, ipy, ipz
         endif
-        !
+!
         close(1)
       endif
 !
@@ -4144,7 +4149,7 @@ module Sub
 !
     endsubroutine nan_inform
 !***********************************************************************
-    subroutine parse_bc(bc,bc1,bc2)
+    subroutine parse_bc(bc,bc12)
 !
 !  Parse boundary conditions, which may be in the form `a' (applies to
 !  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
@@ -4153,11 +4158,11 @@ module Sub
 !  24-jan-02/wolf: coded
 !
       character (len=2*bclen+1), dimension(mcom) :: bc
-      character (len=bclen), dimension(mcom) :: bc1,bc2
+      character (len=bclen), dimension(mcom,2) :: bc12
       integer :: j,isep
 !
       intent(in) :: bc
-      intent(out) :: bc1,bc2
+      intent(out) :: bc12
 !
       do j=1,mcom
         if (bc(j) == '') then ! will probably never happen due to default='p'
@@ -4167,37 +4172,36 @@ module Sub
         endif
         isep = index(bc(j),':')
         if (isep > 0) then
-          bc1(j) = bc(j)(1:isep-1)
-          bc2(j) = bc(j)(isep+1:)
+          bc12(j,1) = bc(j)(1:isep-1)
+          bc12(j,2) = bc(j)(isep+1:)
         else
-          bc1(j) = bc(j)(1:bclen)
-          bc2(j) = bc(j)(1:bclen)
+          bc12(j,:) = bc(j)(1:bclen)
         endif
       enddo
 !
     endsubroutine parse_bc
 !***********************************************************************
-    subroutine inverse_parse_bc(bc,bc1,bc2)
+    subroutine inverse_parse_bc(bc,bc12)
 !
 !  27-jun-12/joern+dhruba: coded
 !
       character (len=2*bclen+1), dimension(mcom) :: bc
-      character (len=bclen), dimension(mcom) :: bc1,bc2
+      character (len=bclen), dimension(mcom,2) :: bc12
       integer :: j
 !
       intent(out) :: bc
-      intent(in) :: bc1,bc2
+      intent(in) :: bc12
 !
       do j=1,mcom
-        if ((bc1(j) == '') .or. (bc2(j) == '')) then
+        if ((bc12(j,1) == '') .or. (bc12(j,2) == '')) then
 ! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
               j, 'in (x, y, or z)'
           call fatal_error('inverse_parse_bc','')
         endif
-        bc(j)(1:bclen) = bc1(j)
+        bc(j)(1:bclen) = bc12(j,1)
         bc(j)(bclen+1:bclen+1) = ':'
-        bc(j)(bclen+2:2*bclen+1)=bc2(j)
+        bc(j)(bclen+2:2*bclen+1)=bc12(j,2)
       enddo
 !
     endsubroutine inverse_parse_bc

@@ -1080,8 +1080,8 @@ module EquationOfState
       logical, pointer :: lmultilayer, lheatc_chiconst
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -1165,7 +1165,7 @@ module EquationOfState
 !   4-may-2009/axel: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1179,7 +1179,7 @@ module EquationOfState
 !   31-may-2010/axel: dummy routine
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1235,8 +1235,8 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
@@ -1254,7 +1254,7 @@ module EquationOfState
 !  bottom boundary
 !
       case ('bot')
-        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
@@ -1270,13 +1270,13 @@ module EquationOfState
 !  top boundary
 !
       case ('top')
-        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                    'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_old: cannot have cs2top<=0'
-  !     if (bcz1(ilnrho) /= 'a2') &
+  !     if (bcz12(ilnrho,1) /= 'a2') &
   !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4.')
         tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + alog(cs2top/cs20)) / gamma
@@ -1300,7 +1300,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1359,7 +1359,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1418,7 +1418,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1475,7 +1475,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1554,7 +1554,7 @@ module EquationOfState
       use DensityMethods, only: putlnrho
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
@@ -1655,7 +1655,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1705,7 +1705,7 @@ module EquationOfState
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z', &
           'not implemented in eos_temperature_ionization.f90')
@@ -1725,7 +1725,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
@@ -1774,7 +1774,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
@@ -1823,7 +1823,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -1872,7 +1872,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_x: cs20,cs0=',cs20,cs0
@@ -1928,7 +1928,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_y
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_y: cs20,cs0=',cs20,cs0
@@ -1985,7 +1985,7 @@ module EquationOfState
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
@@ -2038,8 +2038,8 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: cs2_2d
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
@@ -2099,17 +2099,17 @@ module EquationOfState
       use Gravity, only: gravz,gravz_profile,reduced_top
       use DensityMethods, only: getlnrho
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
-      real, dimension (mx,my) :: lnrho,lnTT,TT1
-      real, dimension (mx,my) :: rhs,sqrtrhs,yH
-      real, dimension (mx,my) :: mu1,rho1pp
-      real, dimension (mx,my) :: yH_term_cv,yH_term_cp
-      real, dimension (mx,my) :: TT_term_cv,TT_term_cp
-      real, dimension (mx,my) :: alpha,delta
-      real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
-      real, dimension (mx,my) :: dlnrhodz,dlnTTdz
+      real, dimension (size(f,1),size(f,2)) :: lnrho,lnTT,TT1
+      real, dimension (size(f,1),size(f,2)) :: rhs,sqrtrhs,yH
+      real, dimension (size(f,1),size(f,2)) :: mu1,rho1pp
+      real, dimension (size(f,1),size(f,2)) :: yH_term_cv,yH_term_cp
+      real, dimension (size(f,1),size(f,2)) :: TT_term_cv,TT_term_cp
+      real, dimension (size(f,1),size(f,2)) :: alpha,delta
+      real, dimension (size(f,1),size(f,2)) :: cv,cp,cs2,nabla_ad
+      real, dimension (size(f,1),size(f,2)) :: dlnrhodz,dlnTTdz
       real :: fac
       integer :: i
 !
@@ -2121,11 +2121,11 @@ module EquationOfState
 !
 !  Boundary condition for density and temperature
 !
-        if (bcz1(ilnTT)/='StS'.and.bcz1(ilnTT)/='') then
+        if (bcz12(ilnTT,1)/='StS'.and.bcz12(ilnTT,1)/='') then
           call fatal_error("bc_stellar_surface", &
                            "This boundary condition for density also sets "// &
                            "temperature. We therfore require "// &
-                           "bcz1(ilnTT)='StS' or bcz1(ilnTT)=''")
+                           "bcz12(ilnTT,1)='StS' or bcz12(ilnTT,1)=''")
         endif
 !
 !  Get variables from f-array
@@ -2192,7 +2192,7 @@ module EquationOfState
 !
 !  Boundary condition for density, temperature, and vector potential
 !
-        if (bcz2(ilnTT)/='StS'.and.bcz2(ilnTT)/='') then
+        if (bcz12(ilnTT,2)/='StS'.and.bcz12(ilnTT,2)/='') then
           call fatal_error("bc_stellar_surface", &
                            "This boundary condition for density also sets "// &
                            "temperature. We therfore require "// &
@@ -2253,7 +2253,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED in "// &
           "eos_temperature_ionization")
@@ -2268,7 +2268,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED in "// &
           "eos_temperature_ionization")
@@ -2283,7 +2283,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED in "// &
           "eos_temperature_ionization")
@@ -2295,17 +2295,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_transport_data
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
-!
     endsubroutine read_transport_data
 !***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
+    subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
 !***********************************************************************

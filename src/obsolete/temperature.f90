@@ -107,7 +107,7 @@ module Entropy
           !  calculate Fbot if it has not been set in run.in
           !
           if (Fbot==impossible) then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'Calculated Fbot = ', Fbot
             else
@@ -736,8 +736,8 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
       if (ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
@@ -751,7 +751,7 @@ endif
 !
       case ('strange-bot')
         if (headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
-        if (bcz1(ilnrho) /= "a2") &
+        if (bcz12(ilnrho,1) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
         tmp_xy = gamma_m1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n1,iss) &
@@ -770,7 +770,7 @@ endif
 !
       case ('bot')
         if (headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-!       if (bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
+!       if (bcz12(ilnrho,1)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
 !  calculate Fbot/(K*cs2)
 !
@@ -798,7 +798,7 @@ endif
 !
       case ('top')
         if (headtt) print*,'bc_ss_flux: hcond0=',hcond0
-        if (bcz2(ilnrho) /= "a2") &
+        if (bcz12(ilnrho,2) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
         tmp_xy = gamma_m1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n2,iss) &
@@ -831,8 +831,8 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
 !
       if (ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
@@ -852,7 +852,7 @@ endif
       case ('bot')
         if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        if (bcz1(ilnrho) /= "a2") &
+        if (bcz12(ilnrho,1) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         tmp_xy = (-gamma_m1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + log(cs2bot/cs20)) / gamma
@@ -866,7 +866,7 @@ endif
       case ('top')
         if (ldebug) print*,'set top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-!       if (bcz1(ilnrho) /= "a2") &
+!       if (bcz12(ilnrho,1) /= "a2") &
 !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
         tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + log(cs2top/cs20)) / gamma
@@ -892,7 +892,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -949,7 +949,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1006,7 +1006,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1063,7 +1063,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1112,7 +1112,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
@@ -1161,7 +1161,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1210,8 +1210,8 @@ endif
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: cs2_2d
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at

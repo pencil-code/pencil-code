@@ -417,66 +417,57 @@ module Dustvelocity
 !
 !  27-feb-04/anders: Copied from initialize_dustvelocity
 !
-!
 !  Copy boundary conditions on first dust species to all species
 !
-      if (ndustspec>1) then
-         bcx(iudx) =  bcx(iudx(1))
-        bcx1(iudx) = bcx1(iudx(1))
-        bcx2(iudx) = bcx2(iudx(1))
-         bcx(iudy) =  bcx(iudy(1))
-        bcx1(iudy) = bcx1(iudy(1))
-        bcx2(iudy) = bcx2(iudy(1))
-         bcx(iudz) =  bcx(iudz(1))
-        bcx1(iudz) = bcx1(iudz(1))
-        bcx2(iudz) = bcx2(iudz(1))
-         bcx(ind)  =  bcx(ind(1))
-        bcx1(ind)  = bcx1(ind(1))
-        bcx2(ind)  = bcx2(ind(1))
-        if (lmdvar) then
-           bcx(imd) =  bcx(imd(1))
-          bcx1(imd) = bcx1(imd(1))
-          bcx2(imd) = bcx2(imd(1))
-        endif
+    integer :: k
 !
-         bcy(iudx) =  bcy(iudx(1))
-        bcy1(iudx) = bcy1(iudx(1))
-        bcy2(iudx) = bcy2(iudx(1))
-         bcy(iudy) =  bcy(iudy(1))
-        bcy1(iudy) = bcy1(iudy(1))
-        bcy2(iudy) = bcy2(iudy(1))
-         bcy(iudz) =  bcy(iudz(1))
-        bcy1(iudz) = bcy1(iudz(1))
-        bcy2(iudz) = bcy2(iudz(1))
-         bcy(ind)  =  bcy(ind(1))
-        bcy1(ind)  = bcy1(ind(1))
-        bcy2(ind)  = bcy2(ind(1))
-        if (lmdvar) then
-           bcy(imd) =  bcy(imd(1))
-          bcy1(imd) = bcy1(imd(1))
-          bcy2(imd) = bcy2(imd(1))
-        endif
+    if (ndustspec>1) then
 !
-         bcz(iudx) =  bcz(iudx(1))
-        bcz1(iudx) = bcz1(iudx(1))
-        bcz2(iudx) = bcz2(iudx(1))
-         bcz(iudy) =  bcz(iudy(1))
-        bcz1(iudy) = bcz1(iudy(1))
-        bcz2(iudy) = bcz2(iudy(1))
-         bcz(iudz) =  bcz(iudz(1))
-        bcz1(iudz) = bcz1(iudz(1))
-        bcz2(iudz) = bcz2(iudz(1))
-         bcz(ind)  =  bcz(ind(1))
-        bcz1(ind)  = bcz1(ind(1))
-        bcz2(ind)  = bcz2(ind(1))
-        if (lmdvar) then
-           bcz(imd) =  bcz(imd(1))
-          bcz1(imd) = bcz1(imd(1))
-          bcz2(imd) = bcz2(imd(1))
-        endif
-        if (lroot) print*, 'copy_bcs_dust: '// &
-            'Copied bcs on first dust species to all others'
+      bcx(iudx) = bcx(iudx(1))
+      bcx(iudy) = bcx(iudy(1))
+      bcx(iudz) = bcx(iudz(1))
+      bcx(ind)  = bcx(ind(1))
+      bcy(iudx) = bcy(iudx(1))
+      bcy(iudy) = bcy(iudy(1))
+      bcy(iudz) = bcy(iudz(1))
+      bcy(ind)  = bcy(ind(1))
+      bcz(iudx) = bcz(iudx(1))
+      bcz(iudy) = bcz(iudy(1))
+      bcz(iudz) = bcz(iudz(1))
+      bcz(ind)  = bcz(ind(1))
+!
+      if (lmdvar) then
+        bcx(imd) = bcx(imd(1))
+        bcy(imd) = bcy(imd(1))
+        bcz(imd) = bcz(imd(1))
       endif
+
+      do k=1,2
+        bcx12(iudx,k) = bcx12(iudx(1),k)
+        bcx12(iudy,k) = bcx12(iudy(1),k)
+        bcx12(iudz,k) = bcx12(iudz(1),k)
+        bcx12(ind,k)  = bcx12(ind(1),k)
+!
+        bcy12(iudx,k) = bcy12(iudx(1),k)
+        bcy12(iudy,k) = bcy12(iudy(1),k)
+        bcy12(iudz,k) = bcy12(iudz(1),k)
+        bcy12(ind,k)  = bcy12(ind(1),k)
+!
+        bcz12(iudx,k) = bcz12(iudx(1),k)
+        bcz12(iudy,k) = bcz12(iudy(1),k)
+        bcz12(iudz,k) = bcz12(iudz(1),k)
+        bcz12(ind,k)  = bcz12(ind(1),k)
+!
+        if (lmdvar) then
+          bcy12(imd,k) = bcy12(imd(1),k)
+          bcx12(imd,k) = bcx12(imd(1),k)
+          bcz12(imd,k) = bcz12(imd(1),k)
+        endif
+      enddo
+!
+      if (lroot) print*, 'copy_bcs_dust: '// &
+        'Copied bcs on first dust species to all others'
+    endif
 !
     endsubroutine copy_bcs_dust
 !***********************************************************************
@@ -498,12 +489,12 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
       real :: eps,cs,eta_glnrho,v_Kepler
-      integer :: j,k,l,ierr
+      integer :: j,k,l
       logical :: lnothing
       real, dimension(:,:), pointer :: reference_state
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,ierr)
+        call get_shared_variable('reference_state',reference_state,caller='init_uud')
 !
 !  inituud corresponds to different initializations of uud (called from start).
 !

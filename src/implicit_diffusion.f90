@@ -151,25 +151,28 @@ module ImplicitDiffusion
 !
       shearing: if (lshear) then
 !       Shear is present: Work in unsheared frame.
-        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
-        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz12, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, spread(spread('p', 1, mcom),1,2), ivar1, ivar2, dth, get_diffus_coeff)
 !
         call sheared_advection_fft(f, ivar1, ivar2, real(-t))
-        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
-        call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
+        !!call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
+        !!call xsweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
+        call xsweep(f, spread(spread('p', 1, mcom),1,2), ivar1, ivar2, dth, get_diffus_coeff)
+        call xsweep(f, spread(spread('p', 1, mcom),1,2), ivar1, ivar2, dth, get_diffus_coeff)
         call sheared_advection_fft(f, ivar1, ivar2, real(t))
 !
-        call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), ivar1, ivar2, dth, get_diffus_coeff)
-        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
+        !!call ysweep(f, spread('p', 1, mcom), spread('p', 1, mcom), iv1, iv2, dth, get_diffus_coeff)
+        call ysweep(f, spread(spread('p', 1, mcom),1,2), ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz12, ivar1, ivar2, dth, get_diffus_coeff)
       else shearing
 !       No shear is present.
-        call xsweep(f, bcx1, bcx2, ivar1, ivar2, dth, get_diffus_coeff)
-        call ysweep(f, bcy1, bcy2, ivar1, ivar2, dth, get_diffus_coeff)
-        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
+        call xsweep(f, bcx12, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, bcy12, ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz12, ivar1, ivar2, dth, get_diffus_coeff)
 !
-        call zsweep(f, bcz1, bcz2, ivar1, ivar2, dth, get_diffus_coeff)
-        call ysweep(f, bcy1, bcy2, ivar1, ivar2, dth, get_diffus_coeff)
-        call xsweep(f, bcx1, bcx2, ivar1, ivar2, dth, get_diffus_coeff)
+        call zsweep(f, bcz12, ivar1, ivar2, dth, get_diffus_coeff)
+        call ysweep(f, bcy12, ivar1, ivar2, dth, get_diffus_coeff)
+        call xsweep(f, bcx12, ivar1, ivar2, dth, get_diffus_coeff)
       endif shearing
 !
     endsubroutine integrate_diffusion_full
@@ -393,7 +396,7 @@ module ImplicitDiffusion
 !
     endsubroutine set_diffusion_equations
 !***********************************************************************
-    subroutine xsweep(f, bcx1, bcx2, ivar1, ivar2, dt, get_diffus_coeff)
+    subroutine xsweep(f, bcx12, ivar1, ivar2, dt, get_diffus_coeff)
 !
 ! Implicitly integrate the diffusion term in the x-direction.
 !
@@ -410,7 +413,7 @@ module ImplicitDiffusion
 !   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(mcom), intent(in) :: bcx1, bcx2
+      character(len=*), dimension(mcom,2), intent(in) :: bcx12
       integer, intent(in) :: ivar1, ivar2
       real, intent(in) :: dt
       external :: get_diffus_coeff
@@ -426,7 +429,7 @@ module ImplicitDiffusion
           yscan: do j = m1, m2
             do l = ivar1, ivar2
               call implicit_pencil( f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, &
-                                    bcx1(l), bcx2(l), dx2_bound(-1:1), xgrid((/1,nxgrid/)) )
+                                    bcx12(l,:), dx2_bound(-1:1), xgrid((/1,nxgrid/)) )
             enddo
           enddo yscan
         enddo zscan
@@ -434,7 +437,7 @@ module ImplicitDiffusion
 !
     endsubroutine xsweep
 !***********************************************************************
-    subroutine ysweep(f, bcy1, bcy2, ivar1, ivar2, dt, get_diffus_coeff)
+    subroutine ysweep(f, bcy12, ivar1, ivar2, dt, get_diffus_coeff)
 !
 ! Implicitly integrate the diffusion term in the y-direction.
 !
@@ -453,7 +456,7 @@ module ImplicitDiffusion
       use Mpicomm, only: transp_xy
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(mcom), intent(in) :: bcy1, bcy2
+      character(len=*), dimension(mcom,2), intent(in) :: bcy12
       integer, intent(in) :: ivar1, ivar2
       real, intent(in) :: dt
       external :: get_diffus_coeff
@@ -492,7 +495,7 @@ module ImplicitDiffusion
                 call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
               endif
               penc(1:nx) = axy(:,j)
-              call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy1(l), bcy2(l), &
+              call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy12(l,:), &
                                     d2_bound, boundl )
               axy(:,j) = penc(1:nx)
             enddo xscan
@@ -504,7 +507,7 @@ module ImplicitDiffusion
 !
     endsubroutine ysweep
 !***********************************************************************
-    subroutine zsweep(f, bcz1, bcz2, ivar1, ivar2, dt, get_diffus_coeff)
+    subroutine zsweep(f, bcz12, ivar1, ivar2, dt, get_diffus_coeff)
 !
 ! Implicitly integrate the diffusion term in the z-direction.
 !
@@ -522,7 +525,7 @@ module ImplicitDiffusion
       use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(mcom), intent(in) :: bcz1, bcz2
+      character(len=*), dimension(mcom,2), intent(in) :: bcz12
       integer, intent(in) :: ivar1, ivar2
       real, intent(in) :: dt
       external :: get_diffus_coeff
@@ -557,7 +560,7 @@ module ImplicitDiffusion
                 call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
               endif
               penc(1:nzgrid) = ft(i,j,:)
-              call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz1(iv), bcz2(iv), &
+              call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz12(iv,:),  &
                                     dz2_bound, bound )
               ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
@@ -599,7 +602,7 @@ module ImplicitDiffusion
 !
     endsubroutine get_tridiag
 !***********************************************************************
-    subroutine implicit_pencil(q, n, a, opb, omb, c, bc1, bc2, d2_bound, bound)
+    subroutine implicit_pencil(q, n, a, opb, omb, c, bc12, d2_bound, bound)
 !
 ! Implicitly integrate a state variable along one pencil using the
 ! Crank-Nicolson method.  The (linear) system of equations read
@@ -640,7 +643,7 @@ module ImplicitDiffusion
       integer, intent(in) :: n
       real, dimension(0:n+1), intent(inout) :: q
       real, dimension(n), intent(in) :: a, opb, omb, c
-      character(len=*), intent(in) :: bc1, bc2
+      character(len=*), dimension(2), intent(in) :: bc12
       real, dimension(-1:1), optional :: d2_bound
       real, dimension(2), optional :: bound
 !
@@ -651,7 +654,7 @@ module ImplicitDiffusion
 !
 ! Prepare the RHS of the linear system.
 !
-      call bc_pencil(q, n, 1, bc1, bc2, d2_bound, bound)
+      call bc_pencil(q, n, 1, bc12, d2_bound, bound)
       r = a * q(0:n-1) + opb * q(1:n) + c * q(2:n+1)
 !
 ! Assume non-periodic boundary conditions first.
@@ -663,7 +666,7 @@ module ImplicitDiffusion
 !
 ! Check the lower boundary conditions.
 !
-      lower: select case (bc1)
+      lower: select case (bc12(1))
 !     Periodic
       case ('p') lower
         beta = -a(1)
@@ -694,7 +697,7 @@ module ImplicitDiffusion
 !
 ! Check the upper boundary condition.
 !
-      upper: select case (bc2)
+      upper: select case (bc12(2))
 !     Periodic
       case ('p') upper
         alpha = -c(n)

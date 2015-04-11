@@ -1699,7 +1699,7 @@ module Mpicomm
       integer :: j
 !
       do j=1,3
-        if ( bcz1(ivar+j-1)=='p' ) then
+        if ( bcz12(ivar+j-1,1)=='p' ) then
           vec(1:n1-1        ,j) = vec(n2i:n2,j)
           vec(n2+1:n2+nghost,j) = vec(n1:n1i,j)
         endif

@@ -75,29 +75,20 @@ module ImplicitPhysics
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: ierr
       real, dimension(:), pointer :: hole_params
       real, dimension(mz) :: profz
 !
-      call get_shared_variable('hcond0', hcond0, ierr)
-      call get_shared_variable('hcond1', hcond1, ierr)
-      call get_shared_variable('hcond2', hcond2, ierr)
-      call get_shared_variable('widthlnTT', widthlnTT, ierr)
-      call get_shared_variable('lmultilayer', lmultilayer, ierr)
+      call get_shared_variable('hcond0', hcond0, caller='initialize_implicit_physics')
+      call get_shared_variable('hcond1', hcond1)
+      call get_shared_variable('hcond2', hcond2)
+      call get_shared_variable('widthlnTT', widthlnTT)
+      call get_shared_variable('lmultilayer', lmultilayer)
       print*,'***********************************'
       print*, hcond0, hcond1, hcond2, widthlnTT, lmultilayer
       print*,'***********************************'
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                 "there was a problem when getting hcond0")
-      call get_shared_variable('Fbot', Fbot, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting Fbot")
-      call get_shared_variable('lADI_mixed', lADI_mixed, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting lADI_mixed")
-      call get_shared_variable('hole_params', hole_params, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting the hole_params array")
+      call get_shared_variable('Fbot', Fbot)
+      call get_shared_variable('lADI_mixed', lADI_mixed)
+      call get_shared_variable('hole_params', hole_params)
       Tbump=hole_params(1)
       Kmin=hole_params(2)
       Kmax=hole_params(3)
@@ -297,7 +288,7 @@ module ImplicitPhysics
         !
         bz(nz)=1. ; az(nz)=0.
         rhsz(nz)=cs2top/gamma_m1
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1.  ; cz(1)=0.
@@ -422,7 +413,7 @@ module ImplicitPhysics
        bz(nz)=1. ; az(nz)=0.
        rhsz(nz)=0.
 ! bottom
-       select case (bcz1(ilnTT))
+       select case (bcz12(ilnTT,1))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
          case ('cT')
           bz(1)=1. ; cz(1)=0.
@@ -571,7 +562,7 @@ module ImplicitPhysics
         bz(nzgrid)=1. ; az(nzgrid)=0.
         rhsz(nzgrid)=0.
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
           case ('cT')
             bz(1)=1. ; cz(1)=0.
@@ -626,7 +617,7 @@ module ImplicitPhysics
 ! bottom bondary condition z=z(n1): constant T or imposed flux dT/dz
 !
       if (iproc==0) then
-      select case (bcz1(ilnTT))
+      select case (bcz12(ilnTT,1))
         case ('cT') ! constant temperature
           f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
         case ('c3') ! constant flux
@@ -666,7 +657,7 @@ module ImplicitPhysics
         rhsz(n-nghost)=TT(n)+wz(n-nghost)/2.*(TT(n+1)-2.*TT(n)+TT(n-1))
       enddo
       bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1 ! T = Ttop
-      if (bcz1(iTT)=='cT') then
+      if (bcz12(iTT,1)=='cT') then
         bz(1)=1. ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1 ! T = Tbot
       else
         cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
@@ -721,7 +712,7 @@ module ImplicitPhysics
 !
         b(nz)=1. ; a(nz)=0.
         rhs(nz)=0.
-        if (bcz1(ilnTT)=='cT') then
+        if (bcz12(ilnTT,1)=='cT') then
 ! Constant temperature at the bottom
           b(1)=1. ; c(1)=0.
           rhs(1)=0.
@@ -810,7 +801,7 @@ module ImplicitPhysics
         ! Always constant temperature at the top
         !
         bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           case ('cT') ! Constant temperature at the bottom
             bz(1)=1.  ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
           case ('c1') ! Constant flux at the bottom
@@ -926,7 +917,7 @@ module ImplicitPhysics
 !
         b(nz)=1. ; a(nz)=0.
         rhs(nz)=0.
-        if (bcz1(ilnTT)=='cT') then
+        if (bcz12(ilnTT,1)=='cT') then
 ! Constant temperature at the bottom
           b(1)=1. ; c(1)=0.
           rhs(1)=0.
@@ -1030,7 +1021,7 @@ module ImplicitPhysics
        bz(nz)=1. ; az(nz)=0.
        rhsz(nz)=0.
 ! bottom
-       select case (bcz1(ilnTT))
+       select case (bcz12(ilnTT,1))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
          case ('cT')
           bz(1)=1. ; cz(1)=0.
@@ -1129,7 +1120,7 @@ module ImplicitPhysics
         bz(nz)=1. ; az(nz)=0.
         rhsz(nz)=cs2top/gamma_m1
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0.

@@ -175,7 +175,7 @@ module Io
         write (lun_output, IOSTAT=io_err) a
       endif
 !
-      lerror = outlog(io_err, 'write main data')
+      lerror = outlog(io_err, 'main data')
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -183,10 +183,10 @@ module Io
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        lerror = outlog(io_err, 'write additional data plus deltay')
+        lerror = outlog(io_err, 'additional data and deltay')
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        lerror = outlog(io_err, 'write additional data')
+        lerror = outlog(io_err, 'additional data')
       endif
 !
       if (lserial_io) call end_serialize()
@@ -206,7 +206,7 @@ module Io
 !
       if (persist_initialized) then
         write (lun_output, iostat=io_err) id_block_PERSISTENT
-        lerror = outlog (io_err, 'write id_block_PERSISTENT')
+        lerror = outlog (io_err, 'id_block_PERSISTENT')
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
@@ -241,7 +241,7 @@ module Io
       endif
       lerror = outlog(io_err, 'openw formatted', file, location='output_form_int_0D')
       write (lun_output,*,IOSTAT=io_err) data
-      lerror = outlog(io_err, 'write formatted data')
+      lerror = outlog(io_err, 'formatted data')
       close (lun_output)
 !
     endsubroutine output_form_int_0D
@@ -295,7 +295,7 @@ module Io
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       write (lun_output, iostat=io_err) id_block_PERSISTENT
-      init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
+      init_write_persist = outlog (io_err, 'id_block_PERSISTENT')
       persist_initialized = .not. init_write_persist
 !
     endfunction init_write_persist
@@ -317,7 +317,7 @@ module Io
 !
       if (persist_last_id /= id) then
         write (lun_output, iostat=io_err) id
-        write_persist_id = outlog (io_err, 'write persistent ID '//label)
+        write_persist_id = outlog (io_err, 'persistent ID '//label)
         persist_last_id = id
       else
         write_persist_id = .false.
@@ -341,7 +341,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_logical_0D = outlog (io_err, 'write persistent '//label)
+      write_persist_logical_0D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_logical_0D
 !***********************************************************************
@@ -361,7 +361,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_logical_1D = outlog (io_err, 'write persistent '//label)
+      write_persist_logical_1D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_logical_1D
 !***********************************************************************
@@ -382,7 +382,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_int_0D = outlog (io_err, 'write persistent '//label)
+      write_persist_int_0D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_int_0D
 !***********************************************************************
@@ -402,7 +402,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_int_1D = outlog (io_err, 'write persistent '//label)
+      write_persist_int_1D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_int_1D
 !***********************************************************************
@@ -422,7 +422,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_real_0D = outlog (io_err, 'write persistent '//label)
+      write_persist_real_0D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_real_0D
 !***********************************************************************
@@ -442,7 +442,7 @@ module Io
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
-      write_persist_real_1D = outlog (io_err, 'write persistent '//label)
+      write_persist_real_1D = outlog (io_err, 'persistent '//label)
 !
     endfunction write_persist_real_1D
 !***********************************************************************
@@ -487,14 +487,21 @@ module Io
 !
 !  24-oct-13/MR: derived from input_snap
 !  28-oct-13/MR: consistency check for t_sp relaxed for restart from different precision
+!   6-mar-14/MR: if timestamp of snapshot inconsistent, now three choices:
+!                if lreset_tstart=F: cancel program
+!                                =T, tstart unspecified: use minimum time of all
+!                                var.dat 
+!                                                        for start
+!                                 T, tstart specified: use this value
 !
-      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
+                         stop_it, mpiallreduce_min_sgl
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real(KIND=4), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=4) :: t_sp
+      real(KIND=4) :: t_sp, t_sgl
 
       real(KIND=4),                 intent(out) :: dx, dy, dz, deltay
       real(KIND=4), dimension (mx), intent(out) :: x
@@ -504,7 +511,7 @@ module Io
       real :: t_test   ! t in single precision for backwards compatibility
 
       integer :: io_err
-      logical :: lerror
+      logical :: lerror, ltest
 !
       if (lserial_io) call start_serialize()
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
@@ -552,7 +559,7 @@ module Io
           call fatal_error('read_snap_single','nghost_read_fewer must be >=0')
         endif
       endif
-      lerror = outlog (io_err, 'read main data')
+      lerror = outlog (io_err, 'main data')
 
       if (ip <= 8) print *, 'read_snap_single: read ', file
       if (mode == 1) then
@@ -561,31 +568,53 @@ module Io
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          lerror = outlog (io_err, 'read additional data plus deltay')
+          lerror = outlog (io_err, 'additional data + deltay')
         else
           if (nghost_read_fewer==0) then
             read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
           elseif (nghost_read_fewer>0) then
             read (lun_input, IOSTAT=io_err) t_sp
           endif
-          lerror = outlog (io_err, 'read additional data')
+          lerror = outlog (io_err, 'additional data')
         endif
 !
 !  Verify consistency of the snapshots regarding their timestamp,
 !  unless lreset_tstart=T, in which case we reset all times to tstart.
 !
-        if (.not.lreset_tstart) then
+        if (.not.lreset_tstart.or.tstart==impossible) then
+!
           t_test = t_sp
           call mpibcast_real(t_test)
-          if (t_test /= t_sp .and. .not.lread_from_other_prec .or. abs(t_test-t_sp)>1.e-6) &
-              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
-          call stop_it_if_any((t_test /= t_sp), 'read_snap_single')
+          call mpiallreduce_or(t_test /= t_sp .and. .not.lread_from_other_prec .or. abs(t_test-t_sp)>1.e-6,ltest)
+!
+!  If timestamps deviate at any processor
+!
+          if (ltest) then
+            if (lreset_tstart) then
+!
+!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
+!
+              call mpiallreduce_min_sgl(t_sp,t_sgl)
+              tstart=t_sgl
+              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
+            else
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
+                          ' IS INCONSISTENT: t=', t_sp
+              call stop_it('read_snap_single')
+            endif
+          else
+            tstart=t_sp
+          endif
+!
         endif
 !
 !  Set time or overwrite it by a given value.
 !
-        t = t_sp
-        if (lreset_tstart) t = tstart
+        if (lreset_tstart) then
+          t = tstart
+        else
+          t = t_sp
+        endif
 !
 !  Verify the read values for x, y, z, and t.
 !
@@ -604,14 +633,20 @@ module Io
 !
 !  24-oct-13/MR: derived from input_snap
 !  28-oct-13/MR: consistency check for t_sp relaxed for restart from different precision
-!
-      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
+!   6-mar-14/MR: if timestamp of snapshot inconsistent, now three choices:
+!                if lreset_tstart=F: cancel program
+!                                =T, tstart unspecified: use minimum time of all var.dat 
+!                                                        for start
+!                                =T, tstart specified: use this value
+!                             
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
+                         stop_it, mpiallreduce_min_dbl
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real(KIND=8), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=8) :: t_sp
+      real(KIND=8) :: t_sp, t_dbl
 
       real(KIND=8), intent(out) :: dx, dy, dz, deltay
       real(KIND=8), dimension (mx), intent(out) :: x
@@ -668,7 +703,7 @@ module Io
           call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
         endif
       endif
-      lerror = outlog (io_err, 'read main data')
+      lerror = outlog (io_err, 'main data')
 
       if (ip <= 8) print *, 'read_snap: read ', file
       if (mode == 1) then
@@ -677,32 +712,53 @@ module Io
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          lerror = outlog (io_err, 'read additional data plus deltay')
+          lerror = outlog (io_err, 'additional data + deltay')
         else
           if (nghost_read_fewer==0) then
             read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
           elseif (nghost_read_fewer>0) then
             read (lun_input, IOSTAT=io_err) t_sp
           endif
-          lerror = outlog (io_err, 'read additional data')
+          lerror = outlog (io_err, 'additional data')
         endif
 !
 !  Verify consistency of the snapshots regarding their timestamp,
 !  unless lreset_tstart=T, in which case we reset all times to tstart.
 !
-        if (.not.lreset_tstart) then
+        if (.not.lreset_tstart.or.tstart==impossible) then
+!
           t_test = t_sp
           call mpibcast_real(t_test)
-          ltest = t_test /= t_sp  .and. .not.lread_from_other_prec .or. abs(t_test-t_sp)>1.e-6
-          if (ltest) &
-              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
-          call stop_it_if_any(ltest, 'read_snap_double')
+          call mpiallreduce_or(t_test /= t_sp .and. .not.lread_from_other_prec .or. abs(t_test-t_sp)>1.e-6,ltest)
+!
+!  If timestamp deviates at any processor
+!
+          if (ltest) then
+            if (lreset_tstart) then
+!
+!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
+!
+              call mpiallreduce_min_dbl(t_sp,t_dbl)
+              tstart=t_dbl
+              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,iproc, '.'
+            else
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
+                          ' IS INCONSISTENT: t=', t_sp
+              call stop_it('read_snap_double')
+            endif
+          else
+            tstart=t_sp
+          endif
+!
         endif
 !
 !  Set time or overwrite it by a given value.
 !
-        t = t_sp
-        if (lreset_tstart) t = tstart
+        if (lreset_tstart) then
+          t = tstart
+        else
+          t = t_sp
+        endif
 !
 !  Verify the read values for x, y, z, and t.
 !
@@ -787,7 +843,7 @@ module Io
           read_persist_id = .false.
         endif
       else
-        read_persist_id = outlog (io_err, 'read persistent ID '//label,lcont=.true.)
+        read_persist_id = outlog (io_err, 'persistent ID '//label,lcont=.true.)
       endif
 !
     endfunction read_persist_id
@@ -804,7 +860,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_logical_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
+      read_persist_logical_0D = outlog(io_err, 'persistent '//label,lcont=.true.)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -820,7 +876,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_logical_1D = outlog(io_err, 'read persistent '//label,lcont=.true.)
+      read_persist_logical_1D = outlog(io_err, 'persistent '//label,lcont=.true.)
 !
     endfunction read_persist_logical_1D
 !***********************************************************************
@@ -836,7 +892,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_int_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
+      read_persist_int_0D = outlog(io_err, 'persistent '//label,lcont=.true.)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -852,7 +908,7 @@ module Io
       integer :: io_err
 !
       read (lun_input, iostat=io_err) value
-      read_persist_int_1D = outlog(io_err, 'read persistent '//label,lcont=.true.)
+      read_persist_int_1D = outlog(io_err, 'persistent '//label,lcont=.true.)
 !
     endfunction read_persist_int_1D
 !***********************************************************************
@@ -882,7 +938,7 @@ module Io
         read (lun_input, iostat=io_err) value
       endif
 
-      read_persist_real_0D = outlog(io_err, 'read persistent '//label,lcont=.true.)
+      read_persist_real_0D = outlog(io_err, 'persistent '//label,lcont=.true.)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -914,7 +970,7 @@ module Io
         read (lun_input, iostat=io_err) value
       endif
 !
-      read_persist_real_1D = outlog(io_err, 'read persistent '//label, lcont=.true.)
+      read_persist_real_1D = outlog(io_err, 'persistent '//label, lcont=.true.)
 !
     endfunction read_persist_real_1D
 !***********************************************************************
@@ -951,7 +1007,7 @@ module Io
       else
         write(lun_output,IOSTAT=io_err) a
       endif
-      lerror = outlog(io_err,"write data block")
+      lerror = outlog(io_err,"data block")
       close(lun_output)
 !
       if (lserial_io) call end_serialize()
@@ -1026,7 +1082,7 @@ module Io
       else
         read(lun_input,IOSTAT=io_err) a
       endif
-      lerror = outlog(io_err,"read data block",location='read_globals_double')
+      lerror = outlog(io_err,"data block",location='read_globals_double')
 !
     endsubroutine read_globals_double
 !***********************************************************************
@@ -1055,7 +1111,7 @@ module Io
       else
         read(lun_input,IOSTAT=io_err) a
       endif
-      lerror = outlog(io_err,"read data block",location='read_globals_single')
+      lerror = outlog(io_err,"data block",location='read_globals_single')
 !
     endsubroutine read_globals_single
 !***********************************************************************
@@ -1080,7 +1136,7 @@ module Io
       lerror = outlog(io_err,"openw",trim(dir)//'/'//flist,dist=-lun_output, &
                       location='log_filename_to_file')
       write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-      lerror = outlog(io_err,"write fpart", trim(dir)//'/'//flist)
+      lerror = outlog(io_err,"fpart", trim(dir)//'/'//flist)
       close(lun_output)
 !
       if (lcopysnapshots_exp) then
@@ -1090,25 +1146,40 @@ module Io
           lerror = outlog(io_err,"openw",trim(datadir)//'/move-me.list',dist=-lun_output, &
                           location='log_filename_to_file')
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-          lerror = outlog(io_err,"write fpart")
+          lerror = outlog(io_err,"fpart")
           close(lun_output)
         endif
       endif
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file)
+    subroutine wgrid(file,mxout,myout,mzout)
 !
 !  Write processor-local part of grid coordinates.
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
-!
+!  30-sep-13/MR  : optional parameters mxout,myout,mzout added
+!                  to be able to output coordinate vectors with coordinates differing from
+!                  mx,my,mz
+
       character (len=*) :: file
+      integer, optional :: mxout,myout,mzout
 !
+      integer           :: mxout1,myout1,mzout1
       integer :: io_err
       logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
+!
+     if (present(mzout)) then
+        mxout1=mxout
+        myout1=myout
+        mzout1=mzout
+      else
+        mxout1=mx
+        myout1=my
+        mzout1=mz
+      endif
 !
       t_sp = t
 
@@ -1117,16 +1188,16 @@ module Io
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?", .true.)
       lerror = outlog(io_err,"openw",trim(directory)//'/'//file,location='wgrid')
-      write(lun_output,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      lerror = outlog(io_err,"write main data block")
+      write(lun_output,IOSTAT=io_err) t_sp,x(1:mxout1),y(1:myout1),z(1:mzout1),dx,dy,dz
+      lerror = outlog(io_err,"main data block")
       write(lun_output,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"write dx,dy,dz")
+      lerror = outlog(io_err,"dx,dy,dz")
       write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
-      lerror = outlog(io_err,"write Lx,Ly,Lz")
-      write(lun_output,IOSTAT=io_err) dx_1,dy_1,dz_1
-      lerror = outlog(io_err,"write dx_1,dy_1,dz_1")
-      write(lun_output,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      lerror = outlog(io_err,"write dx_tilde,dy_tilde,dz_tilde")
+      lerror = outlog(io_err,"Lx,Ly,Lz")
+      write(lun_output,IOSTAT=io_err) dx_1(1:mxout1),dy_1(1:myout1),dz_1(1:mzout1)
+      lerror = outlog(io_err,"dx_1,dy_1,dz_1")
+      write(lun_output,IOSTAT=io_err) dx_tilde(1:mxout1),dy_tilde(1:myout1),dz_tilde(1:mzout1)
+      lerror = outlog(io_err,"dx_tilde,dy_tilde,dz_tilde")
       close(lun_output,IOSTAT=io_err)
       lerror = outlog(io_err,'close')
 !
@@ -1149,9 +1220,9 @@ module Io
       real(KIND=4) :: t_sp   ! t in single precision for backwards compatibility
 !
       read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      lerror = outlog(io_err,"read main data block",location='input_grid_single', lcont=.true.)
+      lerror = outlog(io_err,"main data block",location='input_grid_single', lcont=.true.)
       read(lun_input,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"read dx,dy,dz",lcont=.true.)
+      lerror = outlog(io_err,"dx,dy,dz",lcont=.true.)
       read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
       if (io_err < 0) then
         ! End-Of-File: give notification that box dimensions are not read.
@@ -1159,11 +1230,11 @@ module Io
         ! We should allow this for the time being.
         call warning ('input_grid', "Lx,Ly,Lz are not yet in grid.dat")
       else
-        lerror = outlog(io_err,"read Lx,Ly,Lz")
+        lerror = outlog(io_err,"Lx,Ly,Lz")
         read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
-        lerror = outlog(io_err,"read dx_1,dy_1,dz_1")
+        lerror = outlog(io_err,"dx_1,dy_1,dz_1")
         read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-        lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")
+        lerror = outlog(io_err,"dx_tilde,dy_tilde,dz_tilde")
       endif
 !
     endsubroutine input_grid_single
@@ -1185,9 +1256,9 @@ module Io
       real(KIND=8) :: t_sp   ! t in single precision for backwards compatibility
 !
       read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      lerror = outlog(io_err,"read main data block",location='input_grid_double',lcont=.true.)
+      lerror = outlog(io_err,"main data block",location='input_grid_double',lcont=.true.)
       read(lun_input,IOSTAT=io_err) dx,dy,dz
-      lerror = outlog(io_err,"read dx,dy,dz",lcont=.true.)
+      lerror = outlog(io_err,"dx,dy,dz",lcont=.true.)
       read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
       if (io_err < 0) then
         ! End-Of-File: give notification that box dimensions are not read.
@@ -1195,11 +1266,11 @@ module Io
         ! We should allow this for the time being.
         call warning ('input_grid_double', "Lx,Ly,Lz are not yet in grid.dat")
       else
-        lerror = outlog(io_err,"read Lx,Ly,Lz",lcont=.true.)
+        lerror = outlog(io_err,"Lx,Ly,Lz",lcont=.true.)
         read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
-        lerror = outlog(io_err,"read dx_1,dy_1,dz_1",lcont=.true.)
+        lerror = outlog(io_err,"dx_1,dy_1,dz_1",lcont=.true.)
         read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-        lerror = outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde",lcont=.true.)
+        lerror = outlog(io_err,"dx_tilde,dy_tilde,dz_tilde",lcont=.true.)
       endif
 !
     endsubroutine input_grid_double
@@ -1301,11 +1372,11 @@ module Io
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
       lerror = outlog(io_err,"openw",file,location='wproc_bounds')
       write(lun_output,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'write procx_bounds')
+      lerror = outlog(io_err,'procx_bounds')
       write(lun_output,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'write procy_bounds')
+      lerror = outlog(io_err,'procy_bounds')
       write(lun_output,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'write procz_bounds')
+      lerror = outlog(io_err,'procz_bounds')
       close(lun_output,IOSTAT=io_err)
       lerror = outlog(io_err,'close')
 !
@@ -1363,11 +1434,11 @@ module Io
       logical :: lerror
 !
       read(lun_input,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'read procx_bounds')
+      lerror = outlog(io_err,'procx_bounds')
       read(lun_input,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'read procy_bounds')
+      lerror = outlog(io_err,'procy_bounds')
       read(lun_input,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'read procz_bounds')
+      lerror = outlog(io_err,'procz_bounds')
 !
     endsubroutine input_proc_bounds_double
 !***********************************************************************
@@ -1385,11 +1456,11 @@ module Io
       logical :: lerror
 !
       read(lun_input,IOSTAT=io_err) procx_bounds
-      lerror = outlog(io_err,'read procx_bounds')
+      lerror = outlog(io_err,'procx_bounds')
       read(lun_input,IOSTAT=io_err) procy_bounds
-      lerror = outlog(io_err,'read procy_bounds')
+      lerror = outlog(io_err,'procy_bounds')
       read(lun_input,IOSTAT=io_err) procz_bounds
-      lerror = outlog(io_err,'read procz_bounds')
+      lerror = outlog(io_err,'procz_bounds')
 !
     endsubroutine input_proc_bounds_single
 !***********************************************************************

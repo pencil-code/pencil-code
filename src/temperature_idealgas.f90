@@ -77,7 +77,7 @@ module Energy
   logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
 !
-!  Input parameters.
+!  Init parameters.
 !
   namelist /entropy_init_pars/ &
       initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_const, TT_const, &
@@ -204,8 +204,6 @@ module Energy
       use FArrayManager, only: farray_register_pde
       use SharedVariables, only: get_shared_variable
 !
-      integer :: ierr
-!
 !  Register TT or lnTT, depending on whether or not ltemperature_nolog
 !
       if (ltemperature_nolog) then
@@ -217,15 +215,13 @@ module Energy
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
+                               caller='register_energy')
 !
 !  real variable PrRa shared with hydro modules, used for Boussinesq
 !
-      if (lboussinesq.and.lviscosity_heat) then
-        call get_shared_variable('PrRa',PrRa,ierr)
-        if (ierr/=0) call fatal_error('register_energy','PrRa')
-      endif
+      if (lboussinesq.and.lviscosity_heat) &
+        call get_shared_variable('PrRa',PrRa)
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
@@ -268,7 +264,7 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
       logical :: lnothing
-      integer :: i, ierr
+      integer :: i
       real :: star_cte
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
@@ -395,7 +391,7 @@ module Energy
 !
 !  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
 !
-      if (bcz1(ilnTT)=='c1' .and. lrun) then
+      if (bcz12(ilnTT,1)=='c1' .and. lrun) then
         if (Fbot==impossible .and. hcond0 /= impossible) then
           Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
           if (lroot) print*, &
@@ -426,30 +422,20 @@ module Energy
 !
 !  Now we share several variables.
 !
-      call put_shared_variable('hcond0', hcond0, ierr)
-      call put_shared_variable('hcond1', hcond1, ierr)
-      call put_shared_variable('hcond2', hcond2, ierr)
-      call put_shared_variable('lmultilayer', lmultilayer, ierr)
-      call put_shared_variable('widthlnTT', widthlnTT, ierr)
-      if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting hcond0')
-      call put_shared_variable('Fbot', Fbot, ierr)
-      if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting Fbot')
-      call put_shared_variable('lADI_mixed', lADI_mixed, ierr)
-      if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting lADI_mixed')
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting lviscosity_heat')
+      call put_shared_variable('hcond0', hcond0, caller='initialize_energy')
+      call put_shared_variable('hcond1', hcond1)
+      call put_shared_variable('hcond2', hcond2)
+      call put_shared_variable('lmultilayer', lmultilayer)
+      call put_shared_variable('widthlnTT', widthlnTT)
+      call put_shared_variable('Fbot', Fbot)
+      call put_shared_variable('lADI_mixed', lADI_mixed)
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
 !
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
 !  problem).
 !
       hole_params=(/Tbump,Kmin,Kmax,hole_slope,hole_width/)
-      call put_shared_variable('hole_params',hole_params,ierr)
-      if (ierr/=0) call fatal_error('initialize_energy', &
-          'there was a problem when putting the hole_params array')
+      call put_shared_variable('hole_params',hole_params)
 !
 !  A word of warning...
 !

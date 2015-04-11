@@ -180,10 +180,10 @@ include 'NSCBC.h'
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
           topbot='bot'; bc12(j)=nscbc_bc1(j);!val=bt_val1(j)
-          valx=fbcx1; valy=fbcy1; valz=fbcz1; ip_ok=0
+          valx=fbcx(:,1); valy=fbcy(:,1); valz=fbcz(:,1); ip_ok=0
         else
           topbot='top'; bc12(j)=nscbc_bc2(j);!val=bt_val2(j)
-          valx=fbcx2; valy=fbcy2; valz=fbcz2
+          valx=fbcx(:,2); valy=fbcy(:,2); valz=fbcz(:,2)
           if (j==1) ip_ok=nprocx-1
           if (j==2) ip_ok=nprocy-1
           if (j==3) ip_ok=nprocz-1
@@ -1174,8 +1174,8 @@ include 'NSCBC.h'
             do jjj=imin,imax
               do kkk=jmin,jmax
                 if (dir==1) then
-                   vel = fbcx1(1)
-                   rad = fbcx2(1)
+                   vel = fbcx(1,1)
+                   rad = fbcx(1,2)
                    call jet_x(prof,vel,rad)
                    u_in(:,:,1)=prof
                 elseif (dir==2) then

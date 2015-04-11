@@ -2106,9 +2106,11 @@ module EquationOfState
       !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       !use Magnetic_meanfield, only: meanfield_chitB
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
-      real, dimension (nx,3) :: bb
-      real, dimension (nx) :: rho,b2,quench
+      real, dimension (:,:,:,:), intent(in) :: f
+      real, dimension (:),       intent(out):: quench
+!
+      real, dimension (size(quench),3) :: bb
+      real, dimension (size(quench)) :: rho,b2
       character (len=*), intent(in) :: task
       integer :: j
 !
@@ -2161,7 +2163,10 @@ module EquationOfState
 !
 !   8-jun-13/axel: coded
 !
-      real, dimension (nx) :: rho,b2,Beq21,quench
+      real, dimension(:), intent(IN) :: rho,b2
+      real, dimension(:), intent(OUT):: quench
+!
+      real, dimension(size(rho)) :: Beq21
 !
 !  compute Beq21 = 1/Beq^2
 !XX
@@ -2196,8 +2201,8 @@ module EquationOfState
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -2345,9 +2350,9 @@ module EquationOfState
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
-      real, dimension (nx) :: quench
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
+      real, dimension (l2-l1+1) :: quench
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2488,8 +2493,8 @@ module EquationOfState
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -2997,8 +3002,8 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: tmp_xy
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -3020,8 +3025,7 @@ module EquationOfState
 !  bottom boundary
 !
       case ('bot')
-!
-        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*,'bc_ss_temp_old: cannot have cs2bot = ', cs2bot, ' <= 0'
@@ -3040,13 +3044,12 @@ module EquationOfState
 !  top boundary
 !
       case ('top')
-!
-        if ((bcz2(ilnrho) /= 'a2') .and. (bcz2(ilnrho) /= 'a3')) &
+        if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, 'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, 'bc_ss_temp_old: cannot have cs2top = ',cs2top, ' <= 0'
 !
-  !     if (bcz1(ilnrho) /= 'a2') &
+  !     if (bcz12(ilnrho,1) /= 'a2') &
   !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
         call getlnrho(f(:,:,n2,ilnrho),tmp_xy)
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2top/cs20)) / gamma
@@ -3073,7 +3076,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       real, dimension(my,mz) :: lnrho_yz
       integer :: i
@@ -3197,7 +3200,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
       real, dimension(mx,mz) :: lnrho_xz
@@ -3293,7 +3296,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3421,7 +3424,7 @@ module EquationOfState
       use Gravity, only: gravz
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3512,7 +3515,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -3621,7 +3624,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 
       real :: tmp
       real, dimension(mx,my) :: lnrho_xy
@@ -3682,7 +3685,7 @@ module EquationOfState
       use Gravity, only: gravz
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 
       real :: tmp,dcs2bot
       integer :: i
@@ -3746,7 +3749,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho
 
       character (len=3) :: topbot
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), allocatable :: rho_yz,dlnrho
       real, dimension(:,:), pointer :: reference_state
@@ -3829,7 +3832,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho_y
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       integer :: i
       real, dimension(mx,mz) :: dlnrho
@@ -3884,7 +3887,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(mx,my) :: dlnrho
       real, dimension(:,:), pointer :: reference_state
@@ -3940,7 +3943,7 @@ module EquationOfState
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -3998,7 +4001,7 @@ module EquationOfState
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -4056,7 +4059,7 @@ module EquationOfState
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
 !
@@ -4108,8 +4111,8 @@ module EquationOfState
 !
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: cs2_2d
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
@@ -4153,7 +4156,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       call keep_compiler_quiet(f)
@@ -4180,9 +4183,9 @@ module EquationOfState
       use Gravity, only: potential
       use Sub, only: div
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-      real, dimension (my,mz) :: cs2,gravterm,centterm,uphi,rho
+      real, dimension (size(f,2),size(f,3)) :: cs2,gravterm,centterm,uphi,rho
       real :: potp,potm,rad,step
       integer :: i
       real, dimension(:,:), pointer :: reference_state
@@ -4287,11 +4290,11 @@ module EquationOfState
       use Gravity, only: potential, gravz
       use Sub, only: div
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
-      real, dimension (mx,my) :: cs2
-      real, dimension (nx) :: shock,divu
+      real, dimension (size(f,1),size(f,2)) :: cs2
+      real, dimension (l2-l1+1) :: divu
       real :: rho,ss,dlnrhodz, dssdz, cs2_point
       real :: potp,potm
       integer :: i
@@ -4311,7 +4314,7 @@ module EquationOfState
 !  The following might work for anelastic
 !
           if (ldensity) then
-            if (bcz1(iss)/='hs') then
+            if (bcz12(iss,1)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
@@ -4332,7 +4335,7 @@ module EquationOfState
               f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - dz2_bound(-i)*dssdz
             enddo
           else if (lanelastic) then
-            if (bcz1(iss_b)/='hs') then
+            if (bcz12(iss_b,1)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
@@ -4340,7 +4343,7 @@ module EquationOfState
             call eoscalc(ipp_ss,log(f(l1,m1,n1,irho_b)),f(l1,m1,n1,iss_b), &
                          cs2=cs2_point)
 !
-            dlnrhodz =  gamma *gravz/cs2_point
+            dlnrhodz = gamma *gravz/cs2_point
             dssdz    = gamma_m1*gravz/cs2_point
 !
             do i=1,nghost
@@ -4353,7 +4356,7 @@ module EquationOfState
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz1(ilntt)/='s') then
+          if (bcz12(ilntt,1)/='s') then
             call fatal_error("bc_lnrho_hds_z_iso", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(ilntt)='s'")
@@ -4384,9 +4387,8 @@ module EquationOfState
               ! needed.
               n = n1+i
               do m = m1,m2
-                shock = f(l1:l2,m,n,ishock)
                 call div(f,iuu,divu)
-                cs2(l1:l2,m) = cs2bot - shock*divu
+                cs2(l1:l2,m) = cs2bot - f(l1:l2,m,n,ishock)*divu
               enddo
             endif
 !
@@ -4408,7 +4410,7 @@ module EquationOfState
 !
           if (ldensity) then
 
-            if (bcz2(iss)/='hs') then
+            if (bcz12(iss,2)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                   "This boundary condition for density is "//&
                   "currently only correct for bcz2(iss)='hs'")
@@ -4437,7 +4439,7 @@ module EquationOfState
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz2(ilntt)/='s') then
+          if (bcz12(ilntt,2)/='s') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
                 "This boundary condition for density is "//&
                 "currently only correct for bcz2(ilntt)='s'")
@@ -4467,9 +4469,8 @@ module EquationOfState
               ! needed.
               n = n2-i
               do m = m1,m2
-                shock = f(l1:l2,m,n,ishock)
                 call div(f,iuu,divu)
-                cs2(l1:l2,m) = cs2top - shock*divu
+                cs2(l1:l2,m) = cs2top - f(l1:l2,m,n,ishock)*divu
               enddo
             else
             endif
@@ -4503,7 +4504,7 @@ module EquationOfState
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
@@ -4524,7 +4525,7 @@ module EquationOfState
         kappa = sqrt(kx**2 + ky**2)
       endif
 !
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4624,17 +4625,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_transport_data
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
     endsubroutine read_transport_data
 !***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
+    subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
 !***********************************************************************

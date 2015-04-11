@@ -224,8 +224,6 @@ module Energy
       use SharedVariables
       use Sub
 !
-      integer :: ierr
-!
       call farray_register_pde('ss',iss)
       call farray_register_auxiliary('ss_b',iss_b,communicated=.true.)
 !
@@ -257,7 +255,7 @@ module Energy
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
       real :: beta1, beta0, TT_crit
-      integer :: i, ierr, q
+      integer :: i, q
       logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
 !
@@ -354,7 +352,7 @@ module Energy
           !  calculate Fbot if it has not been set in run.in
           !
           if (Fbot==impossible) then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Fbot = ', Fbot
@@ -371,7 +369,7 @@ module Energy
           !  calculate Ftop if it has not been set in run.in
           !
           if (Ftop==impossible) then
-            if (bcz2(iss)=='c1') then
+            if (bcz12(iss,2)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Ftop = ',Ftop
@@ -394,7 +392,7 @@ module Energy
           !  calculate Fbot if it has not been set in run.in
           !
           if (Fbot==impossible) then
-            if (bcz1(iss)=='c1') then
+            if (bcz12(iss,1)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                    'initialize_energy: Calculated Fbot = ', Fbot
@@ -414,7 +412,7 @@ module Energy
           !  calculate Ftop if it has not been set in run.in
           !
           if (Ftop==impossible) then
-            if (bcz2(iss)=='c1') then
+            if (bcz12(iss,2)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                       'initialize_energy: Calculated Ftop = ', Ftop
@@ -488,7 +486,7 @@ module Energy
           call star_heat(f,lcompute_grav)
 !
         case ('cylind_layers')
-          if (bcx1(iss)=='c1') then
+          if (bcx12(iss,1)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif
@@ -561,13 +559,8 @@ module Energy
 !
 ! Shared variables
 !
-      call put_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("initialize_energy: "//&
-           "there was a problem when putting hcond0")
-!
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_energy: "//&
-           "there was a problem when putting lviscosity_heat")
+      call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
 !
       call keep_compiler_quiet(f)
 !
@@ -3563,16 +3556,13 @@ module Energy
       real, dimension (nx) :: lnrho, TT, ss, z_mn
       real :: beta, cp1, zbot, ztop, TT0
       real, pointer :: gravx
-      integer :: ierr
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
       if (lcylindrical_coords) then
-        call get_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call stop_it("single_polytrope: "//&
-           "there was a problem when getting gravx")
+        call get_shared_variable('gravx', gravx, caller='single_polytrope')
         beta=cp1*gamma/gamma_m1*gravx/(mpoly0+1)
       else
         beta=cp1*gamma/gamma_m1*gravz/(mpoly0+1)
