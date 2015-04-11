@@ -102,27 +102,36 @@ module Messages
 !***********************************************************************
    subroutine fatal_error(location,message,force)
 !
+      use General, only: loptest
+
       character(len=*), optional :: location
       character(len=*)           :: message
       logical,          optional :: force
 !
-      logical :: fatal = .false.
+      logical :: fatal
 !
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
+!
         errors=errors+1
-        if (present(force)) fatal=force
+        fatal=loptest(force)
 !
         if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(scaller) // ": " // trim(message)
+          if (scaller=='') then
+            write (*,*) trim(message)
+          else
+            write (*,*) trim(scaller) // ": " // trim(message)
+          endif
         endif
 !
-        if (ldie_onfatalerror .and. fatal) call die_immediately
-        if (ldie_onfatalerror) call die_gracefully
+        if (ldie_onfatalerror) then
+          if (fatal) call die_immediately
+          call die_gracefully
+        endif
 !
       endif
 !

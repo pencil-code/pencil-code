@@ -145,8 +145,6 @@ module EquationOfState
 !
       use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
- 
-      integer :: ierr
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -186,8 +184,8 @@ module EquationOfState
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
 
       if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,ierr)
-        call put_shared_variable('lnrho0',lnrho0,ierr)
+        call put_shared_variable('rho0',rho0,caller='initialize_eos')
+        call put_shared_variable('lnrho0',lnrho0)
       endif
 !
 !  write scale non-free constants to file; to be read by idl
@@ -1077,7 +1075,6 @@ module EquationOfState
 !
       use Gravity
       use Mpicomm,only:stop_it
-      use SharedVariables,only:get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -1122,7 +1119,7 @@ module EquationOfState
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma_m1/gamma* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+dz2_bound(-i)*tmp_xy)
         enddo
 !
 !  top boundary
@@ -1153,7 +1150,7 @@ module EquationOfState
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma_m1/gamma* &
-              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
+              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-dz2_bound(i)*tmp_xy)
         enddo
       case default
         call fatal_error('bc_ss_flux','invalid argument')
@@ -1513,7 +1510,7 @@ module EquationOfState
         tmp=-gravz/cs2bot
         do i=1,nghost
           f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,iss) &
-                                                  -f(:,:,n1-i,iss) +2*i*dz*tmp
+                                                  -f(:,:,n1-i,iss) +dz2_bound(-i)*tmp
         enddo
 !
 !  top boundary
@@ -1536,7 +1533,7 @@ module EquationOfState
         tmp=gravz/cs2top
         do i=1,nghost
           f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,iss) &
-                                                  -f(:,:,n2+i,iss) +2*i*dz*tmp
+                                                  -f(:,:,n2+i,iss) +dz2_bound(i)*tmp
         enddo
 !
       case default
@@ -1554,6 +1551,7 @@ module EquationOfState
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
+      use DensityMethods, only: putlnrho
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1594,7 +1592,7 @@ module EquationOfState
 !
           f(:,:,n2,ilnrho)=lnrho_top+ss_top-f(:,:,n2,iss)
         else
-          f(:,:,n2,ilnrho)=lnrho_top
+          call putlnrho(f(:,:,n2,ilnrho),lnrho_top)
         endif
 !
 !  make density antisymmetric about boundary
@@ -1630,7 +1628,7 @@ module EquationOfState
 !
           f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,iss)
         else
-          f(:,:,n1,ilnrho)=lnrho_bot
+          call putlnrho(f(:,:,n1,ilnrho),lnrho_bot)
         endif
 !
 !  make density antisymmetric about boundary
@@ -2099,11 +2097,12 @@ module EquationOfState
 !  16-May-2006/tobi: isentropic lower boundary
 !
       use Gravity, only: gravz,gravz_profile,reduced_top
+      use DensityMethods, only: getlnrho
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
-      real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1
+      real, dimension (mx,my) :: lnrho,lnTT,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
       real, dimension (mx,my) :: yH_term_cv,yH_term_cp
@@ -2131,9 +2130,8 @@ module EquationOfState
 !
 !  Get variables from f-array
 !
-        lnrho = f(:,:,n1,ilnrho)
+        call getlnrho(f(:,:,n1,ilnrho),lnrho)
         lnTT = f(:,:,n1,ilnTT)
-        rho1 = exp(-lnrho)
         TT1 = exp(-lnTT)
 !
 !  Hydrogen ionization fraction
@@ -2184,8 +2182,8 @@ module EquationOfState
 !  Fill ghost zones accordingly
 !
         do i=1,nghost
-          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
-          f(:,:,n1-i,ilnTT)  = f(:,:,n1+i,ilnTT)  - 2*i*dz*dlnTTdz
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - dz2_bound(-i)*dlnrhodz
+          f(:,:,n1-i,ilnTT)  = f(:,:,n1+i,ilnTT)  - dz2_bound(-i)*dlnTTdz
         enddo
 !
 !  Top boundary
@@ -2203,12 +2201,11 @@ module EquationOfState
 !
 !  Get variables from f-array
 !
-        lnrho = f(:,:,n2,ilnrho)
+        call getlnrho(f(:,:,n2,ilnrho),lnrho)
         lnTT = f(:,:,n2,ilnTT)
-        rho1 = exp(-lnrho)
         TT1 = exp(-lnTT)
 !
-!  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
+!  `Effective' gravitational acceleration (geff = gravz - rho^-1*dz1ppm)
 !
         if (gravz_profile=='reduced_top') then
           fac = reduced_top
@@ -2241,7 +2238,7 @@ module EquationOfState
 !  Fill ghost zones accordingly
 !
         do i=1,nghost
-          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + dz2_bound(i)*dlnrhodz
           f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
         enddo
 !

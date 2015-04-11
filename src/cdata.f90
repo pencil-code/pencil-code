@@ -354,7 +354,7 @@ module Cdata
 !
 !  Variables related to calculating diagnostic output.
 !
-  character (len=1) :: comment_char='#'
+  character :: comment_char='#'
   integer :: it1=10,it1d=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
