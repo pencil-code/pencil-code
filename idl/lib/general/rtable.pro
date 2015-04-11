@@ -25,7 +25,7 @@ endif
 ;
 ;  read: free format
 ;
-a=fltarr(ncolumn) & aa=a & n=0L
+a=dblarr(ncolumn) & aa=a & n=0L
 if n_elements(form) eq 0 then begin
   readf,lun,a
   n=n+1L
