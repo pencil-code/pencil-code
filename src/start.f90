@@ -100,7 +100,7 @@ program start
 !
 !  Get processor numbers and define whether we are root.
 !
-  call mpicomm_init
+  call mpicomm_init()
 !
 !  Check if parallelization and chosen grid numbers make sense.
 !
@@ -164,7 +164,7 @@ program start
 !
 !  Read parameters from start.in.
 !
-  call read_startpars()
+  call read_startpars(FILE=.true.,LIERR=.true.)
 !
 !  Initialise MPI communication.
 !
@@ -550,7 +550,7 @@ program start
 !
   if (lroot) then
     call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
     if (lparticles) call write_dim_particles(trim(datadir))
   endif
 !
@@ -571,7 +571,7 @@ program start
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules(f)
+  call finalize_modules(f,.true.)
 !
 !  Stop MPI.
 !
@@ -579,6 +579,7 @@ program start
 !
 !  Free any allocated memory.
 !
+999 continue
   call farray_clean_up()
   call sharedvars_clean_up()
   call initial_condition_clean_up()

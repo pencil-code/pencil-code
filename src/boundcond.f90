@@ -49,7 +49,7 @@ module Boundcond
 !
 !  21-sep-02/wolf: extracted from wsnaps
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
 !
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
@@ -65,7 +65,7 @@ module Boundcond
 !
 !  11-aug-11/wlad: adapted from update_ghosts
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer  :: ivar1,ivar2
       integer, optional :: ivar2_opt
 !
@@ -132,11 +132,11 @@ module Boundcond
 !
 !  10-oct-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
       integer :: ivar1, ivar2
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -162,23 +162,21 @@ module Boundcond
       use Shear
       use Special, only: special_boundconds
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      real, dimension (mcom) :: fbcx12
-      real, dimension (mcom) :: fbcx2_12
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
-      character (len=bclen), dimension(mcom) :: bc12
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
+!!print*, 'boundconds_x: mcom,mfarray,ivar1,ivar2=', mcom,mfarray,ivar1,ivar2
       select case (nxgrid)
 !
       case (1)
@@ -191,35 +189,35 @@ module Boundcond
 !  Use the following construct to keep compiler from complaining if
 !  we have no variables (and boundconds) at all (samples/no-modules):
 !
-        if (all(bcx1(ivar1:ivar2)=='she') .and. all(bcx2(ivar1:ivar2)=='she')) then
+        if (all(bcx12(ivar1:ivar2,:)=='she')) then
           call boundcond_shear(f,ivar1,ivar2)
         else
           do k=1,2
             ! loop over 'bot','top'
             if (k==1) then
-              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=lfirst_proc_x
+              topbot='bot'; ip_ok=lfirst_proc_x
             else
-              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=llast_proc_x
+              topbot='top'; ip_ok=llast_proc_x
             endif
 !
             do j=ivar1,ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
 ! If ndustspec is large, it is stupid to set bc for all dust species
-! in start.in. But if one does not set them, they becomes 'p' by default
-! Since this problem is crutial  only for aerosol + chemistry
+! in start.in. But if one does not set them, they become 'p' by default
+! Since this problem is crucial only for aerosol + chemistry
 ! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
-!            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
+!            if ((bcx12(j,k)=='p') .and. lchemistry .and. ldustdensity) bcx12(j,k)=''
 !
-              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
-              if (bc12(j) == 'she') then
-                if (bcx1(j) /= bcx2(j)) &
+              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bcx12(j,k)
+              if (bcx12(j,k) == 'she') then
+                if (bcx12(j,1) /= bcx12(j,2)) &
                   call fatal_error_local('boundconds_x', 'generalize me to have sheared periodic boundary on only one end.')
                 if (k == 1) call boundcond_shear(f, j, j)
               elseif (ip_ok) then
-                select case (bc12(j))
+                select case (bcx12(j,k))
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
                   call bc_zero_x(f,topbot,j)
@@ -235,7 +233,7 @@ module Boundcond
                   call bc_symset_x(f,+1,topbot,j)
                 case ('sds')
                   ! BCY_DOC: symmetric-derivative-set
-                  call bc_symderset_x(f,topbot,j,val=fbcx12)
+                  call bc_symderset_x(f,topbot,j,val=fbcx(:,k))
                 case ('s0d')
                   ! BCX_DOC: symmetry, function value such that df/dx=0
                   call bc_symset0der_x(f,topbot,j)
@@ -329,21 +327,21 @@ module Boundcond
                   ! BCX_DOC: $f=1$ (for debugging)
                   call bc_one_x(f,topbot,j)
                 case ('set')
-                  ! BCX_DOC: set boundary value to \var{fbcx12}
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
+                  ! BCX_DOC: set boundary value to \var{fbcx}
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx(:,k))
                 case ('der')
-                  ! BCX_DOC: set derivative on boundary to \var{fbcx12}
-                  call bc_set_der_x(f,topbot,j,fbcx12(j))
+                  ! BCX_DOC: set derivative on boundary to \var{fbcx}
+                  call bc_set_der_x(f,topbot,j,fbcx(j,k))
                 case ('slo')
-                  ! BCX_DOC: set slope at the boundary = \var{fbcx12}
-                  call bc_slope_x(f,fbcx12,topbot,j)
+                  ! BCX_DOC: set slope at the boundary = \var{fbcx}
+                  call bc_slope_x(f,fbcx(:,k),topbot,j)
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
-                  call bc_dr0_x(f,fbcx12,topbot,j)
+                  call bc_dr0_x(f,fbcx(:,k),topbot,j)
                 case ('ovr')
                   ! BCX_DOC: overshoot boundary condition
                   ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
-                  call bc_overshoot_x(f,fbcx12,topbot,j)
+                  call bc_overshoot_x(f,fbcx(:,k),topbot,j)
                 case ('out')
                   ! BCX_DOC: allow outflow, but no inflow
                   ! BCX_DOC: forces ghost cells and boundary to not point inwards
@@ -354,7 +352,7 @@ module Boundcond
                   call bc_outflow_x_e1(f,topbot,j,.true.)
                 case ('ant')
                   ! BCX_DOC: stops and prompts for adding documentation
-                  call bc_antis_x(f,fbcx12,topbot,j)
+                  call bc_antis_x(f,fbcx(:,k),topbot,j)
                 case ('e1')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_1(f,topbot,j)
@@ -367,14 +365,14 @@ module Boundcond
                 case ('hat')
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
-                  call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
+                  call bc_set_jethat_x(f,j,topbot,fbcx(:,k),fbcx_2(:,k))
                 case ('jet')
                   ! BCX_DOC: top hat jet profile in cartezian coordinate.
                   !Defined only for the bottom boundary
-                  call bc_set_jet_x(f,j,topbot,fbcx12,fbcx2_12)
+                  call bc_set_jet_x(f,j,topbot,fbcx(:,k),fbcx_2(:,k))
                 case ('spd')
-                  ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
-                  call bc_set_spder_x(f,topbot,j,fbcx12(j))
+                  ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx(j)}$
+                  call bc_set_spder_x(f,topbot,j,fbcx(j,k))
                 case ('sfr')
                   ! BCX_DOC: stress-free boundary condition
                   ! BCX_DOC: for spherical coordinate system.
@@ -397,7 +395,7 @@ module Boundcond
                   call bc_set_pfc_x(f,topbot,j)
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
-                  call bc_fix_x(f,topbot,j,fbcx12(j))
+                  call bc_fix_x(f,topbot,j,fbcx(j,k))
                 case ('fil')
                   ! BCX_DOC: set boundary value from a file
                   call bc_file_x(f,topbot,j)
@@ -417,17 +415,17 @@ module Boundcond
                 case ('ioc')
                   ! BCX_DOC: inlet/outlet on western/eastern hemisphere
                   ! BCX_DOC: in cylindrical coordinates
-                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
+                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx(:,k))
                 case ('tay')
                   call tayler_expansion(f,topbot,j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
-                  bc%bcname=bc12(j)
+                  bc%bcname=bcx12(j,k)
                   bc%ivar=j
                   bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
-                  bc%value1=fbcx12(j)
-                  bc%value2=fbcx12(j)
+                  bc%value1=fbcx(j,k)
+                  bc%value2=fbcx(j,k)
                   bc%done=.false.
 !
                   call special_boundconds(f,bc)
@@ -435,7 +433,7 @@ module Boundcond
                   if (.not.bc%done) then
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &
                          "No such boundary condition bcx1/2 = ", &
-                         bc12(j), " for j=", j
+                         bcx12(j,k), " for j=", j
                     call fatal_error_local("boundconds_x: ",trim(errormsg))
                   endif
                 endselect
@@ -461,19 +459,17 @@ module Boundcond
       use Special, only: special_boundconds
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      real, dimension (mcom) :: fbcy12, fbcy12_1, fbcy12_2
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
-      character (len=bclen), dimension(mcom) :: bc12
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -487,12 +483,10 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcy1
-            fbcy12=fbcy1; fbcy12_1=fbcy1_1; fbcy12_2=fbcy1_2
+            topbot='bot'; 
             ip_ok=lfirst_proc_y
           else
-            topbot='top'; bc12=bcy2
-            fbcy12=fbcy2; fbcy12_1=fbcy2_1; fbcy12_2=fbcy2_2
+            topbot='top'; 
             ip_ok=llast_proc_y
           endif
 !
@@ -505,11 +499,11 @@ module Boundcond
 ! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
-!            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
+!            if ((bcy12(j,k)=='p') .and. lchemistry .and. ldustdensity) bcy12(j,k)=''
 !
-            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
+            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bcy12(j,k)
             if (ip_ok) then
-              select case (bc12(j))
+              select case (bcy12(j,k))
               case ('0')
                 ! BCY_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_y(f,topbot,j)
@@ -531,10 +525,10 @@ module Boundcond
                 call bc_symset_y(f,+1,topbot,j)
               case ('sds')
                 ! BCY_DOC: symmetric-derivative-set
-                call bc_symderset_y(f,topbot,j,val=fbcy12)
+                call bc_symderset_y(f,topbot,j,val=fbcy(:,k))
               case ('cds')
                 ! BCY_DOC: complex symmetric-derivative-set
-                call bc_csymderset_y(f,topbot,j,val=fbcy12)
+                call bc_csymderset_y(f,topbot,j,val=fbcy(:,k))
               case ('s0d')
                 ! BCY_DOC: symmetry, function value such that df/dy=0
                 call bc_symset0der_y(f,topbot,j)
@@ -600,13 +594,13 @@ module Boundcond
                 call bc_one_y(f,topbot,j)
               case ('set')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
+                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy(:,k))
               case ('sse')
                 ! BCY_DOC:  symmetry, set boundary value
-                call bc_sym_y(f,+1,topbot,j,val=fbcy12)
+                call bc_sym_y(f,+1,topbot,j,val=fbcy(:,k))
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12,val2=fbcy12_1,val4=fbcy12_2)
+                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy(:,k),val2=fbcy_1(:,k),val4=fbcy_2(:,k))
               case ('e1')
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_1(f,topbot,j)
@@ -618,7 +612,7 @@ module Boundcond
                 call bcy_extrap_2_3(f,topbot,j)
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
-                call bc_set_der_y(f,topbot,j,fbcy12(j))
+                call bc_set_der_y(f,topbot,j,fbcy(j,k))
               case ('cop')
                 ! BCY_DOC: outflow: copy value of last physical point to
                 ! BCY_DOC: all ghost cells
@@ -652,10 +646,10 @@ module Boundcond
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
               case default
-                bc%bcname=bc12(j)
+                bc%bcname=bcy12(j,k)
                 bc%ivar=j
-                bc%value1=fbcy12(j)
-                bc%value2=fbcy12(j)
+                bc%value1=fbcy(j,k)
+                bc%value2=fbcy(j,k)
                 bc%location=(((k-1)*4)-2)   ! -2/2 for y bot/top
                 bc%done=.false.
 !
@@ -663,7 +657,7 @@ module Boundcond
 !
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
-                       bc12(j), " for j=", j
+                       bcy12(j,k), " for j=", j
                   call fatal_error_local("boundconds_y: ",trim(errormsg))
                 endif
               endselect
@@ -691,18 +685,17 @@ module Boundcond
       use Special, only: special_boundconds
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-      real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2, fbcz_zero=0.
+      real, dimension (size(f,4)) :: fbcz_zero
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
-      character (len=bclen), dimension(mcom) :: bc12
       character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -717,24 +710,16 @@ module Boundcond
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
             topbot='bot'
-            bc12=bcz1
-            fbcz12=fbcz1
-            fbcz12_1=fbcz1_1
-            fbcz12_2=fbcz1_2
             ip_ok=lfirst_proc_z
           else
             topbot='top'
-            bc12=bcz2
-            fbcz12=fbcz2
-            fbcz12_1=fbcz2_1
-            fbcz12_2=fbcz2_2
             ip_ok=llast_proc_z
           endif
 !
           do j=ivar1,ivar2
-            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
+            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bcz12(j,k)
             if (ip_ok) then
-              select case (bc12(j))
+              select case (bcz12(j,k))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_z(f,topbot,j)
@@ -764,6 +749,7 @@ module Boundcond
                 call bc_sf_z(f,-1,topbot,j)
               case ('a0d')
                 ! BCZ_DOC: antisymmetry with zero derivative
+                fbcz_zero=0.
                 call bc_sym_z(f,+1,topbot,j,VAL=fbcz_zero)
               case ('v')
                 ! BCZ_DOC: vanishing third derivative
@@ -936,20 +922,20 @@ module Boundcond
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
               case ('set')
                 ! BCZ_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
+                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,k))
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12,val2=fbcz12_1,val4=fbcz12_2)
+                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,k),val2=fbcz_1(:,k),val4=fbcz_2(:,k))
               case ('der')
                 ! BCZ_DOC: set derivative on the boundary
-                call bc_set_der_z(f,topbot,j,fbcz12(j))
+                call bc_set_der_z(f,topbot,j,fbcz(j,k))
               case ('div')
                 ! BCZ_DOC: set the divergence of $\uv$ to a given value
                 ! BCZ_DOC: use bc = 'div' for iuz
-                call bc_set_div_z(f,topbot,j,fbcz12(j))
+                call bc_set_div_z(f,topbot,j,fbcz(j,k))
               case ('ovr')
                 ! BCZ_DOC: set boundary value
-                call bc_overshoot_z(f,fbcz12,topbot,j)
+                call bc_overshoot_z(f,fbcz(:,k),topbot,j)
               case ('inf')
                 ! BCZ_DOC: allow inflow, but no outflow
                 call bc_inflow_z(f,topbot,j)
@@ -992,7 +978,7 @@ module Boundcond
                 ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
-                   call bc_wind_z(f,topbot,fbcz12(j))     !
+                   call bc_wind_z(f,topbot,fbcz(j,k))   !
                    call bc_sym_z(f,+1,topbot,j)           !  's'
                    call bc_sym_z(f,+1,topbot,iuz)         !  's'
                 endif
@@ -1002,18 +988,18 @@ module Boundcond
               case ('nil')
                 ! BCZ_DOC: do nothing; assume that everything is set
               case default
-                bc%bcname=bc12(j)
+                bc%bcname=bcz12(j,k)
                 bc%ivar=j
                 bc%location=(((k-1)*6)-3)   ! -3/3 for z bot/top
-                bc%value1=fbcz12_1(j)
-                bc%value2=fbcz12_2(j)
+                bc%value1=fbcz_1(j,k)
+                bc%value2=fbcz_2(j,k)
                 bc%done=.false.
 !
                 if (lspecial) call special_boundconds(f,bc)
 !
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
-                       bc12(j), " for j=", j
+                       bcz12(j,k), " for j=", j
                   call fatal_error_local("boundconds_z: ",trim(errormsg))
                 endif
               endselect
@@ -1024,7 +1010,7 @@ module Boundcond
 !
     endsubroutine boundconds_z
 !***********************************************************************
-    subroutine bc_pencil_scalar(penc, ncell, nghost, bc1, bc2, d2_bound, bound)
+    subroutine bc_pencil_scalar(penc, ncell, nghost, bc, d2_bound, bound)
 !
 ! Apply boundary conditions to a 1D scalar of arbitrary size.
 !
@@ -1046,7 +1032,7 @@ module Boundcond
 !
       integer, intent(in) :: ncell, nghost
       real, dimension(1-nghost:ncell+nghost), intent(inout) :: penc
-      character(len=*), intent(in) :: bc1, bc2
+      character(len=*), dimension(2), intent(in) :: bc
       real, dimension(-nghost:nghost), optional :: d2_bound
       real, dimension(2), optional :: bound
 
@@ -1054,7 +1040,7 @@ module Boundcond
 !
 ! Apply lower boundary condition.
 !
-      lower: select case (bc1)
+      lower: select case (bc(1))
 !     Nothing
       case ('') lower
 !     Periodic
@@ -1086,7 +1072,7 @@ module Boundcond
 !
 ! Apply upper boundary condition.
 !
-      upper: select case (bc2)
+      upper: select case (bc(2))
 !     Nothing
       case ('') upper
 !     Periodic
@@ -1118,7 +1104,7 @@ module Boundcond
 !
     endsubroutine bc_pencil_scalar
 !***********************************************************************
-    subroutine bc_pencil_vector(penc, ncell, nghost, ncomp, bc1, bc2, d2_bound, bound)
+    subroutine bc_pencil_vector(penc, ncell, nghost, ncomp, bc, d2_bound, bound)
 !
 ! Apply boundary conditions to a 1D vector of arbitrary size.
 !
@@ -1137,14 +1123,14 @@ module Boundcond
 !
       integer, intent(in) :: ncell, nghost, ncomp
       real, dimension(1-nghost:ncell+nghost, ncomp), intent(inout) :: penc
-      character(len=*), dimension(ncomp), intent(in) :: bc1, bc2
+      character(len=*), dimension(ncomp,2), intent(in) :: bc
       real, dimension(-nghost:nghost), optional :: d2_bound
       real, dimension(2), optional :: bound
 !
       integer :: j
 !
       comp: do j = 1, ncomp
-        call bc_pencil_scalar(penc(:,j), ncell, nghost, bc1(j), bc2(j), d2_bound, bound)
+        call bc_pencil_scalar(penc(:,j), ncell, nghost, bc(j,:), d2_bound, bound)
       enddo comp
 !
     endsubroutine bc_pencil_vector
@@ -1155,7 +1141,7 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -1165,7 +1151,7 @@ module Boundcond
         if (nprocx==1) f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
 !
       case ('top')               ! top boundary
-        if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
+        if (nprocx==1) f(l2+1:,:,:,j) = f(l1:l1i,:,:,j)
 !
       case default
         print*, "bc_per_x: ", topbot, " should be 'top' or 'bot'"
@@ -1180,7 +1166,7 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -1190,7 +1176,7 @@ module Boundcond
         if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
 !
       case ('top')               ! top boundary
-        if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
+        if (nprocy==1) f(:,m2+1:,:,j) = f(:,m1:m1i,:,j)
 !
       case default
         print*, "bc_per_y: ", topbot, " should be 'top' or 'bot'"
@@ -1205,7 +1191,7 @@ module Boundcond
 !
 !  15-june-10/dhruba: aped
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,nhalf
       character (len=bclen) :: topbot
 !
@@ -1245,7 +1231,7 @@ module Boundcond
 !
 !  15-june-10/dhruba: aped
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,nhalf
       character (len=bclen) :: topbot
 !
@@ -1259,8 +1245,8 @@ module Boundcond
         endif
       case ('top')               ! top boundary
         if (nprocz==1) then
-           f(:,m2+1:my,n1:nhalf,j) = -f(:,m2i:m2,nhalf+1:n2,j)
-           f(:,m2+1:my,nhalf+1:n2,j) = -f(:,m2i:m2,n1:nhalf,j)
+           f(:,m2+1:,n1:nhalf,  j) = -f(:,m2i:m2,nhalf+1:n2,j)
+           f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2i:m2,n1:nhalf,j)
         endif
       case default
         print*, "bc_aper_y: ", topbot, " should be 'top' or 'bot'"
@@ -1275,7 +1261,7 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -1285,7 +1271,7 @@ module Boundcond
         if (nprocz==1) f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
 !
       case ('top')               ! top boundary
-        if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
+        if (nprocz==1) f(:,:,n2+1:,j) = f(:,:,n1:n1i,j)
 !
       case default
         print*, "bc_per_z: ", topbot, " should be 'top' or 'bot'"
@@ -1299,11 +1285,10 @@ module Boundcond
 !  Setting d^2f/dr^2 + 2*/r*df/dr - 2*f/r^2 =0,
 !  to set del2=0 in spherical coordinates.
 !
-!
 !  24-nov-12/joern: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp1,tmp2
       integer ::j
 !
@@ -1368,8 +1353,8 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -1419,8 +1404,8 @@ module Boundcond
 !  11-nov-09/axel+koen: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: extra1,extra2
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,2),size(f,3)) :: extra1,extra2
       integer :: i,j
       real :: dxR
 !
@@ -1462,8 +1447,8 @@ module Boundcond
 !  28-feb-11/koen: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: f1_co,f2_co
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,2),size(f,3)) :: f1_co,f2_co
       integer :: i,j
       real :: dxR
 !
@@ -1504,8 +1489,8 @@ module Boundcond
 !  28-feb-11/koen: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: f1_co,f2_co
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,2),size(f,3)) :: f1_co,f2_co
       integer :: i,j
       real :: dxR
 !
@@ -1547,7 +1532,7 @@ module Boundcond
 !  15-may-13/joern: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       real :: tmp
 !
@@ -1601,8 +1586,8 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -1643,8 +1628,8 @@ module Boundcond
 !  30-may-11/axel: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
       integer :: i,j
 !
       select case (topbot)
@@ -1671,7 +1656,7 @@ module Boundcond
 !  12-nov-09/axel+koen: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
@@ -1718,9 +1703,9 @@ module Boundcond
 !  25-feb-07/axel: adapted from bc_sym_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
-      real, dimension (mcom) :: slope
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
+      real, dimension (:) :: slope
       integer :: i,j
       logical, optional :: rel
       logical :: relative
@@ -1777,9 +1762,9 @@ module Boundcond
 !  25-feb-07/axel: adapted from bc_sym_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
-      real, dimension (mcom) :: slope
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
+      real, dimension (:) :: slope
       integer :: i,j
       ! Abbreviations to keep compiler from complaining in 1-d or 2-d:
       integer :: l1_4, l1_5, l1_6
@@ -1843,8 +1828,8 @@ module Boundcond
 !  25-feb-07/axel: adapted from bc_sym_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom) :: dist
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:) :: dist
       integer :: i,j
 !
       select case (topbot)
@@ -1882,8 +1867,8 @@ module Boundcond
 !  25-feb-07/axel: adapted from bc_sym_z
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom) :: dist
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:) :: dist
       integer :: i,j
 !
       select case (topbot)
@@ -1925,9 +1910,9 @@ module Boundcond
 !  25-feb-07/axel: adapted from bc_slope_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
-      real, dimension (mcom) :: slope
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
+      real, dimension (:) :: slope
       integer :: i,j
       logical, optional :: rel
       logical :: relative
@@ -1986,8 +1971,8 @@ module Boundcond
 !   9-jun-11/axel: added val2 argument
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val,val2,val4
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -1998,8 +1983,8 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (present(val)) f(:,m1,:,j)=val(j)
-        if (present(val2)) f(:,m1,:,j)=f(:,m1,:,j)+val2(j)*spread(x**2,2,mz)
-        if (present(val4)) f(:,m1,:,j)=f(:,m1,:,j)+val4(j)*spread(x**4,2,mz)
+        if (present(val2)) f(:,m1,:,j)=f(:,m1,:,j)+val2(j)*spread(x**2,2,size(f,3))
+        if (present(val4)) f(:,m1,:,j)=f(:,m1,:,j)+val4(j)*spread(x**4,2,size(f,3))
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
@@ -2009,8 +1994,8 @@ module Boundcond
 !
       case ('top')               ! top boundary
         if (present(val)) f(:,m2,:,j)=val(j)
-        if (present(val2)) f(:,m2,:,j)=f(:,m2,:,j)+val2(j)*spread(x**2,2,mz)
-        if (present(val4)) f(:,m2,:,j)=f(:,m2,:,j)+val4(j)*spread(x**4,2,mz)
+        if (present(val2)) f(:,m2,:,j)=f(:,m2,:,j)+val2(j)*spread(x**2,2,size(f,3))
+        if (present(val4)) f(:,m2,:,j)=f(:,m2,:,j)+val4(j)*spread(x**4,2,size(f,3))
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
@@ -2035,8 +2020,8 @@ module Boundcond
       use EquationOfState, only: cs0
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rad,za,zg,H,lnrho
+      real, dimension (:,:,:,:) :: f
+      real, dimension(size(f,1)) :: rad,za,zg,H,lnrho
       integer :: i,in,j
 !
       if (.not.(j==irho.or.j==ilnrho)) &
@@ -2052,7 +2037,7 @@ module Boundcond
         H=cs0*rad
         do i=1,nghost
           zg=rad*costh(m1-i)
-          do in=1,mz
+          do in=1,size(f,3)
             if (ldensity_nolog) then 
               lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
               f(:,m1-i,in,j) = exp(lnrho)
@@ -2068,7 +2053,7 @@ module Boundcond
         H=cs0*rad
         do i=1,nghost
           zg=rad*costh(m2+i)
-          do in=1,mz
+          do in=1,size(f,3)
             if (ldensity_nolog) then
               lnrho = alog(f(:,m2,in,j)) - (zg**2-za**2)/(2*H**2)
               f(:,m2+i,in,j) = exp(lnrho)
@@ -2102,8 +2087,8 @@ module Boundcond
 !  10-apr-05/axel: added val argument
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -2144,8 +2129,8 @@ module Boundcond
 !  30-may-11/axel: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
       integer :: i,j
 !
       select case (topbot)
@@ -2170,12 +2155,12 @@ module Boundcond
 !  30-may-11/axel: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,mz) :: derval
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1),size(f,3)) :: derval
+      real, dimension (:), optional :: val
       integer :: i,j
 !
-      derval=spread((xyz1(1)-x)*val(j),2,mz)
+      derval=spread((xyz1(1)-x)*val(j),2,size(f,3))
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
@@ -2200,7 +2185,7 @@ module Boundcond
 !  19-nov-09/axel: adapted from bc_symset0der_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
@@ -2247,7 +2232,7 @@ module Boundcond
 !  23-may-13/joern: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: j
 !
@@ -2300,8 +2285,8 @@ module Boundcond
 !  10-apr-05/axel: added val argument
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val,val2,val4
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -2312,22 +2297,24 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (present(val)) f(:,:,n1,j)=val(j)
-        if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,my)
-        if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,my)
+        if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,size(f,2))
+        if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         else
+!!!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 !
       case ('top')               ! top boundary
         if (present(val)) f(:,:,n2,j)=val(j)
-        if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,my)
-        if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,my)
+        if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,size(f,2))
+        if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         else
+          !!if (ldownsampling) print*, 'size,n2,j=',size(f,1),size(f,2),size(f,3),size(f,4),n2,j 
           do i=1,nghost; f(:,:,n2+i,j)=              sgn*f(:,:,n2-i,j); enddo
           if (sgn<0) f(:,:,n2,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -2348,7 +2335,7 @@ module Boundcond
 !
 !  14-feb-09/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: sgn, j
       character(3), intent(in) :: topbot
 !
@@ -2374,7 +2361,7 @@ module Boundcond
 !  22-nov-09/axel: adapted from bc_symset0der_y
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
@@ -2415,7 +2402,7 @@ module Boundcond
 !  14-may-2006/tobi: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 !
@@ -2445,7 +2432,7 @@ module Boundcond
 !  27-apr-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
       real, intent (in) :: val
@@ -2471,13 +2458,18 @@ module Boundcond
 !   9-jan-2008/axel+nils+natalia: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-      integer :: i,lbc0,lbc1,lbc2,stat,io_code
+      integer :: i,lbc0,lbc1,lbc2,stat,iszx,io_code
       real :: lbc,frac
       logical, save :: lbc_file_x=.true.
+!
+      if (ldownsampling) then
+        call warning('bc_file_x','Not available for downsampling')
+        return
+      endif
 !
 !  Allocate memory for large array.
 !
@@ -2500,6 +2492,8 @@ module Boundcond
         endif
         lbc_file_x=.false.
       endif
+      
+      iszx=size(f,1)
 !
       select case (topbot)
 !
@@ -2509,8 +2503,8 @@ module Boundcond
         lbc=Udrift_bc*t*dx_1(1)+1.
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
-        lbc1=mx+mod(-lbc0,mx)
-        lbc2=mx+mod(-lbc0-1,mx)
+        lbc1=iszx+mod(-lbc0,iszx)
+        lbc2=iszx+mod(-lbc0-1,iszx)
         do i=1,nghost
           f(l1-i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
                            +frac*bc_file_x_array(lbc2,:,:,j)
@@ -2523,8 +2517,8 @@ module Boundcond
         lbc=Udrift_bc*t*dx_1(1)+1.
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
-        lbc1=mx+mod(+lbc0,mx)
-        lbc2=mx+mod(+lbc0+1,mx)
+        lbc1=iszx+mod(+lbc0,iszx)
+        lbc2=iszx+mod(+lbc0+1,iszx)
         do i=1,nghost
           f(l2+i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
                            +frac*bc_file_x_array(lbc2,:,:,j)
@@ -2547,7 +2541,7 @@ module Boundcond
 !  27-apr-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
       real, intent (in) :: val
@@ -2556,21 +2550,21 @@ module Boundcond
       if (lspherical_coords)then
         select case (topbot)
         case ('bot')               ! bottom boundary
-        do i=1,nghost
-          f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*(val-f(l1,:,:,j)*r1_mn(1))
-        enddo
-      case ('top')               ! top boundary
-        do i=1,nghost
-          f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound(i)*(val-f(l2,:,:,j)*r1_mn(nx))
-        enddo
+          do i=1,nghost
+            f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*(val-f(l1,:,:,j)*r1_mn(1))
+          enddo
+        case ('top')               ! top boundary
+          do i=1,nghost
+            f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound(i)*(val-f(l2,:,:,j)*r1_mn(nx))
+          enddo
 !
-      case default
-        call warning('bc_set_spder_x',topbot//" should be 'top' or 'bot'")
+        case default
+          call warning('bc_set_spder_x',topbot//" should be 'top' or 'bot'")
 !
-      endselect
-    else
-      call stop_it('bc_set_spder_x valid only in spherical coordinate system')
-    endif
+        endselect
+      else
+        call stop_it('bc_set_spder_x valid only in spherical coordinate system')
+      endif
 !
     endsubroutine bc_set_spder_x
 ! **********************************************************************
@@ -2588,7 +2582,7 @@ module Boundcond
 !  25-Aug-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
       select case (topbot)
@@ -2622,7 +2616,7 @@ module Boundcond
 !  25-Aug-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
 !
@@ -2655,7 +2649,7 @@ module Boundcond
 !  03-Dec-2009/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
 !
@@ -2695,13 +2689,14 @@ module Boundcond
       use SharedVariables, only : get_shared_variable
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
       integer :: k
       real :: fac,sth,lambda_exp
+!
 !
 ! -------- Either case get the lambda variables first -----------
 !
@@ -2721,7 +2716,7 @@ module Boundcond
       case ('bot')
 !
         if ((llambda_effect).and.(j==iuz)) then
-          do iy=1,my
+          do iy=1,size(f,2)
             sth=sinth(iy)
             lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
             do k=1,nghost
@@ -2748,7 +2743,7 @@ module Boundcond
 !
       case ('top')
         if ((llambda_effect).and.(j==iuz)) then
-          do iy=1,my
+          do iy=1,size(f,2)
             sth=sinth(iy)
             lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
             do k=1,nghost
@@ -2787,15 +2782,15 @@ module Boundcond
       use Sub, only: step
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent(in) :: jj
       integer :: i,j,k
-      real, dimension(mcom),intent(in) :: fracall,uzeroall
+      real, dimension(:),intent(in) :: fracall,uzeroall
       real :: frac,uzero,ylim,ymid,y1,zlim,zmid,z1
       real :: yhat_min,yhat_max,zhat_min,zhat_max
       real, parameter :: width_hat=0.01
-      real, dimension (ny) :: hatprofy
-      real, dimension (nz) :: hatprofz
+      real, dimension (m2-m1+1) :: hatprofy
+      real, dimension (n2-n1+1) :: hatprofz
 !
       y1 = xyz1(2)
       z1 = xyz1(3)
@@ -2851,11 +2846,11 @@ module Boundcond
       use Sub, only: step
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (ny,nz) :: prof
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (m2-m1+1,n2-n1+1) :: prof
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent(in) :: jj
       integer :: i,j,k
-      real, dimension(mcom),intent(in) :: velocity,radius
+      real, dimension(:),intent(in) :: velocity,radius
       real :: vel,rad
 !
       vel = velocity(jj)
@@ -2897,13 +2892,13 @@ module Boundcond
 !
       use Sub, only: step
 !
-      real, dimension (ny,nz), intent (out) :: prof
+      real, dimension (:,:), intent (out) :: prof
       integer :: j,k
       real :: vel,rad,ymid,y1,zlim,zmid,z1
       real :: yhat_min,yhat_max,zhat_min,zhat_max
       real :: width_hat
-      real, dimension (ny) :: hatprofy
-      real, dimension (nz) :: hatprofz
+      real, dimension (size(prof,1)) :: hatprofy
+      real, dimension (size(prof,2)) :: hatprofz
 !
       y1 = xyz1(2)
       z1 = xyz1(3)
@@ -2912,19 +2907,20 @@ module Boundcond
       ymid = y0+(y1-y0)/2.
       yhat_min=ymid-rad/2.
       yhat_max=ymid+rad/2
-      hatprofy=step(y(m1:m2),yhat_min,width_hat)&
-           -step(y(m1:m2),yhat_max,width_hat)
+      hatprofy= step(y(m1:m2),yhat_min,width_hat) &
+               -step(y(m1:m2),yhat_max,width_hat)
 !
       if (nzgrid>1) then
          zlim = (z1-z0)*rad
          zmid = z0+(z1-z0)/2.
          zhat_min=zmid-zlim/2.
          zhat_max=zmid+zlim/2
-         hatprofz=step(z(n1:n2),zhat_min,width_hat)&
-              -step(z(n1:n2),zhat_max,width_hat)
+         hatprofz= step(z(n1:n2),zhat_min,width_hat) &
+                  -step(z(n1:n2),zhat_max,width_hat)
       endif
-      do j=1,ny
-         do k=1,nz
+!
+      do j=1,size(prof,1)
+         do k=1,size(prof,2)
             if (nzgrid>1) then
                prof(j,k)= vel*hatprofy(j)*hatprofz(k)
             else
@@ -2946,7 +2942,7 @@ module Boundcond
 !  25-Aug-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
 !
@@ -2981,14 +2977,14 @@ module Boundcond
       use SharedVariables, only : get_shared_variable
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
       real, pointer :: LH1_rprof(:)
       logical, pointer :: llambda_effect
       integer :: k,ix
       real :: cos2thm_k,cos2thmpk,somega
-      real,dimension(mx):: LH1
+      real,dimension(size(f,1)):: LH1
 !
 ! -------- Either case get the lambda variables first -----------
 !
@@ -3008,13 +3004,13 @@ module Boundcond
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
             if (Omega==0) then
-               do ix=1,mx
+               do ix=1,size(f,1)
                   f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
                        (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
                        *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
                enddo
             else
-              do ix=1,mx
+              do ix=1,size(f,1)
 ! DM+GG: temporally commented out
 !                somega=x(ix)*Omega*sinth(m1-k)*( &
 !                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
@@ -3040,13 +3036,13 @@ module Boundcond
             cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
             cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
             if (Omega==0)then
-               do ix=1,mx
+               do ix=1,size(f,1)
                   f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                    (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                   *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
                enddo
              else
-              do ix=1,mx
+              do ix=1,size(f,1)
 ! DM+GG: Temporally comented out
 !                somega=x(ix)*Omega*sinth(m2+k)*( &
 !                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
@@ -3089,7 +3085,7 @@ module Boundcond
 !  25-Aug-2007/dhruba: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       real :: cottheta
 !
@@ -3124,7 +3120,7 @@ module Boundcond
 !  14-may-2006/tobi: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 !
@@ -3152,7 +3148,7 @@ module Boundcond
 !  14-may-2006/tobi: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 !
@@ -3180,15 +3176,17 @@ module Boundcond
 !  17-may-2010/bing: coded
 !
       character (len=bclen), intent (in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (nx,ny) :: fac,duz_dz
+      real, dimension (:,:,:,:), intent (inout) :: f
+      real, dimension (l2-l1+1,m2-m1+1) :: fac,duz_dz
       real, intent(in) :: val
 !
       integer, intent (in) :: j
 !
-      integer :: iref=-1,pos
+      integer :: iref=-1,pos,nxl,nyl
 !
       if (j/=iuz) call fatal_error_local('bc_set_div_z','please set div for uz only')
+!
+      nxl=l2-l1+1; nyl=m2-m1+1
 !
       select case (topbot)
 !
@@ -3205,20 +3203,20 @@ module Boundcond
 !
 ! take the x derivative of ux
       if (nxgrid/=1) then
-        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+        fac=(1./60)*spread(dx_1(l1:l2),2,nyl)
         duz_dz= fac*(+45.0*(f(l1+1:l2+1,m1:m2,iref,iux)-f(l1-1:l2-1,m1:m2,iref,iux)) &
-            -  9.0*(f(l1+2:l2+2,m1:m2,iref,iux)-f(l1-2:l2-2,m1:m2,iref,iux)) &
-            +      (f(l1+3:l2+3,m1:m2,iref,iux)-f(l1-3:l2-3,m1:m2,iref,iux)))
+                     - 9.0*(f(l1+2:l2+2,m1:m2,iref,iux)-f(l1-2:l2-2,m1:m2,iref,iux)) &
+                     +     (f(l1+3:l2+3,m1:m2,iref,iux)-f(l1-3:l2-3,m1:m2,iref,iux)))
       else
         if (ip<=5) print*, 'bc_set_div_z: Degenerate case in x-direction'
       endif
 !
 ! take the y derivative of uy and add to dux/dx
       if (nygrid/=1) then
-        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+        fac=(1./60)*spread(dy_1(m1:m2),1,nxl)
         duz_dz=duz_dz + fac*(+45.0*(f(l1:l2,m1+1:m2+1,iref,iuy)-f(l1:l2,m1-1:m2-1,iref,iuy)) &
-            -  9.0*(f(l1:l2,m1+2:m2+2,iref,iuy)-f(l1:l2,m1-2:m2-2,iref,iuy)) &
-            +      (f(l1:l2,m1+3:m2+3,iref,iuy)-f(l1:l2,m1-3:m2-3,iref,iuy)))
+                             - 9.0*(f(l1:l2,m1+2:m2+2,iref,iuy)-f(l1:l2,m1-2:m2-2,iref,iuy)) &
+                             +     (f(l1:l2,m1+3:m2+3,iref,iuy)-f(l1:l2,m1-3:m2-3,iref,iuy)))
       else
         if (ip<=5) print*, 'bc_set_div_z: Degenerate case in y-direction'
       endif
@@ -3256,7 +3254,7 @@ module Boundcond
 !  26-apr-06/tobi: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j
 !
       select case (topbot)
@@ -3286,7 +3284,7 @@ module Boundcond
 !  26-apr-06/tobi: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j
 !
       select case (topbot)
@@ -3316,7 +3314,7 @@ module Boundcond
 !  26-apr-06/tobi: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j
 !
       select case (topbot)
@@ -3346,21 +3344,22 @@ module Boundcond
 !  30-jul-13/wlad: copied from z
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
-      integer :: i,stat
+      integer :: i,stat,iszx,iszz
 !
 !  Allocate memory for large arrays.
 !
-      allocate(cpoly0(mx,mz),stat=stat)
+      iszx=size(f,1); iszz=size(f,3)
+      allocate(cpoly0(iszx,iszz),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_y', &
           'Could not allocate memory for cpoly0')
-      allocate(cpoly1(mx,mz),stat=stat)
+      allocate(cpoly1(iszx,iszz),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_y', &
           'Could not allocate memory for cpoly1')
-      allocate(cpoly2(mx,mz),stat=stat)
+      allocate(cpoly2(iszx,iszz),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_y', &
           'Could not allocate memory for cpoly2')
 !
@@ -3400,21 +3399,22 @@ module Boundcond
 !  19-aug-03/anders: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
-      integer :: i,stat
+      integer :: i,stat,iszx,iszy
 !
 !  Allocate memory for large arrays.
 !
-      allocate(cpoly0(mx,my),stat=stat)
+      iszx=size(f,1); iszy=size(f,2)
+      allocate(cpoly0(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_z', &
           'Could not allocate memory for cpoly0')
-      allocate(cpoly1(mx,my),stat=stat)
+      allocate(cpoly1(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_z', &
           'Could not allocate memory for cpoly1')
-      allocate(cpoly2(mx,my),stat=stat)
+      allocate(cpoly2(iszx,iszy),stat=stat)
       if (stat>0) call fatal_error('bc_van3rd_z', &
           'Could not allocate memory for cpoly2')
 !
@@ -3456,7 +3456,7 @@ module Boundcond
 !  07-jan-09/axel: corrected
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,k
 !
       select case (topbot)
@@ -3535,7 +3535,7 @@ module Boundcond
 !  05-apr-03/axel: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,k
 !
       select case (topbot)
@@ -3582,7 +3582,7 @@ module Boundcond
 !  26-jan-09/nils: adapted from bc_onesided_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,k
 !
       select case (topbot)
@@ -3661,7 +3661,7 @@ module Boundcond
 !  05-apr-03/axel: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,k
 !
       select case (topbot)
@@ -3707,7 +3707,7 @@ module Boundcond
 !  10-mar-09/axel: corrected
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,k
 !
       select case (topbot)
@@ -3786,7 +3786,7 @@ module Boundcond
 !  19-jun-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
@@ -3817,7 +3817,7 @@ module Boundcond
 !  19-jun-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
@@ -3848,7 +3848,7 @@ module Boundcond
 !  19-jun-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
@@ -3880,7 +3880,7 @@ module Boundcond
 !  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,n1p4,n2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -3918,7 +3918,7 @@ module Boundcond
 !  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,l1p4,l2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -3956,7 +3956,7 @@ module Boundcond
 !   01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,m1p4,m2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -3992,15 +3992,15 @@ module Boundcond
 !  18-dec-08/wlad: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,l,i
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
         do i=1,nghost
-          do n=1,mz
-            do l=1,mx
+          do n=1,size(f,3)
+            do l=1,size(f,1)
               if (f(l,m1+i,n,j)/=0.) then
                 f(l,m1-i,n,j)=f(l,m1,n,j)**2/f(l,m1+i,n,j)
               else
@@ -4012,8 +4012,8 @@ module Boundcond
 !
       case ('top')               ! top boundary
         do i=1,nghost
-          do n=1,mz
-            do l=1,mx
+          do n=1,size(f,3)
+            do l=1,size(f,1)
               if (f(l,m2-i,n,j)/=0.) then
                 f(l,m2+i,n,j)=f(l,m2,n,j)**2/f(l,m2-i,n,j)
               else
@@ -4039,7 +4039,7 @@ module Boundcond
 !  09-oct-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
@@ -4084,7 +4084,7 @@ module Boundcond
 !  09-oct-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
@@ -4119,7 +4119,7 @@ module Boundcond
 !  09-oct-03/wolf: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,n1p4,n2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -4163,7 +4163,7 @@ module Boundcond
 !  18-dec-08/wlad: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,i
       real :: yl1,ypi,ymi,xl1,xmi,xpi,yyi,xl2,yl2
 !
@@ -4171,7 +4171,7 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do i=1,nghost
-          do n=1,mz;do m=1,my
+          do n=1,size(f,3);do m=1,size(f,2)
             yl1=alog(f(l1,m,n,j)) ; ypi=alog(f(l1+i,m,n,j))
             xl1=alog(x(l1)) ; xmi=alog(x(l1-i)) ; xpi=alog(x(l1+i))
 !
@@ -4182,7 +4182,7 @@ module Boundcond
 !
       case ('top')               ! top boundary
         do i=1,nghost
-          do n=1,mz;do m=1,my
+          do n=1,size(f,3);do m=1,size(f,2)
             yl2=alog(f(l2,m,n,j)) ; ymi=alog(f(l2-i,m,n,j))
             xpi=alog(x(l2+i)) ; xl2=alog(x(l2)) ; xmi=alog(x(l2-i))
 !
@@ -4206,10 +4206,10 @@ module Boundcond
 !  23-nov-10/Bourdin.KIS: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: slope
+      real, dimension (size(f,1),size(f,2)) :: slope
 !
 !
       select case (topbot)
@@ -4240,10 +4240,10 @@ module Boundcond
 !  23-nov-10/Bourdin.KIS: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: m
+      real, dimension (size(f,1),size(f,2)) :: m
 !
 !
       select case (topbot)
@@ -4280,10 +4280,10 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: slope
+      real, dimension (size(f,1),size(f,2)) :: slope
       real :: gamma_bot, gamma_top, tau, fade_fact
       real, pointer :: tdamp, tfade_start
       logical, pointer :: ldamp_fade
@@ -4348,12 +4348,11 @@ module Boundcond
 !  11-apr-11/Bourdin.KIS: coded
 !
       character (len=bclen), intent(in) :: topbot
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (:,:,:,:), intent(inout) :: f
       integer, intent(in) :: j
 !
       integer :: i
-      real, dimension (mx,my) :: slope, rho_ref
-!
+      real, dimension (size(f,1),size(f,2)) :: slope, rho_ref
 !
       select case (topbot)
       case ('bot')
@@ -4388,10 +4387,10 @@ module Boundcond
 !
       use Mpicomm, only: communicate_xy_ghosts
 !
-      real, dimension (mx,my), intent(inout) :: data
+      real, dimension (:,:), intent(inout) :: data
       integer, intent(in) :: num
 !
-      real, dimension (mx,my) :: out
+      real, dimension (size(data,1),size(data,2)) :: out
       integer :: px, py
 !
 !
@@ -4422,7 +4421,7 @@ module Boundcond
 !  13-aug-2002/nils: moved into boundcond
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       real, dimension (:,:), allocatable :: fder
@@ -4430,7 +4429,7 @@ module Boundcond
 !
 !  Allocate memory for large array.
 !
-      allocate(fder(mx,my),stat=stat)
+      allocate(fder(size(f,1),size(f,2)),stat=stat)
       if (stat>0) call fatal_error('bc_db_z', &
           'Could not allocate memory for fder')
 !
@@ -4475,7 +4474,7 @@ module Boundcond
 !  13-aug-2002/nils: moved into boundcond
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       real, dimension (:,:), allocatable :: fder
@@ -4483,7 +4482,7 @@ module Boundcond
 !
 !  Allocate memory for large array.
 !
-      allocate(fder(my,mz),stat=stat)
+      allocate(fder(size(f,2),size(f,3)),stat=stat)
       if (stat>0) call fatal_error('bc_db_x', &
           'Could not allocate memory for fder')
 !
@@ -4529,7 +4528,7 @@ module Boundcond
       use EquationOfState, only: gamma_m1, cs2top, cs2bot
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: sgn,i,j
 !
       select case (topbot)
@@ -4605,7 +4604,7 @@ module Boundcond
       use SharedVariables, only : get_shared_variable
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real, pointer :: ampl_forc, k_forc, w_forc
       integer :: sgn, i, j
 !
@@ -4622,7 +4621,7 @@ module Boundcond
            call get_shared_variable('w_forc', w_forc)
            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                ampl_forc, k_forc, w_forc
-           f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
+           f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -4644,7 +4643,7 @@ module Boundcond
             call get_shared_variable('w_forc', w_forc)
             if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                    ampl_forc, k_forc, w_forc
-            f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
+            f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
          case default
             if (lroot) print*, "No such value for force_upper_bound: <", &
                  trim(force_upper_bound),">"
@@ -4666,7 +4665,7 @@ module Boundcond
 !
 !  26-apr-2004/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: idz,j
       real :: kx,ky
 !
@@ -4674,10 +4673,10 @@ module Boundcond
 !
       if (j==iux) then
         if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
-        f(:,:,idz,j) = spread(cos(ky*y),1,mx)
+        f(:,:,idz,j) = spread(cos(ky*y),1,size(f,1))
       elseif (j==iuy) then
         if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif
-        f(:,:,idz,j) = spread(sin(kx*x),2,my)
+        f(:,:,idz,j) = spread(sin(kx*x),2,size(f,2))
       elseif (j==iuz) then
         f(:,:,idz,j) = 0.
       endif
@@ -4691,7 +4690,7 @@ module Boundcond
 !  26-apr-2004/wolf: coded
 !  10-apr-2005/axel: adapted for A
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: idz,j
       real :: kx,ky
 !
@@ -4699,10 +4698,10 @@ module Boundcond
 !
       if (j==iax) then
         if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
-        f(:,:,idz,j) = spread(cos(ky*y),1,mx)
+        f(:,:,idz,j) = spread(cos(ky*y),1,size(f,1))
       elseif (j==iay) then
         if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif
-        f(:,:,idz,j) = spread(sin(kx*x),2,my)
+        f(:,:,idz,j) = spread(sin(kx*x),2,size(f,2))
       elseif (j==iaz) then
         f(:,:,idz,j) = 0.
       endif
@@ -4715,7 +4714,7 @@ module Boundcond
 !
 !  11-jul-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -4725,7 +4724,7 @@ module Boundcond
           f(1:l1-1,:,:,j)=1.
 !
       case ('top')               ! top boundary
-          f(l2+1:mx,:,:,j)=1.
+          f(l2+1:,:,:,j)=1.
 !
       case default
         print*, "bc_one_x: ",topbot, " should be 'top' or 'bot'"
@@ -4740,7 +4739,7 @@ module Boundcond
 !
 !  11-jul-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -4750,7 +4749,7 @@ module Boundcond
           f(:,1:m1-1,:,j)=1.
 !
       case ('top')               ! top boundary
-          f(:,m2+1:my,:,j)=1.
+          f(:,m2+1:,:,j)=1.
 !
       case default
         print*, "bc_one_y: ", topbot, " should be 'top' or 'bot'"
@@ -4765,7 +4764,7 @@ module Boundcond
 !
 !  11-jul-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
 !
@@ -4775,7 +4774,7 @@ module Boundcond
           f(:,:,1:n1-1,j)=1.
 !
       case ('top')               ! top boundary
-          f(:,:,n2+1:mz,j)=1.
+          f(:,:,n2+1:,j)=1.
 !
       case default
         print*, "bc_one_z: ", topbot, " should be 'top' or 'bot'"
@@ -4860,7 +4859,7 @@ module Boundcond
        use Mpicomm, only : mpisend_real, mpirecv_real
        use Syscalls, only : file_exists
 !
-       real, dimension (mx,my,mz,mfarray) :: f
+       real, dimension (:,:,:,:) :: f
 !
        real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
@@ -4878,6 +4877,11 @@ module Boundcond
        integer :: unit=1
 !
        intent (inout) :: f
+!
+       if (ldownsampling) then
+         call warning('uu_driver','Not available for downsampling')
+         return
+       endif
 !
        if (lroot .and. .not. file_exists(vel_times_dat)) &
            call fatal_error_local('uu_driver','Could not find file "'//trim(vel_times_dat)//'"')
@@ -5153,7 +5157,7 @@ module Boundcond
       use Mpicomm, only : mpisend_real, mpirecv_real, &
                           mpisend_logical, mpirecv_logical
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real, save :: t_l=0., t_r=0., delta_t=0.
       integer :: ierr, lend, frame, stat, rec_l, rec_r
       integer :: rec_vxl, rec_vxr, rec_vyl, rec_vyr ! l- and r-record position if file
@@ -5182,6 +5186,11 @@ module Boundcond
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
       character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
+!
+      if (ldownsampling) then
+        call warning('bc_force_aa_time','Not available for downsampling')
+        return
+      endif
 !
       if (first_run) then
 !
@@ -5416,7 +5425,7 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
       real, pointer :: hcond0, hcond1, Fbot
@@ -5425,7 +5434,7 @@ module Boundcond
 !
 !  Allocate memory for large array.
 !
-      allocate(tmp_yz(my,mz),stat=stat)
+      allocate(tmp_yz(size(f,2),size(f,3)),stat=stat)
       if (stat>0) call fatal_error('bc_lnTT_flux_x', &
           'Could not allocate memory for tmp_yz')
 !
@@ -5472,7 +5481,7 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_xy
@@ -5481,7 +5490,7 @@ module Boundcond
 !
 !  Allocate memory for large array.
 !
-      allocate(tmp_xy(mx,my),stat=stat)
+      allocate(tmp_xy(size(f,1),size(f,2)),stat=stat)
       if (stat>0) call fatal_error('bc_lnTT_flux_x', &
           'Could not allocate memory for tmp_xy')
 !
@@ -5530,7 +5539,7 @@ module Boundcond
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_yz,work_yz
@@ -5547,7 +5556,7 @@ module Boundcond
 !
 !  Allocate memory for large arrays.
 !
-      allocate(tmp_yz(my,mz),stat=stat)
+      allocate(tmp_yz(size(f,2),size(f,3)),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for tmp_yz')
 !
@@ -5560,9 +5569,9 @@ module Boundcond
       endif
 !
       if (lheatc_kramers.or.lreference_state) then
-        allocate(work_yz(my,mz),stat=stat)
+        allocate(work_yz(size(f,2),size(f,3)),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
-            'Could not allocate memory for work_yz')
+                                     'Could not allocate memory for work_yz')
       endif
 !
       if (lreference_state) &
@@ -5713,11 +5722,11 @@ module Boundcond
 !
       use Deriv, only: heatflux_deriv_x
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
-      real, dimension(my,mz)           , intent(IN)   :: inh
-      real, dimension(my,mz), optional , intent(IN)   :: coef
-      real                             , intent(IN)   :: fac
-      integer                          , intent(IN)   :: topbot
+      real, dimension(:,:,:,:),       intent(INOUT):: f
+      real, dimension(:,:),           intent(IN)   :: inh
+      real, dimension(:,:), optional, intent(IN)   :: coef
+      real                          , intent(IN)   :: fac
+      integer                       , intent(IN)   :: topbot
 !
       integer :: i,ll,ia,ie
 !
@@ -5756,38 +5765,39 @@ module Boundcond
 !
       use Fourier, only: fourier_transform_xy_xy
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
       integer, intent (in) :: j
 !
       real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
-      integer :: i,stat
+      integer :: i,stat,nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
-      allocate(kx(nx,ny),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(kx(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for kx')
-      allocate(ky(nx,ny),stat=stat)
+      allocate(ky(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for ky')
-      allocate(kappa(nx,ny),stat=stat)
+      allocate(kappa(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for kappa')
-      allocate(exp_fact(nx,ny),stat=stat)
+      allocate(exp_fact(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for exp_fact')
-      allocate(tmp_re(nx,ny),stat=stat)
+      allocate(tmp_re(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for tmp_re')
-      allocate(tmp_im(nx,ny),stat=stat)
+      allocate(tmp_im(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
-      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+      kx = spread(kx_fft(ipx*nxl+1:ipx*nxl+nxl),2,nyl)
+      ky = spread(ky_fft(ipy*nyl+1:ipy*nyl+nyl),1,nxl)
 !
 !  Calculate 1/k^2, zero mean
 !
@@ -5874,7 +5884,7 @@ module Boundcond
 !
 !  11-aug-2009/anders: implemented
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
       integer :: j
 !
@@ -5888,7 +5898,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        f(l2+1:mx,:,:,j)=0.0
+        f(l2+1:,:,:,j)=0.0
 !
 !  Default.
 !
@@ -5905,7 +5915,7 @@ module Boundcond
 !
 !  13-jul-2011/Tijmen: adapted from bc_zero_x
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
       integer :: j
 !
@@ -5919,7 +5929,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        f(:,m2+1:my,:,j)=0.0
+        f(:,m2+1:,:,j)=0.0
 !
 !  Default.
 !
@@ -5936,7 +5946,7 @@ module Boundcond
 !
 !  13-aug-2007/anders: implemented
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
       integer :: j
 !
@@ -5950,7 +5960,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        f(:,:,n2+1:mz,j)=0.0
+        f(:,:,n2+1:,j)=0.0
 !
 !  Default.
 !
@@ -5973,7 +5983,7 @@ module Boundcond
 !  25-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       logical, optional :: lforce_ghost
 !
@@ -5988,7 +5998,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n1,j)>0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
           else                         ! 'a'
@@ -6005,7 +6015,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n2,j)<0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
           else                         ! 'a'
@@ -6040,7 +6050,7 @@ module Boundcond
 !  14-jun-2011/axel: adapted from bc_outflow_z
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       logical, optional :: lforce_ghost
 !
@@ -6055,7 +6065,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iy=1,my; do iz=1,mz
+        do iy=1,size(f,2); do iz=1,size(f,3)
           if (f(l1,iy,iz,j)<0.0) then  ! 's'
             do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
           else                         ! 'a'
@@ -6072,7 +6082,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do iz=1,mz
+        do iy=1,size(f,2); do iz=1,size(f,3)
           if (f(l2,iy,iz,j)>0.0) then  ! 's'
             do i=1,nghost; f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j); enddo
           else                         ! 'a'
@@ -6107,7 +6117,7 @@ module Boundcond
 !  14-jun-2011/axel: adapted from bc_outflow_x
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       logical, optional :: lforce_ghost
 !
@@ -6122,7 +6132,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iy=1,my; do iz=1,mz
+        do iy=1,size(f,2); do iz=1,size(f,3)
           if (f(l1,iy,iz,j)<0.0) then  ! 's'
             do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
             f(l1-1,iy,iz,j)=0.25*(  9*f(l1,iy,iz,j)- 3*f(l1+1,iy,iz,j)- 5*f(l1+2,iy,iz,j)+ 3*f(l1+3,iy,iz,j))
@@ -6142,7 +6152,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do iz=1,mz
+        do iy=1,size(f,2); do iz=1,size(f,3)
           if (f(l2,iy,iz,j)>0.0) then  ! 's'
             f(l2+1,iy,iz,j)=0.25*(  9*f(l2,iy,iz,j)- 3*f(l2-1,iy,iz,j)- 5*f(l2-2,iy,iz,j)+ 3*f(l2-3,iy,iz,j))
             f(l2+2,iy,iz,j)=0.05*( 81*f(l2,iy,iz,j)-43*f(l2-1,iy,iz,j)-57*f(l2-2,iy,iz,j)+39*f(l2-3,iy,iz,j))
@@ -6179,7 +6189,7 @@ module Boundcond
 !  08-oct-2013/wlad: copied from z
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       logical, optional :: lforce_ghost
 !
@@ -6194,7 +6204,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iz=1,mz; do ix=1,mx
+        do iz=1,size(f,3); do ix=1,size(f,1)
           if (f(ix,m1,iz,j)<0.0) then  ! 's'
             do i=1,nghost; f(ix,m1-i,iz,j)=+f(ix,m1+i,iz,j); enddo
           else                         ! 'a'
@@ -6211,7 +6221,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iz=1,mz; do ix=1,mx
+        do iz=1,size(f,3); do ix=1,size(f,1)
           if (f(ix,m2,iz,j)>0.0) then  ! 's'
             do i=1,nghost; f(ix,m2+i,iz,j)=+f(ix,m2-i,iz,j); enddo
           else                         ! 'a'
@@ -6247,7 +6257,7 @@ module Boundcond
 !  25-dec-2010/Bourdin.KIS: added forcing of boundary and ghost cell values
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       logical, optional :: lforce_ghost
 !
@@ -6262,7 +6272,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n1,j)<0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
           else                         ! 'a'
@@ -6279,7 +6289,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n2,j)>0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
           else                         ! 'a'
@@ -6313,7 +6323,7 @@ module Boundcond
 !  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_const_deriv_z'
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i, ix, iy
@@ -6322,8 +6332,8 @@ module Boundcond
 !
       ! bottom boundary
       case ('bot')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' boundary condition
             do i = 1, nghost
               f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
@@ -6337,8 +6347,8 @@ module Boundcond
 !
       ! top boundary
       case ('top')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' boundary condition
             do i = 1, nghost
               f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
@@ -6368,7 +6378,7 @@ module Boundcond
 !  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i, ix, iy
@@ -6377,8 +6387,8 @@ module Boundcond
 !
       ! bottom boundary
       case ('bot')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' boundary condition
             do i = 1, nghost
               f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
@@ -6392,8 +6402,8 @@ module Boundcond
 !
       ! top boundary
       case ('top')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' boundary condition
             do i = 1, nghost
               f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
@@ -6422,7 +6432,7 @@ module Boundcond
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_inflow_zero_deriv_z'
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i, ix, iy
@@ -6431,8 +6441,8 @@ module Boundcond
 !
       ! bottom boundary
       case ('bot')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' or 'a' boundary condition for forced inflow
             do i = 1, nghost
               f(ix,iy,n1-i,j) = abs (f(ix,iy,n1+i,j))
@@ -6443,8 +6453,8 @@ module Boundcond
 !
       ! top boundary
       case ('top')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' or 'a' boundary condition for forced inflow
             do i = 1, nghost
               f(ix,iy,n2+i,j) = -abs (f(ix,iy,n2-i,j))
@@ -6470,7 +6480,7 @@ module Boundcond
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_outflow_zero_deriv_z'
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i, ix, iy
@@ -6479,8 +6489,8 @@ module Boundcond
 !
       ! bottom boundary
       case ('bot')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' or 'a' boundary condition for forced outflow
             do i = 1, nghost
               f(ix,iy,n1-i,j) = -abs (f(ix,iy,n1+i,j))
@@ -6491,8 +6501,8 @@ module Boundcond
 !
       ! top boundary
       case ('top')
-        do iy = 1, my
-          do ix = 1, mx
+        do iy = 1, size(f,2)
+          do ix = 1, size(f,1)
             ! 's' or 'a' boundary condition for forced outflow
             do i = 1, nghost
               f(ix,iy,n2+i,j) = abs (f(ix,iy,n2-i,j))
@@ -6519,7 +6529,7 @@ module Boundcond
 !  14-mar-2011/fred: amended
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i, ix, iy
@@ -6529,7 +6539,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n1,j) <= 0.0) then
             do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
           else
@@ -6547,7 +6557,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do iy=1,my; do ix=1,mx
+        do iy=1,size(f,2); do ix=1,size(f,1)
           if (f(ix,iy,n2,j) >= 0.0) then
             do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2,j); enddo
           else
@@ -6578,7 +6588,7 @@ module Boundcond
 !  11-aug-2009/anders: implemented
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i
@@ -6598,7 +6608,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_copy_z: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_copy_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -6611,7 +6621,7 @@ module Boundcond
 !  08-june-2010/wlyra: implemented
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i
@@ -6650,7 +6660,7 @@ module Boundcond
 !  08-june-2010/wlyra: implemented
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real :: value
       integer :: j,l,n
 !
@@ -6661,7 +6671,7 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-        do l=1,mx; do n=1,mz
+        do l=1,size(f,1); do n=1,size(f,3)
           value=0.
           if (f(l,m1,n,j)<0) value=f(l,m1,n,j)
           do i=1,nghost
@@ -6672,7 +6682,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        do l=1,mx; do n=1,mz
+        do l=1,size(f,1); do n=1,size(f,3)
           value=0.
           if (f(l,m2,n,j) > 0) value=f(l,m2,n,j)
           do i=1,nghost
@@ -6696,7 +6706,7 @@ module Boundcond
 !  15-aug-2007/anders: implemented
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       integer :: i
@@ -6764,11 +6774,11 @@ module Boundcond
       use EquationOfState, only: gamma, gamma_m1, get_cp1
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
 !
       integer :: i
-      real, dimension (mx,my) :: T_inv, grad_rho
+      real, dimension (size(f,1),size(f,2)) :: T_inv, grad_rho
       real :: g_ref, delta_z, inv_cp_cv, cp_inv
       real, dimension (:), pointer :: gravz_zpencil
 !
@@ -6810,7 +6820,7 @@ module Boundcond
 !
       use General, only: keep_compiler_quiet
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(:,:,:,:) :: f
 !
       call bc_aa_pot_field_extrapol(f,"all",.true.)
 !
@@ -6827,7 +6837,7 @@ module Boundcond
 !
       use Fourier, only: vect_pot_extrapol_z_parallel
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
       logical, optional :: lfinalize
 !
@@ -6836,6 +6846,11 @@ module Boundcond
       integer :: kx_start, stat, pos_z
       real :: delta_z, reduce_factor=1.
 !
+      if (ldownsampling) then
+        call warning('bc_force_aa_time','Not available for downsampling')       
+        return
+      endif
+
       if (present (lfinalize)) then
         if (lfinalize) then
           if (allocated (exp_fact_bot)) deallocate (exp_fact_bot)
@@ -6914,46 +6929,47 @@ module Boundcond
 !
       use Fourier, only: fourier_transform_xy_xy
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
       real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact
       real, dimension (:,:), allocatable :: tmp_re,tmp_im
       real    :: delta_z
-      integer :: i,j,stat
+      integer :: i,j,stat, nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
-      allocate(aa_re(nx,ny,iax:iaz),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(aa_re(nxl,nyl,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for aa_re',.true.)
-      allocate(aa_im(nx,ny,iax:iaz),stat=stat)
+      allocate(aa_im(nxl,nyl,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for aa_im',.true.)
-      allocate(kx(nx,ny),stat=stat)
+      allocate(kx(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for kx',.true.)
-      allocate(ky(nx,ny),stat=stat)
+      allocate(ky(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for ky',.true.)
-      allocate(kappa(nx,ny),stat=stat)
+      allocate(kappa(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for kappa',.true.)
-      allocate(exp_fact(nx,ny),stat=stat)
+      allocate(exp_fact(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for exp_fact',.true.)
-      allocate(tmp_re(nx,ny),stat=stat)
+      allocate(tmp_re(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for tmp_re',.true.)
-      allocate(tmp_im(nx,ny),stat=stat)
+      allocate(tmp_im(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for tmp_im',.true.)
 !
 !  Get local wave numbers
 !
-      kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
-      ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+      kx = spread(kx_fft(ipx*nxl+1:ipx*nxl+nxl),2,nyl)
+      ky = spread(ky_fft(ipy*nyl+1:ipy*nyl+nyl),1,nxl)
 !
 !  Calculate 1/k^2, zero mean
 !
@@ -7046,49 +7062,50 @@ module Boundcond
 !
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
       real, dimension (:,:), allocatable :: kx,ky,kappa
       real, dimension (:,:), allocatable :: tmp_re,tmp_im,fac
-      integer :: i,j,stat
+      integer :: i,j,stat,nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
-      allocate(aa_re(nx,ny,iax:iaz),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(aa_re(nxl,nyl,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for aa_re',.true.)
-      allocate(aa_im(nx,ny,iax:iaz),stat=stat)
+      allocate(aa_im(nxl,nyl,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for aa_im',.true.)
-      allocate(kx(nx,ny),stat=stat)
+      allocate(kx(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for kx',.true.)
-      allocate(ky(nx,ny),stat=stat)
+      allocate(ky(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for ky',.true.)
-      allocate(kappa(nx,ny),stat=stat)
+      allocate(kappa(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for kappa',.true.)
-      allocate(tmp_re(nx,ny),stat=stat)
+      allocate(tmp_re(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for tmp_re',.true.)
-      allocate(tmp_im(nx,ny),stat=stat)
+      allocate(tmp_im(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for tmp_im',.true.)
-      allocate(fac(nx,ny),stat=stat)
+      allocate(fac(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for fac',.true.)
 !
 !  Get local wave numbers
 !
       if (nxgrid>1) then
-        kx = spread(kx_fft(ipx*nx+1:ipx*nx+nx),2,ny)
-        ky = spread(ky_fft(ipy*ny+1:ipy*ny+ny),1,nx)
+        kx = spread(kx_fft(ipx*nxl+1:ipx*nxl+nxl),2,nyl)
+        ky = spread(ky_fft(ipy*nyl+1:ipy*nyl+nyl),1,nxl)
       else
         kx(1,:) = 0.0
-        ky(1,:) = ky_fft(ipy*ny+1:ipy*ny+ny)
+        ky(1,:) = ky_fft(ipy*nyl+1:ipy*nyl+nyl)
       endif
 !
 !  Calculate 1/k^2, zero mean
@@ -7186,22 +7203,23 @@ module Boundcond
 !  14-jun-2002/axel: adapted from similar
 !   8-jul-2002/axel: introduced topbot argument
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: f2,f3
       real, dimension (:,:,:), allocatable :: fz
-      integer :: j, stat
+      integer :: j, stat,nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
-      allocate(f2(nx,ny),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(f2(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
           'Could not allocate memory for f2',.true.)
-      allocate(f3(nx,ny),stat=stat)
+      allocate(f3(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
           'Could not allocate memory for f3',.true.)
-      allocate(fz(nx,ny,nghost+1),stat=stat)
+      allocate(fz(nxl,nyl,nghost+1),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
           'Could not allocate memory for fz',.true.)
 !
@@ -7216,7 +7234,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", lfirst_proc_xy)
+                 "with mod(nxgrid,nygrid)/=0", lfirst_proc_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -7235,18 +7253,18 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", lfirst_proc_xy)
+                 "with mod(nxgrid,nygrid)/=0", lfirst_proc_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
           call potential_field(fz,f2,f3,+1)
-          f(l1:l2,m1:m2,n2:mz,iax+j)=fz
+          f(l1:l2,m1:m2,n2:,iax+j)=fz
         enddo
 !
         f2=f(l1:l2,m1:m2,n2,iax)
         f3=f(l1:l2,m1:m2,n2,iay)
         call potentdiv(fz,f2,f3,+1)
-        f(l1:l2,m1:m2,n2:mz,iaz)=-fz
+        f(l1:l2,m1:m2,n2:,iaz)=-fz
       case default
         call fatal_error('bc_aa_pot', 'invalid argument', lfirst_proc_xy)
       endselect
@@ -7280,38 +7298,39 @@ module Boundcond
       real, dimension (:,:), allocatable :: fac,kk,f1r,f1i,g1r,g1i
       real, dimension (:,:), allocatable :: f2r,f2i,f3r,f3i
       real :: delz
-      integer :: i,stat
+      integer :: i,stat,nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
-      allocate(fac(nx,ny),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(fac(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for fac',.true.)
-      allocate(kk(nx,ny),stat=stat)
+      allocate(kk(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for kk',.true.)
-      allocate(f1r(nx,ny),stat=stat)
+      allocate(f1r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f1r',.true.)
-      allocate(f1i(nx,ny),stat=stat)
+      allocate(f1i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f1i',.true.)
-      allocate(g1r(nx,ny),stat=stat)
+      allocate(g1r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for g1r',.true.)
-      allocate(g1i(nx,ny),stat=stat)
+      allocate(g1i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for g1i',.true.)
-      allocate(f2r(nx,ny),stat=stat)
+      allocate(f2r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f2r',.true.)
-      allocate(f2i(nx,ny),stat=stat)
+      allocate(f2i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f2i',.true.)
-      allocate(f3r(nx,ny),stat=stat)
+      allocate(f3r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f3r',.true.)
-      allocate(f3i(nx,ny),stat=stat)
+      allocate(f3i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f3i',.true.)
 !
@@ -7328,7 +7347,7 @@ module Boundcond
 !  define wave vector
 !  calculate sqrt(k^2)
 !
-      kk=sqrt(spread(kx_fft(ipx*nx+1:ipx*nx+nx)**2,2,ny)+spread(ky_fft(ipy*ny+1:ipy*ny+ny)**2,1,nx))
+      kk=sqrt(spread(kx_fft(ipx*nxl+1:ipx*nxl+nxl)**2,2,nyl)+spread(ky_fft(ipy*nyl+1:ipy*nyl+nyl)**2,1,nxl))
 !
 !  one-sided derivative
 !
@@ -7390,44 +7409,50 @@ module Boundcond
       real, dimension (:), allocatable :: ky
       real, dimension (nx) :: kx
       real :: delz
-      integer :: i,stat
+      integer :: i,stat,nxl,nyl
+!
+      if (ldownsampling) then
+        call warning('bc_force_aa_time','Not available for downsampling')      
+        return
+      endif
 !
 !  Allocate memory for large arrays.
 !
-      allocate(fac(nx,ny),stat=stat)
+      nxl=l2-l1+1; nyl=m2-m1+1
+      allocate(fac(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for fac',.true.)
-      allocate(kk(nx,ny),stat=stat)
+      allocate(kk(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for kk',.true.)
-      allocate(kkkx(nx,ny),stat=stat)
+      allocate(kkkx(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for kkkx',.true.)
-      allocate(kkky(nx,ny),stat=stat)
+      allocate(kkky(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for kkky',.true.)
-      allocate(f1r(nx,ny),stat=stat)
+      allocate(f1r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f1r',.true.)
-      allocate(f1i(nx,ny),stat=stat)
+      allocate(f1i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f1i',.true.)
-      allocate(g1r(nx,ny),stat=stat)
+      allocate(g1r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for g1r',.true.)
-      allocate(g1i(nx,ny),stat=stat)
+      allocate(g1i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for g1i',.true.)
-      allocate(f2r(nx,ny),stat=stat)
+      allocate(f2r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f2r',.true.)
-      allocate(f2i(nx,ny),stat=stat)
+      allocate(f2i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f2i',.true.)
-      allocate(f3r(nx,ny),stat=stat)
+      allocate(f3r(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f3r',.true.)
-      allocate(f3i(nx,ny),stat=stat)
+      allocate(f3i(nxl,nyl),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
           'Could not allocate memory for f3i',.true.)
       allocate(ky(nygrid),stat=stat)
@@ -7444,14 +7469,14 @@ module Boundcond
 !
 !  define wave vector
 !
-      kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)*2*pi/Lx
+      kx=cshift((/(i-nxl/2,i=0,nxl-1)/),+nxl/2)*2*pi/Lx
       ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)*2*pi/Ly
 !
 !  calculate 1/k^2, zero mean
 !
-      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
-      kkkx=spread(kx,2,ny)
-      kkky=spread(ky(ipy*ny+1:(ipy+1)*ny),1,nx)
+      kk=sqrt(spread(kx**2,2,nyl)+spread(ky(ipy*nyl+1:(ipy+1)*nyl)**2,1,nxl))
+      kkkx=spread(kx,2,nyl)
+      kkky=spread(ky(ipy*nyl+1:(ipy+1)*nyl),1,nxl)
 !
 !  calculate 1/kk
 !
@@ -7507,13 +7532,18 @@ module Boundcond
 !  18-06-2008/bing: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j,ipt,ntb=-1
       real :: massflux,u_add
       real :: local_flux,local_mass
       real :: total_flux,total_mass
       real :: get_lf,get_lm
       integer :: nroot
+!
+      if (ldownsampling) then
+        call warning('bc_force_aa_time','Not available for downsampling')    
+        return
+      endif
 !
       if (headtt) then
         print*,'bc_wind: Massflux',massflux
@@ -7615,8 +7645,8 @@ module Boundcond
 !
       real, pointer :: Fbot
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: tmp_x
+      real, dimension (:,:,:,:) :: f
+      real, dimension (size(f,1)) :: tmp_x
       integer :: i
 !
       call get_shared_variable('Fbot', Fbot, caller='bc_ADI_flux_z')
@@ -7645,7 +7675,7 @@ module Boundcond
 !
       use SharedVariables, only : get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: idz, j
       real    :: kx
       real, pointer, save :: ampl_forc, k_forc, w_forc, x_forc, dx_forc
@@ -7671,9 +7701,9 @@ module Boundcond
 !
       if (k_forc /= impossible) then
         kx=2*pi/Lx*k_forc
-        f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, my)
+        f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, size(f,2))
       else
-        f(:,:,idz,j) = spread(ampl_forc*exp(-((x-x_forc)/dx_forc)**2)*cos(w_forc*t), 2, my)
+        f(:,:,idz,j) = spread(ampl_forc*exp(-((x-x_forc)/dx_forc)**2)*cos(w_forc*t), 2, size(f,2))
       endif
 !
     endsubroutine bc_force_ux_time
@@ -7690,9 +7720,9 @@ module Boundcond
 ! NB! Assumes y to have the range 0 < y < 2pi
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,i
-      real, dimension(mcom) :: val
+      real, dimension(:) :: val
 !
       select case (topbot)
       case ('bot')
@@ -7740,7 +7770,7 @@ module Boundcond
       use Gravity, only: gravz
       use EquationOfState, only : cs20
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
       real    :: haut
       integer :: i
@@ -7767,7 +7797,7 @@ module Boundcond
 !  25-Oct-10/tijmen & bing: coded
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i,j
 !
       select case (topbot)
@@ -7804,11 +7834,16 @@ module Boundcond
 !
       use Fourier, only: fourier_transform_other
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
       real, dimension (nxgrid) :: fft_az_r,fft_az_i,A_r,A_i,exp_fact
       real, dimension (nxgrid) :: iay_global
       integer :: i,j,ipos,dir
+!
+      if (ldownsampling) then
+        call warning('bc_force_aa_time','Not available downsampling')
+        return
+      endif
 !
       select case (topbot)
 !
@@ -7880,10 +7915,10 @@ module Boundcond
       use EquationOfState, only: get_cv1,get_cp1
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: cv1,cp1,cv,cp
-      real, dimension (mx,my,mz) :: lnrho_
+      real, dimension (size(f,1),size(f,2),size(f,3)) :: lnrho_
 !
       call get_cv1(cv1); cv=1./cv1
       call get_cp1(cp1); cp=1./cp1
@@ -7930,7 +7965,7 @@ module Boundcond
 !                  Eq.(5)
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j,k
 !
       select case (topbot)
@@ -7967,7 +8002,7 @@ module Boundcond
 !
 !  At the moment only the x-direction is implemented
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       real, intent(in) :: rhob
       character (len=bclen), intent(in) :: boundtype,tb,dirn
       logical, intent(out) :: lsuccess
@@ -7988,20 +8023,20 @@ module Boundcond
         case ('x')
           select case (tb)
             case('bot')
-              if ((btyp/=bcx1(ilnrho)) .or. (rhob/=fbcx1(ilnrho))) then
+              if ((btyp/=bcx12(ilnrho,1)) .or. (rhob/=fbcx(ilnrho,1))) then
                 lconsistent=.false.
-                bcx1(ilnrho)=btyp
-                fbcx1(ilnrho)=boundrho
+                bcx12(ilnrho,1)=btyp
+                fbcx(ilnrho,1)=boundrho
                 call boundconds_x(f,ilnrho,ilnrho)
-                if (lroot) print*,'boundcond: density in x at the bottom set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+                if (lroot) print*,'boundcond: density in x at the bottom set to: ',bcx12(ilnrho,1),', with the value ',fbcx(ilnrho,1)
               endif
             case('top')
-              if ((btyp/=bcx2(ilnrho)) .or. (rhob/=fbcx2(ilnrho))) then
+              if ((btyp/=bcx12(ilnrho,2)) .or. (rhob/=fbcx(ilnrho,2))) then
                 lconsistent=.false.
-                bcx2(ilnrho)=btyp
-                fbcx2(ilnrho)=boundrho
+                bcx12(ilnrho,2)=btyp
+                fbcx(ilnrho,2)=boundrho
                 call boundconds_x(f,ilnrho,ilnrho)
-                if (lroot) print*,'boundcond: density in x at the top set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+                if (lroot) print*,'boundcond: density in x at the top set to: ',bcx12(ilnrho,2),', with the value ',fbcx(ilnrho,2)
               endif
             case default
               call fatal_error('set_consistent_density_boundary','topbot does not match any, aborting')
@@ -8034,7 +8069,7 @@ module Boundcond
 !
 !  At the moment only the x-direction is implemented
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       character (len=bclen), intent(in) :: boundtype,tb,dirn,comp
       logical, intent(out) :: lsuccess
 !
@@ -8050,25 +8085,25 @@ module Boundcond
             case('bot')
               select case (comp)
                 case('x')
-                  if (btyp/=bcx1(iux)) then
+                  if (btyp/=bcx12(iux,1)) then
                     lconsistent=.false.
-                    bcx1(iux)=btyp
+                    bcx12(iux,1)=btyp
                     call boundconds_x(f,iux,iux)
-                    if (lroot) print*,'boundcond: x velocity in x at the bottom set to: ',bcx1(iux)
+                    if (lroot) print*,'boundcond: x velocity in x at the bottom set to: ',bcx12(iux,1)
                   endif
                 case('y')
-                  if (btyp/=bcx1(iuy)) then
+                  if (btyp/=bcx12(iuy,1)) then
                     lconsistent=.false.
-                    bcx1(iuy)=btyp
+                    bcx12(iuy,1)=btyp
                     call boundconds_x(f,iuy,iuy)
-                    if (lroot) print*,'boundcond: y velocity in x at the bottom set to: ',bcx1(iuy)
+                    if (lroot) print*,'boundcond: y velocity in x at the bottom set to: ',bcx12(iuy,1)
                   endif
                 case('z')
-                  if (btyp/=bcx1(iuz)) then
+                  if (btyp/=bcx12(iuz,1)) then
                     lconsistent=.false.
-                    bcx1(iuz)=btyp
+                    bcx12(iuz,1)=btyp
                     call boundconds_x(f,iuz,iuz)
-                    if (lroot) print*,'boundcond: z velocity in x at the bottom set to: ',bcx1(iuz)
+                    if (lroot) print*,'boundcond: z velocity in x at the bottom set to: ',bcx12(iuz,1)
                   endif
                 case default
                   call fatal_error('set_consistent_vel_boundary','component does not match any, aborting')
@@ -8076,25 +8111,25 @@ module Boundcond
             case('top')
               select case (comp)
                 case('x')
-                  if (btyp/=bcx2(iux)) then
+                  if (btyp/=bcx12(iux,2)) then
                     lconsistent=.false.
-                    bcx2(iux)=btyp
+                    bcx12(iux,2)=btyp
                     call boundconds_x(f,iux,iux)
-                    if (lroot) print*,'boundcond: x velocity in x at the top set to: ',bcx2(iux)
+                    if (lroot) print*,'boundcond: x velocity in x at the top set to: ',bcx12(iux,2)
                   endif
                 case('y')
-                  if (btyp/=bcx2(iuy)) then
+                  if (btyp/=bcx12(iuy,2)) then
                     lconsistent=.false.
-                    bcx2(iuy)=btyp
+                    bcx12(iuy,2)=btyp
                     call boundconds_x(f,iuy,iuy)
-                    if (lroot) print*,'boundcond: y velocity in x at the top set to: ',bcx2(iuy)
+                    if (lroot) print*,'boundcond: y velocity in x at the top set to: ',bcx12(iuy,2)
                   endif
                 case('z')
-                  if (btyp/=bcx2(iuz)) then
+                  if (btyp/=bcx12(iuz,2)) then
                     lconsistent=.false.
-                    bcx2(iuz)=btyp
+                    bcx12(iuz,2)=btyp
                     call boundconds_x(f,iuz,iuz)
-                    if (lroot) print*,'boundcond: z velocity in x at the top set to: ',bcx2(iuz)
+                    if (lroot) print*,'boundcond: z velocity in x at the top set to: ',bcx12(iuz,2)
                   endif
                 case default
                   call fatal_error('set_consistent_vel_boundary','component does not match any, aborting')
@@ -8119,7 +8154,7 @@ module Boundcond
 !
 ! sets periodic boundary condition on auxiliar variables
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: ivar
 !
       call bc_per_x(f,'top',ivar); call bc_per_x(f,'bot',ivar)
@@ -8131,7 +8166,7 @@ module Boundcond
     subroutine tayler_expansion(f,topbot,j)
 !
       character (len=bclen) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
 !
       select case (topbot)
