@@ -73,9 +73,9 @@ module Param_IO
 !
 ! local quantities
 !
-  real, dimension(mcom) :: fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
-                           fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
-                           fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2
+  real, dimension(mcom) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
+                           fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
+                           fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
 
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
