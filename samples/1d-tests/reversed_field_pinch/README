@@ -27,3 +27,8 @@ Scaling results for different resolution (alpm_int should be pi)
     128  3.14218
     256  3.14174
     512  3.14163
+
+older versions:
+  svn up -r15668   sementation fault
+  svn up -r18000   nompicomm.f90, line 1103: Conflicting attributes or multiple declaration of name.
+  svn up -r20000   No rule to make target `entropy.h', needed by `noentropy.o'
