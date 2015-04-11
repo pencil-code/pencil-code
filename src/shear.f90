@@ -972,12 +972,12 @@ module Shear
 !  19-sep-14/ccyang: coded.
 !
       use Mpicomm, only: mpirecv_real, mpisend_real, mpibarrier
+      use Cparam, only: l1i, l2i
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       integer, intent(in) :: ivar1, ivar2
 !
       integer, parameter :: ltag = 101, rtag = 102
-      integer, parameter :: l1i = l1 + nghost - 1, l2i = l2 - nghost + 1
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
       integer, dimension(4) :: nbcast
       integer :: nvar, istat
