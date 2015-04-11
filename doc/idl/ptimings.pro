@@ -12,6 +12,7 @@ if !d.name eq 'PS' then begin
 end
 ;
 ;  mv idl.ps ../figs/ptimings.ps
+;  mv idl.ps ~/tex/pencil-code/performance/fig/ptimings.ps
 ;  convert ../figs/ptimings.ps ~/shared/My\ Pictures/Figures/Pencil/ptimings.png
 ;
 fact=1.
