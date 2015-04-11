@@ -13,6 +13,8 @@ Recommended resolution:
     initchem='innerbox', amplchemk=1.,0., amplchemk2=.5,.25, widthchem=.1
 Comments:
     Reaction-diffusion equations, showing cell splitting etc.
+    dU/dt = D*del2(U) - U*V^2 + A(1-U)
+    dV/dt = D*del2(V) + U*V^2 - B*V
     Double precision is not really important, except for auto-testing
 Reference:
     J.E. Pearson (1993, Science, 261, 189-192,
