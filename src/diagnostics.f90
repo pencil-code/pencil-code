@@ -173,7 +173,8 @@ module Diagnostics
 !
       logical,save :: lfirst_call=.true.
       character (len=640) :: fform,legend,line
-      integer :: iname, iostat, nnamel,iop
+      integer :: iname, iostat, nnamel
+      logical :: lop
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
 !
@@ -251,8 +252,8 @@ module Diagnostics
 !
 !  Append to diagnostics file.
 !
-        inquire(lun,opened=iop)
-        if (iop==0) &
+        inquire(lun,opened=lop)
+        if (lop) &
           open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
 !  file not distributed, backskipping enabled
         if (.not. outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1)) then
@@ -925,12 +926,13 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
-      integer :: iostat, iop
+      integer :: iostat
+      logical :: lop
 !
       if (lroot.and.nnamez>0) then
 !
-        inquire(1,opened=iop)
-        if (iop==0) &
+        inquire(1,opened=lop)
+        if (lop) &
           open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
