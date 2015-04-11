@@ -1691,7 +1691,11 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##  the following 2 lines are for the gnu compiler
 ##  which works (use module swap PrgEnv-cray PrgEnv-gnu)
 ##
-#FFLAGS=-O3 #(beskow*)
+##NS: added compiler option -ffree-line-length-0
+##NS: to allow for long lines in source codes (max col no def was 132)
+#FFLAGS=-O3 -ffree-line-length-0 #(beskow*)
+##NS: use following for debugging the code
+##FFLAGS=-O3 -fcheck=all #(beskow*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(beskow*)
 ##
 ##
