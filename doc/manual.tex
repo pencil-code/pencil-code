@@ -4228,6 +4228,8 @@ ny & nprocyx & nprocy & nprocz & ncpus \\
  256 & 1 & 16 & 16 &  256 \\
  256 & 2 & 16 & 16 &  512 \\
  256 & 4 & 16 & 16 & 1024 \\
+ 256 & 8 & 16 & 16 & 2048 \\ %should be ok
+ 288 & 2 & 16 & 18 &  576 \\
  512 & 2 & 16 & 32 & 1024 \\
  512 & 4 & 16 & 16 & 1024 \\
  512 & 4 & 16 & 32 & 2048 \\
@@ -6087,6 +6089,9 @@ No, because 2048 = 0.5 * 4096 and 0.5 is not an integer.
 Maybe try either setting nprocz=64 or nprocy=64.
 You could compensate the change of ncpus with the $x$-direction.
 For $2048^3$ simulations, nprocy=32 and nprocz=64 would be good.
+%nygrid=1024 = n * 16*64 = n*1024, so n=1 is ok
+%nygrid= 256 = n * 16*16 = n*256, so n=1 is ok
+A list of good meshes is given in Table~\ref{GoodMeshes}.
 
 \subsubsection{Unit-agnostic calculations?}
 
@@ -7622,6 +7627,7 @@ where \code{nw=nx*ny*nz}.
   16 &Triolith&0.075& $128^3$ & magn/noentro & 2x2x4  &  1-mar-14 & AB \\
   16 &Triolith&0.065& $128^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
   16 &Triolith&0.054& $256^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
+  24 &Gardar & 0.44 & $128^2\times48$ & magn/noentro &        & 6-nov-13 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
