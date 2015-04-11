@@ -102,7 +102,7 @@ module Gravity
   integer :: idiag_epot=0          ! DIAG_DOC: $\left<\varrho \Phi_{\rm grav}
                                    ! DIAG_DOC: \right>$ \quad(mean potential
                                    ! DIAG_DOC: energy)
-  integer :: idiag_epottot=0       ! DIAG_DOC: $\intV\varrho \Phi_{\rm grav}
+  integer :: idiag_epottot=0       ! DIAG_DOC: $\int_V\varrho \Phi_{\rm grav}
                                    ! DIAG_DOC: dV$ \quad(total potential
                                    ! DIAG_DOC: energy)
 !
