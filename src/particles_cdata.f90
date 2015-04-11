@@ -14,6 +14,12 @@ module Particles_cdata
   integer, parameter :: lun_output=93
 !
   real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
+!
+! Introduce the maximum number possible particles that can live in 
+! a cell.
+!
+  integer, parameter :: maxp=20
+  integer, parameter :: max_par_per_grid=int(npar_per_cell*maxp)+1
   real :: rp_int=-impossible, rp_ext=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
   real :: rhopmat=1.0, rhopmat1=1.0, mpmat=0.0
@@ -106,5 +112,28 @@ module Particles_cdata
   integer, parameter :: ngp=2
 !
   real :: t_nextcol=0. !collision diagnostic times, set to turn-over of largest eddies
+!
+! Number of grid points that are considered neighbouring grids. This is determined by
+! the grid resolution and the number psigma which determines that range of interaction of
+! the potential. The default is set to 0 but must be reset in post-parameter read initialization.
+! We use three different numbers for three directions in case we have different resolutions
+! along three directions. So far this is written only for cartesian co-ordinates. 
+  integer,allocatable,dimension(:,:,:,:) :: invert_ineargrid_map
+  logical :: lallocated_neighbour_list=.false.
+!***********************************************************************
+contains
+!***********************************************************************
+!    subroutine allocate_neighbour_list(neighbourx,neighboury,neighbourz,Nneighbour)
+!      integer :: neighbourx,neighboury,neighbourz,Nneighbour
+!
+!  allocates the memory for calculation of neighbourlist
+!
+!      write(*,*) 'DM:neighbourx,neighboury,neighbourz',neighbourx,neighboury,neighbourz
+!      allocate(nlist(1-neighbourx:nx+neighbourx,1-neighboury:nx+neighboury, &
+!        1-neighbourz:nx+neighbourz,Nneighbour+1))
+!      lallocated_neighbour_list=.true.
+!
+!    endsubroutine allocate_neighbour_list
+!***********************************************************************
 !
 endmodule Particles_cdata

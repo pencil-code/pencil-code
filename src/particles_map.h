@@ -11,3 +11,4 @@
   public :: sort_particles_iblock
   public :: fill_blocks_with_bricks, fill_bricks_with_blocks
   public :: shepherd_neighbour_pencil3d
+  public :: boundcond_neighbour_list

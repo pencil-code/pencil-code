@@ -21,7 +21,6 @@ module Particles_main
   use Particles_mpicomm
   use Particles_nbody
   use Particles_number
-  use Particles_potential
   use Particles_radius
   use Particles_sink
   use Particles_spin
@@ -56,7 +55,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-      call register_particles_potential    ()
+!      call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_spin         ()
       call register_particles_number       ()
@@ -110,7 +109,7 @@ module Particles_main
       call rprint_particles_ads          (lreset,LWRITE=lroot)
       call rprint_particles_surf         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
-      call rprint_particles_potential    (lreset,LWRITE=lroot)
+!      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
@@ -228,7 +227,6 @@ module Particles_main
       call initialize_particles_density      (f)
       call initialize_particles_nbody        (f)
       call initialize_particles_number       (f)
-      call initialize_particles_potential    (f)
       call initialize_particles_radius       (f)
       call initialize_particles_selfgrav     (f)
       call initialize_particles_sink         (f)
@@ -475,13 +473,14 @@ module Particles_main
       endif
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
+!   This call also sorts the particles into mn 
 !
       call particles_discrete_collisions()
 !
 !  Adapt the number of particles in each grid cell to a desired number
 !
       if (lparticles_adaptation .and. llast) then
-        call sort_particles_imn(fp,ineargrid,ipar)
+        call sort_particles_imn(fp,ineargrid,ipar,f=f)
         call map_xxp_grid(f,fp,ineargrid)
         call map_vvp_grid(f,fp,ineargrid)
         call particles_adaptation_pencils(f,fp,dfp,ipar,ineargrid)
@@ -593,7 +592,7 @@ module Particles_main
       if (lparticles_blocks) then
         call sort_particles_iblock(fp,ineargrid,ipar,dfp=dfp)
       else
-        call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+        call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp,f=f)
       endif
 !
 !  Map the particle positions and velocities on the grid.
@@ -664,6 +663,7 @@ module Particles_main
 !
       if (lparticles_nbody)     call calc_nbodygravity_particles(f)
       if (lparticles_viscosity) call calc_particles_viscosity(f,fp,ineargrid)
+      if (lparticles_potential)  call boundcond_neighbour_list()
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
@@ -823,7 +823,10 @@ module Particles_main
 !  Dynamical equations.
 !
       if (lparticles)        call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles)        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)        then
+!        write(*,*) 'DM: calling dvvp_dt_pencil'
+        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      endif
       if (lparticles_radius) call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_spin)   call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_mass)   call dpmass_dt_pencil(f,df,fp,dfp,p,ineargrid)
@@ -838,8 +841,8 @@ module Particles_main
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_viscosity) &
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
-      if (lparticles_potential) &
-          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
+!      if (lparticles_potential) &
+!          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_polymer) &
 !          call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
 !
@@ -982,14 +985,14 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_potential) then
-        call read_particles_pot_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_potential_init_pars',iostat); return
-          endif
-        endif
-      endif
+!      if (lparticles_potential) then
+!        call read_particles_pot_init_pars(unit,iostat)
+!        if (present(iostat)) then
+!          if (iostat/=0) then
+!            call samplepar_startpars('particles_potential_init_pars',iostat); return
+!          endif
+!        endif
+!      endif
 !
       if (lparticles_spin) then
         call read_particles_spin_init_pars(unit,iostat)
@@ -1141,7 +1144,7 @@ module Particles_main
 !
       call read_particles_init_pars(unit)
       if (lparticles_radius)      call read_particles_rad_init_pars(unit)
-      if (lparticles_potential)   call read_particles_pot_init_pars(unit)
+!      if (lparticles_potential)   call read_particles_pot_init_pars(unit)
       if (lparticles_spin)        call read_particles_spin_init_pars(unit)
       if (lparticles_sink)        call read_particles_sink_init_pars(unit)
       if (lparticles_number)      call read_particles_num_init_pars(unit)
@@ -1173,8 +1176,8 @@ module Particles_main
             print*,'&particles_init_pars         /'
         if (lparticles_radius) &
             print*,'&particles_radius_init_pars  /'
-        if (lparticles_potential) &
-            print*,'&particles_potential_init_pars  /'
+!        if (lparticles_potential) &
+!            print*,'&particles_potential_init_pars  /'
         if (lparticles_spin) &
             print*,'&particles_spin_init_pars    /'
         if (lparticles_sink) &
@@ -1222,7 +1225,7 @@ module Particles_main
 !
       call write_particles_init_pars(unit)
       if (lparticles_radius)      call write_particles_rad_init_pars(unit)
-      if (lparticles_potential)   call write_particles_pot_init_pars(unit)
+!      if (lparticles_potential)   call write_particles_pot_init_pars(unit)
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
       if (lparticles_sink)        call write_particles_sink_init_pars(unit)
       if (lparticles_number)      call write_particles_num_init_pars(unit)
@@ -1274,14 +1277,14 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_potential) then
-        call read_particles_pot_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_potential_run_pars',iostat); return
-          endif
-        endif
-      endif
+!      if (lparticles_potential) then
+!        call read_particles_pot_run_pars(unit,iostat)
+!        if (present(iostat)) then
+!          if (iostat/=0) then
+!            call samplepar_runpars('particles_potential_run_pars',iostat); return
+!          endif
+!        endif
+!      endif
 !
       if (lparticles_spin) then
         call read_particles_spin_run_pars(unit,iostat)
@@ -1474,7 +1477,7 @@ module Particles_main
         if (lparticles)                print*,'&particles_run_pars         /'
         if (lparticles_adaptation)     print*,'&particles_adapt_run_pars   /'
         if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
-        if (lparticles_potential)      print*,'&particles_potential_run_pars  /'
+!        if (lparticles_potential)      print*,'&particles_potential_run_pars  /'
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
         if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
@@ -1513,7 +1516,7 @@ module Particles_main
 !
       if (lparticles)                call write_particles_run_pars(unit)
       if (lparticles_radius)         call write_particles_rad_run_pars(unit)
-      if (lparticles_potential)      call write_particles_pot_run_pars(unit)
+!      if (lparticles_potential)      call write_particles_pot_run_pars(unit)
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
@@ -1750,7 +1753,7 @@ module Particles_main
 !***********************************************************************
     subroutine particles_cleanup
 !
-      if (lparticles_potential) call particles_potential_clean_up()
+!      call particles_final_clean_up()
       if (lparticles_chemistry) then 
         call particles_chemistry_clean_up()
         call particles_surfspec_clean_up()

@@ -1423,12 +1423,13 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
-    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp)
+    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp,f)
 !
 !  Sort the particles so that they appear in the same order as the (m,n) loop.
 !
 !  16-nov-09/anders: dummy
 !
+      real, dimension (mx,my,mz,mfarray),optional :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar

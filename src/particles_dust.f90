@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED np_rad(5); npvz(5)
@@ -5414,6 +5415,14 @@ module Particles
       enddo
 !
     endsubroutine rprint_particles
+!***********************************************************************
+    subroutine particles_final_clean_up
+!
+!  cleanup (dummy)
+!
+      print*,'particles_tracer: Nothing to clean up'
+
+    endsubroutine particles_final_clean_up
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !

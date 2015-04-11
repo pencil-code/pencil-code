@@ -8,8 +8,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 4
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_potential=.true.
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -83,22 +84,14 @@ module Particles
   logical :: lpar_spec=.false.
   logical :: lflowdrag=.true.
 !
-! About the neighbour list
-!
-  logical,save :: lallocated_neighbour_list=.false.,lcalculate_neighbour_list=.true.
-  integer :: Nneighbour=48
-!
-! Note : Default number of slots for storing the index of the neighbouring particles.
-! In liquid typical number of neighbours in about 12. If we then consider the
-! potential to have a range such that two shells are within its domain of influence
-! then we need about 24 slots. At present we keep double of that number of slots.
-! and while allocating we add one more to keep the numpber of non-empty slots
-! which will be looped over.
-!
-  integer,allocatable,dimension(:,:),save :: neighbour_list
   character (len=labellen) :: ppotential='nothing'
-  real :: psigma=1.,ppowerby2=19,skin_factor=2.,pampl=1.
+  integer :: sigma_in_grid = 1
+  real :: psigma_by_dx=0.1,ppowerby2=19,skin_factor=2.,pampl=1.
 !
+! Note: psigma below is psigma = psigma_by_dx * dx ; because we always like to think of the
+! range of the potential in units of dx. While calculating neighbours we look around for 
+! sigma_in_grid number of grid points. This should be >= 1 .  Also, if
+! psigma is larger than dx then sigma_in_grid must be larger too. 
 ! Note : psigma should be much smaller than the dissipation range, maybe even less than a grid-spacing
 ! as we are not including many terms in the Maxey-Riley equations. As far as the interaction
 ! with the fluid is concerned our particles are point particles with inertia. But the
@@ -117,11 +110,12 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz,lcheck_exact_frontier, lflowdrag, &
-      lnocalc_rhop,lparticlemesh_cic, ppotential, psigma, ppowerby2, skin_factor, tausp
+      lnocalc_rhop,lparticlemesh_cic, ppotential, psigma_by_dx, ppowerby2, skin_factor, tausp,&
+      sigma_in_grid,pampl,linsert_particles_continuously
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz,cdtp,lcentrifugal_force_par,lcheck_exact_frontier, lcoriolis_force_par, &
-      lpar_spec, Nneighbour, tausp
+      lpar_spec, tausp,sigma_in_grid,psigma_by_dx,ppowerby2,skin_factor,pampl,linsert_particles_continuously
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -163,7 +157,7 @@ module Particles
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: particles_charged.f90 dhruba.mitra@gmail.com $")
+           "$Id: particles_potential.f90 dhruba.mitra@gmail.com $")
 !
 !  Indices for particle position.
 !
@@ -194,8 +188,10 @@ module Particles
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
         communicated=lparticles_sink.or.lcommunicate_rhop)
 !
-! This module shall always require electric field and magnetic field stored as
-! a auxiliary array.
+! Auxiliary array to invert the ineargrid map
+!
+      call farray_register_auxiliary('invgrid',iinvgrid,vector=2,&
+        communicated=.false.)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -220,11 +216,6 @@ module Particles
 !
       real :: rhom
       integer :: ierr, jspec
-!
-! Allocate space for neighbour list.
-!
-      call allocate_neighbour_list()
-      if (lroot) print*, 'initialize_particles_potential: Allocated neighbour list'
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -350,23 +341,11 @@ module Particles
 !
     endsubroutine initialize_particles
 !***********************************************************************
-    subroutine allocate_neighbour_list
-!
-!  allocates the memory for calculation of neighbourlist
-!
-      allocate(neighbour_list(npar_loc,Nneighbour+1))
-      lallocated_neighbour_list=.true.
-!
-    endsubroutine allocate_neighbour_list
-!***********************************************************************
     subroutine particles_potential_clean_up
 !
 !  cleanup after the particles_potential module
 !
-      if (lallocated_neighbour_list) then
-        deallocate(neighbour_list)
-        print*, 'particles_potential: Neighbour list deallocated'
-      endif
+
 !
     endsubroutine particles_potential_clean_up
 !***********************************************************************
@@ -419,6 +398,19 @@ module Particles
 !
         case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles: nothing'
+!
+        case ('two')
+          fp(1,ixp) = xyz0(1)+3*Lx/4.
+          fp(1,iyp)=0.; fp(1,izp)=0. ;
+          fp(2,ixp) = xyz0(1)+Lx/4.
+          fp(2,iyp)=0.; fp(2,izp)=0.;
+          fp(3,ixp) = xyz0(1)+Lx/5.
+          fp(3,iyp)=0.; fp(3,izp)=0.;
+          if (lroot .and. j==1) then 
+            print*, 'init_particles: two'
+            write(*,*) 'xyz0(1),Lxyz(1)',xyz0(1),Lxyz(1)
+            write(*,*) 'x1,x2',fp(1,ixp),fp(2,ixp)
+          endif
 !
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
@@ -838,7 +830,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           call map_nearest_grid(fp,ineargrid)
           call map_xxp_grid(f,fp,ineargrid)
-          call sort_particles_imn(fp,ineargrid,ipar)
+          call sort_particles_imn(fp,ineargrid,ipar,f=f)
           do k=k1_imn(imn_array(m_hole+m1-1,n_hole+n1-1)), &
                k2_imn(imn_array(m_hole+m1-1,n_hole+n1-1))
             if (ineargrid(k,1)==l_hole+l1-1) then
@@ -887,6 +879,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
+!
+        case ('oppose')
+          if (lroot .and. j==1) print*, 'init_particles: two'
+          fp(1,ivpx) = -vpx0
+          fp(1,ivpy)=0; fp(1,ivpz)=0.
+          fp(2,ivpx) = vpx0
+          fp(2,ivpy)=0; fp(2,ivpz)=0.
 !
         case ('zero')
           if (lroot) print*, 'init_particles: Zero particle velocity'
@@ -1059,7 +1058,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  positions and velocities are not displaced relative to when there is no
 !  sorting).
 !
-      call sort_particles_imn(fp,ineargrid,ipar)
+      call sort_particles_imn(fp,ineargrid,ipar,f=f)
 !
     endsubroutine init_particles
 !***********************************************************************
@@ -1753,8 +1752,9 @@ k_loop:   do while (.not. (k>npar_loc))
             accn = tausp1*(uup-fp(k,ivpx:ivpz))
           endif
 !
-          call get_interparticle_accn(fp,k,interparticle_accn,Vij)
+          call get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accn + interparticle_accn
+          write(*,*) 'DM,ipaccn',interparticle_accn
         enddo
 !
 !  No particles in this pencil.
@@ -1852,43 +1852,49 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt_blocks
 !***********************************************************************
-    subroutine get_interparticle_accn(fp,k,interparticle_accn,Vij)
+    subroutine get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       integer :: ineighbour,kneighbour,nindex
       real :: Vij
       real,dimension(3) :: unit_vector,interparticle_accn,force_ij
       real :: xi,yi,zi,xj,yj,zj,rij_sqr,force
+      integer :: ll,mm,nn,startp,endp,ip,ix0,iy0,iz0
 !
-      xi=fp(k,ixp)
-      yi=fp(k,iyp)
-      zi=fp(k,izp)
-      kneighbour=neighbour_list(k,1)
-      do ineighbour=1,kneighbour
-        nindex=neighbour_list(k,ineighbour+1)
-        xj=fp(nindex,ixp)
-        yj=fp(nindex,iyp)
-        zj=fp(nindex,izp)
-!
-! Note: (about the sign of the unit vector below) The force is *negative*
-! derivative of the potential. Also the unit vector is not normalized.
-!
-        unit_vector(1)=xj-xi
-        unit_vector(2)=yj-yi
-        unit_vector(3)=zj-zi
-        rij_sqr=(xi-xj)**2+(yi-yj)**2+(zi-zj)**2
-        call get_interaction_force(rij_sqr,force,Vij)
-        force_ij=force*unit_vector
-        if  (.not.lpencil_check_at_work) then
-          write(*,*) 'DM:ineighbour,nindex,xj,yj,zj',ineighbour,nindex,xj,yj,zj
-          write(*,*) 'DM: xi,yi,zi',xi,yi,zi
-          write(*,*) 'DM: rij_sqr,force_ij,Vij',rij_sqr,force_ij,Vij
-        endif
-!
+      xi=fp(k,ixp);yi=fp(k,iyp);zi=fp(k,izp);
+      ix0=ineargrid(k,1);iy0=ineargrid(k,2);iz0=ineargrid(k,3);
+      interparticle_accn=0.
+      do nn=-sigma_in_grid,sigma_in_grid
+        do mm=-sigma_in_grid,sigma_in_grid
+          do ll=-sigma_in_grid,sigma_in_grid
+            startp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid))
+            endp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid+1))
+!            write(*,*) 'out:startp,endp,k,ip',startp,endp,k,ip
+            do ip=startp,endp
+              if ((ip.ne.k).and.(ip.ne.0)) then 
+                xj=fp(ip,ixp);yj=fp(ip,iyp);zj=fp(ip,izp);
+                unit_vector(1)=xj-xi
+                unit_vector(2)=yj-yi
+                unit_vector(3)=zj-zi
+                write(*,*)'DM unitvector',unit_vector
+                write(*,*) 'startp,endp,k,ip',startp,endp,k,ip
+                write(*,*) 'DM fp1',fp(k,:)
+                write(*,*) 'DM ip',xi,yi,zi
+                write(*,*) 'DM fp2',fp(ip,:)
+                write(*,*) 'DM jp',xj,yj,zj
+                rij_sqr=(xi-xj)**2+(yi-yj)**2+(zi-zj)**2
+                call get_interaction_force(rij_sqr,force,Vij)
+                force_ij=force*unit_vector
 ! Note : This assumes that the mass of the particles are unity. If we use
 ! particles_density with this module then we need to change here
 !
-        interparticle_accn=force_ij
+                interparticle_accn=interparticle_accn+force_ij
+              endif
+            enddo
+          enddo
+        enddo
       enddo
 !
     endsubroutine get_interparticle_accn
@@ -1908,7 +1914,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! radius. If we use the particle_radius module we need to change the calculation of
 ! sigma below
 !
-      sigma=psigma
+      sigma=psigma_by_dx*dx
       xi_sqr=rij_sqr/(sigma**2)
       select case (ppotential)
       case ('rep-power-law')
@@ -1923,51 +1929,51 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine get_interaction_force
 !***********************************************************************
-    subroutine update_neighbour_list(fp)
+!    subroutine update_neighbour_list(fp)
 !
 !  Update the neighbour list for all the particles
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: k,kneighbour,kn
-      real :: xi,yi,zi,xj,yj,zj,rij_sqr
-      integer :: jp
+!      real, dimension (mpar_loc,mparray) :: fp
+!      integer :: k,kneighbour,kn
+!      real :: xi,yi,zi,xj,yj,zj,rij_sqr
+!      integer :: jp
 !
 ! Go through the whole array fp to find the neighbours
 !
-      do ip=1,npar_loc
+!      do ip=1,npar_loc
 !
 ! The coordinate of the particle in question
 !
-        xi=fp(ip,ixp)
-        yi=fp(ip,iyp)
-        zi=fp(ip,izp)
-        kn=1
-        neighbour_list(ip,:) = 0.
-!
+!        xi=fp(ip,ixp)
+!        yi=fp(ip,iyp)
+!        zi=fp(ip,izp)
+!        kn=1
+!        neighbour_list(ip,:) = 0.
+!!
 ! Now loop over mpar_loc number of particles. This is of course very time consuming.
 ! This can be improved upon.
 !
-        do jp=1,mpar_loc
+!        do jp=1,mpar_loc
 !
 ! The neighbourlist cannot include the particle itself
 !
-          if (jp .ne. ip) then
-            xj=fp(jp,ixp)
-            yj=fp(jp,iyp)
-            zj=fp(jp,izp)
-            rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
-            if (rij_sqr <= (skin_factor*psigma)**2) then
+!          if (jp .ne. ip) then
+!            xj=fp(jp,ixp)
+!            yj=fp(jp,iyp)
+!            zj=fp(jp,izp)
+!            rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
+!            if (rij_sqr <= (skin_factor*psigma)**2) then
 ! If the distance of between the particles are less than a skin_factor multiplied by the
 ! effective radius (psigma) of the particles then they are included in the neighbour list
-              kn=kn+1
-              neighbour_list(ip,kn)=jp
-            endif
-          endif
-        enddo
-        neighbour_list(ip,1)=kn-1
-      enddo
+!              kn=kn+1
+!              neighbour_list(ip,kn)=jp
+!            endif
+!          endif
+!        enddo
+!        neighbour_list(ip,1)=kn-1
+!      enddo
 !
-    endsubroutine update_neighbour_list
+!    endsubroutine update_neighbour_list
 !***********************************************************************
     subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
@@ -2372,6 +2378,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! hence does nothing when a single processor is used; otherwise calls the subroutine
 ! that actually lists the particles near boundary
 !
+      real, dimension (mpar_loc,mparray) :: fp
 
       if (ncpus .ne. 1) then
         call really_list_particles_near_boundary(fp)

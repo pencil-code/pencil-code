@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); tcond
+! PENCILS PROVIDED Ma2; fpres(3); tcond; dsdr
 !
 !***************************************************************
 module Energy

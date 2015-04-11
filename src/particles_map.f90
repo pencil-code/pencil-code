@@ -948,7 +948,7 @@ module Particles_map
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
-    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp)
+    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp,f)
 !
 !  Sort the particles so that they appear in the same order as the (m,n) loop.
 !
@@ -956,6 +956,7 @@ module Particles_map
 !
       use General, only: safe_character_assign
 !
+      real, dimension (mx,my,mz,mfarray),optional :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar
@@ -1107,6 +1108,12 @@ module Particles_map
         close (lun)
       endif
 !
+! If we are using particles_potential, this is the time to update the neighbour list
+!
+      if (lparticles_potential) then
+        call invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
+      endif
+!
       if (ip<=8) print '(A,i4,i8,i4,l4)', &
            'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
            iproc, ncount, isorttype, lrunningsort
@@ -1123,6 +1130,87 @@ module Particles_map
       endif
 !
     endsubroutine sort_particles_imn
+!***********************************************************************
+    subroutine boundcond_neighbour_list
+!
+! Copy the number of neighbours to the boundary points of the 
+! neighbour list
+!
+!      nlist(1-neighbourx:0) = nlist()
+!      allocate(nlist(1-neighbourx:nx+neighbourx,1-neighboury:nx+neighboury, &
+!        1-neighbourz:nx+neighbourz,Nneighbour+1))
+
+!
+    endsubroutine boundcond_neighbour_list
+!***********************************************************************
+    subroutine invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
+!
+!  Update the neighbour list for all the particles
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      integer :: k,noccup,ix0,iy0,iz0,ix,im,in,imn
+      integer, dimension(nx) :: pinl, pin_cell
+      integer, dimension(0:nx-1) :: cuml_pinl
+      integer, dimension(npar_loc) :: lpark_sorted
+!
+! Go through the whole array fp to distribute them in cells
+!
+      f(:,:,:,iinvgrid:iinvgrid+1) = 0
+      do imn=1,ny*nz
+        im=nn(imn)
+        in=mm(imn)
+        if (npar_imn(imn)>=2) then
+ !         write(*,*) 'DHRUBA, in here ? ',imn
+          pinl = 0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            write(*,*) 'ix0 and k!',ix0,k
+            pinl(ix0)=pinl(ix0)+1
+          enddo
+          cuml_pinl(0)=0
+          do ix=1,nx-1
+            cuml_pinl(ix)=cuml_pinl(ix-1)+pinl(ix)
+          enddo
+ !         write(*,*)'DHRUBA, cuml',cuml_pinl
+          pin_cell = 0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            lpark_sorted(k-k1_imn(imn)+1) = k1_imn(imn)+cuml_pinl(ix0-1)+pin_cell(ix0)
+            pin_cell(ix0) = pin_cell(ix0)+1
+          enddo
+          fp(k1_imn(imn):k2_imn(imn),:)=fp(lpark_sorted(1:npar_imn(imn)),:)
+          if (present(dfp)) &
+            dfp(k1_imn(imn):k2_imn(imn),:)=dfp(lpark_sorted(1:npar_imn(imn)),:)
+          ineargrid(k1_imn(imn):k2_imn(imn),:)=ineargrid(lpark_sorted(1:npar_imn(imn)),:)
+          ipar(k1_imn(imn):k2_imn(imn))=ipar(lpark_sorted(1:npar_imn(imn)))
+          do ix=1,nx
+            if (pin_cell(ix) .gt. 0) then
+              f(ix+nghost,im,in,iinvgrid)= k1_imn(imn)+cuml_pinl(ix-1)
+              f(ix+nghost,im,in,iinvgrid+1)=k1_imn(imn)+cuml_pinl(ix-1)+pin_cell(ix)-1
+!              write(*,*) cuml_pinl(ix-1),k1_imn(imn),k2_imn(imn),f(ix+nghost,im,in,iinvgrid),f(ix+nghost,im,in,iinvgrid+1)
+            else
+              f(ix+nghost,im,in,iinvgrid)= 0
+              f(ix+nghost,im,in,iinvgrid+1)= 0
+            endif
+          enddo
+        elseif (npar_imn(imn).eq.1) then
+          k=k1_imn(imn)
+          ix0=ineargrid(k,1)
+          f(ix0+nghost,iy,iz,iinvgrid)=k
+          f(ix0+nghost,iy,iz,iinvgrid+1)=k
+        endif
+      enddo   !loop over imn ends
+!      do ix=l1,l2;do iy=m1,m2;do iz=n1,n2;
+!        write(*,*) 'ix,iy,iz,iinvgrid,f',ix,iy,iz,iinvgrid,f(ix,iy,iz,iinvgrid)
+        !if(f(ix,iy,iz,iinvgrid+1).ne.0.) write(*,*) 'ix,iy,iz,iinvgrid,f',ix,iy,iz,iinvgrid+1,f(ix,iy,iz,iinvgrid+1)
+!      enddo;enddo;enddo
+!
+    endsubroutine invert_ineargrid_list
 !***********************************************************************
     subroutine random_particle_pencils(fp,ineargrid,ipar,dfp)
 !
@@ -1223,7 +1311,7 @@ module Particles_map
 !
 !    0. NGP (Nearest Grid Point)
 !       The entire effect of the particle goes to the nearest grid point.
-!    1. CIC (Cloud In Cell)
+!    1. C (Cloud In Cell)
 !       The particle has a region of influence with the size of a grid cell.
 !       This is equivalent to a first order (spline) interpolation scheme.
 !    2. TSC (Triangular Shaped Cloud)

@@ -972,6 +972,14 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
+    subroutine particles_final_clean_up
+!
+!  cleanup (dummy)
+!
+      print*,'particles_tracer: Nothing to clean up'
+
+    endsubroutine particles_final_clean_up
+!***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
 ! dummy
