@@ -579,7 +579,6 @@ program start
 !
 !  Free any allocated memory.
 !
-999 continue
   call farray_clean_up()
   call sharedvars_clean_up()
   call initial_condition_clean_up()
