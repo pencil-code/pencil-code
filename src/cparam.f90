@@ -30,9 +30,15 @@ module Cparam
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
 !
-  integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
-  integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
-  integer, parameter :: mz=nz+2*nghost,n1=1+nghost,n2=mz-nghost
+!!!  integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
+!!!  integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
+!!!  integer, parameter :: mz=nz+2*nghost,n1=1+nghost,n2=mz-nghost
+  integer, parameter :: mx=nx+2*nghost,l1=1+nghost
+  integer :: l2=mx-nghost
+  integer, parameter :: my=ny+2*nghost,m1=1+nghost
+  integer :: m2=my-nghost
+  integer, parameter :: mz=nz+2*nghost,n1=1+nghost
+  integer :: n2=mz-nghost
   integer, parameter :: mxgrid=nxgrid+2*nghost
   integer, parameter :: mygrid=nygrid+2*nghost
   integer, parameter :: mzgrid=nzgrid+2*nghost
@@ -40,9 +46,15 @@ module Cparam
   integer(KIND=ikind8), parameter :: nwgrid=int(nxgrid,kind=ikind8)* &
                     int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
 !
-  integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
-  integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
-  integer, parameter :: n1i=n1+nghost-1,n2i=n2-nghost+1
+!!!  integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
+!!!  integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
+!!!  integer, parameter :: n1i=n1+nghost-1,n2i=n2-nghost+1
+  integer, parameter :: l1i=l1+nghost-1
+  integer :: l2i=mx-2*nghost+1
+  integer, parameter :: m1i=m1+nghost-1
+  integer :: m2i=my-2*nghost+1
+  integer, parameter :: n1i=n1+nghost-1
+  integer :: n2i=mz-2*nghost+1
 !
   integer, parameter :: nrcyl=nx/2
   integer, parameter :: nrcylrun=max(nx/20,1)
