@@ -7,6 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3
