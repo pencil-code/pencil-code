@@ -121,7 +121,7 @@ module Particles_cdata
   integer,allocatable,dimension(:,:,:,:) :: invert_ineargrid_map
   logical :: lallocated_neighbour_list=.false.
 !***********************************************************************
-contains
+!contains
 !***********************************************************************
 !    subroutine allocate_neighbour_list(neighbourx,neighboury,neighbourz,Nneighbour)
 !      integer :: neighbourx,neighboury,neighbourz,Nneighbour
