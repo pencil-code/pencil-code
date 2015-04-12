@@ -958,7 +958,7 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex(KIND=8), dimension(nbcast_array) :: bcast_array
+      complex(KIND=rkind8), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
@@ -1086,7 +1086,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
 !
-      double precision :: fmin_tmp,fmin
+      real(KIND=rkind8) :: fmin_tmp,fmin
 !
       fmin=fmin_tmp
 !
@@ -1094,7 +1094,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
 !
-      real(KIND=4) :: fmin_tmp,fmin
+      real(KIND=rkind4) :: fmin_tmp,fmin
 !
       fmin=fmin_tmp
 !

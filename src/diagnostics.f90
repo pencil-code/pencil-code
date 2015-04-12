@@ -253,7 +253,7 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         inquire(lun,opened=lop)
-        if (lop) &
+        if (.not.lop) &
           open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
 !  file not distributed, backskipping enabled
         if (.not. outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1)) then
@@ -932,7 +932,7 @@ module Diagnostics
       if (lroot.and.nnamez>0) then
 !
         inquire(1,opened=lop)
-        if (lop) &
+        if (.not.lop) &
           open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &

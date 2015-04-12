@@ -27,7 +27,9 @@ module Cparam
   integer, parameter :: mparray=mpvar+mpaux
   integer, parameter :: mpcom=mpvar+mpaux
 !
-  integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
+  integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
+  integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
 !
 !!!  integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
@@ -44,7 +46,7 @@ module Cparam
   integer, parameter :: mzgrid=nzgrid+2*nghost
   integer, parameter :: mw=mx*my*mz
   integer(KIND=ikind8), parameter :: nwgrid=int(nxgrid,kind=ikind8)* &
-                    int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
+                                     int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
 !
 !!!  integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
 !!!  integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
@@ -205,6 +207,5 @@ module Cparam
   integer, parameter :: iref_rho=1, iref_grho=2, iref_d2rho=3, iref_d6rho=4, &
                         iref_gp=5, iref_s=6, iref_gs=7, iref_d2s=8, iref_d6s=9
   integer, parameter :: nref_vars=9
- 
 !
 endmodule Cparam

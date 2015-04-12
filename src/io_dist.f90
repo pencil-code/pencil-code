@@ -456,14 +456,14 @@ module Io
       integer, intent(in) :: nv, mode
       real, dimension (mx,my,mz,nv), intent(out) :: a
 
-      real(KIND=8), dimension(:,:,:,:), allocatable :: adb
-      real(KIND=4), dimension(:,:,:,:), allocatable :: asg
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: adb
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
 
-      real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb
-      real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg
+      real(KIND=rkind8), dimension(:), allocatable :: xdb,ydb,zdb
+      real(KIND=rkind4), dimension(:), allocatable :: xsg,ysg,zsg
 
-      real(KIND=8) :: dxdb,dydb,dzdb,deltaydb
-      real(KIND=4) :: dxsg,dysg,dzsg,deltaysg
+      real(KIND=rkind8) :: dxdb,dydb,dzdb,deltaydb
+      real(KIND=rkind4) :: dxsg,dysg,dzsg,deltaysg
 
       if (lread_from_other_prec) then
         if (kind(a)==4) then
@@ -499,14 +499,14 @@ module Io
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
-      real(KIND=4), dimension (mx,my,mz,nv), intent(out) :: a
+      real(KIND=rkind4), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=4) :: t_sp, t_sgl
+      real(KIND=rkind4) :: t_sp, t_sgl
 
-      real(KIND=4),                 intent(out) :: dx, dy, dz, deltay
-      real(KIND=4), dimension (mx), intent(out) :: x
-      real(KIND=4), dimension (my), intent(out) :: y
-      real(KIND=4), dimension (mz), intent(out) :: z
+      real(KIND=rkind4),                 intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind4), dimension (mx), intent(out) :: x
+      real(KIND=rkind4), dimension (my), intent(out) :: y
+      real(KIND=rkind4), dimension (mz), intent(out) :: z
 
       real :: t_test   ! t in single precision for backwards compatibility
 
@@ -644,14 +644,14 @@ module Io
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
-      real(KIND=8), dimension (mx,my,mz,nv), intent(out) :: a
+      real(KIND=rkind8), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=8) :: t_sp, t_dbl
+      real(KIND=rkind8) :: t_sp, t_dbl
 
-      real(KIND=8), intent(out) :: dx, dy, dz, deltay
-      real(KIND=8), dimension (mx), intent(out) :: x
-      real(KIND=8), dimension (my), intent(out) :: y
-      real(KIND=8), dimension (mz), intent(out) :: z
+      real(KIND=rkind8), intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind8), dimension (mx), intent(out) :: x
+      real(KIND=rkind8), dimension (my), intent(out) :: y
+      real(KIND=rkind8), dimension (mz), intent(out) :: z
 
       real :: t_test   ! t in single precision for backwards compatibility
       integer :: io_err
@@ -923,8 +923,8 @@ module Io
       real, intent(out) :: value
 !
       integer :: io_err
-      real(KIND=8) :: vdb
-      real(KIND=4) :: vsg
+      real(KIND=rkind8) :: vdb
+      real(KIND=rkind4) :: vsg
 !
       if (lread_from_other_prec) then
         if (kind(value)==4) then
@@ -953,8 +953,8 @@ module Io
       real, dimension(:), intent(out) :: value
 !
       integer :: io_err
-      real(KIND=8), dimension(:), allocatable :: vdb
-      real(KIND=4), dimension(:), allocatable :: vsg
+      real(KIND=rkind8), dimension(:), allocatable :: vdb
+      real(KIND=rkind4), dimension(:), allocatable :: vsg
 !
       if (lread_from_other_prec) then
         if (kind(value)==4) then
@@ -1028,8 +1028,8 @@ module Io
 !
       integer :: io_err
       logical :: lerror
-      real(KIND=8), dimension(:,:,:,:), allocatable :: adb
-      real(KIND=4), dimension(:,:,:,:), allocatable :: asg
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: adb
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
 
 !
       if (lserial_io) call start_serialize()
@@ -1063,7 +1063,7 @@ module Io
 !
 !  23-oct-13/MR  : derived from input_globals
 !
-      real(KIND=8), dimension (:,:,:,:) :: a
+      real(KIND=rkind8), dimension (:,:,:,:) :: a
 !
       integer :: io_err
       logical :: lerror
@@ -1092,7 +1092,7 @@ module Io
 !
 !  23-oct-13/MR  : derived from input_globals
 !
-      real(KIND=4), dimension (:,:,:,:) :: a
+      real(KIND=rkind4), dimension (:,:,:,:) :: a
 !
       integer :: io_err
       logical :: lerror
@@ -1210,14 +1210,14 @@ module Io
 !  23-oct-13/MR: derived from input_grid
 !  28-oct-13/MR: added lcont and location parameters to calls of outlog where appropriate
 !
-      real(KIND=4),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
-      real(KIND=4), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
-      real(KIND=4), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
-      real(KIND=4), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
+      real(KIND=rkind4),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
+      real(KIND=rkind4), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
+      real(KIND=rkind4), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
+      real(KIND=rkind4), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
 
       integer :: io_err
       logical :: lerror
-      real(KIND=4) :: t_sp   ! t in single precision for backwards compatibility
+      real(KIND=rkind4) :: t_sp   ! t in single precision for backwards compatibility
 !
       read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
       lerror = outlog(io_err,"main data block",location='input_grid_single', lcont=.true.)
@@ -1246,14 +1246,14 @@ module Io
 !  23-oct-13/MR: derived from input_grid
 !  28-oct-13/MR: added lcont and location parameters to calls of outlog where appropriate
 !
-      real(KIND=8),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
-      real(KIND=8), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
-      real(KIND=8), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
-      real(KIND=8), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
+      real(KIND=rkind8),                intent(OUT) :: dx,dy,dz,Lx,Ly,Lz
+      real(KIND=rkind8), dimension (mx),intent(OUT) :: x,dx_1,dx_tilde
+      real(KIND=rkind8), dimension (my),intent(OUT) :: y,dy_1,dy_tilde
+      real(KIND=rkind8), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
 
       integer :: io_err
       logical :: lerror
-      real(KIND=8) :: t_sp   ! t in single precision for backwards compatibility
+      real(KIND=rkind8) :: t_sp   ! t in single precision for backwards compatibility
 !
       read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
       lerror = outlog(io_err,"main data block",location='input_grid_double',lcont=.true.)
@@ -1291,11 +1291,11 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      real(KIND=8), dimension(:), allocatable :: xdb,ydb,zdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb
-      real(KIND=4), dimension(:), allocatable :: xsg,ysg,zsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg
+      real(KIND=rkind8), dimension(:), allocatable :: xdb,ydb,zdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb
+      real(KIND=rkind4), dimension(:), allocatable :: xsg,ysg,zsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg
 
-      real(KIND=8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb
-      real(KIND=4) :: dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg
+      real(KIND=rkind8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb
+      real(KIND=rkind4) :: dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg
 
       open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
       if (io_err /= 0) call fatal_error('rgrid', &
@@ -1393,13 +1393,13 @@ module Io
 !
       integer :: io_err
       logical :: lerror
-      real(KIND=4), dimension(0:nprocx):: procx_boundssg
-      real(KIND=4), dimension(0:nprocy):: procy_boundssg
-      real(KIND=4), dimension(0:nprocz):: procz_boundssg
+      real(KIND=rkind4), dimension(0:nprocx):: procx_boundssg
+      real(KIND=rkind4), dimension(0:nprocy):: procy_boundssg
+      real(KIND=rkind4), dimension(0:nprocz):: procz_boundssg
 !
-      real(KIND=8), dimension(0:nprocx):: procx_boundsdb
-      real(KIND=8), dimension(0:nprocy):: procy_boundsdb
-      real(KIND=8), dimension(0:nprocz):: procz_boundsdb
+      real(KIND=rkind8), dimension(0:nprocx):: procx_boundsdb
+      real(KIND=rkind8), dimension(0:nprocy):: procy_boundsdb
+      real(KIND=rkind8), dimension(0:nprocz):: procz_boundsdb
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err,status='old')
 
@@ -1426,9 +1426,9 @@ module Io
 !
 !   23-oct-13/MR: derivced from rproc_bounds
 !
-      real(KIND=8), dimension(0:nprocx), intent(OUT):: procx_bounds
-      real(KIND=8), dimension(0:nprocy), intent(OUT):: procy_bounds
-      real(KIND=8), dimension(0:nprocz), intent(OUT):: procz_bounds
+      real(KIND=rkind8), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=rkind8), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=rkind8), dimension(0:nprocz), intent(OUT):: procz_bounds
 
       integer :: io_err
       logical :: lerror
@@ -1448,9 +1448,9 @@ module Io
 !
 !   23-oct-13/MR: derivced from rproc_bounds
 !
-      real(KIND=4), dimension(0:nprocx), intent(OUT):: procx_bounds
-      real(KIND=4), dimension(0:nprocy), intent(OUT):: procy_bounds
-      real(KIND=4), dimension(0:nprocz), intent(OUT):: procz_bounds
+      real(KIND=rkind4), dimension(0:nprocx), intent(OUT):: procx_bounds
+      real(KIND=rkind4), dimension(0:nprocy), intent(OUT):: procy_bounds
+      real(KIND=rkind4), dimension(0:nprocz), intent(OUT):: procz_bounds
 
       integer :: io_err
       logical :: lerror
