@@ -1166,7 +1166,7 @@ module ImplicitPhysics
                             +dchi(n-nghost)*(TT(n+1)-TT(n-1))
       enddo
       bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1 ! T = Ttop
-      if (bcz1(iTT)=='cT') then
+      if (bcz12(iTT,1)=='cT') then
         bz(1)=1. ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1 ! T = Tbot
       else
 !        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(n1)*dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
@@ -1245,7 +1245,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
@@ -1332,7 +1332,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
@@ -1444,7 +1444,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
@@ -1561,7 +1561,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
 ! bottom
-        select case (bcz1(ilnTT))
+        select case (bcz12(ilnTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
