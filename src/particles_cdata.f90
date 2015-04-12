@@ -19,7 +19,8 @@ module Particles_cdata
 ! a cell.
 !
   integer, parameter :: maxp=20
-  integer, parameter :: max_par_per_grid=int(npar_per_cell*maxp)+1
+  integer(KIND=ikind8), parameter :: npar_maxp=npar*maxp
+  integer, parameter :: max_par_per_grid=int(npar_maxp/nwgrid)+1  ! ceiling needed?
   real :: rp_int=-impossible, rp_ext=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
   real :: rhopmat=1.0, rhopmat1=1.0, mpmat=0.0
