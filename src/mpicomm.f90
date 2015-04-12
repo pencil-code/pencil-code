@@ -2337,7 +2337,7 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex(KIND=8), dimension(nbcast_array) :: bcast_array
+      complex(KIND=rkind8), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -2359,7 +2359,7 @@ module Mpicomm
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      complex(KIND=4), dimension(nbcast_array) :: bcast_array
+      complex(KIND=rkind4), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -2565,7 +2565,7 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
-      real(KIND=4) :: fmin_tmp,fmin
+      real(KIND=rkind4) :: fmin_tmp,fmin
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
@@ -2576,7 +2576,7 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
-      double precision :: fmin_tmp,fmin
+      real(KIND=rkind8) :: fmin_tmp,fmin
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
