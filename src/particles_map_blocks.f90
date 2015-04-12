@@ -1445,6 +1445,17 @@ module Particles_map
 !
     endsubroutine sort_particles_imn
 !***********************************************************************
+    subroutine boundcond_neighbour_list
+!
+! Copy the number of neighbours to the boundary points of the 
+! neighbour list
+!
+! Dummy so far.
+!
+!  12-qpr-15/MR: added
+!
+    endsubroutine boundcond_neighbour_list
+!***********************************************************************
     subroutine shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Create a shepherd/neighbour list of particles in the pencil.
