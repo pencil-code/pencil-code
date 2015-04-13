@@ -139,6 +139,7 @@ module Magnetic
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
   real, pointer :: cp
   real :: dipole_moment=0.0
+  real :: eta_power_x=0., eta_power_z=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -297,7 +298,7 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock, ladd_global_field
+      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -6788,6 +6789,19 @@ module Magnetic
               der_step(z,eta_z0,-eta_zwidth)+der_step(z,eta_z1,eta_zwidth))
           endif
 !
+!  Powerlaw-z
+!
+        case ('powerlaw-z','powerlaw_z')
+!
+!  eta proportional to chosen power of z...
+!
+          eta_z = eta*(1.+z/eta_z0)**eta_power_z
+!
+!  ... and its gradient.
+!
+          if (present(geta_z)) then
+            geta_z = eta_power_z*eta/(eta_z0+z)
+          endif
       endselect
 !
     endsubroutine eta_zdep
@@ -6938,6 +6952,18 @@ module Magnetic
 !
            geta_x = eta*(eta_jump-two_step_factor)*( &
              der_step(x,eta_x0,-eta_xwidth0)+der_step(x,eta_x1,eta_xwidth1))
+!
+!  Powerlaw-x
+!
+        case ('powerlaw-x','powerlaw_x')
+!
+!  eta proportional to chosen power of z...
+!
+          eta_x = eta*(1.+x/eta_x0)**eta_power_x
+!
+!  ... and its gradient.
+!
+          geta_x = eta_power_x*eta/(eta_x0+x)
 !
       endselect
 !
