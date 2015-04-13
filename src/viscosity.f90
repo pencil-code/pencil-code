@@ -44,7 +44,7 @@ module Viscosity
   real :: lambda_jump=0.,roffset_lambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
-  real :: nu_infinity,nu0,non_newton_lambda,carreau_exponent
+  real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   character (len=labellen) :: nnewton_type='none'
   real :: nnewton_tscale,nnewton_step_width
   real, dimension(nx) :: xmask_vis=0

@@ -1939,8 +1939,10 @@ module Density
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
-        if (notanumber(f(:,m-nghost:m+nghost,n-nghost:n+nghost,ilnrho))) &
-          call fatal_error('calc_pencils_density','NaNs in f(:,:,:,ilnrho)')
+        if (notanumber(p%glnrho)) then
+          print*, 'n,m=', n,m
+          call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
+        endif
         if (lpencil(i_grho)) then
           do i=1,3
             p%grho(:,i)=p%rho*p%glnrho(:,i)

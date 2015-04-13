@@ -3211,14 +3211,14 @@ module General
 
     endfunction roptest
 !***********************************************************************
-    real(KIND=8) function doptest(dopt,ddef)
+    real(KIND=rkind8) function doptest(dopt,ddef)
 !
 !  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
 !
 !  20-aug-13/MR: coded
 !
-      real(KIND=8), optional, intent(IN) :: dopt, ddef
+      real(KIND=rkind8), optional, intent(IN) :: dopt, ddef
 
       if (present(dopt)) then
         doptest=dopt
