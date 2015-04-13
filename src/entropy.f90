@@ -801,6 +801,10 @@ module Energy
       if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi_rho and chi_t are zero!')
       endif
+      if (chi_t==0.0.and.chit_aniso/=0.0) then
+        call warning('initialize_energy','nonzero chit_aniso makes no sense with zero chi_t! Set to zero.')
+        chit_aniso=0.
+      endif
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
         call warning('initialize_energy', &
             'No heat conduction, but hcond0 /= 0')
@@ -3543,7 +3547,8 @@ module Energy
       endif
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        if (chi_t/=0.) &
+          call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
         call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
       endif
 !
@@ -3557,10 +3562,12 @@ module Energy
 !  gamma*chi*del2ss.
 !
       if (lfirst.and.ldt) then
-        if (leos_idealgas) then
-          diffus_chi=diffus_chi+(gamma*chi+chi_t*chit_prof)*dxyz_2
-        else
-          diffus_chi=diffus_chi+(chi+chi_t*chit_prof)*dxyz_2
+        if (chi_t/=0.) then
+          if (leos_idealgas) then
+            diffus_chi=diffus_chi+(gamma*chi+chi_t*chit_prof)*dxyz_2
+          else
+            diffus_chi=diffus_chi+(chi+chi_t*chit_prof)*dxyz_2
+          endif
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -4452,15 +4459,15 @@ module Energy
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
             hcond=hcond_zprof(n)
-              do ix=1,nx
-                glhc(ix,:)=gradloghcond_zprof(n,:)
-              enddo
+            do ix=1,nx
+              glhc(ix,:)=gradloghcond_zprof(n,:)
+            enddo
           endif
           if (chi_t/= 0.0) then
             chit_prof=chit_zprof(n)
-              do ix=1,nx
-                glnchit_prof(ix,:)=gradlogchit_zprof(n,:)
-              enddo
+            do ix=1,nx
+              glnchit_prof(ix,:)=gradlogchit_zprof(n,:)
+            enddo
           endif
 ! If not gravz, using or not hcond_global
         elseif (lgravx) then
@@ -4540,8 +4547,10 @@ module Energy
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
         call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
-        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
-        call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
+        if (chi_t/=0.) then
+          call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+          call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
+        endif
       endif
 !
 !  2d-averages
@@ -4549,14 +4558,16 @@ module Energy
       if (l2davgfirst) then
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
         if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,2),idiag_fradymxy_Kprof)
-        if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
-        if (idiag_fturbymxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,2),idiag_fturbymxy)
-        if (idiag_fturbrxy/=0) &
+        if (chi_t/=0.) then
+          if (idiag_fturbxy/=0  ) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
+          if (idiag_fturbymxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,2),idiag_fturbymxy)
+          if (idiag_fturbrxy/=0) &
             call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
-            (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
-        if (idiag_fturbthxy/=0) &
+                                 (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
+          if (idiag_fturbthxy/=0) &
             call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
-            (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
+                                 (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
+        endif
       endif
 !
 !  "Turbulent" entropy diffusion.
@@ -4684,10 +4695,13 @@ module Energy
 !    gamma*chix*del2ss.
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        if (chi_t==0.) then
+          diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        else
+          diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
         endif
+        if (ldiagnos.and.idiag_dtchi/=0) &
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond
@@ -6209,7 +6223,7 @@ module Energy
         z_mn=spread(z(n),1,nx)
         glnchit_prof(:,1:2) = 0.
         glnchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,zbot,-widthss) &
-                         + (chit_prof2-1)*der_step(z_mn,ztop,widthss)
+                          + (chit_prof2-1)*der_step(z_mn,ztop,widthss)
       endif
 !
       if (lspherical_coords.or.lconvection_gravx) then
