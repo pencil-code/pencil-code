@@ -146,7 +146,7 @@ if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [yystalk], $
     ps=1, color=255, thick=2.0
 ;  Colorbar indicating range.
 if (colorbar) then begin
-  colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
+  colorbar_co, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
       title=bartitle, /normal, /vertical
 endif
 ;  For png output, take image from z-buffer.          

@@ -143,7 +143,7 @@ if ( subbox and (time ge tsubbox) ) then begin
 endif
 ;  Colorbar indicating range.
 if (colorbar) then begin
-  colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
+  colorbar_co, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
       title=bartitle, /normal, /vertical
 endif
 ;  For png output, take image from z-buffer.          
