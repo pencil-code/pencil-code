@@ -3562,16 +3562,14 @@ module Energy
 !  gamma*chi*del2ss.
 !
       if (lfirst.and.ldt) then
-        if (chi_t/=0.) then
-          if (leos_idealgas) then
-            diffus_chi=diffus_chi+(gamma*chi+chi_t*chit_prof)*dxyz_2
-          else
-            diffus_chi=diffus_chi+(chi+chi_t*chit_prof)*dxyz_2
-          endif
+        if (leos_idealgas) then
+          diffus_chi=diffus_chi+(gamma*chi)*dxyz_2
+        else
+          diffus_chi=diffus_chi+chi*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
+        if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) &
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
       endif
 !
     endsubroutine calc_heatcond_constchi
