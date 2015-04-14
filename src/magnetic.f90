@@ -6799,9 +6799,7 @@ module Magnetic
 !
 !  ... and its gradient.
 !
-          if (present(geta_z)) then
-            geta_z = eta_power_z*eta/(eta_z0+z)
-          endif
+          if (present(geta_z)) geta_z = eta_power_z*eta_z/(eta_z0+z)
       endselect
 !
     endsubroutine eta_zdep
@@ -6963,7 +6961,7 @@ module Magnetic
 !
 !  ... and its gradient.
 !
-          geta_x = eta_power_x*eta/(eta_x0+x)
+          geta_x = eta_power_x*eta_x/(eta_x0+x)
 !
       endselect
 !
