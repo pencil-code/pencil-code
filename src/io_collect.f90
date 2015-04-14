@@ -1293,14 +1293,15 @@ module Io
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid(file)
+    subroutine wgrid(file,mxout,myout,mzout)
 !
 !  Write grid coordinates.
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
       character (len=*) :: file
-!
+      integer, optional :: mxout,myout,mzout
+
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
