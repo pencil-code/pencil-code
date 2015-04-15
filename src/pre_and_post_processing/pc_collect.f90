@@ -12,7 +12,7 @@ program pc_collect
   use Param_IO
   use Register
   use Snapshot
-  use General, only: backskip_to_time, loptest
+  use General, only: backskip_to_time, loptest, delete_file
 !
   implicit none
 !
@@ -99,7 +99,7 @@ program pc_collect
     if (lroot) then
       print *, ''
       print *, 'lwrite_aux=T but lread_aux=F'
-      print *, 'The code will write the auxiliary variables to allprocs/VARN'
+      print *, 'The code will write the auxiliary variables to allprocs/VARn'
       print *, ' without having read them from proc*/VARN'
       print *, ''
       call fatal_error("pc_collect","Stop and check")
@@ -184,7 +184,8 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 
   if (.not.lonly_farray) gz = huge(1.0)
 
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+  call delete_file(trim(directory_out)//'/'//filename)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='new', access='direct', recl=mxgrid*mygrid*io_len)
 !
 ! Loop over processors
 !

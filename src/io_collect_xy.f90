@@ -25,6 +25,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use Messages, only: fatal_error, svn_id
+  use General, only: delete_file
 !
   implicit none
 !
@@ -67,7 +68,7 @@ module Io
 !
   contains
 !***********************************************************************
-    subroutine register_io()
+    subroutine register_io
 !
 !  dummy routine, generates separate directory for each processor.
 !  VAR#-files are written to the directory directory_snap which will
@@ -83,7 +84,7 @@ module Io
 !
     endsubroutine register_io
 !***********************************************************************
-    subroutine directory_names()
+    subroutine directory_names
 !
 !  Set up the directory names:
 !  set directory name for the output (one subdirectory for each processor)
@@ -264,6 +265,7 @@ module Io
 !   6-mar-2015/MR: changed direct access writing to sequential
 !
       use Mpicomm, only: globalize_xy
+      use General, only: delete_file
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -290,17 +292,18 @@ module Io
         ! receive data from the xy-plane of the pz-layer
         call globalize_xy (a, ga)
 
+        call delete_file(trim (directory_snap)//'/'//file)
         if (ldirect_access) then
           inquire (IOLENGTH=io_len) t_sp
           rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
-          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=rec_len)
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='new', access='direct', recl=rec_len)
           write(lun_output, rec=1) ga
           if (lwrite_add) then
             close(lun_output)
             open (lun_output, FILE=trim (directory_snap)//'/'//file, status='old', form='unformatted', position='append')
           endif
         else
-          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', form='unformatted')
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, status='new', form='unformatted')
           write(lun_output) ga
         endif
         deallocate (ga)
@@ -334,7 +337,7 @@ module Io
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize()
+    subroutine output_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -494,7 +497,7 @@ module Io
 !
     endsubroutine input_snap
 !***********************************************************************
-    subroutine input_snap_finalize()
+    subroutine input_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -532,7 +535,8 @@ module Io
         if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
         if (filename /= "") then
           if (lfirst_proc_xy) close (lun_output)
-          open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='replace')
+          call delete_file(trim(directory_snap)//'/'//filename)
+          open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
           filename = ""
         endif
         write (lun_output) id_block_PERSISTENT
@@ -553,7 +557,7 @@ module Io
       integer, intent(in) :: id
 !
       write_persist_id = .true.
-      if (.not. persist_initialized) write_persist_id = init_write_persist ()
+      if (.not. persist_initialized) write_persist_id = init_write_persist()
       if (.not. persist_initialized) return
 !
       if ((ldistribute_persist .or. lfirst_proc_xy) .and. (persist_last_id /= id)) then
@@ -1213,7 +1217,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
 !
       call output_snap (a, nv, file, 0)
-      call output_snap_finalize ()
+      call output_snap_finalize
 !
     endsubroutine output_globals
 !***********************************************************************
@@ -1228,7 +1232,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
 !
       call input_snap (file, a, nv, 0)
-      call input_snap_finalize ()
+      call input_snap_finalize
 !
     endsubroutine input_globals
 !***********************************************************************
@@ -1254,7 +1258,7 @@ module Io
       endif
 !
       if (lcopysnapshots_exp) then
-        call mpibarrier ()
+        call mpibarrier
         if (lroot) then
           open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append')
           write (lun_output,'(A)') trim (fpart)
@@ -1281,7 +1285,7 @@ module Io
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=trim (directory_collect)//'/'//file, FORM='unformatted', status='replace')
+        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = t
         call collect_grid (x, y, z, gx, gy, gz)
         write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
@@ -1383,7 +1387,8 @@ module Io
 !
       integer :: ierr
 !
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      call delete_file(file)
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
       if (ierr /= 0) call stop_it ( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")

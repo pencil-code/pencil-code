@@ -18,6 +18,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use Messages, only: fatal_error, outlog, warning, svn_id
+  use General, only: delete_file
 !
   implicit none
 !
@@ -80,7 +81,7 @@ module Io
 !
   contains
 !***********************************************************************
-    subroutine register_io()
+    subroutine register_io
 !
 !  dummy routine, generates separate directory for each processor.
 !  VAR#-files are written to the directory directory_snap which will
@@ -97,7 +98,7 @@ module Io
 !
     endsubroutine register_io
 !***********************************************************************
-    subroutine directory_names()
+    subroutine directory_names
 !
 !  Set up the directory names:
 !  set directory name for the output (one subdirectory for each processor)
@@ -154,9 +155,10 @@ module Io
       t_sp = t
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
-      if (lserial_io) call start_serialize()
+      if (lserial_io) call start_serialize
       if (present(file)) then
-        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
+        call delete_file(trim(directory_snap)//'/'//file)
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='new')
         lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_snap')
       endif
 !
@@ -189,11 +191,11 @@ module Io
         lerror = outlog(io_err, 'additional data')
       endif
 !
-      if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize()
+    subroutine output_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -213,7 +215,7 @@ module Io
 !
       close (lun_output)
 !
-      if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -286,8 +288,9 @@ module Io
 !
       if (filename /= "") then
         close (lun_output)
+        call delete_file(trim (directory_snap)//'/'//file)
         open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', &
-              IOSTAT=io_err, status='replace')
+              IOSTAT=io_err, status='new')
         init_write_persist = outlog (io_err, 'openw persistent file', &
                              trim (directory_snap)//'/'//file, location='init_write_persist' )
         filename = ""
@@ -312,7 +315,7 @@ module Io
       integer :: io_err
 !
       write_persist_id = .true.
-      if (.not. persist_initialized) write_persist_id = init_write_persist ()
+      if (.not. persist_initialized) write_persist_id = init_write_persist()
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
@@ -513,7 +516,7 @@ module Io
       integer :: io_err
       logical :: lerror, ltest
 !
-      if (lserial_io) call start_serialize()
+      if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
             IOSTAT=io_err, status='old')
       lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, &
@@ -657,7 +660,7 @@ module Io
       integer :: io_err
       logical :: lerror,ltest
 !
-      if (lserial_io) call start_serialize()
+      if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
             IOSTAT=io_err, status='old')
       lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, &
@@ -771,7 +774,7 @@ module Io
 !
     endsubroutine read_snap_double
 !***********************************************************************
-    subroutine input_snap_finalize()
+    subroutine input_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -781,7 +784,7 @@ module Io
       use Mpicomm, only: end_serialize
 !
       close (lun_input)
-      if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -989,9 +992,9 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      if (lserial_io) call start_serialize()
+      if (lserial_io) call start_serialize
       open(lun_output,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
-      lerror = outlog(io_err,"openw globals",file,location='output_globals')
+      lerror = outlog(io_err,"openw",file,location='output_globals')
 !
       if (lwrite_2d) then
         if (nx==1) then
@@ -1010,7 +1013,7 @@ module Io
       lerror = outlog(io_err,"data block")
       close(lun_output)
 !
-      if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize
 !
     endsubroutine output_globals
 !***********************************************************************
@@ -1032,7 +1035,7 @@ module Io
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
 
 !
-      if (lserial_io) call start_serialize()
+      if (lserial_io) call start_serialize
 !
       open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
       lerror = outlog(io_err,"openr globals",file,location='input_globals')
@@ -1053,7 +1056,7 @@ module Io
 
       close(lun_input)
 !
-      if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize
 !
     endsubroutine input_globals
 !***********************************************************************
@@ -1369,7 +1372,8 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
+      call delete_file(file) 
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='new')
       lerror = outlog(io_err,"openw",file,location='wproc_bounds')
       write(lun_output,IOSTAT=io_err) procx_bounds
       lerror = outlog(io_err,'procx_bounds')

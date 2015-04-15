@@ -11,6 +11,7 @@ program pc_distribute_z
   use Param_IO
   use Register
   use Sub
+  use General, only: delete_file
 !
   implicit none
 !
@@ -220,14 +221,15 @@ subroutine read_and_distribute(filename,f,lonly_farray)
 !
 !  Write data.
 !
+    call delete_file(trim(directory_snap)//'/'//filename)
     if (ldirect_access) then
       rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * mvar * io_len
-      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace', access='direct', recl=rec_len )
+      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='new', access='direct', recl=rec_len )
       write(lun_output, rec=1) f
       close(lun_output)
       open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='old', form='unformatted', position='append')
     else
-      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace',form='unformatted')
+      open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='new',form='unformatted')
       write(lun_output) f
     endif
 !

@@ -17,7 +17,7 @@ program pc_reduce
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
-  use General, only: backskip_to_time
+  use General, only: backskip_to_time,delete_file
 !
   implicit none
 !
@@ -181,7 +181,8 @@ program pc_reduce
   call directory_names
   inquire (file=trim(directory_snap)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*io_len)
+  call delete_file(trim(directory_out)//'/'//filename)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='new', access='direct', recl=nrx*nry*io_len)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.

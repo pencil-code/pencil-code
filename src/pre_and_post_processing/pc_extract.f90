@@ -17,7 +17,7 @@ program pc_extract
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
-  use General, only: backskip_to_time
+  use General, only: backskip_to_time,delete_file
 !
   implicit none
 !
@@ -164,10 +164,12 @@ program pc_extract
   call directory_names()
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_extract', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+  call delete_file(trim(directory_out)//'/'//filename)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='new', access='direct', recl=mxgrid*mygrid*io_len)
   do pos = 1, num_quantities
+    call delete_file(trim(directory_out)//'/'//trim(filename)//'_'//output_names(pos))
     open (output_luns(pos), FILE=trim(directory_out)//'/'//trim(filename)//'_'//output_names(pos), &
-        status='replace', access='direct', recl=nxgrid*nygrid*io_len)
+          status='new', access='direct', recl=nxgrid*nygrid*io_len)
   enddo
 !
 !  Allow modules to do any physics modules do parameter dependent

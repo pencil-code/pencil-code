@@ -24,6 +24,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use Messages, only: fatal_error, svn_id
+  use General, only: delete_file
 !
   implicit none
 !
@@ -286,7 +287,8 @@ module Io
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+        call delete_file(trim(directory_snap)//'/'//file)
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, status='new', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -519,9 +521,11 @@ module Io
         if (filename /= "") then
           if (lroot) close (lun_output)
           if (ldistribute_persist) then
-            open (lun_output, FILE=trim (directory_dist)//'/'//filename, FORM='unformatted', status='replace')
+            call delete_file(trim(directory_dist)//'/'//filename)
+            open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
           else
-            open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='replace')
+            call delete_file(trim(directory_snap)//'/'//filename)
+            open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
           endif
           filename = ""
         endif
@@ -1412,7 +1416,8 @@ module Io
 !
       integer :: ierr
 !
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      call delete_file(file)
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
       if (ierr /= 0) call stop_it ( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")

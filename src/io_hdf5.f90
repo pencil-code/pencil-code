@@ -12,6 +12,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use Messages, only: fatal_error, svn_id
+  use General, only: delete_file
 !
   implicit none
 !
@@ -577,7 +578,8 @@ module Io
       endif
 !
       if (filename /= "") then
-        open (lun_output, FILE=trim (directory_dist)//'/'//filename, FORM='unformatted', status='replace')
+        call delete_file(trim(directory_dist)//'/'//filename)
+        open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
         if (ip <= 9) write (*,*) 'begin persistent block'
         write (lun_output) id_block_PERSISTENT
         filename = ""
@@ -1408,7 +1410,8 @@ module Io
 !
       integer :: ierr
 !
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      call delete_file(file)
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
       if (ierr /= 0) call stop_it ( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")

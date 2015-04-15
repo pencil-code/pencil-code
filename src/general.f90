@@ -38,7 +38,7 @@ module General
   public :: operator(.IN.)
   public :: loptest, ioptest, roptest, doptest, coptest
   public :: indgen
-  public :: rewind
+  public :: rewind, delete_file
   public :: backskip_to_time
 !
   include 'record_types.h'
@@ -3386,6 +3386,22 @@ module General
       call keep_compiler_quiet(unit)
 
     endsubroutine rewind_int
+!***********************************************************************
+    subroutine delete_file(file)
+!
+!  Deletes a file. Needed on CRAYs as status='replace' in open is not sufficient
+!  to avoid unwanted file growth.
+!
+! 11-jan-15/MR: coded
+!
+      character(LEN=*), intent(IN) :: file
+
+      integer, parameter :: lun=111
+
+      open (lun, FILE=file)
+      close(lun, status='delete')
+
+    endsubroutine delete_file
 !***********************************************************************
     subroutine backskip_to_time(lun,lroot)
 !
