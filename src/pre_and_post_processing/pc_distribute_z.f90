@@ -6,14 +6,11 @@ program pc_distribute_z
 !
   use Cdata
   use Cparam, only: fnlen
-  use Diagnostics
-  use Filter
   use IO
   use Messages
   use Param_IO
   use Register
   use Sub
-  use Syscalls, only: sizeof_real
 !
   implicit none
 !
@@ -59,16 +56,16 @@ program pc_distribute_z
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call read_startpars()
+  call read_startpars
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_runpars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in read_startpars
@@ -87,7 +84,7 @@ program pc_distribute_z
 !
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -121,7 +118,7 @@ program pc_distribute_z
     mvar_in=mvar
   endif
 !
-  allocate (f (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
+  allocate (f (mxgrid,mygrid,mz,mfarray), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_distribute_z', 'Failed to allocate memory for f.', .true.)
 !
 !  Print resolution and dimension of the simulation.
@@ -144,17 +141,42 @@ program pc_distribute_z
   t = t_sp
 !
   inquire (IOLENGTH=io_len) t_sp
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-  call initialize_modules (f)
+  call initialize_modules(f)
+
+  call read_and_distribute(filename,f(:,:,:,1:mvar_io),.false.)
+  if (mglobal>0) &
+    call read_and_distribute('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),.true.)
+!
+!  Give all modules the possibility to exit properly.
+!
+  call finalize_modules (f)
+!
+!  Free any allocated memory.
+!
+  deallocate (f)
+!
+contains
+!*************************************************************************************************
+subroutine read_and_distribute(filename,f,lonly_farray)
+
+  character(LEN=*) :: filename
+  real, dimension(:,:,:,:) :: f
+  integer :: mvar_in
+  logical :: lonly_farray
+
+  integer :: mvar
+
+  mvar = size(f,4)
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 ! Loop over processors
 !
-  write (*,*) "IPZ-layer:"
+  write (*,*) 'writing "'//trim(filename)//'" IPZ-layer:'
 !
   do ipz = 0, nprocz-1
 !
@@ -163,7 +185,7 @@ program pc_distribute_z
     f = huge(1.0)
 !
     ! read xy-layer:
-    do pa = 1, mvar_io
+    do pa = 1, mvar
       do pz = 1, mz
         read (lun_input, rec=pz+ipz*nz+(pa-1)*mzgrid) f(:,:,pz,pa)
       enddo
@@ -194,25 +216,28 @@ program pc_distribute_z
 !
 !  Set up directory names.
 !
-    call directory_names()
+    call directory_names
 !
 !  Write data.
 !
     if (ldirect_access) then
-      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * mvar_io * io_len
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * mvar * io_len
       open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace', access='direct', recl=rec_len )
-      write(lun_output, rec=1) f(:,:,:,1:mvar_io)
+      write(lun_output, rec=1) f
       close(lun_output)
       open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='old', form='unformatted', position='append')
     else
       open (lun_output, FILE=trim(directory_snap)//'/'//filename, status='replace',form='unformatted')
-      write(lun_output) f(:,:,:,1:mvar_io)
+      write(lun_output) f
     endif
+!
+    if (.not.lonly_farray) then
 !
 !  Write additional data.
 !
-    write(lun_output) t_sp
-    if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
+      write(lun_output) t_sp
+      if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
+    endif
     close(lun_output)
 !
   enddo
@@ -220,14 +245,6 @@ program pc_distribute_z
   close (lun_input)
   print *, 'Written snapshot for time t =', t
 !
-!  Give all modules the possibility to exit properly.
-!
-  call finalize_modules (f)
-!
-!  Free any allocated memory.
-!
-  deallocate (f)
-  call fnames_clean_up()
-  call vnames_clean_up()
-!
+endsubroutine read_and_distribute
+!*********************************************************************************************
 endprogram pc_distribute_z
