@@ -44,7 +44,7 @@ pro rvid_box, field, $
   shell=shell, centred=centred, r_int=r_int, r_ext=r_ext, colmpeg=colmpeg, $
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
-  magnify=magnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, $
+  magnify=magnify, ymagnify=ymagnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, $
   xmax=xmax, ymax=ymax, sample=sample, $
   xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
   size_label=size_label, $
@@ -81,6 +81,7 @@ default,imgprefix,'img_'
 default,imgdir,'.'
 default,dev,'x'
 default,magnify,1.0
+default,ymagnify,1.0
 default,zmagnify,1.0
 default,xpos,0.0
 default,zpos,0.34
@@ -391,7 +392,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       if (not keyword_set(shell)) then begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
                      amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
-                     xpos=xpos,magnify=magnify,zmagnify=zmagnify,scale=scale, $
+                     xpos=xpos,magnify=magnify,ymagnify=ymagnify,zmagnify=zmagnify,scale=scale, $
                      nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,sample=sample
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin

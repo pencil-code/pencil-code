@@ -4,7 +4,8 @@ pro boxbotex_scl,inxy,imxy,imxz,imyz,$
          amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$
          length=length,xpos=xpos,ip=ip,box=box,$
          centred=centred,shell=shell,r_int=r_int,r_ext=r_ext,$
-         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,magnify=magnify,zmagnify=zmagnify,$
+         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,$
+         magnify=magnify,ymagnify=ymagnify,zmagnify=zmagnify,$
          nobottom=nobottom, norm=norm, sample=sample
 ;
 ; n=15
@@ -108,6 +109,7 @@ if n_elements(scale) eq 0 then scale=1.0
 if n_elements(length) eq 0 then length=1.0
 if n_elements(norm) eq 0 then norm=1.0
 if n_elements(magnify) eq 0 then magnify=1.0
+if n_elements(ymagnify) eq 0 then ymagnify=1.0
 if n_elements(zmagnify) eq 0 then zmagnify=1.0
 if n_elements(ip) eq 0 then ip=0
 if keyword_set(shell) then begin            
@@ -258,7 +260,7 @@ if (xmax*npx ge ymax*npy) then maxscale=xmax*npx*sf else maxscale=ymax*npy*sf
 ;AB: maxscale adjusted via inverse magnify parameter
 maxscale=maxscale/magnify
 range=[0,maxscale]
-scale3,xrange=range,yrange=range,zrange=range/zmagnify,$
+scale3,xrange=range,yrange=range/ymagnify,zrange=range/zmagnify,$
         ax=(360+xrot) mod 360,az=zrot
 z0=zpos+(sf-1)/(2*sf)*maxscale & z1=z0+zval
 x0=xpos+(sf-1)/(2*sf)*maxscale & x1=x0+xmax*npx+xval
