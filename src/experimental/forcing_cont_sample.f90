@@ -21,7 +21,6 @@ module Forcing
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use General
   use Messages
 !
   implicit none
@@ -82,6 +81,7 @@ module Forcing
 !
 !  continuous forcing variables
 !
+  integer :: n_forcing_cont=n_forcing_cont_max
   logical :: lembed=.false.,lshearing_adjust_old=.false.
   logical :: lgentle=.false.
   character (len=labellen) :: iforcing_cont='ABC'
@@ -151,7 +151,7 @@ module Forcing
 !  nothing needs to be done when called from start.f90
 !
       use Mpicomm, only: stop_it
-      use Sub, only: inpui,step_scalar,erfunc
+      use Sub, only: step_scalar,erfunc
       real :: zstar
 !
       if (lstart) then
@@ -357,7 +357,7 @@ module Forcing
 !  cosy profile of helicity
 !
       elseif (iforce_profile=='surface_x_cosy') then
-        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
         profx_hel=1.
         profy_ampl=1.
         do m=1,my
@@ -369,7 +369,7 @@ module Forcing
 !  stepy profile of helicity
 !
       elseif (iforce_profile=='surface_x_stepy') then
-        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
         profx_hel=1.
         profy_ampl=1.
         do m=1,my
@@ -380,7 +380,7 @@ module Forcing
 !  turn off forcing intensity above x=x0
 !
       elseif (iforce_profile=='surface_x') then
-        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
         profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
@@ -388,7 +388,7 @@ module Forcing
 !  turn on forcing intensity above x=x0
 !
       elseif (iforce_profile=='above_x0') then
-        profx_ampl=.5*(1.+erfunc((x-r_ff)/width_ff))
+        profx_ampl=.5*(1.+erfunc((x(l1:l2)-r_ff)/width_ff))
         profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
@@ -396,7 +396,7 @@ module Forcing
 !  turn on forcing intensity above x=x0 with cosy profile
 !
       elseif (iforce_profile=='above_x0_cosy') then
-        profx_ampl=.5*(1.+erfunc((x-r_ff)/width_ff))
+        profx_ampl=.5*(1.+erfunc((x(l1:l2)-r_ff)/width_ff))
         profy_ampl=1.
         profx_hel=1.
         do m=1,my

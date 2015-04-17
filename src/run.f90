@@ -239,7 +239,7 @@ program run
     call wgrid('grid.dat')
     call wdim(trim(directory)//'/dim.dat')
     if (lroot) call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   endif
@@ -886,3 +886,4 @@ program run
   if (lwrite_sound)        call sound_clean_up()
 !
 endprogram run
+!**************************************************************************

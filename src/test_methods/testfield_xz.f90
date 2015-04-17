@@ -170,6 +170,7 @@ module Testfield
       select case (itestfield)
         case ('1')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest)
         case ('1-alt')     ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest_alt)
+        case ('alt-II')    ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest_alt_II)
         case ('2')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest2)
         case ('3')         ; call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest3)
         case ('4','linear'); call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest4)
@@ -364,6 +365,45 @@ module Testfield
       endselect
 !
     endsubroutine set_bbtest_alt
+!***********************************************************************
+    subroutine set_bbtest_alt_II(bbtest,jtest)
+!
+!  tries of alternative testfields
+!
+!  23-oct-13/MR: coded
+!  30-oct-13/MR: added another alternative
+!  
+      real, dimension (nx,3) :: bbtest
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: bbtest
+!
+      integer :: nl
+!
+!  set bbtest for each of the 9 cases
+!
+      nl = n-n1+1
+!
+      select case (jtest)
+!
+      case (1); bbtest(:,1)=cx*cz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sx*cz(nl)+cx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=cx*sz(nl)+sx*sz(nl); bbtest(:,2)=0.; bbtest(:,3)=0.
+!
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cz(nl)+sx*sz(nl); bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(nl)+cx*sz(nl); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(nl)+sx*sz(nl); bbtest(:,3)=0.
+!
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cz(nl)+sx*sz(nl)
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(nl)+cx*sz(nl)
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(nl)+sx*sz(nl)
+!
+      case default; bbtest=0.
+!
+      endselect
+!
+    endsubroutine set_bbtest_alt_II
 !***********************************************************************
     subroutine set_bbtest2(bbtest,jtest)
 !

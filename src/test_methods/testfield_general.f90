@@ -532,7 +532,7 @@ module Testfield_general
 !***********************************************************************
     subroutine calc_diffusive_part_prof_0d(del2Atest,divatest,eta,geta,jg,daatest)
 !
-!  calculates full diffusive part daatest from del2Atest, divatest
+
 !  with x independent eta (m,n fixed) and grad(eta) with variable number of components
 !  jg contains indices (out of {1,2,3}) for which geta has nonvanishing components
 !
@@ -633,33 +633,33 @@ module Testfield_general
                               -sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
 
             Minv(i,j,2,:) = (/ -cx(i)*sx(i), cx(i)**2, sx(i)**2 /) &
-                             /(cos(ktestfield_x*x(i) - ktestfield_z*z(j))*ktestfield_x)
+                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_x)
 
             Minv(i,j,3,:) = (/ -cz(j)*sz(j), sz(j)**2,  cz(j)**2 /) &
-                             /(cos(ktestfield_x*x(i) - ktestfield_z*z(j))*ktestfield_z)
+                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_z)
 !
-            ! alt-II
-!            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) - ktestfield_z*z(j)), sin(ktestfield_x*x(i) - ktestfield_z*z(j)), &
-!                              -2*sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
-!            Minv(i,j,2,:) = (/ -0.5*sin(2*ktestfield_x*x(i)), cx(i)**2  , -cos(2*ktestfield_x*x(i))/) &
-!                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_x)
-!            Minv(i,j,3,:) = (/ -0.5*sin(2*ktestfield_z*z(j)), sz(j)**2  ,  cos(2*ktestfield_z*z(j))/) &
-!                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_z)
-!
-             !alt-III
-!            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) + ktestfield_z*z(j))*(cos(ktestfield_x*x(i) - ktestfield_z*z(j)) &
-!                            + sin(ktestfield_x*x(i) - ktestfield_z*z(j))), &
-!                              sin(ktestfield_x*x(i) - ktestfield_z*z(j))*(cos(ktestfield_x*x(i) + ktestfield_z*z(j)) &
-!                            + sin(ktestfield_x*x(i) + ktestfield_z*z(j))), &
-!                            - sin(2*ktestfield_x*x(i)) + sin(2*ktestfield_z*z(j))  /)&           
-!                           /(cos(ktestfield_x*x(i)) + sin(ktestfield_x*x(i)))/(cos(ktestfield_z*z(j)) - sin(ktestfield_z*z(j)))
-      
-!            Minv(i,j,2,:) = (/  -sx(i),  cx(i), -cx(i) + sx(i) /) &
-!                            /ktestfield_x/(cz(j) - sz(j)) 
+            case('alt-II')
+            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) - ktestfield_z*z(j)), sin(ktestfield_x*x(i) - ktestfield_z*z(j)), &
+                              -2*sin(ktestfield_x*x(i) - ktestfield_z*z(j)) /) 
+            Minv(i,j,2,:) = (/ -0.5*sin(2*ktestfield_x*x(i)), cx(i)**2  , -cos(2*ktestfield_x*x(i))/) &
+                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_x)
+            Minv(i,j,3,:) = (/ -0.5*sin(2*ktestfield_z*z(j)), sz(j)**2  ,  cos(2*ktestfield_z*z(j))/) &
+                             /(cos(ktestfield_x*x(i) + ktestfield_z*z(j))*ktestfield_z)
+
+            case('alt-III')
+            Minv(i,j,1,:) = (/ cos(ktestfield_x*x(i) + ktestfield_z*z(j))*(cos(ktestfield_x*x(i) - ktestfield_z*z(j)) &
+                            + sin(ktestfield_x*x(i) - ktestfield_z*z(j))), &
+                              sin(ktestfield_x*x(i) - ktestfield_z*z(j))*(cos(ktestfield_x*x(i) + ktestfield_z*z(j)) &
+                            + sin(ktestfield_x*x(i) + ktestfield_z*z(j))), &
+                            - sin(2*ktestfield_x*x(i)) + sin(2*ktestfield_z*z(j))  /)&           
+                           /(cos(ktestfield_x*x(i)) + sin(ktestfield_x*x(i)))/(cos(ktestfield_z*z(j)) - sin(ktestfield_z*z(j)))
+     
+            Minv(i,j,2,:) = (/  -sx(i),  cx(i), -cx(i) + sx(i) /) &
+                            /ktestfield_x/(cz(j) - sz(j)) 
                       
-!            Minv(i,j,3,:) = (/  -sz(j), -sz(j),  cz(j) + sz(j) /) &
-!                            /ktestfield_z/(cx(i) + sx(i)) 
-!
+            Minv(i,j,3,:) = (/  -sz(j), -sz(j),  cz(j) + sz(j) /) &
+                            /ktestfield_z/(cx(i) + sx(i)) 
+
           case ('2')    
           case ('3')    
           case ('4','linear')
@@ -783,7 +783,7 @@ module Testfield_general
     allocate(temp_array(nx,nz,count))
 !
     select case (itestfield)
-    case ('1','1-alt','4','linear')
+    case ('1','1-alt','alt-II','alt-III','4','linear')
 !
       do n=1,nz
         do i=1,3 

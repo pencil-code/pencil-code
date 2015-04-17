@@ -274,11 +274,17 @@ ystart = position(1)
 xsize = (position(2) - position(0))
 ysize = (position(3) - position(1))
 
+   ; Alternative using CONTOUR
+
+;bar=grange(range(0),range(1),60) # REPLICATE(1., 2)
+;contour, bar, position=[xstart, ystart, xstart+xsize, ystart+ysize], nlev=255, /noerase,$
+;         /fill, xticks=1, yticks=1, xminor=1, yminor=1,xtickname=[' ',' '],ytickname=[' ',' ']
+
    ; Display the color bar in the window. Sizing is
    ; different for PostScript and regular display.
 
 IF scalablePixels THEN BEGIN
-
+  
    TV, bar, xstart, ystart, XSIZE=xsize, YSIZE=ysize, /Normal
 
 ENDIF ELSE BEGIN
