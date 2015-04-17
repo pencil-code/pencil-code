@@ -39,7 +39,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
   logical :: lviscosity_heat=.false.
-  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
+  logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lcalc_TTmean=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   integer, parameter :: nheatc_max=3

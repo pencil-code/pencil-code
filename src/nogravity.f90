@@ -40,7 +40,6 @@ module Gravity
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.,r0_pot=0.,qgshear=1.5
   integer :: n_pot=10
-  character (len=labellen) :: gravz_profile='const'  !(used by Density)
   logical :: lnumerical_equilibrium=.false.
 !
   contains
@@ -371,5 +370,21 @@ module Gravity
 ! gravity parameters set consistently.
 !
     endsubroutine set_consistent_gravity
+!***********************************************************************
+    subroutine get_zgravity(gravz)
+!
+!  Dummy routine
+!
+      real, dimension(mz) :: gravz
+!
+      call keep_compiler_quiet(gravz)
+!
+    endsubroutine get_zgravity
+!***********************************************************************
+    logical function is_constant_zgrav()
+
+      is_constant_zgrav=.true.
+ 
+    endfunction is_constant_zgrav
 !***********************************************************************
 endmodule Gravity

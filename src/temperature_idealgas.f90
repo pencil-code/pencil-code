@@ -50,7 +50,7 @@ module Energy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real, dimension(5) :: hole_params
-  real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
+  real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0
   integer, parameter :: nheatc_max=3
@@ -65,6 +65,7 @@ module Energy
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
   logical :: lheatc_Ktherm=.false.
   logical :: lviscosity_heat=.true.
+  logical :: lcalc_TTmean=.false.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   logical :: linitial_log=.false.
@@ -76,6 +77,8 @@ module Energy
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
+!
+  real, dimension(nz) :: TTmz, gTTmz 
 !
 !  Init parameters.
 !
@@ -93,7 +96,7 @@ module Energy
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
-      cool, beta_bouss, borderss, lmultilayer
+      cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -1268,12 +1271,55 @@ module Energy
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
-!  Dummy routine.
+!  Calculation of mean quantities.
+!
+!  17-apr-15/MR: coded
+!
+      use Sub, only: grad, finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
 !
-      call keep_compiler_quiet(f)
+      real :: fact
+      real, dimension (nx,3):: gradTT
+      real, dimension (nx)  :: temp
+!
+      integer :: nl
+!
+!  Calculate mean of temperature and its gradient.
+!
+      if (lcalc_TTmean) then
+!
+        fact=1./nxygrid
+        do n=n1,n2
+!
+          nl = n-n1+1
+          TTmz(nl)=0.; gTTmz(nl)=0.
+!
+          if (ltemperature_nolog) then
+            do m=m1,m2
+              TTmz(nl)=TTmz(nl)+sum(f(l1:l2,m,n,iTT))
+              call grad(f,iTT,gradTT)
+              gTTmz(nl)=gTTmz(nl)+sum(gradTT(:,3))
+            enddo
+          else
+            do m=m1,m2
+              temp = exp(f(l1:l2,m,n,ilnTT))
+              TTmz(nl)=TTmz(nl)+sum(temp)
+              call grad(f,ilnTT,gradTT)
+              gTTmz(nl)=gTTmz(nl)+sum(gradTT(:,3)*temp)
+            enddo
+          endif
+!
+        enddo
+!
+        call finalize_aver(nprocxy,12,TTmz)
+        call finalize_aver(nprocxy,12,gTTmz)
+!
+        TTmz  = fact*TTmz
+        gTTmz = fact*gTTmz    ! simpler by deriving TTmz!!
+!
+      endif
 !
     endsubroutine calc_lenergy_pars
 !***********************************************************************
@@ -1546,18 +1592,19 @@ module Energy
       else
         chix=hcond0*p%cp1
       endif
+      chix = gamma*chix
 !
       if (ltemperature_nolog) then
-        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + gamma*chix*p%del2TT
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + chix*p%del2TT
       else
         call dot(p%glnTT,p%glnTT,g2)
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chix*(g2 + p%del2lnTT)
       endif
 !
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        diffus_chi=diffus_chi+chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -1585,6 +1632,7 @@ module Energy
 !
       intent(in) :: p
       intent(inout) :: df
+!
       hcondTT=hcond0*sqrt(exp(p%lnTT))
 !
 !  Add heat conduction to RHS of temperature equation.
@@ -1595,18 +1643,19 @@ module Energy
       else
         chix=hcondTT*p%cp1/rho0
       endif
+      chix = gamma*chix
 !
       if (ltemperature_nolog) then
-        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + gamma*chix*p%del2TT
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + chix*p%del2TT
       else
         call dot(p%glnTT,p%glnTT,g2)
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chix*(g2 + p%del2lnTT)
       endif
 !
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        diffus_chi=diffus_chi+chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

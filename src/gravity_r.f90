@@ -1082,4 +1082,12 @@ module Gravity
 !
     endsubroutine set_consistent_gravity
 !***********************************************************************
+    logical function is_constant_zgrav()
+!
+!  14-apr-15/MR: coded
+!
+      is_constant_zgrav=.false.
+
+    endfunction is_constant_zgrav
+!***********************************************************************
 endmodule Gravity

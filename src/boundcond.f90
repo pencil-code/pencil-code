@@ -21,6 +21,7 @@ module Boundcond
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
   public :: set_consistent_vel_boundary
+  public :: copy_BCs
   public :: set_periodic_boundcond_on_aux
   public :: jet_x
 !
@@ -434,7 +435,7 @@ module Boundcond
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &
                          "No such boundary condition bcx1/2 = ", &
                          bcx12(j,k), " for j=", j
-                    call fatal_error_local("boundconds_x: ",trim(errormsg))
+                    call fatal_error_local("boundconds_x",trim(errormsg))
                   endif
                 endselect
               endif
@@ -658,7 +659,7 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
                        bcy12(j,k), " for j=", j
-                  call fatal_error_local("boundconds_y: ",trim(errormsg))
+                  call fatal_error_local("boundconds_y",trim(errormsg))
                 endif
               endselect
             endif
@@ -1000,7 +1001,7 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                        bcz12(j,k), " for j=", j
-                  call fatal_error_local("boundconds_z: ",trim(errormsg))
+                  call fatal_error_local("boundconds_z",trim(errormsg))
                 endif
               endselect
             endif
@@ -2575,7 +2576,7 @@ module Boundcond
 !  In spherical polar coordinate system,
 !  at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
 !  and demand $div A = 0$ gives the condition on $A_r$ to be
-!  $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
+!  $d/dr( A_r) + 2 A_r/r = 0$ . This subroutine sets this condition of
 !  $j$ the component of f. As this is related to setting the
 !  perfect conducting boundary condition we call this "pfc".
 !
@@ -5594,7 +5595,7 @@ module Boundcond
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FbotKbot/T
 !
-        if (pretend_lnTT) then
+        if (pretend_lnTT) then      ! TODO: non-equidistant grid
           do i=1,nghost
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+dx2_bound(-i)*FbotKbot/exp(f(l1,:,:,iss))
           enddo
@@ -5689,12 +5690,12 @@ module Boundcond
           if (lreference_state) &
             tmp_yz = tmp_yz + reference_state(nx,iref_gs)
 !
-!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = gamma_m1/gamma*Ftop/(K*cs2)
+!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = gamma_m1/gamma*Ftop/(K*cs2)   ! check sign
 !
           if (lreference_state) then
             work_yz= 1./(f(l2,:,:,irho)+reference_state(nx,iref_rho))
             tmp_yz = tmp_yz + reference_state(nx,iref_gs)/fac + reference_state(nx,iref_grho)*work_yz
-            call heatflux_boundcond_x( f, -tmp_yz, fac, TOP, work_yz )
+            call heatflux_boundcond_x( f, -tmp_yz, fac, TOP, work_yz )     ! check sign of tmp_yz
           else
             call heatflux_boundcond_x( f, -tmp_yz, fac, TOP )
           endif
@@ -8189,5 +8190,37 @@ module Boundcond
       endselect
 !
     endsubroutine tayler_expansion
+!***********************************************************************
+    subroutine copy_BCs(isrc,itarg,num)
+!
+!  14-apr-15/MR: coded
+!
+      integer, intent(IN) :: isrc,itarg,num
+
+      integer :: iet, ies
+
+      if (isrc/=0) then
+
+        ies = isrc +num-1
+        iet = itarg+num-1
+
+        if (nxgrid>1) then
+          bcx (itarg:iet) = bcx (isrc:ies)
+          bcx12(itarg:iet,:) = bcx12(isrc:ies,:)
+        endif
+
+        if (nygrid>1) then
+          bcy (itarg:iet) = bcy (isrc:ies)
+          bcy12(itarg:iet,:) = bcy12(isrc:ies,:)
+        endif
+
+        if (nzgrid>1) then
+          bcz (itarg:iet) = bcz (isrc:ies)
+          bcz12(itarg:iet,:) = bcz12(isrc:ies,:)
+        endif
+
+      endif
+!
+    endsubroutine copy_BCs
 !***********************************************************************
 endmodule Boundcond

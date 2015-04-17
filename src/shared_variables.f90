@@ -947,7 +947,7 @@ module SharedVariables
       real, dimension(:), pointer            :: prof, gprof    !intent(OUT)
 
       call get_shared_variable(     trim(name),prof ,caller="fetch_profile_1d")
-      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_1d")
+      call get_shared_variable('g'//trim(name),gprof)
 
     endsubroutine fetch_profile_1d
 !***********************************************************************
@@ -963,7 +963,7 @@ module SharedVariables
       real, dimension(:,:,:), pointer            :: gprof   !intent(OUT)
 
       call get_shared_variable(     trim(name),prof ,caller="fetch_profile_2d")
-      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_2d")
+      call get_shared_variable('g'//trim(name),gprof)
 
     endsubroutine fetch_profile_2d
 !***********************************************************************
@@ -979,7 +979,7 @@ module SharedVariables
       real, dimension(:,:,:,:), pointer            :: gprof   !intent(OUT)
 
       call get_shared_variable(     trim(name),prof ,caller="fetch_profile_3d")
-      call get_shared_variable('g'//trim(name),gprof,caller="fetch_profile_3d")
+      call get_shared_variable('g'//trim(name),gprof)
 
     endsubroutine fetch_profile_3d
 !***********************************************************************

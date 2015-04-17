@@ -173,6 +173,10 @@ module Io
           io_err = 0
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
+      elseif (ldownsampl) then
+        write (lun_output, IOSTAT=io_err) a(firstind(1):l2:downsampl(1), &
+                                            firstind(2):m2:downsampl(2), &
+                                            firstind(3):n2:downsampl(3), :)
       else
         write (lun_output, IOSTAT=io_err) a
       endif
@@ -469,11 +473,11 @@ module Io
       real(KIND=rkind4) :: dxsg,dysg,dzsg,deltaysg
 
       if (lread_from_other_prec) then
-        if (kind(a)==4) then
+        if (kind(a)==rkind4) then
           allocate(adb(mx,my,mz,nv),xdb(mx),ydb(my),zdb(mz))
           call read_snap(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
           a=adb; x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb; deltay=deltaydb
-        elseif (kind(a)==8) then
+        elseif (kind(a)==rkind8) then
           allocate(asg(mx,my,mz,nv),xsg(mx),ysg(my),zsg(mz))
           call read_snap(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltaysg,nv,mode)
           a=asg; x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg; deltay=deltaysg
@@ -930,10 +934,10 @@ module Io
       real(KIND=rkind4) :: vsg
 !
       if (lread_from_other_prec) then
-        if (kind(value)==4) then
+        if (kind(value)==rkind4) then
           read (lun_input, iostat=io_err) vdb
           value=vdb
-        elseif (kind(value)==8) then
+        elseif (kind(value)==rkind8) then
           read (lun_input, iostat=io_err) vsg
           value=vsg
         endif
@@ -960,11 +964,11 @@ module Io
       real(KIND=rkind4), dimension(:), allocatable :: vsg
 !
       if (lread_from_other_prec) then
-        if (kind(value)==4) then
+        if (kind(value)==rkind4) then
           allocate(vdb(size(value)))
           read (lun_input, iostat=io_err) vdb
           value=vdb
-        elseif (kind(value)==8) then
+        elseif (kind(value)==rkind8) then
           allocate(vsg(size(value)))
           read (lun_input, iostat=io_err) vsg
           value=vsg
@@ -1041,11 +1045,11 @@ module Io
       lerror = outlog(io_err,"openr globals",file,location='input_globals')
 
       if (lread_from_other_prec) then
-        if (kind(a)==4) then
+        if (kind(a)==rkind4) then
           allocate(adb(mx,my,mz,nv))
           call read_globals(adb)
           a=adb
-        elseif (kind(a)==8) then
+        elseif (kind(a)==rkind8) then
           allocate(asg(mx,my,mz,nv))
           call read_globals(asg)
           a=asg
@@ -1288,11 +1292,15 @@ module Io
 !  28-oct-13/MR  : added overwriting of grid.dat if restart from different precision
 !   3-mar-15/MR  : calculation of d[xyz]2_bound added: contain twice the distances of
 !                  three neighbouring points from the boundary point
+!  15-apr-15/MR  : automatic detection of precision added
+!
+      use Syscalls, only: file_size
 !
       character (len=*) :: file
 !
-      integer :: io_err
-      logical :: lerror
+      integer :: io_err, datasize, filesize
+      integer, parameter :: nrec=5
+      logical :: lerror, lotherprec
 !
       real(KIND=rkind8), dimension(:), allocatable :: xdb,ydb,zdb,dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb
       real(KIND=rkind4), dimension(:), allocatable :: xsg,ysg,zsg,dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg
@@ -1307,20 +1315,30 @@ module Io
       lerror = outlog(io_err,'openr',file,location='rgrid')
 
       if (lread_from_other_prec) then
-        if (kind(x)==4) then
-          allocate(xdb(mx),ydb(my),zdb(mz),dx_1db(mx),dy_1db(my),dz_1db(mz),dx_tildedb(mx),dy_tildedb(my),dz_tildedb(mz))
-          call input_grid(xdb,ydb,zdb,dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb, &
-                          dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb)
-          x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb
-          Lx=Lxdb; Ly=Lydb; Lz=Lzdb; dx_1=dx_1db; dy_1=dy_1db; dz_1=dz_1db
-          dx_tilde=dx_tildedb; dy_tilde=dy_tildedb; dz_tilde=dz_tildedb
-        elseif (kind(x)==8) then
-          allocate(xsg(mx),ysg(my),zsg(mz),dx_1sg(mx),dy_1sg(my),dz_1sg(mz),dx_tildesg(mx),dy_tildesg(my),dz_tildesg(mz))
-          call input_grid(xsg,ysg,zsg,dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg, &
-                          dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg)
-          x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg
-          Lx=Lxsg; Ly=Lysg; Lz=Lzsg; dx_1=dx_1sg; dy_1=dy_1sg; dz_1=dz_1sg;
-          dx_tilde=dx_tildesg; dy_tilde=dy_tildesg; dz_tilde=dz_tildesg
+
+        datasize = 3*(mx+my+mz) + 10
+        filesize = file_size(trim(directory)//'/'//file) - 8*nrec
+!
+        if (kind(x)==rkind4) then
+          lotherprec = filesize/=4*datasize
+          if (lotherprec) then
+            allocate(xdb(mx),ydb(my),zdb(mz),dx_1db(mx),dy_1db(my),dz_1db(mz),dx_tildedb(mx),dy_tildedb(my),dz_tildedb(mz))
+            call input_grid(xdb,ydb,zdb,dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb, &
+                            dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb)
+            x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb
+            Lx=Lxdb; Ly=Lydb; Lz=Lzdb; dx_1=dx_1db; dy_1=dy_1db; dz_1=dz_1db
+            dx_tilde=dx_tildedb; dy_tilde=dy_tildedb; dz_tilde=dz_tildedb
+          endif
+        elseif (kind(x)==rkind8) then
+          lotherprec = filesize/=8*datasize
+          if (lotherprec) then
+            allocate(xsg(mx),ysg(my),zsg(mz),dx_1sg(mx),dy_1sg(my),dz_1sg(mz),dx_tildesg(mx),dy_tildesg(my),dz_tildesg(mz))
+            call input_grid(xsg,ysg,zsg,dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg, &
+                            dx_1sg,dy_1sg,dz_1sg,dx_tildesg,dy_tildesg,dz_tildesg)
+            x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg
+            Lx=Lxsg; Ly=Lysg; Lz=Lzsg; dx_1=dx_1sg; dy_1=dy_1sg; dz_1=dz_1sg;
+            dx_tilde=dx_tildesg; dy_tilde=dy_tildesg; dz_tilde=dz_tildesg
+          endif
         endif
       else
         call input_grid(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
@@ -1328,7 +1346,7 @@ module Io
       close(lun_input,IOSTAT=io_err)
       lerror = outlog(io_err,'close')
 !
-      if (lread_from_other_prec) call wgrid(file)         ! perhaps not necessary
+      if (lread_from_other_prec.and.lotherprec) call wgrid(file)         ! perhaps not necessary
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
@@ -1408,10 +1426,10 @@ module Io
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err,status='old')
 
       if (lread_from_other_prec) then
-        if (kind(x)==4) then
+        if (kind(x)==rkind4) then
           call input_proc_bounds(procx_boundsdb,procy_boundsdb,procz_boundsdb)
           procx_bounds=procx_boundsdb; procy_bounds=procy_boundsdb; procz_bounds=procz_boundsdb
-        elseif (kind(x)==8) then
+        elseif (kind(x)==rkind8) then
           call input_proc_bounds(procx_boundssg,procy_boundssg,procz_boundssg)
           procx_bounds=procx_boundssg; procy_bounds=procy_boundssg; procz_bounds=procz_boundssg
         endif

@@ -69,7 +69,7 @@ module EquationOfState
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
   !real :: cp=impossible, cp1=impossible
-  real :: cp1=impossible
+  real :: cp1=impossible,cv=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.

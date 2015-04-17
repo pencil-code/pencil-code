@@ -74,7 +74,7 @@ module Special
 !
   real, allocatable, dimension(:,:,:) :: kvec, uvec, uvec_split   !to generate real-space velocities
   real, allocatable, dimension(:,:)   :: vec_split, vec_split0, phase_time
-  real                                :: twopi, del_xx1
+  real                                :: del_xx1
 !
   character (len=labellen) :: time_step_type='nothing'        !Shell contribution to time-step
   integer :: minshell=-1, maxshell=-1, minshell2=-1           !bounds of physically relevant
@@ -123,7 +123,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ns, ierr, nk,nk2, ik, count, cc_count
       character (len=fnlen) :: filename
-      real :: kav, twopid
+      real :: kav
       real, dimension(1) :: fran
       real, dimension(4000) :: kkx, kky, kkz
 !

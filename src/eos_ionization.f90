@@ -63,7 +63,7 @@ module EquationOfState
 !ajwm  reworking to be independent of these things first
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
-  real :: cs0=impossible, rho0=impossible, cp=impossible
+  real :: cs0=impossible, rho0=impossible, cp=impossible, cv=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp = .false., lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible

@@ -59,7 +59,7 @@ module Sub
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
   public :: dyadic2
-  public :: cross, cross_mn
+  public :: cross, cross_mn, cross_mixed
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn, multsv_mn_add
   public :: multvs, multvv_mat
@@ -123,6 +123,7 @@ module Sub
   interface cross
     module procedure cross_mn
     module procedure cross_0
+    module procedure cross_mixed
   endinterface
 !
   interface u_dot_grad
@@ -1063,6 +1064,24 @@ module Sub
       c(:,3)=a(:,1)*b(:,2)-a(:,2)*b(:,1)
 !
     endsubroutine cross_mn
+!***********************************************************************
+    subroutine cross_mixed(a,b,c)
+!
+!  Cross product, c = a x b, of a pencil and a non-pencil variable.
+!
+!  17-apr-2015/MR: coded
+!
+      real, dimension (nx,3) :: a,c
+      real, dimension (3) :: b
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c(:,1)=a(:,2)*b(3)-a(:,3)*b(2)
+      c(:,2)=a(:,3)*b(1)-a(:,1)*b(3)
+      c(:,3)=a(:,1)*b(2)-a(:,2)*b(1)
+!
+    endsubroutine cross_mixed
 !***********************************************************************
     subroutine cross_0(a,b,c)
 !
@@ -2098,6 +2117,12 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del4f
 !
+!  Exit if this is requested for non-cartesian runs.
+!
+      if (lcylindrical_coords.or.lspherical_coords) &
+          call fatal_error('del4v', &
+          'not implemented for non-cartesian coordinates')
+!
 !  Do the del4 diffusion operator.
 !
       k1=k-1
@@ -2105,12 +2130,6 @@ module Sub
         call del4(f,k1+i,tmp)
         del4f(:,i)=tmp
       enddo
-!
-!  Exit if this is requested for non-cartesian runs.
-!
-      if (lcylindrical_coords.or.lspherical_coords) &
-          call fatal_error('del4v', &
-          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del4v
 !***********************************************************************

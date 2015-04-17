@@ -82,7 +82,7 @@ module EquationOfState
                           lcs_as_aux,lgamma_as_aux,lnabad_as_aux, &
                           lHminus_opacity_correction
 !
-  real :: cs0=impossible, rho0=impossible, cp=impossible
+  real :: cs0=impossible, rho0=impossible, cp=impossible,cv=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
   logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs_as_aux=.false.
