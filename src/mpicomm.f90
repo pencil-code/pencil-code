@@ -389,7 +389,7 @@ module Mpicomm
   contains
 !
 !***********************************************************************
-    subroutine mpicomm_init()
+    subroutine mpicomm_init
 !
 !  Get processor number, number of procs, and whether we are root.
 !
@@ -401,7 +401,7 @@ module Mpicomm
       lmpicomm = .true.
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
-      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , mpierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
       lroot = (iproc==root)
 !
       if (sizeof_real() < 8) then
@@ -409,7 +409,7 @@ module Mpicomm
         if (lroot) then
           write (*,*) ""
           write (*,*) "==============================================================="
-          write (*,*) "WARNING: using SINGLE PRECISION, you'd better know what you do!"
+          write (*,*) "WARNING: using SINGLE PRECISION, you'd better know what you do!"     
           write (*,*) "==============================================================="
           write (*,*) ""
         endif
@@ -580,15 +580,17 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !  11-aug-07/axel: communication in the x-direction added
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      real, dimension(:,:,:,:), intent(inout):: f
+      integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
       if (ivar2==0) return
+!
+      mxl=size(f,1)
 !
 !  Periodic boundary conditions in x.
 !
@@ -599,7 +601,7 @@ module Mpicomm
       if (nprocy>1) then
         lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2) !!(lower y-zone)
         ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
-        nbufy=mx*nz*nghost*(ivar2-ivar1+1)
+        nbufy=mxl*nz*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
             yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
@@ -615,7 +617,7 @@ module Mpicomm
       if (nprocz>1) then
         lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !!(lower z-zone)
         ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !!(upper z-zone)
-        nbufz=mx*ny*nghost*(ivar2-ivar1+1)
+        nbufz=mxl*ny*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
@@ -636,7 +638,7 @@ module Mpicomm
         ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
         uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
         lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
-        nbufyz=mx*nghost*nghost*(ivar2-ivar1+1)
+        nbufyz=mxl*nghost*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
             uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
         call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
@@ -672,12 +674,12 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      real, dimension(:,:,:,:), intent(inout):: f
+      integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
       if (ivar2==0) return
@@ -696,7 +698,7 @@ module Mpicomm
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
           endif
           if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-            f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+            f(:,m2+1:  ,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
@@ -713,7 +715,7 @@ module Mpicomm
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
           endif
           if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
+            f(:,m1:m2,n2+1:  ,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
@@ -723,32 +725,36 @@ module Mpicomm
 !  The four yz-corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
+
         call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
+
         do j=ivar1,ivar2
           if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
             if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
               f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
             endif
             if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-              f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
+              f(:,m2+1:  , 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
             endif
           endif
           if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
             if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-              f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
+              f(:,m2+1:  ,n2+1:,j)=uubufi(:,:,:,j)  !!(set uu corner)
             endif
             if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-              f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
+              f(:, 1:m1-1,n2+1:,j)=lubufi(:,:,:,j)  !!(set lu corner)
             endif
           endif
         enddo
+        
         call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
         call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
         call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
         call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
+      
       endif
 !
 !  communication sample
@@ -761,7 +767,7 @@ module Mpicomm
 !  make sure the other processors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
-      call mpibarrier()
+     call mpibarrier()
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -778,7 +784,7 @@ module Mpicomm
 !
       integer :: ivar1, ivar2, nbufx, j
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -805,7 +811,7 @@ module Mpicomm
           endif
           if (.not. llast_proc_x .or. bcx12(j,2)=='p' .or. &
               (bcx12(j,2)=='she'.and.nygrid==1)) then
-            f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
+            f(l2+1:,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
         call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
@@ -820,12 +826,12 @@ module Mpicomm
 !
 !   18-june-10/dhruba: aped
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbuf_pole, j
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -863,12 +869,12 @@ module Mpicomm
 !
 !   18-june-10/dhruba: aped
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbuf_pole, j
 !
-      ivar1=1; ivar2=mcom
+      ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
@@ -885,9 +891,9 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
         do j=ivar1,ivar2
           if (bcy12(j,2)=='pp') &
-              f(l1:l2,m2+1:my,n1:n2,j)=spbufyi(:,:,:,j)
+              f(l1:l2,m2+1:,n1:n2,j)=spbufyi(:,:,:,j)
           if (bcy12(j,2)=='ap') &
-              f(l1:l2,m2+1:my,n1:n2,j)=-spbufyi(:,:,:,j)
+              f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
         enddo
         call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
       endif
@@ -2152,7 +2158,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,1,MPI_REAL,ibcast_proc, &
-          MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -2552,7 +2558,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
 !
-!  Calculate total maximum for each array element and return to all processors.
+!  Calculate total maximum element and return to all processors.
 !
       real :: fmax_tmp,fmax
 !
@@ -3905,12 +3911,12 @@ module Mpicomm
 !   8-oct-2006/tobi: Coded
 !  28-dec-2010/Bourdin.KIS: extended to work for any 3D vector field data.
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (:,:,:,:), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       integer, intent(in), optional :: start_index
 !
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
-      real, dimension (nghost,my,nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
+      real, dimension (nghost,size(f,2),nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
       integer :: nbufx,nbufy,nn1,nn2,is,ie
 !
       is = iax
@@ -3920,7 +3926,7 @@ module Mpicomm
       nn1=-1; nn2=-1
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
-        case ('top'); nn1=n2; nn2=mz
+        case ('top'); nn1=n2; nn2=size(f,3)
         case default; call stop_it_if_any(.true.,"communicate_vect_field_ghosts: "//topbot//" should be either `top' or `bot'")
       end select
 !
@@ -3946,7 +3952,7 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
 !
         f(l1:l2,   1:m1-1,nn1:nn2,is:ie) = lbufyi
-        f(l1:l2,m2+1:my  ,nn1:nn2,is:ie) = ubufyi
+        f(l1:l2,m2+1:    ,nn1:nn2,is:ie) = ubufyi
 !
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
@@ -3954,7 +3960,7 @@ module Mpicomm
       else
 !
         f(l1:l2,   1:m1-1,nn1:nn2,is:ie) = f(l1:l2,m2i:m2 ,nn1:nn2,is:ie)
-        f(l1:l2,m2+1:my  ,nn1:nn2,is:ie) = f(l1:l2, m1:m1i,nn1:nn2,is:ie)
+        f(l1:l2,m2+1:    ,nn1:nn2,is:ie) = f(l1:l2, m1:m1i,nn1:nn2,is:ie)
 !
       endif
 !
@@ -3965,7 +3971,7 @@ module Mpicomm
         lbufxo = f( l1:l1i,:,nn1:nn2,is:ie)
         ubufxo = f(l2i:l2 ,:,nn1:nn2,is:ie)
 !
-        nbufx=nghost*my*(nghost+1)*3
+        nbufx=nghost*size(f,2)*(nghost+1)*3
 !
         call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx, &
                        MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
@@ -3980,7 +3986,7 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
 !
         f(   1:l1-1,:,nn1:nn2,is:ie) = lbufxi
-        f(l2+1:mx  ,:,nn1:nn2,is:ie) = ubufxi
+        f(l2+1:    ,:,nn1:nn2,is:ie) = ubufxi
 !
         call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
@@ -3988,7 +3994,7 @@ module Mpicomm
       else
 !
         f(   1:l1-1,:,nn1:nn2,is:ie) = f(l2i:l2 ,:,nn1:nn2,is:ie)
-        f(l2+1:mx  ,:,nn1:nn2,is:ie) = f( l1:l1i,:,nn1:nn2,is:ie)
+        f(l2+1:    ,:,nn1:nn2,is:ie) = f( l1:l1i,:,nn1:nn2,is:ie)
 !
       endif
 !
@@ -4000,10 +4006,10 @@ module Mpicomm
 !
 !  11-apr-2011/Bourdin.KIS: adapted from communicate_vect_field_ghosts.
 !
-      real, dimension (mx,my), intent (inout) :: data
+      real, dimension (:,:), intent (inout) :: data
 !
       real, dimension (nx,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
-      real, dimension (nghost,my) :: lbufxo,ubufxo,lbufxi,ubufxi
+      real, dimension (nghost,size(data,2)) :: lbufxo,ubufxo,lbufxi,ubufxi
       integer :: nbufx,nbufy
 !
 !  Periodic boundaries in y -- communicate along y if necessary
@@ -4028,7 +4034,7 @@ module Mpicomm
         call MPI_WAIT (irecv_rq_fromlowy, irecv_stat_fl, mpierr)
 !
         data(l1:l2,   1:m1-1) = lbufyi
-        data(l1:l2,m2+1:my  ) = ubufyi
+        data(l1:l2,m2+1:    ) = ubufyi
 !
         call MPI_WAIT (isend_rq_tolowy, isend_stat_tl, mpierr)
         call MPI_WAIT (isend_rq_touppy, isend_stat_tu, mpierr)
@@ -4036,7 +4042,7 @@ module Mpicomm
       else
 !
         data(l1:l2,   1:m1-1) = data(l1:l2,m2i:m2 )
-        data(l1:l2,m2+1:my  ) = data(l1:l2, m1:m1i)
+        data(l1:l2,m2+1:    ) = data(l1:l2, m1:m1i)
 !
       endif
 !
@@ -4047,7 +4053,7 @@ module Mpicomm
         lbufxo = data( l1:l1i,:)
         ubufxo = data(l2i:l2 ,:)
 !
-        nbufx = nghost * my
+        nbufx = nghost * size(data,2)
 !
         call MPI_IRECV (ubufxi, nbufx, MPI_REAL, xuneigh, tolowx, &
                        MPI_COMM_WORLD, irecv_rq_fromuppx, mpierr)
@@ -4062,7 +4068,7 @@ module Mpicomm
         call MPI_WAIT (irecv_rq_fromlowx, irecv_stat_fl, mpierr)
 !
         data(   1:l1-1,:) = lbufxi
-        data(l2+1:mx  ,:) = ubufxi
+        data(l2+1:    ,:) = ubufxi
 !
         call MPI_WAIT (isend_rq_tolowx, isend_stat_tl, mpierr)
         call MPI_WAIT (isend_rq_touppx, isend_stat_tu, mpierr)
@@ -4070,7 +4076,7 @@ module Mpicomm
       else
 !
         data(   1:l1-1,:) = data(l2i:l2 ,:)
-        data(l2+1:mx  ,:) = data( l1:l1i,:)
+        data(l2+1:    ,:) = data( l1:l1i,:)
 !
       endif
 !
@@ -6659,9 +6665,9 @@ module Mpicomm
       if ((onx /= bnx*nprocxy) .or. (ony /= bny)) &
           call stop_fatal ('transp_pencil_xy_4D: output array has unmatching size', lfirst_proc_xy)
       if (inz /= onz) &
-          call stop_fatal ('transp_pencil_xy_4D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
+          call stop_fatal ('transp_pencil_xy_4D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)               
       if (ina /= ona) &
-          call stop_fatal ('transp_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
+         call stop_fatal ('transp_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
 !
       allocate (send_buf(bnx,bny,onz,ona), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for send_buf!', .true.)
@@ -6677,14 +6683,14 @@ module Mpicomm
           ! data is local
           do pos_z = 1, onz
             do pos_a = 1, ona
-              out(bnx*ibox+1:bnx*(ibox+1),:,pos_z,pos_a) = transpose (in(bny*ibox+1:bny*(ibox+1),:,pos_z,pos_a))
+              out(bnx*ibox+1:bnx*(ibox+1),:,pos_z,pos_a) = transpose(in(bny*ibox+1:bny*(ibox+1),:,pos_z,pos_a))
             enddo
           enddo
         else
           ! communicate with partner
           do pos_z = 1, onz
             do pos_a = 1, ona
-              send_buf(:,:,pos_z,pos_a) = transpose (in(bny*ibox+1:bny*(ibox+1),:,pos_z,pos_a))
+              send_buf(:,:,pos_z,pos_a) = transpose(in(bny*ibox+1:bny*(ibox+1),:,pos_z,pos_a))
             enddo
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
@@ -6740,7 +6746,7 @@ module Mpicomm
       if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
           call stop_fatal ('remap_to_pencil_yz_3D: output array size mismatch /= ny/nprocz,nzgrid', lfirst_proc_yz)
       if (inx /= onx) &
-          call stop_fatal ('remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz)
+          call stop_fatal ('remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz) 
 !
       allocate (send_buf(onx,bny,bnz), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for send_buf!', .true.)
@@ -6762,6 +6768,7 @@ module Mpicomm
             call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
             call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
+!
           out(:,:,bnz*ibox+1:bnz*(ibox+1)) = recv_buf
         endif
       enddo
