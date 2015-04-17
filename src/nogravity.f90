@@ -41,6 +41,7 @@ module Gravity
   real :: g0=0.,r0_pot=0.,qgshear=1.5
   integer :: n_pot=10
   logical :: lnumerical_equilibrium=.false.
+  character (len=labellen) :: gravz_profile='zero'
 !
   contains
 !***********************************************************************
