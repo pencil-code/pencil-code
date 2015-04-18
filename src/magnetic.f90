@@ -2497,7 +2497,7 @@ module Magnetic
           if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
         endif addBext
 !
-!  Add a precessing dipole not in the bext field
+!  Add a precessing dipole not in the Bext field
 !
         if (dipole_moment .ne. 0) then
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
@@ -2537,20 +2537,20 @@ module Magnetic
 ! rho=(rho0/10+B^2)
 !
       if (lmagneto_friction.and.lpenc_loc(i_rho1)) then
-        p%rho=(rho0*1.0e-2+p%b2)
-        p%rho1=1./(rho0*1.0e-2+p%b2)
+        p%rho=rho0*1.0e-2+p%b2
+        p%rho1=1./p%rho
       endif
 ! bunit
       if (lpenc_loc(i_bunit)) then
         quench = 1.0/max(tini,sqrt(p%b2))
         if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
-          p%bunit(:,1) = p%bbb(:,1)*quench
-          p%bunit(:,2) = p%bbb(:,2)*quench
-          p%bunit(:,3) = p%bbb(:,3)*quench
+          do j=1,3
+            p%bunit(:,j) = p%bbb(:,j)*quench
+          enddo
         else
-          p%bunit(:,1) = p%bb(:,1)*quench
-          p%bunit(:,2) = p%bb(:,2)*quench
-          p%bunit(:,3) = p%bb(:,3)*quench
+          do j=1,3
+            p%bunit(:,j) = p%bb(:,j)*quench
+          enddo
         endif
       endif
 ! ab
@@ -2561,9 +2561,9 @@ module Magnetic
         call cross_mn(p%uu,p%bb,p%uxb)
         call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
-        if (iglobal_ex_ext/=0) p%uxb(:,1)=p%uxb(:,1)+f(l1:l2,m,n,iglobal_ex_ext)
-        if (iglobal_ey_ext/=0) p%uxb(:,2)=p%uxb(:,2)+f(l1:l2,m,n,iglobal_ey_ext)
-        if (iglobal_ez_ext/=0) p%uxb(:,3)=p%uxb(:,3)+f(l1:l2,m,n,iglobal_ez_ext)
+        do j=1,3
+          if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
+        enddo
       endif
 ! uga
       if (lpenc_loc(i_uga)) then
@@ -2609,22 +2609,22 @@ module Magnetic
 !
 !  Add external j-field.
 !
-        if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
-        if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
-        if (iglobal_jz_ext/=0) p%jj(:,3)=p%jj(:,3)+f(l1:l2,m,n,iglobal_jz_ext)
+        do j=1,3
+          if (iglobal_jext(j)/=0) p%jj(:,j)=p%jj(:,j)+f(l1:l2,m,n,iglobal_jext(j))
+        enddo
 !
 !  Add an external J-field (for the Bell instability).
 !
         if (lJ_ext) then
           if (J_ext_quench/=0) then
             quench=1./(1.+J_ext_quench*p%b2)
-            p%jj(:,1)=p%jj(:,1)-J_ext(1)*quench
-            p%jj(:,2)=p%jj(:,2)-J_ext(2)*quench
-            p%jj(:,3)=p%jj(:,3)-J_ext(3)*quench
+            do j=1,3
+              p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
+            enddo
           else
-            p%jj(:,1)=p%jj(:,1)-J_ext(1)
-            p%jj(:,2)=p%jj(:,2)-J_ext(2)
-            p%jj(:,3)=p%jj(:,3)-J_ext(3)
+            do j=1,3
+              p%jj(:,j)=p%jj(:,j)-J_ext(j)
+            enddo
           endif
         endif
       endif
@@ -2833,9 +2833,9 @@ module Magnetic
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
-     if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
-     if (ljj_as_aux ) f(l1:l2,m,n,ijx  :ijz  )=p%jj
-     if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
+      if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
+      if (ljj_as_aux ) f(l1:l2,m,n,ijx  :ijz  )=p%jj
+      if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
 !
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
@@ -3193,7 +3193,7 @@ module Magnetic
 !
       if (lresi_eta_shock_profz) then
         peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
-                      step(p%z_mn,eta_zshock,-eta_width_shock)
+                     step(p%z_mn,eta_zshock,-eta_width_shock)
 !
         call write_zprof('resi_shock',peta_shock)
         gradeta_shock(:,1) = 0.
@@ -3463,9 +3463,7 @@ module Magnetic
 !  Take care of possibility of imposed field.
 !
             if (any(B_ext/=0.)) then
-              ujiaj(:,1)=p%uu(:,2)*B_ext(3)-p%uu(:,3)*B_ext(2)
-              ujiaj(:,2)=p%uu(:,3)*B_ext(1)-p%uu(:,1)*B_ext(3)
-              ujiaj(:,3)=p%uu(:,1)*B_ext(2)-p%uu(:,2)*B_ext(1)
+              call cross(p%uu,B_ext,ujiaj)
             else
               ujiaj=0.
             endif
@@ -3517,9 +3515,7 @@ module Magnetic
 !  Note: For now, this only works for uniform external fields.
 !
         if (any(B_ext/=0.)) then
-          uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
-          uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
-          uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
+          call cross(p%uu,B_ext,uxb_upw)
         else
           uxb_upw=0.
         endif
@@ -3682,7 +3678,7 @@ module Magnetic
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
-! Electric field E = -dA/dt, store the Electric field in an array if asked for.
+! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !
       if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
 !
@@ -4670,9 +4666,7 @@ module Magnetic
       if (lua_as_aux) then
         do n=1,mz
           do m=1,my
-            f(:,m,n,iua)=f(:,m,n,iux)*f(:,m,n,iax) &
-                        +f(:,m,n,iuy)*f(:,m,n,iay) &
-                        +f(:,m,n,iuz)*f(:,m,n,iaz)
+            f(:,m,n,iua)=sum(f(:,m,n,iux:iuz)*f(:,m,n,iax:iaz),2)
           enddo
         enddo
       endif

@@ -80,7 +80,6 @@ module power_spectrum
 !
       if ( .not.lintegrate_z ) then
 !
-!--     ie=0
         iend_zrange=0
         do i=1,parser( czrange, czranges, ',' )
 !
@@ -149,8 +148,6 @@ module power_spectrum
       do i=1,nr
 !
         if ( read_range( ckranges(i), kranges(:,i), (/-ngrid/2,ngrid/2-1,1/) ) ) then
-!
-!--       ie = nre   !(AB: is not used)
 !
           if ( kranges(1,i)>=0 ) then
             kranges(1:2,i) = kranges(1:2,i)+1
@@ -304,13 +301,13 @@ module power_spectrum
 !  append to diagnostics file
 !
   if (iproc==root) then
-     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
-          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
-     spectrum_sum=.5*spectrum_sum
-     open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
-     write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
-     close(1)
+    if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') spectrum_sum
+    close(1)
   endif
 !
     endsubroutine power
@@ -425,7 +422,7 @@ module power_spectrum
 !***********************************************************************
   subroutine comp_spectrum_xy( f, sp, ar, ai, ivecp )
 !
-! generates xy-spectrum of the component ivec of the vector field, selected by sp
+! generates xy-spectrum of the component ivecp of the vector field, selected by sp
 !
 ! 18-Jan-11/MR: outsourced from power_xy
 !

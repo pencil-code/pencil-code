@@ -74,7 +74,7 @@ module Energy
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: tau_cool_ss=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible
-  real :: ss_volaverage=0., ss_volaverage_tmp
+  real :: ss_volaverage=0.
   real, target :: T0hs=impossible
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
@@ -3247,6 +3247,7 @@ module Energy
 !
       use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: finalize_aver
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3254,9 +3255,6 @@ module Energy
 !
       integer :: l,m,n,lf
       real :: fact, cv1, tmp1
-      real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
-      real, dimension (nx) :: cs2mx_tmp, ssmx1_tmp
-      real, dimension (nx,my) :: cs2mxy_tmp, ssmxy1_tmp
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3266,13 +3264,7 @@ module Energy
         do n=1,mz
           ssmz(n)=fact*sum(f(l1:l2,m1:m2,n,iss))
         enddo
-!
-!  Communication over all processors in the xy plane.
-!
-        if (nprocx>1.or.nprocy>1) then
-          call mpiallreduce_sum(ssmz,ssmz1_tmp,mz,idir=12)
-          ssmz=ssmz1_tmp
-        endif
+        call finalize_aver(nprocxy,12,ssmz)
 !
 !  Compute first and second derivatives.
 !
@@ -3291,13 +3283,7 @@ module Energy
         do l=1,nx
           ssmx(l)=fact*sum(f(l+nghost,m1:m2,n1:n2,iss))
         enddo
-!
-!  Communication over all processors in the yz plane.
-!
-        if (nprocy>1.or.nprocz>1) then
-          call mpiallreduce_sum(ssmx,ssmx1_tmp,nx,idir=23)
-          ssmx=ssmx1_tmp
-        endif
+        call finalize_aver(nprocyz,23,ssmx)
 !
 !  Azimuthal (z) average
 !
@@ -3308,13 +3294,8 @@ module Energy
             ssmxy(l,m)=fact*sum(f(lf,m,n1:n2,iss))
           enddo
         enddo
+        call finalize_aver(nprocz,3,ssmxy)
 !
-        if (nprocz>1) then
-!
-          call mpiallreduce_sum(ssmxy,ssmxy1_tmp,(/nx,my/),idir=3)
-          ssmxy = ssmxy1_tmp
-!
-        endif
       endif
 !
 !  Compute average sound speed cs2(x) and cs2(x,y)
@@ -3363,13 +3344,7 @@ module Energy
         elseif (lcylindrical_coords) then
           call fatal_error('calc_lenergy_pars','calculation of mean c_s not implemented for cylidrical coordinates')
         endif
-!
-!  Communication over all processors in the yz plane.
-!
-        if (nprocy>1.or.nprocz>1) then
-          call mpiallreduce_sum(cs2mx,cs2mx_tmp,nx,idir=23)
-          cs2mx=cs2mx_tmp
-        endif
+        call finalize_aver(nprocyz,23,cs2mx)
 !
 !  Do 2D averages at the same time
 !
@@ -3393,11 +3368,7 @@ module Energy
             endif
           enddo
         enddo
-!
-        if (nprocz>1) then
-          call mpiallreduce_sum(cs2mxy,cs2mxy_tmp,(/nx,my/),idir=3)
-          cs2mxy = cs2mxy_tmp
-        endif
+        call finalize_aver(nprocz,3,cs2mxy)
 !
       endif
 !
@@ -3426,20 +3397,14 @@ module Energy
                      -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
           enddo
         endif
-!
-!  communicate over x and y directions
-!
-        if (nprocx>1.or.nprocy>1) then
-          call mpiallreduce_sum(cs2mz,cs2mz_tmp,mz,idir=12)
-          cs2mz=cs2mz_tmp
-        endif
+        call finalize_aver(nprocxy,12,cs2mz)
       endif
 !
 !  Compute volume average of entropy.
 !
       if (lcalc_ss_volaverage) then
-        ss_volaverage_tmp=sum(f(l1:l2,m1:m2,n1:n2,iss))/nwgrid
-        call mpiallreduce_sum(ss_volaverage_tmp,ss_volaverage)
+        tmp1=sum(f(l1:l2,m1:m2,n1:n2,iss))/nwgrid
+        call mpiallreduce_sum(tmp1,ss_volaverage)
       endif
 !
     endsubroutine calc_lenergy_pars
@@ -4102,13 +4067,11 @@ module Energy
 !
 ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
 !
+      chix = p%rho1*hcond*p%cp1
+!
 !  Put empirical heat transport suppression by the B-field.
 !
-      if (chiB==0.) then
-        chix = p%rho1*hcond*p%cp1
-      else
-        chix = p%rho1*hcond*p%cp1/(1.+chiB*p%b2)
-      endif
+      if (chiB/=0.) chix = chix/(1.+chiB*p%b2)
       call dot(p%glnTT,p%glnTT,g2)
 !
       if (pretend_lnTT) then

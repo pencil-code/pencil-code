@@ -167,7 +167,7 @@ module Testfield_general
       if (tau_aatest/=0.) then
         ltestfield_artifric=.true.
         tau1_aatest=1./tau_aatest
-        if (lroot) print*,'initialize_testfield: tau1_aatest=',tau1_aatest
+        if (lroot) print*,'initialize_testfield_general: tau1_aatest=',tau1_aatest
       endif
 !      
       if (lmagnetic) then
@@ -663,9 +663,9 @@ module Testfield_general
           case ('2')    
           case ('3')    
           case ('4','linear')
-            Minv(i,j,1,:) = (/     1., 0., 0. /)
-            Minv(i,j,2,:) = (/  -x(i), 1., 0. /)
-            Minv(i,j,3,:) = (/  -z(j), 0., 1. /)
+            Minv(i,j,1,:) = (/    1., 0., 0. /)
+            Minv(i,j,2,:) = (/ -x(i), 1., 0. /)
+            Minv(i,j,3,:) = (/ -z(j), 0., 1. /)
     
           case default  
         endselect
@@ -731,7 +731,7 @@ module Testfield_general
         nl = n-n1+1
         jtest = 1
 !
-        do i=1,size(idiags_Eij_xz),3                                         ! over all testfields
+        do i=1,size(idiags_Eij_xz),3                                        ! over all testfields
           do j=1,3                                                          ! over vector components
             call ysum_xz(uxbtestm(:,nl,j,jtest)*ny,n,idiags_Eij_xz(i+j-1))  ! but not over y, hence multiplied by ny
           enddo
@@ -997,9 +997,9 @@ module Testfield_general
 !
         call curl(f,iaxtest,btest)
 !
-        if (lsoca) then             ! perhaps check whether uum is close to zero
+        if (lsoca) then
 !
-!  add Umean x b^T 
+!  add Umean x b^T 		    ! perhaps check whether uum is close to zero
 !
           call cross_mn(uum,btest,uxbtest)
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
