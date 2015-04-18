@@ -12,8 +12,7 @@ end
 ; 
 if not keyword_set(lun) then lun=-1
 if lun lt 0 then $
-  
-openr,lun,/get_lun,file
+  openr,lun,/get_lun,file
 
 if (n_elements(head) ne 0) then begin
   card=''
