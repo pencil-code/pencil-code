@@ -58,7 +58,7 @@ module Testscalar
   real :: lam_testscalar=0.,om_testscalar=0.,delta_testscalar=0.
   real :: delta_testscalar_next=0.
   integer, parameter :: mtestscalar=njtestscalar
-  integer :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4,jtesty1=5,jtesty2=6
+  integer, parameter :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4,jtesty1=5,jtesty2=6
   integer :: nccinit
   real :: camp=1.,camp1=1.
 !
@@ -149,9 +149,9 @@ module Testscalar
 !
 !  arrays for horizontally averaged uc
 !
-  real, dimension (mz,mtestscalar) :: ugtestm
+  real, dimension (nz,mtestscalar) :: ugtestm
   real, dimension (nx,mtestscalar) :: ugtestmx
-  real, dimension (my,mtestscalar) :: ugtestmy
+  real, dimension (ny,mtestscalar) :: ugtestmy
 
   contains
 
@@ -165,8 +165,7 @@ module Testscalar
 !  17-apr-09/axel: added y column of kappa tensor
 !
       use Cdata
-      use Mpicomm
-      use Sub
+      use Mpicomm, only: stop_it
 !
       integer :: j
 !
@@ -398,32 +397,26 @@ module Testscalar
 !  26-nov-08/axel: adapted from testfield_z.f90
 !
       use Cdata
-      use Mpicomm
-      use Initcond
-      use Sub
+      use Mpicomm, only: stop_it
       use InitialCondition, only: initial_condition_cctest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: cc
-      real, dimension (nx) :: b2,fact
-      real :: beq2
+      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       integer :: j
 !
       do j=1,ninit
+        select case (initcctest(j))
 
-      select case (initcctest(j))
+        case ('zero'); f(:,:,:,icctest:icctest+ntestscalar-1)=0.
+        case ('nothing'); !(do nothing)
 
-      case ('zero'); f(:,:,:,icctest:icctest+ntestscalar-1)=0.
-      case ('nothing'); !(do nothing)
-
-      case default
+        case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_cctest: check initcctest: ', trim(initcctest(j))
-        call stop_it("")
+          if (lroot) print*, 'init_cctest: check initcctest: ', trim(initcctest(j))
+          call stop_it("")
 
-      endselect
+        endselect
       enddo
 !
 !  Interface for user's own initial condition
@@ -478,6 +471,7 @@ module Testscalar
     endsubroutine read_testscalar_init_pars
 !***********************************************************************
     subroutine write_testscalar_init_pars(unit)
+!
       integer, intent(in) :: unit
 
       write(unit,NML=testscalar_init_pars)
@@ -499,6 +493,7 @@ module Testscalar
     endsubroutine read_testscalar_run_pars
 !***********************************************************************
     subroutine write_testscalar_run_pars(unit)
+!
       integer, intent(in) :: unit
 
       write(unit,NML=testscalar_run_pars)
@@ -515,6 +510,8 @@ module Testscalar
 !  26-nov-08/axel: adapted from testfield_z.f90
 !  27-dec-08/axel: extended to x-dependent mean fields
 !  17-apr-09/axel: added y column of kappa tensor
+!  27-sep-13/MR  : changes due to ugtestm(mz,...  -->  ugtestm(nz,...,
+!                                ugtestmy(my,...  -->  ugtestmy(ny,...
 !
       use Cdata
       use Diagnostics
@@ -532,11 +529,11 @@ module Testscalar
       real, dimension (nx,3,njtestscalar) :: Fipq,Gipq,Hipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
-      integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: jcctest,jtest,j,nl,ml,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
 !
-      intent(in)     :: f,p
-      intent(inout)  :: df
+      intent(in)    :: f,p
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -583,6 +580,8 @@ module Testscalar
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
+      nl=n-n1+1; ml=m-m1+1
+!
       do jtest=1,njtestscalar
         jcctest=icctest+(jtest-1)
         call del2(f,jcctest,del2ctest)
@@ -624,11 +623,11 @@ module Testscalar
             dugtest=ugtest
           else
             if (jtest>=jtestz1 .and. jtest<=jtestz2) then
-              dugtest=ugtest-ugtestm(n,jtest)
+              dugtest=ugtest-ugtestm(nl,jtest)
             elseif (jtest>=jtestx1 .and. jtest<=jtestx2) then
               dugtest=ugtest-ugtestmx(:,jtest)
             elseif (jtest>=jtesty1 .and. jtest<=jtesty2) then
-              dugtest=ugtest-ugtestmy(m,jtest)
+              dugtest=ugtest-ugtestmy(ml,jtest)
             endif
           endif
 !
@@ -776,7 +775,7 @@ module Testscalar
 !  26-nov-08/axel: adapted from testfield_z.f90
 ! 
       use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4, &
-        ix_loc, iy_loc, iz_loc, iz2_loc, iz3_loc, iz4_loc
+                       ix_loc, iy_loc, iz_loc, iz2_loc, iz3_loc, iz4_loc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -814,36 +813,31 @@ module Testscalar
 !  26-nov-08/axel: adapted from testfield_z.f90
 !  27-dec-08/axel: also calculate yz-averages
 !   8-aug-10/axel: renamed calc_ltestscalar_pars => testscalar_after_boundary
+!  27-sep-13/MR  : changes due to ugtestm(mz,...  -->  ugtestm(nz,... ,
+!                                ugtestmy(my,...  -->  ugtestmy(ny,... ;
+!                  restricted calculation of hydro pencils; simplified communication.
 !
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c,s
-!
-      real, dimension (nx,nprocy,nprocz,njtestscalar) :: ugtestmx1=0.,ugtestmx1_tmp=0.
-      real, dimension (ny,nprocy,njtestscalar) :: ugtestmy1=0.,ugtestmy1_tmp=0.
-      real, dimension (nz,nprocz,njtestscalar) :: ugtestm1=0.,ugtestm1_tmp=0.
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
-      integer :: jcctest,jtest,j,jug,jpy,jpz
-      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid,nxz=nxgrid*nzgrid
+      integer :: jcctest,jtest,nl,ml
       logical :: headtt_save
       real :: fac_xy,fac_yz,fac_xz
       type (pencil_case) :: p
-!
-      intent(inout) :: f
+      logical, dimension(npencils) :: lpenc_loc
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac_xy=1./nxy
-      fac_yz=1./nyz
-      fac_xz=1./nxz
+      fac_xy=1./nxygrid
+      fac_yz=1./nyzgrid
+      fac_xz=1./nxzgrid
 !
 !  Do each of the 2+2 test fields at a time,
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -851,16 +845,20 @@ module Testscalar
 !
 !  ** Start with z-dependent mean fields **
 !
+      lpenc_loc=.false.; lpenc_loc(i_uu)=.true.
+      if (ltestscalar_per_unitvolume) lpenc_loc(i_divu)=.true.
+!
       do jtest=jtestz1,jtestz2
         jcctest=icctest+(jtest-1)
         if (lsoca_ug) then
           ugtestm(:,jtest)=0.
         else
           do n=n1,n2
-            ugtestm(n,jtest)=0.
+            nl=n-n1+1
+            ugtestm(nl,jtest)=0.
             do m=m1,m2
               cctest=f(l1:l2,m,n,jcctest)
-              call calc_pencils_hydro(f,p)
+              call calc_pencils_hydro(f,p,lpenc_loc)
               call grad(f,jcctest,ggtest)
               call dot_mn(p%uu,ggtest,ugtest)
 !
@@ -871,10 +869,9 @@ module Testscalar
 !  Put <ug> or <ug-dc> into auxiliary array and compute its average.
 !
               if (iug/=0) f(l1:l2,m,n,iug+(jtest-1))=ugtest
-              ugtestm(n,jtest)=ugtestm(n,jtest)+fac_xy*sum(ugtest)
+              ugtestm(nl,jtest)=ugtestm(nl,jtest)+fac_xy*sum(ugtest)
               headtt=.false.
             enddo
-            ugtestm1(n-n1+1,ipz+1,jtest)=ugtestm(n,jtest)
           enddo
         endif
       enddo
@@ -891,7 +888,7 @@ module Testscalar
             do n=n1,n2
               do m=m1,m2
                 cctest=f(l1:l2,m,n,jcctest)
-                call calc_pencils_hydro(f,p)
+                call calc_pencils_hydro(f,p,lpenc_loc)
                 call grad(f,jcctest,ggtest)
                 call dot_mn(p%uu,ggtest,ugtest)
 !
@@ -906,7 +903,6 @@ module Testscalar
                 headtt=.false.
               enddo
             enddo
-            ugtestmx1(:,ipy+1,ipz+1,jtest)=ugtestmx(:,jtest)
           endif
         enddo
       endif
@@ -921,9 +917,10 @@ module Testscalar
           else
             ugtestmy(:,jtest)=0.
             do m=m1,m2
+              ml=m-m1+1
               do n=n1,n2
                 cctest=f(l1:l2,m,n,jcctest)
-                call calc_pencils_hydro(f,p)
+                call calc_pencils_hydro(f,p,lpenc_loc)
                 call grad(f,jcctest,ggtest)
                 call dot_mn(p%uu,ggtest,ugtest)
 !
@@ -934,54 +931,26 @@ module Testscalar
 !  Put <ug> or <ug-dc> into auxiliary array and compute its average.
 !
                 if (iug/=0) f(l1:l2,m,n,iug+(jtest-1))=ugtest
-                ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
+                ugtestmy(ml,jtest)=ugtestmy(ml,jtest)+fac_xz*sum(ugtest)
                 headtt=.false.
               enddo
-              ugtestmy1(m-m1+1,ipy+1,jtest)=ugtestmy(m,jtest)
             enddo
           endif
         enddo
       endif
 !
-!  do communication for array of size nz*nprocz*3*njtestscalar
+!  do communication
 !  Do this first for z-dependent mean fields
 !
-      if (nprocy>1) then
-        call mpireduce_sum(ugtestm1,ugtestm1_tmp,(/nz,nprocz,njtestscalar/))
-        call mpibcast_real_arr(ugtestm1_tmp,nz*nprocz*njtestscalar)
-        do jtest=1,njtestscalar
-          do n=n1,n2
-            ugtestm(n,jtest)=ugtestm1_tmp(n-n1+1,ipz+1,jtest)
-          enddo
-        enddo
-      endif
+      call finalize_aver(nprocxy,12,ugtestm)
 !
 !  Next, do this for x-dependent mean fields
 !
-      if (ncpus>1) then
-        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,(/nx,nprocy,nprocz,njtestscalar/))
-        call mpibcast_real_arr(ugtestmx1_tmp,nx*nprocy*nprocz*njtestscalar)
-        do jtest=1,njtestscalar
-          ugtestmx(:,jtest)=0.
-          do jpz=1,nprocz
-            do jpy=1,nprocy
-              ugtestmx(:,jtest)=ugtestmx(:,jtest)+ugtestmx1_tmp(:,jpy,jpz,jtest)
-            enddo
-          enddo
-        enddo
-      endif
+      call finalize_aver(nprocyz,23,ugtestmx)
 !
 !  Finally, do this for y-dependent mean fields
 !
-      if (nprocz>1) then
-        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,(/ny,nprocy,njtestscalar/))
-        call mpibcast_real_arr(ugtestmy1_tmp,ny*nprocy*njtestscalar)
-        do jtest=1,njtestscalar
-          do m=m1,m2
-            ugtestmy(m,jtest)=ugtestmy1_tmp(m-m1+1,ipy+1,jtest)
-          enddo
-        enddo
-      endif
+      call finalize_aver(nprocxz,13,ugtestmy)
 !
 !  reset headtt
 !
@@ -997,7 +966,7 @@ module Testscalar
 !  26-nov-08/axel: adapted from testfield_z.f90
 !
       use Cdata
-      use Sub
+      use Sub, only: read_snaptime, update_snaptime
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
@@ -1024,9 +993,7 @@ module Testscalar
         if (t >= tccinit) then
           do jtest=1,njtestscalar
             j=icctest+(jtest-1)
-            do n=n1,n2
-              f(l1:l2,m1:m2,n,j)=rescale_cctest(jtest)*f(l1:l2,m1:m2,n,j)
-            enddo
+            f(l1:l2,m1:m2,n1:n2,j)=rescale_cctest(jtest)*f(l1:l2,m1:m2,n1:n2,j)
           enddo
           call update_snaptime(file,tccinit,nccinit,dccinit,t,ltestscalar_out)
         endif
@@ -1108,7 +1075,7 @@ module Testscalar
       use Diagnostics
       use General, only: loptest
 !
-      integer :: iname,inamez,inamexz
+      integer :: iname,inamez
       logical :: lreset
       logical, optional :: lwrite
 !
