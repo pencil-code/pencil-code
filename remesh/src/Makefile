@@ -36,12 +36,16 @@ include Makefile.local
 MPICOMM   = mpicomm_
 LDMPI=
 
-include Makefile.inc	
+include Makefile.inc  ## needed ? 
 
 ## Default settings
 FC=f90
 FFLAGS=-O3
 CFLAGS=-O3 -DFUNDERSC=1
+
+ifeq ($(REAL_PRECISION),double)
+  FFLAGS := $(FFLAGS) $(FFLAGS_DOUBLE) 
+endif
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
