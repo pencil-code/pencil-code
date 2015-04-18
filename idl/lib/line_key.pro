@@ -1,5 +1,5 @@
 PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
-            , THICK = THICK , SYMBOL = SYMBOL , CHARSIZE = CHARSIZE , VSHIFT = VSHIFT 
+            , THICK = THICK , SYMBOL = SYMBOL , CHARSIZE = CHARSIZE , VSHIFT = VSHIFT, _extra=extra 
 ;+
 ; NAME:
 ;       LINE_KEY
@@ -27,8 +27,10 @@ PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
 ;
 ;       THICK           The line thickness.
 ;
-;       SYMBOL          If set, the plot symbol corresponding to LINESTY 
-;                       is plotted instead of a line.
+;      SYMBOL           If set, the plot symbol corresponding to SYMBOL
+;                       is plotted instead of a line for a positive value
+;                       a line with linestyle LINESTY *and* symbols 
+;                       according to SYMBOL otherwise
 ;
 ;       CHARSIZE        The charsize used for the label.
 ;
@@ -61,7 +63,8 @@ PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
   IF( NOT KEYWORD_SET( LINELENGTH ) ) THEN linelength = 0.1
   IF( NOT KEYWORD_SET( THICK      ) ) THEN thick      = 1.0
   IF( NOT KEYWORD_SET( CHARSIZE   ) ) THEN charsize   = 1.0
-  IF(     KEYWORD_SET( SYMBOL     ) ) THEN linelength = 0.0
+  IF(     KEYWORD_SET( SYMBOL     ) ) THEN $
+    IF( SYMBOL GT 0 ) THEN linelength = 0.0    
   IF( NOT KEYWORD_SET( VSHIFT     ) ) THEN vshift     = 0.02
 
   lx1           =   x                        * x_win_size + !P.CLIP(0)
@@ -72,9 +75,9 @@ PRO LINE_KEY, X , Y , LABEL , LINESTY , LINELENGTH = LINELENGTH $
 
   IF( NOT KEYWORD_SET( SYMBOL ) ) $
     THEN PLOTS, [ lx1 , lx2 ] , [ ly , ly ] $
-              , LINESTY = linesty , THICK = thick , /DEVICE $
+              , LINESTY = linesty , THICK = thick , /DEVICE, _extra=extra $
     ELSE PLOTS, [ lx1 , lx2 ] , [ ly , ly ] $
-              , PSYM = linesty  , /DEVICE
+              , LINESTY = linesty, PSYM = SYMBOL  , /DEVICE, _extra=extra
   XYOUTS, xl , yl , label , CHARSIZE = charsize , /DEVICE
 
 END
