@@ -2748,7 +2748,7 @@ module Density
         case('bump')
           dlnrhodt=(mass_source_Mdot/fnorm)*exp(-.5*(p%r_mn/mass_source_sigma)**2)
         case('bump2')
-          dlnrhodt=fprofile_z
+          dlnrhodt=fprofile_z(n-n1+1)
         case('bumpr')
           radius2=(x(l1:l2)-xblob)**2+(y(m)-yblob)**2+(z(n)-zblob)**2
           fprofile=(mass_source_Mdot/fnorm)*exp(-.5*radius2/mass_source_sigma**2)
