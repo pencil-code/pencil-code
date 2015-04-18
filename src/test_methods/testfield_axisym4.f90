@@ -636,9 +636,12 @@ module Testfield
 !  Note: the same block of lines occurs again further down in the file.
 !
       do jtest=1,njtest
+!
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
+!
         call del2v(f,iaxtest,del2Atest)
+!
         select case (itestfield)
           case ('linear'); call set_bbtest_linear(B0test,jtest)
           case ('cxcycz'); call set_bbtest_cxcycz(B0test,jtest)
@@ -656,6 +659,7 @@ module Testfield
         if (B_ext(3)/=0.) B0test(:,3)=B0test(:,3)+B_ext(3)
 !
         call cross_mn(uufluct,B0test,uxB)
+!
         if (lsoca) then
 !MR: missing here: meanUU x bbtest
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
