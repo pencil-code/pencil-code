@@ -20,9 +20,6 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
-!
 !***************************************************************
 
 module Testfield
@@ -166,7 +163,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (mx,3,mtestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (nx,3,mtestfield/3) :: uxbtestm,jxbtestm
 
   contains
 
@@ -572,11 +569,9 @@ module Testfield
 !  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
 !
           if (lignore_uxbtestm) then
-            duxbtest(:,:)=uxbtest(:,:)
+            duxbtest=uxbtest
           else
-            do j=1,3
-              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(l1:l2,j,jtest)
-            enddo
+            duxbtest=uxbtest-uxbtestm(:,:,jtest)
           endif
 !
 !  advance test field equation
@@ -633,9 +628,7 @@ module Testfield
 !
 !  subtract average jxb
 !
-          do j=1,3
-            djxbrtest(:,j)=jxbtest(:,j)-jxbtestm(n,j,jtest)
-          enddo
+          djxbrtest=jxbtest-jxbtestm(:,:,jtest)
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
             +jxB0rtest+J0xbrtest+djxbrtest
         endif
@@ -859,75 +852,63 @@ module Testfield
       use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      real, dimension (nx,nprocx,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
-      real, dimension (nx,nprocx,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
       real, dimension (nx,3) :: del2Atest2,graddivatest
-      integer :: jtest,j,nyz=nygrid*nzgrid,juxb,jjxb
+      integer :: jtest,j,juxb,jjxb
       logical :: headtt_save
       real :: fac
-!
-      intent(inout) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
-      fac=1./nyz
+      fac=1./nyzgrid
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      uxbtestm(:,:,:)=0.
-      do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
-        juxb=iuxb+3*(jtest-1)
-        if (.not.lsoca) then
+      uxbtestm=0.
+  
+      if (.not.lsoca) then
+        lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
+
+        do jtest=1,njtest
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+          juxb=iuxb+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
-              call calc_pencils_hydro(f,p)
+              call calc_pencils_hydro(f,p,lpenc_loc)
               call curl(f,iaxtest,bbtest)
               call cross_mn(p%uu,bbtest,uxbtest)
               if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-              uxbtestm(l1:l2,:,jtest)=uxbtestm(l1:l2,:,jtest)+uxbtest(:,:)
+              uxbtestm(:,:,jtest)=uxbtestm(:,:,jtest)+fac*uxbtest
               headtt=.false.
             enddo
           enddo
-        endif
-      enddo
-      uxbtestm(:,:,:)=fac*uxbtestm(:,:,:)
-      uxbtestm1(:,ipx+1,:,:)=uxbtestm(l1:l2,:,:)
-
-!
-!  do communication for array of size nx*nprocx*3*njtest
-!
-      if ((nprocy>1).or.(nprocz>1)) then
-        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nx,nprocx,3,njtest/))
-        call mpibcast_real_arr(uxbtestm1_tmp,nx*nprocx*3*njtest)
-        do jtest=1,njtest
-          do j=1,3
-            uxbtestm(l1:l2,j,jtest)=uxbtestm1_tmp(:,ipx+1,j,jtest)
-          enddo
         enddo
+!
+!  do communication
+!
+        call finalize_aver(nprocyz,23,uxbtestm)
       endif
 !
 !  Do the same for jxb; do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      jxbtestm(:,:,:)=0.
-      do jtest=1,njtest
-        iaxtest=iaatest+3*(jtest-1)
-        iaztest=iaxtest+2
-        jjxb=ijxb+3*(jtest-1)
-        if (.not.lsoca_jxb) then
+      jxbtestm=0.
+      if (.not.lsoca_jxb) then
+        do jtest=1,njtest
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+          jjxb=ijxb+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
@@ -937,25 +918,15 @@ module Testfield
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
               if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-              jxbtestm(l1:L2,:,jtest)=jxbtestm(l1:l2,:,jtest)+jxbtest(:,:)
+              jxbtestm(:,:,jtest)=jxbtestm(:,:,jtest)+fac*jxbtest
               headtt=.false.
             enddo
           enddo
-        endif
-      enddo
-      jxbtestm(:,:,:)=fac*jxbtestm(:,:,:)
-      jxbtestm1(:,ipx+1,:,:)=jxbtestm(l1:l2,:,:)
-!
-!  do communication for array of size nx*nprocx*3*njtest
-!
-      if ((nprocy>1).or.(nprocz>1)) then
-        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nx,nprocx,3,njtest/))
-        call mpibcast_real_arr(jxbtestm1_tmp,nx*nprocx*3*njtest)
-        do jtest=1,njtest
-          do j=1,3
-            jxbtestm(l1:l2,j,jtest)=jxbtestm1_tmp(:,ipx+1,j,jtest)
-          enddo
         enddo
+!
+!  do communication 
+!
+        call finalize_aver(nprocyz,23,jxbtestm)
       endif
 !
 !  reset headtt
