@@ -48,7 +48,7 @@ foreach file ( start.in run.in print.in video.in xyaver.in xzaver.in yzaver.in z
 
   if ( -e ${dir1}/${file} && -e ${dir2}/${file} ) then
     echo "-- ${file}:  --"
-    diff ${dir1}/${file} ${dir2}/${file}
+    diff -w ${dir1}/${file} ${dir2}/${file}
   else
     if ( -e ${dir1}/${file} && ! -e ${dir2}/${file} ) then
       echo "-- ${file}:  --"
