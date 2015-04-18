@@ -43,12 +43,14 @@ module Density
   real, dimension (mz) :: lnrho_init_z=0.0, del2lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
-  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0
+  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0         ! GPU => DEVICE
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(nx) :: xmask_den
+  real, dimension(nx) :: fprofile_x=1.                              ! GPU => DEVICE
+  real, dimension(nz) :: fprofile_z=1.
   real, dimension(nz) :: zmask_den
-  real, dimension(nx) :: reduce_cs2_profx = 1.0
+  real, dimension(nx) :: reduce_cs2_profx = 1.0                     ! GPU => DEVICE
   real, dimension(mz) :: reduce_cs2_profz = 1.0
   character(LEN=labellen) :: ireference_state='nothing'
   real :: reference_state_mass=0.
@@ -72,7 +74,7 @@ module Density
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
   real :: rho_top=1.,rho_bottom=1.
-  real :: rmax_mass_source=0.
+  real :: rmax_mass_source=0., fnorm=1.
   real :: r0_rho=impossible
   real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
@@ -242,7 +244,7 @@ module Density
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
-      use Sub, only: stepdown,der_stepdown, erfunc
+      use Sub, only: stepdown,der_stepdown, erfunc,step
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
@@ -250,7 +252,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
 !
-      integer :: i,j,m,n,ierr
+      integer :: i,j,m,n
       logical :: lnothing
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
@@ -593,7 +595,7 @@ module Density
 !
 !  Communicate lffree to entropy too.
 !
-      call put_shared_variable('lffree',lffree,ierr)
+      call put_shared_variable('lffree',lffree,caller='initialize_density')
 !
       if (lffree) then
         select case(ffree_profile)
@@ -632,27 +634,55 @@ module Density
 !
 !  Put the profiles to entropy and hydro too.
 !
-        call put_shared_variable('profx_ffree',profx_ffree,ierr)
-        call put_shared_variable('profy_ffree',profy_ffree,ierr)
-        call put_shared_variable('profz_ffree',profz_ffree,ierr)
+        call put_shared_variable('profx_ffree',profx_ffree)
+        call put_shared_variable('profy_ffree',profy_ffree)
+        call put_shared_variable('profz_ffree',profz_ffree)
       endif
 !
 !  Check if we are reduced sound speed is used and communicate to
 !  entropy
 !
-      call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed,ierr)
+      call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed)
 !
       if (lreduced_sound_speed) then
-        call put_shared_variable('reduce_cs2',reduce_cs2,ierr)
+        call put_shared_variable('reduce_cs2',reduce_cs2)
 !
         if (lscale_to_cs2top) then
-           if (lgravx) reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
-           if (lgravz) reduce_cs2_profz(n1:n2)=cs2top/(rss_coef1-rss_coef2*(z(n1:n2)-z0))
+          if (lgravx) reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
+          if (lgravz) reduce_cs2_profz(n1:n2)=cs2top/(rss_coef1-rss_coef2*(z(n1:n2)-z0))
         else
-           reduce_cs2_profx=1.
-           reduce_cs2_profz=1.
+          reduce_cs2_profx=1.
+          reduce_cs2_profz=1.
         endif
-        call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
+! 
+        reduce_cs2_profx=reduce_cs2*reduce_cs2_profx
+!
+        call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
+      endif
+
+      if (lmass_source) then
+!
+!  precalculate mass-source profiles.
+!
+        if (mass_source_profile(1:4)=='bump') fnorm=(2.*pi*mass_source_sigma**2)**1.5
+        select case (mass_source_profile)
+          case ('nothing')
+            call fatal_error('initialize_density','mass source with no profile not coded')
+          case('bump2')
+            fprofile_z=(mass_source_Mdot/fnorm)*exp(-.5*(z(n1:n2)/mass_source_sigma)**2)
+          case('bumpx')
+            fprofile_x=(mass_source_Mdot/fnorm)*exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)
+          case ('sph-step-down')
+            if (.not.lspherical_coords) call fatal_error('initialize_density', &
+                'you have chosen mass-source profiles "sph-step-down", but coordinate system is not spherical!')
+            fprofile_x=mass_source_Mdot*stepdown(r1_mn,rmax_mass_source,wdamp)
+          case ('exponential','const','cylindric','bump')
+!
+! default to catch unknown values
+!
+          case default
+            call fatal_error('initialize_density','no such mass_source_profile')
+        endselect
       endif
 !
       if (lreference_state) then
@@ -691,7 +721,7 @@ module Density
 !  Fetch gravity pencil. Requires that the gravity module is initialized before the density module
 !  which is presently the case.
 !
-        call get_shared_variable('gravx_xpencil',gravx_xpencil,caller='initialize_density')
+        call get_shared_variable('gravx_xpencil',gravx_xpencil)
         reference_state(:,iref_gp) = gravx_xpencil(l1:l2)*reference_state(:,iref_rho)
 !
 !  Compute the mass of the reference state for later use
@@ -709,8 +739,8 @@ module Density
           reference_state_mass=tmp
         endif
 !
-        call put_shared_variable('reference_state',reference_state,ierr)
-        call put_shared_variable('reference_state_mass',reference_state_mass,ierr)
+        call put_shared_variable('reference_state',reference_state)
+        call put_shared_variable('reference_state_mass',reference_state_mass)
 
       endif
 !
@@ -2014,7 +2044,8 @@ module Density
       intent(inout) :: df,f
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
-      real, dimension (nx) :: unitpencil=1., density_rhs
+      real, dimension (nx), parameter :: unitpencil=1.
+      real, dimension (nx) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
       integer :: j
 !
 !  Identify module and boundary conditions.
@@ -2025,14 +2056,13 @@ module Density
 !
 !  Continuity equation.
 !
-      density_rhs=0.
       if (lcontinuity_gas .and. .not. lweno_transport .and. &
           .not. lffree .and. .not. lreduced_sound_speed .and. &
           ieos_profile=='nothing') then
         if (ldensity_nolog) then
-          density_rhs = density_rhs - p%ugrho - p%rho*p%divu
+          density_rhs= - p%ugrho   - p%rho*p%divu
         else
-          density_rhs= density_rhs - p%uglnrho - p%divu
+          density_rhs= - p%uglnrho - p%divu
         endif
       else
         density_rhs=0.
@@ -2054,17 +2084,17 @@ module Density
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-     if (lcontinuity_gas .and. ieos_profile=='surface_z') then
-       if (ldensity_nolog) then
-         density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-         if (ldensity_profile_masscons) &
-             density_rhs= density_rhs -dprofz_eos(n)*p%rho*p%uu(:,3)
-       else
-         density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
-         if (ldensity_profile_masscons) &
-             density_rhs= density_rhs -dprofz_eos(n)*p%uu(:,3)
-       endif
-     endif
+      if (lcontinuity_gas .and. ieos_profile=='surface_z') then
+        if (ldensity_nolog) then
+          density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+          if (ldensity_profile_masscons) &
+              density_rhs= density_rhs -dprofz_eos(n)*p%rho*p%uu(:,3)
+        else
+          density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
+          if (ldensity_profile_masscons) &
+              density_rhs= density_rhs -dprofz_eos(n)*p%uu(:,3)
+        endif
+      endif
 !
 !  If we are solving the force-free equation in parts of our domain.
 !
@@ -2073,16 +2103,16 @@ module Density
           density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
                        *(p%ugrho + p%rho*p%divu)
           if (ldensity_profile_masscons) &
-               density_rhs=density_rhs -dprofx_ffree   *p%rho*p%uu(:,1) &
-                           -dprofy_ffree(m)*p%rho*p%uu(:,2) &
-                           -dprofz_ffree(n)*p%rho*p%uu(:,3)
+               density_rhs=density_rhs - dprofx_ffree   *p%rho*p%uu(:,1) &
+                                       - dprofy_ffree(m)*p%rho*p%uu(:,2) &
+                                       - dprofz_ffree(n)*p%rho*p%uu(:,3)
         else
-          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+          density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n)) &
                        *(p%uglnrho + p%divu)
           if (ldensity_profile_masscons) &
                density_rhs=density_rhs -dprofx_ffree   *p%uu(:,1) &
-                           -dprofy_ffree(m)*p%uu(:,2) &
-                           -dprofz_ffree(n)*p%uu(:,3)
+                                       -dprofy_ffree(m)*p%uu(:,2) &
+                                       -dprofz_ffree(n)*p%uu(:,3)
         endif
       endif
 !
@@ -2091,9 +2121,9 @@ module Density
 !
       if (lcontinuity_gas .and. lreduced_sound_speed) then
         if (ldensity_nolog) then
-          density_rhs = density_rhs - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
+          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
         else
-          density_rhs = density_rhs - reduce_cs2*reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
+          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
         endif
       endif
 !
@@ -2121,7 +2151,7 @@ module Density
           fdiff = fdiff + diffrho*p%del2rho
         else
           if (ldiffusion_nolog) then
-            fdiff = fdiff + p%rho1*diffrho*p%del2rho
+            fdiff = fdiff + diffrho*p%rho1*p%del2rho
           else
             fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
           endif
@@ -2137,7 +2167,7 @@ module Density
           fdiff = fdiff + diffrho_hyper3*p%del6rho
         else
           if (ldiffusion_nolog) then
-            fdiff = fdiff + p%rho1*diffrho_hyper3*p%del6rho
+            fdiff = fdiff + diffrho_hyper3*p%rho1*p%del6rho
           else
             call fatal_error('dlnrho_dt','hyper diffusion not implemented for lnrho')
           endif
@@ -2267,11 +2297,13 @@ module Density
 !  for mass diffusion
 !
       massdiff: if (lmassdiff_fixmom .or. lmassdiff_fixkin) then
+
         if (ldensity_nolog) then
           tmp = fdiff*p%rho1
         else
           tmp = fdiff
         endif
+
         hydro: if (lhydro) then
           if (lmassdiff_fixmom) then
             forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
@@ -2279,6 +2311,7 @@ module Density
             forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - 0.5 * p%uu(:,j-iuu+1) * tmp
           endif
         endif hydro
+
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tmp*p%cp
         elseif (lentropy.and.pretend_lnTT) then
@@ -2290,6 +2323,7 @@ module Density
         elseif (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
         endif
+
       endif massdiff
 !
 !  Multiply diffusion coefficient by Nyquist scale.
@@ -2692,15 +2726,15 @@ module Density
 !  28-apr-2005/axel: coded
 !
       use General, only: random_number_wrapper
-      use Sub, only: step,stepdown
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (2) :: fran
-      real :: tmp
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm,radius2
+      real, dimension (2) :: fran
+      real :: tmp
+      real, dimension (nx) :: dlnrhodt, pdamp, fprofile, radius2
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
@@ -2712,45 +2746,34 @@ module Density
         case ('exponential')
           dlnrhodt=mass_source_Mdot
         case('bump')
-          fnorm=(2.*pi*mass_source_sigma**2)**1.5
-          fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
-          dlnrhodt=mass_source_Mdot*fprofile
+          dlnrhodt=(mass_source_Mdot/fnorm)*exp(-.5*(p%r_mn/mass_source_sigma)**2)
         case('bump2')
-          fnorm=(2.*pi*mass_source_sigma**2)**1.5
-          fprofile=exp(-.5*(z(n)/mass_source_sigma)**2)/fnorm
-          dlnrhodt=mass_source_Mdot*fprofile
+          dlnrhodt=fprofile_z
         case('bumpr')
-          fnorm=(2.*pi*mass_source_sigma**2)**1.5
           radius2=(x(l1:l2)-xblob)**2+(y(m)-yblob)**2+(z(n)-zblob)**2
-          fprofile=exp(-.5*radius2/mass_source_sigma**2)/fnorm
+          fprofile=(mass_source_Mdot/fnorm)*exp(-.5*radius2/mass_source_sigma**2)
           if (lmass_source_random) then
             call random_number_wrapper(fran)
             tmp=sqrt(-2*log(fran(1)))*sin(2*pi*fran(2))
-            dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)*tmp
+            dlnrhodt=fprofile*cos(mass_source_omega*t)*tmp
           else
-            dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)
+            dlnrhodt=fprofile*cos(mass_source_omega*t)
           endif
-        case('bumpx')
-          fnorm=(2.*pi*mass_source_sigma**2)**1.5
-          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm
-          dlnrhodt=mass_source_Mdot*fprofile
+        case('bumpx','sph-step-down')
+          dlnrhodt=fprofile_x
         case('const' )
           dlnrhodt=-mass_source_tau1*(f(l1:l2,m,n,ilnrho)-lnrho0)
         case('cylindric')
 !
 !  Cylindrical profile for inner cylinder.
 !
-          pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
-          fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
+          pdamp=1.-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
+          dlnrhodt=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
 !
 !  Cylindrical profile for outer cylinder.
 !
           pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
-          fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
-          dlnrhodt=fint+fext
-        case ('sph-step-down')
-          dlnrhodt=mass_source_Mdot* &
-              stepdown(r1_mn,rmax_mass_source,wdamp)
+          dlnrhodt=dlnrhodt-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
 !
 ! default to catch unknown values
 !
