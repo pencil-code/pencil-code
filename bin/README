@@ -43,3 +43,36 @@ cvsci_run: used to check in a standard set of file that are frequently
 
 In the mean time there are many more files now. New files tend to
 be preceded by "pc_" to identify them as Pencil Code scripts.
+
+In April 2015 the files in this directory are more:
+
+auto-test              pc_configtest              pc_start
+build-testcase-cvs     pc_copyvar                 pc_svn_add_rundir
+copy-snapshots         pc_cvsup                   pc_svnstatus_ignlinks
+copy-snapshots_exp     pc_debug                   pc_svnup
+cvs-add-rundir         pc_deprecated_slice_links  pc_tsnap
+cvsci_run              pc_diffruns                pc_update_autotest.sh
+cvsci_run_bash         pc_dump_config             pc_update_validated.sh
+dx_get_datadir         pc_findconfig              pc_upgraderun
+dx_list_varfiles       pc_fix_svn_properties      pc_useutil
+dx_table2csv           pc_functions.sh            pc_videofiles
+dx_var.general         pc_get_param_state         pc_xmlexport
+getconf.csh            pc_grep                    pencil-test
+gpgrowth               pc_inspectrun              README
+mkdotin                pc_jobtransfer             read_videofiles.csh
+mkinpars               pc_llsub                   reaper
+mkproc-tree            pc_localize                reload
+mkwww                  pc_mkdatadir               remote-top
+move-slice             pc_mkproctree              restart-new-dir
+nl2idl                 pc_newrun                  restart-new-dir-VAR
+nl2python              pc_news                    run.csh
+pc_about               pc_nowarn_to_kcq           scpdatadir
+pc_autocorrect_config  pc_pencil_swap             scp-proc-to-proc
+pc_auto-test           pc_phonelist               setup-src
+pc_build               pc_qsub                    start.csh
+pc_check_dir           pc_reduce_all              start_run.csh
+pc_check_revision      pc_rename                  summarize-history
+pc_codingstyle         pc_run                     timestr
+pc_collect_all         pc_script_test
+pc_config.sh           pc_setupsrc
+
