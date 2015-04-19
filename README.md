@@ -32,8 +32,8 @@ unix>  pc_run    [ -f /path/to/config/file.conf ]
 ```
 
 See `pencil-code/config/hosts/*/*.conf` for sample config files. For more
-details, see the manual in the `doc/` directory (also available from the URL
-above).
+details, see the manual in the `doc/` directory (also available
+[here](http://pencil-code.nordita.org/)).
 
 -----------------------------------------------------------------------------
 
