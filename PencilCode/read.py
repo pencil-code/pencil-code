@@ -347,19 +347,13 @@ def proc_avg2d(datadir='./data', direction='z', proc=0):
         proc
             Process ID.
     """
-    # Chao-Chin Yang, 2015-03-27
+    # Chao-Chin Yang, 2015-04-20
     import numpy as np
     import os.path
-    from struct import unpack, calcsize
+    from struct import unpack
     # Find the dimensions and the precision.
     dim = proc_dim(datadir=datadir, proc=proc)
-    if dim.double_precision:
-        dtype = np.float64
-        fmt = 'd'
-    else:
-        dtype = np.float32
-        fmt = 'f'
-    nb = calcsize(fmt)
+    fmt, dtype, nb = _get_precision(dim)
     # Check the direction of average.
     if direction == 'x':
         n1 = dim.ny
@@ -457,20 +451,14 @@ def proc_grid(datadir='./data', dim=None, proc=0):
         proc
             Process ID.
     """
-    # Chao-Chin Yang, 2014-10-29
+    # Chao-Chin Yang, 2015-04-20
     from collections import namedtuple
     import numpy as np
     from struct import unpack, calcsize
     # Check the dimensions and precision.
     if dim is None:
         dim = proc_dim(datadir=datadir, proc=proc)
-    if dim.double_precision:
-        dtype = np.float64
-        fmt = 'd'
-    else:
-        dtype = np.float32
-        fmt = 'f'
-    nb = calcsize(fmt)
+    fmt, dtype, nb = _get_precision(dim)
     # Read grid.dat.
     f = open(datadir.strip() + '/proc' + str(proc) + '/grid.dat', 'rb')
     f.read(hsize)
@@ -516,26 +504,20 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
         varfile
             Name of the snapshot file.
     """
-    # Chao-Chin Yang, 2015-02-20
+    # Chao-Chin Yang, 2015-04-20
     from collections import namedtuple
     import numpy as np
-    from struct import unpack, calcsize
+    from struct import unpack
     # Check the dimensions and precision.
-    if par is None:
-        par = parameters(datadir=datadir)
     if dim is None:
         dim = proc_dim(datadir=datadir, proc=proc)
-    if dim.double_precision:
-        dtype = np.float64
-        fmt = 'd'
-    else:
-        dtype = np.float32
-        fmt = 'f'
+    fmt, dtype, nb = _get_precision(dim)
+    if par is None:
+        par = parameters(datadir=datadir)
     if par.lwrite_aux:
         adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar + dim.maux))
     else:
         adim = np.array((dim.mx, dim.my, dim.mz, dim.mvar))
-    nb = calcsize(fmt)
     # Read the snapshot.
     f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
     f.read(hsize)
@@ -589,7 +571,7 @@ def var(datadir='./data', varfile='var.dat', verbose=True):
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-02-23
+    # Chao-Chin Yang, 2015-04-20
     from collections import namedtuple
     import numpy as np
     # Get the dimensions.
@@ -604,10 +586,7 @@ def var(datadir='./data', varfile='var.dat', verbose=True):
     else:
         mvar = dim.mvar
     # Check the precision.
-    if dim.double_precision:
-        dtype = np.float64
-    else:
-        dtype = np.float32
+    fmt, dtype, nb = _get_precision(dim)
     # Allocate arrays.
     fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
     f = np.zeros(fdim, dtype=dtype)
@@ -686,3 +665,32 @@ def varname(datadir='./data', filename='varname.dat'):
             var.append(line.rstrip('\n'))
     f.close()
     return var
+#=======================================================================
+######  LOCAL FUNCTIONS  ######
+#=======================================================================
+def _get_precision(dim):
+    """Checks the data precision for reading.
+
+    Returned Values:
+        fmt
+            'd' for double precision and 'f' for single precision.
+        dtype
+            The corresponding numpy dtype.
+        nb
+            Number of bytes per floating-point number.
+
+    Positional Argument:
+        dim
+            Dimensions supplied by dim() or proc_dim().
+    """
+    # Chao-Chin Yang, 2015-04-20
+    import numpy as np
+    from struct import calcsize
+    if dim.double_precision:
+        fmt = 'd'
+        dtype = np.float64
+    else:
+        fmt = 'f'
+        dtype = np.float32
+    nb = calcsize(fmt)
+    return fmt, dtype, nb
