@@ -538,6 +538,94 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
     return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
+def slices(field, datadir='./data'):
+    """Reads the video slices.
+
+    Returned Values:
+        1. Array of time points.
+        2. Record array of slice planes of field at each time.
+
+    Positional Argument:
+        field
+            Field name.
+
+    Keyword Argument:
+        datadir
+            Name of the data directory.
+    """
+    # Chao-Chin Yang, 2015-04-21
+    from glob import glob
+    import numpy as np
+    import os
+    from struct import unpack
+    # Find the slice planes.
+    datadir = datadir.strip()
+    field = field.strip()
+    planes = []
+    for path in glob(datadir + "/slice_" + field + ".*"):
+        planes.append(os.path.basename(path).rsplit('.')[1])
+    if len(planes) == 0:
+        print("Found no slices. ")
+        return
+    # Get the dimensions and check the data precision.
+    dim = dimensions(datadir=datadir)
+    fmt, dtype0, nb = _get_precision(dim)
+    # Function to return the slice dimensions.
+    def slice_dim(plane):
+        if plane[0:2] == 'xy':
+            sdim = dim.nxgrid, dim.nygrid
+        elif plane[0:2] == 'xz':
+            sdim = dim.nxgrid, dim.nzgrid
+        elif plane[0:2] == 'yz':
+            sdim = dim.nygrid, dim.nzgrid
+        else:
+            raise ValueError("Unknown plane type " + plane)
+        return sdim
+    # Get the time points.
+    p = planes[0]
+    nbs = nb * np.array(slice_dim(p)).prod()
+    f = open(datadir + "/slice_" + field + '.' + p, 'rb')
+    nt = 0
+    t = []
+    while len(f.read(hsize)) > 0:
+        a = f.read(nbs)
+        t.append(unpack(fmt, f.read(nb))[0])
+        a = f.read(nb)
+        if len(f.read(hsize)) != hsize:
+            raise EOFError("Incompatible slice file. ")
+        nt += 1
+    f.close()
+    t = np.array(t, dtype=dtype0)
+    # Construct structured data type.
+    dtype = []
+    for p in planes:
+        dtype.append((p, dtype0, slice_dim(p)))
+    s = np.rec.array(np.zeros(nt, dtype=dtype))
+    # Read the slices
+    for p in planes:
+        basename = "slice_" + field + '.' + p
+        path = datadir + '/' + basename
+        print("Reading " + path + "...")
+        f = open(path, 'rb')
+        t1 = []
+        sdim = slice_dim(p)
+        nbs = nb * np.array(sdim).prod()
+        w = np.empty((nt,) + sdim, dtype=dtype0)
+        for i in range(nt):
+            f.read(hsize)
+            w[i,:,:] = np.frombuffer(f.read(nbs), dtype=dtype0).reshape(sdim, order='F')
+            t1.append(unpack(fmt, f.read(nb))[0])
+            a = f.read(nb)  # Discard slice position for the moment.
+            if len(f.read(hsize)) != hsize:
+                raise EOFError("Incompatible slice file. ")
+        if len(f.read(1)) == 1:
+            raise IOError("Incompatible slice file. ")
+        if np.any(np.array(t1, dtype=dtype0) != t):
+            raise RuntimeError("Inconsistent time points. ")
+        f.close()
+        s[p] = w
+    return t, s
+#=======================================================================
 def time_series(datadir='./data'):
     """Returns a NumPy recarray from the time series.
 
