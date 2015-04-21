@@ -345,7 +345,7 @@ module Particles_main
 !
       if (present(snapnum)) then
         call particles_write_snapshot(trim(snap_directory)//'/PVAR'//itoa(snapnum),f, &
-            enum=.false.)
+            enum=.false.,FLIST='pvarN.list')
 !
         if (lparticles_nbody) call particles_nbody_write_snapshot(&
             trim(snap_directory)//'/SPVAR'//itoa(snapnum),enum=.false.)
