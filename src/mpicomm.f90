@@ -3069,7 +3069,7 @@ module Mpicomm
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      mpiwtime = MPI_WTIME()
+      mpiwtime = 0.   !MPI_WTIME()
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -3079,7 +3079,7 @@ module Mpicomm
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      mpiwtick = MPI_WTICK()
+      mpiwtick = 0.   !MPI_WTICK()
 !
     endfunction mpiwtick
 !***********************************************************************
@@ -7402,6 +7402,7 @@ module Mpicomm
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !  03-feb-14/MR: rewritten
 !  10-apr-15/MR: corrected for nx/=ny
+!  22-apr-15/MR: another correction: order of loops over processors and index ranges exchanged
 !
       use General, only: write_full_columns, get_range_no
 !
@@ -7479,38 +7480,38 @@ module Mpicomm
 !
       do ic=1,ncomp
 !
-        n2g=0
+! loop over all ranges of z indices in zrangel
+!
+        do irz=1,nz_max
+!
+          n2g=0
 !
 ! loop over all processor array layers of z direction
 !
-        do ipz=0,nprocz-1
+          do ipz=0,nprocz-1
 !
 ! global lower and upper z index bounds for z layer ipz
 !
-          n1g = n2g+1; n2g = n2g+nz
-!
-! loop over all ranges of z indices in zrangel
-!
-          do irz=1,nz_max
+            n1g = n2g+1; n2g = n2g+nz
             if (get_limits( zrangel(:,irz), n1g, n2g, iza, ize, izs )) exit
 !
 ! loop over all z indices in range irz
 !
             do iz = iza, ize, izs
 !
+! loop over all ranges of ky indices in kyrangel
+!
+              do iry=1,nk_max
+!
 ! loop over all processor array beams in x direction in layer ipz
 !
-              m2g=0
+                m2g=0
 
-              do ipy=0,nprxy(2)-1
+                do ipy=0,nprxy(2)-1
 !
 ! global lower and upper y index bounds for beam ipy
 !
-                m1g=m2g+1; m2g=m2g+nxy(2)
-!
-! loop over all ranges of ky indices in kyrangel
-!
-                do iry=1,nk_max
+                  m1g=m2g+1; m2g=m2g+nxy(2)
                   if (get_limits( kyrangel(:,iry), m1g, m2g, iya, iye, iys )) exit
                   !if (lroot) print*, 'ipy,ipz,iry,iy*=', ipy,ipz, iry, iya, iye, iys
 !
@@ -7518,27 +7519,27 @@ module Mpicomm
 !
                   do iy = iya, iye, iys
 !
+! loop over all ranges of kx indices in kxrangel
+!
+                    do irx=1,nk_max
+!
+!
 ! loop over all processors in beam
 !
-                    l2g=0
-                    do ipx=0,nprxy(1)-1
+                      l2g=0
+                      do ipx=0,nprxy(1)-1
 !
 ! global processor number
 !
-                     if (ltrans) then
-                        ig = ipz*nprocxy + ipx*nprocx + ipy
-                      else
-                        ig = ipz*nprocxy + ipy*nprocx + ipx
-                      endif
+                       if (ltrans) then
+                          ig = ipz*nprocxy + ipx*nprocx + ipy
+                        else
+                          ig = ipz*nprocxy + ipy*nprocx + ipx
+                        endif
 !
 ! global lower and upper x index bounds for processor ipx
 !
-                      l1g=l2g+1; l2g=l2g+nxy(1)
-!
-! loop over all ranges of kx indices in kxrangel
-!
-                      do irx=1,nk_max
-!
+                        l1g=l2g+1; l2g=l2g+nxy(1)
                         if (get_limits( kxrangel(:,irx), l1g, l2g, ixa, ixe, ixs )) exit
                         !if (lroot) print*, 'ipx,ipy,ix*=', ipx,ipy,ixa, ixe, ixs
 !
