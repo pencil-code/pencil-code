@@ -23,7 +23,7 @@ def slices(field, datadir='./data', **kwarg):
     # Chao-Chin Yang, 2015-04-22
     from . import read
     # Read the slices.
-    t, s = read.slices(datadir=datadir)
+    t, s = read.slices(field, datadir=datadir)
     # Get the dimensions, parameters, and grid.
     dim = read.dimensions(datadir=datadir)
     par = read.parameters(datadir=datadir)
