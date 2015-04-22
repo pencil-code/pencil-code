@@ -3,9 +3,10 @@
 #
 # Initializes package PencilCode.
 #
-# Chao-Chin Yang, 2013-10-17
+# Chao-Chin Yang, 2015-04-22
 # Last Modification: $Id$
 #
-from . import read
+from . import animate
 from . import find
 from . import plot
+from . import read
