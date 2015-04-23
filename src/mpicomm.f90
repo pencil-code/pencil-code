@@ -3069,7 +3069,7 @@ module Mpicomm
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      mpiwtime = 0.   !MPI_WTIME()
+      mpiwtime = MPI_WTIME()
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -3079,7 +3079,7 @@ module Mpicomm
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      mpiwtick = 0.   !MPI_WTICK()
+      mpiwtick = MPI_WTICK()
 !
     endfunction mpiwtick
 !***********************************************************************
