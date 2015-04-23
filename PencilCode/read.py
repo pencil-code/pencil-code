@@ -553,7 +553,7 @@ def slices(field, datadir='./data'):
         datadir
             Name of the data directory.
     """
-    # Chao-Chin Yang, 2015-04-21
+    # Chao-Chin Yang, 2015-04-23
     from glob import glob
     import numpy as np
     import os
@@ -565,8 +565,7 @@ def slices(field, datadir='./data'):
     for path in glob(datadir + "/slice_" + field + ".*"):
         planes.append(os.path.basename(path).rsplit('.')[1])
     if len(planes) == 0:
-        print("Found no slices. ")
-        return
+        raise IOError("Found no slices. ")
     # Get the dimensions and check the data precision.
     dim = dimensions(datadir=datadir)
     fmt, dtype0, nb = _get_precision(dim)
