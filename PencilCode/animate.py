@@ -7,6 +7,61 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
+def images(t, a, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kwarg):
+    """Animates a sequence of two-dimensional rectangular data.
+
+    Positional Arguments:
+        t
+            Array of time points.
+        a
+            Sequence in time of the data images.
+        extent
+            Four-element object for the limits of the axes: left, right,
+            bottom, and top, respectively.
+        vmin
+            Scalar or array of same size as t; minimum data value(s).
+        vmax
+            Scalar or array of same size as t; maximum data value(s).
+
+    Keyword Arguments:
+        xlabel
+            Label for the x axis.
+        ylabel
+            Label for the y axis.
+        clabel
+            Label for the color bar.
+        **kwarg
+            Keyword arguments passed to matplotlib.pyplot.figure().
+    """
+    # Chao-Chin Yang, 2015-04-26
+    from collections.abc import Sequence
+    import matplotlib.pyplot as plt
+    import numpy as np
+    # Check the specified range.
+    seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
+    vmin_dynamic = seq(vmin)
+    vmax_dynamic = seq(vmax)
+    vmin0 = vmin[0] if vmin_dynamic else vmin
+    vmax0 = vmax[0] if vmax_dynamic else vmax
+    # Create the first image.
+    fig = plt.figure(**kwarg)
+    ax = fig.gca()
+    im = ax.imshow(a[0], origin='lower', extent=extent, vmin=vmin0, vmax=vmax0, interpolation='nearest')
+    ax.minorticks_on()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title("t = {:#.3G}".format(t[0]))
+    cb = plt.colorbar(im)
+    cb.set_label(clabel)
+    plt.show(block=False)
+    # Loop over each time and update the image.
+    for i in range(1,len(t)):
+        ax.set_title("t = {:#.3G}".format(t[i]))
+        im.set_data(a[i])
+        if vmin_dynamic: im.set_clim(vmin=vmin[i])
+        if vmax_dynamic: im.set_clim(vmax=vmax[i])
+        fig.canvas.draw()
+#=======================================================================
 def slices(field, datadir='./data', drange='full', **kwarg):
     """Dispatches to the respective animator of video slices.
 
@@ -34,7 +89,7 @@ def slices(field, datadir='./data', drange='full', **kwarg):
     if ndim == 1:
         raise NotImplementedError("1D run")
     elif ndim == 2:
-        _slices_2D(field, t, s, dim, par, drange, **kwarg)
+        _slices2d(field, t, s, dim, par, drange, **kwarg)
     elif ndim == 3:
         raise NotImplementedError("3D run")
 #=======================================================================
@@ -83,62 +138,7 @@ def _get_range(t, data, drange):
         raise ValueError("Unknown type of range '{}'".format(drange))
     return vmin, vmax
 #=======================================================================
-def _rectangular_2D(t, maps, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kwarg):
-    """Animates the evolution of a 2D rectangular plane.
-
-    Positional Arguments:
-        t
-            Array of time points.
-        maps
-            Sequence in time of the data maps.
-        extent
-            Four-element arrays for the lower limit and the upper limit
-            horizontally and then those vertically.
-        vmin
-            Scalar or array of same size as t; minimum data value(s).
-        vmax
-            Scalar or array of same size as t; maximum data value(s).
-
-    Keyword Arguments:
-        xlabel
-            Label for the x axis.
-        ylabel
-            Label for the y axis.
-        clabel
-            Label for the color bar.
-        **kwarg
-            Keyword arguments passed to matplotlib.pyplot.figure().
-    """
-    # Chao-Chin Yang, 2015-04-25
-    from collections.abc import Sequence
-    import matplotlib.pyplot as plt
-    import numpy as np
-    # Check the specified range.
-    seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
-    vmin_dynamic = seq(vmin)
-    vmax_dynamic = seq(vmax)
-    vmin0 = vmin[0] if vmin_dynamic else vmin
-    vmax0 = vmax[0] if vmax_dynamic else vmax
-    # Create the first image.
-    fig = plt.figure(**kwarg)
-    ax = fig.gca()
-    ax.minorticks_on()
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title("t = {:#.3G}".format(t[0]))
-    im = ax.imshow(maps[0].transpose(), origin='lower', extent=extent, vmin=vmin0, vmax=vmax0, interpolation='nearest')
-    cb = plt.colorbar(im)
-    cb.set_label(clabel)
-    plt.show(block=False)
-    # Loop over each time and update the image.
-    for i in range(1,len(t)):
-        ax.set_title("t = {:#.3G}".format(t[i]))
-        im.set_data(maps[i].transpose())
-        if vmin_dynamic: im.set_clim(vmin=vmin[i])
-        if vmax_dynamic: im.set_clim(vmax=vmax[i])
-        fig.canvas.draw()
-#=======================================================================
-def _slices_2D(field, t, slices, dim, par, drange, **kwarg):
+def _slices2d(field, t, slices, dim, par, drange, **kwarg):
     """Animates video slices from a 2D model.
 
     Positional Arguments:
@@ -159,7 +159,7 @@ def _slices_2D(field, t, slices, dim, par, drange, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-23
+    # Chao-Chin Yang, 2015-04-26
     # Determine the slice plane.
     if dim.nxgrid == 1:
         plane = 'yz'
@@ -177,13 +177,13 @@ def _slices_2D(field, t, slices, dim, par, drange, **kwarg):
     # Irregular grid not implemented.
     if not (par.lequidist[xdir] and par.lequidist[ydir]):
         raise NotImplementedError("Irregular grid")
-    maps = slices[:][plane]
+    a = slices[:][plane].transpose(0,2,1)
     # Get the dimensions.
     xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
     ymin, ymax = par.xyz0[ydir], par.xyz1[ydir]
     extent = (xmin, xmax, ymin, ymax)
     # Get the data range.
-    vmin, vmax = _get_range(t, maps, drange)
+    vmin, vmax = _get_range(t, a, drange)
     # Send to the animator.
-    _rectangular_2D(t, maps, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
+    images(t, a, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
 #=======================================================================
