@@ -109,7 +109,7 @@ def _rectangular_2D(t, maps, extent, vmin, vmax, xlabel=None, ylabel=None, clabe
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-23
+    # Chao-Chin Yang, 2015-04-25
     from collections.abc import Sequence
     import matplotlib.pyplot as plt
     import numpy as np
@@ -125,6 +125,7 @@ def _rectangular_2D(t, maps, extent, vmin, vmax, xlabel=None, ylabel=None, clabe
     ax.minorticks_on()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    ax.set_title("t = {:#.3G}".format(t[0]))
     im = ax.imshow(maps[0].transpose(), origin='lower', extent=extent, vmin=vmin0, vmax=vmax0, interpolation='nearest')
     cb = plt.colorbar(im)
     cb.set_label(clabel)
