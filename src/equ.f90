@@ -766,7 +766,7 @@ module Equ
 !
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_src    = 0.2 * maxsrc
+          dt1_src    = 5.0 * maxsrc
           dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
 !
 !  time step constraint from the coagulation kernel
