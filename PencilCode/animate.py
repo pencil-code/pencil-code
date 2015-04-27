@@ -91,7 +91,8 @@ def slices(field, datadir='./data', drange='full', **kwarg):
     elif ndim == 2:
         _slices2d(field, t, s, dim, par, drange, **kwarg)
     elif ndim == 3:
-        raise NotImplementedError("3D run")
+        grid = read.grid(datadir=datadir, trim=True)
+        _slices3d(field, t, s, dim, par, grid, drange, **kwarg)
 #=======================================================================
 ###### Local Functions ######
 #=======================================================================
@@ -187,3 +188,114 @@ def _slices2d(field, t, slices, dim, par, drange, **kwarg):
     # Send to the animator.
     images(t, a, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
 #=======================================================================
+def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
+    """Animates video slices from a 3D model.
+
+    Positional Arguments:
+        field
+            Field name.
+        t
+            Array of time points.
+        slices
+            Record array of video slices supplied by read.slices().
+        dim
+            Dimensions supplied by read.dimensions().
+        par
+            Parameters supplied by read.parameters().
+        grid
+            Grid coordinates supplied by read.grid(trim=True).
+        drange
+            Type of data range to be plotted; see _get_range().
+
+    Keyword Arguments:
+        **kwarg
+            Keyword arguments passed to matplotlib.pyplot.figure().
+    """
+    # Chao-Chin Yang, 2015-04-27
+    from collections.abc import Sequence
+    from matplotlib.animation import FuncAnimation
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    import numpy as np
+    # Check the coordinate system.
+    if par.coord_system != 'cartesian':
+        raise NotImplementedError("3D, curvilinear model")
+    print("Processing the data...")
+    # Set the grid.
+    g = lambda x, dx_1, x0, x1: np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
+    x = g(grid.x, grid.dx_1, par.xyz0[0], par.xyz1[0])
+    y = g(grid.y, grid.dy_1, par.xyz0[1], par.xyz1[1])
+    z = g(grid.z, grid.dz_1, par.xyz0[2], par.xyz1[2])
+    # Set the surfaces.
+    nt = len(t)
+    dtype = lambda nx, ny: [('value', np.float, (nt,nx,ny)),
+                            ('x', np.float, (nx+1,ny+1)), ('y', np.float, (nx+1,ny+1)), ('z', np.float, (nx+1,ny+1))]
+    planes = slices.dtype.names
+    surfaces = []
+    if 'xy' in planes or 'xy2' in planes:
+        xmesh, ymesh = np.meshgrid(x, y, indexing='ij')
+        if 'xy' in planes:
+            zmesh = np.full(xmesh.shape, par.xyz0[2] - 0.7 * par.lxyz[2])
+            surfaces.append(np.rec.array((slices.xy, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
+        if 'xy2' in planes:
+            zmesh = np.full(xmesh.shape, par.xyz1[2])
+            surfaces.append(np.rec.array((slices.xy2, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
+    if 'xz' in planes:
+        xmesh, zmesh = np.meshgrid(x, z, indexing='ij')
+        ymesh = np.full(xmesh.shape, par.xyz0[1])
+        surfaces.append(np.rec.array((slices.xz, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nzgrid)))
+    if 'yz' in planes:
+        ymesh, zmesh = np.meshgrid(y, z, indexing='ij')
+        xmesh = np.full(ymesh.shape, par.xyz0[0])
+        surfaces.append(np.rec.array((slices.yz, xmesh, ymesh, zmesh), dtype=dtype(dim.nygrid,dim.nzgrid)))
+    # Check the data range.
+    vmin, vmax = _get_range(t, slices, drange)
+    seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
+    vmin_dynamic = seq(vmin)
+    vmax_dynamic = seq(vmax)
+    vmin0 = vmin[0] if vmin_dynamic else vmin
+    vmax0 = vmax[0] if vmax_dynamic else vmax
+    # Set up the 3D view.
+    print("Initializing...")
+    fig = plt.figure(**kwarg)
+    ax = Axes3D(fig)
+    ax.view_init(15, -135)
+    ax.dist = 15
+    ax.set_xlim(par.xyz0[0], par.xyz1[0])
+    ax.set_ylim(par.xyz0[1], par.xyz1[1])
+    ax.set_zlim(par.xyz0[2], par.xyz1[2])
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    # Plot the first surfaces.
+    cmap = cm.get_cmap()
+    norm = Normalize(vmin=vmin0, vmax=vmax0, clip=True)
+    cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[0])), linewidth=0, shade=False)
+            for s in surfaces]
+    mappable = cm.ScalarMappable(cmap=cmap, norm=norm)
+    mappable.set_array([])
+    cb = fig.colorbar(mappable, shrink=0.8, aspect=20)
+    cb.set_label(field)
+    timestamp = ax.set_title("t = {:#.3G}".format(t[0]))
+    # Animate the sequence.
+    print("Animating...")
+    def update(num, surfaces):
+        nonlocal cols
+        oldcols = cols
+        cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[num])), linewidth=0, shade=False)
+                for s in surfaces]
+        for c in oldcols:
+            ax.collections.remove(c)
+        if vmin_dynamic or vmax_dynamic:
+            if vmin_dynamic:
+                norm.vmin = vmin[num]
+            if vmax_dynamic:
+                norm.vmax = vmax[num]
+            mappable.set_norm(norm)
+        timestamp.set_text("t = {:#.3G}".format(t[num]))
+        return cols
+    anim = FuncAnimation(fig, update, nt, fargs=(surfaces,), interval=1, blit=False, repeat=False)
+    #anim.save('slices3d.mp4', writer='mencoder')
+    plt.show()
