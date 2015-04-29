@@ -73,6 +73,7 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
     """
     # Chao-Chin Yang, 2015-04-29
     from collections.abc import Sequence
+    import matplotlib as mpl
     import matplotlib.pyplot as plt
     import numpy as np
     # Check the specified range.
@@ -97,7 +98,10 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
     # Loop over each time and update the plot.
     for i in range(1,len(t)):
         ax.set_title("t = {:#.4G}".format(t[i]))
-        pc.set_data(c[i])
+        if mpl.__version__ == '1.3.1':
+            pc.set_data(x, y, c[i])
+        else:
+            pc.set_data(c[i])
         if vmin_dynamic: pc.set_clim(vmin=vmin[i])
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
