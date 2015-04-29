@@ -89,6 +89,7 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
     ax.minorticks_on()
     ax.set_xlim(extent[:2])
     ax.set_ylim(extent[2:])
+    ax.set_aspect('equal')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title("t = {:#.4G}".format(t[0]))
