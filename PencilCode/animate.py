@@ -7,14 +7,52 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
-def images(t, a, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kwarg):
+def slices(field, datadir='./data', drange='full', **kwarg):
+    """Dispatches to the respective animator of video slices.
+
+    Positional Argument:
+        field
+            Field name.
+
+    Keyword Arguments:
+        datadir
+            Data directory.
+        drange
+            Type of data range to be plotted; see _get_range().
+        **kwarg
+            Keyword arguments passed to matplotlib.pyplot.figure().
+    """
+    # Chao-Chin Yang, 2015-04-29
+    from . import read
+    # Read the slices.
+    t, s = read.slices(field, datadir=datadir)
+    # Get the dimensions, parameters, and grid.
+    dim = read.dimensions(datadir=datadir)
+    par = read.parameters(datadir=datadir)
+    grid = read.grid(datadir=datadir, trim=True)
+    # Dispatch.
+    ndim = (dim.nxgrid > 1) + (dim.nygrid > 1) + (dim.nzgrid > 1)
+    if ndim == 1:
+        raise NotImplementedError("1D run")
+    elif ndim == 2:
+        _slices2d(field, t, s, dim, par, grid, drange, **kwarg)
+    elif ndim == 3:
+        _slices3d(field, t, s, dim, par, grid, drange, **kwarg)
+#=======================================================================
+###### Local Functions ######
+#=======================================================================
+def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kwarg):
     """Animates a sequence of two-dimensional rectangular data.
 
     Positional Arguments:
         t
-            Array of time points.
-        a
-            Sequence in time of the data images.
+            Array of the time points.
+        x
+            Array of the x-coordinates of the cell boundaries.
+        y
+            Array of the y-coordinates of the cell boundaries.
+        c
+            Sequence in time of the 2D data.
         extent
             Four-element object for the limits of the axes: left, right,
             bottom, and top, respectively.
@@ -33,7 +71,7 @@ def images(t, a, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kw
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-26
+    # Chao-Chin Yang, 2015-04-29
     from collections.abc import Sequence
     import matplotlib.pyplot as plt
     import numpy as np
@@ -43,58 +81,26 @@ def images(t, a, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kw
     vmax_dynamic = seq(vmax)
     vmin0 = vmin[0] if vmin_dynamic else vmin
     vmax0 = vmax[0] if vmax_dynamic else vmax
-    # Create the first image.
+    # Create the first plot.
     fig = plt.figure(**kwarg)
     ax = fig.gca()
-    im = ax.imshow(a[0], origin='lower', extent=extent, vmin=vmin0, vmax=vmax0, interpolation='nearest')
+    pc = ax.pcolorfast(x, y, c[0], vmin=vmin0, vmax=vmax0)
     ax.minorticks_on()
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title("t = {:#.4G}".format(t[0]))
-    cb = plt.colorbar(im)
+    cb = plt.colorbar(pc)
     cb.set_label(clabel)
     plt.show(block=False)
-    # Loop over each time and update the image.
+    # Loop over each time and update the plot.
     for i in range(1,len(t)):
         ax.set_title("t = {:#.4G}".format(t[i]))
-        im.set_data(a[i])
-        if vmin_dynamic: im.set_clim(vmin=vmin[i])
-        if vmax_dynamic: im.set_clim(vmax=vmax[i])
+        pc.set_data(c[i])
+        if vmin_dynamic: pc.set_clim(vmin=vmin[i])
+        if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
-#=======================================================================
-def slices(field, datadir='./data', drange='full', **kwarg):
-    """Dispatches to the respective animator of video slices.
-
-    Positional Argument:
-        field
-            Field name.
-
-    Keyword Arguments:
-        datadir
-            Data directory.
-        drange
-            Type of data range to be plotted; see _get_range().
-        **kwarg
-            Keyword arguments passed to matplotlib.pyplot.figure().
-    """
-    # Chao-Chin Yang, 2015-04-23
-    from . import read
-    # Read the slices.
-    t, s = read.slices(field, datadir=datadir)
-    # Get the dimensions and the parameters.
-    dim = read.dimensions(datadir=datadir)
-    par = read.parameters(datadir=datadir)
-    # Dispatch.
-    ndim = (dim.nxgrid > 1) + (dim.nygrid > 1) + (dim.nzgrid > 1)
-    if ndim == 1:
-        raise NotImplementedError("1D run")
-    elif ndim == 2:
-        _slices2d(field, t, s, dim, par, drange, **kwarg)
-    elif ndim == 3:
-        grid = read.grid(datadir=datadir, trim=True)
-        _slices3d(field, t, s, dim, par, grid, drange, **kwarg)
-#=======================================================================
-###### Local Functions ######
 #=======================================================================
 def _get_range(t, data, drange):
     """Determines the data range to be plotted.
@@ -139,7 +145,7 @@ def _get_range(t, data, drange):
         raise ValueError("Unknown type of range '{}'".format(drange))
     return vmin, vmax
 #=======================================================================
-def _slices2d(field, t, slices, dim, par, drange, **kwarg):
+def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
     """Animates video slices from a 2D model.
 
     Positional Arguments:
@@ -153,6 +159,8 @@ def _slices2d(field, t, slices, dim, par, drange, **kwarg):
             Dimensions supplied by read.dimensions().
         par
             Parameters supplied by read.parameters().
+        grid
+            Grid coordinates supplied by read.grid(trim=True).
         drange
             Type of data range to be plotted; see _get_range().
 
@@ -160,7 +168,8 @@ def _slices2d(field, t, slices, dim, par, drange, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-26
+    # Chao-Chin Yang, 2015-04-29
+    import numpy as np
     # Determine the slice plane.
     if dim.nxgrid == 1:
         plane = 'yz'
@@ -175,18 +184,19 @@ def _slices2d(field, t, slices, dim, par, drange, **kwarg):
     if par.coord_system != 'cartesian':
         raise NotImplementedError("2D, curvilinear model")
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
-    # Irregular grid not implemented.
-    if not (par.lequidist[xdir] and par.lequidist[ydir]):
-        raise NotImplementedError("Irregular grid")
-    a = slices[:][plane].transpose(0,2,1)
+    g = lambda x, dx_1, x0, x1: np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
+    x = g(getattr(grid, xlabel), getattr(grid, "d{}_1".format(xlabel)), par.xyz0[xdir], par.xyz1[xdir])
+    y = g(getattr(grid, ylabel), getattr(grid, "d{}_1".format(ylabel)), par.xyz0[ydir], par.xyz1[ydir])
+    # Get the slice.
+    c = slices[:][plane].transpose((0,2,1))
     # Get the dimensions.
     xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
     ymin, ymax = par.xyz0[ydir], par.xyz1[ydir]
     extent = (xmin, xmax, ymin, ymax)
     # Get the data range.
-    vmin, vmax = _get_range(t, a, drange)
+    vmin, vmax = _get_range(t, c, drange)
     # Send to the animator.
-    images(t, a, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
+    _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
 #=======================================================================
 def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
     """Animates video slices from a 3D model.
