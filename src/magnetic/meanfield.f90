@@ -708,6 +708,8 @@ module Magnetic_meanfield
             Beq21=1./meanfield_Beq**2
           endselect
 !
+!  Here, p%b2*meanfield_Bp21 = beta^2/beta_p^2, etc.
+!
           meanfield_Bs21=Beq21/meanfield_Bs**2
           meanfield_Bp21=Beq21/meanfield_Bp**2
           meanfield_Be21=Beq21/meanfield_Be**2
@@ -741,11 +743,13 @@ module Magnetic_meanfield
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
           if (lqpcurrent) then
-            call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
+            call multsv_mn(mu01*(1+p%j2*mf_qJ2)* &
+              (meanfield_qp_func+p%b2*meanfield_qp_der), &
+              Bk_Bki,p%jxb_mf)
           else
-            call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
+            call multsv_mn(mu01*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
             if (lNEMPI_correction) then
-              call multsv_mn_add(-.5*p%rho1*p%b2**2*meanfield_qp_der,p%grho,p%jxb_mf)
+              call multsv_mn_add(-.5*mu01*p%rho1*p%b2**2*meanfield_qp_der,p%grho,p%jxb_mf)
             endif
           endif
 !
@@ -753,24 +757,24 @@ module Magnetic_meanfield
 !
           if (lqp_profile) then
             call multsv_mn(qp_profile(n),p%jxb_mf,p%jxb_mf)
-            p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*qp_profder(n)*meanfield_qp_func*p%b2
+            p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
           endif
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
 !
-          call multsv_mn_add(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
+          call multsv_mn_add(-meanfield_qs_func,p%jxb+mu01*Bk_Bki,p%jxb_mf)
           call dot(Bk_Bki,p%bb,BiBk_Bki)
-          call multsv_mn_add(-2.*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
+          call multsv_mn_add(-2.*mu01*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
 !  Add e_z*grad(qe*B^2). This has not yet been found to promote instability.
 !
-          p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
+          p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*mu01*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
 !
 !  Add div[qa*Bz*(Bi*gj+Bj*gi)]
 !  Begin by initializing auxiliary vector X_j (see notes)
 !
           XXj=2.*Bk_Bki
-          call multsv_mn_add(-p%rho1*p%b2,p%grho,XXj)
+          call multsv_mn_add(-mu01*p%rho1*p%b2,p%grho,XXj)
 !
 !  Do dqa/dB2 * Bz * (BiX3+z3B.X) term
 !
@@ -781,12 +785,12 @@ module Magnetic_meanfield
 !  Do qa*[Bz,z*(Bi+Bj*Bz,j*zi)] term
 !
           call dot(p%bb,p%bij(:,3,:),BjBzj)
-          p%jxb_mf(:,3)=p%jxb_mf(:,3)+meanfield_qa_func*p%bij(:,3,3)*BjBzj
-          call multsv_mn_add(meanfield_qa_func*p%bij(:,3,3),p%bb,p%jxb_mf)
+          p%jxb_mf(:,3)=p%jxb_mf(:,3)+mu01*meanfield_qa_func*p%bij(:,3,3)*BjBzj
+          call multsv_mn_add(mu01*meanfield_qa_func*p%bij(:,3,3),p%bb,p%jxb_mf)
 !
 !  Do qa*Bz*B_i,z
 !
-          call multsv_mn_add(meanfield_qa_func*p%bb(:,3),p%bij(:,:,3),p%jxb_mf)
+          call multsv_mn_add(mu01*meanfield_qa_func*p%bb(:,3),p%bij(:,:,3),p%jxb_mf)
 !
 !        endif
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
@@ -1185,10 +1189,11 @@ module Magnetic_meanfield
       endif
 !
 !  Add div(chit(B)*rho*T*grads) to entropy equation
+!AB: the following is not correct, so disable it for now!
 !
-      if (lentropy) then
-        if (lmeanfield_chitB) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%chiB_mf
-      endif
+!      if (lentropy) then
+!        if (lmeanfield_chitB) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%chiB_mf
+!      endif
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !  We include possible contribution from meanfield_etat, which is however
