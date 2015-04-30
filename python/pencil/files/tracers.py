@@ -16,7 +16,7 @@ import multiprocessing as mp
 
 
 def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
-                interpolation = 'mean', trace_sub = 1, intQ = [''], varfile = 'VAR0',
+                interpolation = 'weighted', trace_sub = 1, intQ = [''], varfile = 'VAR0',
                 ti = -1, tf = -1,
                 integration = 'simple', datadir = 'data/', destination = 'tracers.dat', nproc = 1):
     """
@@ -25,7 +25,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
     call signature::
     
       tracers(field = 'bb', hMin = 2e-3, hMax = 2e2, lMax = 500, tol = 2e-3,
-                interpolation = 'mean', trace_sub = 1, intQ = '', varfile = 'VAR0',
+                interpolation = 'weighted', trace_sub = 1, intQ = '', varfile = 'VAR0',
                 ti = -1, tf = -1,
                 datadir = 'data', destination = 'tracers.dat', nproc = 1)
     
@@ -81,12 +81,12 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
        Destination file.
        
      *nproc*:
-       Number of cores for multi core computation
+       Number of cores for multi core computation.
     """
 
     # returns the tracers for the specified starting locations
-    def subTracers(q, vv, p, tracers0, hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, 
-                   interpolation = 'mean', integration = 'simple', intQ = ['']):
+    def subTracers(q, vv, p, tracers0, iproc, hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2, 
+                   interpolation = 'weighted', integration = 'simple', intQ = ['']):
         
         tracers = tracers0
         mapping = np.zeros((tracers.shape[0], tracers.shape[1], 3))
@@ -117,7 +117,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
                 else:
                     mapping[ix, iy, :] = [1,1,1]
         
-        q.put((tracers, mapping))
+        q.put((tracers, mapping, iproc))
         
     
     # multi core setup
@@ -193,17 +193,20 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
         xHalf   = np.zeros(3)
         xDouble = np.zeros(3)
         
-        subTracersLambda = lambda queue, vv, p, tracers: \
-            subTracers(queue, vv, p, tracers, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
+        tmp = []
+        subTracersLambda = lambda queue, vv, p, tracers, iproc: \
+            subTracers(queue, vv, p, tracers, iproc, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
                        interpolation = interpolation, integration = integration, intQ = intQ)
         for iproc in range(nproc):
-            proc.append(mp.Process(target = subTracersLambda, args = (queue, vv, p, tracers[iproc::nproc,:,tIdx,:])))
+            proc.append(mp.Process(target = subTracersLambda, args = (queue, vv, p, tracers[iproc::nproc,:,tIdx,:], iproc)))
         for iproc in range(nproc):
             proc[iproc].start()
         for iproc in range(nproc):
-            tracers[iproc::nproc,:,tIdx,:], mapping[iproc::nproc,:,tIdx,:] = queue.get()
+            tmp.append(queue.get())
         for iproc in range(nproc):
             proc[iproc].join()
+        for iproc in range(nproc):
+            tracers[tmp[iproc][2]::nproc,:,tIdx,:], mapping[tmp[iproc][2]::nproc,:,tIdx,:] = (tmp[iproc][0], tmp[iproc][1])
         
     tracers = np.copy(tracers.swapaxes(0, 3), order = 'C')
     if (destination != ''):

@@ -10,14 +10,12 @@ import struct
 import numpy as np
 import pencil as pc
 import math as m
+import multiprocessing as mp
 
 
-#
-# under construction
-#
 def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile = 'VAR0', ti = -1, tf = -1,
                  traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
-                 interpolation = 'mean', trace_sub = 1, integration = 'simple'):
+                 interpolation = 'weighted', trace_sub = 1, integration = 'simple', nproc = 1):
     """
     Find the fixed points.
 
@@ -25,7 +23,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
 
       fixed = fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile = 'VAR0', ti = -1, tf = -1,
                  traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
-                 interpolation = 'mean', trace_sub = 1, integration = 'simple')
+                 interpolation = 'weighted', trace_sub = 1, integration = 'simple', nproc = 1)
 
     Finds the fixed points. Returns the fixed points positions.
 
@@ -76,6 +74,9 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
         Integration method.
         'simple': low order method.
         'RK6': Runge-Kutta 6th order.
+       
+     *nproc*:
+       Number of cores for multi core computation.
     """
 
 
@@ -126,8 +127,149 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
                          hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, interpolation = interpolation, integration = integration)
         return poincare     
            
-           
-    phiMin = np.pi/8.
+    # fixed point finder for a subset of the domain
+    def subFixed(queue, ix0, iy0, vv, p, tracers, iproc, hMin = 2e-3, hMax = 2e4, lMax = 500,
+                 tol = 1e-2, interpolation = 'weighted', integration = 'simple'):
+        diff = np.zeros((4,2))
+        phiMin = np.pi/8.
+        x = []
+        y = []
+        q = []
+        fidx = 0
+    
+        for ix in ix0:
+            for iy in iy0:
+                # compute Poincare index around this cell (!= 0 for potential fixed point)
+                diff[0,:] = tracers[iy, ix, 0, 2:4] - tracers[iy, ix, 0, 0:2]
+                diff[1,:] = tracers[iy, ix+1, 0, 2:4] - tracers[iy, ix+1, 0, 0:2]
+                diff[2,:] = tracers[iy+1, ix+1, 0, 2:4] - tracers[iy+1, ix+1, 0, 0:2]
+                diff[3,:] = tracers[iy+1, ix, 0, 2:4] - tracers[iy+1, ix, 0, 0:2]
+                if (sum(np.sum(diff**2, axis = 1) != 0) == True):
+                    diff = np.swapaxes(np.swapaxes(diff, 0, 1) / np.sqrt(np.sum(diff**2, axis = 1)), 0, 1)
+                poincare = pIndex(vv, p, tracers[iy, ix:ix+2, 0, 0], tracers[iy:iy+2, ix, 0, 1], diff, phiMin,
+                                hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, interpolation = interpolation, integration = integration)
+                
+                if (abs(poincare) > 5): # use 5 instead of 2pi to account for rounding errors
+                    # subsample to get starting point for iteration
+                    nt = 4
+                    xmin = tracers[iy, ix, 0, 0]
+                    ymin = tracers[iy, ix, 0, 1]
+                    xmax = tracers[iy, ix+1, 0, 0]
+                    ymax = tracers[iy+1, ix, 0, 1]
+                    xx = np.zeros((nt**2,3))
+                    tracersSub = np.zeros((nt**2,5))
+                    i1 = 0
+                    for j1 in range(nt):
+                        for k1 in range(nt):
+                            xx[i1,0] = xmin + j1/(nt-1.)*(xmax - xmin)
+                            xx[i1,1] = ymin + k1/(nt-1.)*(ymax - ymin)
+                            xx[i1,2] = p.Oz
+                            i1 += 1
+                    for it1 in range(nt**2):
+                        s = pc.stream(vv, p, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, 
+                                    interpolation = interpolation, integration = integration, xx = xx[it1,:])
+                        tracersSub[it1,0:2] = xx[it1,0:2]
+                        tracersSub[it1,2:] = s.tracers[s.sl-1,:]
+                    min2 = 1e6
+                    minx = xmin
+                    miny = ymin
+                    i1 = 0
+                    for j1 in range(nt):
+                        for k1 in range(nt):
+                            diff2 = (tracersSub[i1, 2] - tracersSub[i1, 0])**2 + (tracersSub[i1, 3] - tracersSub[i1, 1])**2
+                            if (diff2 < min2):
+                                min2 = diff2
+                                minx = xmin + j1/(nt-1.)*(xmax - xmin)
+                                miny = ymin + k1/(nt-1.)*(ymax - ymin)
+                            it1 += 1
+                    
+                    # get fixed point from this starting position using Newton's method                
+                    #TODO:
+                    dl = np.min(var.dx, var.dy)/100.    # step-size for calculating the Jacobian by finite differences
+                    it = 0
+                    # tracers used to find the fixed point
+                    tracersNull = np.zeros((5,4))
+                    point = np.array([minx, miny])
+                    while True:
+                        # trace field lines at original point and for Jacobian:
+                        # (second order seems to be enough)
+                        xx = np.zeros((5,3))
+                        xx[0,:] = np.array([point[0], point[1], p.Oz])
+                        xx[1,:] = np.array([point[0]-dl, point[1], p.Oz])
+                        xx[2,:] = np.array([point[0]+dl, point[1], p.Oz])
+                        xx[3,:] = np.array([point[0], point[1]-dl, p.Oz])
+                        xx[4,:] = np.array([point[0], point[1]+dl, p.Oz])
+                        for it1 in range(5):
+                            s = pc.stream(vv, p, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
+                                        interpolation = interpolation, integration = integration, xx = xx[it1,:])
+                            tracersNull[it1,:2] = xx[it1,:2]
+                            tracersNull[it1,2:] = s.tracers[s.sl-1,0:2]
+                        
+                        # check function convergence
+                        ff = np.zeros(2)
+                        ff[0] = tracersNull[0,2] - tracersNull[0,0]
+                        ff[1] = tracersNull[0,3] - tracersNull[0,1]
+                        #TODO:
+                        if (sum(abs(ff)) <= 1e-4):
+                            fixedPoint = np.array([point[0], point[1]])
+                            break
+                        
+                        # compute the Jacobian
+                        fjac = np.zeros((2,2))
+                        fjac[0,0] = ((tracersNull[2,2] - tracersNull[2,0]) - (tracersNull[1,2] - tracersNull[1,0]))/2./dl
+                        fjac[0,1] = ((tracersNull[4,2] - tracersNull[4,0]) - (tracersNull[3,2] - tracersNull[3,0]))/2./dl
+                        fjac[1,0] = ((tracersNull[2,3] - tracersNull[2,1]) - (tracersNull[1,3] - tracersNull[1,1]))/2./dl
+                        fjac[1,1] = ((tracersNull[4,3] - tracersNull[4,1]) - (tracersNull[3,3] - tracersNull[3,1]))/2./dl
+                        
+                        # invert the Jacobian
+                        fjin = np.zeros((2,2))
+                        det = fjac[0,0]*fjac[1,1] - fjac[0,1]*fjac[1,0]
+                        #TODO:
+                        if (abs(det) < dl):
+                            fixedPoint = point
+                            break
+                        fjin[0,0] = fjac[1,1]
+                        fjin[1,1] = fjac[0,0]
+                        fjin[0,1] = -fjac[0,1]
+                        fjin[1,0] = -fjac[1,0]
+                        fjin = fjin/det
+                        dpoint = np.zeros(2)
+                        dpoint[0] = -fjin[0,0]*ff[0] - fjin[0,1]*ff[1]
+                        dpoint[1] = -fjin[1,0]*ff[0] - fjin[1,1]*ff[1]
+                        point += dpoint
+                        
+                        # check root convergence
+                        #TODO:
+                        if (sum(abs(dpoint)) < 1e-4):
+                            fixedPoint = point
+                            break
+                        
+                        if (it > 20):
+                            fixedPoint = point
+                            print "warning: Newton did not converged"
+                            break
+                        
+                        it += 1
+                            
+                    # check if fixed point lies inside the cell
+                    if ((fixedPoint[0] < tracers[iy, ix, 0, 0]) or (fixedPoint[0] > tracers[iy, ix+1, 0, 0]) or
+                        (fixedPoint[1] < tracers[iy, ix, 0, 1]) or (fixedPoint[1] > tracers[iy+1, ix, 0, 1])):
+                        print "warning: fixed point lies outside the cell"
+                    else:
+                        x.append(fixedPoint[0])
+                        y.append(fixedPoint[1])
+                        #q.append()
+                        fidx += 1
+                        
+        queue.put((x, y, q, fidx, iproc))
+                    
+                    
+    # multi core setup
+    if (np.isscalar(nproc) == False) or (nproc%1 != 0):
+        print("error: invalid processor number")
+        return -1
+    queue = mp.Queue()
+    proc = []
     
     # make sure to read the var files with the correct magic
     if (traceField == 'bb'):
@@ -154,149 +296,43 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
     p.nx = dim.nx; p.ny = dim.ny; p.nz = dim.nz
         
     # create the initial mapping
-    tracers, mapping, t = pc.tracers(traceField = 'bb', hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
-                                    interpolation = interpolation, trace_sub = trace_sub, varfile = varfile,
-                                    integration = integration, datadir = datadir, destination = '')
+    tracers, mapping, t = pc.tracers(traceField = 'bb', hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,                                     
+                                     interpolation = interpolation, trace_sub = trace_sub, varfile = varfile,
+                                     integration = integration, datadir = datadir, destination = '', nproc = nproc)
     
-    diff = np.zeros((4,2))
-    fidx = 0    # index of the fixed point
-    fixed  = pc.fixed_struct()
-    pMap = np.zeros((p.nx*trace_sub-1, p.ny*trace_sub-1))
     # find fixed points
-    for ix in range(p.nx*trace_sub-1):
-        for iy in range(p.ny*trace_sub-1):
-            # compute Poincare index around this cell (!= 0 for potential fixed point)
-            diff[0,:] = tracers[iy, ix, 0, 2:4] - tracers[iy, ix, 0, 0:2]
-            diff[1,:] = tracers[iy, ix+1, 0, 2:4] - tracers[iy, ix+1, 0, 0:2]
-            diff[2,:] = tracers[iy+1, ix+1, 0, 2:4] - tracers[iy+1, ix+1, 0, 0:2]
-            diff[3,:] = tracers[iy+1, ix, 0, 2:4] - tracers[iy+1, ix, 0, 0:2]
-            if (sum(np.sum(diff**2, axis = 1) != 0) == True):
-                diff = np.swapaxes(np.swapaxes(diff, 0, 1) / np.sqrt(np.sum(diff**2, axis = 1)), 0, 1)
-            poincare = pIndex(vv, p, tracers[iy, ix:ix+2, 0, 0], tracers[iy:iy+2, ix, 0, 1], diff, phiMin,
-                              hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, interpolation = interpolation, integration = integration)
-            pMap[ix, iy] = poincare
-            
-            if (abs(poincare) > 5): # use 5 instead of 2pi to account for rounding errors
-                # subsample to get starting point for iteration
-                nt = 4
-                xmin = tracers[iy, ix, 0, 0]
-                ymin = tracers[iy, ix, 0, 1]
-                xmax = tracers[iy, ix+1, 0, 0]
-                ymax = tracers[iy+1, ix, 0, 1]
-                xx = np.zeros((nt**2,3))
-                tracersSub = np.zeros((nt**2,5))
-                i1 = 0
-                for j1 in range(nt):
-                    for k1 in range(nt):
-                        xx[i1,0] = xmin + j1/(nt-1.)*(xmax - xmin)
-                        xx[i1,1] = ymin + k1/(nt-1.)*(ymax - ymin)
-                        xx[i1,2] = p.Oz
-                        i1 += 1
-                for it1 in range(nt**2):
-                    s = pc.stream(vv, p, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol, 
-                                  interpolation = interpolation, integration = integration, xx = xx[it1,:])
-                    tracersSub[it1,0:2] = xx[it1,0:2]
-                    tracersSub[it1,2:] = s.tracers[s.sl-1,:]
-                min2 = 1e6
-                minx = xmin
-                miny = ymin
-                i1 = 0
-                for j1 in range(nt):
-                    for k1 in range(nt):
-                        diff2 = (tracersSub[i1, 2] - tracersSub[i1, 0])**2 + (tracersSub[i1, 3] - tracersSub[i1, 1])**2
-                        if (diff2 < min2):
-                            min2 = diff2
-                            minx = xmin + j1/(nt-1.)*(xmax - xmin)
-                            miny = ymin + k1/(nt-1.)*(ymax - ymin)
-                        it1 += 1
-                
-                # get fixed point from this starting position using Newton's method                
-                #TODO:
-                dl = np.min(var.dx, var.dy)/100.    # step-size for calculating the Jacobian by finite differences
-                it = 0
-                # tracers used to find the fixed point
-                tracersNull = np.zeros((5,4))
-                point = np.array([minx, miny])
-                while True:
-                    # trace field lines at original point and for Jacobian:
-                    # (second order seems to be enough)
-                    xx = np.zeros((5,3))
-                    xx[0,:] = np.array([point[0], point[1], p.Oz])
-                    xx[1,:] = np.array([point[0]-dl, point[1], p.Oz])
-                    xx[2,:] = np.array([point[0]+dl, point[1], p.Oz])
-                    xx[3,:] = np.array([point[0], point[1]-dl, p.Oz])
-                    xx[4,:] = np.array([point[0], point[1]+dl, p.Oz])
-                    for it1 in range(5):
-                        s = pc.stream(vv, p, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
-                                      interpolation = interpolation, integration = integration, xx = xx[it1,:])
-                        tracersNull[it1,:2] = xx[it1,:2]
-                        tracersNull[it1,2:] = s.tracers[s.sl-1,0:2]
-                    
-                    # check function convergence
-                    ff = np.zeros(2)
-                    ff[0] = tracersNull[0,2] - tracersNull[0,0]
-                    ff[1] = tracersNull[0,3] - tracersNull[0,1]
-                    #TODO:
-                    if (sum(abs(ff)) <= 1e-4):
-                        fixedPoint = np.array([point[0], point[1]])
-                        break
-                    
-                    # compute the Jacobian
-                    fjac = np.zeros((2,2))
-                    fjac[0,0] = ((tracersNull[2,2] - tracersNull[2,0]) - (tracersNull[1,2] - tracersNull[1,0]))/2./dl
-                    fjac[0,1] = ((tracersNull[4,2] - tracersNull[4,0]) - (tracersNull[3,2] - tracersNull[3,0]))/2./dl
-                    fjac[1,0] = ((tracersNull[2,3] - tracersNull[2,1]) - (tracersNull[1,3] - tracersNull[1,1]))/2./dl
-                    fjac[1,1] = ((tracersNull[4,3] - tracersNull[4,1]) - (tracersNull[3,3] - tracersNull[3,1]))/2./dl
-                    
-                    # invert the Jacobian
-                    fjin = np.zeros((2,2))
-                    det = fjac[0,0]*fjac[1,1] - fjac[0,1]*fjac[1,0]
-                    #TODO:
-                    if (abs(det) < dl):
-                        fixedPoint = point
-                        break
-                    fjin[0,0] = fjac[1,1]
-                    fjin[1,1] = fjac[0,0]
-                    fjin[0,1] = -fjac[0,1]
-                    fjin[1,0] = -fjac[1,0]
-                    fjin = fjin/det
-                    dpoint = np.zeros(2)
-                    dpoint[0] = -fjin[0,0]*ff[0] - fjin[0,1]*ff[1]
-                    dpoint[1] = -fjin[1,0]*ff[0] - fjin[1,1]*ff[1]
-                    point += dpoint
-                    print point
-                    
-                    # check root convergence
-                    #TODO:
-                    if (sum(abs(dpoint)) < 1e-4):
-                        fixedPoint = point
-                        break
-                    
-                    if (it > 20):
-                        fixedPoint = point
-                        print "warning: Newton did not converged"
-                        break
-                    
-                    it += 1
-                        
-                # check if fixed point lies inside the cell
-                if ((fixedPoint[0] < tracers[iy, ix, 0, 0]) or (fixedPoint[0] > tracers[iy, ix+1, 0, 0]) or
-                    (fixedPoint[1] < tracers[iy, ix, 0, 1]) or (fixedPoint[1] > tracers[iy+1, ix, 0, 1])):
-                    print "warning: fixed point lies outside the cell"
-                else:
-                    fixed.t.append(t)
-                    fixed.x.append(fixedPoint[0])
-                    fixed.y.append(fixedPoint[1])
-                    fidx += 1
-                    fixed.fidx = fidx
-            
+    fixed = pc.fixed_struct()
+    xyq = []    # list of  return values from subFixed
+    ix0 = range(0,p.nx*trace_sub-1)   # set of grid indices for the cores
+    iy0 = range(0,p.ny*trace_sub-1)   # set of grid indices for the cores
+    subFixedLambda = lambda queue, ix0, iy0, vv, p, tracers, iproc: \
+        subFixed(queue, ix0, iy0, vv, p, tracers, iproc, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
+                 interpolation = interpolation, integration = integration)
+    for iproc in range(nproc):
+        proc.append(mp.Process(target = subFixedLambda, args = (queue, ix0[iproc::nproc], iy0, vv, p, tracers, iproc)))
+    for iproc in range(nproc):
+        proc[iproc].start()
+    for iproc in range(nproc):
+        xyq.append(queue.get())
+    for iproc in range(nproc):
+        proc[iproc].join()
+        
+    # put together return values from subFixed
+    fixed.fidx = 0
+    fixed.t = var.t
+    for iproc in range(nproc):
+        fixed.x.append(xyq[xyq[iproc][4]][0])
+        fixed.y.append(xyq[xyq[iproc][4]][1])
+        fixed.q.append(xyq[xyq[iproc][4]][2])
+        fixed.fidx += xyq[xyq[iproc][4]][3]
+    
     fixed.t = np.array(fixed.t)
     fixed.x = np.array(fixed.x)
     fixed.y = np.array(fixed.y)
     fixed.q = np.array(fixed.q)
     fixed.fidx = np.array(fixed.fidx)
 
-    return fixed, pMap
+    return fixed
 
 
 def read_fixed_points(datadir = 'data/', fileName = 'fixed_points.dat', hm = 1):
