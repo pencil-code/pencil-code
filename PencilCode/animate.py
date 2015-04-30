@@ -7,6 +7,53 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
+def avg2d(name, drange='full', **kwarg):
+    """Animates the time sequence of a line average.
+
+    Positional Argument:
+        name
+            Name of the average.
+
+    Keyword Arguments:
+        drange
+            Type of data range to be plotted; see _get_range().
+        **kwarg
+            Other keyword arguments passed on.
+    """
+    # Chao-Chin Yang, 2015-04-30
+    from . import read
+    # Get keyword datadir, if any.
+    kw = {}
+    datadir = kwarg.pop("datadir", None)
+    if datadir is not None:
+        kw["datadir"] = datadir
+    # Get the dimensions, parameters, and grid.
+    dim = read.dimensions(**kw)
+    par = read.parameters(**kw)
+    grid = read.grid(interface=True, par=par, **kw)
+    # Read the averages.
+    direction = kwarg.pop("direction", 'z')
+    kw["direction"] = direction
+    t, avg = read.avg2d(**kw)
+    c = avg[name].transpose((0,2,1))
+    # Check the direction of the line average.
+    if direction == 'x':
+        xdir, ydir = 1, 2
+    elif direction == 'y':
+        xdir, ydir = 0, 2
+    else:
+        xdir, ydir = 0, 1
+    # Check the coordinate system.
+    if par.coord_system != 'cartesian':
+        raise NotImplementedError("curvilinear model")
+    xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
+    x, y = getattr(grid, xlabel), getattr(grid, ylabel)
+    extent = par.xyz0[xdir], par.xyz1[xdir], par.xyz0[ydir], par.xyz1[ydir]
+    # Check the data range.
+    vmin, vmax = _get_range(t, c, drange)
+    # Animate.
+    _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
+#=======================================================================
 def slices(field, datadir='./data', drange='full', **kwarg):
     """Dispatches to the respective animator of video slices.
 
