@@ -44,6 +44,8 @@ module Particles_mpicomm
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
+      call keep_compiler_quiet(f)
+!
 !  Distribute particles evenly among processors to begin with.
 !  DM: for some initial conditions it may be better not to distribute
 !  particles evenly so the logical variable ldist_particles_evenly has been
@@ -57,11 +59,21 @@ module Particles_mpicomm
 !  Set neighbor process ranks for particles.
 !
       neighbors_par = neighbors
-      if (bcpx /= 'p' .or. nxgrid == 1 .or. lshear .and. nygrid > 1) neighbors_par((/-1,1/),:,:) = -1
-      if (bcpy /= 'p' .or. nygrid == 1) neighbors_par(:,(/-1,1/),:) = -1
-      if (bcpz /= 'p' .or. nzgrid == 1) neighbors_par(:,:,(/-1,1/)) = -1
 !
-      call keep_compiler_quiet(f)
+      xdir: if (bcpx /= 'p' .or. nxgrid == 1 .or. lshear .and. nygrid > 1) then
+        if (lfirst_proc_x) neighbors_par(-1,:,:) = -1
+        if (llast_proc_x) neighbors_par(+1,:,:) = -1
+      endif xdir
+!
+      ydir: if (bcpy /= 'p' .or. nygrid == 1) then
+        if (lfirst_proc_y) neighbors_par(:,-1,:) = -1
+        if (llast_proc_y) neighbors_par(:,+1,:) = -1
+      endif ydir
+!
+      zdir: if (bcpz /= 'p' .or. nzgrid == 1) then
+        if (lfirst_proc_z) neighbors_par(:,:,-1) = -1
+        if (llast_proc_z) neighbors_par(:,:,+1) = -1
+      endif zdir
 !
     endsubroutine initialize_particles_mpicomm
 !***********************************************************************
