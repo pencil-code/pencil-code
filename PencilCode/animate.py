@@ -7,14 +7,18 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
-def avg2d(name, drange='full', **kwarg):
+def avg2d(name, direction, datadir='./data', drange='full', **kwarg):
     """Animates the time sequence of a line average.
 
     Positional Argument:
         name
             Name of the average.
+        direction
+            Direction of the average: 'x', 'y', or 'z'.
 
     Keyword Arguments:
+        datadir
+            Path to the data directory.
         drange
             Type of data range to be plotted; see _get_range().
         **kwarg
@@ -22,37 +26,28 @@ def avg2d(name, drange='full', **kwarg):
     """
     # Chao-Chin Yang, 2015-04-30
     from . import read
-    # Get keyword datadir, if any.
-    kw = {}
-    datadir = kwarg.pop("datadir", None)
-    if datadir is not None:
-        kw["datadir"] = datadir
-    # Get the dimensions, parameters, and grid.
-    dim = read.dimensions(**kw)
-    par = read.parameters(**kw)
-    grid = read.grid(interface=True, par=par, **kw)
-    # Read the averages.
-    direction = kwarg.pop("direction", 'z')
-    kw["direction"] = direction
-    t, avg = read.avg2d(**kw)
-    c = avg[name].transpose((0,2,1))
     # Check the direction of the line average.
     if direction == 'x':
         xdir, ydir = 1, 2
     elif direction == 'y':
         xdir, ydir = 0, 2
-    else:
+    elif direction == 'z':
         xdir, ydir = 0, 1
+    else:
+        raise ValueError("Unknown direction '{}'. ".format(direction))
+    # Get the dimensions, parameters, and grid.
+    dim = read.dimensions(datadir=datadir)
+    par = read.parameters(datadir=datadir)
+    grid = read.grid(datadir=datadir, interface=True, par=par)
+    # Read the averages.
+    t, avg = read.avg2d(datadir=datadir, direction=direction)
     # Check the coordinate system.
     if par.coord_system != 'cartesian':
         raise NotImplementedError("curvilinear model")
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
-    extent = par.xyz0[xdir], par.xyz1[xdir], par.xyz0[ydir], par.xyz1[ydir]
-    # Check the data range.
-    vmin, vmax = _get_range(t, c, drange)
     # Animate.
-    _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
+    _frame_rectangle(t, x, y, avg[name], drange, xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
 #=======================================================================
 def slices(field, datadir='./data', drange='full', **kwarg):
     """Dispatches to the respective animator of video slices.
@@ -63,9 +58,9 @@ def slices(field, datadir='./data', drange='full', **kwarg):
 
     Keyword Arguments:
         datadir
-            Data directory.
+            Path to the data directory.
         drange
-            Type of data range to be plotted; see _get_range().
+            Style of the data range; see _get_range().
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
@@ -76,7 +71,7 @@ def slices(field, datadir='./data', drange='full', **kwarg):
     # Get the dimensions, parameters, and grid.
     dim = read.dimensions(datadir=datadir)
     par = read.parameters(datadir=datadir)
-    grid = read.grid(datadir=datadir, trim=True)
+    grid = read.grid(datadir=datadir, interface=True, par=par)
     # Dispatch.
     ndim = (dim.nxgrid > 1) + (dim.nygrid > 1) + (dim.nzgrid > 1)
     if ndim == 1:
@@ -88,25 +83,23 @@ def slices(field, datadir='./data', drange='full', **kwarg):
 #=======================================================================
 ###### Local Functions ######
 #=======================================================================
-def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, clabel=None, **kwarg):
+def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, **kwarg):
     """Animates a sequence of two-dimensional rectangular data.
 
     Positional Arguments:
         t
-            Array of the time points.
+            1D array of the time points.
         x
-            Array of the x-coordinates of the cell boundaries.
+            1D array of the x-coordinates of the cell interfaces.
         y
-            Array of the y-coordinates of the cell boundaries.
+            1D array of the y-coordinates of the cell interfaces.
         c
-            Sequence in time of the 2D data.
-        extent
-            Four-element object for the limits of the axes: left, right,
-            bottom, and top, respectively.
-        vmin
-            Scalar or array of same size as t; minimum data value(s).
-        vmax
-            Scalar or array of same size as t; maximum data value(s).
+            3D array for the sequence in time of the data.  c[i,j,k] is
+            the value at time t[i] and cell with corners at
+            (x[j-1],y[k]), (x[j+1],y[k]), (x[j],y[k-1]), and
+            (x[j],y[k+1]).
+        drange
+            Style of the data range; see _get_range().
 
     Keyword Arguments:
         xlabel
@@ -118,12 +111,13 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-29
+    # Chao-Chin Yang, 2015-04-30
     from collections.abc import Sequence
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     import numpy as np
-    # Check the specified range.
+    # Get the data range.
+    vmin, vmax = _get_range(t, c, drange)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
@@ -132,10 +126,10 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
     # Create the first plot.
     fig = plt.figure(**kwarg)
     ax = fig.gca()
-    pc = ax.pcolorfast(x, y, c[0], vmin=vmin0, vmax=vmax0)
+    pc = ax.pcolorfast(x, y, c[0].transpose(), vmin=vmin0, vmax=vmax0)
     ax.minorticks_on()
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x[0], x[-1])
+    ax.set_ylim(y[0], y[-1])
     ax.set_aspect('equal')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -147,9 +141,9 @@ def _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=None, ylabel=None, c
     for i in range(1,len(t)):
         ax.set_title("t = {:#.4G}".format(t[i]))
         if mpl.__version__ == '1.3.1':
-            pc.set_data(x, y, c[i])
+            pc.set_data(x, y, c[i].transpose())
         else:
-            pc.set_data(c[i])
+            pc.set_data(c[i].transpose())
         if vmin_dynamic: pc.set_clim(vmin=vmin[i])
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
@@ -212,15 +206,15 @@ def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
         par
             Parameters supplied by read.parameters().
         grid
-            Grid coordinates supplied by read.grid(trim=True).
+            Grid coordinates supplied by read.grid(interface=True).
         drange
-            Type of data range to be plotted; see _get_range().
+            Style of the data range; see _get_range().
 
     Keyword Arguments:
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-29
+    # Chao-Chin Yang, 2015-04-30
     import numpy as np
     # Determine the slice plane.
     if dim.nxgrid == 1:
@@ -236,19 +230,9 @@ def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
     if par.coord_system != 'cartesian':
         raise NotImplementedError("2D, curvilinear model")
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
-    g = lambda x, dx_1, x0, x1: np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
-    x = g(getattr(grid, xlabel), getattr(grid, "d{}_1".format(xlabel)), par.xyz0[xdir], par.xyz1[xdir])
-    y = g(getattr(grid, ylabel), getattr(grid, "d{}_1".format(ylabel)), par.xyz0[ydir], par.xyz1[ydir])
-    # Get the slice.
-    c = slices[:][plane].transpose((0,2,1))
-    # Get the dimensions.
-    xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
-    ymin, ymax = par.xyz0[ydir], par.xyz1[ydir]
-    extent = (xmin, xmax, ymin, ymax)
-    # Get the data range.
-    vmin, vmax = _get_range(t, c, drange)
+    x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Send to the animator.
-    _frame_rectangle(t, x, y, c, extent, vmin, vmax, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
+    _frame_rectangle(t, x, y, slices[:][plane], drange, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
 #=======================================================================
 def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
     """Animates video slices from a 3D model.
