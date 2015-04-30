@@ -170,16 +170,24 @@ def dimensions(datadir='./data'):
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 #=======================================================================
-def grid(datadir='./data', trim=False):
+def grid(datadir='./data', interface=False, par=None, trim=False):
     """Returns the coordinates and their derivatives of the grid.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        interface
+            If True, the coordinates of the interfaces between cells are
+            returned; otherwise, those of the cell centers are returned.
+        par
+            Parameters supplied by parameters() needed when the keyword
+            interface is True.  If None, parameters() will be called.
         trim
-            Whether or not to trim the ghost cells.
+            Whether or not to trim the ghost cells.  If the keyword
+            interface is True, ghost cells are automatically trimmed and
+            this keyword has no effect.
     """
-    # Chao-Chin Yang, 2014-11-02
+    # Chao-Chin Yang, 2015-04-30
     from collections import namedtuple
     import numpy as np
     # Get the dimensions.
@@ -235,7 +243,7 @@ def grid(datadir='./data', trim=False):
         dz_1 = assign(n1, n2, dz_1, grid.dz_1, 'dz_1', proc)
         dz_tilde = assign(n1, n2, dz_tilde, grid.dz_tilde, 'dz_tilde', proc)
     # Trim the ghost cells if requested.
-    if trim:
+    if interface or trim:
         x = x[dim.nghost:-dim.nghost]
         y = y[dim.nghost:-dim.nghost]
         z = z[dim.nghost:-dim.nghost]
@@ -245,6 +253,16 @@ def grid(datadir='./data', trim=False):
         dx_tilde = dx_tilde[dim.nghost:-dim.nghost]
         dy_tilde = dy_tilde[dim.nghost:-dim.nghost]
         dz_tilde = dz_tilde[dim.nghost:-dim.nghost]
+    # Find the interfaces if requested.
+    if interface:
+        f = (lambda x, dx_1, x0, x1:
+                np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
+                if len(x) > 1 else x)
+        if par is None:
+            par = parameters(datadir=datadir)
+        x = f(x, dx_1, par.xyz0[0], par.xyz1[0])
+        y = f(y, dy_1, par.xyz0[1], par.xyz1[1])
+        z = f(z, dz_1, par.xyz0[2], par.xyz1[2])
     # Define and return a named tuple.
     Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
                                'dx_tilde', 'dy_tilde', 'dz_tilde'])
