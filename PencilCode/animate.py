@@ -257,7 +257,7 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-27
+    # Chao-Chin Yang, 2015-05-01
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation
     from matplotlib import cm
@@ -269,11 +269,6 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
     if par.coord_system != 'cartesian':
         raise NotImplementedError("3D, curvilinear model")
     print("Processing the data...")
-    # Set the grid.
-    g = lambda x, dx_1, x0, x1: np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
-    x = g(grid.x, grid.dx_1, par.xyz0[0], par.xyz1[0])
-    y = g(grid.y, grid.dy_1, par.xyz0[1], par.xyz1[1])
-    z = g(grid.z, grid.dz_1, par.xyz0[2], par.xyz1[2])
     # Set the surfaces.
     nt = len(t)
     dtype = lambda nx, ny: [('value', np.float, (nt,nx,ny)),
@@ -281,7 +276,7 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
     planes = slices.dtype.names
     surfaces = []
     if 'xy' in planes or 'xy2' in planes:
-        xmesh, ymesh = np.meshgrid(x, y, indexing='ij')
+        xmesh, ymesh = np.meshgrid(grid.x, grid.y, indexing='ij')
         if 'xy' in planes:
             zmesh = np.full(xmesh.shape, par.xyz0[2] - 0.7 * par.lxyz[2])
             surfaces.append(np.rec.array((slices.xy, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
@@ -289,11 +284,11 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
             zmesh = np.full(xmesh.shape, par.xyz1[2])
             surfaces.append(np.rec.array((slices.xy2, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nygrid)))
     if 'xz' in planes:
-        xmesh, zmesh = np.meshgrid(x, z, indexing='ij')
+        xmesh, zmesh = np.meshgrid(grid.x, grid.z, indexing='ij')
         ymesh = np.full(xmesh.shape, par.xyz0[1])
         surfaces.append(np.rec.array((slices.xz, xmesh, ymesh, zmesh), dtype=dtype(dim.nxgrid,dim.nzgrid)))
     if 'yz' in planes:
-        ymesh, zmesh = np.meshgrid(y, z, indexing='ij')
+        ymesh, zmesh = np.meshgrid(grid.y, grid.z, indexing='ij')
         xmesh = np.full(ymesh.shape, par.xyz0[0])
         surfaces.append(np.rec.array((slices.yz, xmesh, ymesh, zmesh), dtype=dtype(dim.nygrid,dim.nzgrid)))
     # Check the data range.
