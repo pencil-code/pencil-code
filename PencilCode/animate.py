@@ -165,15 +165,18 @@ def _get_range(t, data, drange):
             Sequence in time of numpy arrays.
         drange
             Type of data range:
-                'full'
-                    Absolute minimum and maximum.
                 'dynamic'
                     Dynamic minimum and maximum at each time.
+                'full'
+                    Absolute minimum and maximum.
+                'mean'
+                    Time-averaged minimum and maximum.
             Otherwise, user-defined range and returned as is.
     """
-    # Chao-Chin Yang, 2015-04-22
+    # Chao-Chin Yang, 2015-05-03
     from collections.abc import Sequence
     import numpy as np
+    from scipy.integrate import simps
     # User-defined range.
     if not isinstance(drange, str):
         return drange
@@ -194,6 +197,9 @@ def _get_range(t, data, drange):
         pass
     elif drange == 'full':
         vmin, vmax = vmin.min(), vmax.max()
+    elif drange == 'mean':
+        dt = t[-1] - t[0]
+        vmin, vmax = simps(vmin, t) / dt, simps(vmax, t) / dt
     else:
         raise ValueError("Unknown type of range '{}'".format(drange))
     return vmin, vmax
