@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
-def avg2d(name, direction, datadir='./data', drange='full', **kwarg):
+def avg2d(name, direction, datadir='./data', drange='full', logscale=False, **kwarg):
     """Animates the time sequence of a line average.
 
     Positional Argument:
@@ -21,10 +21,12 @@ def avg2d(name, direction, datadir='./data', drange='full', **kwarg):
             Path to the data directory.
         drange
             Type of data range to be plotted; see _get_range().
+        logscale
+            If True, logarithmic scale is used; linear scale otherwise.
         **kwarg
             Other keyword arguments passed on.
     """
-    # Chao-Chin Yang, 2015-04-30
+    # Chao-Chin Yang, 2015-05-03
     from . import read
     # Check the direction of the line average.
     if direction == 'x':
@@ -47,7 +49,7 @@ def avg2d(name, direction, datadir='./data', drange='full', **kwarg):
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Animate.
-    _frame_rectangle(t, x, y, avg[name], drange, xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
+    _frame_rectangle(t, x, y, avg[name], drange, xlabel=xlabel, ylabel=ylabel, clabel=name, logscale=logscale, **kwarg)
 #=======================================================================
 def slices(field, datadir='./data', drange='full', **kwarg):
     """Dispatches to the respective animator of video slices.
@@ -83,7 +85,7 @@ def slices(field, datadir='./data', drange='full', **kwarg):
 #=======================================================================
 ###### Local Functions ######
 #=======================================================================
-def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, **kwarg):
+def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, logscale=False, **kwarg):
     """Animates a sequence of two-dimensional rectangular data.
 
     Positional Arguments:
@@ -108,25 +110,30 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
             Label for the y axis.
         clabel
             Label for the color bar.
+        logscale
+            If True, logarithmic scale is used; linear scale otherwise.
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-30
+    # Chao-Chin Yang, 2015-05-03
     from collections.abc import Sequence
     import matplotlib as mpl
+    from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     import numpy as np
     # Get the data range.
+    c = _posdef(c) if logscale else c
     vmin, vmax = _get_range(t, c, drange)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
     vmin0 = vmin[0] if vmin_dynamic else vmin
     vmax0 = vmax[0] if vmax_dynamic else vmax
+    norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
     # Create the first plot.
     fig = plt.figure(**kwarg)
     ax = fig.gca()
-    pc = ax.pcolorfast(x, y, c[0].transpose(), vmin=vmin0, vmax=vmax0)
+    pc = ax.pcolorfast(x, y, c[0].transpose(), norm=norm)
     ax.minorticks_on()
     ax.set_xlim(x[0], x[-1])
     ax.set_ylim(y[0], y[-1])
@@ -190,6 +197,19 @@ def _get_range(t, data, drange):
     else:
         raise ValueError("Unknown type of range '{}'".format(drange))
     return vmin, vmax
+#=======================================================================
+def _posdef(a):
+    """Make the array a positive definite by assigning the smallest
+    positive value of a to non-positive elements of a.
+
+    Positional Argument:
+        a
+            A numpy array.
+    """
+    # Chao-Chin Yang, 2015-05-03
+    indices = a <= 0.0
+    a[indices] = a[~indices].min()
+    return a
 #=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
     """Animates video slices from a 2D model.
