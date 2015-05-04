@@ -166,31 +166,44 @@ def _get_range(t, data, drange='full', logscale=False):
     from collections.abc import Sequence
     import numpy as np
     from scipy.integrate import simps
+    from sys import float_info
     # User-defined range.
     if not isinstance(drange, str):
         return drange
     # Find the data range at each time.
     nt = len(t)
-    vmin, vmax = np.empty(nt), np.empty(nt)
+    vmin, vmax, vposmin = np.empty(nt), np.empty(nt), np.empty(nt)
+    tiny = float_info.min
     for i, d in enumerate(data):
         if d.dtype.names is None:
             vmin1, vmax1 = d.min(), d.max()
+            indices = d > 0
+            vposmin1 = d[indices].min() if indices.any() else np.inf
         else:
-            vmin1, vmax1 = np.inf, -np.inf
+            vmin1, vmax1, vposmin1 = np.inf, -np.inf, np.inf
             for n in d.dtype.names:
-                vmin1 = min(vmin1, d[n].min())
-                vmax1 = max(vmax1, d[n].max())
+                d1 = d[n]
+                vmin1 = min(vmin1, d1.min())
+                vmax1 = max(vmax1, d1.max())
+                indices = d1 > 0
+                vposmin1 = min(vposmin1, (d1[indices].min() if indices.any() else np.inf))
         vmin[i], vmax[i] = vmin1, vmax1
+        vposmin[i] = vposmin1 if vposmin1 is not np.inf else tiny
     # Check the type of range requested.
     if drange == 'dynamic':
         pass
     elif drange == 'full':
         vmin, vmax = vmin.min(), vmax.max()
+        vposmin = vposmin.min()
     elif drange == 'mean':
         dt = t[-1] - t[0]
         vmin, vmax = simps(vmin, t) / dt, simps(vmax, t) / dt
+        vposmin = vposmin.min()
     else:
         raise ValueError("Unknown type of range '{}'".format(drange))
+    # Guard against non-positive number if logscale is True.
+    if logscale:
+        vmin = max(vmin, vposmin)
     return vmin, vmax
 #=======================================================================
 def _posdef(a):
