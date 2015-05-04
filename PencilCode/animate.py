@@ -107,7 +107,6 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     """
     # Chao-Chin Yang, 2015-05-04
     from collections.abc import Sequence
-    import matplotlib as mpl
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     import numpy as np
