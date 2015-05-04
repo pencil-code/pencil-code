@@ -269,11 +269,11 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-05-01
+    # Chao-Chin Yang, 2015-05-04
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation
     from matplotlib import cm
-    from matplotlib.colors import Normalize
+    from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     import numpy as np
@@ -281,11 +281,23 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     if par.coord_system != 'cartesian':
         raise NotImplementedError("3D, curvilinear model")
     print("Processing the data...")
+    # Get the data range.
+    planes = slices.dtype.names
+    logscale = kwarg.get("logscale", False)
+    if logscale:
+        for p in planes:
+            slices[p] = _posdef(slices[p])
+    vmin, vmax = _get_range(t, slices, **kwarg)
+    seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
+    vmin_dynamic = seq(vmin)
+    vmax_dynamic = seq(vmax)
+    vmin0 = vmin[0] if vmin_dynamic else vmin
+    vmax0 = vmax[0] if vmax_dynamic else vmax
+    norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
     # Set the surfaces.
     nt = len(t)
     dtype = lambda nx, ny: [('value', np.float, (nt,nx,ny)),
                             ('x', np.float, (nx+1,ny+1)), ('y', np.float, (nx+1,ny+1)), ('z', np.float, (nx+1,ny+1))]
-    planes = slices.dtype.names
     surfaces = []
     if 'xy' in planes or 'xy2' in planes:
         xmesh, ymesh = np.meshgrid(grid.x, grid.y, indexing='ij')
@@ -303,13 +315,6 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         ymesh, zmesh = np.meshgrid(grid.y, grid.z, indexing='ij')
         xmesh = np.full(ymesh.shape, par.xyz0[0])
         surfaces.append(np.rec.array((slices.yz, xmesh, ymesh, zmesh), dtype=dtype(dim.nygrid,dim.nzgrid)))
-    # Check the data range.
-    vmin, vmax = _get_range(t, slices, **kwarg)
-    seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
-    vmin_dynamic = seq(vmin)
-    vmax_dynamic = seq(vmax)
-    vmin0 = vmin[0] if vmin_dynamic else vmin
-    vmax0 = vmax[0] if vmax_dynamic else vmax
     # Set up the 3D view.
     print("Initializing...")
     fig = plt.figure()
@@ -324,7 +329,6 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     ax.set_zlabel('z')
     # Plot the first surfaces.
     cmap = cm.get_cmap()
-    norm = Normalize(vmin=vmin0, vmax=vmax0, clip=True)
     cols = [ax.plot_surface(s.x, s.y, s.z, facecolors=cmap(norm(s.value[0])), linewidth=0, shade=False)
             for s in surfaces]
     mappable = cm.ScalarMappable(cmap=cmap, norm=norm)
