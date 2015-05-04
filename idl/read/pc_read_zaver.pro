@@ -143,7 +143,7 @@ if ( subbox and (time ge tsubbox) ) then begin
 endif
 ;  Overplot stalked particles.         
 if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [yystalk], $
-    ps=1, color=255, thick=2.0
+        ps=1, color=255, thick=2.0
 ;  Colorbar indicating range.
 if (colorbar) then begin
   colorbar_co, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
@@ -541,12 +541,19 @@ endif else begin
        ist=where( abs(pst.t-t) eq min(abs(pst.t-t)))
        ist=ist[0]
        if (max(tag_names(pst) eq 'APS') eq 1) then begin
-         ipar=where(pst.aps[*,ist] ne 0.0)
-         if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
+         if (n_elements(pst.ipar) eq 1) then begin
+           if (pst.aps[ist] eq 0.0) then nstalk=0 else nstalk=-1 
+         endif else begin
+           ipar=where(pst.aps[*,ist] ne 0.0)
+           if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
+         endelse
        endif else begin
          ipar=indgen(nstalk)
        endelse
-       if (nstalk ne 0) then begin
+       if (nstalk eq -1) then begin
+         xxstalk=pst.xp[ist]
+         yystalk=pst.yp[ist]
+       endif else if (nstalk ne 0) then begin
          xxstalk=pst.xp[ipar,ist]
          yystalk=pst.yp[ipar,ist]
        endif
