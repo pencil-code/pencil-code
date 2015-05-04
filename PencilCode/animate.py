@@ -115,7 +115,7 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-05-03
+    # Chao-Chin Yang, 2015-05-04
     from collections.abc import Sequence
     import matplotlib as mpl
     from matplotlib.colors import LogNorm, Normalize
@@ -147,10 +147,7 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
     # Loop over each time and update the plot.
     for i in range(1,len(t)):
         ax.set_title("t = {:#.4G}".format(t[i]))
-        if mpl.__version__ == '1.3.1':
-            pc.set_data(x, y, c[i].transpose())
-        else:
-            pc.set_data(c[i].transpose())
+        pc.set_data(c[i].transpose())
         if vmin_dynamic: pc.set_clim(vmin=vmin[i])
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
