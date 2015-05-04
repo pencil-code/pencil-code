@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
-def avg2d(name, direction, datadir='./data', drange='full', logscale=False, **kwarg):
+def avg2d(name, direction, datadir='./data', **kwarg):
     """Animates the time sequence of a line average.
 
     Positional Argument:
@@ -19,14 +19,10 @@ def avg2d(name, direction, datadir='./data', drange='full', logscale=False, **kw
     Keyword Arguments:
         datadir
             Path to the data directory.
-        drange
-            Type of data range to be plotted; see _get_range().
-        logscale
-            If True, logarithmic scale is used; linear scale otherwise.
         **kwarg
-            Other keyword arguments passed on.
+            Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-03
+    # Chao-Chin Yang, 2015-05-04
     from . import read
     # Check the direction of the line average.
     if direction == 'x':
@@ -49,9 +45,9 @@ def avg2d(name, direction, datadir='./data', drange='full', logscale=False, **kw
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Animate.
-    _frame_rectangle(t, x, y, avg[name], drange, xlabel=xlabel, ylabel=ylabel, clabel=name, logscale=logscale, **kwarg)
+    _frame_rectangle(t, x, y, avg[name], xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
 #=======================================================================
-def slices(field, datadir='./data', drange='full', **kwarg):
+def slices(field, datadir='./data', **kwarg):
     """Dispatches to the respective animator of video slices.
 
     Positional Argument:
@@ -61,12 +57,10 @@ def slices(field, datadir='./data', drange='full', **kwarg):
     Keyword Arguments:
         datadir
             Path to the data directory.
-        drange
-            Style of the data range; see _get_range().
         **kwarg
-            Keyword arguments passed to matplotlib.pyplot.figure().
+            Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-04-29
+    # Chao-Chin Yang, 2015-05-04
     from . import read
     # Read the slices.
     t, s = read.slices(field, datadir=datadir)
@@ -79,13 +73,13 @@ def slices(field, datadir='./data', drange='full', **kwarg):
     if ndim == 1:
         raise NotImplementedError("1D run")
     elif ndim == 2:
-        _slices2d(field, t, s, dim, par, grid, drange, **kwarg)
+        _slices2d(field, t, s, dim, par, grid, **kwarg)
     elif ndim == 3:
-        _slices3d(field, t, s, dim, par, grid, drange, **kwarg)
+        _slices3d(field, t, s, dim, par, grid, **kwarg)
 #=======================================================================
 ###### Local Functions ######
 #=======================================================================
-def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, logscale=False, **kwarg):
+def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg):
     """Animates a sequence of two-dimensional rectangular data.
 
     Positional Arguments:
@@ -100,8 +94,6 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
             the value at time t[i] and cell with corners at
             (x[j-1],y[k]), (x[j+1],y[k]), (x[j],y[k-1]), and
             (x[j],y[k+1]).
-        drange
-            Style of the data range; see _get_range().
 
     Keyword Arguments:
         xlabel
@@ -110,10 +102,8 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
             Label for the y axis.
         clabel
             Label for the color bar.
-        logscale
-            If True, logarithmic scale is used; linear scale otherwise.
         **kwarg
-            Keyword arguments passed to matplotlib.pyplot.figure().
+            Keyword arguments passed to _get_range().
     """
     # Chao-Chin Yang, 2015-05-04
     from collections.abc import Sequence
@@ -122,8 +112,9 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
     import matplotlib.pyplot as plt
     import numpy as np
     # Get the data range.
+    logscale = kwarg.get("logscale", False)
     c = _posdef(c) if logscale else c
-    vmin, vmax = _get_range(t, c, drange)
+    vmin, vmax = _get_range(t, c, **kwarg)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
@@ -131,7 +122,7 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
     vmax0 = vmax[0] if vmax_dynamic else vmax
     norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
     # Create the first plot.
-    fig = plt.figure(**kwarg)
+    fig = plt.figure()
     ax = fig.gca()
     pc = ax.pcolorfast(x, y, c[0].transpose(), norm=norm)
     ax.minorticks_on()
@@ -152,7 +143,7 @@ def _frame_rectangle(t, x, y, c, drange, xlabel=None, ylabel=None, clabel=None, 
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
 #=======================================================================
-def _get_range(t, data, drange):
+def _get_range(t, data, drange='full', logscale=False):
     """Determines the data range to be plotted.
 
     Positional Arguments:
@@ -169,8 +160,10 @@ def _get_range(t, data, drange):
                 'mean'
                     Time-averaged minimum and maximum.
             Otherwise, user-defined range and returned as is.
+        logscale
+            Whether or not the color map is in logarithmic scale.
     """
-    # Chao-Chin Yang, 2015-05-03
+    # Chao-Chin Yang, 2015-05-04
     from collections.abc import Sequence
     import numpy as np
     from scipy.integrate import simps
@@ -214,7 +207,7 @@ def _posdef(a):
     a[indices] = a[~indices].min()
     return a
 #=======================================================================
-def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
+def _slices2d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 2D model.
 
     Positional Arguments:
@@ -230,8 +223,6 @@ def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
             Parameters supplied by read.parameters().
         grid
             Grid coordinates supplied by read.grid(interface=True).
-        drange
-            Style of the data range; see _get_range().
 
     Keyword Arguments:
         **kwarg
@@ -255,9 +246,9 @@ def _slices2d(field, t, slices, dim, par, grid, drange, **kwarg):
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Send to the animator.
-    _frame_rectangle(t, x, y, slices[:][plane], drange, xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
+    _frame_rectangle(t, x, y, slices[:][plane], xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
 #=======================================================================
-def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
+def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 3D model.
 
     Positional Arguments:
@@ -273,8 +264,6 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
             Parameters supplied by read.parameters().
         grid
             Grid coordinates supplied by read.grid(trim=True).
-        drange
-            Type of data range to be plotted; see _get_range().
 
     Keyword Arguments:
         **kwarg
@@ -315,7 +304,7 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
         xmesh = np.full(ymesh.shape, par.xyz0[0])
         surfaces.append(np.rec.array((slices.yz, xmesh, ymesh, zmesh), dtype=dtype(dim.nygrid,dim.nzgrid)))
     # Check the data range.
-    vmin, vmax = _get_range(t, slices, drange)
+    vmin, vmax = _get_range(t, slices, **kwarg)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
@@ -323,7 +312,7 @@ def _slices3d(field, t, slices, dim, par, grid, drange, **kwarg):
     vmax0 = vmax[0] if vmax_dynamic else vmax
     # Set up the 3D view.
     print("Initializing...")
-    fig = plt.figure(**kwarg)
+    fig = plt.figure()
     ax = Axes3D(fig)
     ax.view_init(15, -135)
     ax.dist = 15
