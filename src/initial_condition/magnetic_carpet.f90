@@ -89,6 +89,15 @@ module InitialCondition
 !   clear the magnetic field to zero
     f(:,:,:,iax:iaz) = 0.
 !
+    if (config == 'homogeneous') then
+        do m = 1, my, 1
+            do l = 1, mx, 1
+                f(l,m,:,iax) = -ampl*y(m)
+                f(l,m,:,iay) = ampl*x(l)
+            enddo
+        enddo
+    endif
+    
     if (config == 'parasitic_polarities') then
         do n = 1, mz, 1
             do m = 1, my, 1
