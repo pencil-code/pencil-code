@@ -143,7 +143,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
 #=======================================================================
-def _get_range(t, data, center=False, drange='full', logscale=False):
+def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
     """Determines the data range to be plotted.
 
     Positional Arguments:
@@ -164,6 +164,9 @@ def _get_range(t, data, center=False, drange='full', logscale=False):
                 'mean'
                     Time-averaged minimum and maximum.
             Otherwise, user-defined range and returned as is.
+        tmin
+            If not None, the range determination is restricted to
+            t >= tmin.  No effect if drange is 'dynamic'.
         logscale
             Whether or not the color map is in logarithmic scale.
     """
@@ -197,15 +200,20 @@ def _get_range(t, data, center=False, drange='full', logscale=False):
     # Check the type of range requested.
     if drange == 'dynamic':
         pass
-    elif drange == 'full':
-        vmin, vmax = vmin.min(), vmax.max()
-        vposmin = vposmin.min()
-    elif drange == 'mean':
-        dt = t[-1] - t[0]
-        vmin, vmax = simps(vmin, t) / dt, simps(vmax, t) / dt
-        vposmin = vposmin.min()
     else:
-        raise ValueError("Unknown type of range '{}'".format(drange))
+        if tmin is not None:
+            indices = t >= tmin
+            t, vmin, vmax, vposmin = t[indices], vmin[indices], vmax[indices], vposmin[indices]
+            nt = len(t)
+        if drange == 'full':
+            vmin, vmax = vmin.min(), vmax.max()
+            vposmin = vposmin.min()
+        elif drange == 'mean':
+            dt = t[-1] - t[0]
+            vmin, vmax = simps(vmin, t) / dt, simps(vmax, t) / dt
+            vposmin = vposmin.min()
+        else:
+            raise ValueError("Unknown type of range '{}'".format(drange))
     # Guard against non-positive number if logscale is True.
     if logscale:
         vmin = max(vmin, vposmin)
