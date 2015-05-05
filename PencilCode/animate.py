@@ -131,13 +131,13 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     ax.set_aspect('equal')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title("t = {:#.4G}".format(t[0]))
+    ax.set_title("$t = {:#.4G}$".format(t[0]))
     cb = plt.colorbar(pc)
     cb.set_label(clabel)
     plt.show(block=False)
     # Loop over each time and update the plot.
     for i in range(1,len(t)):
-        ax.set_title("t = {:#.4G}".format(t[i]))
+        ax.set_title("$t = {:#.4G}$".format(t[i]))
         pc.set_data(c[i].transpose())
         if vmin_dynamic: pc.set_clim(vmin=vmin[i])
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
@@ -374,7 +374,7 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     mappable.set_array([])
     cb = fig.colorbar(mappable, shrink=0.8, aspect=20)
     cb.set_label(field)
-    timestamp = ax.set_title("t = {:#.4G}".format(t[0]))
+    timestamp = ax.set_title("$t = {:#.4G}$".format(t[0]))
     # Animate the sequence.
     print("Animating...")
     def update(num, surfaces):
@@ -390,7 +390,7 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
             if vmax_dynamic:
                 norm.vmax = vmax[num]
             mappable.set_norm(norm)
-        timestamp.set_text("t = {:#.4G}".format(t[num]))
+        timestamp.set_text("$t = {:#.4G}$".format(t[num]))
         return cols
     anim = FuncAnimation(fig, update, nt, fargs=(surfaces,), interval=1, blit=False, repeat=False)
     #anim.save('slices3d.mp4', writer='mencoder')
