@@ -266,7 +266,7 @@ def _slices2d(field, t, slices, dim, par, grid, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-04-30
+    # Chao-Chin Yang, 2015-05-05
     import numpy as np
     # Determine the slice plane.
     if dim.nxgrid == 1:
@@ -283,8 +283,12 @@ def _slices2d(field, t, slices, dim, par, grid, **kwarg):
         raise NotImplementedError("2D, curvilinear model")
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
+    # Replace the labels if in **kwarg.
+    xlabel = kwarg.pop("xlabel", xlabel)
+    ylabel = kwarg.pop("ylabel", xlabel)
+    clabel = kwarg.pop("clabel", field)
     # Send to the animator.
-    _frame_rectangle(t, x, y, slices[:][plane], xlabel=xlabel, ylabel=ylabel, clabel=field, **kwarg)
+    _frame_rectangle(t, x, y, slices[:][plane], xlabel=xlabel, ylabel=ylabel, clabel=clabel, **kwarg)
 #=======================================================================
 def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 3D model.
