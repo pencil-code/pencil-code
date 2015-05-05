@@ -105,21 +105,22 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-04
+    # Chao-Chin Yang, 2015-05-05
     from collections.abc import Sequence
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     import numpy as np
     # Get the data range.
-    logscale = kwarg.get("logscale", False)
-    c = _posdef(c) if logscale else c
     vmin, vmax = _get_range(t, c, **kwarg)
+    logscale = kwarg.pop("logscale", False)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
     vmin0 = vmin[0] if vmin_dynamic else vmin
     vmax0 = vmax[0] if vmax_dynamic else vmax
     norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
+    if logscale:
+        c = c.clip(min(vmin) if vmin_dynamic else vmin, np.inf)
     # Create the first plot.
     fig = plt.figure()
     ax = fig.gca()
@@ -206,19 +207,6 @@ def _get_range(t, data, drange='full', logscale=False):
         vmin = max(vmin, vposmin)
     return vmin, vmax
 #=======================================================================
-def _posdef(a):
-    """Make the array a positive definite by assigning the smallest
-    positive value of a to non-positive elements of a.
-
-    Positional Argument:
-        a
-            A numpy array.
-    """
-    # Chao-Chin Yang, 2015-05-03
-    indices = a <= 0.0
-    a[indices] = a[~indices].min()
-    return a
-#=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 2D model.
 
@@ -281,7 +269,7 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-05-04
+    # Chao-Chin Yang, 2015-05-05
     from collections.abc import Sequence
     from matplotlib.animation import FuncAnimation
     from matplotlib import cm
@@ -295,17 +283,18 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     print("Processing the data...")
     # Get the data range.
     planes = slices.dtype.names
-    logscale = kwarg.get("logscale", False)
-    if logscale:
-        for p in planes:
-            slices[p] = _posdef(slices[p])
     vmin, vmax = _get_range(t, slices, **kwarg)
+    logscale = kwarg.pop("logscale", False)
     seq = lambda a: isinstance(a, Sequence) or isinstance(a, np.ndarray)
     vmin_dynamic = seq(vmin)
     vmax_dynamic = seq(vmax)
     vmin0 = vmin[0] if vmin_dynamic else vmin
     vmax0 = vmax[0] if vmax_dynamic else vmax
     norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
+    if logscale:
+        a = min(vmin) if vmin_dynamic else vmin
+        for p in planes:
+            slices[p] = slices[p].clip(a, np.inf)
     # Set the surfaces.
     nt = len(t)
     dtype = lambda nx, ny: [('value', np.float, (nt,nx,ny)),
