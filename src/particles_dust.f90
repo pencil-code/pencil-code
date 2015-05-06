@@ -3285,6 +3285,25 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+
+!
+!  Check if the particles consume passive scalar, and calculate the
+!  consumption rate
+!                
+              if (lpscalar_sink .and. lpscalar) then
+                gas_consentration=0.1
+! 
+                if (lsherwood_const) then
+                  Sherwood = 2.
+                else
+                  Sherwood = 2.0 + 0.69*sqrt(rep(k))*(nu(k)/pscalar_diff)**(1./3.)
+                endif
+                mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
+                    (2*fp(k,iap))
+                lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
+                    (pscalar_sink_rate*gas_consentration+mass_trans_coeff)
+                dthetadt=lambda_tilde*4.*pi*fp(k,iap)**2
+              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -3299,33 +3318,7 @@ module Particles
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-              if (ldragforce_gas_par .or. (lpscalar_sink .and. lpscalar)) then
-!
-!  Check if the particles consume passive scalar, and calculate the
-!  consumption rate
-!                
-                if (lpscalar_sink .and. lpscalar) then
-                  gas_consentration=0.1
-!
-!  JONAS: michaelides 2006,p122
-!  Nu/Sh = 0.922+Pe**0.33+0.1*Pe**0.33*Re**0.33
-!  Present: rep(k), needed: Pe(k)
-!  From Multiphase flows with Droplets and particles, p.62:
-!  Sh = 2+0.69*Re_rel**0.5 * Sc**0.33
-!  The long number is 0.7**(1/3)
-!  Sc = nu/pscalar_diff implement with getnu 
-! 
-                  if (lsherwood_const) then
-                    Sherwood = 2.
-                  else
-                    Sherwood = 2.0 + 0.69*sqrt(rep(k))*(nu(k)/pscalar_diff)**(1./3.)
-                  endif
-                  mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
-                      (2*fp(k,iap))
-                  lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
-                      (pscalar_sink_rate*gas_consentration+mass_trans_coeff)
-                  dthetadt=lambda_tilde*4.*pi*fp(k,iap)**2
-                endif
+              if (ldragforce_gas_par) then
 !
 !  Cloud In Cell (CIC) scheme.
 !
