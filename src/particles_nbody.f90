@@ -366,7 +366,8 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension(mspar) :: kep_vel,sma
-      real, dimension(mspar,3) :: position,velocity
+      real, dimension(mspar,3) :: velocity
+      real, dimension(mspar,3) :: positions
       real :: tmp,parc
       integer :: k,ks
 !
@@ -388,9 +389,9 @@ module Particles_nbody
 !  Shortcuts
 !
       if (mspar > 0) then
-        position(1:nspar,1) = xsp0 ; velocity(1:nspar,1) = vspx0
-        position(1:nspar,2) = ysp0 ; velocity(1:nspar,2) = vspy0
-        position(1:nspar,3) = zsp0 ; velocity(1:nspar,3) = vspz0
+        positions(1:nspar,1) = xsp0 ; velocity(1:nspar,1) = vspx0
+        positions(1:nspar,2) = ysp0 ; velocity(1:nspar,2) = vspy0
+        positions(1:nspar,3) = zsp0 ; velocity(1:nspar,3) = vspz0
       endif
 !
 !  Initialize particles' positions.
@@ -411,23 +412,23 @@ module Particles_nbody
             print*, 'init_particles_nbody: Place nbody particles at x,y,z=', &
             xsp0, ysp0, zsp0
         do k=1,npar_loc
-          if (ipar(k)<=mspar) fp(k,ixp:izp)=position(ipar(k),1:3)
+          if (ipar(k)<=mspar) fp(k,ixp:izp)=positions(ipar(k),1:3)
         enddo
 !
       case ('random')
         if (lroot) print*, 'init_particles_nbody: Random particle positions'
         do ks=1,mspar
-          if (nxgrid/=1) call random_number_wrapper(position(ks,ixp))
-          if (nygrid/=1) call random_number_wrapper(position(ks,iyp))
-          if (nzgrid/=1) call random_number_wrapper(position(ks,izp))
+          if (nxgrid/=1) call random_number_wrapper(positions(ks,ixp))
+          if (nygrid/=1) call random_number_wrapper(positions(ks,iyp))
+          if (nzgrid/=1) call random_number_wrapper(positions(ks,izp))
         enddo
 !
         if (nxgrid/=1) &
-             position(1:mspar,ixp)=xyz0_loc(1)+position(1:mspar,ixp)*Lxyz_loc(1)
+             positions(1:mspar,ixp)=xyz0_loc(1)+positions(1:mspar,ixp)*Lxyz_loc(1)
         if (nygrid/=1) &
-             position(1:mspar,iyp)=xyz0_loc(2)+position(1:mspar,iyp)*Lxyz_loc(2)
+             positions(1:mspar,iyp)=xyz0_loc(2)+positions(1:mspar,iyp)*Lxyz_loc(2)
         if (nzgrid/=1) &
-             position(1:mspar,izp)=xyz0_loc(3)+position(1:mspar,izp)*Lxyz_loc(3)
+             positions(1:mspar,izp)=xyz0_loc(3)+positions(1:mspar,izp)*Lxyz_loc(3)
 !
 !  Loop through ipar to allocate the nbody particles.
 !
@@ -437,7 +438,7 @@ module Particles_nbody
                  print*,'initparticles_nbody. Slot for nbody particle ',&
                  ipar(k),' was at fp position ',k,' at processor ',iproc
 !
-            fp(k,ixp:izp)=position(ipar(k),1:3)
+            fp(k,ixp:izp)=positions(ipar(k),1:3)
 !
 !  Correct for non-existing dimensions (not really needed, I think).
 !
@@ -496,13 +497,13 @@ module Particles_nbody
 !
         if (lspherical_coords) then
           if (lroot) print*,'put all particles in the midplane'
-          position(1:mspar,iyp)=pi/2
+          positions(1:mspar,iyp)=pi/2
         endif
 !
         tmp = 0.;parc=0
         do ks=1,mspar
           if (ks/=istar) then
-            sma(ks)=abs(position(ks,1))
+            sma(ks)=abs(positions(ks,1))
             tmp=tmp+pmass(ks)
             parc = parc - sma(ks)*pmass(ks)
           endif
@@ -525,27 +526,27 @@ module Particles_nbody
 !
         do ks=1,mspar
           if (ks/=istar) &
-              position(ks,1)=sign(1.,position(ks,1))* (sma(ks) + parc)
+              positions(ks,1)=sign(1.,positions(ks,1))* (sma(ks) + parc)
         enddo
 !
 !  The last one (star) fixes the CM at Rcm=zero
 !
         if (lcartesian_coords) then
-          position(istar,1)=parc
+          positions(istar,1)=parc
         elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
-          position(istar,1)=abs(parc)
-          position(istar,2)=pi
+          positions(istar,1)=abs(parc)
+          positions(istar,2)=pi
         elseif (lspherical_coords) then
-          position(istar,1)=abs(parc)
-          position(istar,3)=pi
+          positions(istar,1)=abs(parc)
+          positions(istar,3)=pi
         endif
 !
         if (ldebug) then
           print*,'pmass =',pmass
-          print*,'position (x)=',position(:,1)
-          print*,'position (y)=',position(:,2)
-          print*,'position (z)=',position(:,3)
+          print*,'position (x)=',positions(:,1)
+          print*,'position (y)=',positions(:,2)
+          print*,'position (z)=',positions(:,3)
         endif
 !
 !  Loop through ipar to allocate the nbody particles
@@ -560,7 +561,7 @@ module Particles_nbody
 !  Here I substitute the first mspar dust particles by massive ones,
 !  since the first ipars are less than mspar
 !
-            fp(k,ixp:izp)=position(ipar(k),1:3)
+            fp(k,ixp:izp)=positions(ipar(k),1:3)
 !
 !  Correct for non-existing dimensions (not really needed, I think)
 !
@@ -591,17 +592,17 @@ module Particles_nbody
 !
 !  See, i.e., Murray & Dermott, p.45, barycentric orbits.
 !
-        position(iplanet,1)=(1+eccentricity) * semimajor_axis * pmass(  istar)/totmass
-        position(  istar,1)=(1+eccentricity) * semimajor_axis * pmass(iplanet)/totmass
+        positions(iplanet,1)=(1+eccentricity) * semimajor_axis * pmass(  istar)/totmass
+        positions(  istar,1)=(1+eccentricity) * semimajor_axis * pmass(iplanet)/totmass
 !
 !  Azimuthal position. Planet and star phased by pi.
 !
-        position(iplanet,2)=0
-        position(  istar,2)=pi
+        positions(iplanet,2)=0
+        positions(  istar,2)=pi
 !
         do k=1,npar_loc
           if (ipar(k) <= mspar) then
-            fp(k,ixp:izp) = position(ipar(k),1:3)
+            fp(k,ixp:izp) = positions(ipar(k),1:3)
           endif
         enddo
 !
@@ -654,7 +655,7 @@ module Particles_nbody
         do ks=1,mspar
           if (ks/=istar) then
             if (lcartesian_coords) then
-              velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
+              velocity(ks,2) = sign(1.,positions(ks,1))*(kep_vel(ks) + parc)
             elseif (lcylindrical_coords) then
               !positive for the planets
               velocity(ks,2) = abs(kep_vel(ks) + parc)
