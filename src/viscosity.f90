@@ -1291,13 +1291,9 @@ module Viscosity
 !
 !  viscosity gradient
 !
-        if (lcylindrical_coords) then
+        if (lcylindrical_coords .or. lspherical_coords) then
           gradnu(:,1) = -pnlaw*nu*(p%rcyl_mn/xnu)**(-pnlaw-1)*1/xnu
           gradnu(:,2) = 0.
-          gradnu(:,3) = 0.
-        elseif (lspherical_coords) then
-          gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
-          gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
           gradnu(:,3) = 0.
         else
           print*,'power-law viscosity only implemented '
