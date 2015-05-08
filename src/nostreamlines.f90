@@ -17,9 +17,13 @@ module Streamlines
   public :: read_streamlines_init_pars, write_streamlines_init_pars
   public :: read_streamlines_run_pars, write_streamlines_run_pars
 !
-  integer, public :: ntracers
-!
   contains
+!***********************************************************************
+    subroutine tracers_prepare()
+!
+!  Dummy routine
+!
+    endsubroutine tracers_prepare
 !***********************************************************************
     subroutine trace_streamlines(f,tracers,n_tracers,h_max,h_min,l_max,tol,vv)
 !
@@ -41,56 +45,50 @@ module Streamlines
 !
     endsubroutine trace_streamlines
 !***********************************************************************
-    subroutine tracers_prepare()
+    subroutine wtracers(f,path)
 !
-!  Dummy routine
+      real, dimension (mx,my,mz,mfarray) :: f
+      character(len=*) :: path
 !
-    endsubroutine tracers_prepare
-!***********************************************************************
-  subroutine wtracers(f,path)
-!
-    real, dimension (mx,my,mz,mfarray) :: f
-    character(len=*) :: path
-!
-    call keep_compiler_quiet(path)
-    call keep_compiler_quiet(f)
+      call keep_compiler_quiet(path)
+      call keep_compiler_quiet(f)
 !
   endsubroutine wtracers
 !***********************************************************************
-  subroutine read_streamlines_init_pars(unit,iostat)
+    subroutine read_streamlines_init_pars(unit,iostat)
 !
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
+      include 'unit.h'
+      integer, intent(inout), optional :: iostat
 !
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-  endsubroutine read_streamlines_init_pars
+    endsubroutine read_streamlines_init_pars
 !***********************************************************************
-  subroutine write_streamlines_init_pars(unit)
+    subroutine write_streamlines_init_pars(unit)
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    call keep_compiler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
-  endsubroutine write_streamlines_init_pars
+    endsubroutine write_streamlines_init_pars
 !***********************************************************************
-  subroutine read_streamlines_run_pars(unit,iostat)
+    subroutine read_streamlines_run_pars(unit,iostat)
 !
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
+      include 'unit.h'
+      integer, intent(inout), optional :: iostat
 !
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_streamlines_run_pars
 !***********************************************************************
-  subroutine write_streamlines_run_pars(unit)
+    subroutine write_streamlines_run_pars(unit)
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    call keep_compiler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
-  endsubroutine write_streamlines_run_pars
+    endsubroutine write_streamlines_run_pars
 !***********************************************************************
 endmodule Streamlines
