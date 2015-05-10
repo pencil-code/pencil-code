@@ -19,5 +19,5 @@ y=a(1,*)
 print,n
 print
 print,total(n)
-plot,y,n,ps=10,yr=[0,62]
+plot,y,n,ps=10,yr=[0,60]
 END
