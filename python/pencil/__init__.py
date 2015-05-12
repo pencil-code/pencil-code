@@ -7,6 +7,7 @@ from pencil.files.pdim import *
 from pencil.files.param import *
 from pencil.files.grid import read_grid
 from pencil.files.var import read_var
+from pencil.files.read_pvar import read_pvar
 from pencil.files.index import *
 from pencil.files.rrmv_par import *
 from pencil.files.slices import *
@@ -27,3 +28,5 @@ from pencil.files.fixed_points import *
 from pencil.math.derivatives import *
 from pencil.math.vector_multiplication import *
 #from pencil.files.multi_slices import *
+
+
