@@ -29,8 +29,8 @@ def read_pdim(datadir='data',proc=-1):
     """
     if (proc < 0 ):
         filename = datadir+'/pdim.dat' # global box dimensions
-    else:
-        filename = datadir+'/proc'+str(proc)+'/pdim.dat' # local proc. dimensions
+    #else:
+        #filename = datadir+'/proc'+str(proc)+'/pdim.dat' # local proc. dimensions
 
     try:
 	filename = os.path.expanduser(filename)
