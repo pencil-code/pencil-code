@@ -139,7 +139,8 @@ module Cdata
   real, dimension (nx) :: diffus_nud,diffus_nud3
   real, dimension (nx) :: diffus_nun,diffus_nun3
   real, dimension (nx) :: diffus_special
-  real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
+  real, dimension (nx) :: src_density
+  real, dimension (nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_max
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0

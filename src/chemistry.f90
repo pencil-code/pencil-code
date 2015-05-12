@@ -659,6 +659,8 @@ module Chemistry
            endif
         case ('flame_front')
           call flame_front(f)
+        case ('TTD')
+          call TTD(f)
         case ('triple_flame')
           call triple_flame(f)
         case ('flame')
@@ -1376,6 +1378,62 @@ module Chemistry
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+      subroutine TTD(f)
+!
+!  15-may-03/Nils Erland L. Haugen: adapted from flame_front
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,k
+!
+      real :: initial_mu1, ksi_TTD, dTdr_c, deltaT
+!
+      call air_field(f)
+!
+      ksi_TTD=1.
+      dTdr_c=2000 ![K/m]
+!
+!  Initialize temperature
+!
+      do k=l1,l2
+        if (ltemperature_nolog) then
+          f(k,:,:,iTT)=f(k,:,:,iTT)+ksi_TTD*dTdr_c*(xyz1(1)-x(k))/100.
+        else
+          deltaT=ksi_TTD*dTdr_c*(xyz1(1)-x(k))/100.
+          f(k,:,:,ilnTT)=log(exp(f(k,:,:,ilnTT))+deltaT)
+!          print*,'deltaT=',deltaT, exp(f(k,m1,n1,ilnTT)), f(k,m1,n1,ilnTT)
+        endif
+      enddo
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+!  Check if we want nolog of density or nolog of temperature
+!
+      if (ldensity_nolog) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) &
+          f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine TTD
 !***********************************************************************
       subroutine triple_flame(f)
 !

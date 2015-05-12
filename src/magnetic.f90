@@ -6789,7 +6789,7 @@ module Magnetic
 !
 !  eta proportional to chosen power of z...
 !
-          eta_z = eta*(1.+z/eta_z0)**eta_power_z
+          eta_z = eta*(1.+(z-z0)/eta_z0)**eta_power_z
 !
 !  ... and its gradient.
 !
@@ -6951,7 +6951,7 @@ module Magnetic
 !
 !  eta proportional to chosen power of z...
 !
-          eta_x = eta*(1.+x/eta_x0)**eta_power_x
+          eta_x = eta*(1.+(x-x0)/eta_x0)**eta_power_x
 !
 !  ... and its gradient.
 !

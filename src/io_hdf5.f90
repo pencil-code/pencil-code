@@ -76,6 +76,7 @@ module Io
       if (lroot) call svn_id ("$Id$")
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
           "This module only works with the setting lseparate_persist=.true.")
+      call fatal_error ('io_HDF5', "This module is purely experimental, please help to get it working! Thanks.")
 !
 ! Create datatype to describe internal elements of data, ie. the core data
 ! excluding the halos, unless we are on an edge and have to include them.

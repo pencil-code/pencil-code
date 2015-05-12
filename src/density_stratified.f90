@@ -423,7 +423,9 @@ module Density
 !
 !  Find the rate of change.
 !
-      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ugrhos - p%rhos * (p%divu + p%uu(:,3) * dlnrho0dz(n))
+      penc = p%uu(:,3) * dlnrho0dz(n)
+      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ugrhos - p%rhos * (p%divu + penc)
+      if (lfirst .and. ldt) src_density = src_density + abs(penc)
 !
       fdiff = 0.0
 !

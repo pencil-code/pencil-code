@@ -20,7 +20,7 @@ pro plot_plane, array_plot=array_plot, nxg=nxg, nzg=nzg, $
     loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     ceiling=ceiling, position=position, fillwindow=fillwindow, $
-    tformat=tformat, $
+    tformat=tformat, xxstalk=xxstalk, zzstalk=zzstalk, $
     tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, zsize=zsize, lwindow_opened=lwindow_opened, $
     colorbar=colorbar, bartitle=bartitle, quiet=quiet, $
@@ -141,6 +141,9 @@ if ( subbox and (time ge tsubbox) ) then begin
          [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
          thick=thick, color=subcolor
 endif
+;  Overplot stalked particles.
+if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [zzstalk], $
+        ps=1, color=255, thick=2.0
 ;  Colorbar indicating range.
 if (colorbar) then begin
   colorbar_co, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
@@ -176,7 +179,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     noaxes=noaxes, thick=thick, charsize=charsize, loge=loge, log10=log10, $
     t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
     ceiling=ceiling, position=position, fillwindow=fillwindow, $
-    tformat=tformat, swap_endian=swap_endian, $
+    tformat=tformat, stalk=stalk, nstalk=nstalk, swap_endian=swap_endian, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, zsize=zsize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, $
@@ -208,6 +211,7 @@ default, title, ''
 default, t_title, 0
 default, t_scale, 1.0
 default, t_zero, 0.0
+default, stalk, 0
 default, interp, 0
 default, ceiling, 0.0
 default, subbox, 0
@@ -235,10 +239,14 @@ default, readgrid, 0
 default, debug, 0
 default, quiet, 0
 ;
-;  Get necessary dimensions.
+;  Read additional information.
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_dim, obj=locdim, datadir=datadir+'/proc0', /quiet
+if (stalk) then begin
+  pc_read_pstalk, obj=pst, datadir=datadir, /quiet
+  default, nstalk, n_elements(pst.ipar)
+endif
 pc_set_precision, dim=dim, /quiet
 ;
 ;  Need to know box size for proper axes and for shifting the shearing
@@ -519,6 +527,30 @@ endif else begin
         array[ipx*nx:(ipx+1)*nx-1,ipz*nz:(ipz+1)*nz-1,*]=array_local
       endfor
 ;
+;  Interpolate position of stalked particles to time of snapshot.
+;
+      if (stalk) then begin
+        ist=where( abs(pst.t-t) eq min(abs(pst.t-t)))
+        ist=ist[0]
+        if (max(tag_names(pst) eq 'APS') eq 1) then begin
+          if (n_elements(pst.ipar) eq 1) then begin
+            if (pst.aps[ist] eq 0.0) then nstalk=0 else nstalk=-1
+          endif else begin
+            ipar=where(pst.aps[*,ist] ne 0.0)
+            if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
+          endelse
+        endif else begin
+          ipar=indgen(nstalk)
+        endelse
+        if (nstalk eq -1) then begin
+          xxstalk=pst.xp[ist]
+          zzstalk=pst.zp[ist]
+        endif else if (nstalk ne 0) then begin
+          xxstalk=pst.xp[ipar,ist]
+          zzstalk=pst.zp[ipar,ist]
+        endif
+      endif
+;
 ;  Plot requested variable (plotting is turned off by default).
 ;
       plot_plane, array_plot=array[*,*,ivarpos[iplot]], nxg=nxg, nzg=nzg, $
@@ -531,7 +563,7 @@ endif else begin
           loge=loge, log10=log10, $
           t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
           ceiling=ceiling, position=position, fillwindow=fillwindow, $
-          tformat=tformat, $
+          tformat=tformat, xxstalk=xxstalk, zzstalk=zzstalk, $
           tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
           xsize=xsize, zsize=zsize, lwindow_opened=lwindow_opened, $
           colorbar=colorbar, bartitle=bartitle, quiet=quiet, $

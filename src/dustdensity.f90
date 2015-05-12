@@ -66,7 +66,6 @@ module Dustdensity
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
-  integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -88,7 +87,7 @@ module Dustdensity
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   integer :: iadvec_ddensity=0
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
-  real    :: G_condensparam=0., supsatratio_given=0.
+  real    :: G_condensparam=0., supsatratio_given=0., supsatratio_omega=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -110,7 +109,7 @@ module Dustdensity
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
-      G_condensparam,supsatratio_given,ndmin_for_mdvar
+      G_condensparam, supsatratio_given, supsatratio_omega, ndmin_for_mdvar
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
@@ -535,10 +534,14 @@ module Dustdensity
         case ('hat3d')
           call hat3d(amplnd,f,ind(1),widthnd,kx_nd,ky_nd,kz_nd)
           f(:,:,:,ind(1)) = f(:,:,:,ind(1)) + nd_const
+!
+!  By default, spot_number=1, so first means first index.
+!  By setting spot_number to another index, we can initialize any other point.
+!
         case ('first')
           print*, 'init_nd: All dust particles in first bin.'
           f(:,:,:,ind) = 0.
-          f(:,:,:,ind(1)) = nd0
+          f(:,:,:,ind(spot_number)) = nd0
           if (eps_dtog/=0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
         case ('firsttwo')
           print*, 'init_nd: All dust particles in first and second bin.'
@@ -563,7 +566,7 @@ module Dustdensity
           do k=1,ndustspec
             if (a1 == 0) then
               f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2)/md(k)
+                  +amplnd*exp(-0.5*(ad(k)-a0)**2/sigmad**2) !/md(k)
             else
               if (a1>ad(k)) then
                 fac=(ad(k)/a0-1.)**2/(ad(k)/a0-a1/a0)**2
@@ -2047,6 +2050,10 @@ module Dustdensity
     subroutine dust_condensation_nolmdvar(f,df,p,mfluxcond)
 !
 !  Calculate condensation of dust on existing dust surfaces
+!  a*adot = GS
+!  m = (4pi/3) rhow a^3
+!  mdot = 4pi rhow a^2 adot = 4pi rhow a GS
+!  lambda = mdot/m = 3 GS/a^2, and GS = mfluxcond
 !
 !  27-jan-15/axel+nils: coded
 !
@@ -2072,9 +2079,9 @@ module Dustdensity
         mmodk=abs(3*mfluxcond/ad(k)**2)
         mmodkp=abs(3*mfluxcond/ad(k+1)**2)
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-          -.5*mdotkp*f(l1:l2,m,n,ind(k+1)) &
-          +.5*mmodkp*f(l1:l2,m,n,ind(k+1)) &
-              -mmodk*f(l1:l2,m,n,ind(k))
+          -.5*(mdotkp*f(l1:l2,m,n,ind(k+1))) &
+          +.5*(mmodkp*f(l1:l2,m,n,ind(k+1))) &
+              -mmodk *f(l1:l2,m,n,ind(k))
 !
 !  Finish with the last mass bin...
 !
@@ -2086,8 +2093,8 @@ module Dustdensity
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
           -.5*(-mdotkm*f(l1:l2,m,n,ind(k-1))) &
           +.5*(+mmodkm*f(l1:l2,m,n,ind(k-1))) &
-              -mmodk*f(l1:l2,m,n,ind(k))
-
+               -mmodk *f(l1:l2,m,n,ind(k))
+!
 !  ... then loop over mass bins
 !
         do k=2,ndustspec-1
@@ -2100,7 +2107,7 @@ module Dustdensity
           df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
             -.5*(mdotkp*f(l1:l2,m,n,ind(k+1))-mdotkm*f(l1:l2,m,n,ind(k-1))) &
             +.5*(mmodkp*f(l1:l2,m,n,ind(k+1))+mmodkm*f(l1:l2,m,n,ind(k-1))) &
-                -mmodk*f(l1:l2,m,n,ind(k))
+                -mmodk *f(l1:l2,m,n,ind(k))
         enddo
 !
     endsubroutine dust_condensation_nolmdvar
@@ -2218,12 +2225,17 @@ module Dustdensity
           call fatal_error("dustdensity","no icc or ilncc match")
         endif
 !
-!  Allow only positive values (but commented out now).
+!  Assume a cos(om*t) time behavior
 !
-!       mfluxcond=max(mfluxcond, 0.)
+      case ('cos(om*t)')
+        mfluxcond=G_condensparam*supsatratio_given*cos(supsatratio_omega*t)
+!
+!  Allow only positive values (but commented out now).
 !
       case ('simplified')
         mfluxcond=G_condensparam*supsatratio_given
+!
+!  fatal_error otherwise
 !
       case default
         call fatal_error('get_mfluxcond','No valid dust chemistry specified.')

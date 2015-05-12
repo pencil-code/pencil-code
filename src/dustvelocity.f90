@@ -235,6 +235,9 @@ module Dustvelocity
         case ('pscalar')
           !AB: no action needed
 
+        case ('cos(om*t)')
+          !AB: no action needed
+
         case ('simplified')
           !AB: no action needed
 

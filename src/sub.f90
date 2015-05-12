@@ -87,7 +87,7 @@ module Sub
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
-  public :: xlocation, ylocation, zlocation, location_in_proc
+  public :: xlocation, ylocation, zlocation, location_in_proc, position
   public :: register_report_aux
   public :: fourier_single_mode
   public :: remove_mean,global_mean
@@ -5727,6 +5727,31 @@ nameloop: do
       endif
 !
     endsubroutine zlocation
+!***********************************************************************
+    subroutine position(ind,ip,ngrid,ind_loc,flag)
+!
+!  Determines local position ind_loc with respect to processor ip corresponding to global position ind
+!  if grid has global extent ngrid. flag is set if ind_loc lies within the local range.
+!  On return, ind_loc is corrected for ghost zones, thus can be used to index the f array.
+!  ind_loc and flag are not altered if ind <= 0.
+!
+!  21-apr-15/MR: coded
+!
+      integer, intent(in) :: ind,ip,ngrid
+      integer, intent(out):: ind_loc
+      logical, intent(out):: flag
+     
+      if (ind>0) then
+        ind_loc=ind-ip*ngrid
+        if (ind_loc>=1.and.ind_loc<=ngrid) then
+          flag=.true.
+          ind_loc=ind_loc+nghost
+        else
+          flag=.false.
+        endif
+      endif
+
+    endsubroutine position
 !***********************************************************************
     subroutine fourier_single_mode(arr,idims,k,idir,amps,l2nd)
 !

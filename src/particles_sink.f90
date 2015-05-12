@@ -41,6 +41,7 @@ module Particles_sink
   logical :: lbondi_accretion=.false.
   logical :: lselfgravity_sinkparticles=.true.
   logical :: lsubgrid_accretion=.false., ldebug_subgrid_accretion=.false.
+  logical :: laccrete_sink_sink=.true.
   character (len=labellen), dimension(ninit) :: initaps='nothing'
 !
   integer :: idiag_nparsink=0
@@ -50,13 +51,15 @@ module Particles_sink
       lrhop_roche_unit, initaps, aps0, aps1, aps2, aps3, lbondi_accretion, &
       lselfgravity_sinkparticles, lsink_communication_all_to_all, &
       bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
-      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion
+      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion, &
+      laccrete_sink_sink
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles, &
       bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
-      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion
+      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion, &
+      laccrete_sink_sink
 !
   contains
 !***********************************************************************
@@ -1012,7 +1015,9 @@ module Particles_sink
             sum(fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0)
       endif
 !
-      if (present(nosink_in)) then
+      if (.not.laccrete_sink_sink) then
+        nosink=.true.
+      else if (present(nosink_in)) then
         nosink=nosink_in
       else
         nosink=.false.

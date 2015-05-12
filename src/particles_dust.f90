@@ -538,12 +538,15 @@ module Particles
 !
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
-      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
-          .and..not.lparticles_density) then
-        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
-            'not yet implemented for variable particle radius or number'
-        call fatal_error('initialize_particles','')
-      endif
+! NILS: Commented out the check below (after discussion with Anders)
+! NILS: as it does not seem to be required any longer. 
+!
+!      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
+!          .and..not.lparticles_density) then
+!        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
+!            'not yet implemented for variable particle radius or number'
+!        call fatal_error('initialize_particles','')
+!      endif
 !
 !  Fatal error if sink particle radius is zero or negative.
 !
@@ -3097,7 +3100,7 @@ module Particles
       logical :: lnbody, lsink
       real, pointer :: pscalar_diff, ap0(:)
       real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
-      real :: dthetadt
+      real :: dthetadt, mp_vcell
 !
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
@@ -3358,16 +3361,24 @@ module Particles
                     endif
 !  Add friction force to grid point.
                     call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
-                    if (lhydro) then
+!NILS: The grid volume should be put into a pencil when required
+                    if ((lpscalar_sink .and. lpscalar) .or. &
+                        (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                    if (lhydro .and. ldragforce_gas_par) then
+                      if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                      else
+                        mp_vcell=rhop_swarm_par
+                      endif
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_swarm_par*rho1_point*dragforce*weight
+                          mp_vcell*rho1_point*dragforce*weight
                     endif
                     if (lpscalar_sink .and. lpscalar) then
                       if (ilncc == 0) then
                         call fatal_error('dvvp_dt_pencil',&
                             'lpscalar_sink not allowed for pscalar_nolog!')
                       else
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
                         df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
                             weight*dthetadt/volume_cell
                       endif
@@ -3436,19 +3447,28 @@ module Particles
                       else
                         rho1_point = p%rho1(ixx-nghost)
                       endif
+!NILS: The grid volume should be put into a pencil when required
+                      if ((lpscalar_sink .and. lpscalar) .or. &
+                          (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
 !  Add friction force to grid point.
-                      if (lhydro) then
+                      if (lhydro .and. ldragforce_gas_par) then
                         call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
                             rhop_swarm_par)
+!  Calculate the particle mass divided by the cell volume
+                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        else
+                          mp_vcell=rhop_swarm_par
+                        endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                            rhop_swarm_par*rho1_point*dragforce*weight
+                            mp_vcell*rho1_point*dragforce*weight
                       endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
                           call fatal_error('dvvp_dt_pencil',&
                               'lpscalar_sink not allowed for pscalar_nolog!')
                         else
-                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
                               weight*dthetadt/volume_cell
                         endif
@@ -3513,18 +3533,27 @@ module Particles
                         rho1_point = p%rho1(ixx-nghost)
                       endif
 !
-                      if (lhydro) then
+!NILS: The grid volume should be put into a pencil when required
+                      if ((lpscalar_sink .and. lpscalar) .or. &
+                          (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+                          call find_grid_volume(ixx,iyy,izz,volume_cell) 
+                      if (lhydro .and. ldragforce_gas_par) then
                         call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
                             rhop_swarm_par)
+!  Calculate the particle mass divided by the cell volume
+                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        else
+                          mp_vcell=rhop_swarm_par
+                        endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                            rhop_swarm_par*rho1_point*dragforce*weight
+                            mp_vcell*rho1_point*dragforce*weight
                       endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
                           call fatal_error('dvvp_dt_pencil',&
                               'lpscalar_sink not allowed for pscalar_nolog!')
                         else
-                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
                               weight*dthetadt/volume_cell
                         endif
@@ -3536,17 +3565,26 @@ module Particles
 !  Nearest Grid Point (NGP) scheme.
 !
                   l=ineargrid(k,1)
-                  if (lhydro) then
+!NILS: The grid volume should be put into a pencil when required
+                  if ((lpscalar_sink .and. lpscalar) .or. &
+                      (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+                      call find_grid_volume(ixx,iyy,izz,volume_cell) 
+                  if (lhydro .and. ldragforce_gas_par) then
                     call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
+!  Calculate the particle mass divided by the cell volume
+                    if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                      mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                    else
+                      mp_vcell=rhop_swarm_par
+                    endif
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                        rhop_swarm_par*p%rho1(l-nghost)*dragforce
+                        mp_vcell*p%rho1(l-nghost)*dragforce
                   endif
                   if (lpscalar_sink .and. lpscalar) then
                     if (ilncc == 0) then
                       call fatal_error('dvvp_dt_pencil',&
                           'lpscalar_sink not allowed for pscalar_nolog!')
                     else
-                      call find_grid_volume(l,m,n,volume_cell)
                       df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
                           dthetadt/volume_cell
                     endif

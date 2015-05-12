@@ -105,15 +105,7 @@ module FArrayManager
       intent(in)  :: varname,vector
       intent(out) :: ivar,ierr
 !
-      if (present(ierr).and.present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
-      elseif (present(ierr)) then
-        call farray_register_variable(varname,ivar,vartype,ierr=ierr)
-      elseif (present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector)
-      else
-        call farray_register_variable(varname,ivar,vartype)
-      endif
+      call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
 !
     endsubroutine farray_register_pde
 !***********************************************************************
@@ -132,15 +124,7 @@ module FArrayManager
       intent(in)  :: varname,vector
       intent(out) :: ivar,ierr
 !
-      if (present(ierr).and.present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
-      elseif (present(ierr)) then
-        call farray_register_variable(varname,ivar,vartype,ierr=ierr)
-      elseif (present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector)
-      else
-        call farray_register_variable(varname,ivar,vartype)
-      endif
+      call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
 !
 !  write varname into index.pro file (for idl)
 !
@@ -156,6 +140,8 @@ module FArrayManager
 !
 !  Register an auxiliary variable in the f array.
 !
+      use General, only: loptest
+
       character (len=*) :: varname
       integer :: ivar
       integer :: vartype
@@ -166,23 +152,13 @@ module FArrayManager
       intent(in)  :: varname,communicated,vector
       intent(out) :: ivar,ierr
 !
-      vartype = iFARRAY_TYPE_AUXILIARY
-! ... unless
-      if (present(communicated)) then
-        if (communicated) then
-          vartype=iFARRAY_TYPE_COMM_AUXILIARY
-        endif
+      if (loptest(communicated)) then
+        vartype=iFARRAY_TYPE_COMM_AUXILIARY
+      else
+        vartype = iFARRAY_TYPE_AUXILIARY
       endif
 !
-      if (present(ierr).and.present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
-      elseif (present(ierr)) then
-        call farray_register_variable(varname,ivar,vartype,ierr=ierr)
-      elseif (present(vector)) then
-        call farray_register_variable(varname,ivar,vartype,vector=vector)
-      else
-        call farray_register_variable(varname,ivar,vartype)
-      endif
+      call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
 !
     endsubroutine farray_register_auxiliary
 !***********************************************************************

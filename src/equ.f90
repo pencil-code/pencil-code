@@ -82,7 +82,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
+      real, dimension (nx) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
@@ -388,6 +388,7 @@ module Equ
           endif
           if (ldensity.or.lboussinesq.or.lanelastic) then
             diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_hypermesh_rho=0.0
+            if (lstratz) src_density = 0.0
           endif
           if (leos) advec_cs2=0.0
           if (lenergy) then
@@ -667,6 +668,7 @@ module Equ
           maxdiffus=0.0
           maxdiffus2=0.0
           maxdiffus3=0.0
+          maxsrc = 0.0
           if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
@@ -726,6 +728,10 @@ module Equ
           if (lneutralvelocity) maxdiffus3=max(maxdiffus3,diffus_nun3)
           if (lneutraldensity)  maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
 !
+!  Timestep constraint from source terms.
+!
+          if (ldensity .and. lstratz) maxsrc = max(maxsrc, src_density)
+!
 !  Exclude the frozen zones from the time-step calculation.
 !
           if (any(lfreeze_varint)) then
@@ -760,7 +766,8 @@ module Equ
 !
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_max    = max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
+          dt1_src    = 5.0 * maxsrc
+          dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
 !
 !  time step constraint from the coagulation kernel
 !

@@ -1920,6 +1920,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O3 #(norosx52)
 #CFLAGS=-DFUNDERSC=1 -I/usr/local/include#(norosx52)
 #LD_GSL = -lgsl -lgslcblas -L/usr/local/lib/#(norosx52)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(norosx52*)
 ##
 ## Dhruba's laptop
 ##

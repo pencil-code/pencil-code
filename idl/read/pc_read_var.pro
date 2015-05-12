@@ -110,9 +110,20 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
-  default, allprocs, 0
   default, reduced, 0
   if (keyword_set(reduced)) then allprocs=1
+  if not is_defined(allprocs) then begin
+;
+; derive allprocs from the setting in Makefile.local
+;
+    spawn, "grep '^ *[^\#].*io_collect' src/Makefile.local", grepres
+    if strpos(grepres,'xy') ge 0 then $
+      allprocs=2 $
+    else if grepres ne '' then $
+      allprocs=1 $
+    else $
+      allprocs=0
+  endif
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -132,7 +143,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Set f77 keyword according to allprocs.
 ;
-  if (keyword_set (allprocs)) then default, f77, 0
+  if (keyword_set (allprocs)) then $
+    if allprocs eq 1 then default, f77, 0
   default, f77, 1
 ;
 ; Default data directory.
@@ -234,8 +246,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; Number of processors over which to loop.
 ;
   if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
+;
+; data from a single-processor run or written with IO_STRATEGY=IO_COLLECT
+;
     nprocs=1
   endif else if (allprocs eq 2) then begin
+;
+; data written with IO_STRATEGY=IO_COLLECT_XY
+;
     nprocs=dim.nprocz
     procdim.nx=nx
     procdim.ny=ny
@@ -247,6 +265,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     mxloc=mx
     myloc=my
   endif else begin
+;
+; data written with IO_STRATEGY=IO_DIST
+;
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
   endelse
 ;
@@ -340,7 +361,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   res=''
   content=''
   for iv=0L,totalvars-1L do begin
-    if (nprocs eq 1) then begin
+    if (nprocs eq 1 and allprocs ne 2) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
       res=res+','+varcontent[iv].idlvarloc
@@ -412,7 +433,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ;
-    if (nprocs gt 1) then begin
+    if (nprocs gt 1 or allprocs eq 2) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
@@ -499,7 +520,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)
       endif
       readu, file, t, x, y, z, dx, dy, dz
-    endif else if (nprocs eq 1) then begin
+    endif else if (allprocs ne 2 and nprocs eq 1) then begin
       ; single processor distributed file
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay

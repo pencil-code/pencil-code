@@ -1559,7 +1559,7 @@ module EquationOfState
       character (len=80) :: ChemInpLine
       integer :: In1,In2,In3,In4,In5,iElement,iTemperature,StopInd
       integer :: NumberOfElement_i
-      logical :: IsThermo=.false., found_specie
+      logical :: IsThermo=.false., found_specie, existing_specie
       real, dimension(4) :: MolMass
       real, dimension(3) :: tmp_temp
       character (len=5) :: NumberOfElement_string,element_string
@@ -1598,10 +1598,22 @@ module EquationOfState
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
+! Check if we are working with a specie that was found under the SPECIES
+! section of chem.inp.
+!
+            if (ChemInpLine(80:80)=="1") then
+              if (found_specie) then
+                existing_specie=.true.
+              else
+                existing_specie=.false.
+              endif
+            endif
+!
 ! What problems are in the case of  ind_chem=0?
 !
             if (ind_chem>0 .and. ind_chem<=nchemspec) then
 !
+            if (existing_specie) then
             if (found_specie) then
 !
 ! Find molar mass
@@ -1656,6 +1668,7 @@ module EquationOfState
                   species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
 !
+          endif
           endif
           endif !(from ind_chem>0 query)
         endif

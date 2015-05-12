@@ -46,7 +46,7 @@ module Viscosity
   real :: meanfield_nuB=0.0
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   character (len=labellen) :: nnewton_type='none'
-  real :: nnewton_tscale,nnewton_step_width
+  real :: nnewton_tscale=0.0,nnewton_step_width=0.0
   real, dimension(nx) :: xmask_vis=0
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
@@ -97,6 +97,7 @@ module Viscosity
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
+  logical :: luse_nu_rmn_prof=.false.
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   real :: damp_sound=0.
@@ -111,7 +112,7 @@ module Viscosity
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound
+      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -817,6 +818,8 @@ module Viscosity
         lpenc_requested(i_uijk)=.true.
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
+      if (lvisc_nu_profr_powerlaw.and.luse_nu_rmn_prof) &
+          lpenc_requested(i_r_mn)=.true.
       if (lvisc_rho_nu_const .or. &
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
@@ -1287,22 +1290,38 @@ module Viscosity
 !  -- here the nu viscosity depends on r; nu=nu_0*(r/r0)^(-pnlaw)
 !
       if (lvisc_nu_profr_powerlaw) then
-        pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
+        if (.not.luse_nu_rmn_prof) then
+          pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
 !
 !  viscosity gradient
 !
-        if (lcylindrical_coords) then
-          gradnu(:,1) = -pnlaw*nu*(p%rcyl_mn/xnu)**(-pnlaw-1)*1/xnu
-          gradnu(:,2) = 0.
-          gradnu(:,3) = 0.
-        elseif (lspherical_coords) then
-          gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
-          gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
-          gradnu(:,3) = 0.
+          if (lcylindrical_coords) then
+            gradnu(:,1) = -pnlaw*nu*(p%rcyl_mn/xnu)**(-pnlaw-1)*1/xnu
+            gradnu(:,2) = 0.
+            gradnu(:,3) = 0.
+          elseif (lspherical_coords) then
+            gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
+            gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
+            gradnu(:,3) = 0.
+          else
+            print*,'power-law viscosity only implemented '
+            print*,'for spherical and cylindrical coordinates'
+            call fatal_error("calc_pencils_viscosity","")
+          endif
         else
-          print*,'power-law viscosity only implemented '
-          print*,'for spherical and cylindrical coordinates'
-          call fatal_error("calc_pencils_viscosity","")
+          pnu = nu*(p%r_mn/xnu)**(-pnlaw)
+!
+!  viscosity gradient
+!
+          if (lspherical_coords) then
+            gradnu(:,1) = -pnlaw*nu*(p%r_mn/xnu)**(-pnlaw-1)*1/xnu
+            gradnu(:,2) = 0.
+            gradnu(:,3) = 0.
+          else
+            print*,'power-law viscosity with luse_nu_rmn_prof=T only '
+            print*,'implemented for spherical coordinates'
+            call fatal_error("calc_pencils_viscosity","")
+          endif
         endif
 !
         call multmv(p%sij,gradnu,sgradnu)

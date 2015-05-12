@@ -240,9 +240,7 @@ module InitialCondition
          profiles(:,iref_grho ) = drhodr_global (ipx*nx+1:(ipx+1)*nx)
          profiles(:,iref_d2rho) = del2rho_global(ipx*nx+1:(ipx+1)*nx)
          profiles(:,iref_s    ) = ss_global(1)
-
-         return
-
+!
          if (lroot) then 
            call safe_character_assign(wfile,'reference_state.dat')
            open(unit,file=wfile,status='unknown')

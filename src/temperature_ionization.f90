@@ -88,6 +88,7 @@ module Energy
   integer :: idiag_ffakez=0   ! XYAVG_DOC: $\left<\varrho u_z c_p T \right>_{xy}$
   integer :: idiag_mumz=0     ! XYAVG_DOC: $\left<\mu\right>_{xy}$
   integer :: idiag_TTmz=0     ! XYAVG_DOC: $\left< T \right>_{xy}$
+  integer :: idiag_ssmz=0     ! XYAVG_DOC: $\left< s \right>_{xy}$
   integer :: idiag_eemz=0     ! XYAVG_DOC: $\left< e \right>_{xy}$
   integer :: idiag_ppmz=0     ! XYAVG_DOC: $\left< p \right>_{xy}$
 !
@@ -461,6 +462,7 @@ module Energy
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmz/=0) lpenc_diagnos(i_TT)=.true.
+      if (idiag_ssmz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_eemz/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppmz/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
@@ -709,6 +711,7 @@ module Energy
         call xysum_mn_name_z(p%pp*p%rho1,idiag_pr1mz)
         call xysum_mn_name_z(1/p%mu1,idiag_mumz)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%ss,idiag_ssmz)
         call xysum_mn_name_z(p%ee,idiag_eemz)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
       endif
@@ -847,7 +850,8 @@ module Energy
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
-        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_eemz=0; idiag_ppmz=0
+        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
+        idiag_eemz=0; idiag_ppmz=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
       endif
 !
@@ -883,6 +887,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'pr1mz',idiag_pr1mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'mumz',idiag_mumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eemz',idiag_eemz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
       enddo

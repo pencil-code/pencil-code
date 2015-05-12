@@ -257,6 +257,12 @@ module Density
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
 !
+!  Prevent this module when background stratification is on.
+!
+      if (lstratz) call fatal_error('initialize_density', 'lstratz = .true.; use density_stratified instead. ')
+!
+!  Check the switches.
+!
       if (ldensity_nolog.and.lupw_lnrho) then
         lupw_rho=.true.
         if (lroot) &

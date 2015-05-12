@@ -4480,14 +4480,8 @@ module Energy
 !
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        if (notanumber(p%glnTT)) then
-          print*,'calc_heatcond-1: NaNs in p%glnTT'
-          stop
-        endif
-        if (notanumber(glnThcond)) then
-          print*,'calc_heatcond-1: NaNs in glnThcond'
-          stop
-        endif
+        if (notanumber(p%glnTT)) &
+          call fatal_error('calc_heatcond', 'NaNs in p%glnTT')
         call dot(p%glnTT,glnThcond,g2)
           if (pretend_lnTT) then
             thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)

@@ -8,7 +8,7 @@ module Slices
 !
   use Cdata
   use Messages
-  use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime
+  use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime, position
 !
   implicit none
 !
@@ -327,6 +327,7 @@ module Slices
 !  processor.
 !
 !  29-may-06/tobi: wrapped code from param_io.f90 into this subroutine
+!  21-apr-15/MR: corrected i[xyz]_loc determination, see subroutine position
 !
 !  set slice position. The default for slice_position is 'p' for periphery,
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
@@ -339,8 +340,8 @@ module Slices
         lwrite_slice_xz=lfirst_proc_y
         lwrite_slice_yz=lfirst_proc_x
 !
-!  slice position in middle of the box independ of nprocy,nprocz
-!  second horizontal slice is the upper most layer
+!  slice position in middle of the box in dependence of nprocy,nprocz
+!  second horizontal slice is the uppermost layer
 !
       elseif (slice_position=='m') then
         if (mod(nprocx,2)==0) then; ix_loc=l1; else; ix_loc=(l1+l2)/2; endif
@@ -384,7 +385,7 @@ module Slices
 !
       elseif (slice_position=='s') then
         if (nprocx>1) call warning('setup_slice', &
-            'slice_position=s may be wrong for nrpocx>1')
+            'slice_position=s may be wrong for nprocx>1')
         iz_loc=n1; iz2_loc=n2
         call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
         lwrite_slice_xy2=(ipz==nprocz/4)
@@ -432,13 +433,11 @@ module Slices
 !  can now be given in terms of z (zbot_slice, ztop_slice).
 !
       elseif (slice_position=='c') then
-        if (nprocx>1) call warning('setup_slice', &
-            'slice_position=c may be wrong for nrpocx>1')
         ix_loc=l1; iy_loc=m1
         call zlocation(zbot_slice,iz_loc,lwrite_slice_xy)
         call zlocation(ztop_slice,iz2_loc,lwrite_slice_xy2)
         lwrite_slice_xz=lfirst_proc_y
-        lwrite_slice_yz=.true.
+        lwrite_slice_yz=lfirst_proc_x
 !
 !  periphery of the box, but the other way around
 !
@@ -467,70 +466,15 @@ module Slices
         lwrite_slice_xz2=.false.
       endif
 !
-!  Overwrite slice postions if any ix,iy,iz,iz2,iz3,iz4 is greater then Zero
+!  Overwrite slice positions if any ix,iy,iz,iz2,iz3,iz4 is greater then zero
 !
-      if (ix>0) then
-        ix_loc=ix-ipx*nx
-        if (ix_loc>=l1.and.ix_loc<=l2) then
-          lwrite_slice_yz=.true.
-        else
-          lwrite_slice_yz=.false.
-        endif
-      endif
-!
-      if (iy>0) then
-        iy_loc=iy-ipy*ny
-        if (iy_loc>=m1.and.iy_loc<=m2) then
-          lwrite_slice_xz=.true.
-        else
-          lwrite_slice_xz=.false.
-        endif
-      endif
-!
-      if (iy2>0) then
-        iy2_loc=iy2-ipy*ny
-        if (iy2_loc>=m1.and.iy2_loc<=m2) then
-          lwrite_slice_xz2=.true.
-        else
-          lwrite_slice_xz2=.false.
-        endif
-      endif
-!
-      if (iz>0) then
-        iz_loc=iz-ipz*nz
-        if (iz_loc>=n1.and.iz_loc<=n2) then
-          lwrite_slice_xy=.true.
-        else
-          lwrite_slice_xy=.false.
-        endif
-      endif
-!
-      if (iz2>0) then
-        iz2_loc=iz2-ipz*nz
-        if (iz2_loc>=n1.and.iz2_loc<=n2) then
-          lwrite_slice_xy2=.true.
-        else
-          lwrite_slice_xy2=.false.
-        endif
-      endif
-!
-      if (iz3>0) then
-        iz3_loc=iz3-ipz*nz
-        if (iz3_loc>=n1.and.iz3_loc<=n2) then
-          lwrite_slice_xy3=.true.
-        else
-          lwrite_slice_xy3=.false.
-        endif
-      endif
-!
-      if (iz4>0) then
-        iz4_loc=iz4-ipz*nz
-        if (iz4_loc>=n1.and.iz4_loc<=n2) then
-          lwrite_slice_xy4=.true.
-        else
-          lwrite_slice_xy4=.false.
-        endif
-      endif
+      call position(ix,ipx,nx,ix_loc,lwrite_slice_yz)
+      call position(iy,ipy,ny,iy_loc,lwrite_slice_xz)
+      call position(iy2,ipy,ny,iy2_loc,lwrite_slice_xz2)
+      call position(iz,ipz,nz,iz_loc,lwrite_slice_xy)
+      call position(iz2,ipz,nz,iz2_loc,lwrite_slice_xy2)
+      call position(iz3,ipz,nz,iz3_loc,lwrite_slice_xy3)
+      call position(iz4,ipz,nz,iz4_loc,lwrite_slice_xy4)
 !
       call setup_slices_write()
 !
