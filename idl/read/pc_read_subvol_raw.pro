@@ -379,6 +379,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	dx_tilde = grid.dx_tilde[xs:xe]
 	dy_tilde = grid.dy_tilde[ys:ye]
 	dz_tilde = grid.dz_tilde[zs:ze]
+	if (xe-xs eq mxgrid-1) then Ox = grid.Ox else Ox = grid.x[xns]
+	if (ye-ys eq mygrid-1) then Oy = grid.Oy else Oy = grid.y[yns]
+	if (ze-zs eq mzgrid-1) then Oz = grid.Oz else Oz = grid.z[zns]
 	if (xe-xs eq mxgrid-1) then Lx = grid.Lx else Lx = total (1.0/grid.dx_1[xns:xne])
 	if (ye-ys eq mygrid-1) then Ly = grid.Ly else Ly = total (1.0/grid.dy_1[yns:yne])
 	if (ze-zs eq mzgrid-1) then Lz = grid.Lz else Lz = total (1.0/grid.dz_1[zns:zne])
@@ -411,8 +414,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	tags.time = t
 	name += strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
 	sub_grid = create_struct (name=name, $
-		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
-		t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+		t, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
 
 	if (addghosts) then begin
 		xs = xns - nghostx
