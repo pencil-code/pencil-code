@@ -45,9 +45,8 @@ class Index(dict):
         f = open(os.path.join(datadir,'index.pro'))
         for line in f.readlines():
             clean = line.strip()
-            name=clean.split('=')[0].strip()
+            name=clean.split('=')[0].strip().replace('[','').replace(']','')
             if (clean.split('=')[1].strip().startswith('intarr(370)')):
-	      print 'WARNING: index.pro is referencing to a intarray for '+name+', this is not implemented properly yet!'
 	      continue
             val=int(clean.split('=')[1].strip())
             #            print name,val
