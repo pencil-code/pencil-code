@@ -183,22 +183,16 @@ module Particles_main
 !  One can either input these quantities by hand or set the wanted number
 !  density and mass density per grid cell (np_const or rhop_const).
 !
-      if (rhop_const/=0.0) then
-        rhop_swarm=rhop_const/(real(npar)/nwgrid)
-        if (lparticles_radius) then
-          if (mpmat/=0.0 .or. np_swarm/=0.0) then
-            if (lroot) print*, 'particles_initialize_modules: '// &
-                 'may not set mpmat or np_swarm when setting rhop_const'
-            call fatal_error('particles_initialize_modules','')
-          endif
-        else
-          if (mpmat/=0.0 .and. np_swarm/=0.0) then
-            if (lroot) print*, 'particles_initialize_modules: '// &
-                'must set only mpmat or np_swarm when using rhop_const'
-            call fatal_error('particles_initialize_modules','')
-          endif
-          if (mpmat   ==0.0) mpmat   =rhop_swarm/np_swarm
-          if (np_swarm==0.0) np_swarm=rhop_swarm/mpmat
+      if (rhop_const /= 0.0) then
+        rhop_swarm = rhop_const / (real(npar) / nwgrid)
+        if (all(lequidist)) mp_swarm = rhop_swarm * dvol
+        if (mpmat /= 0.0 .or. np_swarm /= 0.0) then
+          if (lparticles_radius) &
+              call fatal_error('particles_initialize_modules', 'may not set mpmat or np_swarm when setting rhop_const')
+          if (mpmat /= 0.0 .and. np_swarm /= 0.0) &
+              call fatal_error('particles_initialize_modules', 'must set only mpmat or np_swarm when using rhop_const')
+          if (mpmat == 0.0) mpmat = rhop_swarm / np_swarm
+          if (np_swarm == 0.0) np_swarm = rhop_swarm / mpmat
         endif
       elseif (np_const/=0.0) then
         if (lparticles_number) then

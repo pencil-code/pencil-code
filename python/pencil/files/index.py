@@ -46,6 +46,9 @@ class Index(dict):
         for line in f.readlines():
             clean = line.strip()
             name=clean.split('=')[0].strip()
+            if (clean.split('=')[1].strip().startswith('intarr(370)')):
+	      print 'WARNING: index.pro is referencing to a intarray for '+name+', this is not implemented properly yet!'
+	      continue
             val=int(clean.split('=')[1].strip())
             #            print name,val
             # need to compare val to totalvars as global indices
