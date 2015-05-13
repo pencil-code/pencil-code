@@ -119,7 +119,7 @@ module Energy
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
   logical :: lborder_heat_variable=.false.
-  logical :: lchromospheric_cooling=.false.
+  logical :: lchromospheric_cooling=.false.,lchi_shock_density_dep=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -180,7 +180,7 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
-      Pres_cutoff,lchromospheric_cooling
+      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3911,7 +3911,12 @@ module Energy
  !         thdiff=thdiff+chi_t*(p%del2ss+g2)
  !       endif
       else
-        thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+         if (lchi_shock_density_dep.eq..true.) then
+           call dot(0.66666666667*p%glnrho+p%glnTT,p%glnTT,g2)
+           thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+         else
+           thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+         endif
  !       if (chi_t/=0.) then
  !          call warning('calc_heatcond_shock', &
  !               'chi_t diffusion might be added twice, please check!')
@@ -3932,7 +3937,11 @@ module Energy
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
 !          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
-          diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
+          if (lchi_shock_density_dep.eq..true.) then
+            diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
+          else
+            diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
+          endif
         else
 !          diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
           diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
