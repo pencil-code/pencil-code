@@ -140,7 +140,8 @@ module Forcing
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
-       lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal
+       lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
+       n_hel_sin_pow
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -414,6 +415,13 @@ module Forcing
       elseif (iforce_profile=='surface_helx_cosy') then
         profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
         profy_ampl=1.; profy_hel=cos(y)
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off helicity of forcing above x=r_ff
+!
+      elseif (iforce_profile=='surface_helx_cosy*siny**n_hel_sin_pow') then
+        profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profy_ampl=1.; profy_hel=cos(y)*sin(y)**6
         profz_ampl=1.; profz_hel=1.
 !
 !  turn off helicity of forcing above z=r_ff
