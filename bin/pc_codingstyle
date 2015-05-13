@@ -20,7 +20,7 @@
 # -v: verbose ouput
 # -d: debug ouput
 #
-# 17.11.2015, Bourdin.KIS: coded.
+# 17.11.2014, Bourdin.KIS: coded.
 # $Id$
 
 use strict;
