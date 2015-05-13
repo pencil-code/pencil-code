@@ -1,4 +1,5 @@
 ! $Id$
+! $Format:%H$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
