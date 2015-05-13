@@ -30,7 +30,7 @@ module Forcing
 !
   real :: force=0.,force2=0., force1_scl=1., force2_scl=1.
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
-  real :: fountain=1.,width_ff=.5,nexp_ff=1.
+  real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
   real :: slope_ff=0.,work_ff=0.,omega_ff=1.
@@ -414,14 +414,14 @@ module Forcing
 !
       elseif (iforce_profile=='surface_helx_cosy') then
         profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
-        profy_ampl=1.; profy_hel=cos(y)
-        profz_ampl=1.; profz_hel=1.
+       profy_ampl=1.; profy_hel=cos(y)
+       profz_ampl=1.; profz_hel=1.
 !
 !  turn off helicity of forcing above x=r_ff
 !
       elseif (iforce_profile=='surface_helx_cosy*siny**n_hel_sin_pow') then
         profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
-        profy_ampl=1.; profy_hel=cos(y)*sin(y)**6
+        profy_ampl=1.; profy_hel=cos(y)*sin(y)**n_hel_sin_pow
         profz_ampl=1.; profz_hel=1.
 !
 !  turn off helicity of forcing above z=r_ff
