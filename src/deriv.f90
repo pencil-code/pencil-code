@@ -1444,6 +1444,10 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
+!
+      if (lspherical_coords.or.lcylindrical_coords) &
+          call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+!
       df=0.0
       if ((i==1.and.j==1)) then
         if (nxgrid/=1) then
@@ -1632,9 +1636,6 @@ module Deriv
         print*, 'der5i1j: no such value for i,j=', i, j
         call fatal_error('der5i1j','')
       endif
-!
-      if (lspherical_coords.or.lcylindrical_coords) &
-          call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
 !***********************************************************************
