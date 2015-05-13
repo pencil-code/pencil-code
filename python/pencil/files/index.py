@@ -46,9 +46,11 @@ class Index(dict):
         for line in f.readlines():
             clean = line.strip()
             name=clean.split('=')[0].strip().replace('[','').replace(']','')
-            if (clean.split('=')[1].strip().startswith('intarr(370)')):
+            if (clean.split('=')[1].strip().startswith('intarr(')):
 	      continue
             val=int(clean.split('=')[1].strip())
+           # val=int(float(clean.split('=')[1].strip())) # sean150513
+
             #            print name,val
             # need to compare val to totalvars as global indices
             # may be present in index.pro
