@@ -341,14 +341,18 @@ def pdim(datadir='./data'):
         datadir
             Name of the data directory
     """
-    # Chao-Chin Yang, 2014-12-31
+    # Chao-Chin Yang, 2015-05-14
     from collections import namedtuple
     # Read pdim.dat.
     f = open(datadir.strip() + '/pdim.dat')
     a = f.read().rsplit()
     f.close()
     # Extract the numbers.
-    npar, mpvar, npar_stalk, mpaux = (int(b) for b in a)
+    if len(a) == 4:
+        npar, mpvar, npar_stalk, mpaux = (int(b) for b in a)
+    else:  # for backward compatibility.
+        npar, mpvar, npar_stalk = (int(b) for b in a)
+        mpaux = 0
     # Define and return a named tuple.
     ParticleNumbers = namedtuple('ParticleNumbers', ['npar', 'mpvar', 'npar_stalk', 'mpaux'])
     return ParticleNumbers(npar=npar, mpvar=mpvar, npar_stalk=npar_stalk, mpaux=mpaux)
