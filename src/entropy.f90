@@ -119,7 +119,9 @@ module Energy
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
   logical :: lborder_heat_variable=.false.
-  logical :: lchromospheric_cooling=.false.,lchi_shock_density_dep=.false.
+  logical :: lchromospheric_cooling=.false., &
+             lchi_shock_density_dep=.false., &
+             lhcond0_density_dep=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -180,7 +182,7 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
-      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep
+      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
