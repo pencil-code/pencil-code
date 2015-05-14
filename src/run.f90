@@ -101,7 +101,7 @@ program run
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
-  integer :: icount, i, mvar_in, isave_shft=0.
+  integer :: icount, i, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
@@ -515,7 +515,7 @@ program run
 !
     if (control_file_exists('SAVE',DELETE=.true.)) then
       call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-      if (isave/=0) isave_shft = mod(it-isave_shft,isave)+isave_shft
+      if (isave/=0) isave_shift = mod(it-isave_shift,isave)+isave_shift
     endif
 !
     if (lout .or. emergency_stop) then
@@ -737,7 +737,7 @@ program run
 !  The time needs also to be written.
 !
     if (isave/=0.and..not.lnowrite) then
-      if (mod(it-isave_shft,isave)==0) then
+      if (mod(it-isave_shift,isave)==0) then
         if (lparticles) &
             call write_snapshot_particles(directory_dist,f,ENUM=.false.)
 !
