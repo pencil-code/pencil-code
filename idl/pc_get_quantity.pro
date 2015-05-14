@@ -53,7 +53,7 @@
 ;  * Using 'pc_read_var_raw': (HIGHLY RECOMMENDED)
 ;
 ;   Load varfile and calculate one quantity only:
-;   IDL> HR_viscous = pc_get_quantity ('B_z', 'var.dat')
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', 'var.dat')
 ;
 ;   Load varfile and calculate separate quantities, using a data array:
 ;   IDL> pc_read_var_raw, obj=var, tags=tags
@@ -655,6 +655,25 @@ function pc_compute_quantity, vars, index, quantity
 		eta_j[*,*,*,1] *= eta
 		eta_j[*,*,*,2] *= eta
 		return, eta_j
+	end
+
+	if (strcmp (quantity, 'H_mag', /fold_case)) then begin
+		; Magnetic field helicity
+		aa = pc_compute_quantity (vars, index, 'A')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		return, dot (aa, bb)
+	end
+	if (strcmp (quantity, 'H_j', /fold_case)) then begin
+		; Electric current helicity
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, dot (jj, bb)
+	end
+	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
+		; Change rate of magnetic field helicity
+		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
+		H_j = pc_compute_quantity (vars, index, 'H_j')
+		return, -2 * eta * H_j
 	end
 
 	if (strcmp (quantity, 'F_Lorentz', /fold_case)) then begin
