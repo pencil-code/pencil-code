@@ -3911,7 +3911,7 @@ module Energy
  !         thdiff=thdiff+chi_t*(p%del2ss+g2)
  !       endif
       else
-         if (lchi_shock_density_dep.eq..true.) then
+         if (lchi_shock_density_dep) then
            call dot(0.66666666667*p%glnrho+p%glnTT,p%glnTT,g2)
            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
          else
@@ -3937,7 +3937,7 @@ module Energy
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
 !          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
-          if (lchi_shock_density_dep.eq..true.) then
+          if (lchi_shock_density_dep) then
             diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
           else
             diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
