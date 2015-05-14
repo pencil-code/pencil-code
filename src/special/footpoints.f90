@@ -32,6 +32,10 @@ module Special
 !   lam_u = coefficient for the exponential saturation for the velocity
 !   z_profile = velocity profile along the z-direction
 !   lam_z = coefficient for the z-profiles
+!   blinking = flag for the 'vortex blinking'
+!   t_blink_up = time period for the driver to be positive
+!   t_blink_0 = time period for the driver to be zero
+!   t_blink_down = time period for the driver to be negative
 !
   integer :: n_pivot = 1
   real, dimension(6) :: udrive = (/0.1,0.,0.,0.,0.,0./)
@@ -43,13 +47,16 @@ module Special
   real :: lam_u = 1
   character (len=labellen) :: z_profile = 'exp'
   real :: lam_z = 1
+  logical, save :: lblink = .False.
+  real :: t_blink_up = 1, t_blink_0 = 0, t_blink_down = 0
 !    
 ! input parameters
   namelist /special_init_pars/ n_pivot
 !
 ! run parameters
   namelist /special_run_pars/ &
-    n_pivot, udrive, xp, yp, rad, width, lam_twist, lam_u, z_profile, lam_z
+    n_pivot, udrive, xp, yp, rad, width, lam_twist, lam_u, z_profile, lam_z, &
+    lblink, t_blink_up, t_blink_0, t_blink_down
 !
   contains
 !
@@ -181,6 +188,8 @@ module Special
       real, dimension(mx) :: dist       ! distance of point to pivot point
       real, dimension(mx) :: ux, uy     ! velocity in x nad y direction      
       real :: z_factor                  ! multiplication factor for the z-dependence
+      integer :: blink                  ! either -1, 0 or 1, depending on the blinking stage
+      real :: t_blink_tot               ! total time for a blick switching on, off and negative
 !
       do ip = 1, n_pivot
         offset = exp(-width(ip)**2/8./lam_twist(ip)**2)
@@ -203,8 +212,23 @@ module Special
         ux = z_factor*ux
         uy = z_factor*uy
 
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - lam_u*(f(l1:l2,m,n,iux) - ux)
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - lam_u*(f(l1:l2,m,n,iuy) - uy)
+        ! add 'vortex blinking' by switching the sign in time
+        blink = 1
+        t_blink_tot = t_blink_up + t_blink_0 + t_blink_down
+        if (lblink) then
+!             blink = 1
+            if ((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot < t_blink_up) then
+                blink = 1
+            elseif (((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot >= t_blink_up) .and. &
+                (t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot < (t_blink_up+t_blink_0)) then
+                blink = 0
+            elseif ((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot >= (t_blink_up+t_blink_0)) then
+                blink = -1
+            endif
+        endif
+        
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - lam_u*(f(l1:l2,m,n,iux) - blink*ux)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - lam_u*(f(l1:l2,m,n,iuy) - blink*uy)
       enddo
 !
     endsubroutine vel_driver

@@ -31,5 +31,6 @@ echo "ERROR REPORT:"
 echo "============="
 echo "$MESSAGE"
 echo "$FAILURE"
+rm -f ERROR
 exit 1
 

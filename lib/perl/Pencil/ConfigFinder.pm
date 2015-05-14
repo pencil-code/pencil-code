@@ -34,7 +34,8 @@ my @config_path = (
             "./config",
             "$ENV{PENCIL_HOME}/config-local",
             "$ENV{HOME}/.pencil/config",
-            "$ENV{PENCIL_HOME}/config"
+            "$ENV{PENCIL_HOME}/config",
+            "$ENV{PENCIL_HOME}/config/compilers",
            );
 
 # ---------------------------------------------------------------------- #

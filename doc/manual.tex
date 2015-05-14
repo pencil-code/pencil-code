@@ -1009,13 +1009,13 @@ To use the code, you will need the following:
 The code is now distributed via
 \url{https://github.com/pencil-code/pencil-code},
 where you can either download a tarball, or, preferably,
-download it via \name{svn}.
+download it via \name{svn} or \name{git}.
 In Iran and some other countries, GitHub is not currently available.
 To alleviate this problem, we have made a recent copy available on
 \url{http://www.nordita.org/software/pencil-code/}.
 If you want us to update this tarball, please contact us.
 
-To ensure at least some level of stability of the \name{svn}
+To ensure at least some level of stability of the \name{svn/git}
 versions, a set of test problems (listed in
 \file[auto-test]{\$PENCIL_HOME/bin/auto-test})
 are routinely tested.
@@ -1028,19 +1028,26 @@ See Sect.~\ref{S-Testing} for details.
 \subsection{Obtaining the code via git or svn}
 \index{CVS}
 \index{svn}
-
+\index{Git}
 \begin{enumerate}
 
 \item Many machines have \name{svn} installed
   (try \code{svn -v} or \code{which svn}).
   On Ubuntu, for example, \name{svn} comes under the
   package name subversion.
+\item The code is now saved under Github, git can be obtained in Linux by typing
+      \code{sudo apt-get install git}
 
 \item Unless you are a privileged users with write access, you can
   download the code with the command
   \begin{verbatim}
     git clone https://github.com/pencil-code/pencil-code.git
   \end{verbatim}
+  or
+\begin{verbatim}
+   svn checkout https://github.com/pencil-code/pencil-code/trunk/ ...\\
+   pencil-code --username MY_GITHUB_USERNAME
+\end{verbatim}
  In order to push your changes to the repository, you have to ask the maintainer of pencil code
 for push access (to become a contributor), or put a pull request to the maintainer of the code.
 
@@ -1058,20 +1065,30 @@ for push access (to become a contributor), or put a pull request to the maintain
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Updating via svn}
+\subsection{Updating via svn or git}
 \index{svn}
 
 Independent of how you installed the code in the first place (from tarball
-or via \name{svn}), you can update your version using \name{svn}.
+or via \name{svn/git}), you can update your version using \name{svn/git}.
 If you have done nontrivial alterations to your version of the code, you
-ought to be careful about upgrading: although \name{svn} is an excellent
+ought to be careful about upgrading: although \name{svn/git} is an excellent
 tool for distributed programming,
 conflicts are quite possible, since many of us are going to
 touch many parts of the code while we develop it further.
-Thus, despite the fact that the code is under \name{svn}, you should probably
+Thus, despite the fact that the code is under \name{svn/git}, you should probably
 back up your important changes before upgrading.
 
-Here is the upgrading procedure:
+Here is the upgrading procedure for \name{git}:
+\begin{enumerate}
+\item Perform a \cmd{git} update of the tree:
+  \begin{alltt}
+  \prompt{unix> } git pull \
+  \end{alltt}
+\item Fix any conflicts you encounter and make sure the examples in the
+  directory \file{samples/} are still working.
+\end{enumerate}
+
+Here is the upgrading procedure for \name{svn}:
 \begin{enumerate}
 \item Perform a \cmd{svn} update of the tree:
   \begin{alltt}
@@ -1083,7 +1100,7 @@ Here is the upgrading procedure:
 
 If you have made useful changes, please contact one of the (currently) 10
 ``Contributors'' (listed under \url{https://github.com/pencil-code/pencil-code})
-who can give you check-in permission.
+who can give you push or check-in permission.
 Be sure to have sufficient comments in the code and please follow our
 standard coding conventions explained in Section~\ref{ProgrammingStyle}.
 There is also a script to check and fix the most common stylebreaks, 
@@ -11114,6 +11131,21 @@ double precision, $\varepsilon\approx10^{-15}$.
                  shearing-periodic boundaries are the $x$-boundaries and
                  are sheared in the $y$-direction). The shear velocity
                  is ${\bf U}=-q\varOmega x\,{\hat{\bf y}}$. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_ads_init_pars}} \\
+\midrule
+  \var{init_ads_mol_frac} [$0.$]
+               & initial adsorbed mole fraction\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_surf_init_pars}} \\
+\midrule
+  \var{init_surf_mol_frac} [$0.$]
+               & initial surface mole fraction\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_chem_init_pars}} \\
+\midrule
+  \var{total_carbon_sites} [$1.08e-8$]
+               & carbon sites per surface area [mol/cm]2\\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -11585,6 +11617,21 @@ the latest set of parameters, you need to look at the code.
 \midrule
   \var{qshear} [start]
                & See p.~\pageref{qshear-init}. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_ads_run_pars}} \\
+\midrule
+  \var{placeholder} [start]
+               & placeholder \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_surf_run_pars}} \\
+\midrule
+  \var{lspecies_transfer [T]}
+               & Species transfer from solid to fluid phase \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_chem_run_pars}} \\
+\midrule
+  \var{lthiele [T]}
+               & Modeling of particle porosity by application of thiele modulus \\
 \bottomrule
 \end{longtable}
 % ---------------------------------------------------------------------- %
