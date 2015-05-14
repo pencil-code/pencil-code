@@ -209,8 +209,10 @@ module Diagnostics
 !  This treats all numbers as floating point numbers.  Only those numbers are
 !  given (and computed) that are also listed in print.in.
 !
-        if (lfirst_call) write(*,*)
-        if (lfirst_call) write(*,'(" ",A)') trim(legend)
+        if (lfirst_call) then
+          write(*,*)
+          write(*,'(" ",A)') trim(legend)
+        endif
 !
 !  Write legend to extra file (might want to do only once after each lreset)
 !
@@ -261,22 +263,21 @@ module Diagnostics
 !
           if (lfirst_call) then
             write(lun,"('"//comment_char//"',a)",IOSTAT=iostat,iomsg=iomsg) trim(legend)
-            if (.not. outlog(iostat,'legend',iomsg=iomsg)) then
+            if (.not. outlog(iostat,'legend',iomsg=iomsg)) continue
           endif
 !
-            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(line)
-            if (.not. outlog(iostat,'line',iomsg=iomsg)) then
+          write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(line)
+          if (.not. outlog(iostat,'line',iomsg=iomsg)) then
 !
-              close(lun,IOSTAT=iostat,iomsg=iomsg)
-              if (outlog(iostat,'close',iomsg=iomsg)) continue
+            close(lun,IOSTAT=iostat,iomsg=iomsg)
+            if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
-             endif
-           endif
-         endif
+          endif
+        endif
 !
 !  Write to stdout.
 !
-         write(*,'(a)') trim(line)
+        write(*,'(a)') trim(line)
          flush(6) ! this is a F2003 feature....
 !
       endif                     ! (lroot)
