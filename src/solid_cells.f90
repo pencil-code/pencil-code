@@ -1,4 +1,4 @@
-! $Id: solid_cells.f90 23288 2015-03-30 14:45:12Z nils.e.haugen $
+! $Id$
 !
 !  This module add solid (as in no-fluid) cells in the domain.
 !  This can be used e.g. in order to simulate a cylinder in a cross flow.
