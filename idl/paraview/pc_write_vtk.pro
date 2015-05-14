@@ -99,13 +99,15 @@ pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, di
 	endelse
 	printf, lun, 'POINT_DATA ', nwgrid
 
-	; Write selected data quantities.
+	; Find quantities to be written.
 	if (size (data, /type) eq 8) then tags = tag_names (data) else tags = tag_names (index)
-	if (not keyword_set (selected)) then selected = tags
 	num_tags = n_elements (tags)
+
+	; Write selected data quantities.
 	skip = [ 'X', 'Y', 'Z', 'DX', 'DY', 'DZ', 'T', 'TIME', 'DELTAY' ]
 	for i = 0, num_tags - 1 do begin
-		if (any (tags[i] eq skip) or not any (tags[i] eq selected)) then continue
+		if (any (tags[i] eq skip)) then continue
+		if (keyword_set (selected)) then if (not any (tags[i] eq selected)) then continue
 		if (size (data, /type) eq 8) then begin
 			num_dims = size (data.(i), /n_dimensions)
 		endif else begin
@@ -130,6 +132,7 @@ pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, di
 			endif else begin
 				writeu, lun, swap_endian (transpose (reform (data[*,*,*,i:i+num_dims-1], [nwgrid, num_dims])), /swap_if_big_endian)
 			endelse
+			if (not keyword_set (selected)) then i += 3
 		endif else begin
 			message, "ERROR: data with unrecognized dimension."
 		endelse
