@@ -4501,7 +4501,7 @@ module Energy
             if (lhcond0_density_dep) then
               call dot(p%glnTT,p%glnrho,glnrhoglnT)
               thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
-              chix = sqrt(p%rho1)*hcond*p.cp1
+              chix = sqrt(p%rho1)*hcond*p%cp1
             else
               thdiff = p%rho1*hcond * (p%del2lnTT + g2)
             endif
