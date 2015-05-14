@@ -277,7 +277,7 @@ module Diagnostics
 !  Write to stdout.
 !
          write(*,'(a)') trim(line)
-!        call flush() ! has to wait until F2003
+         flush(6) ! this is a F2003 feature....
 !
       endif                     ! (lroot)
 !
@@ -949,7 +949,7 @@ module Diagnostics
 !
         close(1,IOSTAT=iostat,iomsg=iomsg)
         if (outlog(iostat,'close',iomsg=iomsg)) continue
-          !!!flush(1)
+        ! flush(1)
 !
       endif
 !
