@@ -4381,6 +4381,7 @@ module Energy
       real, dimension (nx,3) :: glnThcond,glhc,glnchit_prof,gss1,glchit_aniso_prof
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
+      real, dimension (nx) :: glnrhoglnT
       real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
       real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
@@ -4497,7 +4498,13 @@ module Energy
           if (pretend_lnTT) then
             thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
           else
-            thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            if (lhcond0_density_dep) then
+              call dot(p%glnTT,p%glnrho,glnrhoglnT)
+              thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
+              chix = sqrt(p%rho1)*hcond*p.cp1
+            else
+              thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            endif
           endif
       endif  ! hcond0/=0
 !
