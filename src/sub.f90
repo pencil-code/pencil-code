@@ -4354,9 +4354,9 @@ nameloop: do
 !
       use Syscalls, only: file_exists
 !
-      character (len=*) :: fname
+      character (len=*), intent(in) :: fname
 !
-      logical :: removed = .false.
+      logical :: removed
 !
       removed = file_exists(fname,DELETE=.true.)
       if (removed .and. (ip<=6)) &
@@ -4373,9 +4373,11 @@ nameloop: do
 !
       use Mpicomm, only : parallel_file_exists
 !
-      logical :: control_file_exists,ldelete
-      character (len=*) :: fname
-      logical, optional :: delete
+      logical :: control_file_exists
+      character (len=*), intent(in) :: fname
+      logical, optional, intent(in) :: delete
+!
+      logical :: ldelete
 !
       if (present(delete)) then
         ldelete=delete

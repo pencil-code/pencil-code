@@ -710,7 +710,7 @@ module Density
 !
 !  Get from initial condition.
 !
-          call initial_condition_all(profiles=reference_state)
+          call initial_condition_all(f,profiles=reference_state)
           reference_state(:,iref_d6rho) = 0.    ! yet missing
 !
         case ('file')

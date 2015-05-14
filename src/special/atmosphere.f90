@@ -1345,7 +1345,7 @@ subroutine bc_satur_x(f,bc)
          dsize_data=dsize_data*1e-7/2.
 !
            do k=1,ndustspec
-             do i=1,76
+             do i=2,76
                if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then 
                  init_distr2(k)=((nd_data(i)-nd_data(i-1))&
                           /(dsize_data(i)-dsize_data(i-1))*(dsize(k)-dsize_data(i-1))+nd_data(i-1))/dsize(k)

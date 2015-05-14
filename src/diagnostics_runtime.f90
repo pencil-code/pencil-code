@@ -935,6 +935,8 @@ module Diagnostics
 !
 !  29-jan-07/wlad: adapted from write_yzaverages
 !
+      logical,save :: lfirst_call=.true.
+!
       if (lroot.and.nnamer>0) then
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
         if (lfirst_call) write(1,'(1p,8e14.5e3)') rcyl
@@ -942,6 +944,7 @@ module Diagnostics
         write(1,'(1p,8e14.5e3)') fnamer(:,1:nnamer)
         close(1)
       endif
+      lfirst_call=.false.
 !
     endsubroutine write_phizaverages
 !***********************************************************************

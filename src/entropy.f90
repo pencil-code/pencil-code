@@ -119,7 +119,9 @@ module Energy
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
   logical :: lborder_heat_variable=.false.
-  logical :: lchromospheric_cooling=.false.,lchi_shock_density_dep=.false.
+  logical :: lchromospheric_cooling=.false., &
+             lchi_shock_density_dep=.false., &
+             lhcond0_density_dep=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -180,7 +182,7 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
-      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep
+      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3911,7 +3913,7 @@ module Energy
  !         thdiff=thdiff+chi_t*(p%del2ss+g2)
  !       endif
       else
-         if (lchi_shock_density_dep.eq..true.) then
+         if (lchi_shock_density_dep) then
            call dot(0.66666666667*p%glnrho+p%glnTT,p%glnTT,g2)
            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
          else
@@ -3937,7 +3939,7 @@ module Energy
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
 !          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
-          if (lchi_shock_density_dep.eq..true.) then
+          if (lchi_shock_density_dep) then
             diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
           else
             diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
@@ -4379,6 +4381,7 @@ module Energy
       real, dimension (nx,3) :: glnThcond,glhc,glnchit_prof,gss1,glchit_aniso_prof
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
+      real, dimension (nx) :: glnrhoglnT
       real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
       real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
@@ -4495,7 +4498,13 @@ module Energy
           if (pretend_lnTT) then
             thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
           else
-            thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            if (lhcond0_density_dep) then
+              call dot(p%glnTT,p%glnrho,glnrhoglnT)
+              thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
+              chix = sqrt(p%rho1)*hcond*p%cp1
+            else
+              thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            endif
           endif
       endif  ! hcond0/=0
 !

@@ -268,14 +268,17 @@ endif
 ;  Build structure of all the variables
 ;
 if (found_Lxyz and found_grid_der) then begin
+  Ox = x[nghostx] - lperi[0] * 0.5 / dx_1[nghostx]
+  Oy = y[nghosty] - lperi[1] * 0.5 / dy_1[nghosty]
+  Oz = z[nghostz] - lperi[2] * 0.5 / dz_1[nghostz]
   object = create_struct(name="pc_read_grid_" + $
       str((size(x))[1]) + '_' + $
       str((size(y))[1]) + '_' + $
       str((size(z))[1]), $
-      ['t','x','y','z','dx','dy','dz','Lx','Ly','Lz', $
+      ['t','x','y','z','dx','dy','dz','Ox','Oy','Oz','Lx','Ly','Lz', $
        'dx_1','dy_1','dz_1','dx_tilde','dy_tilde','dz_tilde', $
        'lequidist','lperi','ldegenerated'], $
-      t,x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
+      t,x,y,z,dx,dy,dz,Ox,Oy,Oz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde, $
         lequidist,lperi,ldegenerated)
 endif else if (found_Lxyz) then begin
   object = create_struct(name="pc_read_grid_" + $
