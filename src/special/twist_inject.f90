@@ -1,4 +1,4 @@
-! $Id: twist_inject.f90 19193 2012-06-30 12:55:46Z wdobler $
+! $Id$
 !
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -114,7 +114,7 @@ module Special
 !
       use FArrayManager
       if (lroot) call svn_id( &
-           "$Id: nospecial.f90 19193 2012-06-30 12:55:46Z wdobler $")
+           "$Id$")
 !!
 !      if (ldensity.and..not.ldensity_nolog) &
 !      call farray_register_auxiliary('specaux',ispecaux)
