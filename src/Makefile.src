@@ -41,6 +41,7 @@ COSMICRAYFLUX     = nocosmicrayflux
 COSMICRAY         = nocosmicray
 DENSITY           = nodensity
 DETONATE          = nodetonate
+DIAGNOSTICS       =   diagnostics
 DUSTDENSITY       = nodustdensity
 DUSTVELOCITY      = nodustvelocity
 ENERGY            = noentropy
@@ -345,8 +346,8 @@ CDATA_SRC=cdata.f90
 CPARAM_OBJ=cparam.o
 CPARAM_SRC=cparam.f90
 #
-DIAGNOSTICS_OBJ=diagnostics.o
-DIAGNOSTICS_SRC=diagnostics.f90
+DIAGNOSTICS_OBJ=$(DIAGNOSTICS).o
+DIAGNOSTICS_SRC=$(DIAGNOSTICS).f90
 #
 EQU_OBJ=equ.o
 EQU_SRC=equ.f90
