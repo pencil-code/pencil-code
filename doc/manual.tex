@@ -1828,32 +1828,33 @@ Each of the directories can contain the following files:
 \subsection{Configuring the code to compile and run on your computer}
 \label{S-configuration}
 
-\paragraph{Note:} The procedure described here is currently (September
-2009) relatively new.
-For some time, you may alternatively configure the code as described in
-Sects.~\ref{adapt-mkfile} and \ref{start-run-getconf}.
-You are however advised to use the new procedure, as the old approach will
-eventually not be supported (and some of the scripts it uses will be
-removed).
+\paragraph{Note:} We recommend to use the procedure described here, rather than
+the old method described in Sects.~\ref{adapt-mkfile} and \ref{start-run-getconf}.
 
 \paragraph{Quick instructions:}
-
-You may compile the code using a default compiler-specific configuration file:
+You may compile with a default compiler-specific configuration:
 \begin{enumerate}
-\item Single-processor using the GNU compiler collection: \code{pc_build -f GNU-GCC}
-\item Multi-processor using GNU with MPI support: \code{pc_build -f GNU-GCC_MPI}
+\item Single-processor using the GNU compiler collection:
+\begin{alltt}
+  \prompt{unix> } pc_build -f GNU-GCC
+\end{alltt}
+\item Multi-processor using GNU with MPI support:
+\begin{alltt}
+  \prompt{unix> } pc_build -f GNU-GCC_MPI
+\end{alltt}
 \end{enumerate}
-Many compilers are supported already, see available config files in \file{\$PENCIL_HOME/config/compilers/*.conf}.
-For example you will also find there configuration files for \code{Intel} and \code{Intel_MPI}.
+Many compilers are supported already, please refer to the available config
+files in \file{\$PENCIL_HOME/config/compilers/*.conf}, e.g. \file{Intel.conf} and \file{Intel_MPI.conf}.
 
-If you have to set up something specific to a certain host system you work on,
+If you have to set up some compiler options specific to a certain host system you work on,
 or if you like to create a host-specific configuration file so that you can
 simply execute \code{pc_build} without any options,
-you can clone an existing host-configuration file, include there an existing
-compiler configuration, and simply only apply the changes you need.
-A good example of a host-configuration file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf},
-you may clone this, change it according to your needs, and save it unter \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+you can clone an existing host-file, just include an existing
+compiler configuration, and simply only add the options you need.
+A good example of a host-file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
+You may save a clone unter \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
 where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
+This will be the new default for \code{pc_build}.
 
 If you don't know what this was all about, read on.
 
@@ -1886,7 +1887,7 @@ consider the file
 The location in the tree under \file{hosts/} is irrelevant, which allows
 you to group related hosts by institution, owner, hardware, etc.
 
-\subparagraph{Note2: }
+\subparagraph{Note 2:}
 \file{ConfigFinder} actually uses the following search path:
 \begin{enumerate}
 \item \file{./config}
