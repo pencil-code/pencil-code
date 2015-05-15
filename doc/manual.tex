@@ -1837,15 +1837,23 @@ eventually not be supported (and some of the scripts it uses will be
 removed).
 
 \paragraph{Quick instructions:}
+
+You may compile the code using a default compiler-specific configuration file:
 \begin{enumerate}
-\item
-  \label{Item-pick-config-file}%
-  Run \code{pc_build --debug-config} to find out which configuration files
-  are tried and pick one.
-\item Choose one of the existing files from \file{\$PENCIL_HOME/hosts/} as
-  blueprint, copy it to the file name from
-  item~\ref{Item-pick-config-file} and adapt it to your system.
+\item Single-processor using the GNU compiler collection: \code{pc_build -f GNU-GCC}
+\item Multi-processor using GNU with MPI support: \code{pc_build -f GNU-GCC_MPI}
 \end{enumerate}
+Many compilers are supported already, see available config files in \file{\$PENCIL_HOME/config/compilers/*.conf}.
+For example you will also find there configuration files for \code{Intel} and \code{Intel_MPI}.
+
+If you have to set up something specific to a certain host system you work on,
+or if you like to create a host-specific configuration file so that you can
+simply execute \code{pc_build} without any options,
+you can clone an existing host-configuration file, include there an existing
+compiler configuration, and simply only apply the changes you need.
+A good example of a host-configuration file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf},
+you may clone this, change it according to your needs, and save it unter \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
 
 If you don't know what this was all about, read on.
 
@@ -1920,6 +1928,11 @@ To see which host IDs are tried (up to the first one for which a
 configuration file is found), run
 \begin{alltt}
   \prompt{unix> } pc_build --debug-config
+\end{alltt}
+
+This command will tell you the \emph{host-ID} of the system that you are using:
+\begin{alltt}
+  \prompt{unix> } pc_build -i
 \end{alltt}
 
 
