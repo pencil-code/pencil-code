@@ -184,18 +184,18 @@ By default, \verb|pc_build| looks for a config file that is based on your \verb|
   pc_build -i
 \end{verbatim}
 You may add your modified configuration with the filename \verb|host-ID.conf|, where you can change compiler options according to the Pencil Code manual.
+A good host configuration example, that you may clone and adapt according to your needs, is \verb|pencil-code/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf|.
 
 \subsection{Running...}
 
 The initial conditions are set in \verb|start.in| and the parameters for the main simulation run can be found in \verb|run.in|.
 In \verb|print.in| you can choose which physical quantities are written to the file \verb|data/time_series.dat|.
 
-It is time to run the code with --- be sure you have an empty \verb|data| directory:
+Be sure you have created an empty \verb|data| directory. It is now time to run the code:
 \begin{verbatim}
   mkdir data
   pc_run
 \end{verbatim}
-
 Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
@@ -229,7 +229,7 @@ If you plan to use MPI, please also provide the full output of:
 
 Visualizing the output can be done with \verb|IDL| or \verb|Python|, see below.
 
-\subsection{IDL visualization (optional)}
+\subsection{IDL visualization (optional, recommended)}
 % The goal of this section is to demonstrate the general work flow with a very simple example.
 
 \subsubsection{GUI-based visualization}
@@ -297,6 +297,8 @@ in order to read data efficiently and compute quantities in physical units.
 
 
 \subsection{Python visualization (optional)}
+Be advised that the \verb|Python| support is still not complete or as feature-rich as for \verb|IDL|.
+
 \subsubsection{Python module requirements}
 For this example we use the modules: \verb|numpy| and \verb|matplotlib|.
 
