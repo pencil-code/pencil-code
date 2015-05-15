@@ -43,7 +43,7 @@ my @require_declaration_left_space = ('pointer', 'save', 'parameter', 'dimension
 my %require_declaration_right_separator = ('dimension' => '(', 'intent' => '(', 'character' => '(', 'integer' => '(', 'real' => '(', 'complex' => '(');
 my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.');
 
-# command line arguments
+# default command line arguments settings
 my $comment_empty_lines = 1;
 my $indent_after_contains = 1;
 my $header_before_routine = 0;
@@ -52,10 +52,13 @@ my $loose_check = 0;
 my $fatals_only = 0;
 my $auto_correct = 0;
 my $quiet = 0;
+my $recursive = 0;
 my $summary_only = 0;
 my $backup = 0;
 my $verbose = 0;
 my $faulty = 0;
+
+# parse command line arguments
 while ($ARGV[0] =~ /^-/) {
 	my $argument = shift ();
 	if ($argument =~ s/^(-.)(.+)$/${1}/s) { unshift (@ARGV, '-'.$2); }
@@ -66,6 +69,7 @@ while ($ARGV[0] =~ /^-/) {
 	elsif (lc ($argument) eq '-v') { if ($verbose < 1) { $verbose = 1; } }
 	elsif (lc ($argument) eq '-d') { $verbose = 2; }
 	elsif (lc ($argument) eq '-q') { $quiet = 1; }
+	elsif (lc ($argument) eq '-r') { $recursive = 1; }
 	elsif (lc ($argument) eq '-s') { $summary_only = 1; }
 	elsif (lc ($argument) eq '-a') { $auto_correct = 1; }
 	elsif (lc ($argument) eq '-b') { $backup = 1; }
@@ -93,7 +97,7 @@ if ($faulty || !$num_files) {
 	exit (1);
 }
 
-# initialize globals and scan file
+# initialize globals
 if ($indent_after_contains) {
 	push (@trigger_indent, 'contains');
 }
@@ -108,29 +112,16 @@ my $num_fatals = 0;
 my $indentation = length ($indentation_str);
 my $num_trigger_indent = @trigger_indent;
 
-# process filenames
 my $num_file = 0;
 my $exit_code = 0;
-my $filename = '';
-while ($filename = shift ()) {
-	$num_file++;
-	if ((!$quiet || $summary_only) && ($num_files >= 2)) {
-		print ('========================================================================'."\n");
-		print ('File "'.$filename.'":'."\n");
-	}
-	if (!-e $filename) { die ('No such file or directory: "'.$filename.'"'."\n"); }
-	if (!-f $filename) { die ('Not a file: "'.$filename.'"'."\n"); }
-	scan_file ($filename);
-	if (!$summary_only && ((!$fatals_only && $num_accumulative) || $num_fatals)) {
-		warn ('File "'.$filename.'":'."\n");
-	}
-	if (!$quiet || $summary_only || (!$fatals_only && $num_accumulative) || $num_fatals) {
-		print STDERR ('=> ');
-	}
-	if ($auto_correct && !$num_fatals) {
-		write_file ($filename);
-	}
-	print_num_warnings ();
+
+# process command-line arguments
+while (my $argument = shift ()) {
+	# replacement of filename abbreviations
+	my $PENCIL_HOME = $ENV{'PENCIL_HOME'};
+	$argument =~ s/^\s*src\s*$/${PENCIL_HOME}\/src\//is;
+	$argument =~ s/^\s*all\s*$/\./is;
+	scan_directory ($argument);
 }
 exit ($exit_code);
 
@@ -142,21 +133,94 @@ sub usage {
 	$script_name =~ s/^.*\///s;
 	warn ('Usage: '.$script_name.' [-options] filename'."\n");
 	warn ('Options:'."\n");
-	warn ('-a: automatic correction, where possible'."\n");
-	warn ('-b: backups original, if changes are applied'."\n");
-	warn ('-o: old style'."\n");
-	warn ('-n: new style'."\n");
-	warn ('-c: comment empty lines'."\n");
-	warn ('-i: indent after \'contains\''."\n");
-	warn ('-l: loose checking'."\n");
-	warn ('-f: fatal errors only'."\n");
-	warn ('-q: quiet'."\n");
-	warn ('-s: summary only'."\n");
-	warn ('-v: verbose ouput'."\n");
-	warn ('-d: debug ouput'."\n");
+	warn ('    -a: automatic correction, where possible'."\n");
+	warn ('    -b: backups original, if changes are applied'."\n");
+	warn ('    -o: old style'."\n");
+	warn ('    -n: new style'."\n");
+	warn ('    -c: comment empty lines'."\n");
+	warn ('    -i: indent after \'contains\''."\n");
+	warn ('    -l: loose checking'."\n");
+	warn ('    -f: fatal errors only'."\n");
+	warn ('    -q: quiet'."\n");
+	warn ('    -r: recursive checking through subdirectories'."\n");
+	warn ('    -s: summary only'."\n");
+	warn ('    -v: verbose ouput'."\n");
+	warn ('    -d: debug ouput'."\n");
+	warn ('Possible filenames:'."\n");
+	warn ('    run.f90   : check only "run.f90" in the current directory'."\n");
+	warn ('    .         : check all Fortran files in the current directory'."\n");
+	warn ('    all       : check all Fortran files in the current directory (same as ".")'."\n");
+	warn ('    *.f90 *.h : check Fortran and header files in the current directory'."\n");
+	warn ('    src       : check Fortran files in "$PENCIL_HOME/src/" and subdirectories'."\n");
+}
+
+sub scan_directory {
+	my ($dir_entry) = @_;
+
+	# scan recursively through subdirectories
+	if (-d $dir_entry) {
+		$dir_entry =~ s/[\/\s]*$//s;
+
+		# count the files in this directory
+		my @dirlist = ( glob ($dir_entry."/*.f90"), glob ($dir_entry."/*.f"), glob ($dir_entry."/*.h") );
+		$num_files += $#dirlist;
+
+		# iterate over subdirectories
+		my @dirlist = glob ($dir_entry."/*");
+		foreach my $subdir_entry (@dirlist) {
+			if ($subdir_entry =~ /^\.{1,2}\/?$/s) { next; }
+			if (-d $subdir_entry && $recursive) {
+				scan_directory ($subdir_entry);
+			}
+		}
+
+		# process the files in this directory
+		my @dirlist = ( glob ($dir_entry."/*.f90"), glob ($dir_entry."/*.f"), glob ($dir_entry."/*.h") );
+		foreach my $subdir_entry (@dirlist) {
+			scan_file ($subdir_entry);
+		}
+	}
+	else {
+		# process entry as file
+		if (!-e $dir_entry) { die ('No such file or directory: "'.$dir_entry.'"'."\n"); }
+		if (!-f $dir_entry) { die ('Not a file: "'.$dir_entry.'"'."\n"); }
+		$num_files++;
+		scan_file ($dir_entry);
+	}
 }
 
 sub scan_file {
+	my ($filename) = @_;
+
+	# print file header
+	if (!$quiet || $summary_only) {
+		print ('========================================================================'."\n");
+		print ('File "'.$filename.'":'."\n");
+	}
+
+	# sanity check
+	if (!-e $filename) { die ('No such file: "'.$filename.'"'."\n"); }
+	if (!-f $filename) { die ('Not a file: "'.$filename.'"'."\n"); }
+
+	# parse and auto-correct a file
+	parse_file ($filename);
+	if (!$summary_only && ((!$fatals_only && $num_accumulative) || $num_fatals)) {
+		warn ('File "'.$filename.'":'."\n");
+	}
+	if (!$quiet || $summary_only || (!$fatals_only && $num_accumulative) || $num_fatals) {
+		print STDERR ('=> ');
+	}
+	if ($auto_correct && !$num_fatals) {
+		write_file ($filename);
+	}
+
+	# print statistics
+	print_num_warnings ();
+}
+
+sub parse_file {
+	my ($filename) = @_;
+
 	# reset global state
 	$state{'indent'} = 0;
 	$state{'indent_str'} = '';
@@ -183,6 +247,7 @@ sub scan_file {
 	}
 
 	# read file
+	$num_file++;
 	my $num_lines = 0;
 	my $orig_line_number = 0;
 	@lines = [''];
