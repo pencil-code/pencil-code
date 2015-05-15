@@ -131,8 +131,8 @@ pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, di
 				writeu, lun, swap_endian (transpose (reform (data.(i), [nwgrid, num_dims])), /swap_if_big_endian)
 			endif else begin
 				writeu, lun, swap_endian (transpose (reform (data[*,*,*,i:i+num_dims-1], [nwgrid, num_dims])), /swap_if_big_endian)
+				if (not keyword_set (selected)) then i += num_dims
 			endelse
-			if (not keyword_set (selected)) then i += 3
 		endif else begin
 			message, "ERROR: data with unrecognized dimension."
 		endelse
