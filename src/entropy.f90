@@ -96,7 +96,7 @@ module Energy
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
-  logical :: lcooling_general=.false.
+  logical :: lcooling_general=.false., lcooling_ss_mz=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
@@ -128,7 +128,7 @@ module Energy
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=intlen) :: iinit_str
-  real, dimension (mz), save :: hcond_zprof,chit_zprof
+  real, dimension (mz), save :: hcond_zprof, chit_zprof, ss_mz
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
   real, dimension (mx),   save :: hcond_xprof,chit_xprof
   real, dimension (mx,3), save :: gradloghcond_xprof
@@ -163,7 +163,8 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, zcool2, &
+      lcooling_general, lcooling_ss_mz, &
+      ss_const, chi_t, chi_th, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -368,7 +369,7 @@ module Energy
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob
+      use Sub, only: blob, read_zprof_mz
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -703,6 +704,10 @@ module Energy
           endselect
         enddo
       endif
+!
+!  Read entropy profile (used for cooling to reference profile)
+!
+      if (lcooling_ss_mz) call read_zprof_mz('ss_mz',ss_mz)
 !
 !  Initialize heat conduction.
 !
@@ -4836,6 +4841,8 @@ module Energy
         if (lcalc_ss_volaverage) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             -(ss_volaverage-ss_const)/tau_cool_ss
+        elseif (lcooling_ss_mz) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_mz(n))/tau_cool_ss
         else
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const)/tau_cool_ss
         endif

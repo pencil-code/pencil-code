@@ -2304,10 +2304,12 @@ module Initcond
 !  23-may-04/anders: made structure for other input variables
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use Sub, only: write_zprof_mz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
       real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2
       logical :: exist
       integer :: stat
@@ -2407,6 +2409,23 @@ module Initcond
         call fatal_error('','')
 !
       endselect
+!
+!  occupy profile arrays
+!
+        if (lentropy) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
+            ss_mz(n)=ss0(ipz*nz+n-nghost)
+          enddo
+          call write_zprof_mz('ss_mz',ss_mz)
+        endif
+        if (ltemperature) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
+            lnTT_mz(n)=lnTT0(ipz*nz+n-nghost)
+          enddo
+          call write_zprof_mz('lnTT_mz',lnTT_mz)
+        endif
 !
       close(19)
 !
