@@ -259,7 +259,7 @@ module Diagnostics
         if (.not.lop) &
           open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 !  file not distributed, backskipping enabled
-        if (.not. outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1,iomsg=iomsg)) then
+        if (lop .or. .not.outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1,iomsg=iomsg)) then
 !
           if (lfirst_call) then
             write(lun,"('"//comment_char//"',a)",IOSTAT=iostat,iomsg=iomsg) trim(legend)
@@ -936,11 +936,12 @@ module Diagnostics
       if (lroot.and.nnamez>0) then
 !
         inquire(1,opened=lop)
-        if (.not.lop) &
+        if (.not.lop) then
           open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file not distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
-                   location='write_xyaverages',iomsg=iomsg)) return
+          if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
+                     location='write_xyaverages',iomsg=iomsg)) return
+        endif
 !
         write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
         if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
@@ -950,7 +951,6 @@ module Diagnostics
 !
         close(1,IOSTAT=iostat,iomsg=iomsg)
         if (outlog(iostat,'close',iomsg=iomsg)) continue
-        ! flush(1)
 !
       endif
 !
