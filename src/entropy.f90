@@ -86,6 +86,7 @@ module Energy
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   integer :: ippaux=0
+  integer :: cool_type=1
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false., lheatc_Kconst=.false.
   logical, target :: lheatc_chiconst=.false.
@@ -183,7 +184,8 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
-      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep
+      Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
+      cool_type
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -5403,7 +5405,7 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
       integer :: i,imax
       real :: unit_lnQ
 !
@@ -5444,7 +5446,8 @@ module Energy
 !  First set of parameters.
 !
       rtv_cool=0.
-      if (cool_RTV > 0.) then
+    select case (cool_type)
+      case (1)
         imax = size(intlnT_1,1)
         lnQ(:)=0.0
         do i=1,imax-1
@@ -5460,11 +5463,11 @@ module Energy
         else
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
         endif
-      elseif (cool_RTV < 0) then
+        tmp=maxval(rtv_cool*gamma)/(cdts)
+      case (2)
 !
 !  Second set of parameters
 !
-        cool_RTV = cool_RTV*(-1.)
         imax = size(intlnT_2,1)
         lnQ(:)=0.0
         do i=1,imax-1
@@ -5480,9 +5483,18 @@ module Energy
         else
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
         endif
-      else
+        tmp=maxval(rtv_cool*gamma)/(cdts)
+      case (3)
+        rtv_cool=0.0
+        if (z(n) > z_cor) then
+          call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
+          rtv_cool = exp(lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho)
+        endif
+        tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
+      case default
         rtv_cool(:)=0.
-      endif
+        tmp=maxval(rtv_cool*gamma)/(cdts)
+    end select
 !
       rtv_cool=rtv_cool * cool_RTV  ! for adjusting by setting cool_RTV in run.in
 !
@@ -5494,7 +5506,7 @@ module Energy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
       if (lfirst.and.ldt) then
-         dt1_max=max(dt1_max,maxval(rtv_cool*gamma)/(cdts))
+         dt1_max=max(dt1_max,tmp)
       endif
 !
     endsubroutine calc_heat_cool_RTV
@@ -6787,6 +6799,168 @@ module Energy
       if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine get_lnQ(lnTT,lnQ,delta_lnTT)
+!
+!  17-may-2015/piyali.chatterjee : copied from special/solar_corona.f90
+!  input: lnTT in SI units
+!  output: lnP  [p]=W/s * m^3
+!
+      real, dimension (nx), intent(in) :: lnTT
+      real, dimension (nx), intent(out) :: lnQ, delta_lnTT
+!
+      real, parameter, dimension (37) :: intlnT = (/ &
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
+          9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
+          11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, &
+          12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
+          14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
+          15.6576,  69.0776 /)
+      real, parameter, dimension (37) :: intlnQ = (/ &
+          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
+          -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
+          -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
+          -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, &
+          -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
+          -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
+          -0.66650 /)
+      real, dimension(9) :: pars = (/ &
+          2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
+          1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
+!
+      real, dimension (nx) :: slope, ordinate
+      real, dimension (nx) :: logT, logQ
+      integer :: i, px, z_ref
+      real :: pos, frac
+!
+        do px = 1, nx
+           pos = interpol_tabulated (lnTT(px), intlnT)
+           z_ref = floor (pos)
+         if (z_ref < 1) then
+            lnQ(px) = -max_real
+            delta_lnTT(px) = intlnT(2) - intlnT(1)
+            cycle
+          endif
+          if (z_ref > 36) z_ref = 36
+          frac = pos - z_ref
+          lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
+          delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
+        enddo
+!
+    endsubroutine get_lnQ
+!
+!***********************************************************************
+    function interpol_tabulated (needle, haystack)
+!
+! Find the interpolated position of a given value in a tabulated values array.
+! Bisection search algorithm with preset range guessing by previous value.
+! Returns the interpolated position of the needle in the haystack.
+! If needle is not inside the haystack, an extrapolated position is returned.
+!
+! 09-feb-2011/Bourdin.KIS: coded
+! 17-may-2015/piyali.chatterjee : copied from special/solar_corona.f90
+
+      real :: interpol_tabulated
+      real, intent(in) :: needle
+      real, dimension (:), intent(in) :: haystack
+!
+      integer, save :: lower=1, upper=1
+      integer :: mid, num, inc
+!
+      num = size (haystack, 1)
+      if (num < 2) call fatal_error ('interpol_tabulated', "Too few tabulated values!", .true.)
+      if (lower >= num) lower = num - 1
+      if ((upper <= lower) .or. (upper > num)) upper = num
+!
+      if (haystack(lower) > haystack(upper)) then
+!
+!  Descending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle > haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position!
+        inc = 2
+        do while ((upper < num) .and. (needle < haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle < haystack(upper)) then
+          ! Extrapolate needle value below range
+          lower = num - 1
+        elseif (needle > haystack(lower)) then
+          ! Extrapolate needle value above range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle >= haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (haystack(lower) - needle) / (haystack(lower) - haystack(upper))
+!
+      elseif (haystack(lower) < haystack(upper)) then
+!
+!  Ascending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle < haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle > haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle > haystack(upper)) then
+          ! Extrapolate needle value above range
+          lower = num - 1
+        elseif (needle < haystack(lower)) then
+          ! Extrapolate needle value below range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle < haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (needle - haystack(lower)) / (haystack(upper) - haystack(lower))
+      else
+        interpol_tabulated = -1.0
+        call fatal_error ('interpol_tabulated', "Tabulated values are invalid!", .true.)
+      endif
+!
+    endfunction interpol_tabulated
 !***********************************************************************
     subroutine split_update_energy(f)
 !
