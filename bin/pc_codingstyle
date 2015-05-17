@@ -524,6 +524,13 @@ sub parse_file {
 			# comment at end of line
 			picky_fixme_warning ("avoid end-of-line comments");
 			$state{'eol_comment'}++;
+			if ($no_strings =~ s/(\S)( *)(\!{2,})( *)(.*)$/${1} ! ${5}/s) {
+				my $pre = $2;
+				my $num_exclam = length ($3);
+				my $post = $4;
+				$lines[$pos] =~ s/(\S)${pre}\!{${num_exclam}}${post}(.*)$/${1} ! ${2}/s;
+				picky_warning ("end-of-line comments start with only one exclamation mark");
+			}
 		}
 		else {
 			$state{'eol_comment'} = 0;
@@ -607,10 +614,10 @@ sub parse_file {
 			# require spaces around ::
 			my $warning_given = 0;
 			my $test_line = $code_line;
-			$test_line =~ s/\s*::\s?/ :: /s;
+			$test_line =~ s/ *:: ?/ :: /s;
 			if ($test_line ne $code_line) {
 				$code_line = $test_line;
-				$lines[$pos] =~ s/\s*::\s?/ :: /s;
+				$lines[$pos] =~ s/ *:: ?/ :: /s;
 				if (!$warning_given) {
 					picky_warning ("'::' is surrounded by at least one space in a variable declaration for readability");
 					$warning_given = 1;
@@ -1222,6 +1229,16 @@ sub check_closed_nesting {
 			$else =~ s/^ +//is;
 			$line =~ s/^( *else) +(${type})/${1}${2}/is;
 			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?else) +(${type})/${1}${2}/is;
+		}
+		if ($type =~ /^if ([${name}]+)$/is) {
+			my $label = $1;
+			if ($line =~ /^ *(?:else|else(if) .*? then) +${label} *$/is) {
+				my $else_type = $1;
+				warning ("using labels for 'else".$else_type."'-statements is not recommended");
+				$else =~ s/ +${label} *$//is;
+				$line =~ s/ +${label}(.*)$/${1}/is;
+				$lines[$pos] =~ s/ +${label}(.*)$/${1}/is;
+			}
 		}
 		if ($else =~ /^${type}[^ ${name}%]/is) {
 			warning ("space after 'else".$type."'-statement required");
