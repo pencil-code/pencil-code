@@ -604,9 +604,21 @@ sub parse_file {
 		if (($code_line =~ /::/s) || $state{'multiline_declaration'}) {
 			$state{'multiline_declaration'} = 0;
 			if ($code_line =~ /\&$/s) { $state{'multiline_declaration'} = 1; }
+			# require spaces around ::
+			my $warning_given = 0;
+			my $test_line = $code_line;
+			$test_line =~ s/\s*::\s?/ :: /s;
+			if ($test_line ne $code_line) {
+				$code_line = $test_line;
+				$lines[$pos] =~ s/\s*::\s?/ :: /s;
+				if (!$warning_given) {
+					picky_warning ("'::' is surrounded by at least one space in a variable declaration for readability");
+					$warning_given = 1;
+				}
+			}
+			$test_line = '';
 			# comma-separated list of variables
 			$code_line = cut_brackets ($code_line);
-			my $warning_given = 0;
 			while ($code_line =~ /^(.*?[^ ]) *,(?:[^ ]|[ ,]{2,})[^ ]/s) {
 				my $pre = length ($1);
 				if (!$warning_given) {
@@ -616,7 +628,7 @@ sub parse_file {
 				$code_line =~ s/^(.{${pre}}) *,[ ,]*(?=[^ ])/${1}, /s;
 				$lines[$pos] =~ s/^(.{${pre}}) *,[ ,]*(?=[^ ])/${1}, /s;
 			}
-			# require right separator withou space in variable declaration
+			# require right separator without space in variable declaration
 			my $init_line = cut_initialization ($code_line);
 			while (my ($item, $separator) = each (%require_declaration_right_separator)) {
 				if (!$separator) { $separator = '('; }
