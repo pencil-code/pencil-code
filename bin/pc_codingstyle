@@ -337,7 +337,7 @@ sub parse_file {
 		}
 		if ($lines[$pos] =~ /^ *\!\!+ */s) {
 			# double commenting
-			picky_warning ("comments start with only one exclamation mark");
+			picky_warning ("comments start with only one 'exclamation mark'");
 			$lines[$pos] =~ s/^( *\!)\!+ */${1} /s;
 		}
 		if (!$old_style && $state{'routine_footer'}) {
