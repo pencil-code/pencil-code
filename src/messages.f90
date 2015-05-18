@@ -611,7 +611,7 @@ module Messages
 !
     endsubroutine terminal_highlight_fatal_error
 !***********************************************************************
-  logical function outlog(code,mode,file,dist,msg,lcont,location)
+  logical function outlog(code,mode,file,dist,msg,lcont,location,iomsg)
 !
 !  Creates log entries for I/O errors in ioerrors.log.
 !  Notifies user via e-mail if address mailaddress is given.
@@ -633,6 +633,7 @@ module Messages
 !  location(IN): name of program unit, in which error occurred
 !                if omitted assumed to be the one saved in scaller
 !                usually set by the call with mode='open'
+!  iomsg(IN): Fortran runtime message text
 !
 !  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
 !                statement ending the present group of I/O operations as outlog closes (tries to close) the file.
@@ -652,7 +653,7 @@ module Messages
 !
     integer,                     intent(IN) :: code
     character (LEN=*),           intent(IN) :: mode
-    character (LEN=*), optional, intent(IN) :: file,msg,location
+    character (LEN=*), optional, intent(IN) :: file,msg,location,iomsg
     integer,           optional, intent(IN) :: dist
     logical,           optional, intent(IN) :: lcont
 !
@@ -669,6 +670,7 @@ module Messages
     logical :: lopen, lclose, lwrite, lsync, lexists, lcontl, lscan
     character(LEN=4) :: modestr
     character(LEN=labellen) :: item
+    character :: sepchar
 !
     outlog = .false.; modestr=''
     len_mode=len_trim(mode)
@@ -713,7 +715,14 @@ module Messages
     if (present(location)) scaller = location
 
     message = ""
-    if (present (msg)) message = ': '//trim (msg)
+    if (present (msg)) then
+      message = ': '//trim (msg)
+      sepchar = ';'
+    else
+      sepchar = ':'
+    endif
+    if (present (iomsg)) message = trim(message)//sepchar//' '//trim (iomsg)
+
     lcontl = loptest(lcont)
 !
 ! Set the following expression to .false. to activate the experimental code

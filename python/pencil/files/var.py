@@ -313,6 +313,12 @@ class DataCube(object):
           self.uu = self.f[index['ux']-1:index['uz'],...]
         if index.has_key('aa'):
           self.aa = self.f[index['ax']-1:index['az'],...]
+        # Also treat Fcr (from cosmicrayflux) as a vector.
+        if index.has_key('fcr'):  
+           self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
+           self.fcrx = self.fcr[0]
+           self.fcry = self.fcr[1]
+           self.fcrz = self.fcr[2]
 
         self.t = t
         self.dx = dx

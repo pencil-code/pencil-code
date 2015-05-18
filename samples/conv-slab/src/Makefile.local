@@ -3,7 +3,6 @@
 ### Included by `Makefile'
 ###
 
-LDMPI=-lmpi
 MPICOMM   =   mpicomm
 IO        =   io_dist
 

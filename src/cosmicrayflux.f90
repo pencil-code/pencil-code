@@ -23,21 +23,21 @@ module Cosmicrayflux
 !
   include 'cosmicrayflux.h'
 !
-  character (len=labellen) :: initfcr='zero'
-  real :: amplfcr=0.,kpara=0.,kperp=0.
-  real :: tau=0.,tau1=0., bmin=1e-6
-  real, dimension (nx) :: vKperp,vKpara
-  real, dimension (nx) :: b_exp
+  character(len=labellen) :: initfcr='zero'
+  real :: amplfcr=0., kpara=0., kperp=0.
+  real :: tau=0., tau1=0., bmin=1e-6
+  real, dimension(nx) :: vKperp, vKpara
+  real, dimension(nx) :: b_exp
   logical :: lbb_dependent_perp_diff = .false.
   logical :: lcosmicrayflux_diffus_dt = .false.
 !
   namelist /cosmicrayflux_init_pars/ &
-       tau, kpara, kperp, lbb_dependent_perp_diff, &
-       bmin,lcosmicrayflux_diffus_dt
+      tau, kpara, kperp, lbb_dependent_perp_diff, &
+      bmin, lcosmicrayflux_diffus_dt
 !
   namelist /cosmicrayflux_run_pars/ &
-       tau, kpara, kperp, lbb_dependent_perp_diff, bmin, &
-       lcosmicrayflux_diffus_dt
+      tau, kpara, kperp, lbb_dependent_perp_diff, bmin, &
+      lcosmicrayflux_diffus_dt
 !
   contains
 !***********************************************************************
@@ -51,23 +51,24 @@ module Cosmicrayflux
       use FArrayManager
 !
       call farray_register_pde('fcr',ifcr,vector=3)
-      ifcrx = ifcr; ifcry = ifcr+1; ifcrz = ifcr+2
+      ifcrx = ifcr
+      ifcry = ifcr+1
+      ifcrz = ifcr+2
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
-          "$Id$")
+      if (lroot) call svn_id("$Id$")
 !
 !  Writing files for use with IDL
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',fcr $'
-          if (nvar == mvar) write(4,*) ',fcr'
+          if (nvar < mvar) write (4,*) ',fcr $'
+          if (nvar == mvar) write (4,*) ',fcr'
         else
-          write(4,*) ',fcr $'
+          write (4,*) ',fcr $'
         endif
-        write(15,*) 'fcr = fltarr(mx,my,mz,3)*one'
+        write (15,*) 'fcr = fltarr(mx,my,mz,3)*one'
       endif
 !
     endsubroutine register_cosmicrayflux
@@ -79,9 +80,9 @@ module Cosmicrayflux
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitalize_aa added
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 
-      if (tau /= 0.) tau1=1./tau
+      if (tau /= 0.)  tau1 = 1./tau
 !
       call keep_compiler_quiet(f)
 !
@@ -101,11 +102,12 @@ module Cosmicrayflux
       use Initcond
       use InitialCondition, only: initial_condition_fcr
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       select case (initfcr)
 
-      case ('zero', '0'); f(:,:,:,ifcrx:ifcrz) = 0.
+      case ('zero', '0')
+        f(:,:,:,ifcrx:ifcrz) = 0.
 ! probably no more cases needed for fcr
       case default
 !
@@ -128,8 +130,8 @@ module Cosmicrayflux
 !
 !  19-11-04/anders: coded
 !
-      lpenc_requested(i_gecr)=.true.
-      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_gecr) = .true.
+      lpenc_requested(i_bb) = .true.
 !
     endsubroutine pencil_criteria_cosmicrayflux
 !***********************************************************************
@@ -145,10 +147,10 @@ module Cosmicrayflux
 !
 !  Calculate Cosmicray Flux pencils - to be done
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 
-      intent(in)  :: f
+      intent(in) :: f
       intent(inout) :: p
 !
       call keep_compiler_quiet(f)
@@ -170,12 +172,12 @@ module Cosmicrayflux
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: BuiBujgecr, bunit
-      real, dimension (nx)   :: b2, b21, b_abs
-      real, dimension (nx)   :: tmp
-      integer :: i,j,k
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,3) :: BuiBujgecr, bunit
+      real, dimension(nx)   :: b2, b21, b_abs
+      real, dimension(nx)   :: tmp
+      integer :: i, j, k
       type (pencil_case) :: p
 !
       intent(in)     :: f
@@ -183,7 +185,7 @@ module Cosmicrayflux
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dfcr_dt: SOLVE'
+      if (headtt .or. ldebug) print*,'dfcr_dt: SOLVE'
       if (headtt) then
         call identify_bcs('Fecx',ifcrx)
         call identify_bcs('Fecy',ifcry)
@@ -192,15 +194,15 @@ module Cosmicrayflux
 !
       call dot2_mn(p%bb,b2)
 !  with frequency omega_Bz_ext
-      b21=1./max(tini,b2)
+      b21 = 1./max(tini,b2)
       call multsv_mn(sqrt(b21),p%bb,bunit)
 !
       do i=1,3
-        tmp=0.
-        do j=1,3
-          tmp=tmp+bunit(:,i)*bunit(:,j)*p%gecr(:,j)
+        tmp = 0.
+        do j=1, 3
+          tmp = tmp + bunit(:,i)*bunit(:,j)*p%gecr(:,j)
         enddo
-        BuiBujgecr(:,i)=tmp
+        BuiBujgecr(:,i) = tmp
       enddo
 !
 !  Cosmic Ray Flux equation.
@@ -232,38 +234,24 @@ module Cosmicrayflux
 !  treated as an advection contribution. Otherwise, tau*kperp/tau*kpara are
 !  used as cosmic ray diffusivities.
 !
-      if (lfirst.and.ldt) then
+      if (lfirst .and. ldt) then
         if (lcosmicrayflux_diffus_dt) then
           if (lbb_dependent_perp_diff) then
-            diffus_cr=max(diffus_cr,maxval(vKperp)*tau*dxyz_2, &
+            diffus_cr = max(diffus_cr,maxval(vKperp)*tau*dxyz_2, &
                 maxval(vKpara)*tau*dxyz_2)
           else
-            diffus_cr=max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
+            diffus_cr = max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
           endif
         else
           if (lbb_dependent_perp_diff) then
-            advec_kfcr=max(advec_kfcr,maxval(vKperp)*dxyz_2, &
+            advec_kfcr = max(advec_kfcr,maxval(vKperp)*dxyz_2, &
                 maxval(vKpara)*dxyz_2)
           else
-            advec_kfcr=max(advec_kfcr,kperp*dxyz_2,kpara*dxyz_2)
+            advec_kfcr = max(advec_kfcr, kperp*dxyz_2, kpara*dxyz_2)
           endif
         endif
       endif
-!
-!
-!  Calculate diagnostic quantities.
-!
-      if (ldiagnos) then
-!
-!  cosmicrayflux components at one point (=pt)
-!
-!        if (lroot.and.m==mpoint.and.n==npoint) then
-!          if (idiag_fcrxpt/=0) call save_name(p%fcr(lpoint-nghost,1),idiag_fcrxpt)
-!          if (idiag_fcrypt/=0) call save_name(p%fcr(lpoint-nghost,2),idiag_fcrypt)
-!         if (idiag_fcrzpt/=0) call save_name(p%fcr(lpoint-nghost,3),idiag_fcrzpt)
-!        endif
-      endif ! endif (ldiagnos)
-!
+
     endsubroutine dfcr_dt
 !***********************************************************************
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
@@ -272,9 +260,9 @@ module Cosmicrayflux
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=cosmicrayflux_init_pars,ERR=99, IOSTAT=iostat)
+        read (unit, NML=cosmicrayflux_init_pars, ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=cosmicrayflux_init_pars,ERR=99)
+        read (unit, NML=cosmicrayflux_init_pars, ERR=99)
       endif
 !
 99    return
@@ -285,7 +273,7 @@ module Cosmicrayflux
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicrayflux_init_pars)
+      write (unit, NML=cosmicrayflux_init_pars)
 !
     endsubroutine write_cosmicrayflux_init_pars
 !***********************************************************************
@@ -295,9 +283,9 @@ module Cosmicrayflux
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=cosmicrayflux_run_pars,ERR=99, IOSTAT=iostat)
+        read (unit, NML=cosmicrayflux_run_pars, ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=cosmicrayflux_run_pars,ERR=99)
+        read (unit, NML=cosmicrayflux_run_pars, ERR=99)
       endif
 !
 99    return
@@ -308,7 +296,7 @@ module Cosmicrayflux
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicrayflux_run_pars)
+      write (unit, NML=cosmicrayflux_run_pars)
 !
     endsubroutine write_cosmicrayflux_run_pars
 !***********************************************************************
@@ -321,12 +309,12 @@ module Cosmicrayflux
 !
       use Sub
 !
-      integer :: iname,inamez,ixy,irz
-      logical :: lreset,lwr
+      integer :: iname, inamez, ixy, irz
+      logical :: lreset, lwr
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      if (present(lwrite))  lwr = lwrite
 !
 !  Reset everything in case of RELOAD.
 !  (this needs to be consistent with what is defined above!)
@@ -356,7 +344,7 @@ module Cosmicrayflux
 !  Check for those quantities for which we want phi-averages.
 !
       do irz=1,nnamerz
-!        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,idiag_brmphi)
+!        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi',idiag_brmphi)
       enddo
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.

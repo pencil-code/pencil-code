@@ -1470,7 +1470,7 @@ else if ($hostname =~ juqueen*) then
    set one_local_disc = 1
    set mpirun = runjob
    set mpirunops = "--ranks-per-node 16"
-   set mpirunops2="--exe"
+   set mpirunops2="-n $ncpus --exe"
    set npops = ''
    setenv SSH "ssh -q -x"
    setenv SCP "scp -q"
@@ -1754,7 +1754,7 @@ else if ($hostname =~ mhdc) then
        set masterhost = 'master'
        cat $PBS_NODEFILE > mpd.hosts
        set mpirun = /usr/bin/mpirun
-       set mpirunops = "-machinefile mpd.hosts"# $PBS_NODEFILE"
+       set mpirunops = "-machinefile mpd.hosts"# $PBS_NODEFILE
        set myprocpernode = 4
        set mynodes = `expr $ncpus / $myprocpernode `
        set resub = "/usr/compusys-installed/bin/qsub -d $PENCIL_WORKDIR"

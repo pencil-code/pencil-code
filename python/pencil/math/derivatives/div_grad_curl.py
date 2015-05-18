@@ -33,6 +33,14 @@ def grad(f,dx,dy,dz):
     
     return grad
 
+def laplacian(f,dx,dy,dz):
+	"""
+	take the laplacian of a pencil code scalar array
+	"""
+	laplacian = N.empty(f.shape)
+	laplacian = xder2(f,dx)+yder2(f,dy)+zder2(f,dz)
+	return laplacian
+
 def curl(f,dx,dy,dz,run2D=False):
     """
     take the curl of a pencil code vector array.

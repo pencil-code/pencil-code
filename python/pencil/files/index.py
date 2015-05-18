@@ -45,11 +45,12 @@ class Index(dict):
         f = open(os.path.join(datadir,'index.pro'))
         for line in f.readlines():
             clean = line.strip()
-            name=clean.split('=')[0].strip()
-            if (clean.split('=')[1].strip().startswith('intarr(370)')):
-	      print 'WARNING: index.pro is referencing to a intarray for '+name+', this is not implemented properly yet!'
+            name=clean.split('=')[0].strip().replace('[','').replace(']','')
+            if (clean.split('=')[1].strip().startswith('intarr(')):
 	      continue
             val=int(clean.split('=')[1].strip())
+           # val=int(float(clean.split('=')[1].strip())) # sean150513
+
             #            print name,val
             # need to compare val to totalvars as global indices
             # may be present in index.pro

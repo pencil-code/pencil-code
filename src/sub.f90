@@ -79,6 +79,7 @@ module Sub
 !
   public :: write_dx_general, numeric_precision, wdim, rdim
   public :: write_zprof, remove_zprof, write_zprof_once
+  public :: write_zprof_mz, read_zprof_mz
 !
   public :: tensor_diffusion_coef
 !
@@ -4354,9 +4355,9 @@ nameloop: do
 !
       use Syscalls, only: file_exists
 !
-      character (len=*) :: fname
+      character (len=*), intent(in) :: fname
 !
-      logical :: removed = .false.
+      logical :: removed
 !
       removed = file_exists(fname,DELETE=.true.)
       if (removed .and. (ip<=6)) &
@@ -4373,9 +4374,11 @@ nameloop: do
 !
       use Mpicomm, only : parallel_file_exists
 !
-      logical :: control_file_exists,ldelete
-      character (len=*) :: fname
-      logical, optional :: delete
+      logical :: control_file_exists
+      character (len=*), intent(in) :: fname
+      logical, optional, intent(in) :: delete
+!
+      logical :: ldelete
 !
       if (present(delete)) then
         ldelete=delete
@@ -4615,6 +4618,60 @@ nameloop: do
       endif
 !
     endsubroutine write_zprof
+!***********************************************************************
+    subroutine write_zprof_mz(fname,a)
+!
+!  Writes z-profile to a file (taken from stratification, for example).
+!  This works for data strings on length mz.
+!
+!  15-may-15/axel: coded
+!
+      use General, only: safe_character_assign
+!
+      real, dimension(mz) :: a
+      character (len=*) :: fname
+!
+      integer :: unit=1
+      character (len=120) :: wfile
+!
+!  Write zprofile file.
+!
+      call safe_character_assign(wfile, &
+          trim(directory)//'/zprof_'//trim(fname)//'.dat')
+      open(unit,file=wfile)
+      do n=1,mz
+        write(unit,*) z(n),a(n)
+      enddo
+      close(unit)
+!
+    endsubroutine write_zprof_mz
+!***********************************************************************
+    subroutine read_zprof_mz(fname,a)
+!
+!  Read z-profile from a file (taken from stratification, for example).
+!  This works for data strings on length mz.
+!
+!  15-may-15/axel: coded
+!
+      use General, only: safe_character_assign
+!
+      real, dimension(mz) :: a
+      character (len=*) :: fname
+!
+      integer :: unit=1
+      character (len=120) :: wfile
+!
+!  Write zprofile file.
+!
+      call safe_character_assign(wfile, &
+          trim(directory)//'/zprof_'//trim(fname)//'.dat')
+      open(unit,file=wfile)
+      do n=1,mz
+        read(unit,*) z(n),a(n)
+      enddo
+      close(unit)
+!
+    endsubroutine read_zprof_mz
 !***********************************************************************
     subroutine write_zprof_once(fname,a)
 !

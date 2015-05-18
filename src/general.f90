@@ -3397,9 +3397,13 @@ module General
       character(LEN=*), intent(IN) :: file
 
       integer, parameter :: lun=111
+      logical :: exists
 
-      open (lun, FILE=file)
-      close(lun, status='delete')
+      inquire(FILE=file, EXIST=exists)
+      if (exists) then
+        open (lun, FILE=file)
+        close(lun, status='delete')
+      endif
 
     endsubroutine delete_file
 !***********************************************************************

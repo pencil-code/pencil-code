@@ -101,9 +101,9 @@ program run
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
-  integer :: icount, i, mvar_in
+  integer :: icount, i, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic
-  logical :: lstop=.false., timeover=.false., resubmit=.false.
+  logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
 !
@@ -731,13 +731,14 @@ program run
 !  Save snapshot every isnap steps in case the run gets interrupted.
 !  The time needs also to be written.
 !
-    if (isave/=0.and..not.lnowrite) then
-      if (mod(it,isave)==0) then
-        if (lparticles) &
-            call write_snapshot_particles(directory_dist,f,ENUM=.false.)
-!
+    lsave = control_file_exists('SAVE', DELETE=.true.)
+    if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
+      if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
+        if (lparticles) &
+            call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+        if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
       endif
     endif
 !

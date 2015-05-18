@@ -39,6 +39,7 @@ module Initcond
   public :: random_isotropic_KS
   public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
+  public :: htube2_x
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
@@ -2304,10 +2305,12 @@ module Initcond
 !  23-may-04/anders: made structure for other input variables
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use Sub, only: write_zprof_mz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
       real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2
       logical :: exist
       integer :: stat
@@ -2407,6 +2410,23 @@ module Initcond
         call fatal_error('','')
 !
       endselect
+!
+!  occupy profile arrays
+!
+        if (lentropy) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
+            ss_mz(n)=ss0(ipz*nz+n-nghost)
+          enddo
+          call write_zprof_mz('ss_mz',ss_mz)
+        endif
+        if (ltemperature) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
+            lnTT_mz(n)=lnTT0(ipz*nz+n-nghost)
+          enddo
+          call write_zprof_mz('lnTT_mz',lnTT_mz)
+        endif
 !
       close(19)
 !
@@ -3308,6 +3328,65 @@ module Initcond
       endif
 !
     endsubroutine htube2
+!***********************************************************************
+    subroutine htube2_x(ampl,f,i1,i2,radius,epsilon_nonaxi,qtube,center1_y,center1_z,scale_y)
+!
+!
+!  Horizontal twisted flux tube in the x-direction (for vector potential, or passive scalar)
+!  y axis can be stretched to form a flattened tube
+!
+!  17-may-15/piyali.chatterjee: coded from  htube2
+!
+      integer :: i1,i2
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: tmp,modulate
+      real :: ampl,radius,epsilon_nonaxi,kx,qtube
+      real :: center1_y,center1_z,rhorad
+      real,optional :: scale_y
+!
+        kx=2*pi/Lx
+        if (lroot) then
+          print*,'htube2_x: implement x-dependent flux tube in yz-plane; i1,i2=',i1,i2
+          print*,'htube2_x: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+        endif
+!
+!  constant, when epsilon_nonaxi; otherwise modulation about zero
+!
+        do n=1,mz; do m=1,my
+          if (epsilon_nonaxi==0) then
+            modulate(:)=1.0
+          else
+            modulate(:)=epsilon_nonaxi*sin(kx*x(:))
+          endif
+!
+! completely quenched "gaussian"
+          if (present(scale_y))  then
+            rhorad=sqrt((scale_y*(y(m)-center1_y))**2+(z(n)-center1_z)**2)
+            tmp=.5*ampl*modulate*radius**2*&
+                (1.-exp(-(rhorad/radius)**2))/rhorad
+          else
+            rhorad=sqrt((y(m)-center1_y)**2+(z(n)-center1_z)**2)
+            tmp=.5*ampl*modulate*radius**2*&
+                (1.-exp(-(rhorad/radius)**2))/rhorad
+          endif
+!
+!  check whether vector or scalar
+!
+          if (i1==i2) then
+            if (lroot.and.ip<10) print*,'htube2_x: set scalar'
+            f(:,m,n,i1)=f(:,m,n,i1)+tmp
+          elseif (i1+2==i2) then
+            if (lroot.and.ip<10) print*,'htube2_x: set vector'
+            f(:,m,n,i1  )=f(:,m,n,i1)+qtube*tmp*rhorad
+            f(:,m,n,i1+1)=f(:,m,n,i1+1)-(z(n)-center1_z)*tmp/rhorad
+            f(:,m,n,i1+2)=f(:,m,n,i1+2)+(y(m)-center1_y)*tmp/rhorad
+         else
+            if (lroot) print*,'htube2_x: bad value of i2=',i2
+          endif
+!
+        enddo; enddo
+!
+    endsubroutine htube2_x
 !***********************************************************************
     subroutine magsupport(ampl,f,gravz,cs0,rho0)
 !
