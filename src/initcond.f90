@@ -3360,7 +3360,7 @@ module Initcond
           endif
 !
 ! completely quenched "gaussian"
-          if (present(scale_y) .eq. .true.)  then
+          if (present(scale_y))  then
             rhorad=sqrt((scale_y*(y(m)-center1_y))**2+(z(n)-center1_z)**2)
             tmp=.5*ampl*modulate*radius**2*&
                 (1.-exp(-(rhorad/radius)**2))/rhorad
