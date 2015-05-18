@@ -249,21 +249,7 @@ module Cosmicrayflux
           endif
         endif
       endif
-!
-!
-!  Calculate diagnostic quantities.
-!
-      if (ldiagnos) then
-!
-!  cosmicrayflux components at one point (=pt)
-!
-!        if (lroot.and.m==mpoint.and.n==npoint) then
-!          if (idiag_fcrxpt/=0) call save_name(p%fcr(lpoint-nghost,1),idiag_fcrxpt)
-!          if (idiag_fcrypt/=0) call save_name(p%fcr(lpoint-nghost,2),idiag_fcrypt)
-!         if (idiag_fcrzpt/=0) call save_name(p%fcr(lpoint-nghost,3),idiag_fcrzpt)
-!        endif
-      endif ! endif (ldiagnos)
-!
+
     endsubroutine dfcr_dt
 !***********************************************************************
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
