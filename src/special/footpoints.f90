@@ -203,11 +203,16 @@ module Special
 !             case ('errfun')
         case ('sharp')
             z_factor = 0
-            if (z(n) == xyz0(3)) z_factor = 1
+            if (z(n) == xyz0(nghost)) z_factor = 1
         case ('exp')
-            z_factor = exp(-(z(n)-xyz0(3))*lam_z)
+            z_factor = exp(-(z(n)-xyz0(nghost))*lam_z)
+            if (z(n) <= xyz0(nghost)) z_factor = 1
+        case ('erf')
+            z_factor = 1-erf((z(n)-xyz0(nghost))*lam_z)
+            if (z(n) <= xyz0(nghost)) z_factor = 1
         case default
-            z_factor = exp(-(z(n)-xyz0(3))*lam_z)
+            z_factor = exp(-(z(n)-xyz0(nghost))*lam_z)
+            if (z(n) <= xyz0(nghost)) z_factor = 1
         end select
         ux = z_factor*ux
         uy = z_factor*uy
