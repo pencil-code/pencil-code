@@ -105,7 +105,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-05
+    # Chao-Chin Yang, 2015-05-17
     from collections.abc import Sequence
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
@@ -124,7 +124,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     # Create the first plot.
     fig = plt.figure()
     ax = fig.gca()
-    pc = ax.pcolorfast(x, y, c[0].transpose(), norm=norm)
+    pc = ax.pcolormesh(x, y, c[0].transpose(), norm=norm)
     ax.minorticks_on()
     ax.set_xlim(x[0], x[-1])
     ax.set_ylim(y[0], y[-1])
@@ -138,7 +138,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     # Loop over each time and update the plot.
     for i in range(1,len(t)):
         ax.set_title("$t = {:#.4G}$".format(t[i]))
-        pc.set_data(c[i].transpose())
+        pc.set_array(c[i].ravel(order='F'))
         if vmin_dynamic: pc.set_clim(vmin=vmin[i])
         if vmax_dynamic: pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
