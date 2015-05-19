@@ -592,7 +592,7 @@ module Dustdensity
           do k=1,ndustspec
             if (a1 == 0) then
               f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2) !/md(k)
+                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)
             else
               call fatal_error('initnd','no lognormal with a1/=1')
             endif
