@@ -203,6 +203,11 @@ module Sub
     module procedure max_for_dt_1_1_1_nx
   endinterface
 !
+  interface step
+    module procedure step_scalar
+    module procedure step_vector
+  endinterface
+!
   interface cubic_step
     module procedure cubic_step_pt
     module procedure cubic_step_mn
@@ -3681,19 +3686,19 @@ module Sub
 !
     endfunction step_scalar
 !***********************************************************************
-    function step(x,x0,width)
+    function step_vector(x,x0,width)
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile
 !
 !  23-jan-02/wolf: coded
 !
       real, dimension(:) :: x
-      real, dimension(size(x,1)) :: step
+      real, dimension(size(x)) :: step_vector
       real :: x0,width
 !
-      step = 0.5*(1+tanh((x-x0)/(width+tini)))
+      step_vector = 0.5*(1+tanh((x-x0)/(width+tini)))
 !
-    endfunction step
+    endfunction step_vector
 !***********************************************************************
     function der_step(x,x0,width)
 !
