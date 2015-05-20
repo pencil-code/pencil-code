@@ -74,7 +74,7 @@ module Particles_drag
 !
 !  14-feb-15/ccyang: coded.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       integer :: stat

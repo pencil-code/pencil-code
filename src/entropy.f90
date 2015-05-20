@@ -3890,14 +3890,13 @@ module Energy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,gshockglnTT
+      real, dimension (nx) :: thdiff,g2,gshockglnTT,gshockgss
 !
       intent(in) :: p
       intent(inout) :: df
 !
 !  Check that chi is ok.
 !
-!      if (headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
       if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
 !
 !  Calculate terms for shock diffusion:
@@ -3913,25 +3912,15 @@ module Energy
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
       if (pretend_lnTT) then
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
- !       if (chi_t/=0.) then
- !          call warning('calc_heatcond_shock', &
- !               'chi_t diffusion might be added twice, please check!')
- !         call dot(p%glnrho+p%glnTT,p%gss,g2)
- !         thdiff=thdiff+chi_t*(p%del2ss+g2)
- !       endif
       else
          if (lchi_shock_density_dep) then
-           call dot(0.66666666667*p%glnrho+p%glnTT,p%glnTT,g2)
-           thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+           call dot(p%gshock,p%gss,gshockgss)
+           call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
+           thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
+                  (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
          else
            thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
          endif
- !       if (chi_t/=0.) then
- !          call warning('calc_heatcond_shock', &
- !               'chi_t diffusion might be added twice, please check!')
- !         call dot(p%glnrho+p%glnTT,p%gss,g2)
- !         thdiff=thdiff+chi_t*(p%del2ss+g2)
- !       endif
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -3945,14 +3934,12 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
-!          diffus_chi=diffus_chi+(chi_t+gamma*chi_shock*p%shock)*dxyz_2
           if (lchi_shock_density_dep) then
             diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
           else
             diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
           endif
         else
-!          diffus_chi=diffus_chi+(chi_t+chi_shock*p%shock)*dxyz_2
           diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
         endif
         if (ldiagnos.and.idiag_dtchi/=0) then
@@ -4502,17 +4489,17 @@ module Energy
         if (notanumber(p%glnTT)) &
           call fatal_error('calc_heatcond', 'NaNs in p%glnTT')
         call dot(p%glnTT,glnThcond,g2)
-          if (pretend_lnTT) then
-            thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+        if (pretend_lnTT) then
+          thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+        else
+          if (lhcond0_density_dep) then
+            call dot(p%glnTT,p%glnrho,glnrhoglnT)
+            thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
+            chix = sqrt(p%rho1)*hcond*p%cp1
           else
-            if (lhcond0_density_dep) then
-              call dot(p%glnTT,p%glnrho,glnrhoglnT)
-              thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
-              chix = sqrt(p%rho1)*hcond*p%cp1
-            else
-              thdiff = p%rho1*hcond * (p%del2lnTT + g2)
-            endif
+            thdiff = p%rho1*hcond * (p%del2lnTT + g2)
           endif
+        endif
       endif  ! hcond0/=0
 !
 !  Write out hcond z-profile (during first time step only).

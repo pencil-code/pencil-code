@@ -59,6 +59,7 @@ module Dustvelocity
   real :: mucube_graind=1., dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
+  logical :: llin_radiusbins=.false., llog_massbins=.true.
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
   logical :: ldust_pressure=.false.
@@ -86,6 +87,7 @@ module Dustvelocity
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, gravx_dust, &
       beta_dPdr_dust, coeff,  ldustcoagulation, ldustcondensation, &
+      llin_radiusbins, llog_massbins, &
       lvshear_dust_global_eps, cdtd, &
       ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0,&
       lstokes_highspeed_corr, iefficiency_type
@@ -263,15 +265,27 @@ module Dustvelocity
         if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
         if (lroot) print*,'recalculated: md0=',md0
 !
-!  Mass bins.
-!  Do we really need unit_md? When would it not be 1?
+!  Choice between different spacings.
+!  First, linearly spaced radius bins:
 !
-        do k=1,ndustspec
-          mdminus(k) = md0*deltamd**(k-1)
-          mdplus(k)  = md0*deltamd**k
-          md(k) = 0.5*(mdminus(k)+mdplus(k))
-        enddo
-        ad=(0.75*md*unit_md/(pi*rhods))**onethird
+        if (llin_radiusbins) then
+          do k=1,ndustspec
+            ad(k)=ad0+ad1*(k-1)
+          enddo
+          md=4/3.*pi*ad**3*rhods
+!
+!  Logarithmically spaced mass bins:
+!  (Do we really need unit_md? When would it not be 1?)
+!
+        elseif (llog_massbins) then
+          do k=1,ndustspec
+            mdminus(k) = md0*deltamd**(k-1)
+            mdplus(k)  = md0*deltamd**k
+            md(k) = 0.5*(mdminus(k)+mdplus(k))
+          enddo
+          ad=(0.75*md*unit_md/(pi*rhods))**onethird
+        endif
+
         if (lroot) print*,'initialize_dustvelocity: ad=',ad
 !
 !  Calculate betad.

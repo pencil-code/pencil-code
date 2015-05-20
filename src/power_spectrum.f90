@@ -53,7 +53,7 @@ module power_spectrum
 !
       use General, only : parser, read_range, merge_ranges, quick_sort
 !
-      integer, intent(in)              :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       integer :: i, iend_zrange
