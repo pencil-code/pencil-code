@@ -86,17 +86,17 @@
 ;  * Using 'pc_read_subvol_raw': (RECOMMENDED FOR 3D SUBVOLUMES)
 ;
 ;   Load 3D-subvolume from 'VAR123' and calculate separate quantities, not using the cache:
-;   IDL> pc_read_subvol_raw, obj=vars, varfile='VAR123', tags=tags, xs=16, xe=47, ys=16, ye=47, zs=0, ze=31, /addghosts, sub_dim=dim, sub_grid=grid
-;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', vars, tags, dim=dim, grid=grid)
-;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', vars, tags, dim=dim, grid=grid)
-;   IDL> B_z = pc_get_quantity ('B_z', vars, tags, dim=dim, grid=grid)
+;   IDL> pc_read_subvol_raw, obj=var, varfile='VAR123', tags=tags, xs=16, xe=47, ys=16, ye=47, zs=0, ze=31, /addghosts, sub_dim=dim, sub_grid=grid
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
 ;   Load 3D-subvolume from 'var.dat' and calculate separate quantities, using the cache manually:
-;   IDL> pc_read_subvol_raw, obj=vars, tags=tags, xs=16, xe=47, ys=16, ye=47, zs=0, ze=31, /addghosts, sub_dim=dim, sub_grid=grid, start_param=start_param, run_param=run_param
-;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', vars, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
-;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', vars, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
-;   IDL> B_z = pc_get_quantity ('B_z', vars, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
+;   IDL> pc_read_subvol_raw, obj=var, tags=tags, xs=16, xe=47, ys=16, ye=47, zs=0, ze=31, /addghosts, sub_dim=dim, sub_grid=grid, start_param=start_param, run_param=run_param
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
 ;   IDL> tvscl, HR_viscous[*,*,20]
 ;
 
