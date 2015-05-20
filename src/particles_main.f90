@@ -1134,7 +1134,7 @@ module Particles_main
 !
 !  13-may-09/anders: coded
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
 !
       call read_particles_init_pars(unit)
       if (lparticles_radius)      call read_particles_rad_init_pars(unit)
