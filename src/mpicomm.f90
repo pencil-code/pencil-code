@@ -311,6 +311,16 @@ module Mpicomm
     module procedure mpisend_nonblock_int_arr
   endinterface
 !
+  interface parallel_open
+    module procedure parallel_open_ext
+    module procedure parallel_open_int
+  endinterface
+!
+  interface parallel_close
+    module procedure parallel_close_ext
+    module procedure parallel_close_int
+  endinterface
+!
 !  interface mpigather_and_out
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
@@ -7035,7 +7045,7 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine parallel_open(unit,file,form,nitems)
+    subroutine parallel_open_ext(unit,file,form,nitems)
 !
 !  Choose between two reading methods.
 !
@@ -7054,7 +7064,7 @@ module Mpicomm
         call true_parallel_open(unit,file,form)
       endif
 !
-    endsubroutine parallel_open
+    endsubroutine parallel_open_ext
 !***********************************************************************
     subroutine fake_parallel_open(unit,file,form)
 !
@@ -7083,11 +7093,27 @@ module Mpicomm
 !
     endsubroutine fake_parallel_open
 !***********************************************************************
+    subroutine parallel_open_int(unit,file,form,nitems)
+!
+!  primary reading of data by root and broadcasting; data provided in internal file unit 
+!
+!  11-jan-15/MR: implemented 
+!
+      character(len=:), allocatable :: unit
+      character(len=*) :: file
+      character (len=*), optional :: form
+      integer, optional :: nitems
+!
+      call read_infile_root(file,unit,nitems)
+!
+    endsubroutine parallel_open_int
+!***********************************************************************
     subroutine true_parallel_open(unit,file,form,recl)
 !
 !  Read a global file in parallel.
 !
 !  17-mar-10/Bourdin.KIS: implemented
+!  11-jan-15/MR: primary reading of data by root outsourced to read_infile
 !
       use Cparam, only: fnlen
       use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
@@ -7097,52 +7123,12 @@ module Mpicomm
       character (len=*), optional :: form
       integer, optional :: recl
 !
-      logical :: exists
-      integer :: bytes, pos
-      integer, parameter :: buf_len=fnlen
-      character (len=buf_len) :: filename
-      character, dimension(:), allocatable :: buffer
+      integer :: pos
+      character (len=fnlen) :: filename
+      character(len=:), allocatable :: buffer
       character(len=fnlen) :: get_tmp_prefix_
 !
-      if (lroot) then
-!
-!  Test if file exists.
-!
-        inquire(FILE=file,exist=exists)
-        if (.not. exists) call stop_it_if_any(.true., &
-            'true_parallel_open: file not found "'//trim(file)//'"')
-        bytes=file_size(file)
-        if (bytes < 0) call stop_it_if_any(.true., &
-            'true_parallel_open: could not determine file size "'//trim(file)//'"')
-        if (bytes == 0) call stop_it_if_any(.true., &
-            'true_parallel_open: file is empty "'//trim(file)//'"')
-      endif
-!
-!  Catch conditional errors of the MPI root rank.
-!
-      call stop_it_if_any(.false.,'')
-!
-!  Broadcast the file size.
-!
-      call mpibcast_int(bytes)
-!
-!  Allocate temporary memory.
-!
-      allocate(buffer(bytes))
-      buffer=char(0)
-!
-      if (lroot) then
-!
-!  Read file content into buffer.
-!
-        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
-        read(unit, REC=1) buffer
-        close(unit)
-      endif
-!
-!  Broadcast buffer to all MPI ranks.
-!
-      call mpibcast_char(buffer, bytes)
+      call read_infile_root(file,buffer)
 !
 !  Create unique temporary filename.
 !
@@ -7151,12 +7137,13 @@ module Mpicomm
         file(pos:pos)='_'
         pos=scan(file, '/')
       enddo
+!
       get_tmp_prefix_=get_tmp_prefix()
       write(filename,'(A,A,A,I0)') trim(get_tmp_prefix_), file, '-', iproc
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
-      call write_binary_file(filename, bytes, buffer)
+      call write_binary_file(filename, len(buffer), buffer)
       deallocate(buffer)
 !
 !  Open temporary file.
@@ -7176,7 +7163,42 @@ module Mpicomm
 !
     endsubroutine true_parallel_open
 !***********************************************************************
-    subroutine parallel_close(unit)
+    subroutine read_infile_root(file,buffer,nitems)
+!
+!  Primary reading of a global file by the root and its broadcasting.
+!
+!  11-jan-15/MR: outsourced from true_parallel_open
+!
+      character(len=*) :: file
+      character(len=:), allocatable :: buffer
+      integer, optional :: nitems
+!
+      integer :: lenbuf, ni
+      character(LEN=labellen) :: message
+!
+      if (lroot) then
+        ni=read_infile(file,buffer,message)
+        if (ni<0) call stop_it_if_any(.true.,message)
+      endif
+!
+!  Broadcast the file size.
+!
+      lenbuf=len(buffer)
+      call mpibcast_int(lenbuf)
+      if (.not.lroot) allocate(character(len=lenbuf) :: buffer)
+!
+!  Broadcast buffer to all MPI ranks.
+!
+      call mpibcast_char(buffer(1:lenbuf))
+!
+      if (present(nitems)) then
+        if (lroot) nitems=ni
+        call mpibcast_int(nitems)
+      endif
+
+    endsubroutine read_infile_root
+!***********************************************************************
+    subroutine parallel_close_ext(unit)
 !
 !  Close a file unit opened by parallel_open and remove temporary file.
 !
@@ -7187,14 +7209,26 @@ module Mpicomm
       if (lfake_parallel_io) then
         call fake_parallel_close(unit)
       else
-         call true_parallel_close(unit)
-       endif
+        call true_parallel_close(unit)
+      endif
 !
-    endsubroutine parallel_close
+    endsubroutine parallel_close_ext
+!***********************************************************************
+    subroutine parallel_close_int(unit)
+!
+!  "Close" an inernal unit by deallocating it.
+!
+!  11-jan-15/MR: implemented
+!
+      character(len=*), allocatable :: unit
+!
+      if (allocated(unit)) deallocate(unit)
+!
+    endsubroutine parallel_close_int
 !***********************************************************************
     subroutine fake_parallel_close(unit)
 !
-!  Close a file unit opened by parallel_open and remove temporary file.
+!  Close a file unit opened by fake_parallel_open. 
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
@@ -7206,7 +7240,7 @@ module Mpicomm
 !***********************************************************************
     subroutine true_parallel_close(unit)
 !
-!  Close a file unit opened by parallel_open and remove temporary file.
+!  Close a file unit opened by true_parallel_open and remove temporary file.
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
@@ -7370,7 +7404,7 @@ module Mpicomm
     endsubroutine mpigather
 !***********************************************************************
     logical function get_limits(range, k1g, k2g, ia, ie, is )
-
+      
       integer, dimension(3) :: range
       integer :: k1g, k2g
       integer :: ia, ie, is
@@ -7402,7 +7436,6 @@ module Mpicomm
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !  03-feb-14/MR: rewritten
 !  10-apr-15/MR: corrected for nx/=ny
-!  22-apr-15/MR: another correction: order of loops over processors and index ranges exchanged
 !
       use General, only: write_full_columns, get_range_no
 !
@@ -7506,12 +7539,12 @@ module Mpicomm
 ! loop over all processor array beams in x direction in layer ipz
 !
                 m2g=0
-
                 do ipy=0,nprxy(2)-1
 !
 ! global lower and upper y index bounds for beam ipy
 !
                   m1g=m2g+1; m2g=m2g+nxy(2)
+!
                   if (get_limits( kyrangel(:,iry), m1g, m2g, iya, iye, iys )) exit
                   !if (lroot) print*, 'ipy,ipz,iry,iy*=', ipy,ipz, iry, iya, iye, iys
 !
@@ -7523,7 +7556,6 @@ module Mpicomm
 !
                     do irx=1,nk_max
 !
-!
 ! loop over all processors in beam
 !
                       l2g=0
@@ -7531,7 +7563,7 @@ module Mpicomm
 !
 ! global processor number
 !
-                       if (ltrans) then
+                        if (ltrans) then
                           ig = ipz*nprocxy + ipx*nprocx + ipy
                         else
                           ig = ipz*nprocxy + ipy*nprocx + ipx
@@ -7540,6 +7572,7 @@ module Mpicomm
 ! global lower and upper x index bounds for processor ipx
 !
                         l1g=l2g+1; l2g=l2g+nxy(1)
+
                         if (get_limits( kxrangel(:,irx), l1g, l2g, ixa, ixe, ixs )) exit
                         !if (lroot) print*, 'ipx,ipy,ix*=', ipx,ipy,ixa, ixe, ixs
 !
@@ -7572,6 +7605,8 @@ module Mpicomm
                               endif
                             endif
                             if (lcomplex) then
+!print*, 'iy,ipx,ixa:ixe=', iy,ipx,ixa,ixe
+!print*, 'kxrangel=',kxrangel(:,irx)
                               call write_full_columns( 1, rowbuf_cmplx, (/1,nsend,1/), unfilled )
                             else
                               call write_full_columns( 1, rowbuf, (/1,nsend,1/), unfilled )
@@ -7716,12 +7751,12 @@ module Mpicomm
       use General, only: itoa,safe_character_append,safe_character_prepend
 !
       logical,               intent(IN) :: flag
-      character (LEN=fnlen), intent(OUT):: message
+      character (len=fnlen), intent(OUT):: message
 !
       integer :: mpierr, i, ia, ie, count
       logical, dimension(:), allocatable:: flags
 !
-      character (LEN=intlen)  :: str
+      character (len=intlen)  :: str
 !
       if (lroot) allocate(flags(ncpus))
 !
@@ -7765,5 +7800,95 @@ module Mpicomm
       call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
 !
     end function report_clean_output
+!**************************************************************************
+    function read_infile(file,buffer,message) result(ni)
+!
+!  Primary reading of a global file
+!
+!  11-jan-15/MR: outsourced from true_parallel_open
+!
+      use Syscalls, only: file_size
+      use Cdata, only: comment_char
+
+      character(len=*) :: file,message
+      character(len=:), allocatable :: buffer
+      integer :: ni
+!
+      character(len=4096) :: linebuf          ! fixed length problematic
+
+      integer, parameter :: unit=1
+      integer :: bytes,inda,inda2,ind,indc,lenbuf,ios
+      logical :: exists,l0
+
+      ni=-1
+!
+!  Test if file exists.
+!
+        inquire(FILE=file,exist=exists)
+        if (.not. exists) then
+          message='read_infile: file not found "'//trim(file)//'"'
+          return
+        endif
+        bytes=file_size(file)
+        if (bytes < 0) then
+          message='read_infile: could not determine file size"'//trim(file)//'"'
+          return
+        elseif (bytes == 0) then
+          message='read_infile: file is empty "'//trim(file)//'"'
+          return
+        endif
+!
+!  Allocate temporary memory.
+!
+        allocate(character(len=bytes) :: buffer)
+!
+!  Read file content into buffer.
+!
+        open(unit, FILE=file, STATUS='old')
+
+        l0=.true.; buffer=' '; ni=0
+
+        do
+          read(unit,'(a)',iostat=ios) linebuf
+          if (ios<0) exit
+
+          linebuf=adjustl(linebuf)
+!
+          inda=index(linebuf,"'")
+          ind=index(linebuf,'!'); indc=index(linebuf,comment_char)
+
+          if (inda>0) then
+            inda2=index(linebuf(inda+1:),"'")+inda
+            if (inda2==inda) inda2=len(linebuf)+1
+            if (ind>inda.and.ind<inda2) ind=0
+            if (indc>inda.and.indc<inda2) indc=0
+          endif
+
+          if (indc>0) ind=min(max(ind,1),indc)
+!
+          if (ind==0) then
+            ind=len(trim(linebuf))
+          else
+            ind=ind-1
+            if (ind>0) ind=len(trim(linebuf(1:ind)))
+          endif
+!
+          if (ind==0) then        ! is a comment or empty line -> skip
+            cycle
+          elseif (l0) then
+            buffer=linebuf(1:ind)
+            lenbuf=ind
+            l0=.false.
+          else
+            buffer=buffer(1:lenbuf)//' '//linebuf(1:ind)
+            lenbuf=lenbuf+ind+1
+          endif
+          ni=ni+1
+
+        enddo
+
+        close(unit)
+!
+    endfunction read_infile
 !**************************************************************************
 endmodule Mpicomm

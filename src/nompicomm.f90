@@ -276,6 +276,16 @@ module Mpicomm
     module procedure mpisend_nonblock_int_arr
   endinterface
 !
+  interface parallel_open
+    module procedure parallel_open_ext
+    module procedure parallel_open_int
+  endinterface
+!
+  interface parallel_close
+    module procedure parallel_close_ext
+    module procedure parallel_close_int
+  endinterface
+!
 !  interface mpigather_and_out
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
@@ -2571,7 +2581,7 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine parallel_open(unit,file,form,nitems)
+    subroutine parallel_open_ext(unit,file,form,nitems)
 !
 !  Read a global file.
 !
@@ -2599,9 +2609,30 @@ module Mpicomm
         open(unit, FILE=file, STATUS='old')
       endif
 !
-    endsubroutine parallel_open
+    endsubroutine parallel_open_ext
 !***********************************************************************
-    subroutine parallel_close(unit)
+    subroutine parallel_open_int(unit,file,form,nitems)
+!
+!  Read a global file into buffer unit.
+!
+!  12-jan-15/MR: implemented
+!
+      character(len=:), allocatable :: unit
+      character(len=*) :: file
+      character(len=*), optional :: form
+      integer, optional :: nitems
+!
+      integer :: ni
+      character(LEN=labellen) :: message
+!
+      ni=read_infile(file,unit,message)
+      if (ni<0) call stop_it_if_any(.true.,message)
+
+      if (present(nitems)) nitems=ni
+!
+    endsubroutine parallel_open_int
+!***********************************************************************
+    subroutine parallel_close_ext(unit)
 !
 !  Close a file unit opened by parallel_open.
 !
@@ -2611,7 +2642,19 @@ module Mpicomm
 !
       close(unit)
 !
-    endsubroutine parallel_close
+    endsubroutine parallel_close_ext
+!***********************************************************************
+    subroutine parallel_close_int(unit)
+!
+!  "Close" an internal file by deallocating it.
+!
+!  12-jan-15/MR: implemented
+!
+      character(len=:), allocatable :: unit
+!
+      if (allocated(unit)) deallocate(unit)
+!
+    endsubroutine parallel_close_int
 !***********************************************************************
     function parallel_count_lines(file,comchars)
 !
@@ -2786,5 +2829,95 @@ module Mpicomm
     if (ALWAYS_FALSE) print*,flag,message
 !
   end function report_clean_output
+!***********************************************************************
+    function read_infile(file,buffer,message) result(ni)
+!
+!  Primary reading of a global file
+!
+!  11-jan-15/MR: outsourced from true_parallel_open
+!
+      use Syscalls, only: file_size
+      use Cdata, only: comment_char
+
+      character(len=*) :: file,message
+      character(len=:), allocatable :: buffer
+      integer :: ni
+!
+      character(len=4096) :: linebuf          ! fixed length problematic
+
+      integer, parameter :: unit=1
+      integer :: bytes,inda,inda2,ind,indc,lenbuf,ios
+      logical :: exists,l0
+
+      ni=-1
+!
+!  Test if file exists.
+!
+        inquire(FILE=file,exist=exists)
+        if (.not. exists) then
+          message='read_infile: file not found "'//trim(file)//'"'
+          return
+        endif
+        bytes=file_size(file)
+        if (bytes < 0) then
+          message='read_infile: could not determine file size"'//trim(file)//'"'
+          return
+        elseif (bytes == 0) then
+          message='read_infile: file is empty "'//trim(file)//'"'
+          return
+        endif
+!
+!  Allocate temporary memory.
+!
+        allocate(character(len=bytes) :: buffer)
+!
+!  Read file content into buffer.
+!
+        open(unit, FILE=file, STATUS='old')
+
+        l0=.true.; buffer=' '; ni=0
+
+        do
+          read(unit,'(a)',iostat=ios) linebuf
+          if (ios<0) exit
+
+          linebuf=adjustl(linebuf)
+!
+          inda=index(linebuf,"'")
+          ind=index(linebuf,'!'); indc=index(linebuf,comment_char)
+
+          if (inda>0) then
+            inda2=index(linebuf(inda+1:),"'")+inda
+            if (inda2==inda) inda2=len(linebuf)+1
+            if (ind>inda.and.ind<inda2) ind=0
+            if (indc>inda.and.indc<inda2) indc=0
+          endif
+
+          if (indc>0) ind=min(max(ind,1),indc)
+!
+          if (ind==0) then
+            ind=len(trim(linebuf))
+          else
+            ind=ind-1
+            if (ind>0) ind=len(trim(linebuf(1:ind)))
+          endif
+!
+          if (ind==0) then        ! is a comment or empty line -> skip
+            cycle
+          elseif (l0) then
+            buffer=linebuf(1:ind)
+            lenbuf=ind
+            l0=.false.
+          else
+            buffer=buffer(1:lenbuf)//' '//linebuf(1:ind)
+            lenbuf=lenbuf+ind+1
+          endif
+          ni=ni+1
+
+        enddo
+
+        close(unit)
+!
+    endfunction read_infile
 !***********************************************************************
 endmodule Mpicomm
