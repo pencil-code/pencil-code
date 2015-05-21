@@ -26,16 +26,19 @@ module Special
 !   udrive = strength of the forcing velocity
 !   xp = pivot point
 !   yp = pivot point
-!   rad = distance of the footpoint to the pivot poit
+!   rad = distance of the footpoint to the pivot point
 !   width = width of the footpoint
 !   lam_twist = Gaussian RMS width
 !   lam_u = coefficient for the exponential saturation for the velocity
+!   r_profile = velocity profile in the radial direction
 !   z_profile = velocity profile along the z-direction
 !   lam_z = coefficient for the z-profiles
 !   blinking = flag for the 'vortex blinking'
+!   delay_blink = waiting time for the blinking process to commence
 !   t_blink_up = time period for the driver to be positive
-!   t_blink_0 = time period for the driver to be zero
+!   t_blink_0u = time period for the driver to be zero after positive driving
 !   t_blink_down = time period for the driver to be negative
+!   t_blink_0d= time period for the driver to be zero after negative driving
 !
   integer :: n_pivot = 1
   real, dimension(6) :: udrive = (/0.1,0.,0.,0.,0.,0./)
@@ -45,18 +48,23 @@ module Special
   real, dimension(6) :: width = (/1.,0.,0.,0.,0.,0./)
   real, dimension(6) :: lam_twist = (/0.17,0.,0.,0.,0.,0./)
   real :: lam_u = 1
+  character (len=labellen) :: r_profile = 'gaussian'
   character (len=labellen) :: z_profile = 'exp'
   real :: lam_z = 1
   logical, save :: lblink = .False.
-  real :: t_blink_up = 1, t_blink_0 = 0, t_blink_down = 0
+  real, dimension(6) :: delay_blink = (/0.,0.,0.,0.,0.,0./)
+  real, dimension(6) :: t_blink_up = (/1.,0.,0.,0.,0.,0./)
+  real, dimension(6) :: t_blink_0u = (/0.,0.,0.,0.,0.,0./)
+  real, dimension(6) :: t_blink_down = (/0.,0.,0.,0.,0.,0./)
+  real, dimension(6) :: t_blink_0d = (/0.,0.,0.,0.,0.,0./)
 !    
 ! input parameters
   namelist /special_init_pars/ n_pivot
 !
 ! run parameters
   namelist /special_run_pars/ &
-    n_pivot, udrive, xp, yp, rad, width, lam_twist, lam_u, z_profile, lam_z, &
-    lblink, t_blink_up, t_blink_0, t_blink_down
+    n_pivot, udrive, xp, yp, rad, width, lam_twist, lam_u, r_profile, z_profile, lam_z, &
+    lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
 !
   contains
 !
@@ -186,21 +194,29 @@ module Special
       integer :: ip
       real :: offset                    ! offset for u = 0 at the edge of the foopoint
       real, dimension(mx) :: dist       ! distance of point to pivot point
-      real, dimension(mx) :: ux, uy     ! velocity in x nad y direction      
+      real, dimension(mx) :: ux, uy     ! velocity in x and y direction      
       real :: z_factor                  ! multiplication factor for the z-dependence
       integer :: blink                  ! either -1, 0 or 1, depending on the blinking stage
-      real :: t_blink_tot               ! total time for a blick switching on, off and negative
+      real :: t_blink_tot               ! total time for a blink switching on, off and negative
 !
       do ip = 1, n_pivot
         offset = exp(-width(ip)**2/8./lam_twist(ip)**2)
         
         dist = sqrt((x(l1:l2)-xp(ip))**2 + (y(m)-yp(ip))**2)
-        ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
-        uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
-
+        select case (r_profile)
+        case ('gaussian')
+            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
+            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
+        case ('linear_exp')
+            ux = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(-y(m)+yp(ip))
+            uy = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(x(l1:l2)-xp(ip))
+        case default
+            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
+            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
+        end select
+        
         ! add z-dependence
         select case (z_profile)
-!             case ('errfun')
         case ('sharp')
             z_factor = 0
             if (z(n) == xyz0(nghost)) z_factor = 1
@@ -219,16 +235,22 @@ module Special
 
         ! add 'vortex blinking' by switching the sign in time
         blink = 1
-        t_blink_tot = t_blink_up + t_blink_0 + t_blink_down
-        if (lblink) then
-!             blink = 1
-            if ((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot < t_blink_up) then
+        t_blink_tot = t_blink_up(ip) + t_blink_0u(ip) + t_blink_down(ip) + t_blink_0d(ip)
+        if (lblink) blink = 0
+        if ((lblink) .and. (t >= delay_blink(ip))) then
+            if (((t-delay_blink(ip))/t_blink_tot-floor((t-delay_blink(ip))/t_blink_tot))*t_blink_tot < t_blink_up(ip)) then
                 blink = 1
-            elseif (((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot >= t_blink_up) .and. &
-                (t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot < (t_blink_up+t_blink_0)) then
+            elseif ((((t-delay_blink(ip))/t_blink_tot-floor((t-delay_blink(ip))/t_blink_tot))*t_blink_tot >= t_blink_up(ip)) .and. &
+                ((t-delay_blink(ip))/t_blink_tot-floor((t-delay_blink(ip))/t_blink_tot))*t_blink_tot < &
+                (t_blink_up(ip)+t_blink_0u(ip))) then
                 blink = 0
-            elseif ((t/t_blink_tot-floor(t/t_blink_tot))*t_blink_tot >= (t_blink_up+t_blink_0)) then
+            elseif ((((t-delay_blink(ip))/t_blink_tot-floor((t-delay_blink(ip))/t_blink_tot))*t_blink_tot >= &
+                (t_blink_up(ip)+t_blink_0u(ip))) .and. &
+                ((t-delay_blink(ip))/t_blink_tot-floor((t-delay_blink(ip))/t_blink_tot))*t_blink_tot < &
+                (t_blink_up(ip)+t_blink_0u(ip)+t_blink_down(ip))) then
                 blink = -1
+             else
+                blink = 0
             endif
         endif
         
