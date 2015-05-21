@@ -45,16 +45,18 @@ module Cosmicray
        x_pos_cr2, y_pos_cr2, z_pos_cr2
 !
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
-  real :: limiter_cr=1.,blimiter_cr=0.
+  real :: limiter_cr=1.,blimiter_cr=0.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
+  logical :: lupw_ecr=.false.
+  logical :: lcheck_negative_ecr
 !
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
-       limiter_cr,blimiter_cr, &
-       lalfven_advect
+       limiter_cr,blimiter_cr,ecr_floor, &
+       lalfven_advect,lupw_ecr,lcheck_negative_ecr
 !
   integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
   integer :: idiag_ecrdivum=0
@@ -225,7 +227,7 @@ module Cosmicray
 !  20-11-04/anders: coded
 !
       use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
-      use Sub
+      use Sub, only: u_dot_grad,grad,dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -237,7 +239,9 @@ module Cosmicray
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) call dot_mn(p%uu,p%gecr,p%ugecr)
+      if (lpencil(i_ugecr)) then
+        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr) 
+      endif
 ! bgecr
       if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
 ! bglnrho
@@ -662,5 +666,40 @@ module Cosmicray
       endif
 !
     endsubroutine tensor_diffusion
+!***********************************************************************
+    subroutine impose_ecr_floor(f)
+!
+!  Impose a minimum cosmic ray energy density by setting all lower
+!  values to the minimum value (ecr_floor). 
+!
+!  19-may-15/grsarson: adapted from impose_density_floor
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      integer :: i, j, k
+!
+!  Impose the ecr floor.
+!
+      if (ecr_floor>0.) then
+        where (f(:,:,:,iecr)<ecr_floor) f(:,:,:,iecr)=ecr_floor
+      endif
+!
+!  Trap any negative ecr if no ecr floor is set.
+!
+      if (lcheck_negative_ecr) then
+        if (any(f(l1:l2,m1:m2,n1:n2,iecr) <= 0.)) then
+          do k = n1, n2
+            do j = m1, m2
+              do i = l1, l2
+                if (f(i,j,k,iecr) <= 0.) print 10, f(i,j,k,iecr), x(i), y(j), z(k)
+                10 format (1x, 'ecr = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
+              enddo
+            enddo
+          enddo
+          call fatal_error_local('impose_ecr_floor', 'negative ecr detected')
+        endif
+      endif
+!
+    endsubroutine impose_ecr_floor
 !***********************************************************************
 endmodule Cosmicray

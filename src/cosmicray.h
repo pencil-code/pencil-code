@@ -8,4 +8,5 @@
   public :: init_ecr, decr_dt
   public :: pencil_criteria_cosmicray, pencil_interdep_cosmicray
   public :: calc_pencils_cosmicray
+  public :: impose_ecr_floor
 

@@ -44,14 +44,15 @@ module Cosmicray
        gammacr, lnegl, lvariable_tensor_diff
 !
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
-  real :: limiter_cr=1.
+  real :: limiter_cr=1.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
+  logical :: lupw_ecr=.false.
 !
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants, limiter_cr
+       luse_diff_constants,limiter_cr,ecr_floor,lupw_ecr
 !
   integer :: idiag_ecrm=0,idiag_ecrmax=0
   integer :: idiag_kmax=0
@@ -213,7 +214,7 @@ print*,"init_ecr: initecr = ", initecr
 !
 !  20-11-04/anders: coded
 !
-      use Sub
+      use Sub, only: u_dot_grad,grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -225,7 +226,10 @@ print*,"init_ecr: initecr = ", initecr
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) call dot_mn(p%uu,p%gecr,p%ugecr)
+      if (lpencil(i_ugecr)) then
+        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
+      endif
+
 !
     endsubroutine calc_pencils_cosmicray
 !***********************************************************************
@@ -578,5 +582,32 @@ print*,"init_ecr: initecr = ", initecr
       endif
 !
     endsubroutine tensor_diffusion
+!***********************************************************************
+    subroutine impose_ecr_floor(f)
+!
+!  Impose a minimum cosmic ray energy density by setting all lower 
+!  densities to the minimum value (ecr_floor). 
+!
+!  19-may-15/grsarson: adapted from impose_density_floor
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, save :: ecr_floor_log
+      logical, save :: lfirstcall=.true.
+      integer :: i, j, k
+!
+!  Impose the density floor.
+!
+      if (ecr_floor>0.) then
+        if (lfirstcall) then
+          ecr_floor_log=alog(ecr_floor)
+          lfirstcall=.false.
+        endif
+!
+        where (f(:,:,:,iecr)<ecr_floor_log) f(:,:,:,ilnrho)=ecr_floor_log
+!
+      endif
+!
+    endsubroutine impose_ecr_floor
 !***********************************************************************
 endmodule Cosmicray
