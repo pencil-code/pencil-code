@@ -170,6 +170,7 @@ module Viscosity
 ! Module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
+  real :: nu_jump1, nu_jump21, nu_shock_jump1
 !
   contains
 !***********************************************************************
@@ -192,8 +193,9 @@ module Viscosity
       use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
+      use Sub, only: write_zprof, step
 !
-      integer :: i, ierr
+      integer :: i
 !
 !  Default viscosity.
 !
@@ -454,6 +456,36 @@ module Viscosity
         endif
 !
       endif
+
+      if (lvisc_nu_prof) then
+        nu_jump1=nu*(nu_jump-1.)
+!
+!  Write out viscosity z-profile.
+!  At present only correct for Cartesian geometry
+!
+        call write_zprof('visc', nu + nu_jump1*step(z(n1:n2),znu,-widthnu))
+      endif
+
+      if (lvisc_nu_profr_twosteps) nu_jump21=nu*(nu_jump2-1.)
+
+      if (lvisc_nu_shock_profz .or. lvisc_nu_shock_profr) then
+        nu_shock_jump1=nu_shock*(nu_jump_shock-1.)
+!
+!  Write out shock viscosity z-profile.
+!  At present only correct for Cartesian geometry
+!
+        if (lvisc_nu_shock_profz) &
+          call write_zprof('visc_shock', &
+                           nu_shock+nu_shock_jump1*step(z(n1:n2),znu_shock,-widthnu_shock))
+                                     
+!
+!  Write out shock viscosity r-profile.
+!  At present only correct for spherical and cylindrical geometry.
+!
+        if (lvisc_nu_shock_profr) &
+          call write_zprof('visc_shock', &
+                           nu_shock+nu_shock_jump1*step(x(l1:l2),xnu_shock,-widthnu_shock))
+      endif
 !
 !  Register an extra aux slot for dissipation rate if requested (so
 !  visc_heat is written sto snapshots and can be easily analyzed later).
@@ -474,12 +506,11 @@ module Viscosity
 !
 !  Shared variables.
 !
-      call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
-      call put_shared_variable('nu',nu,ierr)
-      call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_viscosity: " &
-          // "problem getting shared var lviscosity_heat")
-      call put_shared_variable('llambda_effect',llambda_effect,ierr)
+      call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict, &
+                               caller='initialize_viscosity')
+      call put_shared_variable('nu',nu)
+      call get_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('llambda_effect',llambda_effect)
 !
 !  For Boussinesq, density is constant, so must use lvisc_simplified.
 !
@@ -503,12 +534,12 @@ module Viscosity
 !
       if (PrM_turb/=0.) then
         if (lmagn_mf) then
-          call get_shared_variable('etat_x',etat_x,caller='initialize_viscosity')
-          call get_shared_variable('etat_y',etat_y,caller='initialize_viscosity')
-          call get_shared_variable('etat_z',etat_z,caller='initialize_viscosity')
-          call get_shared_variable('detat_x',detat_x,caller='initialize_viscosity')
-          call get_shared_variable('detat_y',detat_y,caller='initialize_viscosity')
-          call get_shared_variable('detat_z',detat_z,caller='initialize_viscosity')
+          call get_shared_variable('etat_x',etat_x)
+          call get_shared_variable('etat_y',etat_y)
+          call get_shared_variable('etat_z',etat_z)
+          call get_shared_variable('detat_x',detat_x)
+          call get_shared_variable('detat_y',detat_y)
+          call get_shared_variable('detat_z',detat_z)
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2
             print*,ipz,z(n),etat_z(n),detat_z(n)
@@ -562,13 +593,11 @@ module Viscosity
       use Sub, only: step,der_step,stepdown,der_stepdown
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
-      integer :: ierr
-!
       if ((Lambda_V0==0).and.(Lambda_V1==0).and.(Lambda_H1==0)) &
-        call warning('initialize_viscosity', &
+        call warning('initialize_lambda', &
             'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
       if ((Lambda_V0==0).and.((Lambda_V1/=0).or.(Lambda_H1==0))) &
-        call warning('initialize_viscosity', &
+        call warning('initialize_lambda', &
             'Lambda effect: V_zero=0 but V1 or H1 nonzero')
 !
 ! Select the profile of Lambda, default is uniform. At present (May 2010) the
@@ -628,19 +657,19 @@ module Viscosity
         LV1_rprof=1;LH1_rprof=1.
         der_LV1_rprof=0
       case default
-        call fatal_error('initialize_viscosity(lambda)',&
+        call fatal_error('initialize_lambda',&
             'default lambda_profile is uniform ! ')
       endselect
       lambda_V0t=lambda_V0*LV0_rprof(nx)
       lambda_V1t=lambda_V1*LV1_rprof(nx)
       lambda_V0b=lambda_V0*LV0_rprof(1)
       lambda_V1b=lambda_V1*LV1_rprof(1)
-      call put_shared_variable('Lambda_V0t',Lambda_V0t,ierr)
-      call put_shared_variable('Lambda_V1t',Lambda_V1t,ierr)
-      call put_shared_variable('Lambda_V0b',Lambda_V0b,ierr)
-      call put_shared_variable('Lambda_V1b',Lambda_V1b,ierr)
-      call put_shared_variable('Lambda_H1',Lambda_H1,ierr)
-      call put_shared_variable('LH1_rprof',LH1_rprof,ierr)
+      call put_shared_variable('Lambda_V0t',Lambda_V0t,caller='initialize_lambda')
+      call put_shared_variable('Lambda_V1t',Lambda_V1t)
+      call put_shared_variable('Lambda_V0b',Lambda_V0b)
+      call put_shared_variable('Lambda_V1b',Lambda_V1b)
+      call put_shared_variable('Lambda_H1',Lambda_H1)
+      call put_shared_variable('LH1_rprof',LH1_rprof)
 !
         endsubroutine initialize_lambda
 !***********************************************************************
@@ -1009,7 +1038,7 @@ module Viscosity
 !
 !  Viscous force and viscous heating are calculated here (for later use).
 !
-      p%fvisc=0.0
+      p%fvisc=0.0                               !!! not needed
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
       if (lfirst.and.ldt) then
         p%diffus_total=0.0
@@ -1059,14 +1088,11 @@ module Viscosity
               p%uijk(:,kk,ll,jj)*p%sij(:,ll,kk) + p%uijk(:,ll,kk,jj)*p%sij(:,kk,ll)
           enddo;enddo
         enddo
-        fvisc_nnewton2 = 0.
         do ii=1,3
-          do jj=1,3
-            fvisc_nnewton2(:,ii) = fvisc_nnewton2(:,ii) + p%sij(:,ii,jj)*deljskl2(:,jj)
-          enddo
+          fvisc_nnewton2(:,ii) = sum(p%sij(:,ii,:)*deljskl2,2)
         enddo
         call getnu_non_newtonian(p%sij2,p%nu,gradnu_effective)
-       do ii=1,3
+        do ii=1,3
           p%fvisc(:,ii)=p%nu(:)*p%del2u(:,ii) + gradnu_effective(:)*fvisc_nnewton2(:,ii)
         enddo
 !
@@ -1216,7 +1242,7 @@ module Viscosity
 !  -- the correct expression for nu=const
 !
       if (lvisc_nu_tdep) then
-        nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent
+        nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent         ! out of nm loop
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_tdep
@@ -1259,10 +1285,8 @@ module Viscosity
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
-        pnu = nu + nu*(nu_jump-1.)*(step(tmp3,xnu ,widthnu) - &
-                                    step(tmp3,xnu2,widthnu))
-        tmp4=nu*(nu_jump-1.)*(der_step(tmp3,xnu ,widthnu)- &
-                              der_step(tmp3,xnu2,widthnu))
+        pnu = nu + nu_jump1*(step(tmp3,xnu ,widthnu) - step(tmp3,xnu2,widthnu))
+        tmp4=nu_jump1*(der_step(tmp3,xnu ,widthnu)-der_step(tmp3,xnu2,widthnu)) 
 !
 !  Initialize gradnu before calculating it, otherwise gfortran complains.
 !
@@ -1347,13 +1371,13 @@ module Viscosity
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
-        prof2    = step(tmp3,xnu2,widthnu2)
+        prof2    = step(tmp3,xnu2,widthnu2)    !!! better with der_step in one call
         prof     = step(tmp3,xnu,widthnu)-prof2
         derprof2 = der_step(tmp3,xnu2,widthnu2)
         derprof  = der_step(tmp3,xnu,widthnu)-derprof2
 !
-        pnu  = nu + nu*(nu_jump-1.)*prof+nu*(nu_jump2-1.)*prof2
-        tmp4 = nu + nu*(nu_jump-1.)*derprof+nu*(nu_jump2-1.)*derprof2
+        pnu  = nu + nu_jump1*prof+nu_jump21*prof2
+        tmp4 = nu + nu_jump1*derprof+nu_jump21*derprof2
 !
 !  Initialize gradnu before calculating it, otherwise gfortran complains.
 !
@@ -1386,14 +1410,14 @@ module Viscosity
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
 !
       if (lvisc_nu_prof) then
-        pnu = nu + nu*(nu_jump-1.)*step(p%z_mn,znu,-widthnu)
+        pnu = nu + nu_jump1*step(p%z_mn,znu,-widthnu)
 !
-!  Write out viscosity z-profile (during first time step only)
+!  This indicates that the profile is meant to be applied in Cartesian
+!  coordinates only. Why then z taken from pencil?
 !
-        call write_zprof('visc',pnu)
         gradnu(:,1) = 0.
         gradnu(:,2) = 0.
-        gradnu(:,3) = nu*(nu_jump-1.)*der_step(p%z_mn,znu,-widthnu)
+        gradnu(:,3) = nu_jump1*der_step(p%z_mn,znu,-widthnu)
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         !tobi: The following only works with operator overloading for pencils
@@ -1427,14 +1451,14 @@ module Viscosity
 !
       if (lvisc_nu_shock_profz) then
         if (ldensity) then
-          pnu_shock = nu_shock + nu_shock*(nu_jump_shock-1.)* &
-                      step(p%z_mn,znu_shock,-widthnu_shock)
+          pnu_shock = nu_shock + nu_shock_jump1*step(p%z_mn,znu_shock,-widthnu_shock) 
 !
-          call write_zprof('visc_shock',pnu_shock)
+!  This indicates that the profile is meant to be applied in Cartesian
+!  coordinates only. Why then z taken from pencil?
+!
           gradnu_shock(:,1) = 0.
           gradnu_shock(:,2) = 0.
-          gradnu_shock(:,3) = nu_shock*(nu_jump_shock-1.)* &
-                            der_step(p%z_mn,znu_shock,-widthnu_shock)
+          gradnu_shock(:,3) = nu_shock_jump1*der_step(p%z_mn,znu_shock,-widthnu_shock)
 !
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
@@ -1451,7 +1475,6 @@ module Viscosity
 !
 !  viscous force: nu_shock with radial profile
 !
-!
       if (lvisc_nu_shock_profr) then
         if (ldensity) then
           if (lspherical_coords.or.lsphere_in_a_box) then
@@ -1459,11 +1482,14 @@ module Viscosity
           else
             tmp3=p%rcyl_mn
           endif
-          pnu_shock = nu_shock + nu_shock*(nu_jump_shock-1.)* &
-                      step(tmp3,xnu_shock,widthnu_shock)
+          pnu_shock = nu_shock + nu_shock_jump1*step(tmp3,xnu_shock,widthnu_shock)
 !
-          gradnu_shock(:,1) = nu_shock*(nu_jump_shock-1.)* &
-                            der_step(tmp3,xnu_shock,widthnu_shock)
+!  This indicates that the profile is meant to be applied in spherical and
+!  cylindrical coordinates only, referring to r and pomega, respectively.
+!  Hence not correct for 'sphere in a box'!
+!  Why then r taken from pencil?
+!
+          gradnu_shock(:,1) = nu_shock_jump1*der_step(tmp3,xnu_shock,widthnu_shock)
           gradnu_shock(:,2) = 0.
           gradnu_shock(:,3) = 0.
 !
@@ -1611,9 +1637,8 @@ module Viscosity
 !  your Makefile.local.
 !
       if (lvisc_hyper3_mu_const_strict) then
-        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
-        do i=1,3
-          p%fvisc(:,i)=p%fvisc(:,i)+murho1*f(l1:l2,m,n,ihypvis-1+i)
+        do i=1,3 
+          p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*p%rho1*f(l1:l2,m,n,ihypvis-1+i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
@@ -1659,7 +1684,7 @@ module Viscosity
         endif
 !
         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+&
-             (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
+             (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &     !!! out
               nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
               nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
 !
@@ -1690,7 +1715,7 @@ module Viscosity
 ! diffusion time: it will be multiplied by dxyz_2 again further down
 !
          if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+&
-                 (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
+                 (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &        !!! out
                   nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
                   nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
 !
@@ -1754,9 +1779,7 @@ module Viscosity
           call multsv_mn(nu_smag,p%sglnrho,tmp2)
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
-          if (lpencil(i_visc_heat)) then
-              p%visc_heat=p%visc_heat+2*nu_smag*p%sij2
-          endif
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_smag*p%sij2
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
@@ -1877,16 +1900,14 @@ module Viscosity
 !
     endsubroutine get_gradnu
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,p,Hmax)
+    subroutine calc_viscous_heat(df,p,Hmax)
 !
 !  Calculate viscous heating term for right hand side of entropy equation.
 !
 !  20-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar)    :: df
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!
       real, dimension (nx) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
@@ -1918,8 +1939,6 @@ module Viscosity
 !  only done on the first of the 3 substeps.
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
@@ -1959,7 +1978,7 @@ module Viscosity
         diffus_nu =p%diffus_total *dxyz_2
         diffus_nu2=p%diffus_total2*dxyz_4
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
-          diffus_nu3 = p%diffus_total3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+          diffus_nu3 = p%diffus_total3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))    !!! out
         else
           diffus_nu3=p%diffus_total3*dxyz_6
         endif
@@ -1978,14 +1997,10 @@ module Viscosity
            call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         endif
         if (lvisc_smag_simplified) then
-          if (ldensity) then
-            nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
-          endif
+          if (ldensity) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
         endif
         if (lvisc_smag_cross_simplified) then
-          if (ldensity) then
-            nu_smag=(C_smag*dxmax)**2.*p%ss12
-          endif
+          if (ldensity) nu_smag=(C_smag*dxmax)**2.*p%ss12
         endif
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
@@ -2202,7 +2217,7 @@ module Viscosity
       use cdata, only: Omega
 !
       real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta, &
-          lver,lhor,dlver_dr,dlhor_dtheta
+                            lver,lhor,dlver_dr,dlhor_dtheta
       type (pencil_case) :: p
 !
       lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))+Omega

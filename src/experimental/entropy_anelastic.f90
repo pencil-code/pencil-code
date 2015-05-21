@@ -1630,7 +1630,7 @@ module Energy
 !
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -2357,17 +2357,19 @@ module Energy
             cooling_profile, z2, wcool
         select case (cooling_profile)
         case ('gaussian')
-          prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+          prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2),1,nx)
         case ('step')
-          prof = step(spread(z(n),1,nx),z2,wcool)
+          prof = spread(step(z(n),z2,wcool),1,nx)
         case ('cubic_step')
-          prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+          prof = spread(cubic_step(z(n),z2,wcool),1,nx)
         endselect
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write out cooling profile (during first time step only) and apply.
+!  MR: later to be moved to initialization!
 !
-        call write_zprof('cooling_profile',prof)
+        !if (m==m1) call write_prof('cooling_profile',(/z(n)/),(/prof(1)/),'z',lsave_name=(n==n1))
+        if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z',lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !

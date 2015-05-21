@@ -371,7 +371,7 @@ module Energy
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, read_zprof_mz
+      use Sub, only: blob, read_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -709,7 +709,7 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call read_zprof_mz('ss_mz',ss_mz)
+      if (lcooling_ss_mz) call read_zprof('ss_mz',ss_mz)
 !
 !  Initialize heat conduction.
 !
@@ -2963,7 +2963,7 @@ module Energy
 !
 !  Calculate viscous contribution to entropy.
 !
-      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -4367,7 +4367,7 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber, g2ij, write_zprof_once
+      use Sub, only: dot, notanumber, g2ij, write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4413,9 +4413,9 @@ module Energy
 !
           if (lfirstcall_hcond.and.lfirstpoint) then
             if (.not.lhcond_global) then
-              call get_gravz_heatcond()
-              call write_zprof_once('hcond',hcond_zprof)
-              call write_zprof_once('gloghcond',gradloghcond_zprof(:,3))
+              call get_gravz_heatcond
+              call write_zprof('hcond',hcond_zprof)
+              call write_zprof('gloghcond',gradloghcond_zprof(:,3))
             endif
             if (chi_t/=0.0) call get_gravz_chit()
             lfirstcall_hcond=.false.
@@ -5010,7 +5010,7 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use Sub, only: step, cubic_step, write_zprof
+      use Sub, only: step, cubic_step, write_prof, step
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof
@@ -5047,11 +5047,11 @@ module Energy
       case ('gaussian')
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
       case ('step')
-        prof = step(spread(z(n),1,nx),z2,wcool)
+        prof = spread(step(z(n),z2,wcool),1,nx)
       case ('step2')
-        prof = step(spread(z(n),1,nx),zcool,wcool)
+        prof = spread(step(z(n),zcool,wcool),1,nx)
       case ('cubic_step')
-        prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+        prof = spread(cubic_step(z(n),z2,wcool),1,nx)
 !
 !  Cooling with a profile linear in z (unstable).
 !
@@ -5063,14 +5063,14 @@ module Energy
       heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write out cooling profile (during first time step only) and apply.
+!  MR: Later to be moved to initialization!
 !
-      call write_zprof('cooling_profile',prof)
+      !if (m==m1) call write_prof('cooling_profile',(/z(n)/),(/prof(1)/),'z', lsave_name=(n==n1))
+      if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !
-      if (l1davgfirst) then
-        call xysum_mn_name_z(heat,idiag_dcoolz)
-      endif
+      if (l1davgfirst) call xysum_mn_name_z(heat,idiag_dcoolz)
 !
     endsubroutine get_heat_cool_gravz
 !***********************************************************************

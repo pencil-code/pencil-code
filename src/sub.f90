@@ -20,7 +20,7 @@ module Sub
 !
   private
 !
-  public :: step,step_scalar,stepdown,der_stepdown
+  public :: step,stepdown,der_stepdown
   public :: ylm
   public :: kronecker_delta
 !
@@ -78,8 +78,8 @@ module Sub
   public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, numeric_precision, wdim, rdim
-  public :: write_zprof, remove_zprof, write_zprof_once
-  public :: write_zprof_mz, read_zprof_mz
+  public :: write_prof, write_xprof, write_zprof, remove_zprof
+  public :: read_zprof
 !
   public :: tensor_diffusion_coef
 !
@@ -4586,130 +4586,109 @@ nameloop: do
 !***********************************************************************
     subroutine write_zprof(fname,a)
 !
-!  Writes z-profile to a file (if constructed for identical pencils).
+!  Writes z-profile to a file.
 !
 !  10-jul-05/axel: coded
 !
-      use General, only: safe_character_assign
-!
-      real, dimension(nx) :: a
+      real, dimension(:) :: a
       character (len=*) :: fname
-!
-      integer :: unit=1
-      character (len=120) :: wfile
-!
-!  Do this only for the first step.
-!
-      if (lwrite_prof) then
-        if (m==m1) then
-!
-!  Write zprofile file.
-!
-          call safe_character_assign(wfile, &
-            trim(directory)//'/zprof_'//trim(fname)//'.dat')
-          open(unit,file=wfile,position='append')
-          write(unit,*) z(n),a(1)
-          close(unit)
-!
-!  Add file name to list of f zprofile files.
-!
-          if (n==n1) then
-            call safe_character_assign(wfile,trim(directory)//'/zprof_list.dat')
-            open(unit,file=wfile,position='append')
-            write(unit,*) fname
-            close(unit)
-          endif
-        endif
+
+      if (size(a)==mz) then
+        call write_prof(fname,z,a,'z')
+      else
+        call write_prof(fname,z(n1:n2),a,'z')
       endif
-!
+ 
     endsubroutine write_zprof
 !***********************************************************************
-    subroutine write_zprof_mz(fname,a)
+    subroutine write_xprof(fname,a)
 !
-!  Writes z-profile to a file (taken from stratification, for example).
-!  This works for data strings on length mz.
-!
-!  15-may-15/axel: coded
-!
-      use General, only: safe_character_assign
-!
-      real, dimension(mz) :: a
-      character (len=*) :: fname
-!
-      integer :: unit=1
-      character (len=120) :: wfile
-!
-!  Write zprofile file.
-!
-      call safe_character_assign(wfile, &
-          trim(directory)//'/zprof_'//trim(fname)//'.dat')
-      open(unit,file=wfile)
-      do n=1,mz
-        write(unit,*) z(n),a(n)
-      enddo
-      close(unit)
-!
-    endsubroutine write_zprof_mz
-!***********************************************************************
-    subroutine read_zprof_mz(fname,a)
-!
-!  Read z-profile from a file (taken from stratification, for example).
-!  This works for data strings on length mz.
-!
-!  15-may-15/axel: coded
-!
-      use General, only: safe_character_assign
-!
-      real, dimension(mz) :: a
-      character (len=*) :: fname
-!
-      integer :: unit=1
-      character (len=120) :: wfile
-!
-!  Write zprofile file.
-!
-      call safe_character_assign(wfile, &
-          trim(directory)//'/zprof_'//trim(fname)//'.dat')
-      open(unit,file=wfile)
-      do n=1,mz
-        read(unit,*) z(n),a(n)
-      enddo
-      close(unit)
-!
-    endsubroutine read_zprof_mz
-!***********************************************************************
-    subroutine write_zprof_once(fname,a)
-!
-!  Writes z-profile to a file (if constructed for identical pencils).
+!  Writes x-profile to a file.
 !
 !  10-jul-05/axel: coded
 !
-      use General, only: safe_character_assign
-!
-      real, dimension(mz) :: a
-      integer :: iz
+      real, dimension(:) :: a
       character (len=*) :: fname
+
+      if (size(a)==mx) then
+        call write_prof(fname,x,a,'x')
+      else
+        call write_prof(fname,x(l1:l2),a,'x')
+      endif
+ 
+    endsubroutine write_xprof
+!***********************************************************************
+    subroutine write_prof(fname,coor,a,type,lsave_name)
 !
-      integer :: unit=1
-      character (len=120) :: wfile
+!  Writes profile to a file.
 !
-!  Do this only for the first step.
+!  10-jul-05/axel: coded
+!
+      use General, only: safe_character_assign, loptest
+!
+      real, dimension(:) :: coor, a
+      character (len=*) :: fname
+      character :: type
+      logical, optional :: lsave_name
+!
+      integer, parameter :: unit=1
+      character (len=fnlen) :: wfile
+      integer :: i
+!
+!  If within a loop, do this only for the first step (indicated by lwrite_prof).
 !
       if (lwrite_prof) then
 !
 !  Write zprofile file.
 !
         call safe_character_assign(wfile, &
-            trim(directory)//'/zprof_once_'//trim(fname)//'.dat')
+            trim(directory)//'/'//type//'prof_'//trim(fname)//'.dat')
         open(unit,file=wfile,position='append')
-        do iz=1,mz
-          write(unit,*) z(iz),a(iz)
+        do i=1,size(coor)
+          write(unit,*) coor(i),a(i)
         enddo
         close(unit)
 !
+!  Add file name to list of f zprofile files if lsave_name *not* set or true.
+!
+        if (loptest(lsave_name,.true.)) then
+          call safe_character_assign(wfile,trim(directory)//'/'//type//'prof_list.dat')
+          open(unit,file=wfile,position='append')
+          write(unit,*) fname
+          close(unit)
+        endif
       endif
 !
-    endsubroutine write_zprof_once
+    endsubroutine write_prof
+!***********************************************************************
+    subroutine read_zprof(fname,a)
+!
+!  Read z-profile from a file (taken from stratification, for example).
+!
+!  15-may-15/axel: coded
+!
+      use General, only: safe_character_assign
+!
+      real, dimension(:) :: a
+      character (len=*) :: fname
+!
+      integer, parameter :: unit=1
+      character (len=fnlen) :: wfile
+      real, dimension(size(a)) :: zloc
+!
+!  Write zprofile file.
+!
+      call safe_character_assign(wfile, &
+          trim(directory)//'/zprof_'//trim(fname)//'.dat')
+      open(unit,file=wfile)
+      do n=1,size(a)
+        read(unit,*) zloc(n),a(n)
+      enddo
+      close(unit)
+!
+!  Should we check that zloc == z ?
+!
+    endsubroutine read_zprof
 !***********************************************************************
     subroutine remove_zprof()
 !
