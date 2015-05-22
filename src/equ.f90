@@ -1232,6 +1232,7 @@ module Equ
 !
 !  20-oct-14/ccyang: modularized from pde.
 !
+      use Cosmicray, only: impose_ecr_floor
       use Density, only: impose_density_floor
       use Dustdensity, only: impose_dustdensity_floor
       use Energy, only: impose_energy_floor
@@ -1243,6 +1244,7 @@ module Equ
       call impose_velocity_ceiling(f)
       call impose_energy_floor(f)
       call impose_dustdensity_floor(f)
+      call impose_ecr_floor(f)
 !
     endsubroutine impose_floors_ceilings
 !***********************************************************************
