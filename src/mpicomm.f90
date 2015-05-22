@@ -7183,7 +7183,7 @@ module Mpicomm
 !
 !  Broadcast the file size.
 !
-      lenbuf=len(buffer)
+      if (lroot) lenbuf=len(buffer)
       call mpibcast_int(lenbuf)
       if (.not.lroot) allocate(character(len=lenbuf) :: buffer)
 !
