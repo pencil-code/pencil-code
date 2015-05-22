@@ -371,7 +371,7 @@ module Energy
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, read_zprof
+      use Sub, only: blob, read_zprof, write_prof
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -5065,7 +5065,6 @@ module Energy
 !  Write out cooling profile (during first time step only) and apply.
 !  MR: Later to be moved to initialization!
 !
-      !if (m==m1) call write_prof('cooling_profile',(/z(n)/),(/prof(1)/),'z', lsave_name=(n==n1))
       if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.

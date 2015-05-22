@@ -2368,7 +2368,6 @@ module Energy
 !  Write out cooling profile (during first time step only) and apply.
 !  MR: later to be moved to initialization!
 !
-        !if (m==m1) call write_prof('cooling_profile',(/z(n)/),(/prof(1)/),'z',lsave_name=(n==n1))
         if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z',lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
