@@ -12,14 +12,14 @@ program test_f2003
     namelist /example/ val1, val2, val3
 
     real :: val1, val2, val3
-    integer :: num_bytes, unit
+    integer :: num_bytes, unit = 11
     character (len=*), parameter :: in_file = 'test_namelist.in'
     character (len=:), allocatable :: buffer
 
     ! find namelist file size
     inquire (file=in_file, size=num_bytes)
     if (num_bytes /= 45) then
-      write (*,*) 'FILESIZE ERROR!'
+      write (*,*) 'FILESIZE ERROR! (', num_bytes, ')'
       stop 1
     endif
 
@@ -35,6 +35,8 @@ program test_f2003
     read (buffer, nml=example)
     if ((val1 /= 1.01) .or. (val2 /= 1.02) .or. (val3 /= 1.03)) then
       write (*,*) 'NAMELIST READING ERROR!'
+      write (*,*) buffer
+      write (*,*) '======================='
       stop 1
     endif
 
