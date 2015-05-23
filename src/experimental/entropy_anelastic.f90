@@ -1,4 +1,4 @@
-! $Id: entropy.f90 11900 2009-10-13 23:02:31Z boris.dintrans $
+! $Id$
 !
 !  This module takes care of energy (initial condition
 !  and time advance)
@@ -230,7 +230,7 @@ module Energy
 !  identify version number
 !
       if (lroot) call svn_id( &
-          "$Id: entropy_anelastic.f90 11900 2009-10-13 23:02:31Z dhruba.mitra $")
+          "$Id$")
 !
     endsubroutine register_energy
 !***********************************************************************

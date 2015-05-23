@@ -1,4 +1,4 @@
-! $Id: forcing.f90 16474 2011-03-10 18:59:42Z mppiyali $
+! $Id$
 !
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -141,7 +141,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call svn_id( &
-           "$Id: forcing.f90 16474 2011-03-10 18:59:42Z mppiyali $")
+           "$Id$")
 !
     endsubroutine register_forcing
 !***********************************************************************

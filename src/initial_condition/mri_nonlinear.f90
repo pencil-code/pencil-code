@@ -1,4 +1,4 @@
-! $Id: myic.f90,v 1.1 2015/05/22 13:26:03 brandenb Exp $
+! $Id$
 !
 !  This module provide a way for users to specify custom initial
 !  conditions.
@@ -97,7 +97,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
 !      if (lroot) call svn_id( &
-!         "$Id: myic.f90,v 1.1 2015/05/22 13:26:03 brandenb Exp $")
+!         "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
