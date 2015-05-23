@@ -273,6 +273,7 @@ module Dustvelocity
             ad(k)=ad0+ad1*(k-1)
           enddo
           md=4/3.*pi*ad**3*rhods
+          llog_massbins=.false.
 !
 !  Logarithmically spaced mass bins:
 !  (Do we really need unit_md? When would it not be 1?)
@@ -284,6 +285,7 @@ module Dustvelocity
             md(k) = 0.5*(mdminus(k)+mdplus(k))
           enddo
           ad=(0.75*md*unit_md/(pi*rhods))**onethird
+          llin_radiusbins=.false.
         endif
 
         if (lroot) print*,'initialize_dustvelocity: ad=',ad
