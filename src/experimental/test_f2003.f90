@@ -9,16 +9,19 @@ program test_f2003
 
     implicit none
 
-    namelist /example/ val1, val2, val3
+    integer, parameter :: namelist_size = 39 ! size of namelist.in in bytes
+    character (len=80) :: a
+    real :: b
+    integer :: c
+    namelist /example/ a, b, c
 
-    real :: val1, val2, val3
     integer :: num_bytes, unit = 11
     character (len=*), parameter :: in_file = 'test_namelist.in'
     character (len=:), allocatable :: buffer
 
     ! find namelist file size
     inquire (file=in_file, size=num_bytes)
-    if (num_bytes /= 45) then
+    if (num_bytes /= namelist_size) then
       write (*,*) 'FILESIZE ERROR! (', num_bytes, ')'
       stop 1
     endif
@@ -33,7 +36,7 @@ program test_f2003
 
     ! read namelist from memory buffer
     read (buffer, nml=example)
-    if ((val1 /= 1.01) .or. (val2 /= 1.02) .or. (val3 /= 1.03)) then
+    if ((a /= 'bcx?0') .or. (b /= -1.234) .or. (c /= 42)) then
       write (*,*) 'NAMELIST READING ERROR!'
       write (*,*) buffer
       write (*,*) '======================='
