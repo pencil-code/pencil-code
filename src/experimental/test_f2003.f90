@@ -28,6 +28,7 @@ program test_f2003
 
     ! allocate memory buffer
     allocate (character (len=num_bytes) :: buffer)
+    buffer(1:) = char(0)
 
     ! read namelist file into memory buffer
     open (unit, file=in_file, status='old', form='unformatted', access='stream')
