@@ -9,7 +9,7 @@ program test_f2003
 
     implicit none
 
-    integer, parameter :: namelist_size = 39 ! size of namelist.in in bytes
+    integer, parameter :: namelist_size = 38 ! size of namelist.in in bytes
     character (len=80) :: a
     real :: b
     integer :: c
@@ -22,7 +22,7 @@ program test_f2003
     ! find namelist file size
     inquire (file=in_file, size=num_bytes)
     if (num_bytes /= namelist_size) then
-      write (*,*) 'FILESIZE ERROR! (', num_bytes, ')'
+      write (*,*) 'FILESIZE ERROR! (actual size: ', num_bytes, ', expected: ', namelist_size, ')'
       stop 1
     endif
 
