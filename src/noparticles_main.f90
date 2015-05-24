@@ -150,15 +150,17 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine split_update_particles(f)
+    subroutine split_update_particles(f, dt)
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
 !  14-dec-14/ccyang: dummy
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dt
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(dt)
 !
     endsubroutine split_update_particles
 !***********************************************************************
