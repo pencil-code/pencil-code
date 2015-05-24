@@ -7220,7 +7220,7 @@ module Mpicomm
 !
 !  11-jan-15/MR: implemented
 !
-      character(len=*), allocatable :: unit
+      character(len=:), allocatable :: unit
 !
       if (allocated(unit)) deallocate(unit)
 !
