@@ -233,15 +233,13 @@ module Dustvelocity
           mumon = 18.0
           mmon  = mumon*1.6733e-24
           unit_md = mmon
-
+!
+!  for the following few items, no action is needed
+!
         case ('pscalar')
-          !AB: no action needed
-
+        case ('hat(om*t)')
         case ('cos(om*t)')
-          !AB: no action needed
-
         case ('simplified')
-          !AB: no action needed
 
         case default
           call fatal_error &

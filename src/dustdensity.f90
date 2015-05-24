@@ -2123,8 +2123,8 @@ module Dustdensity
         k=1
         mfluxcondp=(abs(mfluxcond)-mfluxcond)
         mfluxcondm=(abs(mfluxcond)+mfluxcond)
-        coefkp=mfluxcondp/(ad(k+1)-ad(k))
-        coefk0=mfluxcondm/ ad(k)-coefkp
+        coefkp=.5*mfluxcondp/(ad(k+1)-ad(k))
+        coefk0=  -mfluxcondm/ ad(k)-coefkp
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
           +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1) &
           +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
@@ -2133,8 +2133,8 @@ module Dustdensity
 !
         k=ndustspec
         mfluxcondm=(abs(mfluxcond)+mfluxcond)
-        coefkm=mfluxcondm/(ad(k)-ad(k-1))
-        coefk0=-coefkm
+        coefkm=.5*mfluxcondm/(ad(k)-ad(k-1))
+        coefk0=  -mfluxcondp/ ad(k)-coefkm
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
           +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1) &
           +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
@@ -2269,15 +2269,20 @@ module Dustdensity
           call fatal_error("dustdensity","no icc or ilncc match")
         endif
 !
+!  Assume a hat(om*t) time behavior
+!
+      case ('hat(om*t)')
+        mfluxcond=G_condensparam*tanh(20.*cos(supsatratio_omega*t))
+!
 !  Assume a cos(om*t) time behavior
 !
       case ('cos(om*t)')
-        mfluxcond=G_condensparam*supsatratio_given*cos(supsatratio_omega*t)
+        mfluxcond=G_condensparam*cos(supsatratio_omega*t)
 !
 !  Allow only positive values (but commented out now).
 !
       case ('simplified')
-        mfluxcond=G_condensparam*supsatratio_given
+        mfluxcond=G_condensparam
 !
 !  fatal_error otherwise
 !
