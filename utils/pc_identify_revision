@@ -37,7 +37,8 @@ write_revision_file () {
     elif [ -d './.svn' ]; then
         write_revision_file_from_svn_sandbox
     else
-        echo 'Warning: Cannot determine a revision number' >> ${revision_file}
+        echo 'Warning: Cannot determine a revision number' \
+            >> ${revision_file}
     fi
     echo >> ${revision_file}
 }
