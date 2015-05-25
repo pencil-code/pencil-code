@@ -59,7 +59,7 @@ write_revision_file_from_git_sandbox () {
     # For a complete record: document any local changes
     echo 'Git diff:' >> ${revision_file}
     echo '---------' >> ${revision_file}
-    git diff --cached >> ${revision_file}
+    git diff HEAD >> ${revision_file}
     echo >> ${revision_file}
 }
 
