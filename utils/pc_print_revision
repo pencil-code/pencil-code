@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Description:
+#   Print the revision file if if is up-to-date.
+# Usage:
+#   pc_print_revison src/start.x
+#   pc_print_revison src/run.x
+
+
+get_revision_filename () {
+    if [ -z $PENCIL_HOME ]; then
+        echo "Error: \$PENCIL_HOME must be set."
+        exit 1
+    fi
+
+    rf=$(${PENCIL_HOME}/utils/pc_identify_revision --print-file-name)
+    if [ -z "${rf}" ]; then
+        echo 'Error: Cannot get revision file name'
+        exit 1
+    fi
+
+    echo "${rf}"
+}
+
+
+print_revision () {
+    if [ -z "$1" ]; then
+        echo "Usage: pc_print_revison <binary>"
+        exit 1
+    fi
+
+    binary="$1"
+    if [ ! -e ${revision_file} ]; then
+        echo "Error: Revision file ${revision_file} does not exist"
+    fi
+    if [ ! -e ${binary} ]; then
+        echo "Error: Binary file ${binary} does not exist"
+    fi
+
+    if [ ${revision_file} -nt ${binary} ]; then
+        cat < ${revision_file}
+    else
+        echo "Warning: ${revision_file} is not up to date"
+    fi
+}
+
+
+revision_file=$(get_revision_filename)
+print_revision "$@"
