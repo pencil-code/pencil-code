@@ -99,7 +99,10 @@ write_revision_file_from_svn_sandbox () {
 
 
 main () {
-    if [ "$1" = "--reset" -o "$1" = "-r" ]; then
+    if [ "$1" = "--print-file-name" -o "$1" = "-p" ]; then
+        echo "${revision_file}"
+        exit 0
+    elif [ "$1" = "--reset" -o "$1" = "-r" ]; then
         write_file=''
     else
         write_file=1
