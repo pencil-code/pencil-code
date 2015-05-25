@@ -1,0 +1,10 @@
+# .gitignore for a src directory with many symlinked files and
+# directories. Normally, only the .local files should be under
+# revision control.
+
+# Ignore everything...
+*
+
+# ..except for *.local files (and this .gitignore file)
+!*.local
+!*.gitignore

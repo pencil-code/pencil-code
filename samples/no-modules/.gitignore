@@ -1,0 +1,9 @@
+# Symlinked files
+getconf.csh
+start.csh
+run.csh
+start_run.csh
+Makefile
+
+# Generated files
+.pc_build_history
