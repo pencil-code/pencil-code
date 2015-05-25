@@ -50,7 +50,7 @@ module Mpicomm
 !
   implicit none
 !
-  include 'mpicomm.h'
+  include '../mpicomm.h'
 !
   interface mpirecv_logical
      module procedure mpirecv_logical_scl
@@ -7061,7 +7061,7 @@ module Mpicomm
       if (lfake_parallel_io) then
         call fake_parallel_open(unit,file,form)
       else
-        call true_parallel_open(unit,file,form)
+        call true_parallel_open(unit,file,form,nitems=nitems)
       endif
 !
     endsubroutine parallel_open_ext
@@ -7108,7 +7108,7 @@ module Mpicomm
 !
     endsubroutine parallel_open_int
 !***********************************************************************
-    subroutine true_parallel_open(unit,file,form,recl)
+    subroutine true_parallel_open(unit,file,form,recl,nitems)
 !
 !  Read a global file in parallel.
 !
@@ -7116,19 +7116,20 @@ module Mpicomm
 !  11-jan-15/MR: primary reading of data by root outsourced to read_infile
 !
       use Cparam, only: fnlen
+      use General, only: itoa
       use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
 !
       integer :: unit
       character (len=*) :: file
       character (len=*), optional :: form
-      integer, optional :: recl
+      integer, optional :: recl, nitems
 !
       integer :: pos
       character (len=fnlen) :: filename
       character(len=:), allocatable :: buffer
       character(len=fnlen) :: get_tmp_prefix_
 !
-      call read_infile_root(file,buffer)
+      call read_infile_root(file,buffer,nitems)
 !
 !  Create unique temporary filename.
 !
@@ -7143,6 +7144,7 @@ module Mpicomm
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
+      !filename='data/proc'//trim(itoa(iproc))//'/buffer.tmp'   ! for testing only
       call write_binary_file(filename, len(buffer), buffer)
       deallocate(buffer)
 !
