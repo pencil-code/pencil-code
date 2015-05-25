@@ -1,6 +1,6 @@
-# $Id$
+# var.py
 #
-# read VAR files. based on the read_var.pro IDL script.
+# Read VAR files. Based on the read_var.pro IDL script.
 #
 # NB: the f array returned is C-ordered: f[nvar,nz,ny,nx]
 #     NOT Fortran as in Pencil (& IDL):  f[nx,ny,nz,nvar]
@@ -9,8 +9,8 @@
 #
 # modify var.py in a more object-oriented way
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
-#
-import numpy as N
+
+import numpy as np
 from npfile import npfile
 import os
 import sys
@@ -20,36 +20,14 @@ from dim import read_dim
 from pencil.math.derivatives import curl, curl2
 import re
 
+
 def natural_sort(l): 
     convert = lambda text: int(text) if text.isdigit() else text.lower() 
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
     return sorted(l, key = alphanum_key) 
 
-def read_var(*args, **kwargs):
-    """Read VAR files from Pencil Code. if proc < 0, then load all data
-    and assemble. otherwise, load VAR file from specified processor.
 
-    format -- one of (['native', 'n'], ['ieee-le', 'l'],
-    ['ieee-be', 'B']) for byte-ordering
-
-    Params:
-    ------
-        varfile=''
-        datadir='data/'
-        proc=-1
-        ivar=-1
-        quiet=False
-        trimall=False
-        format='native'
-        param=None
-        dim=None
-        index=None
-        run2D=False
-    """
-    return DataCube(*args, **kwargs)
-
-
-class DataCube(object):
+class read_var():
 # !!!  The file format written by output() (and used, e.g. in var.dat)
 # !!!  consists of the followinig Fortran records:
 # !!!    1. data(mx,my,mz,nvar)
@@ -86,11 +64,11 @@ class DataCube(object):
             run2D=False
         """
         if (setup is not None):
-            datadir=os.path.expanduser(setup.datadir)
-            dim=setup.dim
-            param=setup.param
-            index=setup.index
-            run2D=setup.run2D
+            datadir = os.path.expanduser(setup.datadir)
+            dim = setup.dim
+            param = setup.param
+            index = setup.index
+            run2D = setup.run2D
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
@@ -117,28 +95,28 @@ class DataCube(object):
 
         if (not varfile):
             if ivar < 0:
-                varfile='var.dat'
+                varfile = 'var.dat'
             else:
-                varfile='VAR'+str(ivar)
+                varfile = 'VAR'+str(ivar)
 
         if proc < 0:
             procdirs = natural_sort(filter(lambda s:s.startswith('proc'),
-                              os.listdir(datadir)))
+                                    os.listdir(datadir)))
         else:
             procdirs = ['proc'+str(proc)]
 
         #global array
         if (not run2D):
-            f = N.zeros((totalvars, dim.mz, dim.my, dim.mx),
+            f = np.zeros((totalvars, dim.mz, dim.my, dim.mx),
                         dtype=precision)
         else:
             if dim.ny == 1:
-                f = N.zeros((totalvars, dim.mz, dim.mx), dtype=precision)
+                f = np.zeros((totalvars, dim.mz, dim.mx), dtype=precision)
             else:
-                f = N.zeros((totalvars, dim.my, dim.mx), dtype=precision)
-        x = N.zeros(dim.mx, dtype=precision)
-        y = N.zeros(dim.my, dtype=precision)
-        z = N.zeros(dim.mz, dtype=precision)
+                f = np.zeros((totalvars, dim.my, dim.mx), dtype=precision)
+        x = np.zeros(dim.mx, dtype=precision)
+        y = np.zeros(dim.my, dtype=precision)
+        z = np.zeros(dim.mz, dtype=precision)
         for directory in procdirs:
 
             proc = int(directory[4:])
@@ -156,14 +134,14 @@ class DataCube(object):
             infile = npfile(filename, endian=format)
             if (not run2D):
                 f_loc = infile.fort_read(precision,
-                               shape=(-1, mzloc, myloc, mxloc))
+                                         shape=(-1, mzloc, myloc, mxloc))
             else:
                 if dim.ny == 1:
                     f_loc = infile.fort_read(precision,
                                    shape=(-1, mzloc, mxloc))
                 else:
                     f_loc = infile.fort_read(precision,
-                                   shape=(-1, myloc, mxloc))
+                                             shape=(-1, myloc, mxloc))
             raw_etc = infile.fort_read(precision)
             infile.close()
 
@@ -336,30 +314,30 @@ class DataCube(object):
         for field in self.magic:
             if (field == 'rho' and not hasattr(self, 'rho')):
                 if hasattr(self, 'lnrho'):
-                    setattr(self, 'rho', N.exp(self.lnrho))
+                    setattr(self, 'rho', np.exp(self.lnrho))
                 else:
                     sys.exit("pb in magic!")
 
             if (field == 'tt' and not hasattr(self,'tt')):
                 if hasattr(self, 'lnTT'):
-                    tt = N.exp(self.lnTT)
+                    tt = np.exp(self.lnTT)
                     setattr(self, 'tt', tt)
                 else:
                     if hasattr(self, 'ss'):
                         if hasattr(self,'lnrho'):
                             lnrho = self.lnrho
                         elif hasattr(self,'rho'):
-                            lnrho = N.log(self.rho)
+                            lnrho = np.log(self.rho)
                         else:
                             sys.exit("pb in magic: missing rho or lnrho variable")
                         cp = param.cp
                         gamma = param.gamma
                         cs20 = param.cs0**2
-                        lnrho0 = N.log(param.rho0)
-                        lnTT0 = N.log(cs20/(cp*(gamma-1.)))
+                        lnrho0 = np.log(param.rho0)
+                        lnTT0 = np.log(cs20/(cp*(gamma-1.)))
                         lnTT = lnTT0+gamma/cp*self.ss+(gamma-1.)* \
                                (lnrho-lnrho0)
-                        setattr(self, 'tt', N.exp(lnTT))
+                        setattr(self, 'tt', np.exp(lnTT))
                     else:
                         sys.exit("pb in magic!")
 
@@ -367,13 +345,13 @@ class DataCube(object):
                 cp = param.cp
                 gamma = param.gamma
                 cs20 = param.cs0**2
-                lnrho0 = N.log(param.rho0)
-                lnTT0 = N.log(cs20/(cp*(gamma-1.)))
+                lnrho0 = np.log(param.rho0)
+                lnTT0 = np.log(cs20/(cp*(gamma-1.)))
                 if hasattr(self, 'lnTT'):
                     self.ss = cp/gamma*(self.lnTT-lnTT0- \
                               (gamma-1.)*(self.lnrho-lnrho0))
                 elif hasattr(self, 'tt'):
-                    self.ss = cp/gamma*(N.log(self.tt)- \
+                    self.ss = cp/gamma*(np.log(self.tt)- \
                               lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
                 else:
                     sys.exit("pb in magic!")
@@ -385,14 +363,14 @@ class DataCube(object):
                 if hasattr(self,'lnrho'):
                     lnrho = self.lnrho
                 elif hasattr(self,'rho'):
-                    lnrho = N.log(self.rho)
+                    lnrho = np.log(self.rho)
                 else:
                     sys.exit("pb in magic: missing rho or lnrho variable")
                 if hasattr(self, 'ss'):
-                    self.pp = N.exp(gamma*(self.ss+lnrho))
+                    self.pp = np.exp(gamma*(self.ss+lnrho))
                 elif hasattr(self, 'lntt'):
-                    self.pp = (cp-cv)*N.exp(self.lntt+lnrho)
+                    self.pp = (cp-cv)*np.exp(self.lntt+lnrho)
                 elif hasattr(self, 'tt'):
-                    self.pp = (cp-cv)*self.tt*N.exp(lnrho)
+                    self.pp = (cp-cv)*self.tt*np.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
