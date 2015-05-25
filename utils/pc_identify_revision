@@ -9,6 +9,7 @@
 #   pc_identify_revision [--reset]
 
 revision_file='revision.txt'
+quiet=''                        # set to '1' to suppress diff output
 
 
 check_prerequisites () {
@@ -56,11 +57,13 @@ write_revision_file_from_git_sandbox () {
     git status >> ${revision_file}
     echo >> ${revision_file}
 
-    # For a complete record: document any local changes
-    echo 'Git diff:' >> ${revision_file}
-    echo '---------' >> ${revision_file}
-    git diff HEAD >> ${revision_file}
-    echo >> ${revision_file}
+    if [ -z $quiet ]; then
+        # For a complete record: document any local changes
+        echo 'Git diff:' >> ${revision_file}
+        echo '---------' >> ${revision_file}
+        git diff HEAD >> ${revision_file}
+        echo >> ${revision_file}
+    fi
 }
 
 
@@ -85,10 +88,12 @@ write_revision_file_from_svn_sandbox () {
     svn status >> ${revision_file}
     echo >> ${revision_file}
 
-    # For a complete record: document any local changes
-    echo "SVN diff:" >> ${revision_file}
-    svn diff >> ${revision_file}
-    echo >> ${revision_file}
+    if [ -z $quiet ]; then
+        # For a complete record: document any local changes
+        echo "SVN diff:" >> ${revision_file}
+        svn diff >> ${revision_file}
+        echo >> ${revision_file}
+    fi
 }
 
 
