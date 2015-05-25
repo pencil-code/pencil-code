@@ -88,8 +88,8 @@ class read_var():
         else:
             totalvars = dim.mvar
 
-        # read index.pro to get positions and "names"
-        # of variables in f(mx,my,mz,nvar)
+        # Read index.pro to get positions and "names"
+        # of variables in f(mx,my,mz,nvar).
         # Thomas: seems useless now ?
         #exec(index) # this loads the indicies.
 
@@ -108,7 +108,7 @@ class read_var():
         #global array
         if (not run2D):
             f = np.zeros((totalvars, dim.mz, dim.my, dim.mx),
-                        dtype=precision)
+                         dtype=precision)
         else:
             if dim.ny == 1:
                 f = np.zeros((totalvars, dim.mz, dim.mx), dtype=precision)
@@ -137,11 +137,9 @@ class read_var():
                                          shape=(-1, mzloc, myloc, mxloc))
             else:
                 if dim.ny == 1:
-                    f_loc = infile.fort_read(precision,
-                                   shape=(-1, mzloc, mxloc))
+                    f_loc = infile.fort_read(precision, shape=(-1, mzloc, mxloc))
                 else:
-                    f_loc = infile.fort_read(precision,
-                                             shape=(-1, myloc, mxloc))
+                    f_loc = infile.fort_read(precision, shape=(-1, myloc, mxloc))
             raw_etc = infile.fort_read(precision)
             infile.close()
 
@@ -160,15 +158,14 @@ class read_var():
             dz = raw_etc[-1-shear_offset]
 
             if len(procdirs) > 1:
-                # calculate where the local processor will go in
-                # the global array
+                # Calculate where the local processor will go in
+                # the global array.
 
+                # Don't overwrite ghost zones of processor to the left (and
+                # accordingly in y and z direction--makes a difference on the
+                # diagonals).
                 #
-                #  Don't overwrite ghost zones of processor to the left (and
-                #  accordingly in y and z direction--makes a difference on the
-                #  diagonals)
-                #
-                # recall that in NumPy, slicing is NON-INCLUSIVE on the right end
+                # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
                 # ie, x[0:4] will slice all of a 4-digit array, not produce
                 # an error like in idl.
 
@@ -229,19 +226,19 @@ class read_var():
 
         if (magic is not None):
             if ('bb' in magic):
-                # compute the magnetic field before doing trimall
+                # Compute the magnetic field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
                 self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
-                # compute the electric current field before doing trimall
+                # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
                 self.jj = curl2(aa,dx,dy,dz)
                 if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
-                # compute the vorticity field before doing trimall
+                # Compute the vorticity field before doing trimall.
                 uu = f[index['ux']-1:index['uz'],...]
                 self.vort = curl(uu,dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall):
@@ -256,7 +253,7 @@ class read_var():
                         self.vort=self.vort[:, dim.n1:dim.n2+1,
                         dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
-        # trim the ghost zones of the global f-array if asked
+        # Trim the ghost zones of the global f-array if asked.
         if trimall:
             self.x = x[dim.l1:dim.l2+1]
             self.y = y[dim.m1:dim.m2+1]
@@ -281,22 +278,22 @@ class read_var():
             self.n2 = dim.n2+1
 
         # Assign an attribute to self for each variable defined in
-        # 'data/index.pro' so that e.g. self.ux is the x-velocity
+        # 'data/index.pro' so that e.g. self.ux is the x-velocity.
         for key,value in index.items():
-#          print key,value
-          if key != 'global_gg':
-            setattr(self,key,self.f[value-1,...])
-        # Special treatment for vector quantities
+            # print key,value.
+            if key != 'global_gg':
+                setattr(self,key,self.f[value-1,...])
+        # special treatment for vector quantities
         if index.has_key('uu'):
-          self.uu = self.f[index['ux']-1:index['uz'],...]
+            self.uu = self.f[index['ux']-1:index['uz'],...]
         if index.has_key('aa'):
-          self.aa = self.f[index['ax']-1:index['az'],...]
+            self.aa = self.f[index['ax']-1:index['az'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
         if index.has_key('fcr'):  
-           self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
-           self.fcrx = self.fcr[0]
-           self.fcry = self.fcr[1]
-           self.fcrz = self.fcr[2]
+            self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
+            self.fcrx = self.fcr[0]
+            self.fcry = self.fcr[1]
+            self.fcrz = self.fcr[2]
 
         self.t = t
         self.dx = dx
@@ -305,12 +302,12 @@ class read_var():
         if param.lshear:
             self.deltay = deltay
 
-        # do the rest of magic after the trimall (i.e. no additional curl...)
+        # Do the rest of magic after the trimall (i.e. no additional curl...).
         self.magic = magic
         if self.magic is not None:
-            self.magicAttributes(param)
+            self.__magicAttributes(param)
 
-    def magicAttributes(self, param):
+    def __magicAttributes(self, param):
         for field in self.magic:
             if (field == 'rho' and not hasattr(self, 'rho')):
                 if hasattr(self, 'lnrho'):
