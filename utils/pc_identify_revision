@@ -1,0 +1,111 @@
+#!/bin/sh
+
+# Description:
+#   Try hard to identify the current revision of the code.
+#   Works for Git and the Github SVN bridge.
+#   For a SVN sandbox, requires connection to (and authentication
+#   with) the server.
+# Usage:
+#   pc_identify_revision [--reset]
+
+revision_file='revision.txt'
+
+
+check_prerequisites () {
+    # Sanity checks.
+    # Some of these requirements could be weakened, but it is better
+    # to play safe.
+    if [ -z $PENCIL_HOME ]; then
+        echo "Error: \$PENCIL_HOME must be set."
+        exit 1
+    fi
+
+    if [ "$(pwd)" != "$(cd $PENCIL_HOME; pwd)" ]; then
+        echo "pc_identify_revision must be run from \$PENCIL_HOME"
+        exit 1
+    fi
+}
+
+
+write_revision_file () {
+    echo 'Revision:' >> ${revision_file}
+    echo '---------' >> ${revision_file}
+
+    if [ -d './.git' ]; then
+        write_revision_file_from_git_sandbox
+    elif [ -d './.svn' ]; then
+        write_revision_file_from_svn_sandbox
+    else
+        echo 'Warning: Cannot determine a revision number' >> ${revision_file}
+    fi
+    echo >> ${revision_file}
+}
+
+
+write_revision_file_from_git_sandbox () {
+    git rev-parse HEAD >> ${revision_file}
+    echo >> ${revision_file}
+
+    # Not relevant for now, but nice with annotated release tags:
+    #   git describe HEAD >> ${revision_file}
+
+    # Append the output from 'git status', so we know whether
+    # there were uncommitted changes:
+    echo 'Git status:' >> ${revision_file}
+    echo '-----------' >> ${revision_file}
+    git status >> ${revision_file}
+    echo >> ${revision_file}
+
+    # For a complete record: document any local changes
+    echo 'Git diff:' >> ${revision_file}
+    echo '---------' >> ${revision_file}
+    git diff --cached >> ${revision_file}
+    echo >> ${revision_file}
+}
+
+
+write_revision_file_from_svn_sandbox () {
+    # SVN revision:
+    svn log --limit 1 >> ${revision_file}
+    echo >> ${revision_file}
+
+    # Git revision.
+    # Somewhat tricky, because this command requires
+    # authentication with the server, which may not be
+    # possible in automated test runs.
+    # Thus, we run this with a timeout of 1 minute:
+    timeout 60s \
+        svn propget git-commit --revprop -r HEAD \
+        https://github.com/pencil-code/pencil-code.git \
+        >> ${revision_file}
+
+    # Append the output from 'svn status', so we know whether
+    # there were uncommitted changes:
+    echo "SVN status:" >> ${revision_file}
+    svn status >> ${revision_file}
+    echo >> ${revision_file}
+
+    # For a complete record: document any local changes
+    echo "SVN diff:" >> ${revision_file}
+    svn diff >> ${revision_file}
+    echo >> ${revision_file}
+}
+
+
+main () {
+    if [ "$1" = "--reset" -o "$1" = "-r" ]; then
+        write_file=''
+    else
+        write_file=1
+    fi
+
+    check_prerequisites
+    rm -f ${revision_file}
+
+    if [ $write_file ]; then
+        write_revision_file
+    fi
+}
+
+
+main "$@"
