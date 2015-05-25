@@ -3,8 +3,8 @@
 # Description:
 #   Print the revision file if if is up-to-date.
 # Usage:
-#   pc_print_revison src/start.x
-#   pc_print_revison src/run.x
+#   pc_print_revision_file src/start.x
+#   pc_print_revision_file src/run.x
 
 
 get_revision_filename () {
@@ -23,7 +23,7 @@ get_revision_filename () {
 }
 
 
-print_revision () {
+print_info () {
     if [ -z "$1" ]; then
         echo "Usage: pc_print_revison <binary>"
         exit 1
@@ -46,4 +46,4 @@ print_revision () {
 
 
 revision_file=$(get_revision_filename)
-print_revision "$@"
+print_info "$@"
