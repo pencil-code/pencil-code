@@ -1692,8 +1692,7 @@ module Dustdensity
           else
             do k=1,ndustspec
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                     - p%udropgnd(:,k)  
-!                    + p%dndr(:,k)
+                     - p%udropgnd(:,k) + p%dndr(:,k)
 !
 !
             enddo
@@ -1703,7 +1702,6 @@ module Dustdensity
 !
       endif
 !
-!  currently, Natalia adds p%dndr(:,k) in special, but we don't do that
 !  if lsemi_chemistry is true.
 !
       if (lsemi_chemistry) then
@@ -1838,6 +1836,7 @@ module Dustdensity
 !
 !  Diagnostic output
 !
+     endif
       if (ldiagnos) then
         do k=1,ndustspec
           if (idiag_mdm(k)/=0) call sum_mn_name(p%md(:,k),idiag_mdm(k))
@@ -1946,7 +1945,7 @@ module Dustdensity
           if (idiag_rmom(k)/=0) &
               call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
         enddo
-      endif
+!      endif
 !
 !  2d-averages
 !
