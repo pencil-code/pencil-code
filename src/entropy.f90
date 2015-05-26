@@ -4291,7 +4291,7 @@ module Energy
       intent(in) :: p
       intent(inout) :: df
 
-      real :: Krho1
+      real, dimension(nx) :: Krho1
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
