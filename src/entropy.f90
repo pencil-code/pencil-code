@@ -4290,6 +4290,8 @@ module Energy
 !
       intent(in) :: p
       intent(inout) :: df
+
+      real :: Krho1
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -4297,27 +4299,26 @@ module Energy
 !      K = K_0*(T**6.5/rho**2)**n.
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
-!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
-!
-      chix = p%cp1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)
-      call dot(-2.*nkramers*p%glnrho+6.5*nkramers*p%glnTT,p%glnTT,g2)
-      if (pretend_lnTT) then
-        thdiff = p%cv1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers-1.)*(p%del2lnTT+g2)
-      else
-        thdiff = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers-1.)*(p%del2lnTT+g2)
-      endif
+      Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
+      thdiff = Krho1*(p%del2lnTT+g2)
+      if (pretend_lnTT) thdiff = p%cv1*thdiff
 !
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-chix*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_kramers)
+        call xysum_mn_name_z(-Krho1*p%rho*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
       endif
 !
 !  2d-averages
 !
       if (l2davgfirst) then
-        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-chix*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradxy_kramers)
+        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
       endif
+!
+!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
+!
+      chix = p%cp1*Krho1
 !
 !  Check for NaNs initially.
 !
