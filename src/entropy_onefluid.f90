@@ -461,7 +461,7 @@ module Energy
 !
 !  Calculate viscous contribution to entropy.
 !
-      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
 !
 !  Thermal conduction.
 !

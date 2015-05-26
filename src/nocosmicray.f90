@@ -190,4 +190,12 @@ module Cosmicray
 !
     endsubroutine get_slices_cosmicray
 !***********************************************************************
+    subroutine impose_ecr_floor(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_ecr_floor
+!***********************************************************************
 endmodule Cosmicray

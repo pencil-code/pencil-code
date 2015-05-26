@@ -1,4 +1,4 @@
-! $Id: forcing.f90 16474 2011-03-10 18:59:42Z mppiyali $
+! $Id$
 !
 !  This module contains routines both for delta-correlated
 !  and continuous forcing. The fcont pencil is only provided
@@ -141,7 +141,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call svn_id( &
-           "$Id: forcing.f90 16474 2011-03-10 18:59:42Z mppiyali $")
+           "$Id$")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -151,7 +151,7 @@ module Forcing
 !  nothing needs to be done when called from start.f90
 !
       use Mpicomm, only: stop_it
-      use Sub, only: step_scalar,erfunc
+      use Sub, only: step,erfunc
       real :: zstar
 !
       if (lstart) then
@@ -203,7 +203,7 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
-          profz_hel(n)= -1.+2.*step_scalar(z(n),equator-ck_equator_gap,ck_gap_step)
+          profz_hel(n)= -1.+2.*step(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
 !
 !  step function change in intensity of helicity at zff_hel
@@ -213,7 +213,7 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
                        profz_hel=1.
         do n=1,mz
-          profz_ampl(n)=step_scalar(z(n),zff_hel,width_ff)
+          profz_ampl(n)=step(z(n),zff_hel,width_ff)
         enddo
 !
 !  sign change of helicity proportional to cosy
@@ -233,7 +233,7 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do m=1,my
-          profy_hel(m)= -1.+2.*step_scalar(y(m),yequator-ck_equator_gap,ck_gap_step)
+          profy_hel(m)= -1.+2.*step(y(m),yequator-ck_equator_gap,ck_gap_step)
         enddo
 !
 !  sign change of helicity about z=0
@@ -373,7 +373,7 @@ module Forcing
         profx_hel=1.
         profy_ampl=1.
         do m=1,my
-          profy_hel(m)= -1.+2.*step_scalar(y(m),pi/2.,width_ff)
+          profy_hel(m)= -1.+2.*step(y(m),pi/2.,width_ff)
         enddo
         profz_ampl=1.; profz_hel=1.
 !
@@ -1786,13 +1786,13 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               if (y(m)>equator)then
                 forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),coef2(j)) &
                                     *fx(l1:l2)*fy(m)*fz(n))&
-                        *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
-                            step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
+                        *(1.-step(y(m),equator-ck_equator_gap,ck_gap_step)+&
+                            step(y(m),equator+ck_equator_gap,ck_gap_step))
               else
                 forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),-coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))&
-                  *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
-                      step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
+                  *(1.-step(y(m),equator-ck_equator_gap,ck_gap_step)+&
+                      step(y(m),equator+ck_equator_gap,ck_gap_step))
               endif
               if (lhelical_test) then
                 f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -1921,8 +1921,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
            IYlm_list(m,n,lmindex)*sin(rphase1)
          psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
          if (ck_equator_gap/=0)&
-           psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
-             step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
+           psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
+             step(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
      enddo
    else
@@ -1945,8 +1945,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
          psif(:,m,n) = Z_psi*psilm
          if (ck_equator_gap/=0)&
-           psif(:,m,n)=psif(:,m,n)*(1.-step_scalar(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
-           step_scalar(y(m),pi/2+ck_equator_gap,ck_gap_step))
+           psif(:,m,n)=psif(:,m,n)*(1.-step(y(m),pi/2.-ck_equator_gap,ck_gap_step)+&
+           step(y(m),pi/2+ck_equator_gap,ck_gap_step))
        enddo
      enddo
    endif

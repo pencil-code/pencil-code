@@ -74,7 +74,7 @@ module Particles_drag
 !
 !  14-feb-15/ccyang: coded.
 !
-      integer, intent(in) :: unit
+      include 'unit.h'
       integer, intent(inout), optional :: iostat
 !
       integer :: stat
@@ -138,20 +138,22 @@ module Particles_drag
 !
     endsubroutine write_particles_drag_run_pars
 !***********************************************************************
-    subroutine integrate_drag(f, fp)
+    subroutine integrate_drag(f, fp, dt)
 !
 !  Wrapper for the integration of the drag force between particles and
 !  gas.
 !
-!  05-feb-15/ccyang: coded.
+!  24-may-15/ccyang: stub.
 !
       use General, only: keep_compiler_quiet
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, intent(in) :: dt
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dt)
 !
     endsubroutine integrate_drag
 !***********************************************************************

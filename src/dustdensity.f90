@@ -592,7 +592,7 @@ module Dustdensity
           do k=1,ndustspec
             if (a1 == 0) then
               f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2) !/md(k)
+                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)
             else
               call fatal_error('initnd','no lognormal with a1/=1')
             endif
@@ -1692,8 +1692,7 @@ module Dustdensity
           else
             do k=1,ndustspec
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                     - p%udropgnd(:,k)  
-!                    + p%dndr(:,k)
+                     - p%udropgnd(:,k) + p%dndr(:,k)
 !
 !
             enddo
@@ -1703,7 +1702,6 @@ module Dustdensity
 !
       endif
 !
-!  currently, Natalia adds p%dndr(:,k) in special, but we don't do that
 !  if lsemi_chemistry is true.
 !
       if (lsemi_chemistry) then
@@ -1838,6 +1836,7 @@ module Dustdensity
 !
 !  Diagnostic output
 !
+     endif
       if (ldiagnos) then
         do k=1,ndustspec
           if (idiag_mdm(k)/=0) call sum_mn_name(p%md(:,k),idiag_mdm(k))
@@ -1946,7 +1945,7 @@ module Dustdensity
           if (idiag_rmom(k)/=0) &
               call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
         enddo
-      endif
+!      endif
 !
 !  2d-averages
 !
@@ -2105,8 +2104,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: mfluxcond, cc_tmp, mmodk
-      real, dimension (nx) :: mdotkp, mdotkm, mmodkp, mmodkm
+      real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
+      real, dimension (nx) :: coefkp, coefkm, coefk0
       real :: dmdfac
       integer :: k,l
 !
@@ -2121,34 +2120,36 @@ module Dustdensity
 !  Start with the first mass bin...
 !
         k=1
-        mdotkp=mfluxcond/(ad(k+1)*(ad(k+1)-ad(k)))
-        mmodk =((abs(mfluxcond)-mfluxcond)/(ad(k+1)-ad(k)) )/ad(k)
+        mfluxcondp=(abs(mfluxcond)-mfluxcond)
+        mfluxcondm=(abs(mfluxcond)+mfluxcond)
+        coefkp=.5*mfluxcondp/(ad(k+1)-ad(k))
+        coefk0=  -mfluxcondm/ ad(k)-coefkp
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-          -.5*(mdotkp-mmodkp)*f(l1:l2,m,n,ind(k+1)) &
-                     -mmodk  *f(l1:l2,m,n,ind(k))
+          +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1) &
+          +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
 !
 !  Finish with the last mass bin...
 !
         k=ndustspec
-        mdotkm=mfluxcond/(ad(k-1)*(ad(k)-ad(k-1)))
-        mmodk =((abs(mfluxcond)+mfluxcond)/(ad(k)-ad(k-1)) )/ad(k)
+        mfluxcondm=(abs(mfluxcond)+mfluxcond)
+        coefkm=.5*mfluxcondm/(ad(k)-ad(k-1))
+        coefk0=  -mfluxcondp/ ad(k)-coefkm
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-          +.5*(mdotkm+mmodkm)*f(l1:l2,m,n,ind(k-1)) &
-                     -mmodk  *f(l1:l2,m,n,ind(k))
+          +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1) &
+          +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
 !
 !  ... then loop over mass bins
 !
         do k=2,ndustspec-1
-          mdotkp=mfluxcond/(ad(k+1)*(ad(k+1)-ad(k)))
-          mdotkm=mfluxcond/(ad(k-1)*(ad(k)-ad(k-1)))
-          mmodkm=abs(mdotkm)
-          mmodkp=abs(mdotkp)
-          mmodk =((abs(mfluxcond)-mfluxcond)/(ad(k+1)-ad(k)) &
-                 +(abs(mfluxcond)+mfluxcond)/(ad(k)-ad(k-1)) )/ad(k)
+          mfluxcondp=(abs(mfluxcond)-mfluxcond)
+          mfluxcondm=(abs(mfluxcond)+mfluxcond)
+          coefkp=+.5*mfluxcondp/(ad(k+1)-ad(k))
+          coefkm=+.5*mfluxcondm/(ad(k)-ad(k-1))
+          coefk0=-(coefkp+coefkm)
           df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
-            -.5*(mdotkp-mmodkp)*f(l1:l2,m,n,ind(k+1)) &
-            +.5*(mdotkm+mmodkm)*f(l1:l2,m,n,ind(k-1)) &
-                       -mmodk  *f(l1:l2,m,n,ind(k))
+            +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1) &
+            +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1) &
+            +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
         enddo
       endif
 !
@@ -2267,15 +2268,20 @@ module Dustdensity
           call fatal_error("dustdensity","no icc or ilncc match")
         endif
 !
+!  Assume a hat(om*t) time behavior
+!
+      case ('hat(om*t)')
+        mfluxcond=G_condensparam*tanh(20.*cos(supsatratio_omega*t))
+!
 !  Assume a cos(om*t) time behavior
 !
       case ('cos(om*t)')
-        mfluxcond=G_condensparam*supsatratio_given*cos(supsatratio_omega*t)
+        mfluxcond=G_condensparam*cos(supsatratio_omega*t)
 !
 !  Allow only positive values (but commented out now).
 !
       case ('simplified')
-        mfluxcond=G_condensparam*supsatratio_given
+        mfluxcond=G_condensparam
 !
 !  fatal_error otherwise
 !

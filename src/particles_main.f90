@@ -486,18 +486,19 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine split_update_particles(f)
+    subroutine split_update_particles(f, dt)
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  05-feb-15/ccyang: coded.
+!  24-may-15/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, intent(in) :: dt
 !
-      if (lparticles_drag) then
+      drag: if (lparticles_drag) then
         call boundconds_particles(fp, ipar)
-        call integrate_drag(f, fp)
-      endif
+        call integrate_drag(f, fp, dt)
+      endif drag
 !
     endsubroutine split_update_particles
 !***********************************************************************
@@ -1134,7 +1135,7 @@ module Particles_main
 !
 !  13-may-09/anders: coded
 !
-      integer, intent (in) :: unit
+      include 'unit.h'
 !
       call read_particles_init_pars(unit)
       if (lparticles_radius)      call read_particles_rad_init_pars(unit)

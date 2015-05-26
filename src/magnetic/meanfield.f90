@@ -840,10 +840,10 @@ module Magnetic_meanfield
            alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)&
              *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
         case ('step-drop'); alpha_tmp=(1. &
-                -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
-                +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
+                -step(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
+                -step(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
+                -step(alpha_cutoff_up,y(m),alpha_gap_step) &
+                +step(y(m),alpha_cutoff_down,alpha_gap_step))
         case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x(l1:l2)-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))

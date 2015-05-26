@@ -641,7 +641,7 @@ module Energy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Various heating/cooling mechanisms
 !

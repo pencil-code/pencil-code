@@ -1,4 +1,4 @@
-! $Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $
+! $Id$
 !
 !  This module solves the Poisson equation 
 !    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2 - h) f = RHS(x,y,z)
@@ -158,7 +158,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call svn_id( &
-          '$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $')
+          '$Id$')
 !
 !  Break if lshear or 3D
 !
@@ -612,7 +612,8 @@ module Poisson
 !
 !  17-oct-2007/anders: coded
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
+
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
@@ -643,7 +644,7 @@ module Poisson
 !
 !  17-oct-2007/anders: coded
 !
-      integer, intent(in) :: unit
+      include '../unit.h'
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then

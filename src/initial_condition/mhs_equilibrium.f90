@@ -384,7 +384,7 @@ module InitialCondition
 !***********************************************************************
     subroutine cap_field(Bin,Bout)
 !
-      use Sub, only: step_scalar
+      use Sub, only: step
 !
       real, dimension(nx) :: Bin,Brad,Bout
       real :: width
@@ -394,8 +394,8 @@ module InitialCondition
         do i=1,nx
           width=5./dx_1(i-1+l1)
           Brad(i) = Bin(i) * &
-               (step_scalar(x(i),rm_int,width)-&
-               step_scalar(x(i),rm_ext,width))
+               (step(x(i),rm_int,width)-&
+                step(x(i),rm_ext,width))
         enddo
       else
         Brad=Bin
@@ -404,8 +404,8 @@ module InitialCondition
       if (lcap_field_theta) then
         width=1./dy_1(m-1+m1)
         Bout = Brad * &
-             (step_scalar(y(m),tm_bot,width)-&
-              step_scalar(y(m),tm_top,width))
+             (step(y(m),tm_bot,width)-&
+              step(y(m),tm_top,width))
       else
         Bout=Brad
       endif

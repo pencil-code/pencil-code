@@ -1232,7 +1232,7 @@ module Hydro
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=0.
           p%uu(:,2)=0.
-          p%uu(:,3)=wind_amp*step_scalar(z(n),wind_rmin,wind_step_width)
+          p%uu(:,3)=wind_amp*step(z(n),wind_rmin,wind_step_width)
         endif
 !
 ! uniform radial shear with a cutoff at rmax

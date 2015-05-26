@@ -168,7 +168,7 @@ module Timestep
       if (lmagnetic) call split_update_magnetic(f)
       if (lviscosity) call split_update_viscosity(f)
 !
-      if (lparticles) call split_update_particles(f)
+      if (lparticles) call split_update_particles(f, dt)
 !
     endsubroutine split_update
 !***********************************************************************

@@ -25,7 +25,7 @@ syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
 $(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc
 #
-$(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
+$(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ) unit.h unit_loc.h
 #
 $(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ)
 #
