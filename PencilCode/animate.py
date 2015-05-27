@@ -105,7 +105,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-17
+    # Chao-Chin Yang, 2015-05-26
     from collections.abc import Sequence
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
@@ -139,8 +139,12 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     for i in range(1,len(t)):
         ax.set_title("$t = {:#.4G}$".format(t[i]))
         pc.set_array(c[i].ravel(order='F'))
-        if vmin_dynamic: pc.set_clim(vmin=vmin[i])
-        if vmax_dynamic: pc.set_clim(vmax=vmax[i])
+        if vmin_dynamic and vmax_dynamic:
+            pc.set_clim(vmin[i], vmax[i])
+        elif vmin_dynamic:
+            pc.set_clim(vmin=vmin[i])
+        elif vmax_dynamic:
+            pc.set_clim(vmax=vmax[i])
         fig.canvas.draw()
 #=======================================================================
 def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
