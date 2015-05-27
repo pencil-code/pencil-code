@@ -270,7 +270,7 @@ def _slices2d(field, t, slices, dim, par, grid, **kwarg):
         **kwarg
             Keyword arguments passed to matplotlib.pyplot.figure().
     """
-    # Chao-Chin Yang, 2015-05-05
+    # Chao-Chin Yang, 2015-05-27
     import numpy as np
     # Determine the slice plane.
     if dim.nxgrid == 1:
@@ -289,7 +289,7 @@ def _slices2d(field, t, slices, dim, par, grid, **kwarg):
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Replace the labels if in **kwarg.
     xlabel = kwarg.pop("xlabel", xlabel)
-    ylabel = kwarg.pop("ylabel", xlabel)
+    ylabel = kwarg.pop("ylabel", ylabel)
     clabel = kwarg.pop("clabel", field)
     # Send to the animator.
     _frame_rectangle(t, x, y, slices[:][plane], xlabel=xlabel, ylabel=ylabel, clabel=clabel, **kwarg)
