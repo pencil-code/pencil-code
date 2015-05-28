@@ -1,36 +1,34 @@
-# $Id$
+# ts.py
 #
-# read time_series.dat and return a TimeSeries class of 1D numpy
+# Read time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
 #
 #
 import os.path
 import re
-import numpy as N
-import pylab as P
+import numpy as np
+import pylab as plt
 
 
 def read_ts(*args, **kwargs):
     """Read Pencil Code time series data.
     params:
-     string: filename  ='time_series.dat'
-     string: datadir   = 'data'
-     logical: double    = 0
-     logical: plot_data = True
-     logical: print_std = 0
-     logical: quiet     = 0
+    string: filename  ='time_series.dat'
+    string: datadir   = 'data'
+    logical: plot_data = False
+    logical: quiet     = False
     """
     return TimeSeries(*args, **kwargs)
 
 
 class TimeSeries(object):
     """
-    TimeSeries -- holds pencil code time series data. each variable is
+    TimeSeries -- holds pencil code time series data. Each variable is
     represented by a data member of the class.
     """
 
     def __init__(self, filename='time_series.dat', datadir='data',
-                 double=0, print_std=0, quiet=0, plot_data=True, comment_char='#'):
+                 quiet=False, plot_data=False, comment_char='#'):
         """
         constructor:
         -----------
@@ -41,10 +39,8 @@ class TimeSeries(object):
         ______
          string: filename  ='time_series.dat'
          string: datadir   = 'data'
-         logical: double    = 0
-         logical: plot_data = True
-         logical: print_std = 0
-         logical: quiet     = 0
+         logical: plot_data = False
+         logical: quiet     = False
         """
 
         datadir = os.path.expanduser(datadir)
@@ -58,32 +54,32 @@ class TimeSeries(object):
         # and FILEPOSITION keywords
         nlines_init = len(lines)
         self.keys = []
-        data = N.zeros((nlines_init, len(self.keys)))
+        data = np.zeros((nlines_init, len(self.keys)))
         nlines = 0
         for line in lines:
             if re.search("^%s--" % comment_char, line):
-                # read header and create keys for dictionary
+                # Read header and create keys for dictionary.
                 line = line.strip("%s-\n" % comment_char)
                 keys_new = re.split("-+", line)
                 if keys_new != self.keys:
                     n_newrows = abs(len(keys_new) - len(self.keys))
-                    data = N.append(data, N.zeros((nlines_init, n_newrows)),
-                                 axis=1)
+                    data = np.append(data, np.zeros((nlines_init, n_newrows)),
+                                     axis=1)
                     self.keys = keys_new
             else:
                 try:
-                    row = N.array(map(float, re.split(" +", line.strip(" \n"))))
+                    row = np.array(map(float, re.split(" +", line.strip(" \n"))))
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
                     print "Invalid data on line %i. Skipping." % nlines
-        #clean up data
-        data = N.resize(data, (nlines, len(self.keys)))
+        # Clean up data.
+        data = np.resize(data, (nlines, len(self.keys)))
 
         if (not quiet):
             print "Read",nlines,"lines."
 
-        #assemble into a TimeSeries class
+        # Assemble into a TimeSeries class.
         for i in range(0, len(self.keys)):
             setattr(self, self.keys[i], data[:,i])
 
@@ -99,7 +95,7 @@ class TimeSeries(object):
             three is not available or zero, fill the list with the first two
             variables other than `it' and `dt*'
         """
-        P.ioff() # speed up graphics (in connection with an ending P.show())
+        plt.ioff() # speed up graphics (in connection with an ending plt.show())
         listargs = self.keys    # all data columns of the TimeSeries object
         elim = re.compile(r'^(it|dt.*)')  # columns to drop
         for item in dir(self):
@@ -108,37 +104,37 @@ class TimeSeries(object):
         cnt = 0
         if (hasattr(self, 'urms') and self.urms.max() != 0.):
             cnt += 1
-            P.subplot(2, 1, cnt)
-            P.semilogy(self.t, self.urms)
-            P.xlabel('Time')
-            P.ylabel('urms')
+            plt.subplot(2, 1, cnt)
+            plt.semilogy(self.t, self.urms)
+            plt.xlabel('Time')
+            plt.ylabel('urms')
             listargs.remove('urms')
         if (hasattr(self, 'brms') and self.brms.max() != 0.):
             cnt += 1
-            P.subplot(2, 1, cnt)
-            P.semilogy(self.t, self.brms)
-            P.xlabel('Time')
-            P.ylabel('brms')
+            plt.subplot(2, 1, cnt)
+            plt.semilogy(self.t, self.brms)
+            plt.xlabel('Time')
+            plt.ylabel('brms')
             listargs.remove('brms')
         if (hasattr(self, 'ruzm') and self.ruzm.max() != 0.):
             cnt += 1
-            P.subplot(2, 1, cnt)
-            P.plot(self.t, self.ruzm)
-            P.xlabel('Time')
-            P.ylabel('ruzm')
+            plt.subplot(2, 1, cnt)
+            plt.plot(self.t, self.ruzm)
+            plt.xlabel('Time')
+            plt.ylabel('ruzm')
             listargs.remove('ruzm')
         else:
             listargs.remove('t')
             i = 0
             while cnt <= 1:
                 cnt += 1
-                P.subplot(2, 1, cnt)
-                P.plot(self.t, getattr(self, listargs[i]))
-                P.xlabel('Time')
-                P.ylabel(listargs[i])
+                plt.subplot(2, 1, cnt)
+                plt.plot(self.t, getattr(self, listargs[i]))
+                plt.xlabel('Time')
+                plt.ylabel(listargs[i])
                 i += 1
-        P.show()
-        P.ion()
+        plt.show()
+        plt.ion()
 
 
     def __repr__(self):
