@@ -461,7 +461,7 @@ module Conductivity
 !!
 !      use Debug_IO, only: output_pencil
 !      use EquationOfState, only: gamma, gamma_m1
-!      use Sub, only: dot, g2ij, write_zprof_once
+!      use Sub, only: dot, g2ij, write_zprof
 !!
 !      real, dimension (mx,my,mz,mfarray) :: f
 !      type (pencil_case) :: p
@@ -504,8 +504,8 @@ module Conductivity
 !          if (lfirstcall_hcond.and.lfirstpoint) then
 !            if (.not.lhcond_global) then
 !              call get_gravz_heatcond()
-!              call write_zprof_once('hcond',hcond_zprof)
-!              call write_zprof_once('gloghcond',gradloghcond_zprof(:,3))
+!              call write_zprof('hcond',hcond_zprof)
+!              call write_zprof('gloghcond',gradloghcond_zprof(:,3))
 !            endif
 !            if (chi_t/=0.0) call get_gravz_chit()
 !            lfirstcall_hcond=.false.

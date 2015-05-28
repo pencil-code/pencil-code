@@ -92,8 +92,8 @@ module InitialCondition
     if (config == 'homogeneous') then
         do m = 1, my, 1
             do l = 1, mx, 1
-                f(l,m,:,iax) = -ampl*y(m)
-                f(l,m,:,iay) = ampl*x(l)
+                f(l,m,:,iax) = -ampl*y(m)/2
+                f(l,m,:,iay) = ampl*x(l)/2
             enddo
         enddo
     endif

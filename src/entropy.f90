@@ -81,6 +81,7 @@ module Energy
   real :: zz1=impossible, zz2=impossible
   real :: rescale_TTmeanxy=1.
   real :: Pres_cutoff=impossible
+  real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -128,6 +129,7 @@ module Energy
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
+  character (len=labellen) :: ichit='nothing'
   character (len=intlen) :: iinit_str
   real, dimension (mz), save :: hcond_zprof, chit_zprof, ss_mz
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
@@ -185,7 +187,7 @@ module Energy
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type
+      cool_type,ichit,xchit,pclaw
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -371,7 +373,7 @@ module Energy
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, read_zprof_mz
+      use Sub, only: blob, read_zprof, write_prof
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -709,7 +711,7 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call read_zprof_mz('ss_mz',ss_mz)
+      if (lcooling_ss_mz) call read_zprof('ss_mz',ss_mz)
 !
 !  Initialize heat conduction.
 !
@@ -2963,7 +2965,7 @@ module Energy
 !
 !  Calculate viscous contribution to entropy.
 !
-      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -4288,6 +4290,8 @@ module Energy
 !
       intent(in) :: p
       intent(inout) :: df
+
+      real, dimension(nx) :: Krho1
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -4295,27 +4299,26 @@ module Energy
 !      K = K_0*(T**6.5/rho**2)**n.
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
-!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
-!
-      chix = p%cp1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)
-      call dot(-2.*nkramers*p%glnrho+6.5*nkramers*p%glnTT,p%glnTT,g2)
-      if (pretend_lnTT) then
-        thdiff = p%cv1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)*(p%del2lnTT+g2)
-      else
-        thdiff = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)*(p%del2lnTT+g2)
-      endif
+      Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
+      thdiff = Krho1*(p%del2lnTT+g2)
+      if (pretend_lnTT) thdiff = p%cv1*thdiff
 !
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-chix*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_kramers)
+        call xysum_mn_name_z(-Krho1*p%rho*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
       endif
 !
 !  2d-averages
 !
       if (l2davgfirst) then
-        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-chix*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradxy_kramers)
+        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
       endif
+!
+!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
+!
+      chix = p%cp1*Krho1
 !
 !  Check for NaNs initially.
 !
@@ -4367,7 +4370,7 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber, g2ij, write_zprof_once
+      use Sub, only: dot, notanumber, g2ij, write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4413,9 +4416,9 @@ module Energy
 !
           if (lfirstcall_hcond.and.lfirstpoint) then
             if (.not.lhcond_global) then
-              call get_gravz_heatcond()
-              call write_zprof_once('hcond',hcond_zprof)
-              call write_zprof_once('gloghcond',gradloghcond_zprof(:,3))
+              call get_gravz_heatcond
+              call write_zprof('hcond',hcond_zprof)
+              call write_zprof('gloghcond',gradloghcond_zprof(:,3))
             endif
             if (chi_t/=0.0) call get_gravz_chit()
             lfirstcall_hcond=.false.
@@ -5010,7 +5013,7 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use Sub, only: step, cubic_step, write_zprof
+      use Sub, only: step, cubic_step, write_prof, step
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof
@@ -5047,11 +5050,11 @@ module Energy
       case ('gaussian')
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
       case ('step')
-        prof = step(spread(z(n),1,nx),z2,wcool)
+        prof = spread(step(z(n),z2,wcool),1,nx)
       case ('step2')
-        prof = step(spread(z(n),1,nx),zcool,wcool)
+        prof = spread(step(z(n),zcool,wcool),1,nx)
       case ('cubic_step')
-        prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+        prof = spread(cubic_step(z(n),z2,wcool),1,nx)
 !
 !  Cooling with a profile linear in z (unstable).
 !
@@ -5063,14 +5066,13 @@ module Energy
       heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write out cooling profile (during first time step only) and apply.
+!  MR: Later to be moved to initialization!
 !
-      call write_zprof('cooling_profile',prof)
+      if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !
-      if (l1davgfirst) then
-        call xysum_mn_name_z(heat,idiag_dcoolz)
-      endif
+      if (l1davgfirst) call xysum_mn_name_z(heat,idiag_dcoolz)
 !
     endsubroutine get_heat_cool_gravz
 !***********************************************************************
@@ -6142,6 +6144,7 @@ module Energy
 !
       real, dimension (nx) :: chit_prof,z_mn
       real :: zbot, ztop
+      type (pencil_case)     :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6164,8 +6167,13 @@ module Energy
       endif
 !
       if (lspherical_coords.or.lconvection_gravx) then
-        chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss) &
-                      + (chit_prof2-1)*step(x(l1:l2),xtop,widthss)
+        select case (ichit)
+          case ('nothing')
+            chit_prof = 1 + (chit_prof1-1)*step(x(l1:l2),xbot,-widthss) &
+                          + (chit_prof2-1)*step(x(l1:l2),xtop,widthss)
+          case ('powerlaw','power-law')
+            chit_prof = (x(l1:l2)/xchit)**(-pclaw)
+        endselect
       endif
 !
     endsubroutine chit_profile
@@ -6183,6 +6191,7 @@ module Energy
       real, dimension (nx,3) :: glnchit_prof
       real, dimension (nx) :: z_mn
       real :: zbot, ztop
+      type (pencil_case)     :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6206,9 +6215,15 @@ module Energy
       endif
 !
       if (lspherical_coords.or.lconvection_gravx) then
-        glnchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss) &
+        select case (ichit)
+          case ('nothing')
+            glnchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss)&
                           + (chit_prof2-1)*der_step(x(l1:l2),xtop,widthss)
-        glnchit_prof(:,2:3) = 0.
+            glnchit_prof(:,2:3) = 0.
+          case ('powerlaw','power-law')
+            glnchit_prof(:,1) = -pclaw*(x(l1:l2)/xchit)**(-pclaw-1)*1/xchit
+            glnchit_prof(:,2:3) = 0.
+        endselect
       endif
 !
     endsubroutine gradlogchit_profile

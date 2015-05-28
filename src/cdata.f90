@@ -494,6 +494,8 @@ module Cdata
   logical, parameter :: lpolymer_var=lpolymer
   logical, parameter :: lsolid_cells_var=lsolid_cells
   logical, parameter :: lpower_spectrum_var=lpower_spectrum
+  logical, parameter :: lparticles_var=lparticles
+  logical, parameter :: lparticles_drag_var=lparticles_drag
 !
 !  Variables related to Fourier spectra and structure functions.
 !

@@ -122,7 +122,16 @@ module Equ
 !
       if (ldiagnos   ) tdiagnos   =t ! (diagnostics are for THIS time)
       if (l1davgfirst) t1ddiagnos =t ! (1-D averages are for THIS time)
-      if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
+      if (l2davgfirst)  then
+        t2davgfirst=t ! (2-D averages are for THIS time)
+!
+!  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
+!  lwrite_phiaverages=T is required, and perhaps only that.]
+!  [BD: add also the z_mn dependency]
+!
+        lpencil(i_rcyl_mn)=.true.
+        lpencil(i_z_mn)=.true.
+      endif
 !
 !  Grid spacing. For non equidistant grid or non-cartesian coordinates
 !  the grid spacing is calculated in the (m,n) loop below.
@@ -454,15 +463,6 @@ module Equ
 !  this is calculated before the (m,n) loop.
 !
         if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
-!
-!  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
-!  lwrite_phiaverages=T is required, and perhaps only that.]
-!  [BD: add also the z_mn dependency]
-!
-        if (l2davgfirst) then
-          lpencil(i_rcyl_mn)=.true.
-          lpencil(i_z_mn)=.true.
-        endif
 !
 !  Calculate grid/geometry related pencils.
 !
@@ -1232,6 +1232,7 @@ module Equ
 !
 !  20-oct-14/ccyang: modularized from pde.
 !
+      use Cosmicray, only: impose_ecr_floor
       use Density, only: impose_density_floor
       use Dustdensity, only: impose_dustdensity_floor
       use Energy, only: impose_energy_floor
@@ -1243,6 +1244,7 @@ module Equ
       call impose_velocity_ceiling(f)
       call impose_energy_floor(f)
       call impose_dustdensity_floor(f)
+      call impose_ecr_floor(f)
 !
     endsubroutine impose_floors_ceilings
 !***********************************************************************

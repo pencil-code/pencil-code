@@ -518,45 +518,45 @@ module Special
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                + 2.5e6/1005.*p%ccondens*p%TT1
 !
-       dt1=1./(8.*dt)
-       del=0.1
+!       dt1=1./(8.*dt)
+!       del=0.1
 !
-         lzone_left=.false.
-         lzone_right=.false.
-         sz_y=int(del*nygrid)
+!         lzone_left=.false.
+!         lzone_right=.false.
+!         sz_y=int(del*nygrid)
 !
-        if (lbuffer_zone_T) then
-        do j=1,2
+!        if (lbuffer_zone_T) then
+!        do j=1,2
 !
-         if (j==1) then
-           mm1=nygrid-sz_y
-           mm2=nygrid
+!         if (j==1) then
+!           mm1=nygrid-sz_y
+!           mm2=nygrid
 !
-           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
-           if (lzone_right) then
-           endif
-         else if (j==2) then
-           mm1=1
-           mm2=sz_y
-           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
-           if (lzone_left) then
-           endif
-         endif
+!           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
+!           if (lzone_right) then
+!           endif
+!         else if (j==2) then
+!           mm1=1
+!           mm2=sz_y
+!           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
+!           if (lzone_left) then
+!           endif
+!         endif
 !
-          if (lACTOS) then
-          if ((ygrid(sz_y)<y(m)) .and. (y(m)<ygrid(nygrid-sz_y))) then
-            do i=1,ndustspec
-               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
-            enddo
-          endif
-          endif
+!          if (lACTOS) then
+!          if ((ygrid(sz_y)<y(m)) .and. (y(m)<ygrid(nygrid-sz_y))) then
+!            do i=1,ndustspec
+!               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
+!            enddo
+!          endif
+!          endif
 !       
-        enddo
-        else
-          do i=1,ndustspec
-               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
-          enddo
-        endif
+!        enddo
+!        else
+!          do i=1,ndustspec
+!               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
+!          enddo
+!        endif
 
 !
 !

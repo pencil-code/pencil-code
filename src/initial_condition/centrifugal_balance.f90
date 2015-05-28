@@ -730,7 +730,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use EquationOfState, only: cs20,get_cv1
-      use Sub, only: step_scalar, power_law
+      use Sub, only: step, power_law
       use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -999,7 +999,7 @@ module InitialCondition
 !***********************************************************************
     subroutine cap_field(Bin,Bout)
 !
-      use Sub, only: step_scalar
+      use Sub, only: step
 !
       real, dimension(mx), intent(in) :: Bin
       real, dimension(mx), intent(out) :: Bout
@@ -1012,8 +1012,8 @@ module InitialCondition
           if (widthbb1==0.0) widthbb1=5./dx_1(i)
           if (widthbb2==0.0) widthbb2=5./dx_1(i)
           Bout(i) = Bin(i) * &
-               (step_scalar(x(i),rm_int,widthbb1)-&
-                step_scalar(x(i),rm_ext,widthbb2))
+               (step(x(i),rm_int,widthbb1)-&
+                step(x(i),rm_ext,widthbb2))
         enddo
       endif
 !

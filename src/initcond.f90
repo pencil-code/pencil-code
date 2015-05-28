@@ -2305,7 +2305,7 @@ module Initcond
 !  23-may-04/anders: made structure for other input variables
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
-      use Sub, only: write_zprof_mz
+      use Sub, only: write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
@@ -2418,14 +2418,14 @@ module Initcond
             lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
             ss_mz(n)=ss0(ipz*nz+n-nghost)
           enddo
-          call write_zprof_mz('ss_mz',ss_mz)
+          call write_zprof('ss_mz',ss_mz)
         endif
         if (ltemperature) then
           do n=1,mz
             lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
             lnTT_mz(n)=lnTT0(ipz*nz+n-nghost)
           enddo
-          call write_zprof_mz('lnTT_mz',lnTT_mz)
+          call write_zprof('lnTT_mz',lnTT_mz)
         endif
 !
       close(19)

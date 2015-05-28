@@ -782,6 +782,7 @@ module Magnetic
 ! Module Variables
 !
   real, dimension(nzgrid) :: eta_zgrid = 0.0
+  real :: eta_shock_jump1
 !
   contains
 !***********************************************************************
@@ -842,7 +843,7 @@ module Magnetic
 !  26-feb-13/axel: reinitialize_aa added
 !  21-jan-15/MR: avoided double put_shared_variable for B_ext
 !
-      use Sub, only: register_report_aux
+      use Sub, only: register_report_aux, write_zprof, step
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -852,23 +853,18 @@ module Magnetic
       use Forcing, only: n_forcing_cont
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,ierr
+      integer :: i,j
       real :: J_ext2
 !
 !  Share the external magnetic field with module Shear.
 !
-      if (lmagn_mf.or.lshock .or. leos .or. lspecial) then
-        call put_shared_variable('B_ext', B_ext, ierr)
-        if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
-      endif
+      if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
+        call put_shared_variable('B_ext', B_ext, caller='initialize_magnetic')
 !
 !  Share the external magnetic field with mean field module.
 !
-      if (lmagn_mf) then
-        call put_shared_variable('B_ext2', B_ext2, ierr)
-        if (ierr /= 0) call fatal_error('initialize_magnetic', &
-          'unable to share variable B_ext2')
-      endif
+      if (lmagn_mf) &
+        call put_shared_variable('B_ext2', B_ext2, caller='initialize_magnetic')
 !
 !  Shear of B_ext,x is not implemented.
 !
@@ -1155,6 +1151,13 @@ module Magnetic
         endselect
       enddo
 !
+      if (lresi_eta_shock_profz .or. lresi_eta_shock_profr) then
+
+        eta_shock_jump1 = eta_shock*(eta_jump_shock-1.)
+        if (lresi_eta_shock_profz) &
+          call write_zprof('resi_shock', eta_shock + eta_shock_jump1*step(z(n1:n2), eta_zshock, -eta_width_shock))
+      endif
+!
 !  for communication with testfield_general
 !
       lresi_dep(1:4) = (/lresi_xdep,lresi_ydep,lresi_zdep,lresi_xydep/)
@@ -1227,11 +1230,8 @@ module Magnetic
 !
 !  if meanfield theory is invoked, we need to tell the other routines
 !
-        if (lmagn_mf .or. lspecial) then
-          call put_shared_variable('eta',eta,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-              'there was a problem when sharing eta')
-        endif
+        if (lmagn_mf .or. lspecial) &
+          call put_shared_variable('eta',eta,caller='initialize_magnetic')
       endif
 !
 !  precalculating fixed (on timescales larger than tau) vectorpotential
@@ -1269,46 +1269,27 @@ module Magnetic
 !
 !  Share lweyl_gauge
 !
-      if (lspecial.or.lmagn_mf) then
-        call put_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
-        if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'there was a problem when sharing lweyl_gauge')
-      endif
+      if (lspecial.or.lmagn_mf) &
+        call put_shared_variable('lweyl_gauge',lweyl_gauge,caller='initialize_magnetic')
 !
 !  share eta profile with test-field procedure
 !
       if (ltestfield) then
         if (lresi_xdep) then
-          call put_shared_variable('eta_x',eta_x,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting eta_x as shared variable')
-          call put_shared_variable('geta_x',geta_x,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting geta_x as shared variable')
+          call put_shared_variable('eta_x',eta_x,caller='initialize_magnetic')
+          call put_shared_variable('geta_x',geta_x)
         endif
         if (lresi_ydep) then
-          call put_shared_variable('eta_y',eta_y,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting eta_y as shared variable')
-          call put_shared_variable('geta_y',geta_y,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting geta_y as shared variable')
+          call put_shared_variable('eta_y',eta_y,caller='initialize_magnetic')
+          call put_shared_variable('geta_y',geta_y)
         endif
         if (lresi_zdep) then
-          call put_shared_variable('eta_z',eta_z,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting eta_z as shared variable')
-          call put_shared_variable('geta_z',geta_z,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting geta_z as shared variable')
+          call put_shared_variable('eta_z',eta_z,caller='initialize_magnetic')
+          call put_shared_variable('geta_z',geta_z)
         endif
         if (lresi_xydep) then
-          call put_shared_variable('eta_xy',eta_xy,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting eta_xy as shared variable')
-          call put_shared_variable('geta_xy',geta_xy,ierr)
-          if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'problem when putting geta_xy as shared variable')
+          call put_shared_variable('eta_xy',eta_xy,caller='initialize_magnetic')
+          call put_shared_variable('geta_xy',geta_xy)
         endif
       endif
 !
@@ -1357,12 +1338,8 @@ module Magnetic
 !
       if (lmagn_mf) call initialize_magn_mf(f)
 !
-      call put_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,ierr)
-      if (ierr/=0) call fatal_error('initialize_magnetic',&
-           'there was a problem when sharing lfrozen_bb_bot')
-      call put_shared_variable('lfrozen_bb_top',lfrozen_bb_top,ierr)
-      if (ierr/=0) call fatal_error('initialize_magnetic',&
-           'there was a problem when sharing lfrozen_bb_top')
+      call put_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,caller='initialize_magnetic')
+      call put_shared_variable('lfrozen_bb_top',lfrozen_bb_top)
 !
 !  Calculate cosz and sinz for calculating the phase of a Beltrami field
 !  The choice to use k1_ff may not be optimal, but keep it for now.
@@ -1752,9 +1729,7 @@ module Magnetic
         call boundconds_y(f)
         call boundconds_z(f)
 !
-        call get_shared_variable('cp', cp, ierr)
-        if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-             "there was a problem when getting cp")
+        call get_shared_variable('cp', cp, caller='init_aa')
 !
         do n=n1,n2
         do m=m1,m2
@@ -3192,14 +3167,13 @@ module Magnetic
 ! diffusivity: eta-shock with vertical profile
 !
       if (lresi_eta_shock_profz) then
-        peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
-                     step(p%z_mn,eta_zshock,-eta_width_shock)
+        peta_shock = eta_shock + eta_shock_jump1*step(p%z_mn,eta_zshock,-eta_width_shock)
 !
-        call write_zprof('resi_shock',peta_shock)
+! MR: this only correct in Cartesian geometry!
+!
         gradeta_shock(:,1) = 0.
         gradeta_shock(:,2) = 0.
-        gradeta_shock(:,3) = eta_shock*(eta_jump_shock-1.)* &
-                              der_step(p%z_mn,eta_zshock,-eta_width_shock)
+        gradeta_shock(:,3) = eta_shock_jump1*der_step(p%z_mn,eta_zshock,-eta_width_shock)
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-peta_shock*p%shock*mu0*p%jj(:,i)
@@ -3223,11 +3197,9 @@ module Magnetic
         else
           tmp1=p%rcyl_mn
         endif
-        peta_shock = eta_shock + eta_shock*(eta_jump_shock-1.)* &
-                      step(tmp1,eta_xshock,eta_width_shock)
+        peta_shock = eta_shock + eta_shock_jump1*step(tmp1,eta_xshock,eta_width_shock)
 !
-        gradeta_shock(:,1) = eta_shock*(eta_jump_shock-1.)* &
-                              der_step(tmp1,eta_xshock,eta_width_shock)
+        gradeta_shock(:,1) = eta_shock_jump1*der_step(tmp1,eta_xshock,eta_width_shock)
         gradeta_shock(:,2) = 0.
         gradeta_shock(:,3) = 0.
         if (lweyl_gauge) then

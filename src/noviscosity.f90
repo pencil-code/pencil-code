@@ -143,9 +143,8 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,p,Hmax)
+    subroutine calc_viscous_heat(df,p,Hmax)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar)    :: df
       type (pencil_case) :: p
 !
@@ -153,7 +152,7 @@ module Viscosity
 !
       intent(in) :: df,p,Hmax
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(Hmax)
 !

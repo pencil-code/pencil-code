@@ -450,7 +450,7 @@ module Entropy
 !
 !  Calculate viscous contribution to temperature
 !
-      if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Thermal conduction
 !
@@ -666,9 +666,11 @@ module Entropy
 !
 !  Write out hcond z-profile (during first time step only)
 !
-      call write_zprof('hcond',hcond)
-      call write_zprof('glnhcond',glnhcond(:,3))
-      call write_zprof('K_T',chiT)
+      if (m==m1) then
+        call write_prof('hcond',(/z(n)/),(/hcond(1)/),'z', lsave_name=(n==n1))
+        call write_prof('glnhcond',(/z(n)/),(/glnhcond(1,3)/),'z', lsave_name=(n==n1))
+        call write_prof('K_T',(/z(n)/),(/chiT/),'z', lsave_name=(n==n1))
+      endif
 !
 !  Add heat conduction to RHS of temperature equation
 !

@@ -70,7 +70,7 @@ module ImplicitPhysics
       use MpiComm, only: stop_it
       use EquationOfState, only: get_cp1
       use Gravity, only: z1, z2
-      use Sub, only: step,der_step,write_zprof_once
+      use Sub, only: step,der_step,write_zprof
 !
       implicit none
 !
@@ -140,8 +140,8 @@ module ImplicitPhysics
           hcondz=hcond0
           dhcondz=0.0
         endif
-        call write_zprof_once('hcond',hcondz)
-        call write_zprof_once('dhcond',dhcondz)
+        call write_zprof('hcond',hcondz)
+        call write_zprof('dhcond',dhcondz)
       endif
 !
     endsubroutine initialize_implicit_physics
