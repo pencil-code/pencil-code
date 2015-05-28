@@ -1,0 +1,4 @@
+*.directory
+*.pyc
+*~
+./python/pencilnew
