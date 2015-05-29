@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED glnnd(3,ndustspec); gmi(3,ndustspec); gmd(3,ndustspec)
 ! PENCILS PROVIDED gnd(3,ndustspec); grhod(3,ndustspec)
-! PENCILS PROVIDED md(ndustspec); mi(ndustspec); nd(ndustspec)
+! PENCILS PROVIDED ad(ndustspec); md(ndustspec); mi(ndustspec); nd(ndustspec)
 ! PENCILS PROVIDED rhod(ndustspec); rhod1(ndustspec); epsd(ndustspec)
 ! PENCILS PROVIDED udgmi(ndustspec); udgmd(ndustspec); udglnnd(ndustspec)
 ! PENCILS PROVIDED udgnd(ndustspec); glnnd2(ndustspec)
@@ -122,7 +122,7 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0,idiag_ndmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
-  integer, dimension(mmom)      :: idiag_rmom=0
+  integer, dimension(mmom)      :: idiag_rmom=0, idiag_admom=0
 !
   contains
 !***********************************************************************
@@ -1237,8 +1237,10 @@ module Dustdensity
         if (lpencil(i_md)) then
           if (lmdvar)  then
             p%md(:,k)=f(l1:l2,m,n,imd(k))
+            p%ad(:,k)=impossible
           else
             p%md(:,k)=md(k)
+            p%ad(:,k)=ad(k)
           endif
         endif
 ! rhod
@@ -1939,11 +1941,13 @@ module Dustdensity
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
-!  compute moments, assume lmdvar=.true.
+!  compute moments, works independently of lmdvar
 !
         do k=1,mmom
           if (idiag_rmom(k)/=0) &
               call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
+          if (idiag_admom(k)/=0) &
+              call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
         enddo
 !      endif
 !
@@ -2616,6 +2620,7 @@ module Dustdensity
         do k=1,mmom
           sdust=itoa(k)
           call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))
+          call parse_name(iname,cname(iname),cform(iname),'admom'//trim(sdust),idiag_admom(k))
         enddo
       enddo
 !
