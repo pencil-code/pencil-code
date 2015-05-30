@@ -136,6 +136,22 @@ module Density
 !
     endsubroutine read_density_run_pars
 !***********************************************************************
+    subroutine read_density_init_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_density_init_pars
+!***********************************************************************
+    subroutine write_density_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_density_init_pars
+!***********************************************************************
     subroutine write_density_run_pars(unit)
 !
       integer, intent(in) :: unit
