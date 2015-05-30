@@ -70,7 +70,6 @@ module Special
   include '../special.h'
 !
   real, dimension(nx,ny,nz,3) :: gravity
-  real :: dummy
   real :: sigmaz=0.3
 !
   contains
