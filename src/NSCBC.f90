@@ -844,7 +844,7 @@ include 'NSCBC.h'
 !
     endsubroutine write_NSCBC_init_pars
 !***********************************************************************
-    subroutine read_NSCBC_run_pars(unit,iostat)
+    subroutine read_NSCBC_run_pars(iostat)
 !
       use File_io, only: get_unit
       use Sub, only : rdim
