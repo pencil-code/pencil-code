@@ -81,8 +81,7 @@ write_revision_file_from_svn_sandbox () {
     # authentication with the server, which may not be
     # possible in automated test runs.
     # Thus, we run this with a timeout of 1 minute:
-    timeout 60s \
-        svn_cmd propget git-commit --revprop -r HEAD \
+    time_limited_svn_cmd propget git-commit --revprop -r HEAD \
         https://github.com/pencil-code/pencil-code.git \
         >> ${revision_file}
 
@@ -110,6 +109,12 @@ git_cmd () {
 svn_cmd () {
     # Run a SVN command from the top directory
     (cd $PENCIL_HOME; svn "$@")
+}
+
+time_limited_svn_cmd () {
+    # Run a SVN command from the top directory with a time limit of 1
+    # minute
+    (cd $PENCIL_HOME; timeout 60s svn "$@")
 }
 
 
