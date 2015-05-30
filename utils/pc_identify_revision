@@ -45,6 +45,7 @@ write_revision_file () {
 
 write_revision_file_from_git_sandbox () {
     git_cmd rev-parse HEAD >> ${revision_file}
+    git_cmd log --format='%B' -n 1 HEAD >> ${revision_file}
     echo >> ${revision_file}
 
     # Not relevant for now, but nice with annotated release tags:
