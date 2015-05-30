@@ -2292,6 +2292,22 @@ module Hydro
 !
     endfunction output_persistent_hydro
 !***********************************************************************
+    subroutine read_hydro_init_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_hydro_init_pars
+!***********************************************************************
+    subroutine write_hydro_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_hydro_init_pars
+!***********************************************************************
     subroutine read_hydro_run_pars(iostat)
 !
       use File_io, only: get_unit
