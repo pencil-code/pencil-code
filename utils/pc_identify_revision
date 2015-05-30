@@ -24,11 +24,6 @@ check_prerequisites () {
         echo "Error: \$PENCIL_HOME must be set."
         exit 1
     fi
-
-    if [ "$(pwd)" != "$(cd $PENCIL_HOME; pwd)" ]; then
-        echo "pc_identify_revision must be run from \$PENCIL_HOME"
-        exit 1
-    fi
 }
 
 
@@ -36,9 +31,9 @@ write_revision_file () {
     echo 'Revision:' >> ${revision_file}
     echo '---------' >> ${revision_file}
 
-    if [ -d './.git' ]; then
+    if [ -d "${PENCIL_HOME}/.git" ]; then
         write_revision_file_from_git_sandbox
-    elif [ -d './.svn' ]; then
+    elif [ -d "${PENCIL_HOME}/.svn" ]; then
         write_revision_file_from_svn_sandbox
     else
         echo 'Warning: Cannot determine a revision number' \
@@ -49,24 +44,24 @@ write_revision_file () {
 
 
 write_revision_file_from_git_sandbox () {
-    git rev-parse HEAD >> ${revision_file}
+    git_cmd rev-parse HEAD >> ${revision_file}
     echo >> ${revision_file}
 
     # Not relevant for now, but nice with annotated release tags:
-    #   git describe HEAD >> ${revision_file}
+    #   git_cmd describe HEAD >> ${revision_file}
 
     # Append the output from 'git status', so we know whether
     # there were uncommitted changes:
     echo 'Git status:' >> ${revision_file}
     echo '-----------' >> ${revision_file}
-    git status >> ${revision_file}
+    git_cmd status >> ${revision_file}
     echo >> ${revision_file}
 
     if [ -z $quiet ]; then
         # For a complete record: document any local changes
         echo 'Git diff:' >> ${revision_file}
         echo '---------' >> ${revision_file}
-        git diff HEAD >> ${revision_file}
+        git_cmd diff HEAD >> ${revision_file}
         echo >> ${revision_file}
     fi
 }
@@ -74,7 +69,7 @@ write_revision_file_from_git_sandbox () {
 
 write_revision_file_from_svn_sandbox () {
     # SVN revision:
-    svn log --limit 1 >> ${revision_file}
+    svn_cmd log --limit 1 >> ${revision_file}
     echo >> ${revision_file}
 
     # Git revision.
@@ -83,22 +78,34 @@ write_revision_file_from_svn_sandbox () {
     # possible in automated test runs.
     # Thus, we run this with a timeout of 1 minute:
     timeout 60s \
-        svn propget git-commit --revprop -r HEAD \
+        svn_cmd propget git-commit --revprop -r HEAD \
         https://github.com/pencil-code/pencil-code.git \
         >> ${revision_file}
 
     # Append the output from 'svn status', so we know whether
     # there were uncommitted changes:
     echo "SVN status:" >> ${revision_file}
-    svn status >> ${revision_file}
+    svn_cmd status >> ${revision_file}
     echo >> ${revision_file}
 
     if [ -z $quiet ]; then
         # For a complete record: document any local changes
         echo "SVN diff:" >> ${revision_file}
-        svn diff >> ${revision_file}
+        svn_cmd diff >> ${revision_file}
         echo >> ${revision_file}
     fi
+}
+
+
+git_cmd () {
+    # Run a git command from the top directory
+    (cd $PENCIL_HOME; git "$@")
+}
+
+
+svn_cmd () {
+    # Run a SVN command from the top directory
+    (cd $PENCIL_HOME; svn "$@")
 }
 
 
