@@ -82,8 +82,6 @@ module Special
 !
   include 'special.h'
 !
-!!  namelist /special_init_pars/ dummy
-!
   real :: gravz_boussinesq=0., gravz_boussinesq_lnrho=0., betaz_boussinesq=0.
 !
     namelist /special_run_pars/ gravz_boussinesq, gravz_boussinesq_lnrho, &
@@ -249,43 +247,22 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

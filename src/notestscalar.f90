@@ -75,13 +75,11 @@ module Testscalar
 !
     endsubroutine pencil_interdep_testscalar
 !***********************************************************************
-    subroutine read_testscalar_init_pars(unit,iostat)
+    subroutine read_testscalar_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_testscalar_init_pars
 !***********************************************************************
@@ -93,13 +91,11 @@ module Testscalar
 !
     endsubroutine write_testscalar_init_pars
 !***********************************************************************
-    subroutine read_testscalar_run_pars(unit,iostat)
+    subroutine read_testscalar_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_testscalar_run_pars
 !***********************************************************************

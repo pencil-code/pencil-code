@@ -82,10 +82,6 @@ module Special
 !
   include '../special.h'
 !
-!!  namelist /special_init_pars/ dummy
-!
-!!  namelist /special_run_pars/ dummy
-!
 ! Declare index of new variables in f array (if any).
 !
   integer :: ihij,igij
@@ -438,16 +434,6 @@ print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
         enddo !i
 !
     endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
-!
-    endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

@@ -628,65 +628,41 @@ module Poisson
 !
     endsubroutine decide_fourier_routine
 !***********************************************************************
-    subroutine read_poisson_init_pars(unit,iostat)
+    subroutine read_poisson_init_pars(iostat)
 !
-!  Read Poisson init parameters.
+      use File_io, only: get_unit
 !
-!  17-oct-2007/anders: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=poisson_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=poisson_init_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=poisson_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_poisson_init_pars
 !***********************************************************************
     subroutine write_poisson_init_pars(unit)
 !
-!  Write Poisson init parameters.
-!
-!  17-oct-2007/anders: coded
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=poisson_init_pars)
+      write(unit, NML=poisson_init_pars)
 !
     endsubroutine write_poisson_init_pars
 !***********************************************************************
-    subroutine read_poisson_run_pars(unit,iostat)
+    subroutine read_poisson_run_pars(iostat)
 !
-!  Read Poisson run parameters.
+      use File_io, only: get_unit
 !
-!  17-oct-2007/anders: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      read(parallel_unit, NML=poisson_run_pars, IOSTAT=iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=poisson_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=poisson_run_pars,ERR=99)
-      endif
-!
-99    return
-!
-    endsubroutine read_Poisson_run_pars
+    endsubroutine read_poisson_run_pars
 !***********************************************************************
     subroutine write_poisson_run_pars(unit)
 !
-!  Write Poisson run parameters.
-!
-!  17-oct-2007/anders: coded
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=poisson_run_pars)
+      write(unit, NML=poisson_run_pars)
 !
     endsubroutine write_poisson_run_pars
 !***********************************************************************

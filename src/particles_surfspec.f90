@@ -182,48 +182,32 @@ module Particles_surfspec
       call keep_compiler_quiet(f)
     endsubroutine initialize_particles_surf
 ! ******************************************************************************
+    subroutine read_particles_surf_init_pars(iostat)
+      use File_io, only: get_unit
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-    subroutine read_particles_surf_init_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read (unit,NML=particles_surf_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_surf_init_pars,ERR=99)
-      endif
-!
-99    return
+      read (parallel_unit, NML=particles_surf_init_pars, IOSTAT=iostat)
     endsubroutine read_particles_surf_init_pars
 ! ******************************************************************************
-!
     subroutine write_particles_surf_init_pars(unit)
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_surf_init_pars)
+      write (unit, NML=particles_surf_init_pars)
     endsubroutine write_particles_surf_init_pars
 ! ******************************************************************************
+    subroutine read_particles_surf_run_pars(iostat)
+      use File_io, only: get_unit
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-    subroutine read_particles_surf_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read (unit,NML=particles_surf_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_surf_run_pars,ERR=99)
-      endif
-!
-99    return
+      read (parallel_unit, NML=particles_surf_run_pars, IOSTAT=iostat)
     endsubroutine read_particles_surf_run_pars
 ! ******************************************************************************
-!
     subroutine write_particles_surf_run_pars(unit)
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_surf_run_pars)
+      write (unit, NML=particles_surf_run_pars)
     endsubroutine write_particles_surf_run_pars
 ! ******************************************************************************
 !  Initial particle surface fractions

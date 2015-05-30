@@ -118,13 +118,11 @@ module Polymer
 !
     endsubroutine calc_polymer_after_boundary
 !***********************************************************************
-    subroutine read_polymer_init_pars(unit,iostat)
+    subroutine read_polymer_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_polymer_init_pars
 !***********************************************************************
@@ -136,21 +134,19 @@ module Polymer
 !
     endsubroutine write_polymer_init_pars
 !***********************************************************************
-    subroutine read_polymer_run_pars(unit,iostat)
+    subroutine read_polymer_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_polymer_run_pars
 !***********************************************************************
     subroutine write_polymer_run_pars(unit)
 !
-     integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-     call keep_compiler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_polymer_run_pars
 !***********************************************************************

@@ -41,7 +41,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
     if (lroot) call svn_id( &
-        "$Id: blobs_domes.f90,v 1.0 2014-12-16 16:55:00 iomsn Exp $")
+        "$Id$")
 !
   endsubroutine register_initial_condition
 !***********************************************************************
@@ -554,31 +554,26 @@ module InitialCondition
 !
   endsubroutine initial_condition_aa
 !***********************************************************************
-  subroutine read_initial_condition_pars(unit,iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  07-may-09/wlad: coded
+      use File_io, only: get_unit
 !
-    include '../unit.h'
-    integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-    if (present(iostat)) then
-      read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=initial_condition_pars,ERR=99)
-    endif
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
-99    return
-!
-  endsubroutine read_initial_condition_pars
+    endsubroutine read_initial_condition_pars
 !***********************************************************************
-  subroutine write_initial_condition_pars(unit)
-!     
-    integer, intent(in) :: unit
+    subroutine write_initial_condition_pars(unit)
 !
-    write(unit,NML=initial_condition_pars)
+      integer, intent(in) :: unit
 !
-  endsubroutine write_initial_condition_pars
+      write(unit, NML=initial_condition_pars)
+!
+    endsubroutine write_initial_condition_pars
 !***********************************************************************
+!********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **

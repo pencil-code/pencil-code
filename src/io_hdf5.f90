@@ -917,7 +917,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
       use Mpicomm, only: mpibcast_logical
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

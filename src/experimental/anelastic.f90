@@ -807,18 +807,14 @@ module Density
 !
     endsubroutine polytropic_simple
 !***********************************************************************
-    subroutine read_density_init_pars(unit,iostat)
+    subroutine read_density_init_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=density_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=density_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=density_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_density_init_pars
 !***********************************************************************
@@ -826,22 +822,18 @@ module Density
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=density_init_pars)
+      write(unit, NML=density_init_pars)
 !
     endsubroutine write_density_init_pars
 !***********************************************************************
-    subroutine read_density_run_pars(unit,iostat)
+    subroutine read_density_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=density_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_density_run_pars
 !***********************************************************************
@@ -849,7 +841,7 @@ module Density
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=density_run_pars)
+      write(unit, NML=density_run_pars)
 !
     endsubroutine write_density_run_pars
 !***********************************************************************

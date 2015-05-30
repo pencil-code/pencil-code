@@ -270,18 +270,14 @@ module Cosmicrayflux
 !
     endsubroutine dfcr_dt
 !***********************************************************************
-    subroutine read_cosmicrayflux_init_pars(unit,iostat)
+    subroutine read_cosmicrayflux_init_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=cosmicrayflux_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=cosmicrayflux_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=cosmicrayflux_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_cosmicrayflux_init_pars
 !***********************************************************************
@@ -289,22 +285,18 @@ module Cosmicrayflux
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicrayflux_init_pars)
+      write(unit, NML=cosmicrayflux_init_pars)
 !
     endsubroutine write_cosmicrayflux_init_pars
 !***********************************************************************
-    subroutine read_cosmicrayflux_run_pars(unit,iostat)
+    subroutine read_cosmicrayflux_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=cosmicrayflux_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=cosmicrayflux_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=cosmicrayflux_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_cosmicrayflux_run_pars
 !***********************************************************************
@@ -312,7 +304,7 @@ module Cosmicrayflux
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicrayflux_run_pars)
+      write(unit, NML=cosmicrayflux_run_pars)
 !
     endsubroutine write_cosmicrayflux_run_pars
 !***********************************************************************

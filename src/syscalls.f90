@@ -6,10 +6,6 @@ module Syscalls
 !
   implicit none
 !
-  external file_size_c
-  external write_binary_file_c
-  external get_pid_c
-  external get_env_var_c
   external is_nan_c
   external system_c
   external sizeof_real_c
@@ -22,169 +18,34 @@ module Syscalls
     module procedure is_nan_4D
   endinterface
 !
-  interface write_binary_file
-    module procedure write_binary_file_str
-    module procedure write_binary_file_carr
-  endinterface
   contains
 !***********************************************************************
-    function file_exists(file, delete)
+    subroutine system_cmd(command)
 !
-!  Determines if a file exists.
-!  If delete is true, deletes the file.
+!  Executes a system command.
+!
+!  3-nov-11/MR: coded
+!
+      character(len=*) :: command
+!
+      call system_c(trim(command)//char(0))
+!
+    endsubroutine system_cmd
+!***********************************************************************
+    function sizeof_real()
+!
+!  Determines the size of a real in bytes.
 !
 !  Returns:
-!  * Logical containing the existence of a given file
+!  * The number of bytes used for a real.
 !
-!  23-mar-10/Bourdin.KIS: implemented
+!  16-Feb-2012/Bourdin.KIS: coded
 !
-      use Cparam, only: ip
+      integer :: sizeof_real
 !
-      logical :: file_exists
-      character(len=*) :: file
-      logical, optional :: delete
+      call sizeof_real_c(1.0, sizeof_real)
 !
-      integer :: unit=1
-!
-      inquire (file=file, exist=file_exists)
-!
-      if (file_exists .and. present(delete)) then
-        if (delete) then
-          if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
-          open (unit,FILE=file)
-          close (unit,STATUS='DELETE')
-        endif
-      endif
-!
-    endfunction file_exists
-!***********************************************************************
-    subroutine touch_file(file)
-!
-!  Touches a given file (used for code locking).
-!
-!  25-may-03/axel: coded
-!  24-mar-10/Bourdin.KIS: moved here from sub.f90 and mpicomm.f90
-!
-      character(len=*) :: file
-!
-      integer :: unit=1
-!
-      open (unit,FILE=file)
-      close (unit)
-!
-    endsubroutine touch_file
-!***********************************************************************
-    function file_size(file)
-!
-!  Determines the size of a given file.
-!
-!  Returns:
-!  * positive integer containing the file size of a given file
-!  * -2 if the file could not be found or opened
-!  * -1 if retrieving the file size failed
-!
-!  19-mar-10/Bourdin.KIS: coded
-!
-      integer :: file_size
-      character(len=*) :: file
-!
-      file_size = -1
-      call file_size_c(trim(file)//char(0), file_size)
-!
-    endfunction file_size
-!***********************************************************************
-    subroutine write_binary_file_carr(file,bytes,buffer)
-!
-!  Writes a given buffer (vector of single characters) to a binary file.
-!
-!  06-Apr-2014/Bourdin.KIS: coded
-!
-      character(len=*) :: file
-      integer :: bytes, result
-      character, dimension(:) :: buffer
-!
-      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
-
-      if (result /= bytes) then
-        if (result < 0) then
-          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
-        elseif (result == 0) then
-          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
-        else
-          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
-        endif
-        stop
-      endif
-!
-    endsubroutine write_binary_file_carr
-!***********************************************************************
-    subroutine write_binary_file_str(file,bytes,buffer)
-!
-!  Writes a given buffer (string) to a binary file.
-!
-!  21-jan-2015/MR: copied from write_binary_file_carr 
-!
-      character(len=*) :: file
-      integer :: bytes, result
-      character(len=*) :: buffer
-!
-      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
-      
-      if (result /= bytes) then
-        if (result < 0) then
-          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
-        elseif (result == 0) then
-          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
-        else
-          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
-        endif
-        stop
-      endif
-!
-    endsubroutine write_binary_file_str
-!***********************************************************************
-    function count_lines(file,comchars)
-!
-!  Determines the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter comchars for characters marking not to be
-!                counted comment lines added
-!
-      use General, only: operator(.IN.)
-!
-      character(len=*), intent(in) :: file
-      character, dimension(:), optional, intent(in) :: comchars
-      integer :: count_lines
-!
-      integer :: unit=1, ierr
-      character :: ch
-      logical :: lcount
-!
-      count_lines = -1
-      if (.not. file_exists(file)) return
-!
-      open (unit, FILE=file, STATUS='old', IOSTAT=ierr)
-      if (ierr /= 0) return
-      count_lines = 0
-      do while (ierr == 0)
-        read (unit,'(a)',iostat=ierr) ch
-        if (ierr == 0) then
-          if (present(comchars)) then
-            lcount = ((ch .IN. comchars) == 0)
-          else
-            lcount = .true.
-          endif
-          if (lcount) count_lines = count_lines+1
-        endif
-      enddo
-      close (unit)
-!
-    endfunction count_lines
+    endfunction sizeof_real
 !***********************************************************************
     function get_PID()
 !
@@ -223,59 +84,6 @@ module Syscalls
       value = trim(value)
 !
     endsubroutine get_env_var
-!***********************************************************************
-    function get_tmp_prefix()
-!
-!  Determines the proper temp directory and adds a unique prefix.
-!
-!  Returns:
-!  * String containing the location of a usable temp directory
-!  * Default is '/tmp'
-!
-!   4-aug-10/Bourdin.KIS: coded
-!
-      use Cparam, only: fnlen
-!
-      character(len=fnlen) :: get_tmp_prefix
-      character(len=fnlen) :: tmp_dir
-!
-      call get_env_var('TMPDIR', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) call get_env_var('TEMP', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP_DIR', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) call get_env_var('PBS_TEMP', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) tmp_dir = '/tmp'
-!
-      write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
-!
-    endfunction get_tmp_prefix
-!***********************************************************************
-    subroutine system_cmd(command)
-!
-!  Executes a system command.
-!
-!  3-nov-11/MR: coded
-!
-      character(len=*) :: command
-!
-      call system_c(trim(command)//char(0))
-!
-    endsubroutine system_cmd
-!***********************************************************************
-    function sizeof_real()
-!
-!  Determines the size of a real in bytes.
-!
-!  Returns:
-!  * The number of bytes used for a real.
-!
-!  16-Feb-2012/Bourdin.KIS: coded
-!
-      integer :: sizeof_real
-!
-      call sizeof_real_c(1.0, sizeof_real)
-!
-    endfunction sizeof_real
 !***********************************************************************
     function is_nan_0D(value)
 !

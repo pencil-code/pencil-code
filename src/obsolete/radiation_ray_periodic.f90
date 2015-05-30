@@ -1224,48 +1224,42 @@ module Radiation
 !
     endsubroutine de_dt
 !***********************************************************************
-    subroutine read_radiation_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_radiation_init_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=radiation_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=radiation_init_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
+      integer, intent(out) :: iostat
 !
-99    return
+      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_radiation_init_pars
 !***********************************************************************
     subroutine write_radiation_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=radiation_init_pars)
+      write(unit, NML=radiation_init_pars)
 !
     endsubroutine write_radiation_init_pars
 !***********************************************************************
-    subroutine read_radiation_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_radiation_run_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=radiation_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=radiation_run_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
+      integer, intent(out) :: iostat
 !
-99    return
+      read(parallel_unit, NML=radiation_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_radiation_run_pars
 !***********************************************************************
     subroutine write_radiation_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=radiation_run_pars)
+      write(unit, NML=radiation_run_pars)
 !
     endsubroutine write_radiation_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_radiation(lreset,lwrite)
 !
 !  Dummy routine for Flux Limited Diffusion routine

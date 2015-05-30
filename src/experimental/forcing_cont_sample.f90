@@ -98,9 +98,6 @@ module Forcing
   real, dimension (my) :: siny,cosy,embedy
   real, dimension (mz) :: sinz,cosz,embedz
 !
-  integer :: dummy              ! We cannot define empty namelists
-  namelist /forcing_init_pars/ dummy
-!
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
@@ -3796,36 +3793,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine forcing_continuous
 !***********************************************************************
-    subroutine read_forcing_init_pars(unit,iostat)
+    subroutine read_forcing_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-    endsubroutine read_forcing_init_pars
-!***********************************************************************
-    subroutine write_forcing_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_forcing_init_pars
-!***********************************************************************
-    subroutine read_forcing_run_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=forcing_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=forcing_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=forcing_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_forcing_run_pars
 !***********************************************************************
@@ -3833,7 +3808,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=forcing_run_pars)
+      write(unit, NML=forcing_run_pars)
 !
     endsubroutine write_forcing_run_pars
 !***********************************************************************

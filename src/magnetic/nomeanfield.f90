@@ -97,13 +97,11 @@ module Magnetic_meanfield
 !
     endsubroutine daa_dt_meanfield
 !***********************************************************************
-    subroutine read_magn_mf_init_pars(unit,iostat)
+    subroutine read_magn_mf_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magn_mf_init_pars
 !***********************************************************************
@@ -115,13 +113,11 @@ module Magnetic_meanfield
 !
     endsubroutine write_magn_mf_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_run_pars(unit,iostat)
+    subroutine read_magn_mf_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magn_mf_run_pars
 !***********************************************************************

@@ -30,9 +30,6 @@ module Viscosity
   real :: maxeffectivenu,nu_hyper3, nu_mol=0.0
   logical :: lvisc_first=.false.
 
-  ! input parameters
-  !namelist /viscosity_init_pars/ dummy
-
   ! run parameters
   namelist /viscosity_run_pars/ nu_hyper3, lvisc_first,ivisc
  
@@ -71,8 +68,7 @@ module Viscosity
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
-           "$Id$")
+      if (lroot) call svn_id("$Id$")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -101,43 +97,24 @@ module Viscosity
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
-    subroutine read_viscosity_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
-      if (ALWAYS_FALSE) print*,unit
-                                                                                                   
-    endsubroutine read_viscosity_init_pars
-!***********************************************************************
-    subroutine write_viscosity_init_pars(unit)
-      integer, intent(in) :: unit
-                                                                                                   
-      if (ALWAYS_FALSE) print*,unit
-                                                                                                   
-    endsubroutine write_viscosity_init_pars
-!***********************************************************************
-    subroutine read_viscosity_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat)) then
-        read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=viscosity_run_pars,ERR=99)
-      endif
-                                                                                                   
-                                                                                                   
-99    return
+    subroutine read_viscosity_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=viscosity_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=viscosity_run_pars)
-
+!
+      write(unit, NML=viscosity_run_pars)
+!
     endsubroutine write_viscosity_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
 !  Writes ihyper to index.pro file
@@ -193,11 +170,9 @@ module Viscosity
 !
 !  21-11-04/anders: coded
 !
-      use Cdata
-!
       logical, dimension (npencils) :: lpencil_in
 !      
-      if (ALWAYS_FALSE) print*, lpencil_in !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -208,14 +183,11 @@ module Viscosity
 !
 !  21-11-04/anders: coded
 !
-      use Cdata
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (pencil_case), intent(in) :: p
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f,p
-!
-      if (ALWAYS_FALSE) print*, f, p !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -460,8 +432,6 @@ module Viscosity
 !           call sum_mn_name(2*nu_hyper3*exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK)
 !        endif
       endif
-!
-!      if(ALWAYS_FALSE) print*,divu,shock,gshock !(to keep compiler quiet)
 !        
     end subroutine calc_viscous_force
 !***********************************************************************

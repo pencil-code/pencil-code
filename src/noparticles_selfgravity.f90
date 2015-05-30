@@ -141,45 +141,33 @@ module Particles_selfgravity
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
-    subroutine read_particles_selfg_init_pars(unit,iostat)
+    subroutine read_particles_selfg_init_pars(iostat)
 !
-!  14-jun-06/anders: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_selfg_init_pars
 !***********************************************************************
     subroutine write_particles_selfg_init_pars(unit)
 !
-!  14-jun-06/anders: dummy
-!
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_selfg_init_pars
 !***********************************************************************
-    subroutine read_particles_selfg_run_pars(unit,iostat)
+    subroutine read_particles_selfg_run_pars(iostat)
 !
-!  14-jun-06/anders: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_selfg_run_pars
 !***********************************************************************
     subroutine write_particles_selfg_run_pars(unit)
 !
-!  14-jun-06/anders: dummy
-!
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !

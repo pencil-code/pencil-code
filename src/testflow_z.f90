@@ -571,53 +571,45 @@ module Testflow
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testflow_init_pars(unit,iostat)     ! -> Default interface
+    subroutine read_testflow_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=testflow_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testflow_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=testflow_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_testflow_init_pars
 !***********************************************************************
-    subroutine write_testflow_init_pars(unit)         ! -> Default interface
+    subroutine write_testflow_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=testflow_init_pars)
+      write(unit, NML=testflow_init_pars)
 !
     endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testflow_run_pars(unit,iostat)    ! -> Default interface
+    subroutine read_testflow_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=testflow_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testflow_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=testflow_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_testflow_run_pars
 !***********************************************************************
-    subroutine write_testflow_run_pars(unit)          ! -> Default interface
+    subroutine write_testflow_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=testflow_run_pars)
+      write(unit, NML=testflow_run_pars)
 !
-!      if (itestflow=='W11-W22') then
-!        njtestflow=4                       ! remove unnecessary memory consumption
-!      else
-!        njtestflow= njtestflow
-!      endif
-
+!      ! remove unnecessary memory consumption
+!      if (itestflow=='W11-W22') njtestflow=4
+!
     endsubroutine write_testflow_run_pars
 !***********************************************************************
     subroutine duutest_dt(f,df,p)                    ! -> Default interface

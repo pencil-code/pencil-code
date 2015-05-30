@@ -338,18 +338,14 @@ module Particles_adsorbed
 !
     endsubroutine dpads_dt_pencil
 !***********************************************************************
-    subroutine read_particles_ads_init_pars(unit,iostat)
+    subroutine read_particles_ads_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read (unit,NML=particles_ads_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_ads_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      99    return
+      read(parallel_unit, NML=particles_ads_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_ads_init_pars
 !***********************************************************************
@@ -357,22 +353,18 @@ module Particles_adsorbed
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_ads_init_pars)
+      write(unit, NML=particles_ads_init_pars)
 !
     endsubroutine write_particles_ads_init_pars
 !***********************************************************************
-    subroutine read_particles_ads_run_pars(unit,iostat)
+    subroutine read_particles_ads_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read (unit,NML=particles_ads_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_ads_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      99    return
+      read(parallel_unit, NML=particles_ads_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_ads_run_pars
 !***********************************************************************
@@ -380,7 +372,7 @@ module Particles_adsorbed
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_ads_run_pars)
+      write(unit, NML=particles_ads_run_pars)
 !
     endsubroutine write_particles_ads_run_pars
 !***********************************************************************

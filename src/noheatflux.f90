@@ -125,31 +125,11 @@ module Heatflux
 !
     endsubroutine dheatflux_dt
 !***********************************************************************
-    subroutine read_heatflux_init_pars(unit,iostat)
+    subroutine read_heatflux_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
-!
-    endsubroutine read_heatflux_init_pars
-!***********************************************************************
-    subroutine write_heatflux_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_heatflux_init_pars
-!***********************************************************************
-    subroutine read_heatflux_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_heatflux_run_pars
 !***********************************************************************

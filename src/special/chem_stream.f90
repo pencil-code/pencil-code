@@ -72,7 +72,7 @@ module Special
   real, dimension (mx,my,mz) :: pres=0., mmu1=0.
   logical :: ldivtau=.false.
   logical :: lT_prof1=.true., lT_prof2=.false.,lT_tanh=.false.
-  real :: test, H_max
+  real :: H_max
   real :: Rgas, Rgas_unit_sys=1.
 !
   real :: rho_init=1., T_init=1., Y1_init=1., Y2_init=1., Y3_init=1., ux_init=0.
@@ -90,9 +90,6 @@ module Special
    index_H2, index_O2, index_H2O, &
    index_N2,init_TT1,init_TT2,init_lnTT1, init_x1, init_x2,  init_p2, &
    init_lnrho, init_ux, lT_prof1, lT_prof2,lT_tanh, str_thick
-! run parameters
-  namelist /chem_stream_run_pars/ &
-   test
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -296,47 +293,24 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=chem_stream_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=chem_stream_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=chem_stream_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=chem_stream_init_pars)
+      write(unit, NML=chem_stream_init_pars)
 !
     endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=chem_stream_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=chem_stream_run_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_special_run_pars
-!***********************************************************************
-    subroutine write_special_run_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=chem_stream_run_pars)
-!
-    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

@@ -1,4 +1,4 @@
-! $Id: parker_wind.f90,v 1.1 2012-01-30 09:08:03 joern Exp $
+! $Id$
 !
 ! Initial condition for the parker wind in spherical coordinates.  
 !
@@ -45,7 +45,7 @@ module InitialCondition
 !  26-jan-12/joern: coded
 !
       if (lroot) call svn_id( &
-           "$Id: parker_wind.f90, v 1.1 2012-01-30 14:08:03 joern Exp$")
+           "$Id")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -145,28 +145,22 @@ module InitialCondition
 !      
     endsubroutine initial_condition_lncc
 !***********************************************************************
-    subroutine read_initial_condition_pars(unit,iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  07-may-09/wlad: coded
+      use File_io, only: get_unit
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=initial_condition_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!     
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=initial_condition_pars)
+      write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************

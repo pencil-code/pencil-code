@@ -199,28 +199,25 @@ module Shock
 !
     endsubroutine initialize_shock
 !***********************************************************************
-    subroutine read_shock_run_pars(unit,iostat)
+    subroutine read_shock_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=shock_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=shock_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=shock_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_shock_run_pars
 !***********************************************************************
     subroutine write_shock_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=shock_run_pars)
+      write(unit, NML=shock_run_pars)
 !
     endsubroutine write_shock_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_shock(lreset,lwrite)
 !
 !  Writes ishock to index.pro file

@@ -72,43 +72,15 @@ module Particles_viscosity
 !
     endsubroutine dvvp_dt_viscosity_pencil
 !***********************************************************************
-    subroutine read_particles_visc_init_pars(unit,iostat)
+    subroutine read_particles_visc_run_pars(iostat)
 !
-!  07-oct-08/anders: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_particles_visc_init_pars
-!***********************************************************************
-    subroutine write_particles_visc_init_pars(unit)
-!
-!  07-oct-08/anders: dummy
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_visc_init_pars
-!***********************************************************************
-    subroutine read_particles_visc_run_pars(unit,iostat)
-!
-!  07-oct-08/anders: dummy
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_visc_run_pars
 !***********************************************************************
     subroutine write_particles_visc_run_pars(unit)
-!
-!  07-oct-08/anders: dummy
 !
       integer, intent(in) :: unit
 !

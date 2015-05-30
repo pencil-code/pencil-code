@@ -321,44 +321,41 @@ print*,"init_ecr: initecr = ", initecr
 !
     endsubroutine decr_dt
 !***********************************************************************
-    subroutine read_cosmicray_init_pars(unit,iostat)
+    subroutine read_cosmicray_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=cosmicray_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=cosmicray_init_pars,ERR=99)
-      endif
-99    return
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=cosmicray_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_cosmicray_init_pars
 !***********************************************************************
     subroutine write_cosmicray_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicray_init_pars)
+      write(unit, NML=cosmicray_init_pars)
 !
     endsubroutine write_cosmicray_init_pars
 !***********************************************************************
-    subroutine read_cosmicray_run_pars(unit,iostat)
+    subroutine read_cosmicray_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=cosmicray_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=cosmicray_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=cosmicray_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_cosmicray_run_pars
 !***********************************************************************
     subroutine write_cosmicray_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=cosmicray_run_pars)
+      write(unit, NML=cosmicray_run_pars)
 !
     endsubroutine write_cosmicray_run_pars
 !***********************************************************************

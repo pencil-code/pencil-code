@@ -35,7 +35,7 @@ module Particles_mass
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
 !
-  namelist /particles_mass_run_pars/ lpart_mass_backreac,dmpdt
+  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt
 !
   integer :: idiag_mpm=0
   integer :: idiag_convm=0
@@ -323,57 +323,41 @@ module Particles_mass
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
-    subroutine read_particles_mass_init_pars(unit,iostat)
+    subroutine read_particles_mass_init_pars(iostat)
 !
-!  23-sep-14/Nils: adapted
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read (unit,NML=particles_mass_init_pars,ERR=99,IOSTAT=iostat)
-      else
-        read (unit,NML=particles_mass_init_pars,ERR=99)
-      endif
-!
-      99    return
+      read(parallel_unit, NML=particles_mass_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_mass_init_pars
 !***********************************************************************
     subroutine write_particles_mass_init_pars(unit)
 !
-!  23-sep-14/Nils: adapted
-!
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_mass_init_pars)
+      write(unit, NML=particles_mass_init_pars)
 !
     endsubroutine write_particles_mass_init_pars
 !***********************************************************************
-    subroutine read_particles_mass_run_pars(unit,iostat)
+    subroutine read_particles_mass_run_pars(iostat)
 !
-!  23-sep-14/Nils: adapted
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read (unit,NML=particles_mass_run_pars,ERR=99,IOSTAT=iostat)
-      else
-        read (unit,NML=particles_mass_run_pars,ERR=99)
-      endif
-!
-      99    return
+      read(parallel_unit, NML=particles_mass_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_mass_run_pars
 !***********************************************************************
     subroutine write_particles_mass_run_pars(unit)
 !
-!  23-sep-14/Nils: adapted
-!
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_mass_run_pars)
+      write(unit, NML=particles_mass_run_pars)
 !
     endsubroutine write_particles_mass_run_pars
 !***********************************************************************

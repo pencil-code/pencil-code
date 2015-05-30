@@ -203,7 +203,7 @@ module Testfield
       use Diagnostics, only: gen_form_legend
       use Cdata
       use FarrayManager, only: farray_register_auxiliary
-      use General, only: operator(.IN.)
+      use General, only: operator(.in.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
@@ -383,7 +383,7 @@ module Testfield
 !  allocate slice buffers
 !
       if (lwrite_slices) then
-        if (('bb11'.IN.cnamev)/=0 ) &
+        if ('bb11' .in. cnamev) &
           allocate(bb11_xy(nx,ny,3), bb11_xy2(nx,ny,3), &
                    bb11_xz(nx,nz,3), bb11_yz(ny,nz,3) )
       endif
@@ -405,26 +405,22 @@ module Testfield
 !
     endsubroutine initialize_testfield
 !***********************************************************************
-    subroutine read_testfield_run_pars(unit,iostat)
+    subroutine read_testfield_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=testfield_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testfield_run_pars,ERR=99)
-      endif
-
-99    return
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=testfield_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_testfield_run_pars
 !***********************************************************************
     subroutine write_testfield_run_pars(unit)
 !
       integer, intent(in) :: unit
-
-      write(unit,NML=testfield_run_pars)
+!
+      write(unit, NML=testfield_run_pars)
 !
     endsubroutine write_testfield_run_pars
 !***********************************************************************
@@ -456,7 +452,7 @@ module Testfield
       use Hydro, only: uumz,lcalc_uumeanz
       use Mpicomm, only: stop_it
       use Sub
-      use General, only: operator(.IN.)
+      use General, only: operator(.in.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1220,7 +1216,7 @@ module Testfield
 !
       if (lvideo.and.lfirst) then
 !
-        if (('bb11' .IN. cnamev) /= 0) then
+        if ('bb11' .in. cnamev) then
 !
 !  first test solution
 !

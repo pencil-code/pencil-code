@@ -28,11 +28,6 @@ module Heatflux
 !
   implicit none
 !
-  real :: dummy=0.
-!
-  namelist /heatflux_init_pars/ &
-      dummy
-!
   character (len=labellen) :: iheatflux='nothing'
   logical :: lreset_heatflux
   real :: tau_heatflux=0.,saturation_flux=0.,tau1_eighthm=0.
@@ -254,51 +249,24 @@ contains
 !
   endsubroutine dheatflux_dt
 !***********************************************************************
-  subroutine read_heatflux_init_pars(unit,iostat)
+    subroutine read_heatflux_run_pars(iostat)
 !
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-    if (present(iostat)) then
-      read(unit,NML=heatflux_init_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=heatflux_init_pars,ERR=99)
-    endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99  return
+      read(parallel_unit, NML=heatflux_run_pars, IOSTAT=iostat)
 !
-  endsubroutine read_heatflux_init_pars
+    endsubroutine read_heatflux_run_pars
 !***********************************************************************
-  subroutine write_heatflux_init_pars(unit)
+    subroutine write_heatflux_run_pars(unit)
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    write(unit,NML=heatflux_init_pars)
+      write(unit, NML=heatflux_run_pars)
 !
-  endsubroutine write_heatflux_init_pars
-!***********************************************************************
-  subroutine read_heatflux_run_pars(unit,iostat)
-!
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
-!
-    if (present(iostat)) then
-      read(unit,NML=heatflux_run_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=heatflux_run_pars,ERR=99)
-    endif
-!
-99  return
-!
-  endsubroutine read_heatflux_run_pars
-!***********************************************************************
-  subroutine write_heatflux_run_pars(unit)
-!
-    integer, intent(in) :: unit
-!
-    write(unit,NML=heatflux_run_pars)
-!
-  endsubroutine write_heatflux_run_pars
+    endsubroutine write_heatflux_run_pars
 !***********************************************************************
   subroutine rprint_heatflux(lreset,lwrite)
 !

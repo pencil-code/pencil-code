@@ -424,29 +424,22 @@ module Testfield_general
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
-    subroutine read_testfield_init_pars(unit,iostat)
+    subroutine read_testfield_init_pars(iostat)
 !
-!  27-jun-13/MR  : moved from testfield_xz
+      use File_io, only: get_unit
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=testfield_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testfield_init_pars,ERR=99)
-      endif
+      read(parallel_unit, NML=testfield_init_pars, IOSTAT=iostat)
 !
-99    return
     endsubroutine read_testfield_init_pars
 !***********************************************************************
     subroutine write_testfield_init_pars(unit)
 !
-!  27-jun-13/MR  : moved from testfield_xz
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=testfield_init_pars)
+      write(unit, NML=testfield_init_pars)
 !
     endsubroutine write_testfield_init_pars
 !***********************************************************************

@@ -348,42 +348,6 @@ module Energy
 !
     endsubroutine calc_lenergy_pars
 !***********************************************************************
-    subroutine read_energy_init_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_energy_init_pars
-!***********************************************************************
-    subroutine write_energy_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_energy_init_pars
-!***********************************************************************
-    subroutine read_energy_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_energy_run_pars
-!***********************************************************************
-    subroutine write_energy_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_energy_run_pars
-!***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -423,6 +387,38 @@ module Energy
       call keep_compiler_quiet(umax)
 !
     endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine read_energy_init_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_energy_init_pars
+!***********************************************************************
+    subroutine write_energy_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_energy_init_pars
+!***********************************************************************
+    subroutine read_energy_run_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_energy_run_pars
+!***********************************************************************
+    subroutine write_energy_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_energy_run_pars
 !***********************************************************************
     subroutine rprint_energy(lreset,lwrite)
 !

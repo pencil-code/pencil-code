@@ -125,26 +125,38 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine read_density_run_pars(unit,iostat)
+    subroutine read_density_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=density_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_density_run_pars
+!***********************************************************************
+    subroutine read_density_init_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_density_init_pars
+!***********************************************************************
+    subroutine write_density_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_density_init_pars
 !***********************************************************************
     subroutine write_density_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=density_run_pars)
+      write(unit, NML=density_run_pars)
 !
     endsubroutine write_density_run_pars
 !***********************************************************************
@@ -257,24 +269,6 @@ module Density
       call keep_compiler_quiet(f)
 !
     endsubroutine impose_density_floor
-!***********************************************************************
-    subroutine read_density_init_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_density_init_pars
-!***********************************************************************
-    subroutine write_density_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_density_init_pars
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !

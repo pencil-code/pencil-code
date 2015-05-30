@@ -2292,13 +2292,11 @@ module Hydro
 !
     endfunction output_persistent_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
+    subroutine read_hydro_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -2310,18 +2308,14 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
+    subroutine read_hydro_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -2329,7 +2323,7 @@ module Hydro
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=hydro_run_pars)
+      write(unit, NML=hydro_run_pars)
 !
     endsubroutine write_hydro_run_pars
 !***********************************************************************

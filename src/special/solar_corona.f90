@@ -154,7 +154,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( "$Id$")
+      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -164,7 +164,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -368,7 +368,7 @@ module Special
 !  21-oct-2010/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_real
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       integer :: i
       integer, parameter :: unit=12
@@ -448,8 +448,8 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, parallel_file_exists
-      use Syscalls, only: file_exists, file_size
+      use Mpicomm, only: mpibcast_int, mpibcast_real
+      use File_io, only: parallel_file_exists, file_size
 !
       character(len=*), intent(in) :: filename
       real, dimension(mz), intent(out) :: profile
@@ -684,13 +684,14 @@ module Special
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      read (unit, NML=special_init_pars)
-      if (present (iostat)) iostat = 0
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -698,17 +699,18 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=special_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      read (unit, NML=special_run_pars)
-      if (present (iostat)) iostat = 0
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
       if (Kgpara /= 0.0) then
         call warning('calc_heatcond_grad', &
@@ -740,7 +742,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1531,7 +1533,7 @@ module Special
 !  07-jan-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       real, intent(in) :: time
       character(len=*), intent(in) :: filename
@@ -2977,7 +2979,7 @@ module Special
 !***********************************************************************
     subroutine compute_gran_level(level)
 !
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       integer, intent(in) :: level
       logical :: lstop=.false.

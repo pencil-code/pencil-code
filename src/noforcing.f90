@@ -122,31 +122,11 @@ module Forcing
 !
     endsubroutine forcing_cont
 !***********************************************************************
-    subroutine read_forcing_init_pars(unit,iostat)
+    subroutine read_forcing_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_forcing_init_pars
-!***********************************************************************
-    subroutine write_forcing_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_forcing_init_pars
-!***********************************************************************
-    subroutine read_forcing_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_forcing_run_pars
 !***********************************************************************

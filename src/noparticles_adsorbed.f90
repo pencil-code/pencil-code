@@ -104,34 +104,24 @@ module Particles_adsorbed
     call keep_compiler_quiet(ineargrid)
   endsubroutine dpads_dt
 ! ******************************************************************************
+  subroutine read_particles_ads_init_pars(iostat)
+    integer, intent(out) :: iostat
 
-  subroutine read_particles_ads_init_pars(unit,iostat)
-!
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
-
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
+    iostat = 0
   endsubroutine read_particles_ads_init_pars
 ! ******************************************************************************
-
   subroutine write_particles_ads_init_pars(unit)
     integer, intent(in) :: unit
 
     call keep_compiler_quiet(unit)
   endsubroutine write_particles_ads_init_pars
 ! ******************************************************************************
+  subroutine read_particles_ads_run_pars(iostat)
+    integer, intent(out) :: iostat
 
-  subroutine read_particles_ads_run_pars(unit,iostat)
-!
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
-
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
+    iostat = 0
   endsubroutine read_particles_ads_run_pars
 ! ******************************************************************************
-
   subroutine write_particles_ads_run_pars(unit)
     integer, intent(in) :: unit
 

@@ -341,47 +341,41 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
-    subroutine read_gravity_init_pars(unit,iostat)
+    subroutine read_gravity_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=grav_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=grav_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_gravity_init_pars
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=grav_init_pars)
+      write(unit, NML=grav_init_pars)
 !
     endsubroutine write_gravity_init_pars
 !***********************************************************************
-    subroutine read_gravity_run_pars(unit,iostat)
+    subroutine read_gravity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=grav_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=grav_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_gravity_run_pars
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=grav_run_pars)
+      write(unit, NML=grav_run_pars)
 !
     endsubroutine write_gravity_run_pars
 !***********************************************************************

@@ -68,73 +68,41 @@ module Particles_drag
 !
     endsubroutine init_particles_drag
 !***********************************************************************
-    subroutine read_particles_drag_init_pars(unit, iostat)
+    subroutine read_particles_drag_init_pars(iostat)
 !
-!  Read initialization parameters from namelist particles_drag_init_pars.
+      use File_io, only: get_unit
 !
-!  14-feb-15/ccyang: coded.
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      integer :: stat
-!
-      read(unit, NML=particles_drag_init_pars, IOSTAT=stat)
-      if (present(iostat)) then
-        iostat = stat
-      else if (stat /= 0) then
-        call fatal_error('read_particles_drag_init_pars', 'cannot read particles_drag_init_pars. ')
-      endif
+      read(parallel_unit, NML=particles_drag_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_drag_init_pars
 !***********************************************************************
     subroutine write_particles_drag_init_pars(unit)
 !
-!  Write initialization parameters to namelist particles_drag_init_pars.
-!
-!  14-feb-15/ccyang: coded.
-!
       integer, intent(in) :: unit
 !
-      integer :: stat
-!
-      write(unit, NML=particles_drag_init_pars, IOSTAT=stat)
-      if (stat /= 0) call fatal_error('write_particles_drag_init_pars', 'cannot write particles_drag_init_pars. ')
+      write(unit, NML=particles_drag_init_pars)
 !
     endsubroutine write_particles_drag_init_pars
 !***********************************************************************
-    subroutine read_particles_drag_run_pars(unit, iostat)
+    subroutine read_particles_drag_run_pars(iostat)
 !
-!  Read runtime parameters from namelist particles_drag_run_pars.
+      use File_io, only: get_unit
 !
-!  14-dec-14/ccyang: coded.
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      integer :: stat
-!
-      read(unit, NML=particles_drag_run_pars, IOSTAT=stat)
-      if (present(iostat)) then
-        iostat = stat
-      else if (stat /= 0) then
-        call fatal_error('read_particles_drag_run_pars', 'cannot read particles_drag_run_pars. ')
-      endif
+      read(parallel_unit, NML=particles_drag_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_drag_run_pars
 !***********************************************************************
     subroutine write_particles_drag_run_pars(unit)
 !
-!  Write runtime parameters to namelist particles_drag_run_pars.
-!
-!  14-dec-14/ccyang: coded.
-!
       integer, intent(in) :: unit
 !
-      integer :: stat
-!
-      write(unit, NML=particles_drag_run_pars, IOSTAT=stat)
-      if (stat /= 0) call fatal_error('write_particles_drag_run_pars', 'cannot write particles_drag_run_pars. ')
+      write(unit, NML=particles_drag_run_pars)
 !
     endsubroutine write_particles_drag_run_pars
 !***********************************************************************

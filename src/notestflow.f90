@@ -24,12 +24,7 @@ module Testflow
 !
   include 'testflow.h'
 !
-  real :: dummy
   logical :: lshear_as_param=.false.
-
-  namelist /testflow_init_pars/ dummy
-!
-  namelist /testflow_run_pars/ dummy
 !
   contains
 !***********************************************************************
@@ -75,13 +70,11 @@ module Testflow
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testflow_init_pars(unit,iostat)
+    subroutine read_testflow_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_testflow_init_pars
 !***********************************************************************
@@ -93,13 +86,11 @@ module Testflow
 !
     endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testflow_run_pars(unit,iostat)
+    subroutine read_testflow_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_testflow_run_pars
 !***********************************************************************

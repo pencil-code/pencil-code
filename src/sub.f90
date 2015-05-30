@@ -4358,7 +4358,7 @@ nameloop: do
 !
 !  5-mar-02/wolf: coded
 !
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       character (len=*), intent(in) :: fname
 !
@@ -4377,7 +4377,7 @@ nameloop: do
 !
 !  26-jul-09/wolf: coded
 !
-      use Mpicomm, only : parallel_file_exists
+      use File_io, only : parallel_file_exists
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
@@ -4403,7 +4403,7 @@ nameloop: do
 !
 !  4-oct-02/wolf: coded
 !
-      use Syscalls, only : file_exists
+      use File_io, only : file_exists
 !
       character (len=linelen) :: read_line_from_file
       character (len=*) :: fname

@@ -44,25 +44,15 @@ module Detonate
 !
     endsubroutine initialize_detonate
 !***********************************************************************
-    subroutine read_detonate_run_pars(unit, iostat)
+    subroutine read_detonate_run_pars(iostat)
 !
-!  Reads the runtime parameters.
+      integer, intent(out) :: iostat
 !
-!  13-feb-14/ccyang: dummy
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_detonate_run_pars
 !***********************************************************************
     subroutine write_detonate_run_pars(unit)
-!
-!  Writes the runtime parameters.
-!
-!  13-feb-14/ccyang: dummy
 !
       integer, intent(in) :: unit
 !

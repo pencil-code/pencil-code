@@ -246,39 +246,35 @@ module Particles
 !
     endsubroutine create_particles_sink_simple
 !***********************************************************************
-    subroutine read_particles_init_pars(unit,iostat)
+    subroutine read_particles_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(unit,iostat)
+    subroutine read_particles_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-       call keep_compiler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************

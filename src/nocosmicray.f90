@@ -52,13 +52,11 @@ module Cosmicray
 !
     endsubroutine initialize_cosmicray
 !***********************************************************************
-    subroutine read_cosmicray_init_pars(unit,iostat)
+    subroutine read_cosmicray_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_cosmicray_init_pars
 !***********************************************************************
@@ -70,13 +68,11 @@ module Cosmicray
 !
     endsubroutine write_cosmicray_init_pars
 !***********************************************************************
-    subroutine read_cosmicray_run_pars(unit,iostat)
+    subroutine read_cosmicray_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_cosmicray_run_pars
 !***********************************************************************

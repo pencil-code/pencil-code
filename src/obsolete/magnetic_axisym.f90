@@ -1726,43 +1726,39 @@ module Magnetic
 !
     endsubroutine calc_tau_aa_exterior
 !***********************************************************************
-    subroutine read_magnetic_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_magnetic_init_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_init_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
-99    return
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_init_pars)
+      write(unit, NML=magnetic_init_pars)
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_magnetic_run_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_run_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
-99    return
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_run_pars)
+      write(unit, NML=magnetic_run_pars)
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************

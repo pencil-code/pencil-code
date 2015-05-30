@@ -22,21 +22,15 @@ module ImplicitDiffusion
 !
   contains
 !***********************************************************************
-    subroutine read_implicit_diffusion_pars(unit, iostat)
+    subroutine read_implicit_diffusion_pars(iostat)
 !
-!  Dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_implicit_diffusion_pars
 !***********************************************************************
     subroutine write_implicit_diffusion_pars(unit)
-!
-!  Dummy
 !
       integer, intent(in) :: unit
 !

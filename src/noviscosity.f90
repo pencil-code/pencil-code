@@ -46,31 +46,11 @@ module Viscosity
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
-    subroutine read_viscosity_init_pars(unit,iostat)
+    subroutine read_viscosity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
-!
-    endsubroutine read_viscosity_init_pars
-!***********************************************************************
-    subroutine write_viscosity_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_viscosity_init_pars
-!***********************************************************************
-    subroutine read_viscosity_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_viscosity_run_pars
 !***********************************************************************

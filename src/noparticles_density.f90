@@ -98,49 +98,21 @@ module Particles_density
 !
     endsubroutine drhopswarm_dt
 !***********************************************************************
-    subroutine read_particles_dens_init_pars(unit,iostat)
+    subroutine read_particles_dens_init_pars(iostat)
 !
-!  22-nov-10/anders+michiel: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_dens_init_pars
 !***********************************************************************
     subroutine write_particles_dens_init_pars(unit)
 !
-!  22-nov-10/anders+michiel: dummy
-!
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_dens_init_pars
-!***********************************************************************
-    subroutine read_particles_dens_run_pars(unit,iostat)
-!
-!  22-nov-10/anders+michiel: dummy
-!
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_particles_dens_run_pars
-!***********************************************************************
-    subroutine write_particles_dens_run_pars(unit)
-!
-!  22-nov-10/anders+michiel: dummy
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_dens_run_pars
 !***********************************************************************
     subroutine rprint_particles_density(lreset,lwrite)
 !

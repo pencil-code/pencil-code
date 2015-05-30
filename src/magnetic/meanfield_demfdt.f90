@@ -270,18 +270,14 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine demf_dt_meanfield
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_init_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magn_mf_demfdt_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magn_mf_demfdt_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=magn_mf_demfdt_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_magn_mf_demfdt_init_pars
 !***********************************************************************
@@ -289,22 +285,18 @@ module Magnetic_meanfield_demfdt
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magn_mf_demfdt_init_pars)
+      write(unit, NML=magn_mf_demfdt_init_pars)
 !
     endsubroutine write_magn_mf_demfdt_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_run_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magn_mf_demfdt_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magn_mf_demfdt_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(unit, NML=magn_mf_demfdt_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_magn_mf_demfdt_run_pars
 !***********************************************************************
@@ -312,7 +304,7 @@ module Magnetic_meanfield_demfdt
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magn_mf_demfdt_run_pars)
+      write(unit, NML=magn_mf_demfdt_run_pars)
 !
     endsubroutine write_magn_mf_demfdt_run_pars
 !***********************************************************************
