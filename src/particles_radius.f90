@@ -714,6 +714,7 @@ module Particles_radius
       use File_io, only: get_unit
 !
       integer, intent(out) :: iostat
+      integer :: pos
       include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
@@ -722,8 +723,8 @@ module Particles_radius
 !  because not all parts of the code are adapted to work with more than one
 !  particle radius.
 !
-      do i=1,ninit
-        if (ap0(i)/=0) then
+      do pos=1,ninit
+        if (ap0(pos)/=0) then
           npart_radii=npart_radii+1
         endif
       enddo
