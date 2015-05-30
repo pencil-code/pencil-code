@@ -197,7 +197,7 @@ module Particles_surfspec
     endsubroutine write_particles_surf_init_pars
 ! ******************************************************************************
     subroutine read_particles_surf_run_pars(iostat)
-      use File_io, only: parallel_unit
+      use File_io, only: get_unit
       integer, intent(out) :: iostat
       include "parallel_unit.h"
 !
