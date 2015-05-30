@@ -3605,7 +3605,7 @@ module Particles
 !
                 call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                     rhop_swarm_par*tausp1_par*up2
+                     mp_vcell*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
