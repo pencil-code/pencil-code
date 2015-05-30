@@ -43,10 +43,10 @@ print_info () {
     echo '=============== Start revision info ==============='
     echo
 
-    if [ ${revision_file} -nt ${binary} ]; then
-        cat < ${revision_file}
+    if [ ${revision_file} -ot ${binary} ]; then
+        echo "${revision_file} is not up to date."
     else
-        echo "Warning: ${revision_file} is not up to date"
+        cat < ${revision_file}
     fi
 
     echo
