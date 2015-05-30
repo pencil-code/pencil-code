@@ -81,9 +81,11 @@ write_revision_file_from_svn_sandbox () {
     # authentication with the server, which may not be
     # possible in automated test runs.
     # Thus, we run this with a timeout of 1 minute:
+    echo "Git revision:" >> ${revision_file}
     time_limited_svn_cmd propget git-commit --revprop -r HEAD \
         https://github.com/pencil-code/pencil-code.git \
         >> ${revision_file}
+    echo >> ${revision_file}
 
     # Append the output from 'svn status', so we know whether
     # there were uncommitted changes:
