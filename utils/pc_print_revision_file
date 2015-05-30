@@ -39,17 +39,19 @@ print_info () {
         exit 1
     fi
 
+    echo
+    echo '=============== Start revision info ==============='
+    echo
+
     if [ ${revision_file} -nt ${binary} ]; then
-        echo
-        echo '=============== Start revision info ==============='
-        echo
         cat < ${revision_file}
-        echo
-        echo '===============  End revision info  ==============='
-        echo
     else
         echo "Warning: ${revision_file} is not up to date"
     fi
+
+    echo
+    echo '===============  End revision info  ==============='
+    echo
 }
 
 
