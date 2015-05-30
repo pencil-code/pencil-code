@@ -48,7 +48,7 @@ module ImplicitDiffusion
       integer, intent(out) :: iostat
       include "parallel_unit.h"
 !
-      read(unit, NML=implicit_diffusion_pars, iostat=iostat)
+      read(parallel_unit, NML=implicit_diffusion_pars, iostat=iostat)
 !
     endsubroutine read_implicit_diffusion_pars
 !***********************************************************************
