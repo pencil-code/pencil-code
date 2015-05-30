@@ -72,6 +72,9 @@ write_revision_file_from_svn_sandbox () {
     svn_cmd log --limit 1 >> ${revision_file}
     echo >> ${revision_file}
 
+    # Which branch we are on
+    svn_cmd info >> ${revision_file}
+
     # Git revision.
     # Somewhat tricky, because this command requires
     # authentication with the server, which may not be
