@@ -850,11 +850,10 @@ include 'NSCBC.h'
       use Sub, only : rdim
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
-!
       integer :: stat
       logical :: exist
       character (len=fnlen) :: file
+      include "parallel_unit.h"
 !
 ! Define default for the inlet_profile for backward compatibility
 !
