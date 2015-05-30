@@ -32,9 +32,11 @@ print_info () {
     binary="$1"
     if [ ! -e ${revision_file} ]; then
         echo "Error: Revision file ${revision_file} does not exist"
+        exit 1
     fi
     if [ ! -e ${binary} ]; then
         echo "Error: Binary file ${binary} does not exist"
+        exit 1
     fi
 
     if [ ${revision_file} -nt ${binary} ]; then
