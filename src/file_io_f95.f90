@@ -155,8 +155,6 @@ module File_io
       integer, intent(in) :: unit
 !
       close(unit,status='delete')
- if (lroot) write (*,*) 'CLOSE: ', unit
- if (lroot) flush (6)
 !
     endsubroutine parallel_close
 !***********************************************************************
