@@ -138,14 +138,32 @@ parallel_unit_h:
 	@case "$(FILE_IO)" in \
 	'file_io_f2003') \
 	    echo "      character (len=:), allocatable :: parallel_unit" > src/parallel_unit_declaration.h ; \
-	    echo "      character (len=:), allocatable :: parallel_unit\n      parallel_unit = get_unit()" > src/parallel_unit.h ; \
-	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)\n      character(LEN=*) :: cbcast_array\n      integer :: bytes\n      integer, optional :: proc\n      integer :: ibcast_proc\n      if (present(proc)) then\n        ibcast_proc=proc\n      else\n        ibcast_proc=root\n      endif\n      call MPI_BCAST(cbcast_array,bytes,MPI_CHARACTER,ibcast_proc,MPI_COMM_WORLD,mpierr)\n    endsubroutine mpibcast_char_alloc" > src/parallel_unit_broadcast.h ; \
-	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)\n      character (len=:), allocatable :: cbcast_array\n      integer :: bytes\n      integer, optional :: proc\n      if (ALWAYS_FALSE) print*, cbcast_array, bytes, proc\n    endsubroutine mpibcast_char_alloc" > src/parallel_unit_nobroadcast.h ; \
+	    echo "      character (len=:), allocatable :: parallel_unit" > src/parallel_unit.h ; \
+	    echo "      parallel_unit = get_unit()" >> src/parallel_unit.h ; \
+	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)" > src/parallel_unit_broadcast.h ; \
+	    echo "      character(LEN=*) :: cbcast_array" >> src/parallel_unit_broadcast.h ; \
+	    echo "      integer :: bytes" >> src/parallel_unit_broadcast.h ; \
+	    echo "      integer, optional :: proc" >> src/parallel_unit_broadcast.h ; \
+	    echo "      integer :: ibcast_proc" >> src/parallel_unit_broadcast.h ; \
+	    echo "      if (present(proc)) then" >> src/parallel_unit_broadcast.h ; \
+	    echo "        ibcast_proc=proc" >> src/parallel_unit_broadcast.h ; \
+	    echo "      else" >> src/parallel_unit_broadcast.h ; \
+	    echo "        ibcast_proc=root" >> src/parallel_unit_broadcast.h ; \
+	    echo "      endif" >> src/parallel_unit_broadcast.h ; \
+	    echo "      call MPI_BCAST(cbcast_array,bytes,MPI_CHARACTER,ibcast_proc,MPI_COMM_WORLD,mpierr)" >> src/parallel_unit_broadcast.h ; \
+	    echo "    endsubroutine mpibcast_char_alloc" >> src/parallel_unit_broadcast.h ; \
+	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)" > src/parallel_unit_nobroadcast.h ; \
+	    echo "      character (len=:), allocatable :: cbcast_array" >> src/parallel_unit_nobroadcast.h ; \
+	    echo "      integer :: bytes" >> src/parallel_unit_nobroadcast.h ; \
+	    echo "      integer, optional :: proc" >> src/parallel_unit_nobroadcast.h ; \
+	    echo "      if (ALWAYS_FALSE) print*, cbcast_array, bytes, proc" >> src/parallel_unit_nobroadcast.h ; \
+	    echo "    endsubroutine mpibcast_char_alloc" >> src/parallel_unit_nobroadcast.h ; \
 	    echo "    public :: mpibcast_char_alloc" > src/parallel_unit_broadcast_header.h ; \
 	    ;; \
 	*) \
 	    echo "      integer :: parallel_unit" > src/parallel_unit_declaration.h ; \
-	    echo "      integer :: parallel_unit\n      parallel_unit = get_unit()" > src/parallel_unit.h ; \
+	    echo "      integer :: parallel_unit" > src/parallel_unit.h ; \
+	    echo "      parallel_unit = get_unit()" >> src/parallel_unit.h ; \
 	    echo "" > src/parallel_unit_broadcast.h ; \
 	    echo "" > src/parallel_unit_nobroadcast.h ; \
 	    echo "" > src/parallel_unit_broadcast_header.h ; \
