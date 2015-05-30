@@ -43,7 +43,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: lsnap, lerror
+      logical :: lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 
