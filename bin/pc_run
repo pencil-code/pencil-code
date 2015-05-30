@@ -270,6 +270,7 @@ sub start_cmd {
     run_extra_setup_script();
     setup_local_disc();
     handle_local_binary($start_x);
+    identify_revision($start_x);
 
     get_lock();
     clear_completed();
@@ -290,6 +291,7 @@ sub run_cmd {
     start_background_helpers();
     write_job_id('STARTED');
     log_rundirectory();
+    identify_revision($run_x);
 
     get_lock();
     clear_completed();
@@ -1012,6 +1014,13 @@ sub handle_local_binary {
 
     system("remote-top > remote-top.log 2>&1 &") == 0
       or die "Cannot start remote-top in background: $!";
+}
+# ---------------------------------------------------------------------- #
+sub identify_revision {
+# Print revision info
+    my ($binary) = @_;
+
+    system("$ENV{PENCIL_HOME}/utils/pc_print_revision_file", $binary);
 }
 # ---------------------------------------------------------------------- #
 sub handle_copy_snapshots {

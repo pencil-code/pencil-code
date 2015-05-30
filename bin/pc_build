@@ -72,14 +72,14 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       location for a config file for the given computer
 
 # To do / ideas:
-#   - Allow make-style assignement arguments:
+#   - Allow make-style assignment arguments:
 #       pc_build FC=myf90 FFLAGS+='-O0 -g'
 #   - Allow handing down flags to 'make' with
 #       -Wm,<flag1>,<flag2>,...
 #       --make-flags=<flag1>,<flag2>,...
 #   - Allow setting the search path
 
-# Copyright (C) 2009  Wolfgang Dobler
+# Copyright (C) 2015  Wolfgang Dobler
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the same conditions as Perl or under the GNU General Public
@@ -228,8 +228,10 @@ map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
 
+system("$ENV{PENCIL_HOME}/utils/pc_identify_revision", '--reset');
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
+system("$ENV{PENCIL_HOME}/utils/pc_identify_revision");
 
 
 # ---------------------------------------------------------------------- #
