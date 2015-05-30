@@ -6,7 +6,11 @@
 #   For a SVN sandbox, requires connection to (and authentication
 #   with) the server.
 # Usage:
-#   pc_identify_revision [--reset]
+#   pc_identify_revision [--reset|-r] [--print-file-name|-p]
+# Examples:
+#   pc_identify_revision                    # Write revision file
+#   pc_identify_revision --reset            # Delete revision file
+#   pc_identify_revision --print-file-name  # print name of rev. file
 
 revision_file='revision.txt'
 quiet=''                        # set to '1' to suppress diff output
