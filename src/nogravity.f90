@@ -74,13 +74,11 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
-    subroutine read_gravity_init_pars(unit,iostat)
+    subroutine read_gravity_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_gravity_init_pars
 !***********************************************************************
@@ -92,13 +90,11 @@ module Gravity
 !
     endsubroutine write_gravity_init_pars
 !***********************************************************************
-    subroutine read_gravity_run_pars(unit,iostat)
+    subroutine read_gravity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_gravity_run_pars
 !***********************************************************************

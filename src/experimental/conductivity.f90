@@ -29,7 +29,6 @@ module Conductivity
   real :: tau_diff=0.0
   real :: hcond0=impossible
   real :: Kbot=impossible
-  real :: dummy=impossible
   real, dimension (mz), save :: hcond_zprof,chit_zprof
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
   real, dimension (mx),   save :: hcond_xprof,chit_xprof
@@ -43,8 +42,6 @@ module Conductivity
 !
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
-!
-  namelist /conductivity_init_pars/ dummy
 !
   namelist /conductivity_run_pars/ &
       hcond0, chi_t, chit_aniso, chi_shock, chi, iheatcond, Kbot, chi_hyper3, chiB, tau_diff
@@ -140,41 +137,14 @@ module Conductivity
 !
     endsubroutine initialize_conductivity
 !***********************************************************************
-    subroutine read_conductivity_init_pars(unit,iostat)
+    subroutine read_conductivity_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=conductivity_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=conductivity_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
-!
-    endsubroutine read_conductivity_init_pars
-!***********************************************************************
-    subroutine write_conductivity_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit,NML=conductivity_init_pars)
-!
-    endsubroutine write_conductivity_init_pars
-!***********************************************************************
-    subroutine read_conductivity_run_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=conductivity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=conductivity_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=conductivity_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_conductivity_run_pars
 !***********************************************************************
@@ -182,7 +152,7 @@ module Conductivity
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=conductivity_run_pars)
+      write(unit, NML=conductivity_run_pars)
 !
     endsubroutine write_conductivity_run_pars
 !***********************************************************************

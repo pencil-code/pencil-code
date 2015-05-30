@@ -116,45 +116,33 @@ module Particles_mass
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
-    subroutine read_particles_mass_init_pars(unit,iostat)
+    subroutine read_particles_mass_init_pars(iostat)
 !
-!  23-sep-14/Nils: adapted
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_mass_init_pars
 !***********************************************************************
     subroutine write_particles_mass_init_pars(unit)
 !
-!  23-sep-14/Nils: adapted
-!
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_mass_init_pars
 !***********************************************************************
-    subroutine read_particles_mass_run_pars(unit,iostat)
+    subroutine read_particles_mass_run_pars(iostat)
 !
-!  23-sep-14/Nils: adapted
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_mass_run_pars
 !***********************************************************************
     subroutine write_particles_mass_run_pars(unit)
 !
-!  23-sep-14/Nils: adapted
-!
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !

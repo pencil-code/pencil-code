@@ -39,43 +39,15 @@ module TestPerturb
 !
     endsubroutine initialize_testperturb
 !***********************************************************************
-    subroutine read_testperturb_init_pars(unit,iostat)
+    subroutine read_testperturb_run_pars(iostat)
 !
-!  Dummy routine
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_testperturb_init_pars
-!***********************************************************************
-    subroutine write_testperturb_init_pars(unit)
-!
-!  Dummy routine
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_testperturb_init_pars
-!***********************************************************************
-    subroutine read_testperturb_run_pars(unit,iostat)
-!
-!  Dummy routine
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_testperturb_run_pars
 !***********************************************************************
     subroutine write_testperturb_run_pars(unit)
-!
-!  Dummy routine
 !
       integer, intent(in) :: unit
 !

@@ -58,12 +58,6 @@ module Special
 !
   include '../special.h'
 !
-  real :: dummy
-!
-  namelist /special_init_pars/ dummy
-!
-  namelist /special_run_pars/ dummy
-!
   type InternalPencils
      real, dimension(nx,3) :: gkappa,glambda,glnkappa,glnlambda,gksi
      real, dimension(nx)   :: divflux,kappa,kappa1,lambda,lambda1,gTTgksi
@@ -340,49 +334,6 @@ module Special
       endif
 !
     endsubroutine calc_opacity
-!***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit,NML=special_init_pars)
-!
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
-endsubroutine read_special_run_pars
-!***********************************************************************
-    subroutine write_special_run_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=special_run_pars)
-!
-    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

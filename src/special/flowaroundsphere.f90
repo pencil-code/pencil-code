@@ -448,18 +448,14 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=flowaroundsphere_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=flowaroundsphere_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=flowaroundsphere_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -467,22 +463,18 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=flowaroundsphere_init_pars)
+      write(unit, NML=flowaroundsphere_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=flowaroundsphere_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=flowaroundsphere_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=flowaroundsphere_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -490,7 +482,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=flowaroundsphere_run_pars)
+      write(unit, NML=flowaroundsphere_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

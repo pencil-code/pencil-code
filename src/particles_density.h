@@ -9,6 +9,4 @@
   public :: drhopswarm_dt
   public :: read_particles_dens_init_pars
   public :: write_particles_dens_init_pars
-  public :: read_particles_dens_run_pars
-  public :: write_particles_dens_run_pars
   public :: rprint_particles_density

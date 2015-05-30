@@ -162,13 +162,13 @@ program start
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
-!  Read parameters from start.in.
-!
-  call read_startpars
-!
 !  Initialise MPI communication.
 !
   call initialize_mpicomm()
+!
+!  Read parameters from start.in.
+!
+  call read_startpars
 !
 !  Register variables in the f array.
 !

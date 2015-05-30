@@ -673,43 +673,22 @@ module Viscosity
 !
         endsubroutine initialize_lambda
 !***********************************************************************
-    subroutine read_viscosity_init_pars(unit,iostat)
+    subroutine read_viscosity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-    endsubroutine read_viscosity_init_pars
-!***********************************************************************
-    subroutine write_viscosity_init_pars(unit)
+      read(parallel_unit, NML=viscosity_run_pars, IOSTAT=iostat)
 !
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_viscosity_init_pars
-!***********************************************************************
-    subroutine read_viscosity_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=viscosity_run_pars,ERR=99)
-      endif
-!
-99    return
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=viscosity_run_pars)
+      write(unit, NML=viscosity_run_pars)
 !
     endsubroutine write_viscosity_run_pars
 !***********************************************************************

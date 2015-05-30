@@ -141,30 +141,22 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-!  04-sep-10/bing: coded
+      use File_io, only: get_unit
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
-!  04-sep-10/bing: coded
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

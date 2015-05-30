@@ -147,38 +147,22 @@ module Detonate
 !
     endsubroutine initialize_detonate
 !***********************************************************************
-    subroutine read_detonate_run_pars(unit,iostat)
+    subroutine read_detonate_run_pars(iostat)
 !
-!  Reads the runtime parameters.
+      use File_io, only: get_unit
 !
-!  06-feb-14/ccyang: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      integer :: stat
-!
-      read(unit, NML=detonate_run_pars, IOSTAT=stat)
-      if (present(iostat)) then
-        iostat = stat
-      else if (stat /= 0) then
-        call fatal_error('read_detonate_run_pars', 'cannot read detonate_run_pars. ')
-      endif
+      read(parallel_unit, NML=detonate_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_detonate_run_pars
 !***********************************************************************
     subroutine write_detonate_run_pars(unit)
 !
-!  Writes the runtime parameters.
-!
-!  06-feb-14/ccyang: coded
-!
       integer, intent(in) :: unit
 !
-      integer :: stat
-!
-      write(unit, NML=detonate_run_pars, IOSTAT=stat)
-      if (stat /= 0) call warning('write_detonate_run_pars', 'cannot write detonate_run_pars. ')
+      write(unit, NML=detonate_run_pars)
 !
     endsubroutine write_detonate_run_pars
 !***********************************************************************

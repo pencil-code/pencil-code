@@ -3662,22 +3662,17 @@ module Magnetic
 !
     endsubroutine curflux
 !***********************************************************************
-    subroutine read_magnetic_init_pars(unit,iostat)
+    subroutine read_magnetic_init_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: parallel_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magnetic_mf_init_pars(unit,iostat)
-!
-99    return
+      if (lmeanfield_theory) call read_magnetic_mf_init_pars(iostat)
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
@@ -3685,7 +3680,7 @@ module Magnetic
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_init_pars)
+      write(unit, NML=magnetic_init_pars)
 !
 !  write namelist for mean-field theory (if invoked)
 !
@@ -3693,22 +3688,17 @@ module Magnetic
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(unit,iostat)
+    subroutine read_magnetic_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: parallel_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magnetic_mf_run_pars(unit,iostat)
-!
-99    return
+      if (lmeanfield_theory) call read_magnetic_mf_run_pars(iostat)
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
@@ -3716,7 +3706,7 @@ module Magnetic
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_run_pars)
+      write(unit, NML=magnetic_run_pars)
 !
 !  write namelist for mean-field theory (if invoked)
 !

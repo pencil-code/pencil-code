@@ -38,25 +38,13 @@ module NSCBC
 !
     endsubroutine nscbc_boundtreat
 !***********************************************************************
-    subroutine read_NSCBC_init_pars(unit,iostat)
+    subroutine read_NSCBC_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_NSCBC_init_pars
-!***********************************************************************
-    subroutine read_NSCBC_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_NSCBC_run_pars
 !***********************************************************************
     subroutine write_NSCBC_init_pars(unit)
 !
@@ -65,6 +53,14 @@ module NSCBC
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_NSCBC_init_pars
+!***********************************************************************
+    subroutine read_NSCBC_run_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_NSCBC_run_pars
 !***********************************************************************
     subroutine write_NSCBC_run_pars(unit)
 !

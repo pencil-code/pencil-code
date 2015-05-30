@@ -2590,6 +2590,7 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
+      use File_io, only : parallel_count_lines, parallel_open, parallel_close
       use General, only : itoa
       use Sub, only     : location_in_proc
 !
@@ -2604,6 +2605,7 @@ module Diagnostics
       real    :: xsound, ysound, zsound
       integer :: lsound, msound, nsound
       character (LEN=80) :: line
+      include "parallel_unit_declaration.h"
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2617,26 +2619,26 @@ module Diagnostics
 !
       ncoords_sound = 0
 !
-      call parallel_open(unit,file=sound_coord_file)
+      call parallel_open(parallel_unit,sound_coord_file)
 !
       do isound=1,mcoords_sound
 !
         select case (dimensionality)
-        case (1); read(unit,*,iostat=istat) xsound
-        case (2); read(unit,*,iostat=istat) xsound, ysound
-        case (3); read(unit,*,iostat=istat) xsound, ysound, zsound
+        case (1); read(parallel_unit,*,iostat=istat) xsound
+        case (2); read(parallel_unit,*,iostat=istat) xsound, ysound
+        case (3); read(parallel_unit,*,iostat=istat) xsound, ysound, zsound
         case default
         endselect
 !
         if (istat < 0) exit ! end-of-file
 !
         if (istat > 0) then
-          backspace unit
-          read (unit,*) line
-          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
+!          backspace parallel_unit
+!          read (parallel_unit,*) line
+!          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
             print*, 'allocate_sound - Warning: unreadable data in line '// &
                     trim(itoa(isound))//' of '//trim(sound_coord_file)//' !'
-          endif
+!          endif
           cycle
         endif
 !
@@ -2660,6 +2662,8 @@ module Diagnostics
           endif
         endif
       enddo
+!
+      call parallel_close(parallel_unit)
 !
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then

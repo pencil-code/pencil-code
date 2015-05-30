@@ -660,73 +660,41 @@ module Magnetic
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
-    subroutine read_magnetic_init_pars(unit, iostat)
+    subroutine read_magnetic_init_pars(iostat)
 !
-! Reads the initialization parameters for Magnetic.
+      use File_io, only: get_unit
 !
-! 19-jun-13/ccyang: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      integer :: stat
-!
-      read(unit, NML=magnetic_init_pars, IOSTAT=stat)
-      if (present(iostat)) then
-        iostat = stat
-      else if (stat /= 0) then
-        call fatal_error('read_magnetic_init_pars', 'cannot read magnetic_init_pars. ')
-      endif
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
 !
-! Writes the initialization parameters for Magnetic.
-!
-! 19-jun-13/ccyang: coded
-!
       integer, intent(in) :: unit
 !
-      integer :: stat
-!
-      write(unit, NML=magnetic_init_pars, IOSTAT=stat)
-      if (stat /= 0) call fatal_error('write_magnetic_init_pars', 'cannot write magnetic_init_pars. ')
+      write(unit, NML=magnetic_init_pars)
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(unit, iostat)
+    subroutine read_magnetic_run_pars(iostat)
 !
-! Reads the runtime parameters for Magnetic.
+      use File_io, only: get_unit
 !
-! 19-jun-13/ccyang: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      integer :: stat
-!
-      read(unit, NML=magnetic_run_pars, IOSTAT=stat)
-      if (present(iostat)) then
-        iostat = stat
-      else if (stat /= 0) then
-        call fatal_error('read_magnetic_run_pars', 'cannot read magnetic_run_pars. ')
-      endif
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
 !
-! Writes the runtime parameters for Magnetic.
-!
-! 19-jun-13/ccyang: coded
-!
       integer, intent(in) :: unit
 !
-      integer :: stat
-!
-      write(unit, NML=magnetic_run_pars, IOSTAT=stat)
-      if (stat /= 0) call fatal_error('write_magnetic_run_pars', 'cannot write magnetic_run_pars. ')
+      write(unit, NML=magnetic_run_pars)
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************

@@ -130,57 +130,41 @@ module Shear
 !
     endsubroutine initialize_shear
 !***********************************************************************
-    subroutine read_shear_init_pars(unit,iostat)
+    subroutine read_shear_init_pars(iostat)
 !
-!  Read initial shear parameters.
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=shear_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=shear_init_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=shear_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_shear_init_pars
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
 !
-!  Write initial shear parameters.
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=shear_init_pars)
+      write(unit, NML=shear_init_pars)
 !
     endsubroutine write_shear_init_pars
 !***********************************************************************
-    subroutine read_shear_run_pars(unit,iostat)
+    subroutine read_shear_run_pars(iostat)
 !
-!  Read run shear parameters.
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=shear_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=shear_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=shear_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_shear_run_pars
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
 !
-!  Write run shear parameters.
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=shear_run_pars)
+      write(unit, NML=shear_run_pars)
 !
     endsubroutine write_shear_run_pars
 !***********************************************************************

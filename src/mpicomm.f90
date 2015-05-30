@@ -51,6 +51,7 @@ module Mpicomm
   implicit none
 !
   include 'mpicomm.h'
+  include 'mpif.h'
 !
   interface mpirecv_logical
      module procedure mpirecv_logical_scl
@@ -315,8 +316,6 @@ module Mpicomm
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
-!
-  include 'mpif.h'
 !
 !  initialize debug parameter for this routine
 !
@@ -2338,6 +2337,8 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    include "parallel_unit_broadcast.h"
+!***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
 !  Communicate real array between processors.
@@ -3083,18 +3084,19 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine touch_file(fname)
+    subroutine touch_file(file)
 !
-!  touch file (used for code locking)
+!  Touches a given file (used for code locking).
+!
 !  25-may-03/axel: coded
-!  06-mar-07/wolf: moved here from sub.f90, so we can use it below
+!  24-mar-10/Bourdin.KIS: moved here from sub.f90
 !
-      character (len=*) :: fname
+      character(len=*) :: file
 !
-      if (lroot) then
-        open(1,FILE=fname,STATUS='replace')
-        close(1)
-      endif
+      integer :: unit = 1
+!
+      open (unit, FILE=file)
+      close (unit)
 !
     endsubroutine touch_file
 !***********************************************************************
@@ -7034,240 +7036,6 @@ module Mpicomm
       call mpireduce_sum(az_local,az,nzgrid)
 !
     endsubroutine z2x
-!***********************************************************************
-    subroutine parallel_open(unit,file,form,nitems)
-!
-!  Choose between two reading methods.
-!
-!  19-nov-10/dhruba.mitra: implemented
-!
-      integer :: unit
-      character (len=*) :: file
-      character (len=*), optional :: form
-      integer, optional :: nitems
-!
-      if (present(nitems)) nitems=0
-!
-      if (lfake_parallel_io) then
-        call fake_parallel_open(unit,file,form)
-      else
-        call true_parallel_open(unit,file,form)
-      endif
-!
-    endsubroutine parallel_open
-!***********************************************************************
-    subroutine fake_parallel_open(unit,file,form)
-!
-!  Read a global file.
-!
-!  18-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-      character (len=*) :: file
-      character (len=*), optional :: form
-!
-      logical :: exists
-!
-!  Test if file exists.
-!
-      inquire(FILE=file,exist=exists)
-      if (.not. exists) call stop_it('fake_parallel_open: file not found "'//trim(file)//'"')
-!
-!  Open file.
-!
-      if (present(form)) then
-        open(unit, FILE=file, FORM=form, STATUS='old')
-      else
-        open(unit, FILE=file, STATUS='old')
-      endif
-!
-    endsubroutine fake_parallel_open
-!***********************************************************************
-    subroutine true_parallel_open(unit,file,form,recl)
-!
-!  Read a global file in parallel.
-!
-!  17-mar-10/Bourdin.KIS: implemented
-!
-      use Cparam, only: fnlen
-      use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
-!
-      integer :: unit
-      character (len=*) :: file
-      character (len=*), optional :: form
-      integer, optional :: recl
-!
-      logical :: exists
-      integer :: bytes, pos
-      integer, parameter :: buf_len=fnlen
-      character (len=buf_len) :: filename
-      character, dimension(:), allocatable :: buffer
-      character(len=fnlen) :: get_tmp_prefix_
-!
-      if (lroot) then
-!
-!  Test if file exists.
-!
-        inquire(FILE=file,exist=exists)
-        if (.not. exists) call stop_it_if_any(.true., &
-            'true_parallel_open: file not found "'//trim(file)//'"')
-        bytes=file_size(file)
-        if (bytes < 0) call stop_it_if_any(.true., &
-            'true_parallel_open: could not determine file size "'//trim(file)//'"')
-        if (bytes == 0) call stop_it_if_any(.true., &
-            'true_parallel_open: file is empty "'//trim(file)//'"')
-      endif
-!
-!  Catch conditional errors of the MPI root rank.
-!
-      call stop_it_if_any(.false.,'')
-!
-!  Broadcast the file size.
-!
-      call mpibcast_int(bytes)
-!
-!  Allocate temporary memory.
-!
-      allocate(buffer(bytes))
-      buffer=char(0)
-!
-      if (lroot) then
-!
-!  Read file content into buffer.
-!
-        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
-        read(unit, REC=1) buffer
-        close(unit)
-      endif
-!
-!  Broadcast buffer to all MPI ranks.
-!
-      call mpibcast_char(buffer, bytes)
-!
-!  Create unique temporary filename.
-!
-      pos=scan(file, '/')
-      do while(pos /= 0)
-        file(pos:pos)='_'
-        pos=scan(file, '/')
-      enddo
-      get_tmp_prefix_=get_tmp_prefix()
-      write(filename,'(A,A,A,I0)') trim(get_tmp_prefix_), file, '-', iproc
-!
-!  Write temporary file into local RAM disk (/tmp).
-!
-      call write_binary_file(filename, bytes, buffer)
-      deallocate(buffer)
-!
-!  Open temporary file.
-!
-      if (present(form) .and. present(recl)) then
-        open(unit, FILE=filename, FORM=form, RECL=recl, STATUS='old')
-      elseif (present(recl)) then
-        open(unit, FILE=filename, RECL=recl, STATUS='old')
-      elseif (present(form)) then
-        open(unit, FILE=filename, FORM=form, STATUS='old')
-      else
-        open(unit, FILE=filename, STATUS='old')
-      endif
-!
-!  Unit is now reading from RAM and is ready to be used on all ranks in
-!  parallel.
-!
-    endsubroutine true_parallel_open
-!***********************************************************************
-    subroutine parallel_close(unit)
-!
-!  Close a file unit opened by parallel_open and remove temporary file.
-!
-!  17-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-!
-      if (lfake_parallel_io) then
-        call fake_parallel_close(unit)
-      else
-         call true_parallel_close(unit)
-       endif
-!
-    endsubroutine parallel_close
-!***********************************************************************
-    subroutine fake_parallel_close(unit)
-!
-!  Close a file unit opened by parallel_open and remove temporary file.
-!
-!  17-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-!
-      close(unit)
-!
-    endsubroutine fake_parallel_close
-!***********************************************************************
-    subroutine true_parallel_close(unit)
-!
-!  Close a file unit opened by parallel_open and remove temporary file.
-!
-!  17-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-!
-      close(unit,STATUS='delete')
-!
-    endsubroutine true_parallel_close
-!***********************************************************************
-    function parallel_count_lines(file,comchars)
-!
-!  Determines in parallel the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter comchars added for use in count_lines
-!
-      use Syscalls, only: count_lines
-!
-      character(len=*),                  intent(IN) :: file
-      character, dimension(:), optional, intent(IN) :: comchars
-!
-      integer :: parallel_count_lines
-!
-      if (lroot) parallel_count_lines = count_lines(file,comchars)
-      call mpibcast_int(parallel_count_lines)
-!
-    endfunction
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use Syscalls, only: file_exists
-!
-      character(len=*) :: file
-      logical :: parallel_file_exists,ldelete
-      logical, optional :: delete
-!
-      if (present(delete)) then
-        ldelete=delete
-      else
-        ldelete=.false.
-      endif
-!
-      ! Let the root node do the dirty work
-      if (lroot) parallel_file_exists = file_exists(file,ldelete)
-!
-      call mpibcast_logical(parallel_file_exists)
-!
-    endfunction
 !***********************************************************************
     subroutine mpigather_xy( sendbuf, recvbuf, lpz )
 !

@@ -1650,18 +1650,11 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine read_particles_chem_init_pars(unit,iostat)
+    subroutine read_particles_chem_init_pars(iostat)
+      use File_io, only: parallel_unit
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read (unit,NML=particles_chem_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_chem_init_pars,ERR=99)
-      endif
-!
-99    return
+      read (parallel_unit, NML=particles_chem_init_pars, IOSTAT=iostat)
     endsubroutine read_particles_chem_init_pars
 ! ******************************************************************************
 !  Write input parameters for the particles_chemistry module in start.x
@@ -1671,25 +1664,18 @@ module Particles_chemistry
     subroutine write_particles_chem_init_pars(unit)
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_chem_init_pars)
+      write (unit, NML=particles_chem_init_pars)
     endsubroutine write_particles_chem_init_pars
 ! ******************************************************************************
 !  Read run parameters for particles_chemistry module, run.x
 !
 !  oct-14/Jonas: coded
 !
-    subroutine read_particles_chem_run_pars(unit,iostat)
+    subroutine read_particles_chem_run_pars(iostat)
+      use File_io, only: parallel_unit
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read (unit,NML=particles_chem_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=particles_chem_run_pars,ERR=99)
-      endif
-!
-99    return
+      read (parallel_unit, NML=particles_chem_run_pars, IOSTAT=iostat)
     endsubroutine read_particles_chem_run_pars
 ! ******************************************************************************
 !   Write run parameters for particles_chemistry module, run.x
@@ -1699,7 +1685,7 @@ module Particles_chemistry
     subroutine write_particles_chem_run_pars(unit)
       integer, intent(in) :: unit
 !
-      write (unit,NML=particles_chem_run_pars)
+      write (unit, NML=particles_chem_run_pars)
     endsubroutine write_particles_chem_run_pars
 ! ******************************************************************************
 !  Calculate the current density of the particle

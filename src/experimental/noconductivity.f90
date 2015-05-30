@@ -45,13 +45,11 @@ module Conductivity
 !
     endsubroutine initialize_conductivity
 !***********************************************************************
-    subroutine read_conductivity_init_pars(unit,iostat)
+    subroutine read_conductivity_init_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_conductivity_init_pars
 !***********************************************************************
@@ -63,13 +61,11 @@ module Conductivity
 !
     endsubroutine write_conductivity_init_pars
 !***********************************************************************
-    subroutine read_conductivity_run_pars(unit,iostat)
+    subroutine read_conductivity_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_conductivity_run_pars
 !***********************************************************************

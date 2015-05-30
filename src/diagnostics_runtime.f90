@@ -249,7 +249,7 @@ module Diagnostics
 !  Write to stdout.
 !
         write(*,'(a)') trim(line)
-        ! flush(6) ! this is a F2003 feature....
+        flush(6) ! this is a F2003 feature....
 !
       endif
 !
@@ -333,7 +333,6 @@ module Diagnostics
 !
       logical, save :: lfirst_call=.true.
       integer, parameter :: lun=1
-      integer :: iostat
 !
         open(lun,file=trim(directory)//'/sound.dat',position='append')
 !
@@ -2443,20 +2442,21 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
+      use File_io, only : parallel_count_lines, parallel_open, parallel_close
       use General, only : itoa
       use Sub, only     : location_in_proc
 !
       integer, intent(in) :: nnamel
 !
       character (LEN=*), parameter :: sound_coord_file = 'sound.coords'
-      integer :: stat=0, isound
+      integer :: isound
       logical :: lval
-      integer :: unit=1, istat, il
+      integer :: ierr, il
       integer :: mcoords_sound
       integer, allocatable, dimension (:,:) :: temp_sound_coords
       real    :: xsound, ysound, zsound
       integer :: lsound, msound, nsound
-      character (LEN=80) :: line
+      include "parallel_unit_declaration.h"
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2464,34 +2464,22 @@ module Diagnostics
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
-      allocate(temp_sound_coords(mcoords_sound,3),stat=stat)
-      if (stat>0) call fatal_error('allocate_sound', &
+      allocate(temp_sound_coords(mcoords_sound,3),stat=ierr)
+      if (ierr>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for temp_sound_coords')
 !
       ncoords_sound = 0
 !
-      call parallel_open(unit,file=sound_coord_file)
+      call parallel_open(parallel_unit,sound_coord_file)
 !
       do isound=1,mcoords_sound
 !
         select case (dimensionality)
-        case (1); read(unit,*,iostat=istat) xsound
-        case (2); read(unit,*,iostat=istat) xsound, ysound
-        case (3); read(unit,*,iostat=istat) xsound, ysound, zsound
+        case (1); read(parallel_unit,*) xsound
+        case (2); read(parallel_unit,*) xsound, ysound
+        case (3); read(parallel_unit,*) xsound, ysound, zsound
         case default
         endselect
-!
-        if (istat < 0) exit ! end-of-file
-!
-        if (istat > 0) then
-          backspace unit
-          read (unit,*) line
-          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
-            print*, 'allocate_sound - Warning: unreadable data in line '// &
-                    trim(itoa(isound))//' of '//trim(sound_coord_file)//' !'
-          endif
-          cycle
-        endif
 !
         if (location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)) then
 !
@@ -2514,25 +2502,27 @@ module Diagnostics
         endif
       enddo
 !
+      call parallel_close(parallel_unit)
+!
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then
 !
         if (.not. allocated(cname_sound)) then
-          allocate(cname_sound(nnamel),stat=istat)
-          if (istat>0) call fatal_error('allocate_sound', &
+          allocate(cname_sound(nnamel),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for cname_sound')
         endif
 !
         if (.not. allocated(sound_coords_list)) then
-          allocate(sound_coords_list(ncoords_sound,3),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for sound_coords_list')
         endif
         sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
 !
         if (.not. allocated(fname_sound)) then
-          allocate(fname_sound(nnamel,ncoords_sound),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(fname_sound(nnamel,ncoords_sound),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for fname_sound')
           if (ldebug) print*, 'allocate_sound: allocated memory for '// &
               'fname_sound  with nname_sound  =', nnamel
@@ -2541,8 +2531,8 @@ module Diagnostics
         fname_sound = 0.0
 !
         if (.not. allocated(cform_sound)) then
-          allocate(cform_sound(nnamel),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(cform_sound(nnamel),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for cform_sound')
         endif
         cform_sound = ' '

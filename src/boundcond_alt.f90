@@ -4837,7 +4837,7 @@ module Boundcond
 !
        use EquationOfState, only : gamma,gamma_m1,gamma1,cs20,lnrho0
        use Mpicomm, only : mpisend_real, mpirecv_real
-       use Syscalls, only : file_exists
+       use File_io, only : file_exists
 !
        real, dimension (mx,my,mz,mfarray) :: f
 !

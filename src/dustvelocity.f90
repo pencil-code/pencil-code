@@ -1613,46 +1613,42 @@ module Dustvelocity
 !
     endsubroutine get_stoppingtime
 !***********************************************************************
-    subroutine read_dustvelocity_init_pars(unit,iostat)
+    subroutine read_dustvelocity_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=dustvelocity_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=dustvelocity_init_pars,ERR=99)
-      endif
-
-99    return
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=dustvelocity_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
     subroutine write_dustvelocity_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=dustvelocity_init_pars)
-
+!
+      write(unit, NML=dustvelocity_init_pars)
+!
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
-    subroutine read_dustvelocity_run_pars(unit,iostat)
+    subroutine read_dustvelocity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=dustvelocity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=dustvelocity_run_pars,ERR=99)
-      endif
-
-99    return
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=dustvelocity_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************
     subroutine write_dustvelocity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=dustvelocity_run_pars)
-
+!
+      write(unit, NML=dustvelocity_run_pars)
+!
     endsubroutine write_dustvelocity_run_pars
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)

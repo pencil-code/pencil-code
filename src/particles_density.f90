@@ -26,16 +26,12 @@ module Particles_density
 !
   real :: rhop_swarm0=1.0, rhop_swarm1=1.0, rhop_swarm2, rhop_swarm3
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
-  real :: dummy=0.0
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
 !
   namelist /particles_dens_init_pars/ &
       initrhopswarm, rhop_swarm0, rhop_swarm1, rhop_swarm2, rhop_swarm3, &
       gravr_swarm0, gravr_swarm1, eps_dtog
-!
-  namelist /particles_dens_run_pars/ &
-      dummy
 !
   contains
 !***********************************************************************
@@ -257,59 +253,24 @@ module Particles_density
 !
     endsubroutine drhopswarm_dt
 !***********************************************************************
-    subroutine read_particles_dens_init_pars(unit,iostat)
+    subroutine read_particles_dens_init_pars(iostat)
 !
-!  22-nov-10/anders+michiel: adapted
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_dens_init_pars,ERR=99,IOSTAT=iostat)
-      else
-        read(unit,NML=particles_dens_init_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=particles_dens_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_dens_init_pars
 !***********************************************************************
     subroutine write_particles_dens_init_pars(unit)
 !
-!  22-nov-10/anders+michiel: adapted
+      integer, intent(in) :: unit
 !
-      integer, intent (in) :: unit
-!
-      write(unit,NML=particles_dens_init_pars)
+      write(unit, NML=particles_dens_init_pars)
 !
     endsubroutine write_particles_dens_init_pars
-!***********************************************************************
-    subroutine read_particles_dens_run_pars(unit,iostat)
-!
-!  22-nov-10/anders+michiel: adapted
-!
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=particles_dens_run_pars,ERR=99,IOSTAT=iostat)
-      else
-        read(unit,NML=particles_dens_run_pars,ERR=99)
-      endif
-!
-99    return
-!
-    endsubroutine read_particles_dens_run_pars
-!***********************************************************************
-    subroutine write_particles_dens_run_pars(unit)
-!
-!  22-nov-10/anders+michiel: adapted
-!
-      integer, intent (in) :: unit
-!
-      write(unit,NML=particles_dens_run_pars)
-!
-    endsubroutine write_particles_dens_run_pars
 !***********************************************************************
     subroutine rprint_particles_density(lreset,lwrite)
 !

@@ -47,13 +47,11 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine read_energy_init_pars(unit,iostat)
+    subroutine read_energy_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_energy_init_pars
 !***********************************************************************
@@ -65,13 +63,11 @@ module Energy
 !
     endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_energy_run_pars(unit,iostat)
+    subroutine read_energy_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_energy_run_pars
 !***********************************************************************
@@ -144,6 +140,38 @@ module Energy
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_lenergy_pars
+!***********************************************************************
+    subroutine read_energy_init_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_energy_init_pars
+!***********************************************************************
+    subroutine write_energy_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_energy_init_pars
+!***********************************************************************
+    subroutine read_energy_run_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_energy_run_pars
+!***********************************************************************
+    subroutine write_energy_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_energy_run_pars
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !

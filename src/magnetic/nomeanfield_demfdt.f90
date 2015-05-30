@@ -92,21 +92,15 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine demf_dt_meanfield
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_init_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_init_pars(iostat)
 !
-!  Dummy routine
+      integer, intent(out) :: iostat
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magn_mf_demfdt_init_pars
 !***********************************************************************
     subroutine write_magn_mf_demfdt_init_pars(unit)
-!
-!  Dummy routine
 !
       integer, intent(in) :: unit
 !
@@ -114,21 +108,15 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine write_magn_mf_demfdt_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_run_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_run_pars(iostat)
 !
-!  Dummy routine
+      integer, intent(out) :: iostat
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magn_mf_demfdt_run_pars
 !***********************************************************************
     subroutine write_magn_mf_demfdt_run_pars(unit)
-!
-!  Dummy routine
 !
       integer, intent(in) :: unit
 !

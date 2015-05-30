@@ -82,8 +82,6 @@ module Special
 !
   include '../special.h'
 !
-!!  namelist /special_init_pars/ dummy
-!
   real :: fring=0.0d0,r0=0.2,tilt=0.0,width=0.02,&
           dIring=0.0,dposx=0.0,dposz=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
   real :: posy=0.0,alpha=1.25
@@ -275,36 +273,14 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -312,7 +288,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

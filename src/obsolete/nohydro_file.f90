@@ -20,9 +20,6 @@ module Hydro
 
   private
 
-  !namelist /hydro_init_pars/ dummyuu
-  !namelist /hydro_run_pars/  dummyuu
-
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_urms=0,idiag_umax=0,idiag_orms=0,idiag_omax=0
@@ -72,12 +69,9 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Cdata
-      use Sub
-!
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (ALWAYS_FALSE) print*,f  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_uu
 !***********************************************************************
@@ -142,7 +136,6 @@ module Hydro
         if (idiag_um2/=0) call max_mn_name(u2,idiag_um2)
       endif
 !
-      if (ALWAYS_FALSE) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
@@ -163,44 +156,46 @@ module Hydro
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
-!  dummy routine
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      if (ALWAYS_FALSE) print*, f     !(keep compiler quiet)
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (ALWAYS_FALSE)) print*,iostat
-      if (ALWAYS_FALSE) print*,unit
-
-    endsubroutine read_hydro_init_pars
-!***********************************************************************
-    subroutine write_hydro_init_pars(unit)
-      integer, intent(in) :: unit
-
-      if (ALWAYS_FALSE) print*,unit
-
-    endsubroutine write_hydro_init_pars
-!***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat) .and. (ALWAYS_FALSE)) print*,iostat
-      if (ALWAYS_FALSE) print*,unit
-
+    subroutine read_hydro_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      if (ALWAYS_FALSE) print*,unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_hydro_run_pars
+!***********************************************************************
+    subroutine read_hydro_run_pars(unit,iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_hydro_run_pars
+!***********************************************************************
+    subroutine write_hydro_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)

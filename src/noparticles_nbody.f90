@@ -182,13 +182,11 @@ module Particles_nbody
 !
     endsubroutine calc_nbodygravity_particles
 !***********************************************************************
-    subroutine read_particles_nbody_init_pars(unit,iostat)
+    subroutine read_particles_nbody_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_nbody_init_pars
 !***********************************************************************
@@ -200,13 +198,11 @@ module Particles_nbody
 !
     endsubroutine write_particles_nbody_init_pars
 !***********************************************************************
-    subroutine read_particles_nbody_run_pars(unit,iostat)
+    subroutine read_particles_nbody_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_nbody_run_pars
 !***********************************************************************

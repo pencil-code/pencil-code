@@ -80,8 +80,6 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-!!  integer :: dummy
-!
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
@@ -1496,28 +1494,22 @@ module InitialCondition
 !
     endsubroutine lowk_noise_gaussian_rprof
 !***********************************************************************
-    subroutine read_initial_condition_pars(unit,iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  07-may-09/wlad: coded
+      use File_io, only: get_unit
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=initial_condition_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!     
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=initial_condition_pars)
+      write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************

@@ -8,8 +8,8 @@
 ! In any case one of the two declarations must finally be present.
 ! 
 !#IFDEF f2003
-!  character(LEN=*) :: unit
+!  character (len=*), intent(in) :: unit
 !#ELSE
-  integer :: unit
+  integer, intent(in) :: unit
 !#ENDIF
-  intent(IN) :: unit
+

@@ -2,7 +2,6 @@
   private
 
   public :: register_heatflux, initialize_heatflux, finalize_heatflux
-  public :: read_heatflux_init_pars, write_heatflux_init_pars
   public :: read_heatflux_run_pars,  write_heatflux_run_pars
   public :: rprint_heatflux
   public :: get_slices_heatflux

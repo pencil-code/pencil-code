@@ -46,15 +46,15 @@ module power_spectrum
 !
   contains
 !***********************************************************************
-    subroutine read_power_spectrum_runpars(unit,iostat)
+    subroutine read_power_spectrum_runpars(iostat)
 !
 ! 05-feb-14/MR: added ordering of z ranges
 ! 12-mar-14/MR: changed merge_ranges into function
 !
+      use File_io, only: parallel_unit
       use General, only : parser, read_range, merge_ranges, quick_sort
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
       integer :: i, iend_zrange
       character (LEN=20), dimension(nz_max) :: czranges
@@ -62,11 +62,8 @@ module power_spectrum
       integer, dimension(nz_max) :: iperm
       logical :: ldum
 !
-      if (present(iostat)) then
-        read(unit,NML=power_spectrum_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=power_spectrum_run_pars,ERR=99)
-      endif
+      read(parallel_unit, NML=power_spectrum_run_pars, IOSTAT=iostat)
+      if (iostat /= 0) return
 !
       kxrange(:,1) = (/1,nxgrid,1/)
       kyrange(:,1) = (/1,nygrid,1/)
@@ -124,8 +121,6 @@ module power_spectrum
       if (uxy_spec  ) n_spectra = n_spectra+1
       if (bxy_spec  ) n_spectra = n_spectra+1
       if (jxbxy_spec) n_spectra = n_spectra+1
-!
-99    return
 !
     endsubroutine read_power_spectrum_runpars
 !***********************************************************************

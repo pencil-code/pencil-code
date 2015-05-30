@@ -33,9 +33,6 @@ module Viscosity
   ! dummy logical
   logical :: lvisc_first=.false.
 
-  ! input parameters
-  !namelist /viscosity_init_pars/ dummy
-
   ! run parameters
   namelist /viscosity_run_pars/ ivisc,q_DJO,t0_DJO,nu,nuf_DJO,ti_DJO,tf_DJO
 
@@ -77,43 +74,24 @@ module Viscosity
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
-    subroutine read_viscosity_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
-      if (ALWAYS_FALSE) print*,unit
-
-    endsubroutine read_viscosity_init_pars
-!***********************************************************************
-    subroutine write_viscosity_init_pars(unit)
-      integer, intent(in) :: unit
-
-      if (ALWAYS_FALSE) print*,unit
-
-    endsubroutine write_viscosity_init_pars
-!***********************************************************************
-    subroutine read_viscosity_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=viscosity_run_pars,ERR=99)
-      endif
-
-
-99    return
+    subroutine read_viscosity_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=viscosity_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
     subroutine write_viscosity_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=viscosity_run_pars)
-
+!
+      write(unit, NML=viscosity_run_pars)
+!
     endsubroutine write_viscosity_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
 !  Writes ishock to index.pro file
@@ -152,12 +130,14 @@ module Viscosity
         endif
       endif
 !
-      if (ALWAYS_FALSE) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_viscosity(f)
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      if (ALWAYS_FALSE) print*,f  !(to keep compiler quiet)
+!
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -197,7 +177,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*heat
       if (lfirst.and.ldt) Hmax=Hmax+heat
-      if (ALWAYS_FALSE) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
+
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -322,7 +302,6 @@ module Viscosity
         call max_mn_name(spread(nu,1,nx)/dxmin**2,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if (ALWAYS_FALSE) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
 
 !***********************************************************************

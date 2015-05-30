@@ -244,52 +244,41 @@ module Lorenz_gauge
 !
     endsubroutine dlorenz_gauge_dt
 !***********************************************************************
-    subroutine read_lorenz_gauge_init_pars(unit,iostat)
+    subroutine read_lorenz_gauge_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-!  read namelist
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=lorenz_gauge_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=lorenz_gauge_init_pars,ERR=99)
-      endif
+      read(parallel_unit, NML=lorenz_gauge_init_pars, IOSTAT=iostat)
 !
-99    return
     endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
     subroutine write_lorenz_gauge_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-!  write name list
-!
-      write(unit,NML=lorenz_gauge_init_pars)
+      write(unit, NML=lorenz_gauge_init_pars)
 !
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
-    subroutine read_lorenz_gauge_run_pars(unit,iostat)
+    subroutine read_lorenz_gauge_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-!  write name list
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=lorenz_gauge_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=lorenz_gauge_run_pars,ERR=99)
-      endif
+      read(parallel_unit, NML=lorenz_gauge_run_pars, IOSTAT=iostat)
 !
-99  endsubroutine read_lorenz_gauge_run_pars
+    endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************
     subroutine write_lorenz_gauge_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-!  write name list
-!
-      write(unit,NML=lorenz_gauge_run_pars)
+      write(unit, NML=lorenz_gauge_run_pars)
 !
     endsubroutine write_lorenz_gauge_run_pars
 !***********************************************************************

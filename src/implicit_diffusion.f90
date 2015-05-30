@@ -41,38 +41,22 @@ module ImplicitDiffusion
 !  PUBLIC ROUTINES GO BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine read_implicit_diffusion_pars(unit, iostat)
+    subroutine read_implicit_diffusion_pars(iostat)
 !
-!  Reads the namelist implicit_diffusion_pars.
+      use File_io, only: get_unit
 !
-!  04-sep-14/ccyang: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      integer :: status
-!
-      read(unit, nml=implicit_diffusion_pars, iostat=status)
-      if (present(iostat)) then
-        iostat = status
-      else if (status /= 0) then
-        call fatal_error('read_implicit_diffusion_pars', 'unable to read namelist implicit_diffusion_pars')
-      endif
+      read(unit, NML=implicit_diffusion_pars, iostat=iostat)
 !
     endsubroutine read_implicit_diffusion_pars
 !***********************************************************************
     subroutine write_implicit_diffusion_pars(unit)
 !
-!  Writes the namelist implicit_diffusion_pars.
-!
-!  04-sep-14/ccyang: coded
-!
       integer, intent(in) :: unit
 !
-      integer :: status
-!
-      write(unit, nml=implicit_diffusion_pars, iostat=status)
-      if (status /= 0) call warning('write_implicit_diffusion_pars', 'unable to write namelist implicit_diffusion_pars')
+      write(unit, nml=implicit_diffusion_pars)
 !
     endsubroutine write_implicit_diffusion_pars
 !***********************************************************************

@@ -771,37 +771,25 @@ module Particles_collisions
 !
     endsubroutine particle_collision
 !***********************************************************************
-    subroutine read_particles_coll_run_pars(unit,iostat)
+    subroutine read_particles_coll_run_pars(iostat)
 !
-!  Read run parameters from run.in.
+      use File_io, only: get_unit
 !
-!  28-mar-09/anders: adapted
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,nml=particles_coll_run_pars,err=99,iostat=iostat)
-      else
-        read(unit,nml=particles_coll_run_pars,err=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=particles_coll_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_coll_run_pars
 !***********************************************************************
     subroutine write_particles_coll_run_pars(unit)
 !
-!  Write run parameters to param.nml.
-!
-!  28-mar-09/anders: adapted
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=particles_coll_run_pars)
+      write(unit, NML=particles_coll_run_pars)
 !
     endsubroutine write_particles_coll_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_collisions(lreset,lwrite)
 !
 !  Read and register diagnostic parameters.

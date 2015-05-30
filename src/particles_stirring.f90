@@ -64,34 +64,22 @@ module Particles_stirring
 !
     endsubroutine particle_stirring
 !***********************************************************************
-    subroutine read_particles_stir_run_pars(unit,iostat)
+    subroutine read_particles_stir_run_pars(iostat)
 !
-!  Read run parameters from run.in.
+      use File_io, only: get_unit
 !
-!  30-dec-10/anders+michiel: coded
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,nml=particles_stirring_run_pars,err=99,iostat=iostat)
-      else
-        read(unit,nml=particles_stirring_run_pars,err=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=particles_stirring_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_stir_run_pars
 !***********************************************************************
     subroutine write_particles_stir_run_pars(unit)
 !
-!  Write run parameters to param.nml.
-!
-!  30-dec-10/anders+michiel: coded
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=particles_stirring_run_pars)
+      write(unit, NML=particles_stirring_run_pars)
 !
     endsubroutine write_particles_stir_run_pars
 !***********************************************************************

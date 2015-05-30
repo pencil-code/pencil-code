@@ -158,13 +158,11 @@ module Lorenz_gauge
 !
     endsubroutine dlorenz_gauge_dt
 !***********************************************************************
-    subroutine read_lorenz_gauge_init_pars(unit,iostat)
+    subroutine read_lorenz_gauge_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
@@ -172,19 +170,15 @@ module Lorenz_gauge
 !
       integer, intent(in) :: unit
 !
-!  write name list
-!
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
-    subroutine read_lorenz_gauge_run_pars(unit,iostat)
+    subroutine read_lorenz_gauge_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************

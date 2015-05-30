@@ -274,49 +274,41 @@ module Particles_spin
 !
     endsubroutine dps_dt
 !***********************************************************************
-    subroutine read_particles_spin_init_pars(unit,iostat)
+    subroutine read_particles_spin_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_spin_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_spin_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_spin_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_spin_init_pars
 !***********************************************************************
     subroutine write_particles_spin_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_spin_init_pars)
+      write(unit, NML=particles_spin_init_pars)
 !
     endsubroutine write_particles_spin_init_pars
 !***********************************************************************
-    subroutine read_particles_spin_run_pars(unit,iostat)
+    subroutine read_particles_spin_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_spin_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_spin_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_spin_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_spin_run_pars
 !***********************************************************************
     subroutine write_particles_spin_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_spin_run_pars)
+      write(unit, NML=particles_spin_run_pars)
 !
     endsubroutine write_particles_spin_run_pars
 !***********************************************************************

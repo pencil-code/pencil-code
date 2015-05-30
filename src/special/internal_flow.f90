@@ -29,7 +29,6 @@ module Special
   real, target, dimension (nx,ny,3) :: uu_xy_meanx
   real, dimension(nygrid,3) :: mean_u
 !
-  integer :: dummy
   character(len=24) :: initspecial='nothing'
   real :: central_vel=0,ampluu_spec=0,Re_tau=180
 !
@@ -38,9 +37,6 @@ module Special
 ! input parameters
   namelist /internal_flow_init_pars/ &
        initspecial,central_vel,ampluu_spec,Re_tau
-  ! run parameters
-  namelist /internal_flow_run_pars/  &
-       dummy
 !
   integer :: idiag_turbint=0
   integer :: idiag_uxm_central,idiag_tau_w
@@ -253,49 +249,24 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=internal_flow_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=internal_flow_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=internal_flow_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=internal_flow_init_pars)
+      write(unit, NML=internal_flow_init_pars)
 !
     endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=internal_flow_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=internal_flow_run_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_special_run_pars
-!***********************************************************************
-    subroutine write_special_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit,NML=internal_flow_run_pars)
-!
-    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

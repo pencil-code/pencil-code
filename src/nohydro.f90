@@ -782,13 +782,11 @@ module Hydro
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
+    subroutine read_hydro_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -800,13 +798,11 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
+    subroutine read_hydro_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************

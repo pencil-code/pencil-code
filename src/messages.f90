@@ -61,7 +61,6 @@ module Messages
 ! Also set a flag if fake_parallel_io is requested.
 !
       inquire(FILE="COLOR", EXIST=ltermcap_color)
-      inquire(FILE="FAKE_PARALLEL_IO", EXIST=lfake_parallel_io)
 !
     endsubroutine initialize_messages
 !***********************************************************************
@@ -262,7 +261,7 @@ module Messages
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()
           write (*,*) trim(scaller) // ": " // trim(message)
-!          call flush() ! has to wait until F2003
+!          call flush(6) ! has to wait until F2003
         endif
 !
         if (ldie_onwarning) call die_gracefully

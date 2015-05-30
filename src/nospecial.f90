@@ -82,10 +82,6 @@ module Special
 !
   include 'special.h'
 !
-!!  namelist /special_init_pars/ dummy
-!
-!!  namelist /special_run_pars/ dummy
-!
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -265,13 +261,11 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -283,13 +277,11 @@ module Special
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_special_run_pars
 !***********************************************************************

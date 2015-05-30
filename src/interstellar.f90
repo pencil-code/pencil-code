@@ -1084,50 +1084,45 @@ module Interstellar
       endselect
 !
     endsubroutine get_slices_interstellar
-!*****************************************************************************
-    subroutine read_interstellar_init_pars(unit,iostat)
+!***********************************************************************
+    subroutine read_interstellar_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=interstellar_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=interstellar_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=interstellar_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_interstellar_init_pars
-!*****************************************************************************
+!***********************************************************************
     subroutine write_interstellar_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=interstellar_init_pars)
+      write(unit, NML=interstellar_init_pars)
 !
     endsubroutine write_interstellar_init_pars
-!*****************************************************************************
-    subroutine read_interstellar_run_pars(unit,iostat)
+!***********************************************************************
+    subroutine read_interstellar_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=interstellar_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=interstellar_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=interstellar_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_interstellar_run_pars
-!*****************************************************************************
+!***********************************************************************
     subroutine write_interstellar_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=interstellar_run_pars)
+      write(unit, NML=interstellar_run_pars)
 !
     endsubroutine write_interstellar_run_pars
-!!****************************************************************************
+!***********************************************************************
     subroutine init_interstellar(f)
 !
 !  Initialise some explosions etc.
