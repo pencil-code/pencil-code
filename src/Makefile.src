@@ -2223,8 +2223,11 @@ semiauto-conf:
 #
 start_buildtime:
 	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
+	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 stop_buildtime:
 	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
+	$${PENCIL_HOME}/utils/pc_identify_revision
+
 buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	    -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \

@@ -228,10 +228,8 @@ map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
 
-system("$ENV{PENCIL_HOME}/utils/pc_identify_revision", '--reset');
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
-system("$ENV{PENCIL_HOME}/utils/pc_identify_revision");
 
 
 # ---------------------------------------------------------------------- #
