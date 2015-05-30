@@ -117,6 +117,7 @@ endif
 
 # Run start.x
 rm -f ERROR COMPLETED
+${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun  $mpirunops $npops $mpirunops2 $start_x $x_ops

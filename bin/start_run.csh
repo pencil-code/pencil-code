@@ -189,6 +189,7 @@ endif
 
 # Run start.x
 rm -f ERROR COMPLETED
+${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
@@ -279,6 +280,7 @@ timestr>> $datadir/runtime.dat
 # Run run.x
 rm -f ERROR COMPLETED
 date
+${PENCIL_HOME}/utils/pc_print_revision_file $run_x
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
