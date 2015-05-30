@@ -1,3 +1,7 @@
+# Directories
+data
+runtime
+
 # Symlinked files
 getconf.csh
 start.csh
@@ -7,3 +11,6 @@ Makefile
 
 # Generated files
 .pc_build_history
+COMPLETED
+run_command.log
+
