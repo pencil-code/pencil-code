@@ -7052,14 +7052,14 @@ module Magnetic
 !
 !  write details
 !
-      output_persistent_magnetic = .false.
+      output_persistent_magnetic = .true.
 !
       if (lforcing_cont_aa_local) then
-        if (write_persist ('MAGNETIC_PHASE', id_record_MAGNETIC_PHASE, phase_beltrami)) &
-            output_persistent_magnetic = .true.
-        if (write_persist ('MAGNETIC_AMPL', id_record_MAGNETIC_AMPL, ampl_beltrami)) &
-            output_persistent_magnetic = .true.
+        if (write_persist ('MAGNETIC_PHASE', id_record_MAGNETIC_PHASE, phase_beltrami)) return
+        if (write_persist ('MAGNETIC_AMPL', id_record_MAGNETIC_AMPL, ampl_beltrami)) return
       endif
+!
+      output_persistent_magnetic = .false.
 !
     endfunction output_persistent_magnetic
 !***********************************************************************
