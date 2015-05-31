@@ -174,6 +174,7 @@ module Diagnostics
       logical,save :: lfirst_call=.true.
       character (len=640) :: fform,legend,line
       integer :: iname, iostat, nnamel
+      character(LEN=linelen) :: iomsg
       logical :: lop
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
@@ -208,22 +209,24 @@ module Diagnostics
 !  This treats all numbers as floating point numbers.  Only those numbers are
 !  given (and computed) that are also listed in print.in.
 !
-        if (lfirst_call) write(*,*)
-        if (lfirst_call) write(*,'(" ",A)') trim(legend)
+        if (lfirst_call) then
+          write(*,*)
+          write(*,'(" ",A)') trim(legend)
+        endif
 !
 !  Write legend to extra file (might want to do only once after each lreset)
 !
         if (lfirst_call) then
 !
-          open(lun,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
+          open(lun,file=trim(datadir)//'/legend.dat',IOSTAT=iostat,iomsg=iomsg)
           if (.not. outlog(iostat,'openw',trim(datadir)//'/legend.dat', &
-                           location='prints')) then
+                           location='prints',iomsg=iomsg)) then
 !
-            write(lun,'(" ",A)',IOSTAT=iostat) trim(legend)
-            if (.not. outlog(iostat,'legend')) then
+            write(lun,'(" ",A)',IOSTAT=iostat,iomsg=iomsg) trim(legend)
+            if (.not. outlog(iostat,'legend',iomsg=iomsg)) then
 !
-              close(lun,IOSTAT=iostat)
-              if (outlog(iostat,'close')) continue
+              close(lun,IOSTAT=iostat,iomsg=iomsg)
+              if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
             endif
           endif
@@ -254,29 +257,28 @@ module Diagnostics
 !
         inquire(lun,opened=lop)
         if (.not.lop) &
-          open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
+          open(lun,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 !  file not distributed, backskipping enabled
-        if (.not. outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1)) then
+        if (lop .or. .not.outlog(iostat,'openw',trim(datadir)//'/time_series.dat',dist=-1,iomsg=iomsg)) then
 !
           if (lfirst_call) then
-            write(lun,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
+            write(lun,"('"//comment_char//"',a)",IOSTAT=iostat,iomsg=iomsg) trim(legend)
+            if (.not. outlog(iostat,'legend',iomsg=iomsg)) continue
           endif
-          if (.not. outlog(iostat,'legend')) then
 !
-            write(lun,'(a)',IOSTAT=iostat) trim(line)
-            if (.not. outlog(iostat,'line')) then
+          write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(line)
+          if (.not. outlog(iostat,'line',iomsg=iomsg)) then
 !
-              close(lun,IOSTAT=iostat)
-              if (outlog(iostat,'close')) continue
+            close(lun,IOSTAT=iostat,iomsg=iomsg)
+            if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
-             endif
-           endif
-         endif
+          endif
+        endif
 !
 !  Write to stdout.
 !
-         write(*,'(a)') trim(line)
-!        call flush() ! has to wait until F2003
+        write(*,'(a)') trim(line)
+        flush(6)
 !
       endif                     ! (lroot)
 !
@@ -361,38 +363,39 @@ module Diagnostics
       logical, save :: lfirst_call=.true.
       integer, parameter :: lun=1
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
-        open(lun,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat)
+        open(lun,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file distributed (???), backskipping enabled
         if (outlog(iostat,'openw',trim(directory)//'/sound.dat',dist=1, &
-                   location='write_sound_append')) return
+                   location='write_sound_append',iomsg=iomsg)) return
 !
         if (lfirst_call) then
 !
-          write(lun,'(a)',IOSTAT=iostat) trim(legend)
-          if (outlog(iostat,'legend')) return
+          write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(legend)
+          if (outlog(iostat,'legend',iomsg=iomsg)) return
 !
           if (dimensionality>0) then
 !
-            write(lun,'(a)',IOSTAT=iostat) trim(coorlegend)
-            if (outlog(iostat,'coorlegend')) return
+            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(coorlegend)
+            if (outlog(iostat,'coorlegend',iomsg=iomsg)) return
 !
             if ( ncoords_sound>1 ) then
-              write(lun,'(a)',IOSTAT=iostat) trim(sublegend)
-              if (outlog(iostat,'sublegend')) return
+              write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(sublegend)
+              if (outlog(iostat,'sublegend',iomsg=iomsg)) return
             endif
 !
-            write(lun,'(a)',IOSTAT=iostat) comment_char//repeat('-',len_trim(legend)-1)
-            if (outlog(iostat,'comment')) return
+            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) comment_char//repeat('-',len_trim(legend)-1)
+            if (outlog(iostat,'comment',iomsg=iomsg)) return
 !
           endif
         endif
 !
-        write(lun,'(a)',IOSTAT=iostat) trim(line)
-        if (outlog(iostat,'line')) return
+        write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(line)
+        if (outlog(iostat,'line',iomsg=iomsg)) return
 !
-        close(lun,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(lun,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
     endsubroutine write_sound_append
 !***********************************************************************
@@ -927,26 +930,27 @@ module Diagnostics
 !   6-jun-02/axel: coded
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
       logical :: lop
 !
       if (lroot.and.nnamez>0) then
 !
         inquire(1,opened=lop)
-        if (.not.lop) &
-          open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
+        if (.not.lop) then
+          open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file not distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
-                   location='write_xyaverages')) return
+          if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
+                     location='write_xyaverages',iomsg=iomsg)) return
+        endif
 !
-        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos')) return
+        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
+        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
 !
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamez(:,:,1:nnamez)
-        if (outlog(iostat,'fnamez')) return
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamez(:,:,1:nnamez)
+        if (outlog(iostat,'fnamez',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-          !!!flush(1)
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -960,22 +964,23 @@ module Diagnostics
 !  12-oct-05/anders: adapted from write_xyaverages
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (lroot.and.nnamey>0) then
 !
-        open(1,file=trim(datadir)//'/xzaverages.dat',position='append',IOSTAT=iostat)
+        open(1,file=trim(datadir)//'/xzaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/xzaverages.dat',dist=-1, &
-                   location='write_xzaverages')) return
+                   location='write_xzaverages',iomsg=iomsg)) return
 !
-        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos')) return
+        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
+        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
 !
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamey(:,:,1:nnamey)
-        if (outlog(iostat,'fnamey')) return
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamey(:,:,1:nnamey)
+        if (outlog(iostat,'fnamey',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -989,22 +994,23 @@ module Diagnostics
 !   2-oct-05/anders: adapted from write_xyaverages
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (lroot.and.nnamex>0) then
 !
-        open(1,file=trim(datadir)//'/yzaverages.dat',position='append',IOSTAT=iostat)
+        open(1,file=trim(datadir)//'/yzaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/yzaverages.dat',dist=-1, &
-                   location='write_yzaverages')) return
+                   location='write_yzaverages',iomsg=iomsg)) return
 !
-        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos')) return
+        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
+        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
 !
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamex(:,:,1:nnamex)
-        if (outlog(iostat,'fnamex')) return
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamex(:,:,1:nnamex)
+        if (outlog(iostat,'fnamex',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -1024,27 +1030,28 @@ module Diagnostics
 !  29-jan-07/wlad: adapted from write_yzaverages
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (lroot.and.nnamer>0) then
 !
-        open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat)
+        open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file not distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(datadir)//'/phizaverages.dat',dist=-1, &
-                   location='write_phizaverages')) return
+                   location='write_phizaverages',iomsg=iomsg)) return
 !
         if (it==1) then     ! right question?
-          write(1,'(1p,8e14.5e3)',IOSTAT=iostat) rcyl
-          if (outlog(iostat,'rcyl')) return
+          write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) rcyl
+          if (outlog(iostat,'rcyl',iomsg=iomsg)) return
         endif
 !
-        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos')) return
+        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
+        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
 !
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamer(:,1:nnamer)
-        if (outlog(iostat,'fnamer')) return
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamer(:,1:nnamer)
+        if (outlog(iostat,'fnamer',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -1057,22 +1064,23 @@ module Diagnostics
 !   7-jun-05/axel: adapted from write_zaverages
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (lfirst_proc_y.and.nnamexz>0) then
         open(1, file=trim(directory_dist)//'/yaverages.dat', &
-            form='unformatted', position='append',IOSTAT=iostat)
+            form='unformatted', position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(directory_dist)//'/yaverages.dat',dist=1, &
-                   location='write_yaverages')) return
+                   location='write_yaverages',iomsg=iomsg)) return
 !
-        write(1,IOSTAT=iostat) t2davgfirst
-        if (outlog(iostat,'t2davgfirst')) return
+        write(1,IOSTAT=iostat,iomsg=iomsg) t2davgfirst
+        if (outlog(iostat,'t2davgfirst',iomsg=iomsg)) return
 !
-        write(1,IOSTAT=iostat) fnamexz(:,:,1:nnamexz)
-        if (outlog(iostat,'fnamexz')) return
+        write(1,IOSTAT=iostat,iomsg=iomsg) fnamexz(:,:,1:nnamexz)
+        if (outlog(iostat,'fnamexz',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -1085,22 +1093,23 @@ module Diagnostics
 !  19-jun-02/axel: adapted from write_xyaverages
 !
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (lfirst_proc_z.and.nnamexy>0) then
         open(1, file=trim(directory_dist)//'/zaverages.dat', &
-            form='unformatted', position='append',IOSTAT=iostat)
+            form='unformatted', position='append',IOSTAT=iostat,iomsg=iomsg)
 ! file distributed, backskipping enabled
         if (outlog(iostat,'openw',trim(directory_dist)//'/zaverages.dat',dist=1, &
-                   location='write_zaverages')) return
+                   location='write_zaverages',iomsg=iomsg)) return
 !
-        write(1,IOSTAT=iostat) t2davgfirst
-        if (outlog(iostat,'t2davgfirst')) return
+        write(1,IOSTAT=iostat,iomsg=iomsg) t2davgfirst
+        if (outlog(iostat,'t2davgfirst',iomsg=iomsg)) return
 !
-        write(1,IOSTAT=iostat) fnamexy(:,:,1:nnamexy)
-        if (outlog(iostat,'fnamexy')) return
+        write(1,IOSTAT=iostat,iomsg=iomsg) fnamexy(:,:,1:nnamexy)
+        if (outlog(iostat,'fnamexy',iomsg=iomsg)) return
 !
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
+        close(1,IOSTAT=iostat,iomsg=iomsg)
+        if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
       endif
 !
@@ -1122,23 +1131,24 @@ module Diagnostics
 !
       integer, parameter :: lun=1
       integer :: i,iostat
+      character(LEN=linelen) :: iomsg
       character (len=1024) :: labels
 !
-      open(lun,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat)
+      open(lun,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat,iomsg=iomsg)
       if (outlog(iostat,'openw',trim(datadir)//'/averages/PHIAVG'//trim(ch), &
-                 location='write_phiaverages_file')) return
+                 location='write_phiaverages_file',iomsg=iomsg)) return
 !
-      write(lun,IOSTAT=iostat) nrcyl,nzgrid,nnamerz,nprocz
-      if (outlog(iostat,'nrcyl etc.')) return
+      write(lun,IOSTAT=iostat,iomsg=iomsg) nrcyl,nzgrid,nnamerz,nprocz
+      if (outlog(iostat,'nrcyl etc.',iomsg=iomsg)) return
 !
-      write(lun,IOSTAT=iostat) t2davgfirst,rcyl,z(n1)+(/(i*dz, i=0,nzgrid-1)/),drcyl,dz
-      if (outlog(iostat,'t2davgfirst etc.')) return
+      write(lun,IOSTAT=iostat,iomsg=iomsg) t2davgfirst,rcyl,z(n1)+(/(i*dz, i=0,nzgrid-1)/),drcyl,dz
+      if (outlog(iostat,'t2davgfirst etc.',iomsg=iomsg)) return
 !
       !ngrs: use pack to explicitly order the array before writing
       !     (write was messing up on copson without this...)
 !
-      write(lun,IOSTAT=iostat) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
-      if (outlog(iostat,'fnamerz')) return
+      write(lun,IOSTAT=iostat,iomsg=iomsg) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
+      if (outlog(iostat,'fnamerz',iomsg=iomsg)) return
 !
 !  Write labels at the end of file.
 !
@@ -1146,11 +1156,11 @@ module Diagnostics
       do i=2,nnamerz
         call safe_character_append(labels,",",trim(cnamerz(i)))
       enddo
-      write(lun,IOSTAT=iostat) len(labels),labels
-      if (outlog(iostat,'labels')) return
+      write(lun,IOSTAT=iostat,iomsg=iomsg) len(labels),labels
+      if (outlog(iostat,'labels',iomsg=iomsg)) return
 !
-      close(lun,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
+      close(lun,IOSTAT=iostat,iomsg=iomsg)
+      if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
     endsubroutine write_phiaverages_file
 !***********************************************************************
@@ -1168,6 +1178,7 @@ module Diagnostics
 !
       integer, parameter :: lun=1
       integer :: iostat
+      character(LEN=linelen) :: iomsg
 !
       if (.not. lroot .or. (nnamerz <= 0)) return
 !
@@ -1177,16 +1188,16 @@ module Diagnostics
 !
 !  Write file name to file list.
 !
-      open(lun,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat)
+      open(lun,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat,iomsg=iomsg)
       ! file not distributed, backskipping enabled
       if (outlog(iostat,'openw',trim(datadir)//'/averages/phiavg.files',dist=-1, &
-                 location='write_phiaverages')) return
+                 location='write_phiaverages',iomsg=iomsg)) return
 !
-      write(lun,'(A)',IOSTAT=iostat)'PHIAVG'//trim(ch)
-      if (outlog(iostat,'"PHIAVG"')) return
+      write(lun,'(A)',IOSTAT=iostat,iomsg=iomsg)'PHIAVG'//trim(ch)
+      if (outlog(iostat,'"PHIAVG"',iomsg=iomsg)) return
 !
-      close(lun,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
+      close(lun,IOSTAT=iostat,iomsg=iomsg)
+      if (outlog(iostat,'close',iomsg=iomsg)) continue
 !
     endsubroutine write_phiaverages
 !***********************************************************************
@@ -2590,22 +2601,22 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_count_lines, parallel_open, parallel_close
+      use File_io, only : parallel_count_lines, parallel_open, parallel_close, get_unit
       use General, only : itoa
       use Sub, only     : location_in_proc
 !
       integer, intent(in) :: nnamel
 !
       character (LEN=*), parameter :: sound_coord_file = 'sound.coords'
-      integer :: stat=0, isound
+      integer :: isound
       logical :: lval
-      integer :: unit=1, istat, il
+      integer :: ierr, il
       integer :: mcoords_sound
       integer, allocatable, dimension (:,:) :: temp_sound_coords
       real    :: xsound, ysound, zsound
       integer :: lsound, msound, nsound
       character (LEN=80) :: line
-      include "parallel_unit_declaration.h"
+      include "parallel_unit.h"
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2613,8 +2624,8 @@ module Diagnostics
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
-      allocate(temp_sound_coords(mcoords_sound,3),stat=stat)
-      if (stat>0) call fatal_error('allocate_sound', &
+      allocate(temp_sound_coords(mcoords_sound,3),stat=ierr)
+      if (ierr>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for temp_sound_coords')
 !
       ncoords_sound = 0
@@ -2624,15 +2635,15 @@ module Diagnostics
       do isound=1,mcoords_sound
 !
         select case (dimensionality)
-        case (1); read(parallel_unit,*,iostat=istat) xsound
-        case (2); read(parallel_unit,*,iostat=istat) xsound, ysound
-        case (3); read(parallel_unit,*,iostat=istat) xsound, ysound, zsound
+        case (1); read(parallel_unit,*,iostat=ierr) xsound
+        case (2); read(parallel_unit,*,iostat=ierr) xsound, ysound
+        case (3); read(parallel_unit,*,iostat=ierr) xsound, ysound, zsound
         case default
         endselect
 !
-        if (istat < 0) exit ! end-of-file
+        if (ierr < 0) exit ! end-of-file
 !
-        if (istat > 0) then
+        if (ierr > 0) then
 !          backspace parallel_unit
 !          read (parallel_unit,*) line
 !          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
@@ -2669,21 +2680,21 @@ module Diagnostics
       if (lwrite_sound) then
 !
         if (.not. allocated(cname_sound)) then
-          allocate(cname_sound(nnamel),stat=istat)
-          if (istat>0) call fatal_error('allocate_sound', &
+          allocate(cname_sound(nnamel),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for cname_sound')
         endif
 !
         if (.not. allocated(sound_coords_list)) then
-          allocate(sound_coords_list(ncoords_sound,3),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for sound_coords_list')
         endif
         sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
 !
         if (.not. allocated(fname_sound)) then
-          allocate(fname_sound(nnamel,ncoords_sound),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(fname_sound(nnamel,ncoords_sound),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for fname_sound')
           if (ldebug) print*, 'allocate_sound: allocated memory for '// &
               'fname_sound  with nname_sound  =', nnamel
@@ -2692,8 +2703,8 @@ module Diagnostics
         fname_sound = 0.0
 !
         if (.not. allocated(cform_sound)) then
-          allocate(cform_sound(nnamel),stat=stat)
-          if (stat>0) call fatal_error('allocate_sound', &
+          allocate(cform_sound(nnamel),stat=ierr)
+          if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for cform_sound')
         endif
         cform_sound = ' '

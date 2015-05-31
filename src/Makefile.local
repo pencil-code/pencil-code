@@ -6,7 +6,7 @@
 
 MPICOMM             = nompicomm
 GLOBAL              = noglobal
-DIAGNOSTICS         = diagnostics_runtime
+DIAGNOSTICS         = diagnostics
 FILE_IO             = file_io_f95
 
 HYDRO               =   hydro

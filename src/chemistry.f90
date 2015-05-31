@@ -1386,12 +1386,13 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
-      real :: initial_mu1, ksi_TTD, dTdr_c, deltaT
+      real :: initial_mu1, ksi_TTD, dTdr_c, deltaT,PP
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
       ksi_TTD=1.
       dTdr_c=2000 ![K/m]
+!      dTdr_c=20000 ![K/m]
 !
 !  Initialize temperature
 !
@@ -1408,7 +1409,7 @@ module Chemistry
 !  Initialize density
 !
       call getmu_array(f,mu1_full)
-      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(PP)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
 !
 !  Initialize velocity
@@ -1443,7 +1444,7 @@ module Chemistry
       integer :: i,j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
-      real :: del
+      real :: del, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
@@ -5543,10 +5544,11 @@ module Chemistry
       !
     endsubroutine get_gamma_slice
 !***********************************************************************
-    subroutine air_field(f)
+    subroutine air_field(f,PP)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: sum_Y,tmp
+      real, optional :: PP ! (in dynes = 1atm)
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -5555,7 +5557,7 @@ module Chemistry
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
       integer :: i,j,k=1
-      real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
+      real :: YY_k, air_mass, TT=300.
       real :: velx=0.
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1

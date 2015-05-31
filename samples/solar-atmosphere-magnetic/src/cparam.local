@@ -1,6 +1,8 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !  cparam.local
 !
+! MAUX CONTRIBUTION 3
+!
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
