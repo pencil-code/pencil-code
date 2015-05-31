@@ -902,41 +902,35 @@ module Interstellar
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use IO, only: lun_input, lcollective_IO
+      use IO, only: read_persist, lun_input, lcollective_IO
 !
       integer :: id
       logical :: done
 !
-      integer :: i, ierr
+      integer :: i
 !
       if (lcollective_IO) call fatal_error ('input_persistent_interstellar', &
           "The interstellar persistent variables can't be read collectively!")
 !
       select case (id)
         case (id_record_T_NEXT_SNI)
-          read (lun_input, iostat=ierr) t_next_SNI, t_next_SNII
-          if (outlog (ierr, 'read persistent T_NEXT_SNI')) return
+          read (lun_input) t_next_SNI, t_next_SNII
           done = .true.
         case (id_record_POS_NEXT_SNII)
-          read (lun_input, iostat=ierr) x_next_SNII, y_next_SNII
-          if (outlog (ierr, 'read persistent POS_NEXT_SNII')) return
+          read (lun_input) x_next_SNII, y_next_SNII
           done = .true.
         case (id_record_ISM_SN_TOGGLE)
-          read (lun_input, iostat=ierr) lSNI, lSNII
-          if (outlog (ierr, 'read persistent ISM_SN_TOGGLE')) return
+          read (lun_input) lSNI, lSNII
           done = .true.
         case (id_record_BOLD_MASS)
-          read (lun_input, iostat=ierr) boldmass
-          if (outlog (ierr, 'read persistent BOLD_MASS')) return
+          if (read_persist ('BOLD_MASS', boldmass)) return
           done = .true.
         case (id_record_ISM_SNRS)
           ! Forget any existing SNRs.
           SNRs(:)%state = SNstate_invalid
-          read (lun_input, iostat=ierr) nSNR
-          if (outlog (ierr, 'read persistent nSNR')) return
+          read (lun_input) nSNR
           do i = 1, nSNR
-            read (lun_input, iostat=ierr) SNRs(i)
-            if (outlog (ierr, 'read persistent SNRs')) return
+            read (lun_input) SNRs(i)
             SNR_index(i) = i
           enddo
           done = .true.
@@ -953,37 +947,34 @@ module Interstellar
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use IO, only: write_persist_id, lun_output, lcollective_IO
+      use IO, only: write_persist, write_persist_id, lun_output, lcollective_IO
 !
-      integer :: i, ierr
+      integer :: i
 !
       if (lcollective_IO) call fatal_error ('output_persistent_interstellar', &
           "The interstellar persistent variables can't be written collectively!")
 !
       output_persistent_interstellar = .true.
 !
+      ! Persistent variables should be saved separately with one tag each.
+      ! Not this way:
       if (write_persist_id ('T_NEXT_SNI', id_record_T_NEXT_SNI)) return
-      write (lun_output, iostat=ierr) t_next_SNI, t_next_SNII
-      if (outlog (ierr, 'write persistent T_NEXT_SNI')) return
+      write (lun_output) t_next_SNI, t_next_SNII
 !
       if (write_persist_id ('POS_NEXT_SNII', id_record_POS_NEXT_SNII)) return
-      write (lun_output, iostat=ierr) x_next_SNII, y_next_SNII
-      if (outlog (ierr, 'write persistent POS_NEXT_SNII')) return
+      write (lun_output) x_next_SNII, y_next_SNII
 !
       if (write_persist_id ('ISM_SN_TOGGLE', id_record_ISM_SN_TOGGLE)) return
-      write (lun_output, iostat=ierr) lSNI, lSNII
-      if (outlog (ierr, 'write persistent ISM_SN_TOGGLE')) return
+      write (lun_output) lSNI, lSNII
 !
-      if (write_persist_id ('BOLD_MASS', id_record_BOLD_MASS)) return
-      write (lun_output, iostat=ierr) boldmass
-      if (outlog (ierr, 'write persistent BOLD_MASS')) return
+      ! But this way is better:
+      if (write_persist ('BOLD_MASS', id_record_BOLD_MASS, boldmass)) return
 !
+      ! For self-defined data types, things are not so easy to implement.
       if (write_persist_id ('ISM_SNRS', id_record_ISM_SNRS)) return
-      write (lun_output, iostat=ierr) nSNR
-      if (outlog (ierr, 'write persistent nSNR')) return
+      write (lun_output) nSNR
       do i = 1, nSNR
-        write (lun_output, iostat=ierr) SNRs(SNR_index(i))
-        if (outlog (ierr, 'write persistent SNRs')) return
+        write (lun_output) SNRs(SNR_index(i))
       enddo
 !
       output_persistent_interstellar = .false.

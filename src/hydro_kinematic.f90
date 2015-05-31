@@ -2226,21 +2226,21 @@ module Hydro
       integer :: id,lun
       logical :: done
 !
-      if (id==id_record_NOHYDRO_TPHASE) then
+      if (id == id_record_NOHYDRO_TPHASE) then
         read (lun) tphase_kinflow
-        done=.true.
-      elseif (id==id_record_NOHYDRO_PHASE1) then
+        done = .true.
+      elseif (id == id_record_NOHYDRO_PHASE1) then
         read (lun) phase1
-        done=.true.
-      elseif (id==id_record_NOHYDRO_PHASE2) then
+        done = .true.
+      elseif (id == id_record_NOHYDRO_PHASE2) then
         read (lun) phase2
-        done=.true.
-      elseif (id==id_record_NOHYDRO_LOCATION) then
+        done = .true.
+      elseif (id == id_record_NOHYDRO_LOCATION) then
         read (lun) location
-        done=.true.
-      elseif (id==id_record_NOHYDRO_TSFORCE) then
+        done = .true.
+      elseif (id == id_record_NOHYDRO_TSFORCE) then
         read (lun) tsforce
-        done=.true.
+        done = .true.
       endif
 !
       if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
@@ -2256,10 +2256,8 @@ module Hydro
 !
       integer :: lun
 !
-      integer :: iostat
-!
-      if (lroot.and.ip<14) then
-        if (tphase_kinflow>=0.) &
+      if (lroot .and. (ip < 14)) then
+        if (tphase_kinflow >= 0.) &
             print*,'output_persistent_hydro: ',tphase_kinflow
       endif
 !
@@ -2267,26 +2265,11 @@ module Hydro
 !
       output_persistent_hydro = .true.
 !
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_TPHASE
-      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE')) return
-      write (lun,IOSTAT=iostat) tphase_kinflow
-      if (outlog(iostat,'write tphase_kinflow')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE1
-      if (outlog(iostat,'write id_record_NOHYDRO_PHASE1')) return
-      write (lun,IOSTAT=iostat) phase1
-      if (outlog(iostat,'write phase1')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE2
-      if (outlog(iostat,'write id_record_NOHYDRO_PHASE2')) return
-      write (lun,IOSTAT=iostat) phase2
-      if (outlog(iostat,'write phase2')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_LOCATION
-      if (outlog(iostat,'write id_record_NOHYDRO_LOCATION')) return
-      write (lun,IOSTAT=iostat) location
-      if (outlog(iostat,'write location')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_TSFORCE
-      if (outlog(iostat,'write id_record_NOHYDRO_TSFORCE')) return
-      write (lun,IOSTAT=iostat) tsforce
-      if (outlog(iostat,'write tsforce')) return
+      if (write_persist ('NOHYDRO_TPHASE', id_record_NOHYDRO_TPHASE, tphase_kinflow)) return
+      if (write_persist ('NOHYDRO_PHASE1', id_record_NOHYDRO_PHASE1, phase1)) return
+      if (write_persist ('NOHYDRO_PHASE2', id_record_NOHYDRO_PHASE2, phase2)) return
+      if (write_persist ('NOHYDRO_LOCATION', id_record_NOHYDRO_LOCATION, location)) return
+      if (write_persist ('NOHYDRO_TSFORCE', id_record_NOHYDRO_TSFORCE, tsforce)) return
 !
       output_persistent_hydro = .false.
 !

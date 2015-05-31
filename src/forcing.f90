@@ -4991,12 +4991,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  write details
 !
-      output_persistent_forcing = .false.
+      output_persistent_forcing = .true.
 !
-      if (write_persist ('FORCING_LOCATION', id_record_FORCING_LOCATION, location)) &
-          output_persistent_forcing = .true.
-      if (write_persist ('FORCING_TSFORCE', id_record_FORCING_TSFORCE, tsforce)) &
-          output_persistent_forcing = .true.
+      if (write_persist ('FORCING_LOCATION', id_record_FORCING_LOCATION, location)) return
+      if (write_persist ('FORCING_TSFORCE', id_record_FORCING_TSFORCE, tsforce)) return
+!
+      output_persistent_forcing = .false.
 !
     endfunction output_persistent_forcing
 !***********************************************************************
