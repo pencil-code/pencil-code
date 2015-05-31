@@ -249,7 +249,7 @@ module Diagnostics
 !  Write to stdout.
 !
         write(*,'(a)') trim(line)
-        flush(6) ! this is a F2003 feature....
+        ! flush(6) ! this is a F2003 feature....
 !
       endif
 !
