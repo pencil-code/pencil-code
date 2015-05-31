@@ -306,22 +306,19 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-      integer :: wd1=0, dist, iostat
+      integer :: wd1=0, dist
       logical, save :: lfirstcall=.true.
-      logical :: writ
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
-      writ = .true.
       if (lfirstcall) then
-        open(1, file=trim(datadir)//'/svnid.dat', status='replace',IOSTAT=iostat)
+        open(1, file=trim(datadir)//'/svnid.dat', status='replace')
         dist=0
         lfirstcall=.false.
       else
-        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append',IOSTAT=iostat)
+        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
         dist=-1
       endif
-      if (outlog(iostat,'open',trim(datadir)//'/svnid.dat',dist=dist)) writ=.false.
 !
 !  Construct format
 !  Need to set explicit format below, to avoid problems when the
@@ -382,14 +379,11 @@ module Messages
             date(1:wd), &
             trim(author)
 !
-        if (writ) then
-          write(1,fmt,IOSTAT=iostat) "SVN: ", &
-              trim(filename), &
-              revision(1:wv), &
-              date(1:wd), &
-              trim(author)
-          if (outlog(iostat,'write filename, revision etc.')) return
-        endif
+        write(1,fmt) "SVN: ", &
+            trim(filename), &
+            revision(1:wv), &
+            date(1:wd), &
+            trim(author)
       else                      ! not a SVN line; maybe `[No ID given]'
         wd1 = min(wd, len(svnid))
         write(*,fmt) "SVN: ", &
@@ -397,22 +391,16 @@ module Messages
             '', &
             '', &
             svnid(1:wd1)
-        if (writ) then
-          write(1,fmt,IOSTAT=iostat) "SVN: ", &
-              '-------', &
-              '', &
-              '', &
-              svnid(1:wd1)
-          if (outlog(iostat,'write svnid')) return
-        endif
+        write(1,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
       endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
-      if (writ) then
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-      endif
+      close(1)
 !
     endsubroutine svn_id
 !***********************************************************************
