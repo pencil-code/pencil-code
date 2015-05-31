@@ -416,57 +416,54 @@ module Messages
       double precision, save :: time_initial
       character(len=*), optional :: instruct
       logical, optional :: mnloop
-      integer :: mul_fac,iostat
-      logical, save :: opened=.true.
+      integer :: mul_fac
+      logical, save :: opened = .false.
 !
       if (present(location)) scaller=location
 !
-!  work on the timing only when it==it_timing
+!  work on the timing only when it == it_timing
 !
-      if (it==it_timing) then
-        if (lroot) then
+      if (it /= it_timing) return
+!
+      if (lroot) then
 !
 !  initialize
 !
-          if (present(instruct)) then
-            if (trim(instruct)=='initialize') then
-              open(lun,file=trim(datadir)//'/timing.dat', status='replace',IOSTAT=iostat)
-              if (outlog(iostat,'open',trim(datadir)//'/timing.dat')) opened=.false.
-              time_initial=mpiwtime()
-            endif
+        if (present(instruct)) then
+          if (trim(instruct) == 'initialize') then
+            open(lun, file=trim(datadir)//'/timing.dat', status='replace')
+            opened = .true.
+            time_initial = mpiwtime()
           endif
+        endif
 !
 !  write current timing to the timing file
 !
-          if (lfirst) then
-            if ((present(mnloop).and.lfirstpoint).or. .not.present(mnloop)) then
-              time=mpiwtime()-time_initial
-              if (present(mnloop)) then
-                mul_fac=ny*nz
-              else
-                mul_fac=1
-              endif
-              if (.not.opened) then
-                open(lun,file=trim(datadir)//'/timing.dat',position='append',IOSTAT=iostat)
-                opened = .not.(outlog(iostat,'open',trim(datadir)//'/timing.dat'))
-              endif
-              if (opened) then
-                write(lun,*,IOSTAT=iostat) time,mul_fac,trim(scaller)//": "//trim(message)
-                if (outlog(iostat,'write time,mul_fac etc.')) opened=.false.
-              endif
+        if (lfirst) then
+          if ((present(mnloop) .and. lfirstpoint) .or. .not. present(mnloop)) then
+            time = mpiwtime() - time_initial
+            if (present(mnloop)) then
+              mul_fac = ny*nz
+            else
+              mul_fac = 1
             endif
+            if (.not. opened) then
+              open(lun, file=trim(datadir)//'/timing.dat', position='append')
+              opened = .true.
+            endif
+            write(lun,*) time, mul_fac, trim(scaller)//": "//trim(message)
           endif
+        endif
 !
 !  finalize
 !
-          if (present(instruct)) then
-            if (trim(instruct)=='finalize' .and. opened) then
-              close(lun,IOSTAT=iostat)
-              if (outlog(iostat,'close')) continue
-            endif
+        if (present(instruct)) then
+          if (opened .and. (trim(instruct) == 'finalize')) then
+            close(lun)
+            opened = .false.
           endif
-!
         endif
+!
       endif
 !
     endsubroutine timing
