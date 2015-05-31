@@ -87,12 +87,9 @@ module Hydro
 !
       integer :: iostat
 !
-      open(1,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
-      read(1,IOSTAT=iostat) a
-      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
-      close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close',file,location='input_array')) continue
+      open(1,FILE=file,FORM='unformatted')
+      read(1) a
+      close(1)
 !
     endsubroutine input_array
 !***********************************************************************
