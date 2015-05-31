@@ -950,26 +950,4 @@ module Messages
 !
   end function scanfile
 !***********************************************************************
-    subroutine input_array(file,a,dimx,dimy,dimz,dimv)
-!
-!  Generalized form of input, allows specifying dimension.
-!
-!  27-sep-03/axel: coded
-!  04-nov-11/MR: moved here from General
-!
-      character (len=*) :: file
-      integer :: dimx,dimy,dimz,dimv
-      real, dimension (dimx,dimy,dimz,dimv) :: a
-!
-      integer :: iostat
-!
-      open(1,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
-      read(1,IOSTAT=iostat) a
-      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
-      close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close',file,location='input_array')) continue
-!
-    endsubroutine input_array
-!***********************************************************************
 endmodule Messages
