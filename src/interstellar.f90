@@ -913,17 +913,46 @@ module Interstellar
           "The interstellar persistent variables can't be read collectively!")
 !
       select case (id)
-        case (id_record_T_NEXT_SNI)
+        ! for backwards-compatibility (deprecated):
+        case (id_record_ISM_T_NEXT_OLD)
           read (lun_input) t_next_SNI, t_next_SNII
           done = .true.
-        case (id_record_POS_NEXT_SNII)
+        case (id_record_ISM_POS_NEXT_OLD)
           read (lun_input) x_next_SNII, y_next_SNII
           done = .true.
-        case (id_record_ISM_SN_TOGGLE)
+        case (id_record_ISM_TOGGLE_OLD)
           read (lun_input) lSNI, lSNII
           done = .true.
-        case (id_record_BOLD_MASS)
-          if (read_persist ('BOLD_MASS', boldmass)) return
+        case (id_record_ISM_SNRS_OLD)
+          ! Forget any existing SNRs.
+          SNRs(:)%state = SNstate_invalid
+          read (lun_input) nSNR
+          do i = 1, nSNR
+            read (lun_input) SNRs(i)
+            SNR_index(i) = i
+          enddo
+          done = .true.
+        ! currently active tags:
+        case (id_record_ISM_T_NEXT_SNI)
+          if (read_persist ('ISM_T_NEXT_SNI', t_next_SNI)) return
+          done = .true.
+        case (id_record_ISM_T_NEXT_SNII)
+          if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_X_NEXT_SNII)
+          if (read_persist ('ISM_X_NEXT_SNII', x_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_Y_NEXT_SNII)
+          if (read_persist ('ISM_Y_NEXT_SNII', y_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_TOGGLE_SNI)
+          if (read_persist ('ISM_TOGGLE_SNI', lSNI)) return
+          done = .true.
+        case (id_record_ISM_TOGGLE_SNII)
+          if (read_persist ('ISM_TOGGLE_SNII', lSNII)) return
+          done = .true.
+        case (id_record_ISM_BOLD_MASS)
+          if (read_persist ('ISM_BOLD_MASS', boldmass)) return
           done = .true.
         case (id_record_ISM_SNRS)
           ! Forget any existing SNRs.
@@ -956,19 +985,13 @@ module Interstellar
 !
       output_persistent_interstellar = .true.
 !
-      ! Persistent variables should be saved separately with one tag each.
-      ! Not this way:
-      if (write_persist_id ('T_NEXT_SNI', id_record_T_NEXT_SNI)) return
-      write (lun_output) t_next_SNI, t_next_SNII
-!
-      if (write_persist_id ('POS_NEXT_SNII', id_record_POS_NEXT_SNII)) return
-      write (lun_output) x_next_SNII, y_next_SNII
-!
-      if (write_persist_id ('ISM_SN_TOGGLE', id_record_ISM_SN_TOGGLE)) return
-      write (lun_output) lSNI, lSNII
-!
-      ! But this way is better:
-      if (write_persist ('BOLD_MASS', id_record_BOLD_MASS, boldmass)) return
+      if (write_persist ('ISM_T_NEXT_SNI', id_record_ISM_T_NEXT_SNI, t_next_SNI)) return
+      if (write_persist ('ISM_T_NEXT_SNII', id_record_ISM_T_NEXT_SNII, t_next_SNII)) return
+      if (write_persist ('ISM_X_NEXT_SNII', id_record_ISM_X_NEXT_SNII, x_next_SNII)) return
+      if (write_persist ('ISM_Y_NEXT_SNII', id_record_ISM_Y_NEXT_SNII, y_next_SNII)) return
+      if (write_persist ('ISM_TOGGLE_SNI', id_record_ISM_TOGGLE_SNI, lSNI)) return
+      if (write_persist ('ISM_TOGGLE_SNII', id_record_ISM_TOGGLE_SNII, lSNII)) return
+      if (write_persist ('ISM_BOLD_MASS', id_record_ISM_BOLD_MASS, boldmass)) return
 !
       ! For self-defined data types, things are not so easy to implement.
       if (write_persist_id ('ISM_SNRS', id_record_ISM_SNRS)) return
