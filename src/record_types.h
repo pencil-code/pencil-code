@@ -42,5 +42,5 @@ integer, parameter :: id_record_MAGNETIC_PHASE   = 311
 integer, parameter :: id_record_MAGNETIC_AMPL    = 312
 
 ! Shear
-integer, parameter :: id_record_DELTA_Y          = 320
+integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
 

@@ -138,8 +138,8 @@ module Persist
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
           call random_seed_wrapper (PUT=seed)
           done = .true.
-        case (id_record_DELTA_Y)
-          if (read_persist ('DELTA_Y', deltay)) return
+        case (id_record_SHEAR_DELTA_Y)
+          if (read_persist ('SHEAR_DELTA_Y', deltay)) return
           done = .true.
       endselect
 !
@@ -165,7 +165,7 @@ module Persist
       endif
 !
       if (lshear) then
-        if (write_persist ('DELTA_Y', id_record_DELTA_Y, deltay)) &
+        if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &
             output_persistent_general = .true.
       endif
 !
