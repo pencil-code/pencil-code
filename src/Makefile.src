@@ -127,7 +127,7 @@ CFLAGS       =
 FCCLEANER    =
 LIBMPISUFFIX =
 MAKEOPTS     =
-FFTPACK_RELAXED =
+CONVERSION_RELAXED =
 #
 # Defaults for external libraries.
 #
@@ -2334,11 +2334,11 @@ mpicomm_.f90: mpicomm.f90
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FFTPACK_RELAXED) -o fftpack.o -c fftpack.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o param_io.o -c param_io.f90
 diagnostics_outlog.o: diagnostics_outlog.f90
