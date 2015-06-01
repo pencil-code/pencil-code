@@ -135,6 +135,7 @@ module Special
   real, dimension(:,:), allocatable :: Ux, Uy
   real, dimension(:,:), allocatable :: Ux_ext, Uy_ext
   real, dimension(:,:), allocatable :: BB2
+  real, dimension(:,:), allocatable :: BB2_local
   integer, dimension(:,:), allocatable :: avoid_gran
   real, save :: tsnap_uu=0., thresh
   integer, save :: isnap
@@ -1004,7 +1005,6 @@ module Special
       real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
       real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
       real, dimension(:,:), allocatable, save :: gran_x, gran_y
-      real, dimension(:,:), allocatable, save :: BB2_local
       real, save :: Bz_total_flux=0.0
 !
       if (present (lfinalize)) then
@@ -1076,7 +1076,7 @@ module Special
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
               'Could not allocate memory for gran_x/y', .true.)
         endif
-        call gran_driver (f, BB2_local, gran_x, gran_y)
+        call gran_driver (f, gran_x, gran_y)
         Ux_local = Ux_local + gran_x
         Uy_local = Uy_local + gran_y
       endif
@@ -2823,7 +2823,7 @@ module Special
 !
     endsubroutine set_gran_params
 !***********************************************************************
-    subroutine gran_driver(f, BB2_local, gran_x, gran_y)
+    subroutine gran_driver(f, gran_x, gran_y)
 !
 ! This routine replaces the external computing of granular velocity
 ! pattern initially written by B. Gudiksen (2004)
@@ -2840,7 +2840,6 @@ module Special
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx,ny), intent(in) :: BB2_local
       real, dimension(nx,ny), intent(out) :: gran_x, gran_y
 !
       real, dimension(:,:), allocatable :: buffer
