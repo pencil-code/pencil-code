@@ -18,12 +18,12 @@ integer, parameter :: id_record_BOLD_MASS        = 252
 integer, parameter :: id_record_FORCING_LOCATION = 270
 integer, parameter :: id_record_FORCING_TSFORCE  = 271
 
-! Nohydro
-integer, parameter :: id_record_NOHYDRO_TPHASE   = 280
-integer, parameter :: id_record_NOHYDRO_PHASE1   = 281
-integer, parameter :: id_record_NOHYDRO_PHASE2   = 282
-integer, parameter :: id_record_NOHYDRO_TSFORCE  = 284
-integer, parameter :: id_record_NOHYDRO_LOCATION = 285
+! Hydro
+integer, parameter :: id_record_HYDRO_TPHASE     = 280
+integer, parameter :: id_record_HYDRO_PHASE1     = 281
+integer, parameter :: id_record_HYDRO_PHASE2     = 282
+integer, parameter :: id_record_HYDRO_TSFORCE    = 284
+integer, parameter :: id_record_HYDRO_LOCATION   = 285
 
 ! Magnetic
 integer, parameter :: id_record_MAGNETIC_PHASE   = 311
