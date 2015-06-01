@@ -2308,8 +2308,7 @@ module Initcond
       use Sub, only: write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
-      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2
       logical :: exist
@@ -2335,7 +2334,7 @@ module Initcond
 !
       select case (strati_type)
       case ('lnrho_ss')
-        do n=1,mtotal
+        do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
@@ -2347,7 +2346,7 @@ module Initcond
         enddo
 !
       case ('lnrho_lnTT')
-        do n=1,mtotal
+        do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
@@ -2369,23 +2368,23 @@ module Initcond
 !
 !  Without ghost zones.
 !
-      case (ntotal+1)
+      case (nzgrid+1)
         if (lentropy) then
           do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
-            f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
+            f(:,:,n,iss)=ss0(ipz*nz+(n-nghost))
           enddo
         endif
         if (ltemperature) then
           do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
-            f(:,:,n,ilnTT)=lnTT0(ipz*nz+n-nghost)
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
+            f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
 !
 !  With ghost zones.
 !
-      case (mtotal+1)
+      case (mzgrid+1)
         if (lentropy) then
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
@@ -2402,8 +2401,8 @@ module Initcond
       case default
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
-                'for this run is allowed to contain either',ntotal, &
-                ' lines (without ghost zones) or more than',mtotal, &
+                'for this run is allowed to contain either',nzgrid, &
+                ' lines (without ghost zones) or more than',mzgrid, &
                 ' lines (with ghost zones). It does contain',n-1, &
                 ' lines though.'
         endif
@@ -2415,15 +2414,15 @@ module Initcond
 !
         if (lentropy) then
           do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
-            ss_mz(n)=ss0(ipz*nz+n-nghost)
+            lnrho_mz(n)=lnrho0(ipz*nz+n)
+            ss_mz(n)=ss0(ipz*nz+n)
           enddo
           call write_zprof('ss_mz',ss_mz)
         endif
         if (ltemperature) then
           do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n-nghost)
-            lnTT_mz(n)=lnTT0(ipz*nz+n-nghost)
+            lnrho_mz(n)=lnrho0(ipz*nz+n)
+            lnTT_mz(n)=lnTT0(ipz*nz+n)
           enddo
           call write_zprof('lnTT_mz',lnTT_mz)
         endif
@@ -2441,8 +2440,7 @@ module Initcond
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer, parameter :: ntotal=nx*nprocx,mtotal=nx*nprocx+2*nghost
-      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
+      real, dimension (mxgrid) :: lnrho0,ss0,lnTT0
       real :: tmp,var1,var2
       logical :: exist
       integer :: stat
@@ -2468,7 +2466,7 @@ module Initcond
 !
       select case (strati_type)
       case ('lnrho_ss')
-        do n=1,mtotal
+        do n=1,mxgrid
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*,"stratification: ",tmp,var1,var2
@@ -2480,7 +2478,7 @@ module Initcond
         enddo
 !
       case ('lnrho_lnTT')
-        do n=1,mtotal
+        do n=1,mxgrid
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*,"stratification: ",tmp,var1,var2
@@ -2502,23 +2500,23 @@ module Initcond
   !
   !  without ghost zones
   !
-      case (ntotal+1)
+      case (nxgrid+1)
         if (lentropy) then
           do n=l1,l2
-            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n-nghost)
-            f(n,:,:,iss)=ss0(ipx*nx+n-nghost)
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+(n-nghost))
+            f(n,:,:,iss)=ss0(ipx*nx+(n-nghost))
           enddo
         endif
         if (ltemperature) then
           do n=l1,l2
-            f(n,:,:,ilnrho)=lnrho0(ipx*nx+n-nghost)
-            f(n,:,:,ilnTT)=lnTT0(ipx*nx+n-nghost)
+            f(n,:,:,ilnrho)=lnrho0(ipx*nx+(n-nghost))
+            f(n,:,:,ilnTT)=lnTT0(ipx*nx+(n-nghost))
           enddo
         endif
   !
   !  with ghost zones
   !
-      case (mtotal+1)
+      case (mxgrid+1)
         if (lentropy) then
           do n=1,mx
             f(n,:,:,ilnrho)=lnrho0(ipx*nx+n)
@@ -2535,8 +2533,8 @@ module Initcond
       case default
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
-                'for this run is allowed to contain either',ntotal, &
-                ' lines (without ghost zones) or more than',mtotal, &
+                'for this run is allowed to contain either',nxgrid, &
+                ' lines (without ghost zones) or more than',mxgrid, &
                 ' lines (with ghost zones). It does contain',n-1, &
                 ' lines though.'
         endif
@@ -2557,7 +2555,6 @@ module Initcond
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer, parameter :: ntotal=nx*nprocx,mtotal=nx*nprocx+2*nghost
       real, dimension (nxgrid,nzgrid,mvar) :: slice
       logical :: exist
       integer :: stat
