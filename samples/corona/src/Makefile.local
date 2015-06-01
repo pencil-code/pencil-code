@@ -3,6 +3,7 @@
 ### Included by `Makefile'
 ###
 MPICOMM   =   mpicomm
+IO        =   io_collect_xy
 
 HYDRO     =   hydro
 DENSITY   =   density
