@@ -168,6 +168,7 @@ module Dustvelocity
 !
       use EquationOfState, only: cs0
       use BorderProfiles, only: request_border_driving
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -418,6 +419,11 @@ module Dustvelocity
           call fatal_error('initialize_dustvelocity','')
         endselect
       enddo
+!
+!  Need deltamd for normalization purposes in dustdensity.
+!
+        if (ldustdensity) &
+          call put_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
