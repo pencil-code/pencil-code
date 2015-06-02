@@ -54,7 +54,7 @@ module Dustdensity
   real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
-  real :: nd_const=1.0, dkern_cst=1.0, eps_dtog=0.0, Sigmad=1.0
+  real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
   real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0, supsatfac1=1.0
   real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
@@ -1714,7 +1714,7 @@ module Dustdensity
 !
 !  Calculate kernel of coagulation equation
 !
-      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,p%TT1)
+      if (ldustcoagulation) call coag_kernel(f,p%TT1)
 !
 !  Dust coagulation due to sticking
 !
@@ -2311,6 +2311,12 @@ module Dustdensity
       real :: ust,tl01,teta1
       integer :: i,j,l
 !
+!  As a test, can set kernel to a constant 
+!
+      if (.not.lcalcdkern) then
+        dkern = dkern_cst
+      else
+!
       tl01=1/tl0
       teta1=1/teta
 !
@@ -2379,6 +2385,7 @@ module Dustdensity
           enddo
         enddo
       enddo
+      endif
 !
     endsubroutine coag_kernel
 !***********************************************************************
@@ -2921,7 +2928,6 @@ module Dustdensity
 !
 !  The following corresponds to ff_tmp = G*S*n, but without 1/r factor here.
 !  Need to define some quantity for (p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
-!  AXEL
 !
                 if (dust_chemistry=='simplified' .or. &
                     dust_chemistry=='pscalar') then
