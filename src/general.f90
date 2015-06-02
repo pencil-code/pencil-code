@@ -1170,21 +1170,25 @@ module General
 !
     endfunction spline_derivative_double
 !***********************************************************************
-    function spline_integral(z,f,q0)
+    function spline_integral(z,f,q0) result (q)
 !
 !  Computes integral of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
+!  02-jun-15/MR: fix for size of f equal to 1.
 !
       implicit none
       real, dimension(:) :: z
       real, dimension(:) :: f
-      real, dimension(size(z)) :: df,dz
-      real, dimension(size(z)) :: q,spline_integral
+      real, dimension(size(z)) :: df,dz,q
       real, optional :: q0
       integer :: mz,k
 !
       mz=size(z)
+      if (mz==1) then
+        q = f(1)
+        return
+      endif
 !
       q(1)=0.
       if (present(q0)) q(1)=q0
@@ -1197,8 +1201,6 @@ module General
       do k=2,mz
         q(k)=q(k)+q(k-1)
       enddo
-!
-      spline_integral=q
 !
     endfunction spline_integral
 !***********************************************************************
