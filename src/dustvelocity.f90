@@ -424,6 +424,7 @@ module Dustvelocity
 !
         if (ldustdensity) &
           call put_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
+          call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.

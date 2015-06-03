@@ -40,7 +40,7 @@ module Dustdensity
 !
   include 'dustdensity.h'
 !
-  integer, parameter :: ndiffd_max=4, mmom=61
+  integer, parameter :: ndiffd_max=4, mmom=24  !(largest possible moment)
 !  integer, parameter :: ndustspec0=10 !8
 !  real, dimension(mx,my,mz,ndustspec,ndustspec0), SAVE :: nd_full
   real, dimension(nx,ndustspec,ndustspec0), SAVE :: dndr_full, ppsf_full
@@ -87,10 +87,11 @@ module Dustdensity
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   integer :: iadvec_ddensity=0
+  logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_omega=0.
-  real    :: dlnad, GS_condensparam
+  real    :: dlnmd, dlnad, GS_condensparam
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -124,7 +125,7 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0,idiag_ndmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
-  integer, dimension(mmom)      :: idiag_rmom=0, idiag_admom=0
+  integer, dimension(0:mmom)    :: idiag_rmom=0, idiag_admom=0
 !
   contains
 !***********************************************************************
@@ -239,12 +240,18 @@ module Dustdensity
 !
 !  Need deltamd for computing the radius differential in dustdensity.
 !
-        if (ldustvelocity) &
-          call get_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
+      if (ldustvelocity) then
+        call get_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
+        call get_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
+        if (llin_radiusbins.and..not.lradius_binning) &
+            call fatal_error('initialize_dustdensity', &
+                'must not use llin_radiusbins=T with lradius_binning=F')
+      endif
 !
 !  Differential for integration is ad*dln(ad). Prepare here dln(ad) factor.
 !  This assumes constant logarithmic binning.
 !
+      dlnmd=alog(deltamd)
       dlnad=alog(deltamd)/3.
 !
 !  Compute A=G*S
@@ -610,9 +617,13 @@ module Dustdensity
           endif
           do k=1,ndustspec
             if (a1 == 0) then
+              if (lradius_binning) then
+                fac=1./(sqrt(twopi)*sigmad*ad(k))
+              else
+                fac=dlnad/(sqrt(twopi)*sigmad)
+              endif
               f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2) &
-                  /(sqrt(twopi)*sigmad*ad(k))
+                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
             else
               call fatal_error('initnd','no lognormal with a1/=1')
             endif
@@ -1963,11 +1974,16 @@ module Dustdensity
 !
 !  compute moments, works independently of lmdvar
 !
-        do k=1,mmom
+        do k=0,mmom
           if (idiag_rmom(k)/=0) &
               call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
-          if (idiag_admom(k)/=0) &
+          if (idiag_admom(k)/=0) then
+            if (lradius_binning) then
               call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+            else
+              call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
+            endif
+          endif
         enddo
 !      endif
 !
@@ -2130,7 +2146,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
       real, dimension (nx) :: coefkp, coefkm, coefk0
-      real :: dmdfac
+      real :: dmdfac, dampfact
       integer :: k,l
 !
 !  Calculate mass flux of condensing monomers
@@ -2139,8 +2155,11 @@ module Dustdensity
       if (.not.lsemi_chemistry) then
         call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
 !
-!  upwinding
+!  upwinding, first for radius bins
 !
+        if (lradius_binning) then
+!
+!  Alternative I (does not work when coagulation is also used).
 !  Start with the first mass bin...
 !
         k=1
@@ -2175,6 +2194,54 @@ module Dustdensity
             +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1) &
             +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)
         enddo
+!
+!  same but for mass bins
+!
+        else
+!
+!  Alternative II (lradius_binning=F; preferred when coagulation is also used).
+!  Must not use llin_radiusbins=T with lradius_binning=F'.
+!
+!  Define empirical damping factor (scaling with dlnmd to be checked).
+!
+        dampfact=.1/dlnmd*3.
+!
+!  Start with the first mass bin...
+!
+        k=1
+        mfluxcondp=(abs(mfluxcond)-mfluxcond)
+        mfluxcondm=(abs(mfluxcond)+mfluxcond)
+        coefkp=.5*mfluxcondp/dlnmd*3.
+        coefk0=  -mfluxcondm*dampfact-coefkp
+        df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+          +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
+          +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
+!
+!  Finish with the last mass bin...
+!
+        k=ndustspec
+        mfluxcondm=(abs(mfluxcond)+mfluxcond)
+        coefkm=.5*mfluxcondm/dlnmd*3.
+        coefk0=  -mfluxcondp*dampfact-coefkm
+        df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+          +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
+          +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
+!
+!  ... then loop over mass bins
+!
+        do k=2,ndustspec-1
+          mfluxcondp=(abs(mfluxcond)-mfluxcond)
+          mfluxcondm=(abs(mfluxcond)+mfluxcond)
+          coefkp=+.5*mfluxcondp/dlnmd*3.
+          coefkm=+.5*mfluxcondm/dlnmd*3.
+          coefk0=-(coefkp+coefkm)
+          df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
+            +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
+            +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
+            +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
+        enddo
+!
+        endif
       endif
 !
     endsubroutine dust_condensation_nolmdvar
@@ -2471,7 +2538,9 @@ module Dustdensity
                   if (lradius_binning) then
                     df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
                         dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
-                              *(p%ad(l,i)*p%ad(l,j))/p%ad(l,k)*dlnad
+                              *(p%ad(l,k)/p%ad(l,j))**2*p%ad(l,i)*dlnad
+                    call fatal_error('dust_coagulation', &
+                        'coagulation with lradius_binning=T is not working well') 
                   else
                     df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
                         dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
@@ -2656,7 +2725,7 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
-        do k=1,mmom
+        do k=0,mmom
           sdust=itoa(k)
           call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))
           call parse_name(iname,cname(iname),cform(iname),'admom'//trim(sdust),idiag_admom(k))
