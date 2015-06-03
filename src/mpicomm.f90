@@ -1281,11 +1281,11 @@ module Mpicomm
 !
 !  11-jul-03/tobi: coded
 !  20-jul-05/tobi: use non-blocking MPI calls
+!   2-jun-15/MR: corrected parameters of MPI_SEND (blocking!)
 !
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx
       integer :: idest
-      integer, dimension(MPI_STATUS_SIZE) :: isend_zx
 !
 !  Identifier
 !
@@ -1299,7 +1299,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,isend_zx,mpierr)
+                    MPI_COMM_WORLD,mpierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -1405,10 +1405,10 @@ module Mpicomm
 !  actual MPI calls
 !
       call MPI_ALLGATHER(tau_yz,ny*nz,MPI_REAL,tau_yz_all,ny*nz,MPI_REAL, &
-          MPI_COMM_XBEAM,mpierr)
+                         MPI_COMM_XBEAM,mpierr)
 !
       call MPI_ALLGATHER(Qrad_yz,ny*nz,MPI_REAL,Qrad_yz_all,ny*nz,MPI_REAL, &
-          MPI_COMM_XBEAM,mpierr)
+                         MPI_COMM_XBEAM,mpierr)
 !
     endsubroutine radboundary_yz_periodic_ray
 !***********************************************************************
