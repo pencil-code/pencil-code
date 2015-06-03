@@ -1309,11 +1309,11 @@ module Mpicomm
 !
 !  11-jul-03/tobi: coded
 !  20-jul-05/tobi: use non-blocking MPI calls
+!   2-jun-15/MR: corrected parameters of MPI_SEND (blocking!)
 !
       integer, intent(in) :: nrad,idir
       real, dimension(mx,my) :: Qsend_xy
       integer :: idest
-      integer, dimension(MPI_STATUS_SIZE) :: isend_xy
 !
 !  Identifier
 !
@@ -1327,7 +1327,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,isend_xy,mpierr)
+                    MPI_COMM_WORLD,mpierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
