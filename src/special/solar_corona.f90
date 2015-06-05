@@ -668,7 +668,7 @@ module Special
         lpenc_requested(i_glnTT) = .true.
       endif
 !
-      if (idiag_dtchi2 /= 0.0) then
+      if (idiag_dtchi2 /= 0) then
         lpenc_diagnos(i_rho1) = .true.
         lpenc_diagnos(i_cv1) = .true.
         lpenc_diagnos(i_cs2) = .true.
