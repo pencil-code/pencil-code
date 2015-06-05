@@ -38,9 +38,9 @@ module Particles_main
 !
   include 'particles_main.h'
 !
-  real, dimension (mpar_loc,mparray) :: fp
-  real, dimension (mpar_loc,mpvar) :: dfp
-  integer, dimension (mpar_loc,3) :: ineargrid
+  real, dimension(mpar_loc,mparray) :: fp = 0.0
+  real, dimension(mpar_loc,mpvar) :: dfp = 0.0
+  integer, dimension(mpar_loc,3) :: ineargrid = 0
 !
   contains
 !***********************************************************************
@@ -274,9 +274,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      intent (out) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
