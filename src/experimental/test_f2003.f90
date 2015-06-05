@@ -40,25 +40,25 @@ program test_f2003
     ! read namelist from memory buffer
     read (buffer, nml=example_1)
     if ((a /= 'bcx?0') .or. (b /= -1.234) .or. (c /= 42)) then
-      write (*,*) 'NAMELIST READING ERROR!'
+      write (*,*) 'NAMELIST 1 READING ERROR!'
       write (*,*) buffer
-      write (*,*) '======================='
+      write (*,*) '========================='
       stop 1
     endif
 
     ! read namelists in any order
     read (buffer, nml=example_3)
     if ((a /= 'bcz?0') .or. (b /= -4.321) .or. (c /= 23)) then
-      write (*,*) 'NAMELIST READING ERROR!'
+      write (*,*) 'NAMELIST 2 READING ERROR!'
       write (*,*) buffer
-      write (*,*) '======================='
+      write (*,*) '========================='
       stop 1
     endif
     read (buffer, nml=example_2)
     if ((a /= 'bcy?0') .or. (b /= 1.234) .or. (c /= 42)) then
-      write (*,*) 'NAMELIST READING ERROR!'
+      write (*,*) 'NAMELIST 3 READING ERROR!'
       write (*,*) buffer
-      write (*,*) '======================='
+      write (*,*) '========================='
       stop 1
     endif
 
