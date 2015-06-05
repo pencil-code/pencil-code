@@ -112,9 +112,7 @@ module File_io
       character (len=*), optional, intent(in) :: form
       logical, optional, intent(in) :: remove_comments
 !
-      integer :: bytes, pos
-      character (len=fnlen) :: filename
-      character (len=fnlen) :: tmp_prefix
+      integer :: bytes
 !
  write (*,*) 'POA: ', iproc
  flush (6)
