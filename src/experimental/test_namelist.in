@@ -1,3 +1,9 @@
-&example
+&example_1
 	a='bcx?0', b=-1.234, c=42
+/
+&example_2
+	a='bcy?0', b=1.234, c=42
+/
+&example_3
+	a='bcz?0', b=-4.321, c=23
 /
