@@ -155,13 +155,13 @@ module File_io
       deallocate (parallel_unit)
  write (*,*) 'PCC: ', iproc
  flush (6)
-      if (allocated (buffer)) then
- write (*,*) "PC: DOUBLE DEALLOCATION!"
- flush (6)
-        deallocate (buffer)
-      endif
- write (*,*) 'PCD: ', iproc
- flush (6)
+!      if (allocated (buffer)) then
+! write (*,*) "PC: DOUBLE DEALLOCATION!"
+! flush (6)
+!        deallocate (buffer)
+!      endif
+! write (*,*) 'PCD: ', iproc
+! flush (6)
 !
     endsubroutine parallel_close
 !***********************************************************************
