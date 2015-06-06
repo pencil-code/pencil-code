@@ -590,6 +590,7 @@ module Chemistry
       use InitialCondition, only: initial_condition_chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: PP
       integer :: j,k
       logical :: lnothing, air_exist
 !
@@ -653,7 +654,7 @@ module Chemistry
           if (lroot ) print*, 'init_chem: air '
            inquire(file='air.dat',exist=air_exist)
            if (air_exist) then
-            call air_field(f)
+            call air_field(f,PP)
            else
             call stop_it('there is no air.dat file')
            endif
@@ -1158,7 +1159,7 @@ module Chemistry
       integer :: i,j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
-      real :: log_inlet_density, del
+      real :: log_inlet_density, del, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
@@ -1170,7 +1171,7 @@ module Chemistry
 !
       lflame_front=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
       if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
 !
@@ -1460,7 +1461,7 @@ module Chemistry
 !
       ltriple_flame=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
       init_y1 = xyz0(2) + Lxyz(2)/3.
       init_y2 = xyz0(2) + 2.*Lxyz(2)/3.
@@ -1730,7 +1731,7 @@ module Chemistry
       integer :: i,j,k
 !
       real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
-      real :: log_inlet_density, del
+      real :: log_inlet_density, del,PP
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
       real :: initial_mu1, final_massfrac_O2
@@ -1739,7 +1740,7 @@ module Chemistry
 !
       lflame_front=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
       if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
 !
@@ -1945,7 +1946,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
-      real :: mO2, mH2, mN2, mH2O
+      real :: mO2, mH2, mN2, mH2O, PP
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
@@ -1954,7 +1955,7 @@ module Chemistry
 !
      lflame_front=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
 ! Initialize some indexes
 !
@@ -2060,7 +2061,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
-      real :: mO2, mH2, mN2, mH2O, lower,upper
+      real :: mO2, mH2, mN2, mH2O, lower,upper, PP
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       integer :: i_C3H8, ichem_C3H8, i_CO2, ichem_CO2
       real :: final_massfrac_O2, mu1, phi, delta_O2, mC3H8, mCO2
@@ -2069,7 +2070,7 @@ module Chemistry
 !
      lflame_front=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
 ! Initialize some indexes
 !
@@ -2184,12 +2185,12 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j1,j2,j3
 !
-      real :: lower,upper
+      real :: lower,upper, PP
       real :: T0, T1, rho0, rho1
 !
       lflame_front=.true.
 !
-      call air_field(f)
+      call air_field(f,PP)
 !
 ! Initialize some indexes
 !
@@ -5548,7 +5549,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: sum_Y,tmp
-      real, optional :: PP ! (in dynes = 1atm)
+      real :: PP ! (in dynes = 1atm)
 !
       logical :: emptyfile=.true.
       logical :: found_specie
