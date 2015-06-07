@@ -5006,7 +5006,7 @@ module Mpicomm
       integer, parameter :: xtag=125, ytag=126
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      real, dimension(:,:,:,:), allocatable :: y_row, extended
+      real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
 !
 !
       bnx = size (out, 1)
@@ -5065,6 +5065,10 @@ module Mpicomm
       if (ipz == pz) then
         allocate (y_row(bnx,rny,bnz,bna), stat=alloc_err)
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for y_row!', .true.)
+        if (lfirst_proc_y) then
+          allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
+          if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
+        endif
       endif
 !
       if (iproc == broadcaster) then
@@ -5076,8 +5080,8 @@ module Mpicomm
             y_row = in(px*cnx+1:px*cnx+mx,:,:,:)
           else
             ! send to partner
-            call MPI_SEND (in(px*cnx+1:px*cnx+mx,:,:,:), &
-                nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
+            buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
+            call MPI_SEND (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
       endif
@@ -5096,8 +5100,8 @@ module Mpicomm
             out = y_row(:,py*cny+1:py*cny+my,:,:)
           else
             ! send to partner
-            call MPI_SEND (y_row(:,py*cny+1:py*cny+my,:,:), &
-                nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            buffer = y_row(:,py*cny+1:py*cny+my,:,:)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
       elseif (ipz == pz) then
@@ -5106,7 +5110,10 @@ module Mpicomm
         call MPI_RECV (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
 !
-      if (ipz == pz) deallocate (y_row)
+      if (ipz == pz) then
+        deallocate (y_row)
+        if (lfirst_proc_y) deallocate (buffer)
+      endif
 !
     endsubroutine localize_xy
 !***********************************************************************
