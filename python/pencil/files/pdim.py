@@ -21,14 +21,12 @@ class PcPdim:
 	self.mpaux = mpaux
 
         
-def read_pdim(datadir='data',proc=-1):
+def read_pdim(datadir='data'):
     """
-    read the pdim.dat file. if proc is -1, then read the 'global'
-    dimensions. if proc is >=0, then read the pdim.dat in the
-    corresponding processor directory.
+    read the pdim.dat file
     """
-    if (proc < 0 ):
-        filename = datadir+'/pdim.dat' # global box dimensions
+    
+    filename = datadir+'/pdim.dat' # global particle properties
 
     try:
 	filename = os.path.expanduser(filename)
@@ -37,10 +35,15 @@ def read_pdim(datadir='data',proc=-1):
         print "File",filename,"could not be opened."
         return -1
     else:
-        lines = file.readlines()
+        lines = file.readlines()[0].split()
         file.close()
-        # 'npar','mpvar','npar_stalk','mpaux'
-	npar,mpvar,npar_stalk,mpaux = tuple(map(int,lines[0].split()))
+        if N.size(lines) == 3:
+	  # old code - case: 'npar','mpvar','mpaux'	(before fall 2014)
+	  npar,mpvar,mpaux = tuple(map(int,lines))
+	  npar_stalk = 0
+	if N.size(lines) == 4:
+	  # new code - case: 'npar','mpvar','npar_stalk','mpaux'
+	  npar,mpvar,npar_stalk,mpaux = tuple(map(int,lines))
 
     pdim = PcPdim(npar,mpvar,npar_stalk,mpaux)
 
