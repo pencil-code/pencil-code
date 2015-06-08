@@ -44,9 +44,6 @@ module Shock
   real :: div_threshold=0., div_scaling=1.
   real, dimension (3,3,3) :: smooth_factor
 !
-  ! input parameters
-  !namelist /viscosity_init_pars/ dummy
-!
   ! run parameters
   namelist /shock_run_pars/ &
       lshock_first, lshock_max5, div_threshold, div_scaling, &
@@ -192,42 +189,25 @@ module Shock
 !
     endsubroutine initialize_shock
 !***********************************************************************
-    subroutine read_shock_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_shock_run_pars(iostat)
 !
-      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
-      if (ALWAYS_FALSE) print*,unit
+      use File_io, only: get_unit
 !
-    endsubroutine read_shock_init_pars
-!***********************************************************************
-    subroutine write_shock_init_pars(unit)
-      integer, intent(in) :: unit
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (ALWAYS_FALSE) print*,unit
+      read(parallel_unit, NML=shock_run_pars, IOSTAT=iostat)
 !
-    endsubroutine write_shock_init_pars
-!***********************************************************************
-    subroutine read_shock_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=shock_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=shock_run_pars,ERR=99)
-      endif
-!
-99    return
     endsubroutine read_shock_run_pars
 !***********************************************************************
     subroutine write_shock_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=shock_run_pars)
+      write(unit, NML=shock_run_pars)
 !
     endsubroutine write_shock_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_shock(lreset,lwrite)
 !
 !  Writes ishock to index.pro file

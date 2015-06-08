@@ -36,12 +36,12 @@ my $routine_separator_length = $preferred_line_length - length ($comment_str);
 my @trigger_indent = ('program', 'module', 'interface', 'type', 'subroutine', 'function', 'where', 'do', 'repeat', 'if', 'select');
 my @trigger_unindent = ('program', 'module', 'interface', 'type', 'subroutine', 'function', 'where', 'do', 'if', 'select');
 my @data_types = ('integer', 'real', 'logical', 'character', 'double precision');
-my %require_separator = ('.and.' => '', '.or.' => '', '.not.' => '', '.true.' => '', '.false.' => '', '.eqv.' => '', '.neqv.' => '');
+my %require_separator = ('.and.' => '', '.or.' => '', '.not.' => '', '.true.' => '', '.false.' => '', '.eqv.' => '', '.neqv.' => '', '.in.' => '');
 my $name = 'a-zA-Z0-9_';
 my %require_spaces = ('=' => '<>/=', '>' => '=', '<' => '=', '>=' => '', '<=' => '', '==' => '=', '/=' => '=', 'inquire' => $name.'%', 'open' => $name.'%', 'close' => $name.'%', 'read' => $name.'%', 'write' => $name.'%', '::' => ':');
 my @require_declaration_left_space = ('pointer', 'save', 'parameter', 'dimension', 'allocatable');
 my %require_declaration_right_separator = ('dimension' => '(', 'intent' => '(', 'character' => '(', 'integer' => '(', 'real' => '(', 'complex' => '(');
-my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.');
+my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.', '.IN.' => '.in.');
 
 # default command line arguments settings
 my $comment_empty_lines = 1;

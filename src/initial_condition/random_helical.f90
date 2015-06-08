@@ -39,8 +39,6 @@ module InitialCondition
   logical :: lkvec_allocated=.false.
   logical, dimension (3) :: extent
 !
-!!  integer :: dummy
-!
   namelist /initial_condition_pars/  &
   no_of_modes,relhel,lheluu,lhelaa,ampluu,amplaa,scale_kvectorx,scale_kvectory,&
   scale_kvectorz
@@ -331,38 +329,22 @@ module InitialCondition
 !
     endsubroutine initial_condition_vvp
 !***********************************************************************
-    subroutine read_initial_condition_pars(unit,iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  07-may-09/wlad: coded
+      use File_io, only: get_unit
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-!  Uncomment these lines back in when you turn 
-!  this file into an initial condition, so it 
-!  is able to read the namelist.  
-!
-      if (present(iostat)) then
-        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=initial_condition_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
 !
-!  07-may-09/wlad: coded
-!
       integer, intent(in) :: unit
 !
-!  Uncomment this line back in when you turn 
-!  this file into an initial condition, so it 
-!  is able to write the namelist.  
-!
-      write(unit,NML=initial_condition_pars)
+      write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************

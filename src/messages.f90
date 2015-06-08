@@ -61,7 +61,6 @@ module Messages
 ! Also set a flag if fake_parallel_io is requested.
 !
       inquire(FILE="COLOR", EXIST=ltermcap_color)
-      inquire(FILE="FAKE_PARALLEL_IO", EXIST=lfake_parallel_io)
 !
     endsubroutine initialize_messages
 !***********************************************************************
@@ -262,7 +261,7 @@ module Messages
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()
           write (*,*) trim(scaller) // ": " // trim(message)
-!          call flush() ! has to wait until F2003
+!          call flush(6) ! has to wait until F2003
         endif
 !
         if (ldie_onwarning) call die_gracefully
@@ -307,22 +306,19 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-      integer :: wd1=0, dist, iostat
+      integer :: wd1=0, dist
       logical, save :: lfirstcall=.true.
-      logical :: writ
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
-      writ = .true.
       if (lfirstcall) then
-        open(1, file=trim(datadir)//'/svnid.dat', status='replace',IOSTAT=iostat)
+        open(1, file=trim(datadir)//'/svnid.dat', status='replace')
         dist=0
         lfirstcall=.false.
       else
-        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append',IOSTAT=iostat)
+        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
         dist=-1
       endif
-      if (outlog(iostat,'open',trim(datadir)//'/svnid.dat',dist=dist)) writ=.false.
 !
 !  Construct format
 !  Need to set explicit format below, to avoid problems when the
@@ -383,14 +379,11 @@ module Messages
             date(1:wd), &
             trim(author)
 !
-        if (writ) then
-          write(1,fmt,IOSTAT=iostat) "SVN: ", &
-              trim(filename), &
-              revision(1:wv), &
-              date(1:wd), &
-              trim(author)
-          if (outlog(iostat,'write filename, revision etc.')) return
-        endif
+        write(1,fmt) "SVN: ", &
+            trim(filename), &
+            revision(1:wv), &
+            date(1:wd), &
+            trim(author)
       else                      ! not a SVN line; maybe `[No ID given]'
         wd1 = min(wd, len(svnid))
         write(*,fmt) "SVN: ", &
@@ -398,22 +391,16 @@ module Messages
             '', &
             '', &
             svnid(1:wd1)
-        if (writ) then
-          write(1,fmt,IOSTAT=iostat) "SVN: ", &
-              '-------', &
-              '', &
-              '', &
-              svnid(1:wd1)
-          if (outlog(iostat,'write svnid')) return
-        endif
+        write(1,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
       endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
-      if (writ) then
-        close(1,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-      endif
+      close(1)
 !
     endsubroutine svn_id
 !***********************************************************************
@@ -429,57 +416,54 @@ module Messages
       double precision, save :: time_initial
       character(len=*), optional :: instruct
       logical, optional :: mnloop
-      integer :: mul_fac,iostat
-      logical, save :: opened=.true.
+      integer :: mul_fac
+      logical, save :: opened = .false.
 !
       if (present(location)) scaller=location
 !
-!  work on the timing only when it==it_timing
+!  work on the timing only when it == it_timing
 !
-      if (it==it_timing) then
-        if (lroot) then
+      if (it /= it_timing) return
+!
+      if (lroot) then
 !
 !  initialize
 !
-          if (present(instruct)) then
-            if (trim(instruct)=='initialize') then
-              open(lun,file=trim(datadir)//'/timing.dat', status='replace',IOSTAT=iostat)
-              if (outlog(iostat,'open',trim(datadir)//'/timing.dat')) opened=.false.
-              time_initial=mpiwtime()
-            endif
+        if (present(instruct)) then
+          if (trim(instruct) == 'initialize') then
+            open(lun, file=trim(datadir)//'/timing.dat', status='replace')
+            opened = .true.
+            time_initial = mpiwtime()
           endif
+        endif
 !
 !  write current timing to the timing file
 !
-          if (lfirst) then
-            if ((present(mnloop).and.lfirstpoint).or. .not.present(mnloop)) then
-              time=mpiwtime()-time_initial
-              if (present(mnloop)) then
-                mul_fac=ny*nz
-              else
-                mul_fac=1
-              endif
-              if (.not.opened) then
-                open(lun,file=trim(datadir)//'/timing.dat',position='append',IOSTAT=iostat)
-                opened = .not.(outlog(iostat,'open',trim(datadir)//'/timing.dat'))
-              endif
-              if (opened) then
-                write(lun,*,IOSTAT=iostat) time,mul_fac,trim(scaller)//": "//trim(message)
-                if (outlog(iostat,'write time,mul_fac etc.')) opened=.false.
-              endif
+        if (lfirst) then
+          if ((present(mnloop) .and. lfirstpoint) .or. .not. present(mnloop)) then
+            time = mpiwtime() - time_initial
+            if (present(mnloop)) then
+              mul_fac = ny*nz
+            else
+              mul_fac = 1
             endif
+            if (.not. opened) then
+              open(lun, file=trim(datadir)//'/timing.dat', position='append')
+              opened = .true.
+            endif
+            write(lun,*) time, mul_fac, trim(scaller)//": "//trim(message)
           endif
+        endif
 !
 !  finalize
 !
-          if (present(instruct)) then
-            if (trim(instruct)=='finalize' .and. opened) then
-              close(lun,IOSTAT=iostat)
-              if (outlog(iostat,'close')) continue
-            endif
+        if (present(instruct)) then
+          if (opened .and. (trim(instruct) == 'finalize')) then
+            close(lun)
+            opened = .false.
           endif
-!
         endif
+!
       endif
 !
     endsubroutine timing
@@ -950,27 +934,5 @@ module Messages
     close(lun)
 !
   end function scanfile
-!***********************************************************************
-    subroutine input_array(file,a,dimx,dimy,dimz,dimv)
-!
-!  Generalized form of input, allows specifying dimension.
-!
-!  27-sep-03/axel: coded
-!  04-nov-11/MR: moved here from General
-!
-      character (len=*) :: file
-      integer :: dimx,dimy,dimz,dimv
-      real, dimension (dimx,dimy,dimz,dimv) :: a
-!
-      integer :: iostat
-!
-      open(1,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
-      read(1,IOSTAT=iostat) a
-      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
-      close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close',file,location='input_array')) continue
-!
-    endsubroutine input_array
 !***********************************************************************
 endmodule Messages

@@ -7,6 +7,7 @@ program pc_configtest
   use Cdata
   use Cparam, only: fnlen, intlen
   use Diagnostics
+  use File_io, only: file_exists
   use Filter
   use General, only: itoa
   use Grid, only: initialize_grid
@@ -17,7 +18,7 @@ program pc_configtest
   use Register
   use Snapshot
   use Sub
-  use Syscalls, only: sizeof_real, file_exists
+  use Syscalls, only: sizeof_real
 !
   implicit none
 !

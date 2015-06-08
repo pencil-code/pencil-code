@@ -455,46 +455,58 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_init_pars,ERR=99)
-      endif
-
-
-99    return
+    subroutine input_persistent_hydro(id,done)
+!
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
+!
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    logical function output_persistent_hydro()
+!
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
+!***********************************************************************
+    subroutine read_hydro_init_pars(iostat)
+!
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=hydro_init_pars)
-
+!
+      write(unit, NML=hydro_init_pars)
+!
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_run_pars,ERR=99)
-      endif
-
-
-99    return
+    subroutine read_hydro_run_pars(iostat)
+!
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=hydro_run_pars)
-
+!
+      write(unit, NML=hydro_run_pars)
+!
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)

@@ -978,6 +978,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
+      call map_nearest_grid(fp,ineargrid)
       call boundconds_particles(fp,ipar)
 !
 !  Map particle positions on the grid. Doing this here is necessary for
@@ -2419,49 +2420,41 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine get_frictiontime
 !***********************************************************************
-    subroutine read_particles_init_pars(unit,iostat)
+    subroutine read_particles_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_init_pars)
+      write(unit, NML=particles_init_pars)
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(unit,iostat)
+    subroutine read_particles_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_run_pars)
+      write(unit, NML=particles_run_pars)
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************

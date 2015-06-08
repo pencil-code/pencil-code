@@ -907,7 +907,7 @@ module Magnetic_meanfield
 !  Invoke lmeanfield_noalpm to treat magnetic alpha separately
 !  (which makes physically more sense!)
 !
-        if (lalpm.and..not.lmeanfield_noalpm) then
+        if (lalpm .and. .not. lmeanfield_noalpm) then
           if (lalpha_profile_total) then
              alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
              if (headtt) print*,'use alp=(alpK+alpM)*profile'
@@ -919,7 +919,7 @@ module Magnetic_meanfield
 !  Possibility of *alternate* dynamical alpha.
 !  Here we initialize alpha_total.
 !
-        elseif (lalpm_alternate.and..not.lmeanfield_noalpm) then
+        elseif (lalpm_alternate .and. .not. lmeanfield_noalpm) then
           kf_tmp=kf_x*kf_y(m)*kf_z(n)
           prefact=meanfield_etat_tmp*(kf_tmp/meanfield_Beq)**2
           alpm=prefact*(f(l1:l2,m,n,ialpm)-p%ab)
@@ -1376,22 +1376,18 @@ module Magnetic_meanfield
 !
     endsubroutine Omega_effect
 !***********************************************************************
-    subroutine read_magn_mf_init_pars(unit,iostat)
+    subroutine read_magn_mf_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magn_mf_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magn_mf_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=magn_mf_init_pars, IOSTAT=iostat)
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_init_pars(unit,iostat)
-!
-99    return
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_init_pars(iostat)
 !
     endsubroutine read_magn_mf_init_pars
 !***********************************************************************
@@ -1399,7 +1395,7 @@ module Magnetic_meanfield
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magn_mf_init_pars)
+      write(unit, NML=magn_mf_init_pars)
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !
@@ -1407,22 +1403,18 @@ module Magnetic_meanfield
 !
     endsubroutine write_magn_mf_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_run_pars(unit,iostat)
+    subroutine read_magn_mf_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=magn_mf_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magn_mf_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=magn_mf_run_pars, IOSTAT=iostat)
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_run_pars(unit,iostat)
-!
-99    return
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_run_pars(iostat)
 !
     endsubroutine read_magn_mf_run_pars
 !***********************************************************************
@@ -1430,7 +1422,7 @@ module Magnetic_meanfield
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magn_mf_run_pars)
+      write(unit, NML=magn_mf_run_pars)
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !

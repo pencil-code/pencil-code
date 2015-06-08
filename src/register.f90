@@ -706,37 +706,36 @@ module Register
 !   24-jan-11/MR: removed allocation
 !   26-aug-13/MR: modification for uncounted comment lines in input file
 !
-      use Mpicomm, only: parallel_open, parallel_close
+      use File_io, only: parallel_open, parallel_close
       use Cdata  , only: comment_char
 !
-      character (len=*) ,               intent(in)  :: in_file
+      character (len=*), intent(in) :: in_file
       character (len=30), dimension(*), intent(out) :: cnamel
-      integer,                          intent(out) :: nnamel
+      integer, intent(out) :: nnamel
 !
       character (len=30) :: cname_tmp
-      include 'unit_loc.h'
-
-      nnamel=0
+      integer :: io_err
+      include "parallel_unit_declaration.h"
 !
-      call parallel_open(unit,file=trim(in_file),form='formatted',nitems=nnamel)
+      read_name_format = .false.
+      nnamel = 0
+!
+      call parallel_open(parallel_unit, trim(in_file), form='formatted', remove_comments=.true.)
 !
 !  Read names and formats.
 !
-      if (nnamel>0) then
-        read(unit,*) cnamel(1:nnamel)
-      else
-        do
-          read(unit,*,end=99) cname_tmp
-          if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
-            nnamel=nnamel+1
-            cnamel(nnamel)=cname_tmp
-          endif
-        enddo
-      endif
+      do
+        read(parallel_unit, *, iostat=io_err) cname_tmp
+        if (io_err < 0) exit ! EOF
+        if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
+        if ((cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
+          nnamel = nnamel+1
+          cnamel(nnamel) = cname_tmp
+          read_name_format = .true.
+        endif
+      enddo
 !
-99    call parallel_close(unit)
-!
-      read_name_format = nnamel>0
+      call parallel_close(parallel_unit)
 !
     endfunction read_name_format
 !***********************************************************************
@@ -747,8 +746,9 @@ module Register
 !  3-may-01/axel: coded
 !  11-jan-11/MR: introduced read_name_format calls for each of the lists
 !                for homogeneity
-!  26-aug-13/MR: introduced use of parameter comchars when reading print.in
-!                to avoid counting comment lines
+!  26-aug-13/MR: introduced use of parameter comment_chars when reading
+!                print.in to avoid counting comment lines
+!  28-May-2015/Bourdni.KIS: renamed comment_chars to strip_comments
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -788,7 +788,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
-      use Mpicomm,         only: parallel_file_exists, parallel_count_lines
+      use File_io,         only: parallel_file_exists, parallel_count_lines
 !
       integer :: i,iadd,ios
       logical :: lreset, ldummy
@@ -806,8 +806,6 @@ module Register
       character (LEN=*), parameter :: zaver_in_file    = 'zaver.in'
       character (LEN=*), parameter :: phiaver_in_file  = 'phiaver.in'
 !
-!  In all lists:  recognize "!" and "#" as comments.
-!
 !  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
 !
@@ -819,7 +817,9 @@ module Register
 !
       if (ldebug) print*, 'Reading print formats from '//trim(print_in_file)
 !
-      nname = max(0,parallel_count_lines(print_in_file,comchars=(/'#','!'/)))
+!  Ignore comments in all lists.
+!
+      nname = max(0,parallel_count_lines(print_in_file,ignore_comments=.true.))
 !
       if (nname>0) then
         call allocate_fnames(nname)

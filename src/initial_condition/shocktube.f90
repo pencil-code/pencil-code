@@ -157,28 +157,18 @@ module InitialCondition
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
-    subroutine read_initial_condition_pars(unit, iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  Read the namelist initial_condition_pars.
+      use File_io, only: get_unit
 !
-!  20-nov-13/ccyang: coded
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit, NML=initial_condition_pars, IOSTAT=iostat)
-      else
-        read(unit, NML=initial_condition_pars)
-      endif
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!
-!  Write the namelist initial_condition_pars.
-!
-!  20-nov-13/ccyang: coded
 !
       integer, intent(in) :: unit
 !

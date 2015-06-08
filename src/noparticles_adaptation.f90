@@ -57,28 +57,22 @@ module Particles_adaptation
 !
     endsubroutine particles_adaptation_pencils
 !***********************************************************************
-    subroutine read_particles_adapt_run_pars(unit,iostat)
+    subroutine read_particles_adapt_run_pars(iostat)
 !
-!  03-apr-13/anders: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_adapt_run_pars
 !***********************************************************************
     subroutine write_particles_adapt_run_pars(unit)
-!
-!  03-apr-13/anders: dummy
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_adapt_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_adaptation(lreset,lwrite)
 !
 !  03-apr-13/anders: dummy

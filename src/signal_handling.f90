@@ -71,26 +71,23 @@ subroutine signal_prepare()
 !
 endsubroutine signal_prepare
 !***********************************************************************
-    subroutine read_signal_init_pars(unit,iostat)
+    subroutine read_signal_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=signal_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=signal_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=signal_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_signal_init_pars
 !***********************************************************************
-   subroutine write_signal_init_pars(unit)
+    subroutine write_signal_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=signal_init_pars)
+      write(unit, NML=signal_init_pars)
 !
     endsubroutine write_signal_init_pars
-!*****************************************************************************
+!***********************************************************************
 endmodule Signal_handling

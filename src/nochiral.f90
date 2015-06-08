@@ -25,11 +25,6 @@ module Chiral
 !
   include 'chiral.h'
 !
-  integer :: dummy           ! We cannot define empty namelists
-!
-  namelist /chiral_init_pars/ dummy
-  namelist /chiral_run_pars/  dummy
-!
   integer :: idiag_XX_chiralmax=0, idiag_YY_chiralmax=0
 !
   contains
@@ -146,13 +141,11 @@ module Chiral
       call keep_compiler_quiet(f)
     endsubroutine chiral_before_boundary
 !***********************************************************************
-    subroutine read_chiral_init_pars(unit,iostat)
+    subroutine read_chiral_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_chiral_init_pars
 !***********************************************************************
@@ -164,13 +157,11 @@ module Chiral
 !
     endsubroutine write_chiral_init_pars
 !***********************************************************************
-    subroutine read_chiral_run_pars(unit,iostat)
+    subroutine read_chiral_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_chiral_run_pars
 !***********************************************************************

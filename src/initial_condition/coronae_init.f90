@@ -76,32 +76,24 @@ contains
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
-  subroutine read_initial_condition_pars(unit,iostat)
+    subroutine read_initial_condition_pars(iostat)
 !
-!  04-sep-10/bing: coded
+      use File_io, only: get_unit
 !
-    include '../unit.h'
-    integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-    if (present(iostat)) then
-      read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=initial_condition_pars,ERR=99)
-    endif
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
- 99  return
-!
-  endsubroutine read_initial_condition_pars
+    endsubroutine read_initial_condition_pars
 !***********************************************************************
-  subroutine write_initial_condition_pars(unit)
+    subroutine write_initial_condition_pars(unit)
 !
-!  04-sep-10/bing: coded
+      integer, intent(in) :: unit
 !
-    integer, intent(in) :: unit
+      write(unit, NML=initial_condition_pars)
 !
-    write(unit,NML=initial_condition_pars)
-!
-  endsubroutine write_initial_condition_pars
+    endsubroutine write_initial_condition_pars
 !***********************************************************************
   subroutine initial_condition_lnrho(f)
 !
@@ -168,7 +160,7 @@ contains
       use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
-      use Syscalls, only: file_exists, file_size
+      use File_io, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -408,7 +400,7 @@ contains
       use EquationOfState, only: gamma,cs2top,cs2bot
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-      use Syscalls, only: file_exists, file_size
+      use File_io, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ztop,zbot
@@ -583,7 +575,7 @@ contains
     use EquationOfState, only: gamma,get_cp1
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-    use Syscalls, only: file_exists, file_size
+    use File_io, only: file_exists, file_size
 !
     real, dimension (mx,my,mz,mfarray) :: f
     integer :: prof_nx

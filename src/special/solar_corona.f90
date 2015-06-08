@@ -135,6 +135,7 @@ module Special
   real, dimension(:,:), allocatable :: Ux, Uy
   real, dimension(:,:), allocatable :: Ux_ext, Uy_ext
   real, dimension(:,:), allocatable :: BB2
+  real, dimension(:,:), allocatable :: BB2_local
   integer, dimension(:,:), allocatable :: avoid_gran
   real, save :: tsnap_uu=0., thresh
   integer, save :: isnap
@@ -154,7 +155,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( "$Id$")
+      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -164,7 +165,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -210,7 +211,7 @@ module Special
           call fatal_error ('solar_corona/mag_driver', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
 !
-      if ((.not. lreloading) .and. lrun) nano_seed = 0.
+      if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
       if (lpencil_check_at_work) return
 !
@@ -368,7 +369,7 @@ module Special
 !  21-oct-2010/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_real
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       integer :: i
       integer, parameter :: unit=12
@@ -448,8 +449,8 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, parallel_file_exists
-      use Syscalls, only: file_exists, file_size
+      use Mpicomm, only: mpibcast_int, mpibcast_real
+      use File_io, only: parallel_file_exists, file_size
 !
       character(len=*), intent(in) :: filename
       real, dimension(mz), intent(out) :: profile
@@ -667,7 +668,7 @@ module Special
         lpenc_requested(i_glnTT) = .true.
       endif
 !
-      if (idiag_dtchi2 /= 0.0) then
+      if (idiag_dtchi2 /= 0) then
         lpenc_diagnos(i_rho1) = .true.
         lpenc_diagnos(i_cv1) = .true.
         lpenc_diagnos(i_cs2) = .true.
@@ -684,13 +685,14 @@ module Special
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_init_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      read (unit, NML=special_init_pars)
-      if (present (iostat)) iostat = 0
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -698,17 +700,18 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=special_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      read (unit, NML=special_run_pars)
-      if (present (iostat)) iostat = 0
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
       if (Kgpara /= 0.0) then
         call warning('calc_heatcond_grad', &
@@ -740,7 +743,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write (unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -763,12 +766,12 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtvel = 0.
-        idiag_dtchi2 = 0.
-        idiag_dtnewt = 0.
-        idiag_dtradloss = 0.
-        idiag_dtspitzer = 0.
-        idiag_mag_flux = 0.
+        idiag_dtvel = 0
+        idiag_dtchi2 = 0
+        idiag_dtnewt = 0
+        idiag_dtradloss = 0
+        idiag_dtspitzer = 0
+        idiag_mag_flux = 0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1002,7 +1005,6 @@ module Special
       real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
       real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
       real, dimension(:,:), allocatable, save :: gran_x, gran_y
-      real, dimension(:,:), allocatable, save :: BB2_local
       real, save :: Bz_total_flux=0.0
 !
       if (present (lfinalize)) then
@@ -1074,7 +1076,7 @@ module Special
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
               'Could not allocate memory for gran_x/y', .true.)
         endif
-        call gran_driver (f, BB2_local, gran_x, gran_y)
+        call gran_driver (f, gran_x, gran_y)
         Ux_local = Ux_local + gran_x
         Uy_local = Uy_local + gran_y
       endif
@@ -1531,7 +1533,7 @@ module Special
 !  07-jan-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       real, intent(in) :: time
       character(len=*), intent(in) :: filename
@@ -2791,7 +2793,7 @@ module Special
 ! Don't reset if RELOAD is used
       if (.not. lreloading) then
 !
-        points_rstate(:) = 0.
+        points_rstate(:) = 0
 !
         isnap = ceiling (t/dsnap)
         tsnap_uu = (isnap+1) * dsnap
@@ -2821,7 +2823,7 @@ module Special
 !
     endsubroutine set_gran_params
 !***********************************************************************
-    subroutine gran_driver(f, BB2_local, gran_x, gran_y)
+    subroutine gran_driver(f, gran_x, gran_y)
 !
 ! This routine replaces the external computing of granular velocity
 ! pattern initially written by B. Gudiksen (2004)
@@ -2838,7 +2840,6 @@ module Special
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx,ny), intent(in) :: BB2_local
       real, dimension(nx,ny), intent(out) :: gran_x, gran_y
 !
       real, dimension(:,:), allocatable :: buffer
@@ -2977,7 +2978,7 @@ module Special
 !***********************************************************************
     subroutine compute_gran_level(level)
 !
-      use Syscalls, only: file_exists
+      use File_io, only: file_exists
 !
       integer, intent(in) :: level
       logical :: lstop=.false.

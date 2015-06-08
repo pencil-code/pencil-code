@@ -4,7 +4,8 @@
 ###
 
 MPICOMM   =   mpicomm
-IO        =   io_dist
+IO        =   io_collect
+FILE_IO   =   file_io_f95
 
 HYDRO     =   hydro
 DENSITY   =   density

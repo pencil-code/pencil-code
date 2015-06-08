@@ -980,33 +980,25 @@ module Particles_coagulation
 !
     endsubroutine particles_coag_maxwell
 !***********************************************************************
-    subroutine read_particles_coag_run_pars(unit,iostat)
+    subroutine read_particles_coag_run_pars(iostat)
 !
-!  Read run parameters from run.in.
+      use File_io, only: get_unit
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,nml=particles_coag_run_pars,err=99,iostat=iostat)
-      else
-        read(unit,nml=particles_coag_run_pars,err=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=particles_coag_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_coag_run_pars
 !***********************************************************************
     subroutine write_particles_coag_run_pars(unit)
 !
-!  Write run parameters to param.nml.
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=particles_coag_run_pars)
+      write(unit, NML=particles_coag_run_pars)
 !
     endsubroutine write_particles_coag_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_coagulation(lreset,lwrite)
 !
 !  Read and register diagnostic parameters.

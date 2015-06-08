@@ -2746,45 +2746,41 @@ module Solid_Cells
 !
     endsubroutine freeze_solid_cells
 !***********************************************************************
-    subroutine read_solid_cells_init_pars(unit,iostat)
+    subroutine read_solid_cells_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read (unit,NML=solid_cells_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=solid_cells_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
-    subroutine read_solid_cells_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read (unit,NML=solid_cells_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read (unit,NML=solid_cells_run_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_solid_cells_run_pars
-!***********************************************************************
     subroutine write_solid_cells_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write (unit,NML=solid_cells_init_pars)
+      write(unit, NML=solid_cells_init_pars)
 !
     endsubroutine write_solid_cells_init_pars
 !***********************************************************************
+    subroutine read_solid_cells_run_pars(iostat)
+!
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=solid_cells_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_solid_cells_run_pars
+!***********************************************************************
     subroutine write_solid_cells_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write (unit,NML=solid_cells_run_pars)
+      write(unit, NML=solid_cells_run_pars)
 !
     endsubroutine write_solid_cells_run_pars
 !***********************************************************************

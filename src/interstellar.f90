@@ -902,41 +902,64 @@ module Interstellar
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use IO, only: lun_input, lcollective_IO
+      use IO, only: read_persist, lun_input, lcollective_IO
 !
       integer :: id
       logical :: done
 !
-      integer :: i, ierr
+      integer :: i
 !
       if (lcollective_IO) call fatal_error ('input_persistent_interstellar', &
           "The interstellar persistent variables can't be read collectively!")
 !
       select case (id)
-        case (id_record_T_NEXT_SNI)
-          read (lun_input, iostat=ierr) t_next_SNI, t_next_SNII
-          if (outlog (ierr, 'read persistent T_NEXT_SNI')) return
+        ! for backwards-compatibility (deprecated):
+        case (id_record_ISM_T_NEXT_OLD)
+          read (lun_input) t_next_SNI, t_next_SNII
           done = .true.
-        case (id_record_POS_NEXT_SNII)
-          read (lun_input, iostat=ierr) x_next_SNII, y_next_SNII
-          if (outlog (ierr, 'read persistent POS_NEXT_SNII')) return
+        case (id_record_ISM_POS_NEXT_OLD)
+          read (lun_input) x_next_SNII, y_next_SNII
           done = .true.
-        case (id_record_ISM_SN_TOGGLE)
-          read (lun_input, iostat=ierr) lSNI, lSNII
-          if (outlog (ierr, 'read persistent ISM_SN_TOGGLE')) return
+        case (id_record_ISM_TOGGLE_OLD)
+          read (lun_input) lSNI, lSNII
           done = .true.
-        case (id_record_BOLD_MASS)
-          read (lun_input, iostat=ierr) boldmass
-          if (outlog (ierr, 'read persistent BOLD_MASS')) return
+        case (id_record_ISM_SNRS_OLD)
+          ! Forget any existing SNRs.
+          SNRs(:)%state = SNstate_invalid
+          read (lun_input) nSNR
+          do i = 1, nSNR
+            read (lun_input) SNRs(i)
+            SNR_index(i) = i
+          enddo
+          done = .true.
+        ! currently active tags:
+        case (id_record_ISM_T_NEXT_SNI)
+          if (read_persist ('ISM_T_NEXT_SNI', t_next_SNI)) return
+          done = .true.
+        case (id_record_ISM_T_NEXT_SNII)
+          if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_X_NEXT_SNII)
+          if (read_persist ('ISM_X_NEXT_SNII', x_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_Y_NEXT_SNII)
+          if (read_persist ('ISM_Y_NEXT_SNII', y_next_SNII)) return
+          done = .true.
+        case (id_record_ISM_TOGGLE_SNI)
+          if (read_persist ('ISM_TOGGLE_SNI', lSNI)) return
+          done = .true.
+        case (id_record_ISM_TOGGLE_SNII)
+          if (read_persist ('ISM_TOGGLE_SNII', lSNII)) return
+          done = .true.
+        case (id_record_ISM_BOLD_MASS)
+          if (read_persist ('ISM_BOLD_MASS', boldmass)) return
           done = .true.
         case (id_record_ISM_SNRS)
           ! Forget any existing SNRs.
           SNRs(:)%state = SNstate_invalid
-          read (lun_input, iostat=ierr) nSNR
-          if (outlog (ierr, 'read persistent nSNR')) return
+          read (lun_input) nSNR
           do i = 1, nSNR
-            read (lun_input, iostat=ierr) SNRs(i)
-            if (outlog (ierr, 'read persistent SNRs')) return
+            read (lun_input) SNRs(i)
             SNR_index(i) = i
           enddo
           done = .true.
@@ -953,37 +976,28 @@ module Interstellar
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use IO, only: write_persist_id, lun_output, lcollective_IO
+      use IO, only: write_persist, write_persist_id, lun_output, lcollective_IO
 !
-      integer :: i, ierr
+      integer :: i
 !
       if (lcollective_IO) call fatal_error ('output_persistent_interstellar', &
           "The interstellar persistent variables can't be written collectively!")
 !
       output_persistent_interstellar = .true.
 !
-      if (write_persist_id ('T_NEXT_SNI', id_record_T_NEXT_SNI)) return
-      write (lun_output, iostat=ierr) t_next_SNI, t_next_SNII
-      if (outlog (ierr, 'write persistent T_NEXT_SNI')) return
+      if (write_persist ('ISM_T_NEXT_SNI', id_record_ISM_T_NEXT_SNI, t_next_SNI)) return
+      if (write_persist ('ISM_T_NEXT_SNII', id_record_ISM_T_NEXT_SNII, t_next_SNII)) return
+      if (write_persist ('ISM_X_NEXT_SNII', id_record_ISM_X_NEXT_SNII, x_next_SNII)) return
+      if (write_persist ('ISM_Y_NEXT_SNII', id_record_ISM_Y_NEXT_SNII, y_next_SNII)) return
+      if (write_persist ('ISM_TOGGLE_SNI', id_record_ISM_TOGGLE_SNI, lSNI)) return
+      if (write_persist ('ISM_TOGGLE_SNII', id_record_ISM_TOGGLE_SNII, lSNII)) return
+      if (write_persist ('ISM_BOLD_MASS', id_record_ISM_BOLD_MASS, boldmass)) return
 !
-      if (write_persist_id ('POS_NEXT_SNII', id_record_POS_NEXT_SNII)) return
-      write (lun_output, iostat=ierr) x_next_SNII, y_next_SNII
-      if (outlog (ierr, 'write persistent POS_NEXT_SNII')) return
-!
-      if (write_persist_id ('ISM_SN_TOGGLE', id_record_ISM_SN_TOGGLE)) return
-      write (lun_output, iostat=ierr) lSNI, lSNII
-      if (outlog (ierr, 'write persistent ISM_SN_TOGGLE')) return
-!
-      if (write_persist_id ('BOLD_MASS', id_record_BOLD_MASS)) return
-      write (lun_output, iostat=ierr) boldmass
-      if (outlog (ierr, 'write persistent BOLD_MASS')) return
-!
+      ! For self-defined data types, things are not so easy to implement.
       if (write_persist_id ('ISM_SNRS', id_record_ISM_SNRS)) return
-      write (lun_output, iostat=ierr) nSNR
-      if (outlog (ierr, 'write persistent nSNR')) return
+      write (lun_output) nSNR
       do i = 1, nSNR
-        write (lun_output, iostat=ierr) SNRs(SNR_index(i))
-        if (outlog (ierr, 'write persistent SNRs')) return
+        write (lun_output) SNRs(SNR_index(i))
       enddo
 !
       output_persistent_interstellar = .false.
@@ -1084,50 +1098,45 @@ module Interstellar
       endselect
 !
     endsubroutine get_slices_interstellar
-!*****************************************************************************
-    subroutine read_interstellar_init_pars(unit,iostat)
+!***********************************************************************
+    subroutine read_interstellar_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=interstellar_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=interstellar_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=interstellar_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_interstellar_init_pars
-!*****************************************************************************
+!***********************************************************************
     subroutine write_interstellar_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=interstellar_init_pars)
+      write(unit, NML=interstellar_init_pars)
 !
     endsubroutine write_interstellar_init_pars
-!*****************************************************************************
-    subroutine read_interstellar_run_pars(unit,iostat)
+!***********************************************************************
+    subroutine read_interstellar_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=interstellar_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=interstellar_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=interstellar_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_interstellar_run_pars
-!*****************************************************************************
+!***********************************************************************
     subroutine write_interstellar_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=interstellar_run_pars)
+      write(unit, NML=interstellar_run_pars)
 !
     endsubroutine write_interstellar_run_pars
-!!****************************************************************************
+!***********************************************************************
     subroutine init_interstellar(f)
 !
 !  Initialise some explosions etc.

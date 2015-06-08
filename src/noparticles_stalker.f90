@@ -46,37 +46,33 @@ module Particles_stalker
 !
     endsubroutine particles_stalker_sub
 !***********************************************************************
-    subroutine read_pstalker_init_pars(unit,iostat)
+    subroutine read_pstalker_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_pstalker_init_pars
 !***********************************************************************
     subroutine write_pstalker_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_pstalker_init_pars
 !***********************************************************************
-    subroutine read_pstalker_run_pars(unit,iostat)
+    subroutine read_pstalker_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_pstalker_run_pars
 !***********************************************************************
     subroutine write_pstalker_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !

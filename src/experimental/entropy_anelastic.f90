@@ -566,23 +566,22 @@ module Energy
 !
       endsubroutine initialize_energy
 !***********************************************************************
-    subroutine read_energy_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_energy_init_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=entropy_init_pars,ERR=99)
-      endif
+      use File_io, only: get_unit
 !
-99    return
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_energy_init_pars
 !***********************************************************************
     subroutine write_energy_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=entropy_init_pars)
+      write(unit, NML=entropy_init_pars)
 !
     endsubroutine write_energy_init_pars
 !***********************************************************************

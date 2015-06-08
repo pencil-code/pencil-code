@@ -39,8 +39,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#   -i
-#                   Show the host ID and exit.
+#   -i              Show the host ID and exit.
 #   -D, --debug-config
 #                   Show the config files (existing or not) that would be
 #                   read, then exit

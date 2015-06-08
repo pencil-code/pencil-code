@@ -171,7 +171,6 @@ endif
 ## 1516 24-nodes per cabinet 2.1GHz Opterons                      
 ##                                                                        
 #FC=ftn #(emil*)
-#FC_SLOPPY = $(FC) #(emil*)
 #F90=$(FC) #(emil*)
 #CC=cc #(emil*)
 #FFLAGS=-O3 #(emil*) 
@@ -196,7 +195,6 @@ endif
 ##
 ### old
 ##FC=ftn #(sisu*)
-##FC_SLOPPY = $(FC) #(sisu*)
 ##F90=$(FC) #(sisu*)
 ##CC=cc #(sisu*)
 ##FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)

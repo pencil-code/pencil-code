@@ -26,11 +26,6 @@ module InitialCondition
 !
   real, pointer :: hcond0
   real :: wheat,luminosity,r_bcz,widthss,alpha_MLT
-
-!
-!!  integer :: dummy
-!
-!!  namelist /initial_condition_pars/ dummy
 !
   contains
 !***********************************************************************

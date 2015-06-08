@@ -176,7 +176,6 @@ module Cdata
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
-  logical :: lfake_parallel_io=.false.
   logical :: ltec=.false.
   logical :: lformat=.false.
   logical :: lread_less=.false.

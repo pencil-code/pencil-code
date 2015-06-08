@@ -620,50 +620,42 @@ module Streamlines
     deallocate(vv)
   end subroutine wtracers
 !***********************************************************************
-  subroutine read_streamlines_init_pars(unit,iostat)
+    subroutine read_streamlines_init_pars(iostat)
 !
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-    if (present(iostat)) then
-      read(unit,NML=streamlines_init_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=streamlines_init_pars,ERR=99)
-    endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99  return
+      read(parallel_unit, NML=streamlines_init_pars, IOSTAT=iostat)
 !
-  endsubroutine read_streamlines_init_pars
+    endsubroutine read_streamlines_init_pars
 !***********************************************************************
-  subroutine write_streamlines_init_pars(unit)
+    subroutine write_streamlines_init_pars(unit)
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    write(unit,NML=streamlines_init_pars)
+      write(unit, NML=streamlines_init_pars)
 !
-  endsubroutine write_streamlines_init_pars
+    endsubroutine write_streamlines_init_pars
 !***********************************************************************
-  subroutine read_streamlines_run_pars(unit,iostat)
+    subroutine read_streamlines_run_pars(iostat)
 !
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-    if (present(iostat)) then
-      read(unit,NML=streamlines_run_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=streamlines_run_pars,ERR=99)
-    endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99  return
+      read(parallel_unit, NML=streamlines_run_pars, IOSTAT=iostat)
 !
-  endsubroutine read_streamlines_run_pars
+    endsubroutine read_streamlines_run_pars
 !***********************************************************************
-  subroutine write_streamlines_run_pars(unit)
+    subroutine write_streamlines_run_pars(unit)
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    write(unit,NML=streamlines_run_pars)
+      write(unit, NML=streamlines_run_pars)
 !
-  endsubroutine write_streamlines_run_pars
+    endsubroutine write_streamlines_run_pars
 !***********************************************************************
 endmodule Streamlines

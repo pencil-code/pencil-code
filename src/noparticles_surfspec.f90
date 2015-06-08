@@ -49,26 +49,12 @@ module Particles_surfspec
   endsubroutine init_particles_surf
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
+
+  subroutine read_particles_surf_init_pars(iostat)
 !
+    integer, intent(out) :: iostat
 
-  subroutine read_particles_surf_run_pars(unit,iostat)
-!
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
-
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
-  endsubroutine read_particles_surf_run_pars
-! ******************************************************************************
-!  19.09.2014/Jonas:coded
-
-  subroutine read_particles_surf_init_pars(unit,iostat)
-!
-    include 'unit.h'
-    integer, intent(inout), optional :: iostat
-
-    call keep_compiler_quiet(unit)
-    if (present(iostat)) call keep_compiler_quiet(iostat)
+    iostat = 0
   endsubroutine read_particles_surf_init_pars
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
@@ -78,6 +64,16 @@ module Particles_surfspec
 
     call keep_compiler_quiet(unit)
   endsubroutine write_particles_surf_init_pars
+! ******************************************************************************
+!  19.09.2014/Jonas:coded
+!
+
+  subroutine read_particles_surf_run_pars(iostat)
+!
+    integer, intent(out) :: iostat
+
+    iostat = 0
+  endsubroutine read_particles_surf_run_pars
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 

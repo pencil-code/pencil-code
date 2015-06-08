@@ -586,105 +586,41 @@ module Density
 !
     endsubroutine impose_density_floor
 !***********************************************************************
-    subroutine read_density_init_pars(unit, iostat)
+    subroutine read_density_init_pars(iostat)
 !
-!  Read the namelist density_init_pars.
+      use File_io, only: get_unit
 !
-!  26-feb-13/ccyang: coded.
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      character(len=256) :: msg
-      integer :: ios
-!
-!  Read the namelist.
-!
-!      read(unit, nml=density_init_pars, iostat=ios, iomsg=msg)
-      read(unit, nml=density_init_pars, iostat=ios)
-!
-!  Handle any error.
-!
-      error: if (present(iostat)) then
-        iostat = ios
-      elseif (ios /= 0) then error
-!        call fatal_error('read_density_init_pars', 'unable to read the namelist; ' // trim(msg))
-        call fatal_error('read_density_init_pars', 'unable to read the namelist. ')
-      endif error
+      read(parallel_unit, NML=density_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_density_init_pars
 !***********************************************************************
     subroutine write_density_init_pars(unit)
 !
-!  Write the namelist density_init_pars.
-!
-!  26-feb-13/ccyang: coded.
-!
       integer, intent(in) :: unit
 !
-      character(len=256) :: msg
-      integer :: ios
-!
-!  Write the namelist.
-!
-!      write(unit, nml=density_init_pars, iostat=ios, iomsg=msg)
-      write(unit, nml=density_init_pars, iostat=ios)
-!
-!  Handle any error.
-!
-!      if (ios /= 0) call fatal_error('write_density_init_pars', 'unable to write the namelist; ' // trim(msg))
-      if (ios /= 0) call fatal_error('write_density_init_pars', 'unable to write the namelist. ')
+      write(unit, NML=density_init_pars)
 !
     endsubroutine write_density_init_pars
 !***********************************************************************
-    subroutine read_density_run_pars(unit, iostat)
+    subroutine read_density_run_pars(iostat)
 !
-!  Read the namelist density_run_pars.
+      use File_io, only: get_unit
 !
-!  26-feb-13/ccyang: coded.
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      character(len=256) :: msg
-      integer :: ios
-!
-!  Read the namelist.
-!
-!      read(unit, nml=density_run_pars, iostat=ios, iomsg=msg)
-      read(unit, nml=density_run_pars, iostat=ios)
-!
-!  Handle any error.
-!
-      error: if (present(iostat)) then
-        iostat = ios
-      elseif (ios /= 0) then error
-!        call fatal_error('read_density_run_pars', 'unable to read the namelist; ' // trim(msg))
-        call fatal_error('read_density_run_pars', 'unable to read the namelist. ')
-      endif error
+      read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_density_run_pars
 !***********************************************************************
     subroutine write_density_run_pars(unit)
 !
-!  Write the namelist density_run_pars.
-!
-!  26-feb-13/ccyang: coded.
-!
       integer, intent(in) :: unit
 !
-      character(len=256) :: msg
-      integer :: ios
-!
-!  Write the namelist.
-!
-!      write(unit, nml=density_run_pars, iostat=ios, iomsg=msg)
-      write(unit, nml=density_run_pars, iostat=ios)
-!
-!  Handle any error.
-!
-!      if (ios /= 0) call fatal_error('write_density_run_pars', 'unable to write the namelist; ' // trim(msg))
-      if (ios /= 0) call fatal_error('write_density_run_pars', 'unable to write the namelist. ')
+      write(unit, NML=density_run_pars)
 !
     endsubroutine write_density_run_pars
 !***********************************************************************

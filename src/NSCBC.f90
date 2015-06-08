@@ -823,43 +823,44 @@ include 'NSCBC.h'
 !
     endsubroutine bc_nscbc_prf
 !***********************************************************************
-    subroutine read_NSCBC_init_pars(unit,iostat)
+    subroutine read_NSCBC_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=NSCBC_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=NSCBC_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=NSCBC_init_pars, IOSTAT=iostat)
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
-99    return
-!
     endsubroutine read_NSCBC_init_pars
 !***********************************************************************
-    subroutine read_NSCBC_run_pars(unit,iostat)
+    subroutine write_NSCBC_init_pars(unit)
 !
+      integer, intent(in) :: unit
+!
+      write(unit, NML=NSCBC_init_pars)
+!
+    endsubroutine write_NSCBC_init_pars
+!***********************************************************************
+    subroutine read_NSCBC_run_pars(iostat)
+!
+      use File_io, only: get_unit
       use Sub, only : rdim
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
       integer :: stat
       logical :: exist
       character (len=fnlen) :: file
+      include "parallel_unit.h"
 !
 ! Define default for the inlet_profile for backward compatibility
 !
       inlet_profile(1)='uniform'
       zz_profile(1)='uniform'
 !
-      if (present(iostat)) then
-        read(unit,NML=NSCBC_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=NSCBC_run_pars,ERR=99)
-      endif
+      read(parallel_unit, NML=NSCBC_run_pars, IOSTAT=iostat)
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
@@ -896,17 +897,7 @@ include 'NSCBC.h'
         if (stat>0) call stop_it("Couldn't allocate memory for z_in ")
       endif
 !
-99    return
-!
     endsubroutine read_NSCBC_run_pars
-!***********************************************************************
-    subroutine write_NSCBC_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit,NML=NSCBC_init_pars)
-!
-    endsubroutine write_NSCBC_init_pars
 !***********************************************************************
     subroutine write_NSCBC_run_pars(unit)
 !

@@ -106,25 +106,13 @@ module Solid_Cells
 !
     endfunction in_solid_cell
 !***********************************************************************
-    subroutine read_solid_cells_init_pars(unit,iostat)
+    subroutine read_solid_cells_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_solid_cells_init_pars
-!***********************************************************************
-    subroutine read_solid_cells_run_pars(unit,iostat)
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_solid_cells_run_pars
 !***********************************************************************
     subroutine write_solid_cells_init_pars(unit)
 !
@@ -133,6 +121,14 @@ module Solid_Cells
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_solid_cells_init_pars
+!***********************************************************************
+    subroutine read_solid_cells_run_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_solid_cells_run_pars
 !***********************************************************************
     subroutine write_solid_cells_run_pars(unit)
 !

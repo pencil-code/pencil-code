@@ -313,21 +313,15 @@ module Particles_main
 !
     endsubroutine particles_create_sinks
 !***********************************************************************
-    subroutine particles_read_startpars(unit,iostat)
+    subroutine particles_read_startpars(iostat)
 !
-      include  'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent (out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine particles_read_startpars
 !***********************************************************************
-    subroutine particles_rparam(unit)
-!
-      integer, intent (in) :: unit
-!
-      call keep_compiler_quiet(unit)
+    subroutine particles_rparam()
 !
     endsubroutine particles_rparam
 !***********************************************************************
@@ -339,13 +333,11 @@ module Particles_main
 !
     endsubroutine particles_wparam
 !***********************************************************************
-    subroutine particles_read_runpars(unit,iostat)
+    subroutine particles_read_runpars(iostat)
 !
-      include  'unit.h'
-      integer, intent (inout), optional :: iostat
+      integer, intent (out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine particles_read_runpars
 !***********************************************************************

@@ -3605,7 +3605,7 @@ module Particles
 !
                 call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                     rhop_swarm_par*tausp1_par*up2
+                     mp_vcell*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
@@ -5169,49 +5169,41 @@ module Particles
 !
     endsubroutine calc_thermophoretic_force
 !***********************************************************************
-    subroutine read_particles_init_pars(unit,iostat)
+    subroutine read_particles_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_init_pars)
+      write(unit, NML=particles_init_pars)
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(unit,iostat)
+    subroutine read_particles_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
 !
-      integer, intent (in) :: unit
+      integer, intent(in) :: unit
 !
-      write(unit,NML=particles_run_pars)
+      write(unit, NML=particles_run_pars)
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************

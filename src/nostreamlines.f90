@@ -55,13 +55,11 @@ module Streamlines
 !
   endsubroutine wtracers
 !***********************************************************************
-    subroutine read_streamlines_init_pars(unit,iostat)
+    subroutine read_streamlines_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_streamlines_init_pars
 !***********************************************************************
@@ -73,13 +71,11 @@ module Streamlines
 !
     endsubroutine write_streamlines_init_pars
 !***********************************************************************
-    subroutine read_streamlines_run_pars(unit,iostat)
+    subroutine read_streamlines_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_streamlines_run_pars
 !***********************************************************************

@@ -71,28 +71,22 @@ module Particles_coagulation
 !
     endsubroutine particles_coagulation_blocks
 !***********************************************************************
-    subroutine read_particles_coag_run_pars(unit,iostat)
+    subroutine read_particles_coag_run_pars(iostat)
 !
-!  24-nov-10/anders: coded
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_coag_run_pars
 !***********************************************************************
     subroutine write_particles_coag_run_pars(unit)
-!
-!  24-nov-10/anders: coded
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_particles_coag_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_coagulation(lreset,lwrite)
 !
 !  24-nov-10/anders: coded

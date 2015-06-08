@@ -215,13 +215,11 @@ module Magnetic
 !
     endsubroutine rescaling_magnetic
 !***********************************************************************
-    subroutine read_magnetic_init_pars(unit,iostat)
+    subroutine read_magnetic_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
@@ -233,13 +231,11 @@ module Magnetic
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(unit,iostat)
+    subroutine read_magnetic_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************

@@ -38,9 +38,9 @@ module Particles_main
 !
   include 'particles_main.h'
 !
-  real, dimension (mpar_loc,mparray) :: fp
-  real, dimension (mpar_loc,mpvar) :: dfp
-  integer, dimension (mpar_loc,3) :: ineargrid
+  real, dimension(mpar_loc,mparray) :: fp = 0.0
+  real, dimension(mpar_loc,mpvar) :: dfp = 0.0
+  integer, dimension(mpar_loc,3) :: ineargrid = 0
 !
   contains
 !***********************************************************************
@@ -239,6 +239,7 @@ module Particles_main
 !
       if (lparticles_blocks .and. lrun) then
         if (lroot) print*, 'particles_initialize_modules: reblocking particles'
+        call map_nearest_grid(fp,ineargrid)
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
         call sort_particles_iblock(fp,ineargrid,ipar)
@@ -274,9 +275,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      intent (out) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
@@ -954,204 +953,176 @@ module Particles_main
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine particles_read_startpars(unit,iostat)
+    subroutine particles_read_startpars(iostat)
 !
 !  Read particle parameters from start.in.
 !
 !  01-sep-05/anders: coded
 !  17-aug-08/wlad: added individual check for the modules inside the wrap
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: parallel_unit
 !
-      call read_particles_init_pars(unit,iostat)
-      if (present(iostat)) then
-        if (iostat/=0) then
-          call samplepar_startpars('particles_init_pars',iostat); return
-        endif
+      integer, intent (out) :: iostat
+!
+      call read_particles_init_pars(iostat)
+      if (iostat/=0) then
+        call samplepar_startpars('particles_init_pars',iostat)
+        return
       endif
 !
       if (lparticles_radius) then
-        call read_particles_rad_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_radius_init_pars',iostat); return
-          endif
+        call read_particles_rad_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_radius_init_pars',iostat)
+          return
         endif
       endif
 !
 !      if (lparticles_potential) then
-!        call read_particles_pot_init_pars(unit,iostat)
-!        if (present(iostat)) then
-!          if (iostat/=0) then
-!            call samplepar_startpars('particles_potential_init_pars',iostat); return
-!          endif
+!        call read_particles_pot_init_pars(iostat)
+!        if (iostat/=0) then
+!          call samplepar_startpars('particles_potential_init_pars',iostat)
+!          return
 !        endif
 !      endif
 !
       if (lparticles_spin) then
-        call read_particles_spin_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_spin_init_pars',iostat); return
-          endif
+        call read_particles_spin_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_spin_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_sink) then
-        call read_particles_sink_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_sink_init_pars',iostat); return
-          endif
+        call read_particles_sink_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_sink_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_number) then
-        call read_particles_num_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_number_init_pars',iostat); return
-          endif
+        call read_particles_num_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_number_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_density) then
-        call read_particles_dens_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_dens_init_pars',iostat); return
-          endif
+        call read_particles_dens_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_dens_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_selfgravity) then
-        call read_particles_selfg_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_selfgrav_init_pars',iostat); return
-          endif
+        call read_particles_selfg_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_selfgrav_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_nbody) then
-        call read_particles_nbody_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_nbody_init_pars',iostat); return
-          endif
+        call read_particles_nbody_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_nbody_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_viscosity) then
-        call read_particles_visc_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_visc_init_pars',iostat); return
-          endif
+        call read_particles_visc_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_visc_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_stalker) then
-        call read_pstalker_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('particles_stalker_init_pars',iostat)
-            return
-          endif
+        call read_pstalker_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('particles_stalker_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_mass) then
-        call read_particles_mass_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('read_particles_mass_init_pars',&
-                iostat)
-            return
-          endif
+        call read_particles_mass_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('read_particles_mass_init_pars',iostat)
+          return
         endif
       endif
 !
-      drag: if (lparticles_drag) then
-        call read_particles_drag_init_pars(unit, iostat)
-        soft: if (present(iostat)) then
-          err: if (iostat /= 0) then
-            call samplepar_startpars('read_particles_drag_init_pars', iostat)
-            return
-          endif err
-        endif soft
-      endif drag
+      if (lparticles_drag) then
+        call read_particles_drag_init_pars(iostat)
+        if (iostat /= 0) then
+          call samplepar_startpars('read_particles_drag_init_pars',iostat)
+          return
+        endif
+      endif
 !
       if (lparticles_temperature) then
-        call read_particles_TT_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('read_particles_TT_init_pars',&
-                iostat)
-            return
-          endif
+        call read_particles_TT_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('read_particles_TT_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_adsorbed) then
-        call read_particles_ads_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('read_particles_ads_init_pars',&
-                iostat)
-            return
-          endif
+        call read_particles_ads_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('read_particles_ads_init_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_surfspec) then
-        call read_particles_surf_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('read_particles_surf_init_pars',&
-                iostat)
-            return
-          endif
+        call read_particles_surf_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('read_particles_surf_init_pars',iostat)
+          return
         endif
       endif
 !
      if (lparticles_chemistry) then
-        call read_particles_chem_init_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_startpars('read_particles_chem_init_pars',&
-                iostat)
-            return
-          endif
+        call read_particles_chem_init_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_startpars('read_particles_chem_init_pars',iostat)
+          return
         endif
       endif
 !
     endsubroutine particles_read_startpars
 !***********************************************************************
-    subroutine particles_rparam(unit)
+    subroutine particles_rparam()
 !
 !  Read particle parameters from start.in.
 !
 !  13-may-09/anders: coded
 !
-      include 'unit.h'
+      integer :: iostat
 !
-      call read_particles_init_pars(unit)
-      if (lparticles_radius)      call read_particles_rad_init_pars(unit)
-!      if (lparticles_potential)   call read_particles_pot_init_pars(unit)
-      if (lparticles_spin)        call read_particles_spin_init_pars(unit)
-      if (lparticles_sink)        call read_particles_sink_init_pars(unit)
-      if (lparticles_number)      call read_particles_num_init_pars(unit)
-      if (lparticles_density)     call read_particles_dens_init_pars(unit)
-      if (lparticles_selfgravity) call read_particles_selfg_init_pars(unit)
-      if (lparticles_nbody)       call read_particles_nbody_init_pars(unit)
-      if (lparticles_viscosity)   call read_particles_visc_init_pars(unit)
-      if (lparticles_mass)        call read_particles_mass_init_pars(unit)
-      if (lparticles_temperature) call read_particles_TT_init_pars(unit)
-      if (lparticles_adsorbed)    call read_particles_ads_init_pars(unit)
-      if (lparticles_surfspec)    call read_particles_surf_init_pars(unit)
-      if (lparticles_stalker)     call read_pstalker_init_pars(unit)
+      call read_particles_init_pars(iostat)
+      if (lparticles_radius)      call read_particles_rad_init_pars(iostat)
+!      if (lparticles_potential)   call read_particles_pot_init_pars(iostat)
+      if (lparticles_spin)        call read_particles_spin_init_pars(iostat)
+      if (lparticles_sink)        call read_particles_sink_init_pars(iostat)
+      if (lparticles_number)      call read_particles_num_init_pars(iostat)
+      if (lparticles_density)     call read_particles_dens_init_pars(iostat)
+      if (lparticles_selfgravity) call read_particles_selfg_init_pars(iostat)
+      if (lparticles_nbody)       call read_particles_nbody_init_pars(iostat)
+      if (lparticles_viscosity)   call read_particles_visc_init_pars(iostat)
+      if (lparticles_mass)        call read_particles_mass_init_pars(iostat)
+      if (lparticles_temperature) call read_particles_TT_init_pars(iostat)
+      if (lparticles_adsorbed)    call read_particles_ads_init_pars(iostat)
+      if (lparticles_surfspec)    call read_particles_surf_init_pars(iostat)
+      if (lparticles_stalker)     call read_pstalker_init_pars(iostat)
 !
     endsubroutine particles_rparam
 !***********************************************************************
@@ -1238,222 +1209,193 @@ module Particles_main
 !
     endsubroutine particles_wparam
 !***********************************************************************
-    subroutine particles_read_runpars(unit,iostat)
+    subroutine particles_read_runpars(iostat)
 !
 !  Read particle run parameters from run.in.
 !
-      include 'unit.h'
-      integer, intent (inout), optional :: iostat
+      use File_io, only: parallel_unit
 !
-      integer :: stat
+      integer, intent (out) :: iostat
 !
-      call read_particles_run_pars(unit,iostat)
-      if (present(iostat)) then
-        if (iostat/=0) then
-          call samplepar_runpars('particles_run_pars',iostat); return
-        endif
+      call read_particles_run_pars(iostat)
+      if (iostat/=0) then
+        call samplepar_runpars('particles_run_pars',iostat)
+        return
       endif
 !
       if (lparticles_adaptation) then
-        call read_particles_adapt_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_adapt_run_pars',iostat); return
-          endif
+        call read_particles_adapt_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_adapt_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_radius) then
-        call read_particles_rad_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_radius_run_pars',iostat); return
-          endif
+        call read_particles_rad_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_radius_run_pars',iostat)
+          return
         endif
       endif
 !
 !      if (lparticles_potential) then
-!        call read_particles_pot_run_pars(unit,iostat)
-!        if (present(iostat)) then
-!          if (iostat/=0) then
-!            call samplepar_runpars('particles_potential_run_pars',iostat); return
-!          endif
+!        call read_particles_pot_run_pars(iostat)
+!        if (iostat/=0) then
+!          call samplepar_runpars('particles_potential_run_pars',iostat)
+!          return
 !        endif
 !      endif
 !
       if (lparticles_spin) then
-        call read_particles_spin_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_spin_run_pars',iostat); return
-          endif
+        call read_particles_spin_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_spin_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_sink) then
-        call read_particles_sink_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_sink_run_pars',iostat); return
-          endif
+        call read_particles_sink_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_sink_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_number) then
-        call read_particles_num_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_number_run_pars',iostat); return
-          endif
+        call read_particles_num_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_number_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_density) then
-        call read_particles_dens_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_dens_run_pars',iostat); return
-          endif
+        call read_particles_dens_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_dens_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_selfgravity) then
-        call read_particles_selfg_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_selfgrav_run_pars',iostat); return
-          endif
+        call read_particles_selfg_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_selfgrav_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_nbody) then
-        call read_particles_nbody_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_nbody_run_pars',iostat); return
-          endif
+        call read_particles_nbody_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_nbody_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_viscosity) then
-        call read_particles_visc_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_visc_run_pars',iostat); return
-          endif
+        call read_particles_visc_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_visc_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_coagulation) then
-        call read_particles_coag_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_coag_run_pars',iostat); return
-          endif
+        call read_particles_coag_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_coag_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_collisions) then
-        call read_particles_coll_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_coll_run_pars',iostat); return
-          endif
+        call read_particles_coll_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_coll_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_stirring) then
-        call read_particles_stir_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_stirring_run_pars',iostat); return
-          endif
+        call read_particles_stir_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_stirring_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_stalker) then
-        call read_pstalker_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_stalker_run_pars',iostat); return
-          endif
+        call read_pstalker_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_stalker_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_diagnos_dv) then
-        call read_pars_diagnos_dv_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_diagnos_dv_run_pars',iostat); return
-          endif
+        call read_pars_diagnos_dv_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_diagnos_dv_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_diagnos_state) then
-        call read_pars_diag_state_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('particles_diagnos_state_run_pars',iostat); return
-          endif
+        call read_pars_diag_state_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('particles_diagnos_state_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_mass) then
-        call read_particles_mass_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('read_particles_mass_run_pars',&
-                iostat); return
-          endif
+        call read_particles_mass_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('read_particles_mass_run_pars',iostat)
+          return
         endif
       endif
 !
-      drag: if (lparticles_drag) then
-        call read_particles_drag_run_pars(unit, stat)
-        if (present(iostat)) iostat = stat
-        err: if (stat /= 0) then
-          call samplepar_runpars('read_particles_drag_run_pars', stat)
+      if (lparticles_drag) then
+        call read_particles_drag_run_pars(iostat)
+        if (iostat /= 0) then
+          call samplepar_runpars('read_particles_drag_run_pars', iostat)
           return
-        endif err
-      endif drag
+        endif
+      endif
 !
       if (lparticles_temperature) then
-        call read_particles_TT_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('read_particles_TT_run_pars',&
-                iostat); return
-          endif
+        call read_particles_TT_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('read_particles_TT_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_adsorbed) then
-        call read_particles_ads_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('read_particles_ads_run_pars',&
-                iostat); return
-          endif
+        call read_particles_ads_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('read_particles_ads_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_surfspec) then
-        call read_particles_surf_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('read_particles_surf_run_pars',&
-                iostat); return
-          endif
+        call read_particles_surf_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('read_particles_surf_run_pars',iostat)
+          return
         endif
       endif
 !
       if (lparticles_chemistry) then
-        call read_particles_chem_run_pars(unit,iostat)
-        if (present(iostat)) then
-          if (iostat/=0) then
-            call samplepar_runpars('read_particles_chem_run_pars',&
-                iostat); return
-          endif
+        call read_particles_chem_run_pars(iostat)
+        if (iostat/=0) then
+          call samplepar_runpars('read_particles_chem_run_pars',iostat)
+          return
         endif
       endif
 !

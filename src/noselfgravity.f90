@@ -111,21 +111,15 @@ module Selfgravity
 !
     endsubroutine duu_dt_selfgrav
 !***********************************************************************
-    subroutine read_selfgravity_init_pars(unit,iostat)
+    subroutine read_selfgravity_init_pars(iostat)
 !
-!  Read self gravity init parameters.
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************
     subroutine write_selfgravity_init_pars(unit)
-!
-!  Write self gravity init parameters.
 !
       integer, intent(in) :: unit
 !
@@ -133,21 +127,15 @@ module Selfgravity
 !
     endsubroutine write_selfgravity_init_pars
 !***********************************************************************
-    subroutine read_selfgravity_run_pars(unit,iostat)
+    subroutine read_selfgravity_run_pars(iostat)
 !
-!  Read self gravity run parameters.
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_selfgravity_run_pars
 !***********************************************************************
     subroutine write_selfgravity_run_pars(unit)
-!
-!  Write self gravity run parameters.
 !
       integer, intent(in) :: unit
 !

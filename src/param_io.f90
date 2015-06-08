@@ -239,15 +239,13 @@ module Param_IO
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  31-oct-13/MR  : changed for use instead of rparam; shortened by use of read_pars
 !
-      use Mpicomm, only: parallel_open, parallel_close
-      use General, only: rewind
+      use File_io, only: parallel_open, parallel_rewind, parallel_close
 !
       logical, optional, intent(IN) :: print
 !
-      include 'unit_loc.h'
-!
       integer :: ierr
       logical :: lierrl
+      include "parallel_unit_declaration.h"
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
@@ -256,56 +254,52 @@ module Param_IO
 !  Open namelist file and read through all items that *may* be present in the various modules.
 !
       if (lstart) then
-        call parallel_open(unit,'start.in','formatted')
-        read(unit,NML=init_pars,IOSTAT=ierr)
+        call parallel_open(parallel_unit,'start.in','formatted')
+        read(parallel_unit,NML=init_pars,IOSTAT=ierr)
         if (ierr/=0) call sample_pars(ierr,'')
         lierrl=.true.
       else
-        call parallel_open(unit,trim(datadir)//'/param.nml')
-        read(unit,NML=init_pars)
+        call parallel_open(parallel_unit,trim(datadir)//'/param.nml')
+        read(parallel_unit,NML=init_pars)
         lierrl=.false.
       endif
 !
-      call rewind(unit)
+      call parallel_rewind(parallel_unit)
 !
-      call read_pars(unit,read_initial_condition_pars   ,'initial_condition_pars',lierrl)
-      call read_pars(unit,read_streamlines_init_pars    ,'streamlines',lierrl)
-      call read_pars(unit,read_eos_init_pars            ,'eos',lierrl)
-      call read_pars(unit,read_hydro_init_pars          ,'hydro',lierrl)
-      call read_pars(unit,read_density_init_pars        ,'density',lierrl)
-      call read_pars(unit,read_forcing_init_pars        ,'forcing',lierrl)
-      call read_pars(unit,read_gravity_init_pars        ,'grav_init_pars',lierrl)
-      call read_pars(unit,read_selfgravity_init_pars    ,'selfgrav',lierrl)
-      call read_pars(unit,read_poisson_init_pars        ,'poisson',lierrl)
-      call read_pars(unit,read_energy_init_pars         ,'entropy',lierrl)
-      call read_pars(unit,read_magnetic_init_pars       ,'magnetic',lierrl)
-      call read_pars(unit,read_lorenz_gauge_init_pars   ,'lorenz_gauge',lierrl)
-      call read_pars(unit,read_testscalar_init_pars     ,'testscalar',lierrl)
-      call read_pars(unit,read_testfield_init_pars      ,'testfield',lierrl)
-      call read_pars(unit,read_testflow_init_pars       ,'testflow',lierrl)
-      call read_pars(unit,read_radiation_init_pars      ,'radiation',lierrl)
-      call read_pars(unit,read_pscalar_init_pars        ,'pscalar',lierrl)
-      call read_pars(unit,read_chiral_init_pars         ,'chiral',lierrl)
-      call read_pars(unit,read_chemistry_init_pars      ,'chemistry',lierrl)
-      call read_pars(unit,read_signal_init_pars         ,'signal',lierrl)
-      call read_pars(unit,read_dustvelocity_init_pars   ,'dustvelocity',lierrl)
-      call read_pars(unit,read_dustdensity_init_pars    ,'dustdensity',lierrl)
-      call read_pars(unit,read_neutralvelocity_init_pars,'neutralvelocity',lierrl)
-      call read_pars(unit,read_neutraldensity_init_pars ,'neutraldensity',lierrl)
-      call read_pars(unit,read_cosmicray_init_pars      ,'cosmicray',lierrl)
-      call read_pars(unit,read_cosmicrayflux_init_pars  ,'cosmicrayflux',lierrl)
-      call read_pars(unit,read_heatflux_init_pars       ,'heatflux',lierrl)
-      call read_pars(unit,read_interstellar_init_pars   ,'interstellar',lierrl)
-      call read_pars(unit,read_shear_init_pars          ,'shear',lierrl)
-      call read_pars(unit,read_testperturb_init_pars    ,'testperturb',lierrl)
-      call read_pars(unit,read_viscosity_init_pars      ,'viscosity',lierrl)
-      call read_pars(unit,read_special_init_pars        ,'special',lierrl)
-      call read_pars(unit,read_solid_cells_init_pars    ,'solid_cells',lierrl)
-      call read_pars(unit,read_NSCBC_init_pars          ,'NSCBC',lierrl)
-      call read_pars(unit,read_polymer_init_pars        ,'polymer',lierrl)
-      call read_pars(unit,particles_read_startpars      ,'particles',lierrl)
+      call read_pars(read_initial_condition_pars   ,'initial_condition_pars',lierrl)
+      call read_pars(read_streamlines_init_pars    ,'streamlines',lierrl)
+      call read_pars(read_eos_init_pars            ,'eos',lierrl)
+      call read_pars(read_hydro_init_pars          ,'hydro',lierrl)
+      call read_pars(read_density_init_pars        ,'density',lierrl)
+      call read_pars(read_gravity_init_pars        ,'grav_init_pars',lierrl)
+      call read_pars(read_selfgravity_init_pars    ,'selfgrav',lierrl)
+      call read_pars(read_poisson_init_pars        ,'poisson',lierrl)
+      call read_pars(read_energy_init_pars         ,'entropy',lierrl)
+      call read_pars(read_magnetic_init_pars       ,'magnetic',lierrl)
+      call read_pars(read_lorenz_gauge_init_pars   ,'lorenz_gauge',lierrl)
+      call read_pars(read_testscalar_init_pars     ,'testscalar',lierrl)
+      call read_pars(read_testfield_init_pars      ,'testfield',lierrl)
+      call read_pars(read_testflow_init_pars       ,'testflow',lierrl)
+      call read_pars(read_radiation_init_pars      ,'radiation',lierrl)
+      call read_pars(read_pscalar_init_pars        ,'pscalar',lierrl)
+      call read_pars(read_chiral_init_pars         ,'chiral',lierrl)
+      call read_pars(read_chemistry_init_pars      ,'chemistry',lierrl)
+      call read_pars(read_signal_init_pars         ,'signal',lierrl)
+      call read_pars(read_dustvelocity_init_pars   ,'dustvelocity',lierrl)
+      call read_pars(read_dustdensity_init_pars    ,'dustdensity',lierrl)
+      call read_pars(read_neutralvelocity_init_pars,'neutralvelocity',lierrl)
+      call read_pars(read_neutraldensity_init_pars ,'neutraldensity',lierrl)
+      call read_pars(read_cosmicray_init_pars      ,'cosmicray',lierrl)
+      call read_pars(read_cosmicrayflux_init_pars  ,'cosmicrayflux',lierrl)
+      call read_pars(read_interstellar_init_pars   ,'interstellar',lierrl)
+      call read_pars(read_shear_init_pars          ,'shear',lierrl)
+      call read_pars(read_special_init_pars        ,'special',lierrl)
+      call read_pars(read_solid_cells_init_pars    ,'solid_cells',lierrl)
+      call read_pars(read_NSCBC_init_pars          ,'NSCBC',lierrl)
+      call read_pars(read_polymer_init_pars        ,'polymer',lierrl)
+      call read_pars(particles_read_startpars      ,'particles',lierrl)
 !
-      call parallel_close(unit)
+      call parallel_close(parallel_unit)
 !
 !  Print SVN id from first line.
 !
@@ -379,7 +373,6 @@ module Param_IO
         call write_eos_init_pars(unit)
         call write_hydro_init_pars(unit)
         call write_density_init_pars(unit)
-        call write_forcing_init_pars(unit)
         call write_gravity_init_pars(unit)
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
@@ -402,8 +395,6 @@ module Param_IO
         call write_cosmicrayflux_init_pars(unit)
         call write_interstellar_init_pars(unit)
         call write_shear_init_pars(unit)
-        call write_testperturb_init_pars(unit)
-        call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
         call write_solid_cells_init_pars(unit)
         call write_NSCBC_init_pars(unit)
@@ -417,7 +408,7 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
-    subroutine read_pars(unit,reader,name,lierr)
+    subroutine read_pars(reader,name,lierr)
 !
 !  encapsulates reading of pars + error handling
 !
@@ -426,39 +417,39 @@ module Param_IO
 !  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
 !  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
 !  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
+!  24-May-2015/Bourdin.KIS: reworked
 !
-    use General, only: rewind
-    include 'unit.h'
+      use File_io, only: parallel_rewind, get_unit
 !
-    interface
-      subroutine reader(unit, iostat)
-        include 'unit.h'
-        integer, intent(inout), optional :: iostat
-      endsubroutine reader
-    endinterface
+      interface
+        subroutine reader(iostat)
+          integer, intent(out) :: iostat
+        endsubroutine reader
+      endinterface
 !
-    character(LEN=*), intent(IN):: name
-    logical,          intent(IN):: lierr
+      character(len=*), intent(in) :: name
+      logical, intent(in) :: lierr
 !
-    integer :: ierr
+      integer :: ierr
+      character(len=linelen) :: type
+      include "parallel_unit.h"
 !
-    if (lierr) then
-      ierr=0
-      call reader(unit,ierr)
-      if (ierr/=0.and.ierr/=-1) call sample_pars(ierr,name)
-      if (lroot.and.ierr==-1) then
-        if (lstart) then
-          print*, 'read_pars: Warning - namelist "', trim(name), '_start_pars" missing!'
-        else
-          print*, 'read_pars: Warning - namelist "', trim(name), '_run_pars" missing!'
+      call reader(ierr)
+!
+      if (lierr) then
+        if (ierr == -1) then
+          if (lstart) then
+            type = '_start'
+          else
+            type = '_run'
+          endif
+          if (lroot) call warning ('read_pars', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
+        elseif (ierr /= 0) then
+          call sample_pars(ierr,name)
         endif
       endif
-    else
-      ierr=0
-      call reader(unit,ierr)
-    endif
 ! 
-    call rewind(unit)
+      call parallel_rewind(parallel_unit)
 !
     endsubroutine read_pars
 !***********************************************************************
@@ -493,13 +484,13 @@ module Param_IO
 
         if (ltracers        ) print*,'&streamlines_'//partype//'    /'     !! questionable wg. ltracers
         if (leos            ) print*,'&eos_'//partype//'            /'
-        if (lhydro .or.                     &
+        if (lhydro .or. &
             lhydro_kinematic) print*,'&hydro_'//partype//'          /'
         if (ldensity        ) print*,'&density_'//partype//'        /'
         if (lgrav           ) print*,'&grav_'//partype//'           /'
         if (lselfgravity    ) print*,'&selfgrav_'//partype//'       /'
         if (lpoisson        ) print*,'&poisson_'//partype//'        /'
-        if (lentropy.or.                    &
+        if (lentropy .or. &
             ltemperature    ) print*,'&entropy_'//partype//'        /'
         if (lthermal_energy ) print*,'&energy_'//partype//'         /'
 !        if (lconductivity   ) print*,'&conductivity_'//partype//'   /'
@@ -575,69 +566,67 @@ module Param_IO
 !  13-feb-14/MR  : further preparations for downsampled output
 !
       use Dustvelocity, only: copy_bcs_dust
-      use Mpicomm, only: parallel_open, parallel_close
+      use File_io, only: parallel_open, parallel_rewind, parallel_close
       use Sub, only: parse_bc
-      use General, only: rewind
-!
-      include 'unit_loc.h'
 !
       integer :: ierr
       logical, optional :: logging
+      include "parallel_unit_declaration.h"
 !
       tstart=impossible
 !
 !  Open namelist file.
 !
-      call parallel_open(unit,'run.in','formatted')
+      call parallel_open(parallel_unit,'run.in','formatted')
 !
 !  Read through all items that *may* be present in the various modules.
 !  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
-      read(unit,NML=run_pars,IOSTAT=ierr)
+      read(parallel_unit,NML=run_pars,IOSTAT=ierr)
       if (ierr/=0) call sample_pars(ierr,'')
-      call rewind(unit)
+      call parallel_rewind(parallel_unit)
 !
-      call read_pars(unit,read_streamlines_run_pars    ,'streamlines',.true.)
-      call read_pars(unit,read_eos_run_pars            ,'eos',.true.)
-      call read_pars(unit,read_hydro_run_pars          ,'hydro',.true.)
-      call read_pars(unit,read_density_run_pars        ,'density',.true.)
-      call read_pars(unit,read_forcing_run_pars        ,'forcing',.true.)
-      call read_pars(unit,read_gravity_run_pars        ,'grav',.true.)
-      call read_pars(unit,read_selfgravity_run_pars    ,'selfgrav',.true.)
-      call read_pars(unit,read_poisson_run_pars        ,'poisson',.true.)
-      call read_pars(unit,read_energy_run_pars         ,'entropy',.true.)
-!      call read_pars(unit,read_conductivity_run_pars   ,'conductivity',.true.)
-      call read_pars(unit,read_detonate_run_pars       ,'detonate',.true.)
-      call read_pars(unit,read_magnetic_run_pars       ,'magnetic',.true.)
-      call read_pars(unit,read_lorenz_gauge_run_pars   ,'lorenz_gauge',.true.)
-      call read_pars(unit,read_testscalar_run_pars     ,'testscalar',.true.)
-      call read_pars(unit,read_testfield_run_pars      ,'testfield',.true.)
-      call read_pars(unit,read_testflow_run_pars       ,'testflow',.true.)
-      call read_pars(unit,read_radiation_run_pars      ,'radiation',.true.)
-      call read_pars(unit,read_pscalar_run_pars        ,'pscalar',.true.)
-      call read_pars(unit,read_chiral_run_pars         ,'chiral',.true.)
-      call read_pars(unit,read_chemistry_run_pars      ,'chemistry',.true.)
-      call read_pars(unit,read_dustvelocity_run_pars   ,'dustvelocity',.true.)
-      call read_pars(unit,read_dustdensity_run_pars    ,'dustdensity',.true.)
-      call read_pars(unit,read_neutralvelocity_run_pars,'neutralvelocity',.true.)
-      call read_pars(unit,read_neutraldensity_run_pars ,'neutraldensity',.true.)
-      call read_pars(unit,read_cosmicray_run_pars      ,'cosmicray',.true.)
-      call read_pars(unit,read_cosmicrayflux_run_pars  ,'cosmicrayflux',.true.)
-      call read_pars(unit,read_heatflux_run_pars       ,'heatflux',.true.)
-      call read_pars(unit,read_interstellar_run_pars   ,'interstellar',.true.)
-      call read_pars(unit,read_shear_run_pars          ,'shear',.true.)
-      call read_pars(unit,read_testperturb_run_pars    ,'testperturb',.true.)
-      call read_pars(unit,read_viscosity_run_pars      ,'viscosity',.true.)
-      call read_pars(unit,read_special_run_pars        ,'special',.true.)
-      call read_pars(unit,read_shock_run_pars          ,'shock',.true.)
-      call read_pars(unit,read_solid_cells_run_pars    ,'solid_cells',.true.)
-      call read_pars(unit,read_NSCBC_run_pars          ,'NSCBC',.true.)
-      call read_pars(unit,read_polymer_run_pars        ,'polymer',.true.)
-      call read_pars(unit,particles_read_runpars       ,'particles',.true.)
-      call read_pars(unit,read_power_spectrum_runpars  ,'power_spectrum',.true.)
-      call read_pars(unit,read_implicit_diffusion_pars ,'implicit_diffusion',.true.)
+      call read_pars(read_streamlines_run_pars    ,'streamlines',.true.)
+      call read_pars(read_eos_run_pars            ,'eos',.true.)
+      call read_pars(read_hydro_run_pars          ,'hydro',.true.)
+      call read_pars(read_density_run_pars        ,'density',.true.)
+      call read_pars(read_forcing_run_pars        ,'forcing',.true.)
+      call read_pars(read_gravity_run_pars        ,'grav',.true.)
+      call read_pars(read_selfgravity_run_pars    ,'selfgrav',.true.)
+      call read_pars(read_poisson_run_pars        ,'poisson',.true.)
+      call read_pars(read_energy_run_pars         ,'entropy',.true.)
+!      call read_pars(read_conductivity_run_pars   ,'conductivity',.true.)
+      call read_pars(read_detonate_run_pars       ,'detonate',.true.)
+      call read_pars(read_magnetic_run_pars       ,'magnetic',.true.)
+      call read_pars(read_lorenz_gauge_run_pars   ,'lorenz_gauge',.true.)
+      call read_pars(read_testscalar_run_pars     ,'testscalar',.true.)
+      call read_pars(read_testfield_run_pars      ,'testfield',.true.)
+      call read_pars(read_testflow_run_pars       ,'testflow',.true.)
+      call read_pars(read_radiation_run_pars      ,'radiation',.true.)
+      call read_pars(read_pscalar_run_pars        ,'pscalar',.true.)
+      call read_pars(read_chiral_run_pars         ,'chiral',.true.)
+      call read_pars(read_chemistry_run_pars      ,'chemistry',.true.)
+      call read_pars(read_dustvelocity_run_pars   ,'dustvelocity',.true.)
+      call read_pars(read_dustdensity_run_pars    ,'dustdensity',.true.)
+      call read_pars(read_neutralvelocity_run_pars,'neutralvelocity',.true.)
+      call read_pars(read_neutraldensity_run_pars ,'neutraldensity',.true.)
+      call read_pars(read_cosmicray_run_pars      ,'cosmicray',.true.)
+      call read_pars(read_cosmicrayflux_run_pars  ,'cosmicrayflux',.true.)
+      call read_pars(read_heatflux_run_pars       ,'heatflux',.true.)
+      call read_pars(read_interstellar_run_pars   ,'interstellar',.true.)
+      call read_pars(read_shear_run_pars          ,'shear',.true.)
+      call read_pars(read_testperturb_run_pars    ,'testperturb',.true.)
+      call read_pars(read_viscosity_run_pars      ,'viscosity',.true.)
+      call read_pars(read_special_run_pars        ,'special',.true.)
+      call read_pars(read_shock_run_pars          ,'shock',.true.)
+      call read_pars(read_solid_cells_run_pars    ,'solid_cells',.true.)
+      call read_pars(read_NSCBC_run_pars          ,'NSCBC',.true.)
+      call read_pars(read_polymer_run_pars        ,'polymer',.true.)
+      call read_pars(particles_read_runpars       ,'particles',.true.)
+      call read_pars(read_power_spectrum_runpars  ,'power_spectrum',.true.)
+      call read_pars(read_implicit_diffusion_pars ,'implicit_diffusion',.true.)
 !
-      call parallel_close(unit)
+      call parallel_close(parallel_unit)
 !
 !  Print SVN id from first line.
 !
@@ -710,7 +699,7 @@ module Param_IO
         integer, intent(IN) :: ind, n, ip
 !
       if ( downsampl(ind)>n ) then
-        print*, 'read_startpars: Warning - stepsize for downsampling in '// &
+        print*, 'get_downpars: Warning - stepsize for downsampling in '// &
         coornames(ind)//'-direction ', downsampl(ind), 'greater than grid size ', n, &
         '! Set to grid size.'
         downsampl(ind)=n
@@ -836,8 +825,8 @@ module Param_IO
 !  Make the warnings less dramatic looking, if we are only in start
 !  and exit this routine altogether if, in addition, ip > 13.
 !
-      if (label=='read_startpars'.and.ip>13) return
-      if (label=='read_startpars') lwarning=.false.
+      if (label=='check_consistency_of_lperi'.and.ip>13) return
+      if (label=='check_consistency_of_lperi') lwarning=.false.
 !
       if (nvar > 0) then
 !
@@ -867,7 +856,7 @@ module Param_IO
 !  Make the warnings less dramatic looking, if we are only in start.
 !
       if (lroot .and. (.not. lwarning)) then
-        if (label=='read_startpars') then
+        if (label=='check_consistency_of_lperi') then
           print*,'[bad BCs in start.in only affects post-processing' &
                //' of start data, not the run]'
         else
@@ -987,7 +976,6 @@ module Param_IO
         call write_streamlines_init_pars(unit)
         call write_hydro_init_pars(unit)
         call write_density_init_pars(unit)
-        call write_forcing_init_pars(unit)
         call write_gravity_init_pars(unit)
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
@@ -1010,8 +998,6 @@ module Param_IO
         call write_cosmicrayflux_init_pars(unit)
         call write_interstellar_init_pars(unit)
         call write_shear_init_pars(unit)
-        call write_testperturb_init_pars(unit)
-        call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
         call write_solid_cells_init_pars(unit)
         call write_NSCBC_init_pars(unit)

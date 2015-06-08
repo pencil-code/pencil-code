@@ -28,13 +28,11 @@ module power_spectrum
 !
   contains
 !***********************************************************************
-    subroutine read_power_spectrum_runpars(unit,iostat)
+    subroutine read_power_spectrum_runpars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_power_spectrum_runpars
 !***********************************************************************
@@ -45,7 +43,6 @@ module power_spectrum
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_power_spectrum_runpars
-
 !***********************************************************************
     subroutine power(f,sp)
 !

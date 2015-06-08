@@ -65,13 +65,11 @@ module Particles_diagnos_state
 !
     endsubroutine insert_particles_diagnos_state
 !***********************************************************************
-    subroutine read_pars_diag_state_run_pars(unit,iostat)
+    subroutine read_pars_diag_state_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_pars_diag_state_run_pars
 !***********************************************************************
@@ -82,7 +80,7 @@ module Particles_diagnos_state
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_pars_diag_state_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_diagnos_state(lreset,lwrite)
 !
       logical :: lreset

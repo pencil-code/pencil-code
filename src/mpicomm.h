@@ -8,7 +8,8 @@
   public :: mpicomm_init, initialize_mpicomm, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
-  public :: touch_file, die_gracefully, die_immediately
+  public :: touch_file
+  public :: die_gracefully, die_immediately
   public :: check_emergency_brake
 
   public :: mpirecv_logical, mpirecv_real, mpirecv_int
@@ -25,13 +26,14 @@
   public :: mpibcast_real_arr, mpibcast_cmplx_arr_dbl, mpibcast_cmplx
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
+  include "parallel_unit_broadcast_header.h"
   public :: mpigather_xy, mpimerge_1d, mpigather_z, &
             mpigather_and_out_cmplx, mpigather_and_out_real
   public :: mpiwtime, mpiwtick
-!
+
   public :: mpisend_nonblock_real,mpisend_nonblock_int
   public :: mpirecv_nonblock_real,mpirecv_nonblock_int
-!
+
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: isendrcv_bdry_x
@@ -56,14 +58,10 @@
 
   public :: y2x, z2x
 
-  public :: parallel_open, parallel_close
-  public :: parallel_file_exists
-  public :: parallel_count_lines
-!
   public :: report_clean_output
-!
+
   public :: mpiwait
-!
+
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send
   public :: radboundary_zx_recv, radboundary_zx_send

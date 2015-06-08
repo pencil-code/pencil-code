@@ -172,44 +172,42 @@ module NeutralVelocity
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
-    subroutine read_neutralvelocity_init_pars(unit,iostat)
+    subroutine read_neutralvelocity_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=neutralvelocity_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=neutralvelocity_init_pars,ERR=99)
-      endif
-
-99    return
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=neutralvelocity_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_neutralvelocity_init_pars
 !***********************************************************************
     subroutine write_neutralvelocity_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=neutralvelocity_init_pars)
+      write(unit, NML=neutralvelocity_init_pars)
+!
     endsubroutine write_neutralvelocity_init_pars
 !***********************************************************************
-    subroutine read_neutralvelocity_run_pars(unit,iostat)
+    subroutine read_neutralvelocity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=neutralvelocity_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=neutralvelocity_run_pars,ERR=99)
-      endif
-
-99    return
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "parallel_unit.h"
+!
+      read(parallel_unit, NML=neutralvelocity_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_neutralvelocity_run_pars
 !***********************************************************************
     subroutine write_neutralvelocity_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=neutralvelocity_run_pars)
+      write(unit, NML=neutralvelocity_run_pars)
+!
     endsubroutine write_neutralvelocity_run_pars
 !***********************************************************************
     subroutine init_uun(f)

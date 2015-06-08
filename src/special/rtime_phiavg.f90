@@ -67,13 +67,9 @@ module Special
   real, dimension (nx) :: rhoavg
   real :: drc,r1,r2,B_ext=0.,rt_int=0.,rt_ext=impossible
   logical :: llarge_scale_Bz=.false.
-  integer :: dummy=0,nd
+  integer :: nd
   logical :: laverage_smooth=.true.,lmedian_smooth=.false.
   logical :: lcalc_density_pars=.true.
-!
-!  start parameters
-!
-  namelist /special_init_pars/ dummy
 !
 !   run parameters
 !
@@ -281,46 +277,22 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=special_init_pars)
-!
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

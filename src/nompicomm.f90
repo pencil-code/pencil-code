@@ -953,6 +953,8 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    include "parallel_unit_nobroadcast.h"
+!***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
 !  Communicate real array between processors.
@@ -1385,18 +1387,19 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine touch_file(fname)
+    subroutine touch_file(file)
 !
-!  touch file (used for code locking)
+!  Touches a given file (used for code locking).
+!
 !  25-may-03/axel: coded
-!  06-mar-07/wolf: moved here from sub.f90, so we can use it below
+!  24-mar-10/Bourdin.KIS: moved here from sub.f90
 !
-      character (len=*) :: fname
+      character(len=*) :: file
 !
-      if (lroot) then
-        open(1,FILE=fname,STATUS='replace')
-        close(1)
-      endif
+      integer :: unit = 1
+!
+      open (unit, FILE=file)
+      close (unit)
 !
     endsubroutine touch_file
 !***********************************************************************
@@ -2570,91 +2573,6 @@ module Mpicomm
       if (ALWAYS_FALSE) print*,yproc_no
 !
     endsubroutine z2x
-!***********************************************************************
-    subroutine parallel_open(unit,file,form,nitems)
-!
-!  Read a global file.
-!
-!  18-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-      character (len=*) :: file
-      character (len=*), optional :: form
-      integer, optional :: nitems
-!
-      logical :: exists
-!
-      if (present(nitems)) nitems=0
-!
-!  Test if file exists.
-!
-      inquire(FILE=file,exist=exists)
-      if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
-!
-!  Open file.
-!
-      if (present(form)) then
-        open(unit, FILE=file, FORM=form, STATUS='old')
-      else
-        open(unit, FILE=file, STATUS='old')
-      endif
-!
-    endsubroutine parallel_open
-!***********************************************************************
-    subroutine parallel_close(unit)
-!
-!  Close a file unit opened by parallel_open.
-!
-!  18-mar-10/Bourdin.KIS: implemented
-!
-      integer :: unit
-!
-      close(unit)
-!
-    endsubroutine parallel_close
-!***********************************************************************
-    function parallel_count_lines(file,comchars)
-!
-!  Determines the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter comchars added for use in count_lines
-!
-      use Syscalls, only: count_lines
-!
-      character(len=*),                  intent(IN) :: file
-      character, dimension(:), optional, intent(IN) :: comchars
-!
-      integer :: parallel_count_lines
-!
-      parallel_count_lines = count_lines(file,comchars)
-!
-    endfunction
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use Syscalls, only: file_exists
-!
-      character(len=*) :: file
-      logical :: parallel_file_exists
-      logical, optional :: delete
-!
-      parallel_file_exists = file_exists(file,delete)
-!
-    endfunction
 !***********************************************************************
     subroutine mpigather_xy( sendbuf, recvbuf, lpz )
 !

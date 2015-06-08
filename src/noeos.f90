@@ -483,13 +483,11 @@ module EquationOfState
 !
     endsubroutine get_soundspeed
 !***********************************************************************
-    subroutine read_eos_init_pars(unit,iostat)
+    subroutine read_eos_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_eos_init_pars
 !***********************************************************************
@@ -501,13 +499,11 @@ module EquationOfState
 !
     endsubroutine write_eos_init_pars
 !***********************************************************************
-    subroutine read_eos_run_pars(unit,iostat)
+    subroutine read_eos_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+      iostat = 0
 !
     endsubroutine read_eos_run_pars
 !***********************************************************************

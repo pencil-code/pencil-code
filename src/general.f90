@@ -35,10 +35,10 @@ module General
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
-  public :: operator(.IN.)
+  public :: operator(.in.)
   public :: loptest, ioptest, roptest, doptest, coptest
   public :: indgen
-  public :: rewind, delete_file
+  public :: delete_file
   public :: backskip_to_time
 !
   include 'record_types.h'
@@ -103,13 +103,19 @@ module General
     module procedure poly_interp_fixorder
   endinterface
 !
-  interface operator (.IN.)
-    module procedure string_in_array
+  interface pos_in_array
+    module procedure pos_in_array_int
+    module procedure pos_in_array_char
   endinterface
 !
-  interface rewind
-    module procedure rewind_ext
-    module procedure rewind_int
+  interface in_array
+    module procedure in_array_int
+    module procedure in_array_char
+  endinterface
+!
+  interface operator (.in.)
+    module procedure in_array_int
+    module procedure in_array_char
   endinterface
 !
 !  State and default generator of random numbers.
@@ -1164,21 +1170,25 @@ module General
 !
     endfunction spline_derivative_double
 !***********************************************************************
-    function spline_integral(z,f,q0)
+    function spline_integral(z,f,q0) result (q)
 !
 !  Computes integral of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
+!  02-jun-15/MR: fix for size of f equal to 1.
 !
       implicit none
       real, dimension(:) :: z
       real, dimension(:) :: f
-      real, dimension(size(z)) :: df,dz
-      real, dimension(size(z)) :: q,spline_integral
+      real, dimension(size(z)) :: df,dz,q
       real, optional :: q0
       integer :: mz,k
 !
       mz=size(z)
+      if (mz==1) then
+        q = f(1)
+        return
+      endif
 !
       q(1)=0.
       if (present(q0)) q(1)=q0
@@ -1191,8 +1201,6 @@ module General
       do k=2,mz
         q(k)=q(k)+q(k-1)
       enddo
-!
-      spline_integral=q
 !
     endfunction spline_integral
 !***********************************************************************
@@ -2403,8 +2411,8 @@ module General
 !  10-apr-11/MR: coded
 !  18-nov-13/MR: removed dummy parameter lenf, can be inferred from feld
 !
-      character (LEN=*),               intent(in)  :: zeile
-      character (LEN=*), dimension(:), intent(out) :: feld
+      character (len=*),               intent(in)  :: zeile
+      character (len=*), dimension(:), intent(out) :: feld
       character,                       intent(in)  :: tz
 !
       integer :: ind, inda, lenz, lenf
@@ -2461,11 +2469,11 @@ module General
     integer, dimension(3),          intent(in)    :: range
     integer,                        intent(inout) :: unfilled
     integer,              optional, intent(in)    :: ncol
-    character(LEN=*),     optional, intent(in)    :: fmt
+    character(len=*),     optional, intent(in)    :: fmt
 !
     integer              :: ncoll, nd, ia, ie, is, rest
-    character(LEN=intlen):: str
-    character(LEN=intlen):: fmtl, fmth
+    character(len=intlen):: str
+    character(len=intlen):: fmtl, fmth
     logical              :: lcomplex
 !
     lcomplex = .false.
@@ -2691,7 +2699,7 @@ module General
 !
 ! 4-feb-14/MR: coded
 !
-      integer, dimension(:),  intent(IN)   :: list
+      integer, dimension(:),  intent(in)   :: list
       integer, dimension(:,:),intent(OUT)  :: ranges
       integer,                intent(INOUT):: ie
 
@@ -2738,7 +2746,7 @@ module General
 ! 20-sep-12/MR: made defrange optional, changed order of dummy arguments
 ! 10-feb-14/MR: use of defrange debugged
 !
-      character (LEN=20), intent(in)           :: crange
+      character (len=20), intent(in)           :: crange
       real, dimension(3), intent(out)          :: range
       real, dimension(3), intent(in), optional :: defrange
 !
@@ -2820,7 +2828,7 @@ module General
 ! 20-sep-12/MR: coded
 ! 10-feb-14/MR: use of defrange debugged
 !
-      character (LEN=20)   , intent(in)           :: crange
+      character (len=20)   , intent(in)           :: crange
       integer, dimension(3), intent(out)          :: range
       integer, dimension(3), intent(in), optional :: defrange
 !
@@ -3081,8 +3089,8 @@ module General
 !  3-nov-11/MR: coded
 ! 16-nov-11/MR: changed into logical function to signal I/O errors
 !
-    integer,           intent(IN) :: unit
-    integer, optional, intent(IN) :: count
+    integer,           intent(in) :: unit
+    integer, optional, intent(in) :: count
 !
     integer :: i,n,iostat
 !
@@ -3110,8 +3118,8 @@ module General
 !
 !  16-may-12/MR: coded
 !
-      real, dimension(:), intent(IN) :: vector
-      integer           , intent(IN) :: newlen
+      real, dimension(:), intent(in) :: vector
+      integer           , intent(in) :: newlen
 !
       lextend_vector_float = newlen<=size(vector)
 !
@@ -3124,34 +3132,90 @@ module General
 !
 !  16-may-12/MR: coded
 !
-      character (LEN=*), dimension(:), intent(IN) :: vector
-      integer          , intent(IN) :: newlen
+      character (len=*), dimension(:), intent(in) :: vector
+      integer          , intent(in) :: newlen
 !
       lextend_vector_char = newlen<=size(vector)
 !
     endfunction lextend_vector_char
 !***********************************************************************
-  integer function string_in_array(str, cvec)
+  integer function pos_in_array_int(needle, haystack)
 !
-!  finds position of a string str in a vector of strings cvec,
-!  returns zero if not contained
+!  finds the position of a number in an array
+!  returns 0 if string is not found
 !
-!  20-aug-13/MR: coded
+!  28-May-2015/Bourdin.KIS: reworked
 !
-    character (LEN=*), dimension(:), intent(IN) :: cvec
-    character (LEN=*),               intent(IN) :: str
-    integer                                     :: i
+    integer, intent(in) :: needle
+    integer, dimension(:), intent(in) :: haystack
+    integer :: pos
 
-    do i=1,size(cvec)
-      if (cvec(i)==str) then
-         string_in_array = i
+    pos_in_array_int = -1
+
+    do pos = 1, size(haystack)
+      if (needle == haystack(pos)) then
+         pos_in_array_int = pos
          return
       endif
     enddo
 
-    string_in_array = 0
+    pos_in_array_int = 0
 
-  endfunction string_in_array
+  endfunction pos_in_array_int
+!***********************************************************************
+  integer function pos_in_array_char(needle, haystack)
+!
+!  finds the position of a string in an array
+!  returns 0 if string is not found
+!
+!  28-May-2015/Bourdin.KIS: reworked
+!
+    character (len=*), intent(in) :: needle
+    character (len=*), dimension(:), intent(in) :: haystack
+    integer :: pos
+
+    pos_in_array_char = -1
+
+    do pos = 1, size(haystack)
+      if (needle == haystack(pos)) then
+         pos_in_array_char = pos
+         return
+      endif
+    enddo
+
+    pos_in_array_char = 0
+
+  endfunction pos_in_array_char
+!***********************************************************************
+  logical function in_array_int(needle, haystack)
+!
+!  tests if a number is contained in a given array
+!
+!  28-May-2015/Bourdin.KIS: coded
+!
+    integer, intent(in) :: needle
+    integer, dimension(:), intent(in) :: haystack
+
+    in_array_int = .false.
+
+    if (pos_in_array (needle, haystack) > 0) in_array_int = .true.
+
+  endfunction in_array_int
+!***********************************************************************
+  logical function in_array_char(needle, haystack)
+!
+!  tests if a string str is contained in a vector of strings cvec
+!
+!  28-May-2015/Bourdin.KIS: coded, inspired by MR's string_in_array
+!
+    character (len=*), intent(in) :: needle
+    character (len=*), dimension(:), intent(in) :: haystack
+
+    in_array_char = .false.
+
+    if (pos_in_array (needle, haystack) > 0) in_array_char = .true.
+
+  endfunction in_array_char
 !***********************************************************************
     logical function loptest(lopt,ldef)
 !
@@ -3161,7 +3225,7 @@ module General
 !  20-aug-13/MR: coded
 !  26-aug-13/MR: optional default value ldef added
 !
-      logical, optional, intent(IN) :: lopt, ldef
+      logical, optional, intent(in) :: lopt, ldef
 
       if (present(lopt)) then
         loptest=lopt
@@ -3180,7 +3244,7 @@ module General
 !
 !  20-aug-13/MR: coded
 !
-      integer, optional, intent(IN) :: iopt, idef
+      integer, optional, intent(in) :: iopt, idef
 
       if (present(iopt)) then
         ioptest=iopt
@@ -3199,7 +3263,7 @@ module General
 !
 !  20-aug-13/MR: coded
 !
-      real, optional, intent(IN) :: ropt, rdef
+      real, optional, intent(in) :: ropt, rdef
 
       if (present(ropt)) then
         roptest=ropt
@@ -3218,7 +3282,7 @@ module General
 !
 !  20-aug-13/MR: coded
 !
-      real(KIND=rkind8), optional, intent(IN) :: dopt, ddef
+      real(KIND=rkind8), optional, intent(in) :: dopt, ddef
 
       if (present(dopt)) then
         doptest=dopt
@@ -3237,8 +3301,8 @@ module General
 !
 !  27-jan-15/MR: coded
 !
-      character(LEN=2*labellen) :: coptest
-      character(LEN=*), optional, intent(IN) :: copt, cdef
+      character(len=2*labellen) :: coptest
+      character(len=*), optional, intent(in) :: copt, cdef
 
       if (present(copt)) then
         coptest=copt
@@ -3362,30 +3426,6 @@ module General
       enddo
 
     endfunction indgen
-!****************************************************************************
-    subroutine rewind_ext(unit)
-!
-! Envelope for rewind. Needed if unit can also be an internal one.
-!
-! 11-jan-15/MR: coded
-!
-      integer, intent(IN) :: unit
-
-      rewind(unit)
-
-    endsubroutine rewind_ext
-!****************************************************************************
-    subroutine rewind_int(unit)
-!
-!  Dummy for rewind on an internal unit.
-!
-! 11-jan-15/MR: coded
-!
-      character(LEN=*), intent(IN) :: unit
-
-      call keep_compiler_quiet(unit)
-
-    endsubroutine rewind_int
 !***********************************************************************
     subroutine delete_file(file)
 !
@@ -3394,7 +3434,7 @@ module General
 !
 ! 11-jan-15/MR: coded
 !
-      character(LEN=*), intent(IN) :: file
+      character(len=*), intent(in) :: file
 
       integer, parameter :: lun=111
       logical :: exists

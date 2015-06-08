@@ -4,16 +4,18 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
-GLOBAL    = noglobal
+MPICOMM             = nompicomm
+GLOBAL              = noglobal
+DIAGNOSTICS         = diagnostics
+FILE_IO             = file_io_f95
 
-HYDRO     =   hydro
-DENSITY   =   density
-ENTROPY   = noentropy
-MAGNETIC  = nomagnetic
-RADIATION = noradiation
-PSCALAR   = nopscalar
+HYDRO               =   hydro
+DENSITY             =   density
+ENTROPY             = noentropy
+MAGNETIC            = nomagnetic
+RADIATION           = noradiation
+PSCALAR             = nopscalar
 
-GRAVITY   = nogravity
-FORCING   = noforcing
-SHEAR     = noshear
+GRAVITY             = nogravity
+FORCING             = noforcing
+SHEAR               = noshear

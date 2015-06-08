@@ -22,11 +22,6 @@ module Radiation
 !
   include 'radiation.h'
 !
-  ! radiation turned off
-!
-  !namelist /radiation_init_pars/ dummyuu
-  !namelist /radiation_run_pars/  dummyuu
-!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0
@@ -170,13 +165,11 @@ module Radiation
 !
     endsubroutine de_dt
 !***********************************************************************
-    subroutine read_radiation_init_pars(unit,iostat)
+    subroutine read_radiation_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_radiation_init_pars
 !***********************************************************************
@@ -188,13 +181,11 @@ module Radiation
 !
     endsubroutine write_radiation_init_pars
 !***********************************************************************
-    subroutine read_radiation_run_pars(unit,iostat)
+    subroutine read_radiation_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_radiation_run_pars
 !***********************************************************************

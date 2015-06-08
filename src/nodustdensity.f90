@@ -85,13 +85,11 @@ module Dustdensity
 !
     endsubroutine dndmd_dt
 !***********************************************************************
-    subroutine read_dustdensity_init_pars(unit,iostat)
+    subroutine read_dustdensity_init_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
@@ -103,13 +101,11 @@ module Dustdensity
 !
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
-    subroutine read_dustdensity_run_pars(unit,iostat)
+    subroutine read_dustdensity_run_pars(iostat)
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
 !
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************

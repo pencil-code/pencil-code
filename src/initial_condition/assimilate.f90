@@ -17,11 +17,6 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: dummy
-!
-  namelist /initial_condition_pars/ &
-      dummy
-!
 contains
 !***********************************************************************
   subroutine register_initial_condition()
@@ -46,33 +41,6 @@ contains
     call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
-!***********************************************************************
-  subroutine read_initial_condition_pars(unit,iostat)
-!
-!  04-sep-10/bing: coded
-!
-    include '../unit.h'
-    integer, intent(inout), optional :: iostat
-!
-    if (present(iostat)) then
-      read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=initial_condition_pars,ERR=99)
-    endif
-!
- 99  return
-!
-  endsubroutine read_initial_condition_pars
-!***********************************************************************
-  subroutine write_initial_condition_pars(unit)
-!
-!  04-sep-10/bing: coded
-!
-    integer, intent(in) :: unit
-!
-    write(unit,NML=initial_condition_pars)
-!
-  endsubroutine write_initial_condition_pars
 !***********************************************************************
   subroutine initial_condition_all(f,profiles)
 !

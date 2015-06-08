@@ -27,12 +27,8 @@ module TestPerturb
   character (len=labellen) :: itestfield='B11-B21'
   integer :: nt_testperturb=0, it_testperturb_finalize=0
   real :: ktestfield=1., ktestfield1=1., Btest0=1.
-  real :: dummy
 !
   include 'testperturb.h'
-!
-  namelist /testperturb_init_pars/ &
-      dummy
 !
   namelist /testperturb_run_pars/ &
       itestfield,ktestfield,Btest0,nt_testperturb
@@ -133,57 +129,41 @@ module TestPerturb
 !
     endsubroutine initialize_testperturb
 !***********************************************************************
-    subroutine read_testperturb_init_pars(unit,iostat)
+    subroutine read_testperturb_init_pars(iostat)
 !
-!  read initial testperturb parameters
+      use File_io, only: get_unit
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=testperturb_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testperturb_init_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=testperturb_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_testperturb_init_pars
 !***********************************************************************
     subroutine write_testperturb_init_pars(unit)
 !
-!  write initial testperturb parameters
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=testperturb_init_pars)
+      write(unit, NML=testperturb_init_pars)
 !
     endsubroutine write_testperturb_init_pars
 !***********************************************************************
-    subroutine read_testperturb_run_pars(unit,iostat)
+    subroutine read_testperturb_run_pars(iostat)
 !
-!  read run testperturb parameters
+      use File_io, only: get_unit
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-      if (present(iostat)) then
-        read(unit,NML=testperturb_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testperturb_run_pars,ERR=99)
-      endif
-!
-99    return
+      read(parallel_unit, NML=testperturb_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_testperturb_run_pars
 !***********************************************************************
     subroutine write_testperturb_run_pars(unit)
 !
-!  write run testperturb parameters
-!
       integer, intent(in) :: unit
 !
-      write(unit,NML=testperturb_run_pars)
+      write(unit, NML=testperturb_run_pars)
 !
     endsubroutine write_testperturb_run_pars
 !***********************************************************************

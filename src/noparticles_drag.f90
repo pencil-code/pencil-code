@@ -54,25 +54,15 @@ module Particles_drag
 !
     endsubroutine init_particles_drag
 !***********************************************************************
-    subroutine read_particles_drag_init_pars(unit, iostat)
+    subroutine read_particles_drag_init_pars(iostat)
 !
-!  Read initialization parameters from namelist particles_drag_init_pars.
+      integer, intent(out) :: iostat
 !
-!  14-feb-15/ccyang: coded.
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_drag_init_pars
 !***********************************************************************
     subroutine write_particles_drag_init_pars(unit)
-!
-!  Write initialization parameters to namelist particles_drag_init_pars.
-!
-!  14-feb-15/ccyang: coded.
 !
       integer, intent(in) :: unit
 !
@@ -80,25 +70,15 @@ module Particles_drag
 !
     endsubroutine write_particles_drag_init_pars
 !***********************************************************************
-    subroutine read_particles_drag_run_pars(unit, iostat)
+    subroutine read_particles_drag_run_pars(iostat)
 !
-!  Read runtime parameters from namelist particles_drag_run_pars.
+      integer, intent(out) :: iostat
 !
-!  14-dec-14/ccyang: coded.
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_drag_run_pars
 !***********************************************************************
     subroutine write_particles_drag_run_pars(unit)
-!
-!  Write runtime parameters to namelist particles_drag_run_pars.
-!
-!  14-dec-14/ccyang: coded.
 !
       integer, intent(in) :: unit
 !

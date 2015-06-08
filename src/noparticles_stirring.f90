@@ -37,21 +37,15 @@ module Particles_stirring
 !
     endsubroutine particle_stirring
 !***********************************************************************
-    subroutine read_particles_stir_run_pars(unit,iostat)
+    subroutine read_particles_stir_run_pars(iostat)
 !
-!  30-dec-10/anders+michiel: dummy
+      integer, intent(out) :: iostat
 !
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_particles_stir_run_pars
 !***********************************************************************
     subroutine write_particles_stir_run_pars(unit)
-!
-!  30-dec-10/anders+michiel: dummy
 !
       integer, intent(in) :: unit
 !

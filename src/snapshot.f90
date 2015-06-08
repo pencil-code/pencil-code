@@ -43,12 +43,12 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: lsnap, lerror
+      logical :: lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 
       integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, iax, iay, iaz, &
-                 iex, iey, iez, l2s, l2is, m2s, m2is, n2s,n2is, io_err
+                 iex, iey, iez, l2s, l2is, m2s, m2is, n2s, n2is
       real, dimension(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,msnap) :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
@@ -185,11 +185,10 @@ module Snapshot
 !
         call safe_character_assign(file,'VARd'//ch)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, &
-              FORM='unformatted', IOSTAT=io_err, status='replace')
+              FORM='unformatted', status='replace')
         call output_snap(buffer,msnap)
 
-        close(lun_output,IOSTAT=io_err)
-        if (outlog(io_err,'close')) continue
+        close(lun_output)
 !
         if (present(flist)) call log_filename_to_file(file,flist)
 !
@@ -667,32 +666,28 @@ module Snapshot
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
 !
-      integer :: i, j, k, io_err
+      integer :: i, j, k
 !
-      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.form',IOSTAT=io_err)
-      if (outlog(io_err,'open',trim(file)//'.form',dist=lun_output)) return
+      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.form')
 !
       if (lwrite_2d) then
 !
         if (nx==1) then
           do i = m1, m2
             do j = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=io_err) x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
-              if (outlog(io_err,'write x, y, z, dx, dy, dz, a(l1,i,j,:)')) return
+              write(lun_output,'(40(f12.5))') x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
             enddo
           enddo
         elseif (ny==1) then
           do i = l1, l2
             do j = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=io_err) x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
-              if (outlog(io_err,'write x, y, z, dx, dy, dz, a(i,m1,j,:)')) return
+              write(lun_output,'(40(f12.5))') x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
             enddo
           enddo
         elseif (nz==1) then
           do i = l1, l2
             do j = m1, m2
-              write(lun_output,'(40(f12.5))',IOSTAT=io_err) x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
-              if (outlog(io_err,'write x, y, z, dx, dy, dz, a(i,j,n1,:)')) return
+              write(lun_output,'(40(f12.5))') x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
             enddo
           enddo
         else
@@ -702,8 +697,7 @@ module Snapshot
       else if (ny==1.and.nz==1) then
 !
         do i = l1, l2
-          write(lun_output,'(40(f12.5))',IOSTAT=io_err) x(i),a(i,m1,n1,:)
-          if (outlog(io_err,'write x, a')) return
+          write(lun_output,'(40(f12.5))') x(i),a(i,m1,n1,:)
         enddo
 !
       else
@@ -711,16 +705,14 @@ module Snapshot
         do i = l1, l2
           do j = m1, m2
             do k = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=io_err) x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
-              if (outlog(io_err,'write x, y, z, dx, dy, dz, a')) return
+              write(lun_output,'(40(f12.5))') x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
             enddo
           enddo
         enddo
 !
       endif
 !
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close')) continue
+      close(lun_output)
 !
     endsubroutine output_snap_form
 !***********************************************************************
@@ -737,11 +729,10 @@ module Snapshot
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
 !
-      integer :: i, j, k, kk, io_err
+      integer :: i, j, k, kk
       real, dimension (nx*ny*nz) :: xx, yy, zz
 !
-      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec',IOSTAT=io_err)
-      if (outlog(io_err,'open',trim(file)//'.tec',dist=lun_output)) return
+      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec')
 !
       kk = 0
       do k = 1, nz
@@ -757,151 +748,95 @@ module Snapshot
 !
 !  Write header
 !
-      write(lun_output,*,IOSTAT=io_err) 'TITLE     = "output"'
-      if (outlog(io_err,'write TITLE')) return
+      write(lun_output,*) 'TITLE     = "output"'
 !
       if (lwrite_2d) then
-!
-        if (nx==1) then
-          write(lun_output,*,IOSTAT=io_err) 'VARIABLES = "y"'
-          if (outlog(io_err,'write "VARIABLES = y"')) return
-          write(lun_output,*,IOSTAT=io_err) '"z"'
-          if (outlog(io_err,'write "z"')) return
-        elseif (ny==1) then
-          write(lun_output,*,IOSTAT=io_err) 'VARIABLES = "x"'
-          if (outlog(io_err,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=io_err) '"z"'
-          if (outlog(io_err,'write "z"')) return
-        elseif (nz==1) then
-          write(lun_output,*,IOSTAT=io_err) 'VARIABLES = "x"'
-          if (outlog(io_err,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=io_err) '"y"'
-          if (outlog(io_err,'write "y"')) return
+        if (nx == 1) then
+          write(lun_output,*) 'VARIABLES = "y"'
+          write(lun_output,*) '"z"'
+        elseif (ny == 1) then
+          write(lun_output,*) 'VARIABLES = "x"'
+          write(lun_output,*) '"z"'
+        elseif (nz == 1) then
+          write(lun_output,*) 'VARIABLES = "x"'
+          write(lun_output,*) '"y"'
         endif
-!
       else
-!
-        if (ny==1.and.nz==1) then
-          write(lun_output,*,IOSTAT=io_err) 'VARIABLES = "x"'
-          if (outlog(io_err,'write "VARIABLES = x"')) return
+        if ((ny == 1) .and. (nz == 1)) then
+          write(lun_output,*) 'VARIABLES = "x"'
         else
-          write(lun_output,*,IOSTAT=io_err) 'VARIABLES = "x"'
-          if (outlog(io_err,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=io_err) '"y"'
-          if (outlog(io_err,'write "VARIABLES = y"')) return
-          write(lun_output,*,IOSTAT=io_err) '"z"'
-          if (outlog(io_err,'write "VARIABLES = z"')) return
+          write(lun_output,*) 'VARIABLES = "x"'
+          write(lun_output,*) '"y"'
+          write(lun_output,*) '"z"'
         endif
-!
       endif
       do i = 1, nv
-        write(lun_output,*,IOSTAT=io_err) '"VAR_'//trim(itoa(i))//'"'
-        if (outlog(io_err,'write filename')) return
+        write(lun_output,*) '"VAR_'//trim(itoa(i))//'"'
       enddo
 !
-      write(lun_output,*,IOSTAT=io_err) 'ZONE T="Zone"'
-      if (outlog(io_err,'write "ZONE T=Zone"')) return
+      write(lun_output,*) 'ZONE T="Zone"'
 !
       if (lwrite_2d) then
-        if (nx==1) then
-          write(lun_output,*,IOSTAT=io_err) ' I=1, J=',ny, ', K=',nz
-          if (outlog(io_err,'write ny, nz')) return
+        if (nx == 1) then
+          write(lun_output,*) ' I=1, J=',ny, ', K=',nz
         endif
-        if (ny==1) then
-          write(lun_output,*,IOSTAT=io_err) ' I=',nx, ', J=1, K=',nz
-          if (outlog(io_err,'write nx, nz')) return
+        if (ny == 1) then
+          write(lun_output,*) ' I=',nx, ', J=1, K=',nz
         endif
-        if (nz==1) then
-          write(lun_output,*,IOSTAT=io_err) ' I=',nx, ', J=',ny, ', K=1'
-          if (outlog(io_err,'write nx, ny')) return
+        if (nz == 1) then
+          write(lun_output,*) ' I=',nx, ', J=',ny, ', K=1'
         endif
       else
-        if (ny==1.and.nz==1) then
-          write(lun_output,*,IOSTAT=io_err) ' I=',nx, ', J=  1, K=  1'
-          if (outlog(io_err,'write nx')) return
+        if ((ny == 1) .and. (nz == 1)) then
+          write(lun_output,*) ' I=',nx, ', J=  1, K=  1'
         else
-          write(lun_output,*,IOSTAT=io_err) ' I=',nx, ', J=',ny, ', K=',nz
-          if (outlog(io_err,'write nx, ny, nz')) return
+          write(lun_output,*) ' I=',nx, ', J=',ny, ', K=',nz
         endif
       endif
 !
-      write(lun_output,*,IOSTAT=io_err) ' DATAPACKING=BLOCK'
-      if (outlog(io_err,'write "DATAPACKING=BLOCK"')) return
-!
+      write(lun_output,*) ' DATAPACKING=BLOCK'
 !
 !  Write data
 !
       if (lwrite_2d) then
-        if (nx==1) then
-!
-          write(lun_output,*,IOSTAT=io_err) yy
-          if (outlog(io_err,'write yy')) return
-          write(lun_output,*,IOSTAT=io_err) zz
-          if (outlog(io_err,'write zz')) return
-!
+        if (nx == 1) then
+          write(lun_output,*) yy
+          write(lun_output,*) zz
           do j = 1, nv
-            write(lun_output,*,IOSTAT=io_err) a(l1,m1:m2,n1:n2,j)
-            if (outlog(io_err,'write a')) return
+            write(lun_output,*) a(l1,m1:m2,n1:n2,j)
           enddo
-!
-        elseif (ny==1) then
-!
-          write(lun_output,*,IOSTAT=io_err) xx
-          if (outlog(io_err,'write xx')) return
-!
-          write(lun_output,*,IOSTAT=io_err) zz
-          if (outlog(io_err,'write zz')) return
-!
+        elseif (ny == 1) then
+          write(lun_output,*) xx
+          write(lun_output,*) zz
           do j = 1, nv
-            write(lun_output,*,IOSTAT=io_err) a(l1:l2,m1,n1:n2,j)
-            if (outlog(io_err,'write a')) return
+            write(lun_output,*) a(l1:l2,m1,n1:n2,j)
           enddo
-!
-        elseif (nz==1) then
-          write(lun_output,*,IOSTAT=io_err) xx
-          if (outlog(io_err,'write xx')) return
-!
-          write(lun_output,*,IOSTAT=io_err) yy
-          if (outlog(io_err,'write yy')) return
-!
+        elseif (nz == 1) then
+          write(lun_output,*) xx
+          write(lun_output,*) yy
           do j = 1, nv
-            write(lun_output,*,IOSTAT=io_err) a(l1:l2,m1:m2,n1,j)
-            if (outlog(io_err,'write a')) return
+            write(lun_output,*) a(l1:l2,m1:m2,n1,j)
           enddo
-!
         else
           call fatal_error('output_snap_tec','lwrite_2d used for 3-D simulation!')
         endif
-      else if (ny==1.and.nz==1) then
+      else
+        if ((ny == 1) .and. (nz == 1)) then
+          write(lun_output,*) xx
+          do j = 1, nv
+            write(lun_output,*) a(l1:l2,m1,n1,j)
+          enddo
+        else
+          write(lun_output,*) xx
+          write(lun_output,*) yy
+          write(lun_output,*) zz
+          do j = 1, nv
+            write(lun_output,*) a(l1:l2,m1:m2,n1:n2,j)
+          enddo
+        endif
+      endif
 !
-             write(lun_output,*,IOSTAT=io_err) xx
-             if (outlog(io_err,'write xx')) return
-!
-             do j = 1, nv
-               write(lun_output,*,IOSTAT=io_err) a(l1:l2,m1,n1,j)
-               if (outlog(io_err,'write a')) return
-             enddo
-!
-           else
-!
-             write(lun_output,*,IOSTAT=io_err) xx
-             if (outlog(io_err,'write xx')) return
-!
-             write(lun_output,*,IOSTAT=io_err) yy
-             if (outlog(io_err,'write yy')) return
-!
-             write(lun_output,*,IOSTAT=io_err) zz
-             if (outlog(io_err,'write zz')) return
-!
-             do j = 1, nv
-               write(lun_output,*,IOSTAT=io_err) a(l1:l2,m1:m2,n1:n2,j)
-               if (outlog(io_err,'write a')) return
-             enddo
-!
-           endif
-!
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close')) continue
+      close(lun_output)
 !
     endsubroutine output_snap_tec
 !***********************************************************************

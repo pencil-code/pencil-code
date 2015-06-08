@@ -444,6 +444,14 @@ module Particles_sub
               fp(k,izp)=2*xyz1(3)-fp(k,izp)
               fp(k,ivpz)=-fp(k,ivpz)
             endif
+          elseif (boundz=='inc') then
+!
+!  Move particle from the boundary to the center of the box
+!
+            if (fp(k,izp)<=xyz0(3) .or. fp(k,izp)>=xyz1(3)) then
+              fp(k,izp)=xyz0(3)+(xyz1(3)-xyz0(3))/2.
+              fp(k,ivpx:ivpz)=0.
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition=', boundz
             call stop_it('boundconds_particles')

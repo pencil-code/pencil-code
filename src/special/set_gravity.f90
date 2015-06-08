@@ -1,4 +1,4 @@
-! $Id: baroclinic_run.f90,v 1.5 2009-08-29 02:21:37 wlyra Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,12 +70,7 @@ module Special
   include '../special.h'
 !
   real, dimension(nx,ny,nz,3) :: gravity
-  real :: dummy
   real :: sigmaz=0.3
-!
-  namelist /special_init_pars/ dummy
-!   
-  namelist /special_run_pars/ dummy
 !
   contains
 
@@ -90,7 +85,7 @@ module Special
       use Cdata
 !
       if (lroot) call svn_id( &
-           "$Id: baroclinic_run.f90,v 1.5 2009-08-29 02:21:37 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -204,46 +199,6 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-      integer, intent(in) :: unit
-
-      write(unit,NML=special_init_pars)
-
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
-endsubroutine read_special_run_pars
-!***********************************************************************
-    subroutine write_special_run_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=special_run_pars)
-!
-    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

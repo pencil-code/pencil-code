@@ -521,46 +521,42 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 
     endsubroutine calculate_vars_magnetic
 !***********************************************************************
-    subroutine read_magnetic_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_init_pars,ERR=99)
-      endif
-
-
-99    return
+    subroutine read_magnetic_init_pars(iostat)
+!
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
     subroutine write_magnetic_init_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=magnetic_init_pars)
-
+!
+      write(unit, NML=magnetic_init_pars)
+!
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-
-      if (present(iostat)) then
-        read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_run_pars,ERR=99)
-      endif
-
-
-99    return
+    subroutine read_magnetic_run_pars(iostat)
+!
+      use File_io, only: get_unit
+!
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
+!
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
     subroutine write_magnetic_run_pars(unit)
+!
       integer, intent(in) :: unit
-
-      write(unit,NML=magnetic_run_pars)
-
+!
+      write(unit, NML=magnetic_run_pars)
+!
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)

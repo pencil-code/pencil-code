@@ -61,53 +61,33 @@ module Poisson
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
-    subroutine read_poisson_init_pars(unit,iostat)
+    subroutine read_poisson_init_pars(iostat)
 !
-!  Read Poisson init parameters.
+      integer, intent(out) :: iostat
 !
-!  18-oct-2007/anders: dummy
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_poisson_init_pars
 !***********************************************************************
     subroutine write_poisson_init_pars(unit)
 !
-!  Write Poisson init parameters.
-!
-!  18-oct-2007/anders: dummy
-!
-      integer :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_poisson_init_pars
 !***********************************************************************
-    subroutine read_poisson_run_pars(unit,iostat)
+    subroutine read_poisson_run_pars(iostat)
 !
-!  Read Poisson run parameters.
+      integer, intent(out) :: iostat
 !
-!  18-oct-2007/anders: dummy
-!
-      include 'unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      iostat = 0
 !
     endsubroutine read_poisson_run_pars
 !***********************************************************************
     subroutine write_poisson_run_pars(unit)
 !
-!  Write Poisson run parameters.
-!
-!  18-oct-2007/anders: dummy
-!
-      integer :: unit
+      integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !

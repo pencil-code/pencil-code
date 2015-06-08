@@ -69,14 +69,12 @@ module Special
 !
   include '../special.h'
 ! Global arrays
-  real :: dummy,rho01,cs201,gammam11,Bshear=0.,p0,p01,nw1
+  real :: rho01,cs201,gammam11,Bshear=0.,p0,p01,nw1
   real :: cv1
   logical :: lunstratified=.false.,lstratification=.true.
   logical :: lstatic_stratification=.false.
   real, dimension (nx) :: strat
   real, dimension (nz) :: rtime_strat
-!
-  namelist /special_init_pars/ dummy
 !
   namelist /special_run_pars/ Bshear,lunstratified,&
       lstatic_stratification
@@ -315,45 +313,22 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
+    subroutine read_special_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
-    endsubroutine read_special_init_pars
-!***********************************************************************
-    subroutine write_special_init_pars(unit)
-      integer, intent(in) :: unit
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
-      write(unit,NML=special_init_pars)
-!
-    endsubroutine write_special_init_pars
-!***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-!
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
-!
-99    return
-endsubroutine read_special_run_pars
+    endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
-      write(unit,NML=special_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************

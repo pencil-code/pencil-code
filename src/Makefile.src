@@ -12,6 +12,8 @@ BORDER_PROFILES    = noborder_profiles
 BOUNDCOND          =   boundcond
 DEBUG              = nodebug
 GHOST_CHECK        =   ghost_check
+DIAGNOSTICS        =   diagnostics
+FILE_IO            =   file_io_f95
 SYSCALLS           =   syscalls
 DERIV              =   deriv
 FOURIER            = nofourier
@@ -41,7 +43,6 @@ COSMICRAYFLUX     = nocosmicrayflux
 COSMICRAY         = nocosmicray
 DENSITY           = nodensity
 DETONATE          = nodetonate
-DIAGNOSTICS       =   diagnostics
 DUSTDENSITY       = nodustdensity
 DUSTVELOCITY      = nodustvelocity
 ENERGY            = noentropy
@@ -126,6 +127,7 @@ CFLAGS       =
 FCCLEANER    =
 LIBMPISUFFIX =
 MAKEOPTS     =
+CONVERSION_RELAXED =
 #
 # Defaults for external libraries.
 #
@@ -155,7 +157,13 @@ include Makefile.local
 #
 include Makefile.inc
 #
+# Fortran 2003 standard compilation settings.
+#
+include Makefile-standard.inc
+#
 # Can someone explain this?
+# Bourdin.KIS: In some cases, an underscore is added to the library name.
+#     I think that this is not needed with a correct compiler configuration.
 #
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 #
@@ -354,6 +362,9 @@ EQU_SRC=equ.f90
 #
 FARRAY_OBJ=farray.o
 FARRAY_SRC=farray.f90
+#
+FILE_IO_OBJ=$(FILE_IO).o
+FILE_IO_SRC=$(FILE_IO).f90
 #
 FILTER_OBJ=filter.o
 FILTER_SRC=filter.f90
@@ -1095,7 +1106,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##  Axel's laptop (nl6, 2.0 GHz)
 ##  the -CB options checks for out of bounds arrays
 ##
-#FC=ifort -std95 #(nl6)
+#FC=ifort #(nl6)
+#FSTD_95=-std95 #(nl6)
 #FC=ifort #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
@@ -1193,7 +1205,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ##  norlx50 Nordita computer
 ##
-##FC=g95 -fno-second-underscore -std=f95 #(norlx50)
+##FC=g95 -fno-second-underscore #(norlx50)
+##FSTD_95=-std=f95 #(norlx50)
 ##FFLAGS_DOUBLE= -r8 #(norlx50)
 ##FFLAGS= #(norlx50)
 ##F90FLAGS=-I/usr/lib/openmpi/include -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx50)
@@ -1262,7 +1275,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC=/usr/bin/gfortran-4.4 #(iomsn-laptop)
 #F77=$(FC) #(iomsn-laptop)
 #CC=gcc #(iomsn-laptop)
-#FFLAGS_SLOPPY=$(FFLAGS) -I/usr/lib/openmpi/include #(iomsn-laptop)
+#FFLAGS=$(FFLAGS) -I/usr/lib/openmpi/include #(iomsn-laptop)
 #CFLAGS=-O3 -DFUNDERSC=1 #(iomsn-laptop)
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(iomsn-laptop)
 ##
@@ -1427,7 +1440,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## GWDG Cluster in Goettingen
 ##
-#FC = mpif90 -std95 # (gwdu101)
+#FC = mpif90 # (gwdu101)
+#FSTD_95 = -std95 # (gwdu101)
 #F77 = mpif90 # (gwdu101) 
 #FFLAGS = -implicitnone # (gwdu101) 
 #FFLAGS_DOUBLE = -r8 # (gwdu101) 
@@ -1435,7 +1449,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS = -DFUNDERSC=1 # (gwdu101) 
 #CFLAGS_DOUBLE = -DDOUBLE_PRECISION # (gwdu101) 
 ##
-#FC = mpif90 -std95 # (gwdu102)
+#FC = mpif90 # (gwdu102)
+#FSTD_95 = -std95 # (gwdu102)
 #F77 = mpif90 # (gwdu102)
 #FFLAGS = -implicitnone # (gwdu102)
 #FFLAGS_DOUBLE = -r8 # (gwdu101)
@@ -1627,7 +1642,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Sisu - CrayXC30 - (Kajaani)
 ##
 #FC=ftn #(sisu*)
-#FC_SLOPPY = $(FC) #(sisu*)
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
 #FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
@@ -1637,7 +1651,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Piz Daint - CrayXC30 - (ETH Zurich)
 ##
 #FC=ftn #(daint*)
-#FC_SLOPPY = $(FC) #(daint*)
 #F90=$(FC) #(daint*)
 #CC=cc #(daint*)
 #FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(daint*)
@@ -1656,7 +1669,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Hornet - Cray XC40 - (Stuttgart)
 ##
 #FC=ftn #(eslogin0*)
-#FC_SLOPPY = $(FC) #(eslogin0*)
 #F90=$(FC) #(eslogin0*)
 #CC=cc #(eslogin0*)
 #FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(eslogin0*)
@@ -1667,7 +1679,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## 1516 24-nodes per cabinet 2.1GHz Opterons
 ##
 #FC=ftn #(emil*)
-#FC_SLOPPY = $(FC) #(emil*)
 #F90=$(FC) #(emil*)
 #CC=cc #(emil*)
 #FFLAGS=-O3 #(emil*)
@@ -1678,7 +1689,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## 1516 24-nodes per cabinet 2.1GHz Opterons
 ##
 #FC=ftn #(beskow*)
-#FC_SLOPPY = $(FC) #(beskow*)
 #F90=$(FC) #(beskow*)
 #CC=cc #(beskow*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(beskow*)
@@ -1715,7 +1725,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Taito - HP Supercluster - (Kajaani)
 ##
 #FC=mpif90 #(taito*)
-#FC_SLOPPY = $(FC) -std95 #(taito*)
+#FSTD_95=-std95 #(taito*)
 #F90=$(FC) #(taito*)
 #CC=mpicc #(taito*)
 #FFLAGS=-O3 -implicitnone #(taito*)
@@ -1751,7 +1761,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=gfortran -I/usr/include -I. -I/usr/include/lam  -frecord-marker=4 #(wintermute)
 #F77=$(FC)  #(wintermute)
-#FFLAGS_SLOPPY=  #(wintermute)
 #FFLAGS=-O3   #(wintermute)
 #F90FLAGS=  #(wintermute)
 #F77FLAGS=   #(wintermute)
@@ -1764,7 +1773,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=gfortran -frecord-marker=4 #(volans)
 #F77=$(FC)  #(volans)
-#FFLAGS_SLOPPY=  #(volans)
 #FFLAGS=-O3   #(volans)
 #F90FLAGS=  #(volans)
 #F77FLAGS=   #(volans)
@@ -1777,7 +1785,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpif90 -frecord-marker=4 #(crater)
 #F77=$(FC)  #(crater)
-#FFLAGS_SLOPPY=  #(crater)
 #FFLAGS=-O3   #(crater)
 #F90FLAGS=  #(crater)
 #F77FLAGS=   #(crater)
@@ -2056,13 +2063,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ### End machine dependent
 
 #
-#  FC_SLOPPY is used for necessary non-strict compilation of some modules.
-#  Default value of FC_SLOPPY is equal to FC.
-#
-ifeq ($(FC_SLOPPY),)
-  FC_SLOPPY=$(FC)
-endif
-#
 #  Linker and compiler are the same.
 #
 LD=$(FC)
@@ -2076,9 +2076,9 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
 .c.o:
-	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
@@ -2098,7 +2098,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -2138,7 +2138,7 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
+technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
@@ -2263,7 +2263,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	    ln -s cparam.inc cparam.inc; \
 	    ln -s cparam_pencils.inc cparam_pencils.inc; \
 	fi
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
@@ -2295,7 +2295,7 @@ EXECUTABLES=start.x run.x \
 # delete already compiled .x files:
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-code: Makefile.inc cparam.inc
+code: Makefile.inc Makefile-standard.inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2339,14 +2339,37 @@ mpicomm_.f90: mpicomm.f90
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
+
+#
+# Compile MPICOMM with F2003 standard, if necessary.
+#
+#$(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
+#	@case "$(FILE_IO)" in \
+#	'file_io_f2003') \
+#		$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD_2003) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+#		;; \
+#	*) \
+#		$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+#		;; \
+#	esac;
+
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
-	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
-	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o param_io.o -c param_io.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o param_io.o -c param_io.f90
+diagnostics_outlog.o: diagnostics_outlog.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
+experimental/file_io_f2003.o: experimental/file_io_f2003.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o experimental/file_io_f2003.o -c experimental/file_io_f2003.f90
+file_io_f95.o: file_io_f95.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_f95.o -c file_io_f95.f90
+file_io_dist.o: file_io_dist.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_dist.o -c file_io_dist.f90
 #
 #  Remove all build files, but keep executables (misleading name..)
 #
@@ -2380,6 +2403,7 @@ clean:
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
+	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
 #  Clean up all
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
@@ -2387,7 +2411,7 @@ clean:
 cleann: clean
 	rm -f Makefile src/Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
-	rm -f *.inc && touch Makefile.inc
+	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 #
 #  Same thing.
@@ -2398,7 +2422,7 @@ cleanall: cleann
 #
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
-	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
+	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile-standard.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.

@@ -121,18 +121,14 @@ module Testfield
 !
     endsubroutine initialize_testfield
 !***********************************************************************
-    subroutine read_testfield_run_pars(unit,iostat)
+    subroutine read_testfield_run_pars(iostat)
 !
-      include '../unit.h'
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=testfield_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=testfield_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=testfield_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_testfield_run_pars
 !***********************************************************************
@@ -140,7 +136,7 @@ module Testfield
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=testfield_run_pars)
+      write(unit, NML=testfield_run_pars)
 !
     endsubroutine write_testfield_run_pars
 !***********************************************************************

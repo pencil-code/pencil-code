@@ -393,11 +393,11 @@ else if ($hn =~ gardar* ) then
 
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
-  echo "Warp cluster (warp) - Pittsburgh"
-  echo "******************************"
-  echo "Always use  multiple of 8 no. of processors .."
-  echo "..for multiprecossor jobs. "
-  echo " ******************************"
+#  echo "Warp cluster (warp) - Pittsburgh"
+#  echo "******************************"
+#  echo "Always use  multiple of 8 no. of processors .."
+#  echo "..for multiprecossor jobs. "
+#  echo " ******************************"
 # module load openmpi/psc
   #
 # limit stacksize 524288
@@ -406,15 +406,16 @@ else if ($hn =~ compute-*.local ) then
 # echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
   #
   #setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
-  #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
-  set $mpirun=mpiexec
-  set mpirunops = " -genv I_MPI_DEVICE rdssm:OpenIB-cma -machinefile $PBS_NODEFILE"
-  cp $PBS_NODEFILE machines
-  uniq machines > mpd.hosts
-  set myprocpernode = 8
-  echo $ncpus
-  set mynodes = `expr $ncpus / $myprocpernode `
-  mpdboot -n $mynodes  -f mpd.hosts  -r ssh
+ #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set $mpirun=mpirun
+#  set mpirunops="-hostfile $PBS_NODEFILE"
+#  cp $PBS_NODEFILE machines
+#  set $datadir='data'
+#  uniq machines > mpd.hosts
+#  set myprocpernode = 8
+#  echo $ncpus
+#  set mynodes = `expr $ncpus / $myprocpernode `
+#  mpdboot -n $mynodesOA  -f mpd.hosts  -r ssh
 #  mpdboot -f mpd.hosts -n 16 -r ssh
 #------------------------------------------------
 else if ($hn =~ meera*)  then

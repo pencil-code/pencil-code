@@ -410,6 +410,8 @@ create_Makefile_inc()
 #
   printf "# %s\n" "Empty" "(This file was written by 'pc_setupsrc')" \
       > src/Makefile.inc
+  printf "# %s\n" "Empty" "(This file was written by 'pc_setupsrc')" \
+      > src/Makefile-standard.inc
 }
 #
 copy_local_files()
