@@ -96,6 +96,7 @@ module Sub
   public :: find_max_fvec, find_xyrms_fvec
   public :: finalize_aver
   public :: fseek_pos
+  public :: meanyz
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -251,6 +252,11 @@ module Sub
     module procedure finalize_aver_4D
   endinterface finalize_aver
 !
+  interface meanyz
+     module procedure meanyz_s
+     module procedure meanyz_v
+  endinterface
+!
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
 !        hence commented out for the moment.
@@ -377,6 +383,75 @@ module Sub
           call fatal_error('mean_mn','not implemented for cylindrical')
 !
     endsubroutine mean_mn
+!***********************************************************************
+    subroutine meanyz_s(f,iif,mean,lexp)
+!
+!  Calculates mean of variable at subscript iif of f over all x coordinate surfaces 
+!  by proper integration.
+!
+!  7-jun-15/MR: coded
+!
+      use General, only: loptest
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: iif
+      real, dimension(nx) :: mean
+      logical, optional :: lexp
+
+      integer :: nn, ll, lll
+
+      do ll=l1,l2
+        lll=ll-l1+1
+        mean(lll)=0.
+        do nn=n1,n2
+          if (loptest(lexp)) then
+            mean(lll) = mean(lll) + dVol_z(nn)*sum(dVol_y(m1:m2)*exp(f(ll,m1:m2,nn,iif)))
+          else
+            mean(lll) = mean(lll) + dVol_z(nn)*sum(dVol_y(m1:m2)*f(ll,m1:m2,nn,iif))
+          endif
+        enddo
+        mean(lll) = mean(lll)/Area_yz
+      enddo
+
+      call finalize_aver(nprocyz,23,mean)
+
+    endsubroutine meanyz_s
+!***********************************************************************
+    subroutine meanyz_v(f,iif1,iif2,mean,lexp)
+!
+!  Calculates mean of variables at subscripts iif1 through iif2 of f over all x coordinate surfaces 
+!  by proper integration.
+!
+!  7-jun-15/MR: coded
+!
+      use General, only: loptest
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: iif1,iif2
+      real, dimension(nx,iif2-iif1+1) :: mean
+      logical, optional :: lexp
+
+      integer :: nn, ll, lll, iif, iil
+
+      do iif=iif1,iif2
+        iil=iif-iif1+1
+        do ll=l1,l2
+          lll=ll-l1+1
+          mean(lll,iil)=0.
+          do nn=n1,n2
+            if (loptest(lexp)) then
+              mean(lll,iil) = mean(lll,iil) + dVol_z(nn)*sum(dVol_y(m1:m2)*exp(f(ll,m1:m2,nn,iif)))
+            else
+              mean(lll,iil) = mean(lll,iil) + dVol_z(nn)*sum(dVol_y(m1:m2)*f(ll,m1:m2,nn,iif))
+            endif
+          enddo
+          mean(lll,iil) = mean(lll,iil)/Area_yz
+        enddo
+      enddo
+
+      call finalize_aver(nprocyz,23,mean)
+
+    endsubroutine meanyz_v
 !***********************************************************************
     subroutine rms_mn(a,res)
 !
@@ -2531,23 +2606,16 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
-      logical :: ladd1, upwind1
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_vec','variable index is out of bounds')
         return
       endif
 !
-      ladd1=loptest(ladd)
-!
-!  Test for upwind.
-!
-      upwind1=loptest(upwind)
-!
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind1)
-        if (ladd1) then
+        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=loptest(upwind))
+        if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
           ugradf(:,j)=tmp
