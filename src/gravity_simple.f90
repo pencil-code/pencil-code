@@ -43,6 +43,7 @@ module Gravity
 !
   double precision, parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
   double precision :: g_B, g_D
+  real :: gravitational_const=1.0
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
   real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
@@ -62,6 +63,7 @@ module Gravity
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
   integer :: n_pot=10
+  integer :: n_adjust_sphersym=0
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero', &
                               gravz_profile='zero'
 !
@@ -71,6 +73,8 @@ module Gravity
   logical :: lxyzdependence=.false.
   logical :: lcalc_zinfty=.false.
   logical :: lboussinesq_grav=.false.
+  logical :: ladjust_sphersym=.false.
+ 
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
   real :: kappa_x1=0.0, kappa_x2=0.0, kappa_z1=0.0, kappa_z2=0.0
@@ -84,7 +88,7 @@ module Gravity
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
-      potx_const,poty_const,potz_const, zclip
+      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -94,7 +98,7 @@ module Gravity
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
-      potx_const,poty_const,potz_const, zclip
+      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -135,6 +139,11 @@ module Gravity
                                    ! ZAVG_DOC: u_x \right>_{z}$
                                    ! ZAVG_DOC: \quad(potential energy flux)
 !
+! work variables
+!
+  real, dimension(mx) :: gravx_xpencil_0
+  real ::G4pi
+!  
   contains
 !***********************************************************************
     subroutine register_gravity()
@@ -156,6 +165,10 @@ module Gravity
 !  in the subroutine calc_pencils_grav.
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
+!   9-jun-15/MR: added parameter n_adjust_sphersym: if > 0 after each n_adjust_sphersym
+!                timesteps the spherically symmetric part of gravity is adjusted
+!                according to the actual density distribution.
+!                Only in effect for spherical co-ordinates.
 !
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: notanumber, cubic_step
@@ -547,9 +560,50 @@ module Gravity
              'there was a problem when putting gravx')
       endif
 !
+      if (n_adjust_sphersym>0 .and. lspherical_coords) then
+        G4pi=gravitational_const*4.*pi
+        ladjust_sphersym=.true.
+        gravx_xpencil_0 = gravx_xpencil
+        call gravity_sphersym(f)
+      endif
+  
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_gravity
+!***********************************************************************
+    subroutine gravity_sphersym(f)
+!
+!  Adjusts spherically symmetric part of gravitational acceleration
+!  according to density.
+!
+!  9-jun-15/MR: coded
+!
+      use Sub, only: meanyz
+      use Mpicomm, only: mpirecv_real, mpisend_real
+
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      integer :: l, la
+      real :: integ
+      real, dimension(nx) :: rhomean
+
+      call meanyz(f,ilnrho,rhomean,lexp=.not.ldensity_nolog)
+
+      if (ipx==0) then
+        integ=0.; la=l1+1
+      else
+        call mpirecv_real(integ,xlneigh,xlneigh)
+        la=l1
+      endif
+
+      do l=la,l2
+        integ = integ+x(l)**2*rhomean(l-l1+1)*(x(l)-x(l-1))
+        gravx_xpencil(l) = gravx_xpencil_0(l) + G4pi*integ/x(l)**2
+      enddo
+
+      if (ipx<nprocx-1) call mpisend_real(integ,xuneigh,xuneigh)
+
+    endsubroutine gravity_sphersym
 !***********************************************************************
     subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
 !
@@ -804,6 +858,21 @@ module Gravity
       call keep_compiler_quiet(f)
 !
     endsubroutine duu_dt_grav
+!***********************************************************************
+    subroutine gravity_after_boundary(f)
+!
+!  For actions outside mn-loop. 
+!  At the moment only adjustment of spherically symmetric gravity.
+!
+!  9-jun-15/MR: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      if (ladjust_sphersym) then
+        if ( mod(it, n_adjust_sphersym) == 0 ) call gravity_sphersym(f)
+      endif
+
+    endsubroutine gravity_after_boundary
 !***********************************************************************
     subroutine potential_global(pot,pot0)
 !
