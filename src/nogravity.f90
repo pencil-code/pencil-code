@@ -174,6 +174,18 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
+    subroutine gravity_after_boundary(f)
+!
+!  For actions outside mn-loop. 
+!
+!  9-jun-15/MR: coded 
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine gravity_after_boundary
+!***********************************************************************
     subroutine potential_global(pot,pot0)
 !
 !  Gravity potential.
