@@ -296,18 +296,15 @@ module Particles_viscosity
 !
     endsubroutine write_particles_visc_init_pars
 !***********************************************************************
-    subroutine read_particles_visc_run_pars(unit,iostat)
+    subroutine read_particles_visc_run_pars(iostat)
 !
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      use File_io, only: get_unit
 !
-      if (present(iostat)) then
-        read(unit,NML=particles_visc_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=particles_visc_run_pars,ERR=99)
-      endif
+      integer, intent(out) :: iostat
+      include "../parallel_unit.h"
 !
-99    return
+      read(parallel_unit, NML=particles_visc_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_particles_visc_run_pars
 !***********************************************************************
     subroutine write_particles_visc_run_pars(unit)
