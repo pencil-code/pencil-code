@@ -296,7 +296,7 @@ module Magnetic_meanfield_demfdt
       integer, intent(out) :: iostat
       include "../parallel_unit.h"
 !
-      read(unit, NML=magn_mf_demfdt_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magn_mf_demfdt_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_magn_mf_demfdt_run_pars
 !***********************************************************************

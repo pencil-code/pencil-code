@@ -43,7 +43,7 @@ module Gravity
 !
   double precision, parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
   double precision :: g_B, g_D
-  real :: gravitational_const=1.0
+  real :: gravitational_const=0., mass_cent_body=0.
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
   real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
@@ -88,7 +88,8 @@ module Gravity
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
-      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const
+      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
+      mass_cent_body
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -98,7 +99,8 @@ module Gravity
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
-      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const
+      potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
+      mass_cent_body
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -169,9 +171,13 @@ module Gravity
 !                timesteps the spherically symmetric part of gravity is adjusted
 !                according to the actual density distribution.
 !                Only in effect for spherical co-ordinates.
+!  12-jun-15/MR: added (alternative) parameters gravitational_const and mass_cent_body for 
+!                gravity adjustment.
+!                For Kepler profile, gravitational_const is calculated from gravx and mass_cent_body.
 !
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: notanumber, cubic_step
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, pointer :: cs20,mpoly,gamma
@@ -561,10 +567,23 @@ module Gravity
       endif
 !
       if (n_adjust_sphersym>0 .and. lspherical_coords) then
+
+        if (gravx_profile=='kepler' .and. mass_cent_body/=0.) then
+          if (gravitational_const/=0.) then
+            if (lroot) call warning('initialize_gravity', 'central body mass is ignored')
+          else
+            if (ipx==0) gravitational_const = -gravx_xpencil(l1)*x(l1)**2/mass_cent_body
+            if (nprocx>1) call mpibcast_real(gravitational_const)
+          endif
+        else
+          if (gravitational_const<=0.) &
+            call fatal_error('initialize_gravity', 'positive gravitational constant needed')
+        endif
+
         G4pi=gravitational_const*4.*pi
         ladjust_sphersym=.true.
         gravx_xpencil_0 = gravx_xpencil
-        call gravity_sphersym(f)
+
       endif
   
       call keep_compiler_quiet(f)
@@ -590,25 +609,26 @@ module Gravity
       call meanyz(f,ilnrho,rhomean,lexp=.not.ldensity_nolog)
 
       if (ipx==0) then
-        integ=0.; la=l1+1
+        integ=0.; la=l1+1          ! -> rectangle rule applied in integration below
       else
-        call mpirecv_real(integ,xlneigh,xlneigh)
+        call mpirecv_real(integ,xlneigh,iproc)
         la=l1
       endif
 
       do l=la,l2
         integ = integ+x(l)**2*rhomean(l-l1+1)*(x(l)-x(l-1))
-        gravx_xpencil(l) = gravx_xpencil_0(l) + G4pi*integ/x(l)**2
+        gravx_xpencil(l) = gravx_xpencil_0(l) - G4pi*integ/x(l)**2
       enddo
 
       if (ipx<nprocx-1) call mpisend_real(integ,xuneigh,xuneigh)
 
+!if (ipy==0 .and. ipz==0) print'(a,38(f6.3,",",1x))', 'gravx_xpencil=', gravx_xpencil
     endsubroutine gravity_sphersym
 !***********************************************************************
     subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
 !
 !  This subroutine checks, if the gravity paramters as type, profile and values
-!  are set consistently with initial condittion for example.
+!  are set consistently with initial condition for example.
 !
 !  ginput     =     value for the gravity, GM    : 4, 10, 200
 !  gtype      =     type of gravity              : 'gravx','gravy','gravz'
@@ -868,7 +888,7 @@ module Gravity
 !
       real, dimension(mx,my,mz,mfarray) :: f
 
-      if (ladjust_sphersym) then
+      if (lfirst.and.ladjust_sphersym) then
         if ( mod(it, n_adjust_sphersym) == 0 ) call gravity_sphersym(f)
       endif
 
