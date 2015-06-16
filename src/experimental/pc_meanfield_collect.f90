@@ -59,7 +59,7 @@ program pc_meanfield_collect
   integer  :: nprocs_needed, analysisproc, command, fake_proc, nprocs, &
               mpierr, mpistat
 
-  logical :: initerror, runerror, received,filecheck
+  logical :: initerror, runerror, received, filecheck
   
   integer, dimension(:), allocatable :: fake_procs
   
@@ -95,8 +95,12 @@ program pc_meanfield_collect
   runerror = .false.
   received = .false.
 
+
 ! Initialize MPI
 
+  !call mpicomm_init()
+  !call initialize_messages()
+  !call initialize_mpicomm()
   call MPI_INIT(mpierr)
   call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
   call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , mpierr)
@@ -114,14 +118,12 @@ program pc_meanfield_collect
   if (lroot) call svn_id( &
       '$Id: pc_meanfield_collect.f90 23201 2015-04-06 02:11:37Z st.tuomisto@gmail.com $')
 !
-!  Initialize the message subsystem, eg. color setting etc.a
-
-!
-  call initialize_messages()
-!
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
+
 !
+
+
   call read_startpars()
 !
 !  Read parameters and output parameter list.

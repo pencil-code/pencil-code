@@ -2168,9 +2168,11 @@ pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(p
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x
 #
-experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+experimental/analyzers.o: Makefile.local
+experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) Makefile.local | experimental/analyzers.o
+
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
-	$(LD) $(LDFLAGS) experimental/pc_meanfield_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o experimental/pc_meanfield_collect.x
+	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) $(LDFLAGS) -o experimental/pc_meanfield_collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
