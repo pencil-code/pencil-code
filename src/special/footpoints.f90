@@ -87,7 +87,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-      use Mpicomm, only: parallel_file_exists
+!      use Mpicomm, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -185,7 +185,7 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine vel_driver (f, df)
+  subroutine vel_driver(f, df)
 !
 ! Drive bottom boundary horizontal velocities with given velocity field.
 !
@@ -200,12 +200,26 @@ module Special
       real :: z_factor                  ! multiplication factor for the z-dependence
       integer :: blink                  ! either -1, 0 or 1, depending on the blinking stage
       real :: t_blink_tot               ! total time for a blink switching on, off and negative
+      real :: xc, yc, kc                ! variable sofr the e3 braid
 !
+      if (r_profile == 'e3') n_pivot = 1
+        
       do ip = 1, n_pivot
         offset = exp(-width(ip)**2/8./lam_twist(ip)**2)
-        
         dist = sqrt((x(l1:l2)-xp(ip))**2 + (y(m)-yp(ip))**2)
+        
         select case (r_profile)
+        case ('e3')
+            yc = 0
+            if (mod(int(t/8.),2) == 0) then
+                xc = -1
+                kc = -1
+            else
+                xc = 1
+                kc = 1
+            endif
+            ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(-y(m)+yc)
+            uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(x(l1:l2)-xc)
         case ('gaussian')
             ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
             uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
