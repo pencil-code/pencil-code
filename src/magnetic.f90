@@ -1436,6 +1436,8 @@ module Magnetic
             lskip_projection_aa,lno_second_ampl_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
+        case ('random_isotropic_shell')
+          call random_isotropic_shell(f,iax,amplaa(j))
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
