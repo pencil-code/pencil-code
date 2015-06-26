@@ -4947,7 +4947,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
 !
       character (len=1) :: dummy
-      complex :: ii=cmplx(0.,1.)
+      complex :: ii=(0.,1.)
       integer :: jf,i,nvect,ivect
       real, dimension (3) :: ee,kk,exk
       real, dimension (nx) :: kdotx
