@@ -4973,8 +4973,7 @@ module Initcond
             kdotx=kk(1)*x(l1:l2)+kk(2)*y(m)+kk(3)*z(n)
             do i=1,3
               f(l1:l2,m,n,jf+i-1)=f(l1:l2,m,n,jf+i-1) &
-                +ampl0*real(ampl*exk(i)*exp(ii*(kdotx+phik)))
-if (n==4.and.m==4) print*,ampl0*real(ampl*exk(i)*exp(ii*(kdotx+phik)))
+                +ampl0*ampl*exk(i)*real(exp(ii*(kdotx+phik)))
             enddo
           enddo
         enddo
