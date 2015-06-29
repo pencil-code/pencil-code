@@ -395,4 +395,16 @@ module Cosmicray
 !
     endsubroutine get_slices_cosmicray
 !***********************************************************************
+    subroutine impose_ecr_floor(f)
+!
+!  dummy routine
+!
+!  29-jun-15/axel: adapted from cosmicray.f90
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_ecr_floor
+!***********************************************************************
 endmodule Cosmicray
