@@ -221,12 +221,18 @@ module Special
             ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(-y(m)+yc)
             uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(x(l1:l2)-xc)
         case ('gaussian')
-            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
-            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
+            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)*(-y(m)+yp(ip))/dist
+            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)*(x(l1:l2)-xp(ip))/dist
+            ! normalize
+            ux = ux/(exp(-rad(ip)**2/2/lam_twist(ip)**2)-offset)
+            uy = uy/(exp(-rad(ip)**2/2/lam_twist(ip)**2)-offset)
         case ('linear_exp')
             ux = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(-y(m)+yp(ip))
             uy = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(x(l1:l2)-xp(ip))
-        case default
+            ! normalize
+            ux = ux*exp(1/sqrt(lam_twist(ip)))/sqrt(lam_twist(ip)) 
+            uy = uy*exp(1/sqrt(lam_twist(ip)))/sqrt(lam_twist(ip))
+         case default
             ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
             uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
         end select
