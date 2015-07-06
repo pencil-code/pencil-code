@@ -1502,25 +1502,6 @@ module Solid_Cells
                 elseif (lower_j == (m+j)) then
                   lower_j = lower_j+1
                   upper_j = upper_j+1
-!              
-! JORGEN: Hack to allow for parallelization in y-direction may reduce accuracy
-! Use extrapolation for points that go outside the pencil's neighbouring cells
-!
-                elseif (upper_j > m+3) then
-                  print*, 'outside 1,m+j, m, lower_j,upper_j',m+j, m,lower_j,upper_j
-                  print*, 'y(m+j), y(m), y(lower_j),y(upper_j)',y(m+j), y(m), y(lower_j),y(upper_j)
-                  print*, ''
-                !  upper_j = m+3
-                !  lower_j = m+2.
-                elseif (lower_j>m+3) then
-                  print*, 'outside 1,m+j, m, lower_j,upper_j',m+j, m,lower_j,upper_j
-                  print*, 'y(m+j), y(m), y(lower_j),y(upper_j)',y(m+j), y(m), y(lower_j),y(upper_j)
-                elseif (upper_j<m-3) then
-                  print*, 'outside 1,m+j, m, lower_j,upper_j',m+j, m,lower_j,upper_j
-                  print*, 'y(m+j), y(m), y(lower_j),y(upper_j)',y(m+j), y(m), y(lower_j),y(upper_j)
-                elseif (lower_j<m-3) then
-                  print*, 'outside 1,m+j, m, lower_j,upper_j',m+j, m,lower_j,upper_j
-                  print*, 'y(m+j), y(m), y(lower_j),y(upper_j)',y(m+j), y(m), y(lower_j),y(upper_j)
                 endif
 !
 !  prepare lagrange polynomials for interpolation
