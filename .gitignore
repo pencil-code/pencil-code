@@ -2,3 +2,35 @@
 *.pyc
 *~
 ./python/pencilnew
+
+# left-over files from auto-test and samples
+# first directory level
+samples/*/src
+!samples/*/src/*.local
+samples/*/*.csh
+samples/*/*.log
+samples/*/Makefile
+samples/*/.pc_build_history
+samples/*/COMPLETED
+samples/*/runtime
+samples/*/fort.*
+# second directory level
+samples/*/*/src
+!samples/*/*/src/*.local
+samples/*/*/*.csh
+samples/*/*/*.log
+samples/*/*/Makefile
+samples/*/*/.pc_build_history
+samples/*/*/COMPLETED
+samples/*/*/runtime
+samples/*/*/fort.*
+# third directory level
+samples/*/*/*/src
+!samples/*/*/*/src/*.local
+samples/*/*/*/*.csh
+samples/*/*/*/*.log
+samples/*/*/*/Makefile
+samples/*/*/*/.pc_build_history
+samples/*/*/*/COMPLETED
+samples/*/*/*/runtime
+samples/*/*/*/fort.*
