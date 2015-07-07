@@ -171,7 +171,7 @@ module Special
 !  13-sep-10/bing: coded
 !
       use EquationOfState, only: gamma,get_cp1
-      use Mpicomm, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
       use SharedVariables, only: get_shared_variable
 !
       integer :: ierr

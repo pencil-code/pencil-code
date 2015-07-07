@@ -129,6 +129,7 @@ cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir
+[ -f kvect.dat ] && cp kvect.dat $targetdir
 [ -f chemistry.dat ] && cp chemistry.dat $targetdir
 [ -f chemistry_m.dat ] && cp chemistry_m.dat $targetdir
 [ -f chemistry_p.dat ] && cp chemistry_p.dat $targetdir

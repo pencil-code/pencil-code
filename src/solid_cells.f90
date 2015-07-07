@@ -1408,6 +1408,10 @@ module Solid_Cells
                 exit
               endif
             enddo
+!
+! Coorrection for mirror poitns very close to the surface to avoid 
+! using ghost point in the interpolation
+!
             if (upper_i == i) then
               lower_i = lower_i-1
               upper_i = upper_i-1
@@ -1451,7 +1455,7 @@ module Solid_Cells
           do j = -3,3
             if (j /= 0) then
               bay = (ba(i,m+j,n,2) /= 0).and.(ba(i,m+j,n,2) /= 9).and. &
-                  (ba(i,m+j,n,2) /= 10).and.(.not. bax)
+                  (ba(i,m+j,n,2) /= 10).and.(ba(i,m,n,1)==0)
               if (bay) then
                 iobj = ba(i,m+j,n,4)
                 r_obj = objects(iobj)%r
@@ -1488,6 +1492,10 @@ module Solid_Cells
                     exit
                   endif
                 enddo
+!
+! Coorrection for mirror poitns very close to the surface to avoid 
+! using ghost point in the interpolation
+!
                 if (upper_j == (m+j)) then
                   lower_j = lower_j-1
                   upper_j = upper_j-1
@@ -1535,7 +1543,7 @@ module Solid_Cells
               if (iobj > 0) then
                 if (objects(iobj)%form == 'sphere') then
                   baz = (ba(i,m,k+n,3) /= 0).and.(ba(i,m,k+n,3) /= 9).and. &
-                      (ba(i,m,k+n,3) /= 10).and.(.not. bax)
+                      (ba(i,m,k+n,3) /= 10).and.(ba(i,m,n,1)==0)
                 else
                   baz = .false.
                 endif
@@ -1572,6 +1580,10 @@ module Solid_Cells
                     exit
                   endif
                 enddo
+!
+! Coorrection for mirror poitns very close to the surface to avoid 
+! using ghost point in the interpolation
+!
                 if (upper_k == (n+k)) then
                   lower_k = lower_k-1
                   upper_k = upper_k-1
