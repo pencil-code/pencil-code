@@ -1813,7 +1813,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_slope_x: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_dr0_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3232,12 +3232,12 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do pos=1,nghost
-          f(l1:l2,m1:m2,n1-pos,j) = f(l1:l2,m1:m2,n1+pos,j) - 2*pos*dz*duz_dz
+          f(l1:l2,m1:m2,n1-pos,j) = f(l1:l2,m1:m2,n1+pos,j) - dz2_bound(-pos)*duz_dz
         enddo
 !
       case ('top')               ! top boundary
         do pos=1,nghost
-          f(l1:l2,m1:m2,n2+pos,j) = f(l1:l2,m1:m2,n2-pos,j) + 2*pos*dz*duz_dz
+          f(l1:l2,m1:m2,n2+pos,j) = f(l1:l2,m1:m2,n2-pos,j) + dz2_bound(pos)*duz_dz
         enddo
 !
       case default
@@ -7779,11 +7779,11 @@ module Boundcond
       haut=cs20/gravz
       if (topbot=='bot') then
         do i=1,nghost
-          f(:,:,n1-i,ipp) = f(:,:,n1+i,ipp)-2.0*i*dz*f(:,:,n1,ipp)/haut
+          f(:,:,n1-i,ipp) = f(:,:,n1+i,ipp)-dz2_bound(-i)*f(:,:,n1,ipp)/haut
         enddo
       else
         do i=1,nghost
-          f(:,:,n2+i,ipp) = f(:,:,n2-i,ipp)+2.0*i*dz*f(:,:,n2,ipp)/haut
+          f(:,:,n2+i,ipp) = f(:,:,n2-i,ipp)+dz2_bound(i)*f(:,:,n2,ipp)/haut
         enddo
       endif
 !

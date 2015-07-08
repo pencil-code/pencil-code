@@ -286,5 +286,7 @@ pre_and_post_processing/pc_configtest.o: $(physics) $(technical_nompi) $(EQU_OBJ
 #
 pre_and_post_processing/pc_tecplot.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
-experimental/pc_meanfield_collect.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+experimental/analyzers.o:
+#
+experimental/pc_meanfield_collect.o: experimental/analyzers.o $(physics) $(EQU_OBJ) $(LD_FOURIER) $(MPICOMM_OBJ)
 #

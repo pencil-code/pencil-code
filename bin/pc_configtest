@@ -11,7 +11,7 @@ SUCCESS="CONFIGTEST: > SUCCESSFUL <"
 FAILURE="CONFIGTEST: > FAILED <"
 
 if [ ! -e "$SCRIPT" ]; then
-	echo "Please compile first by ececuting \"pc_build $SCRIPTNAME\"."
+	echo "Please compile first by executing \"pc_build $SCRIPTNAME\"."
 	exit 1
 fi
 

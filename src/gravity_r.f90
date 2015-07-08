@@ -488,6 +488,18 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
+    subroutine gravity_after_boundary(f)
+!
+!  For actions outside mn-loop. 
+!
+!  9-jun-15/MR: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine gravity_after_boundary
+!***********************************************************************
     subroutine indirect_plus_inertial_terms(df,p)
 !
 !  Add the indirect terms from the motion of the primary in a non-inertial frame,

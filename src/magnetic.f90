@@ -1229,6 +1229,7 @@ module Magnetic
             'Timestep is currently only sensitive to fourth order.')
 !
 !  if meanfield theory is invoked, we need to tell the other routines
+!  eta is also needed with the chiral fluids procedure.
 !
         if (lmagn_mf .or. lspecial) &
           call put_shared_variable('eta',eta,caller='initialize_magnetic')
@@ -1436,6 +1437,8 @@ module Magnetic
             lskip_projection_aa,lno_second_ampl_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
+        case ('random_isotropic_shell')
+          call random_isotropic_shell(f,iax,amplaa(j))
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
@@ -3546,8 +3549,9 @@ module Magnetic
 !
       if (battery_term/=0.0) then
         if (headtt) print*,'daa_dt: battery_term=',battery_term
-        call multsv_mn(p%rho1,p%fpres,baroclinic)
-        dAdt = dAdt+battery_term*baroclinic
+!---    call multsv_mn(p%rho2,p%fpres,baroclinic)
+!AB: corrected by Patrick Adams
+        dAdt = dAdt-battery_term*p%fpres
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
             battery_term*maxval(baroclinic)
       endif

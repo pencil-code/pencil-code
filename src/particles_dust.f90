@@ -3568,7 +3568,7 @@ module Particles
 !NILS: The grid volume should be put into a pencil when required
                   if ((lpscalar_sink .and. lpscalar) .or. &
                       (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
-                      call find_grid_volume(ixx,iyy,izz,volume_cell) 
+                      call find_grid_volume(ix0,iy0,iz0,volume_cell) 
                   if (lhydro .and. ldragforce_gas_par) then
                     call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
@@ -3592,6 +3592,16 @@ module Particles
                 endif
               endif
 !
+!  Calculate particle mass density in grid cell
+!
+              if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                call find_grid_volume(ix0,iy0,iz0,volume_cell) 
+                mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+              else
+                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
+                mp_vcell=rhop_swarm_par
+              endif
+!
 !  Heating of gas due to drag force.
 !
               if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) then
@@ -3603,7 +3613,6 @@ module Particles
 !
 ! WL: Check if this is right. drag_heat is of dimension nx, not a scalar
 !
-                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
                      mp_vcell*tausp1_par*up2
               endif
@@ -3621,7 +3630,7 @@ module Particles
                 if (ldragforce_gas_par) then
                   if (p%np(ix0-nghost)/=0.0) &
                        dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                       rhop_swarm_par*tausp1_par
+                       mp_vcell*tausp1_par
                 endif
               endif
             endif

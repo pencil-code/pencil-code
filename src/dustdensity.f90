@@ -247,16 +247,25 @@ module Dustdensity
             call fatal_error('initialize_dustdensity', &
                 'must not use llin_radiusbins=T with lradius_binning=F')
       endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!NB:  this part destroys latm_chemistry case
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (.not. latm_chemistry) then
 !
 !  Differential for integration is ad*dln(ad). Prepare here dln(ad) factor.
 !  This assumes constant logarithmic binning.
 !
-      dlnmd=alog(deltamd)
-      dlnad=alog(deltamd)/3.
+        dlnmd=alog(deltamd)
+        dlnad=alog(deltamd)/3.
 !
 !  Compute A=G*S
 !
-      GS_condensparam=G_condensparam*supsatratio_given
+        GS_condensparam=G_condensparam*supsatratio_given
+
+      endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  Other preparations.
 !
@@ -441,7 +450,9 @@ module Dustdensity
 !
 !      if (latm_chemistry) then
         if (lspecial) then
+! 
           call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
+! 
         else
           dsize=ad
         endif
@@ -770,9 +781,7 @@ module Dustdensity
         case ('atm_drop_gauss')
           do i=1,mx
           do k=1,ndustspec
-            !f(i,:,:,ind(k)) = init_distr(i,k)/exp(f(i,:,:,ilnrho))
             f(i,:,:,ind(k)) = init_distr(i,k)*exp(-f(i,:,:,ilnrho))
-!print*,k,f(4,4,4,ind(k))
           enddo
           enddo
           if (ldcore) then
@@ -1451,8 +1460,8 @@ module Dustdensity
           if (dsize(k)>0.) then
           if (.not. ldcore) then
 !
-                p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
+              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+                            -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
           endif
           endif
           enddo
@@ -1504,8 +1513,6 @@ module Dustdensity
                       ff_tmp(k)=p%nd(i,k)*dsize(k)  &
                       *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                     endif
-!print*,ff_tmp(k),k
-
                   endif
                 endif
               enddo
@@ -1695,41 +1702,41 @@ module Dustdensity
 !
 !  Redistribution over the size in the atmospheric physics case
 !
-          if (ldcore) then
-            Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
-            do i=1, ndustspec0
-             do k=1, ndustspec
-               ppsf_full(:,k,i)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
-                                -BB(i)/(8.*dsize(k)**3))
-             enddo
-             !call droplet_redistr(p,f,ppsf_full(:,:,i),dndr_tmp,nd_substep,i)
-             do k=1, ndustspec;
-               dndr_full(:,k,i)=-Imr*dndr_tmp(:,k)
-               df(l1:l2,m,n,idcj(k,i))=df(l1:l2,m,n,idcj(k,i))+dndr_full(:,k,i)
-             enddo
-            enddo
-            do k=1, ndustspec
+!          if (ldcore) then
+!            Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+!           do i=1, ndustspec0
+!            do k=1, ndustspec
+!               ppsf_full(:,k,i)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+!                                -BB(i)/(8.*dsize(k)**3))
+!             enddo
+!             !call droplet_redistr(p,f,ppsf_full(:,:,i),dndr_tmp,nd_substep,i)
+!             do k=1, ndustspec;
+!               dndr_full(:,k,i)=-Imr*dndr_tmp(:,k)
+!               df(l1:l2,m,n,idcj(k,i))=df(l1:l2,m,n,idcj(k,i))+dndr_full(:,k,i)
+!             enddo
+!            enddo
+!            do k=1, ndustspec
 !              if (k==1) then
 !                df(l1:l2,m,n,ind(k)) = 0.
 !              else
-               tmp1=0.
-               do i=1, ndustspec0
+!               tmp1=0.
+!               do i=1, ndustspec0
 !                    +p%dndr(:,k)
 !                     + dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
 !                 tmp1=tmp1+dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
-               enddo
-               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + tmp1
-               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k)
+!               enddo
+!               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + tmp1
+!               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k)
 !              endif
-            enddo
-          else
+!            enddo
+!          else
+!
             do k=1,ndustspec
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
                      - p%udropgnd(:,k) + p%dndr(:,k)
-!
-!
             enddo
-          endif
+!
+!          endif
 !
 !   End of atmospheric case
 !

@@ -5065,13 +5065,11 @@ module Mpicomm
       if (ipz == pz) then
         allocate (y_row(bnx,rny,bnz,bna), stat=alloc_err)
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for y_row!', .true.)
-        if (lfirst_proc_y) then
-          allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
-          if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
-        endif
       endif
 !
       if (iproc == broadcaster) then
+        allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
         ! distribute the y-rows
         do px = 0, nprocx-1
           partner = px + pz*nprocxy
@@ -5084,6 +5082,7 @@ module Mpicomm
             call MPI_SEND (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
+        deallocate (buffer)
       endif
 !
       if (lfirst_proc_y .and. (ipz == pz)) then
@@ -5092,6 +5091,8 @@ module Mpicomm
           call MPI_RECV (y_row, nrow, MPI_REAL, broadcaster, xtag, MPI_COMM_WORLD, stat, mpierr)
         endif
 !
+        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
         ! distribute the data along the y-direction
         do py = 0, nprocy-1
           partner = ipx + py*nprocx + pz*nprocxy
@@ -5104,16 +5105,14 @@ module Mpicomm
             call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
+        deallocate (buffer)
       elseif (ipz == pz) then
         ! receive local data from y-row partner (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
         call MPI_RECV (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
 !
-      if (ipz == pz) then
-        deallocate (y_row)
-        if (lfirst_proc_y) deallocate (buffer)
-      endif
+      if (ipz == pz) deallocate (y_row)
 !
     endsubroutine localize_xy
 !***********************************************************************

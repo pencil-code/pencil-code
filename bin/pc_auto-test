@@ -121,9 +121,9 @@ my %tests = (
                          2d-tests/debris-photoeletric-streaming
                          2d-tests/Kelvin-Helmholtz
                          2d-tests/selfgravdisk-planet-dust
-                         #0d-tests/reactive_particles
                          cylindrical-globaldisk-dzone
                     )],
+                         #0d-tests/reactive_particles
              # Level 3 for now contains all non-canonical tests that run
              # successfully
              3 =>  [qw(

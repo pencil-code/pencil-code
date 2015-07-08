@@ -484,6 +484,7 @@ module Snapshot
         if (vec_spec) call power(f,'a')
         if (j_spec)   call power_vec(f,'j')
 !         if (jb_spec)   call powerhel(f,'jb')
+        if (Lor_spec) call powerLor(f,'Lor')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')

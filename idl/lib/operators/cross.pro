@@ -13,7 +13,11 @@ function cross, g, f
 ;
   w=make_array(size=s)
 ;
-  if (s[0] eq 2) then begin
+  if (s[0] eq 1) then begin
+    w[0] = g[1]*f[2] - g[2]*f[1]
+    w[1] = g[2]*f[0] - g[0]*f[2]
+    w[2] = g[0]*f[1] - g[1]*f[0]
+  endif else if (s[0] eq 2) then begin
     w[*,0] = g[*,1]*f[*,2] - g[*,2]*f[*,1]
     w[*,1] = g[*,2]*f[*,0] - g[*,0]*f[*,2]
     w[*,2] = g[*,0]*f[*,1] - g[*,1]*f[*,0]
