@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED del2mu5; ugtheta5
+! PENCILS PROVIDED mu5; del2mu5; gtheta5(3); ugtheta5; bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -85,7 +85,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5
+   real :: diffmu5, lambda5
    real, pointer :: eta
    integer :: itheta5, imu5
 !!   integer :: ispecaux=0
@@ -96,11 +96,12 @@ module Special
       initspecial
 !
   namelist /special_run_pars/ &
-      diffmu5
+      diffmu5, lambda5
 !
-!! Diagnostic variables (needs to be consistent with reset list below).
+! Diagnostic variables (needs to be consistent with reset list below).
 !
-!!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
+  integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
+  integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
 !
   contains
 !***********************************************************************
@@ -204,8 +205,15 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_mu5)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
+      if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_ugtheta5)=.true.
+      if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
+      if (lhydro) lpenc_requested(i_uu)=.true.
+      if (lmagnetic) lpenc_requested(i_bb)=.true.
+      if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
+      if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -228,7 +236,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2
+      use Sub, only: del2, grad, dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -238,8 +246,11 @@ module Special
 !
 !  del2mu5
 !
+      if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
-print*,'AXEL',p%del2mu5
+      if (lpencil(i_gtheta5)) call grad(f,imu5,p%gtheta5)
+      if (lpencil(i_ugtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
+      if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -258,6 +269,7 @@ print*,'AXEL',p%del2mu5
 !  06-oct-03/tony: coded
 !
       use Sub, only: multsv
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -266,8 +278,8 @@ print*,'AXEL',p%del2mu5
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5
-      real, dimension (nx,3) :: dtheta5_bb
+      real, dimension (nx) :: dtheta5, EB
+      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -276,28 +288,28 @@ print*,'AXEL',p%del2mu5
 !!    if (headtt) call identify_bcs('theta',itheta5)
 !!    if (headtt) call identify_bcs('mu5',imu5)
 !
+!  Compute E.B
+!
+      EB=eta*(p%jb-p%mu5*p%b2+p%bgtheta5*p%ub)
+!
 !  Evolution of mu5
 !
-      if (diffmu5/=0.) df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)+diffmu5*p%del2mu5
+      if (diffmu5/=0.) df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+        +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of theta5
 !
-        dtheta5=-p%ugtheta5+alpha_fine_structure*pi_1*f(l1:l2,m,n,imu5)
-        df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)+dtheta5
+      df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5
 !
-      call multsv(dtheta5,p%bb,dtheta5_bb)
+      call multsv(p%mu5,p%bb,mu5bb)
+      call multsv(p%ub,p%gtheta5,ubgtheta5)
       if (lmagnetic) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz) &
-        +eta*dtheta5_bb
+        +eta*(mu5bb-ubgtheta5)
 !
-!!      if (ldiagnos) then
-!!        if (idiag_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(MATHEMATICAL EXPRESSION,idiag_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      if (ldiagnos) then
+        if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
+        if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
+      endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -345,30 +357,27 @@ print*,'AXEL',p%del2mu5
 !
 !  06-oct-03/tony: coded
 !
-!!      integer :: iname
+      use Diagnostics, only: parse_name
+!
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
-!!        idiag_SPECIAL_DIAGNOSTIC=0
+        idiag_mu5m=0; idiag_mu5rms=0
       endif
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),&
-!!            'NAMEOFSPECIALDIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        write(3,*) 'idiag_SPECIAL_DIAGNOSTIC=',idiag_SPECIAL_DIAGNOSTIC
-!!      endif
-!!
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
+        call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+      enddo
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)

@@ -109,7 +109,7 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
 	
 	p_data = np.fromfile(casedir+datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_shape)
 	partpars = np.array(p_data['fp'].reshape(mvars,npar_loc))
-	ipar = np.squeeze(p_data['ipar'])
+	ipar = np.squeeze(p_data['ipar'].reshape(p_data['ipar'].shape[0]))
 	return ipar,partpars
 	
 def collect_class_pdata(casedir='.',datadir='/data',nprocs='0'):
