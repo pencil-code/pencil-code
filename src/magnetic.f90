@@ -824,7 +824,7 @@ module Magnetic
 !  Writing files for use with IDL
 !
         if (lroot) write(4,*) ',ee $'
-        write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+        if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
 !
 !  register the mean-field module

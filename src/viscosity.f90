@@ -501,6 +501,9 @@ module Viscosity
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ivisc_heat=',ivisc_heat
           close(3)
+          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
+          write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
+          close(15)
         endif
       endif
 !
