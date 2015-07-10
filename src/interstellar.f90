@@ -83,7 +83,7 @@ module Interstellar
   integer, dimension(4,npreSN) :: preSN
 !
 !  integer :: icooling=0
-!  integer :: icooling2=0
+!  integer :: inetcool=0
 !
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil
@@ -407,7 +407,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('cooling2',icooling2,communicated=.true.)
+      call farray_register_auxiliary('netcool',inetcool,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -422,10 +422,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling2 $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',cooling2'
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netcool $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netcool'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'cooling2 = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'netcool = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -447,7 +447,7 @@ module Interstellar
       real :: mu
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,icooling2)=0.0
+      f(:,:,:,inetcool)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -1062,7 +1062,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'icooling2=',icooling2
+        write(3,*) 'inetcool=',inetcool
       endif
 !
     endsubroutine rprint_interstellar
@@ -1089,10 +1089,10 @@ module Interstellar
           slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
         case ('ism_cool2')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling2)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling2)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling2)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling2)
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetcool)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetcool)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetcool)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetcool)
           slices%ready = .true.
 !
       endselect
@@ -1327,15 +1327,15 @@ module Interstellar
 !
 !  05-sep-10/fred
 !  NB The applied net heating/cooling: (heat-cool)/temp is stored in
-!  icooling2. The radiative cooling rho*Lambda is stored in icooling.
+!  inetcool. The radiative cooling rho*Lambda is stored in icooling.
 !  Both are diagnostic.
 !
         if (ltemperature) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)*gamma
         elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)*gamma
         else
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)
         endif
       else
         damp_profile=1.
@@ -1350,11 +1350,11 @@ module Interstellar
           endif
         enddo
         if (ltemperature) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
         elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
         else
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*damp_profile
+          f(l1:l2,m,n,inetcool)=exp(-lnTT)*(heat-cool)*damp_profile
         endif
       endif
     enddo
@@ -1400,9 +1400,9 @@ module Interstellar
 !
       if (unit_system=='cgs') then
         g_A = g_A_cgs/unit_velocity*unit_time
+        g_B = g_B_cgs/unit_length
         g_C = g_C_cgs/unit_velocity*unit_time
         g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
       else if (unit_system=='SI') then
         call fatal_error('initialize_entopy', &
             'SI unit conversions not inplemented')
@@ -1515,7 +1515,7 @@ module Interstellar
       if (lstart) then
         do n=n1,n2
           f(:,:,n,icooling)=zheat(n)
-          f(:,:,n,icooling2)=zheat(n)-lambda(n)*zrho(n)
+          f(:,:,n,inetcool)=zheat(n)-lambda(n)*zrho(n)
         enddo
       endif
 !
@@ -1643,7 +1643,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,icooling2)=heatcool
+      f(l1:l2,m,n,inetcool)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
