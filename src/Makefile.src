@@ -1536,16 +1536,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpiifort #(pfe|mfe)
 #CC=mpiicc #(pfe|mfe)
-#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe|mfe)
-#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe|mfe)
+#FFLAGS=-O3 -xAVX -ip -mp1 -w -fp-model precise #(pfe|mfe)
+#CFLAGS=-O3 -xAVX -ip -mp1 -w  -fp-model precise -DFUNDERSC=1 #(pfe|mfe)
 #FFLAGS_DOUBLE=-autodouble #(pfe|mfe)
 #LD_MPI=-lmpi #(pfe|mfe)
 ## NTNU Vilje (service)
 ##
 #FC=mpif90 #(service)
 #CC=mpicc #(service)
-#FFLAGS=-O2 -xSSE4.1 -ip -mp1 -w -vec-report0 #(service)
-#CFLAGS=-O2 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(service)
+#FFLAGS=-O3 -xAVX -ip -mp1 -fp-model precise  #(service)
+#CFLAGS=-O3 -xAVX -ip -mp1  -fp-model precise -DFUNDERSC=1 #(service)
 #FFLAGS_DOUBLE=-autodouble #(service)
 #LD_MPI=-lmpi #(service)
 ##
