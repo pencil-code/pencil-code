@@ -64,7 +64,6 @@
   lthermal_hse=T
   heating_select='thermal-hs'
   lcooltime_smooth=F
-  SNR_damping=0.0 !any non-zero value ldamping=T value not used
 /
 &shear_run_pars
 /

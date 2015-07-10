@@ -19,39 +19,38 @@
   !for WSW cooling
   !rho0ts=2.75
   !T0hs=20.259
-  lthermal_hse=T
-  amplaa=0.01
-  initaa='Ferriere-uniform-By'
+  !lthermal_hse=T
+  !amplaa=0.01
+  !initaa='Ferriere-uniform-By'
 /
 &eos_init_pars
   mu=0.62
 /
 &hydro_init_pars
   Omega=25.
-!  inituu='nothing'
+  inituu='nothing'
 /
 &density_init_pars
-!  initlnrho='thermal-hs'
+  initlnrho='nothing'
   ldensity_nolog=T
 /
 &grav_init_pars
   gravz_profile='Ferriere' 
 /
 &entropy_init_pars
-!  initss='thermal-hs'
+  initss='nothing'
 /
 &magnetic_init_pars
-!  amplaa=0.01
-!  initaa='Ferriere-uniform-By'
+  initaa='nothing'
 /
 &interstellar_init_pars
-!  lSNII=T
-!  lSNI=T
-!  rho0ts=3.5
-!  T0hs=15.8421
-!  cooling_select='RBNr'
-!  heating_select='thermal-hs'
-!  lthermal_hse=T
+  lSNII=T
+  lSNI=T
+  rho0ts=3.5
+  T0hs=15.8421
+  cooling_select='RBNr'
+  heating_select='thermal-hs'
+  lthermal_hse=T
 /
 &shear_init_pars
   qshear=1.0
