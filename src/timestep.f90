@@ -24,7 +24,7 @@ module Timestep
       use Boundcond, only: update_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
-      use Interstellar, only: calc_snr_damp_int
+!FAG      use Interstellar, only: calc_snr_damp_int
       use Mpicomm, only: mpifinalize, mpiallreduce_max
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
@@ -108,7 +108,7 @@ module Timestep
 !  Add artificial damping at the location of SN explosions for a short time
 !  after insertion.
 !
-        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
+!FAG        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)

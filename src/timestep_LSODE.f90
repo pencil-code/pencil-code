@@ -30,7 +30,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ
-      use Interstellar, only: calc_snr_damp_int
+!FAG      use Interstellar, only: calc_snr_damp_int
       use Mpicomm
       use Particles_main
       use Shear, only: advance_shear
@@ -131,7 +131,7 @@ module Timestep
 !  Add artificial damping at the location of SN explosions for a short time
 !  after insertion.
 !
-        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
+!FAG        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
