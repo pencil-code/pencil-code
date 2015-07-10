@@ -35,9 +35,7 @@ module Interstellar
     real :: rhom   ! Local mean density at explosion time
     real :: radius             ! Injection radius
     real :: t_sedov
-    real :: t_damping
     real :: heat_energy
-    real :: damping_factor
     real :: energy_loss
     integer :: l,m,n           ! Grid position
     integer :: iproc,ipx,ipy,ipz
@@ -55,8 +53,7 @@ module Interstellar
   integer, parameter :: SNstate_invalid   = 0
   integer, parameter :: SNstate_waiting   = 1
   integer, parameter :: SNstate_exploding = 2
-  integer, parameter :: SNstate_damping   = 3
-  integer, parameter :: SNstate_finished  = 4
+  integer, parameter :: SNstate_finished  = 3
 !
 !  Enumeration of Explosion Errors
 !
@@ -71,7 +68,7 @@ module Interstellar
 !  Est'd value for similarity variable at shock
 !
 !  real :: xsi_sedov=1.215440704
-  real :: xsi_sedov=1.15166956
+  real :: xsi_sedov=1.15166956, mu
 !
 !  'Current' SN Explosion site parameters
 !
@@ -83,7 +80,7 @@ module Interstellar
   integer, dimension(4,npreSN) :: preSN
 !
 !  integer :: icooling=0
-!  integer :: icooling2=0
+!  integer :: inetcool=0
 !
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil
@@ -125,12 +122,7 @@ module Interstellar
 !    [rho]     =       = 1.00 10^-24 g/cm^3
 !  Lambdaunits converts coolH into interstellar code units.
 !
-  real :: unit_Lambda
-!
-!  Minimum resulting central temperature of a SN explosion.
-!  If this is not reached then consider moving mass to achieve this.
-!
-  real, parameter :: TT_SN_min_cgs=1.E6
+  real :: unit_Lambda, unit_Gamma
 !
 !  22-jan-10/fred:
 !  With lSN_velocity kinetic energy lower limit no longer required for shock
@@ -140,16 +132,15 @@ module Interstellar
 !  energy losses in early stages.
 !
   real :: uu_sedov_max=0.
-  real :: TT_SN_min=impossible
-  real :: TT_cutoff_cgs=100.
-  real :: TT_cutoff=impossible, TT_cutoff1=impossible
-  logical :: lTT_cutoff=.false.
 !
 !  SNe placement limitations (for code stability)
+!  Minimum resulting central temperature of a SN explosion.
+!  If this is not reached then consider moving mass to achieve this.
 !
   real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=5E-24
-  real, parameter :: TT_SN_max_cgs=5E9
-  real :: rho_SN_min=impossible, TT_SN_max=impossible, rho_SN_max=impossible
+  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=5E9
+  real :: rho_SN_min=impossible, rho_SN_max=impossible
+  real :: TT_SN_min=impossible, TT_SN_max=impossible
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -171,7 +162,7 @@ module Interstellar
   real, parameter :: kpc_cgs=3.086E+21      ! [cm]
   real, parameter :: yr_cgs=3.155692E7                  ! [s]
   real, parameter :: solar_mass_cgs=1.989E33! [g]
-  real :: solar_mass=impossible
+  real :: solar_mass
 !
 !  Scale heights for SNI/II with Gaussian z distributions
 !
@@ -297,15 +288,6 @@ module Interstellar
 !
   logical :: lSNI=.true., lSNII=.false., lSNII_gaussian=.true.
 !
-! Damp central regions of SNRs at early times
-!
-  logical :: lSNR_damping = .false.
-  real :: SNR_damping = 0.
-  real :: SNR_damping_time_cgs = 5E4*yr_cgs
-  real :: SNR_damping_rate_cgs = 1E3*yr_cgs
-  real :: SNR_damping_time = impossible
-  real :: SNR_damping_rate = impossible
-!
 !  Cooling & heating flags
 !
   logical :: lsmooth_coolingfunc = .false.
@@ -359,7 +341,7 @@ module Interstellar
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
 !
-  real :: addflux_dim1, addrate=1.0
+  real :: addrate=1.0
   real :: boldmass=0.0
   logical :: ladd_massflux = .false.
 !
@@ -373,7 +355,7 @@ module Interstellar
       lSN_velocity, lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, mass_movement, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, &
+      cooling_select, heating_select, heating_rate, rho0ts, &
       T0hs, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min
 !
@@ -386,7 +368,7 @@ module Interstellar
       uniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
       inner_shell_proportion, outer_shell_proportion, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile,velocity_profile, mass_profile, &
-      h_SNI, h_SNII, TT_SN_min, SNR_damping, uu_sedov_max, lSN_scale_rad, &
+      h_SNI, h_SNII, TT_SN_min, uu_sedov_max, lSN_scale_rad, &
       mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
       laverage_SN_heating, coolingfunction_scalefactor,  lforce_locate_SNI,&
       lsmooth_coolingfunc, heatingfunction_scalefactor, t_settle, &
@@ -394,7 +376,7 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff, N_mass, addrate, T0hs, rho0ts, &
+      N_mass, addrate, T0hs, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_radius, lOB_cluster
 !
@@ -407,7 +389,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('cooling2',icooling2,communicated=.true.)
+      call farray_register_auxiliary('netcool',inetcool,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -422,10 +404,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling2 $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',cooling2'
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netcool $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netcool'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'cooling2 = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'netcool = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -440,14 +422,12 @@ module Interstellar
 !
       use General, only: random_seed_wrapper
       use Mpicomm, only: stop_it
-      use EquationOfState, only: getmu
+      use EquationOfState , only: getmu
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: mu
-!
       f(:,:,:,icooling)=0.0
-      f(:,:,:,icooling2)=0.0
+      f(:,:,:,inetcool)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -460,17 +440,139 @@ module Interstellar
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 !
-      call getmu(f,mu)
       if (unit_system=='cgs') then
 !
 !  this Lambda as such enters as n^2*Lambda(T) on the rhs of the
-!  energy equation per unit volume
-!
+!  energy equation per unit volume (n Gamma(T))
         unit_Lambda = unit_velocity**2 / unit_density / unit_time
-      elseif (unit_system=='SI') then
+        unit_Gamma  = unit_velocity**3 / unit_length
+!
+        T0UV=T0UV_cgs / unit_temperature
+        cUV=cUV_cgs * unit_temperature
+        if (GammaUV==impossible) &
+            GammaUV=GammaUV_cgs / unit_Gamma
+!
+        if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
+        if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
+        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
+        if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
+        if (SNI_area_rate==impossible) &
+            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (SNII_area_rate==impossible) &
+            SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
+        if (h_SNII==impossible) h_SNII=h_SNII_cgs / unit_length
+        SNII_mass_rate=SNII_mass_rate_cgs*unit_time
+        SNI_mass_rate=SNI_mass_rate_cgs*unit_time
+        solar_mass=solar_mass_cgs / unit_mass
+        if (lroot) &
+            print*,'initialize_interstellar: solar_mass (code) =', solar_mass
+        r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+        r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+        if (kampl_SN==impossible) then
+          if (.not.lSN_velocity) then
+            kampl_SN=0.0
+          else
+            ampl_SN=0.5*ampl_SN
+            kampl_SN=ampl_SN
+          endif
+        endif
+        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
+        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+        if (lroot) &
+            print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
+            ampl_SN, kampl_SN
+        if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
+        if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
+        if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
+        if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
+        if (mass_SN_progenitor==impossible) &
+            mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
+        if (width_SN==impossible) width_SN= &
+            max(width_SN_cgs / real(unit_length),dxmax*2.5)
+        if (SN_clustering_radius==impossible) &
+            SN_clustering_radius=SN_clustering_radius_cgs / unit_length
+      else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
+!
+      call getmu(f,mu)
+      call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+!
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
+      if (lroot) print*,'initialize_interstellar: unit_Gamma',unit_Gamma
+!
+      heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
+!
+      if (heating_select == 'thermal-hs') then
+        call thermal_hs(f,zrho)
+        call heat_interstellar(f,heat_z,zrho)
+      endif
+!
+!  Cooling cutoff in shocks
+!
+      if (heatcool_shock_cutoff_rate/=0.) then
+        lheatcool_shock_cutoff=.true.
+        heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
+      else
+        lheatcool_shock_cutoff=.false.
+      endif
+!
+!  Slopeyness used for tanh rounding profiles etc.
+!
+      sigma_SN=dxmax*3
+      sigma_SN1=1./sigma_SN
+!
+      preSN(:,:)=0
+!
+      t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
+      average_SNI_heating = &
+          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
+      average_SNII_heating= &
+          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
+      if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
+          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+!
+      if (lroot .and. (ip<14)) then
+        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+        print*,'initialize_interstellar: finished'
+      endif
+!
+      if (lroot .and. lstart) then
+        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+        write(1,'("#",4A)')  &
+            '---it----------t--------itype-iproc----l-----m----n---', &
+            '-----x------------y------------z-------', &
+            '----rho-----------TT-----------EE---------t_sedov----', &
+            '--radius------site_mass------maxTT----t_interval---'
+        close(1)
+      endif
+!
+!  Write unit_Lambda to pc_constants file
+!
+      if (lroot) then
+        print*,"initialize_interstellar: t_next_SNI, t_next_SNII=", &
+            t_next_SNI, t_next_SNII
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
+        write (1,'(a,1pd26.16)') 'unit_Gamma=',unit_Gamma
+        close (1)
+      endif
+!
+    endsubroutine initialize_interstellar
+!*****************************************************************************
+    subroutine select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+!
+!  Routine for selecting parameters for temperature dependent cooling
+!  Lambda. 
+!
+      character (len=labellen), intent(IN) :: cooling_select  
+      real, dimension (:), intent(OUT)  :: lncoolT, coolB
+      double precision, dimension (:), intent(OUT)  :: lncoolH
+      
 !
 !  Mara: Initialize cooling parameters according to selection
 !  Default selection 'RBN' Rosen & Bregman (1993)
@@ -771,130 +873,7 @@ module Interstellar
                               + log(coolingfunction_scalefactor))
       lncoolT(1:ncool+1) = real(log(coolT_cgs(1:ncool+1) / unit_temperature))
 !
-      heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
-!
-      if (unit_system=='cgs') then
-        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
-        if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
-        if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
-        TT_SN_min=TT_SN_min_cgs / unit_temperature
-        TT_cutoff=TT_cutoff_cgs / unit_temperature
-        TT_cutoff1=1.0/TT_cutoff
-        if (SNI_area_rate==impossible) &
-            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (SNII_area_rate==impossible) &
-            SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
-        SNII_mass_rate=SNII_mass_rate_cgs*unit_time
-        SNI_mass_rate=SNI_mass_rate_cgs*unit_time
-        h_SNII=h_SNII_cgs / unit_length
-        solar_mass=solar_mass_cgs / unit_mass
-        if (lroot) &
-            print*,'initialize_interstellar: solar_mass (code) =', solar_mass
-        if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
-        if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
-        r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
-        r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
-        T0UV=T0UV_cgs / unit_temperature
-        cUV=cUV_cgs * unit_temperature
-        if (GammaUV==impossible) &
-            GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
-        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
-        if (kampl_SN==impossible) then
-          if (.not.lSN_velocity) then
-            kampl_SN=0.0
-          else
-            ampl_SN=0.5*ampl_SN
-            kampl_SN=ampl_SN
-          endif
-        endif
-        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        if (lroot) &
-            print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
-            ampl_SN, kampl_SN
-        if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
-        if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
-        if (mass_SN_progenitor==impossible) &
-            mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
-        if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),dxmax*2.5)
-        if (SNR_damping_time==impossible) &
-            SNR_damping_time=SNR_damping_time_cgs / unit_time
-        if (SNR_damping_rate==impossible) &
-            SNR_damping_rate=SNR_damping_rate_cgs / unit_time
-        if (SN_clustering_radius==impossible) &
-            SN_clustering_radius=SN_clustering_radius_cgs / unit_length
-      else
-        call stop_it('initialize_interstellar: SI unit conversions not implemented')
-      endif
-!
-!  Inverse volume share of mass lost through the boundary substitute for
-!  galactic fountain given no inflow boundary vertical condition
-!
-      if (ladd_massflux) addflux_dim1=1./(Lxyz(1)*Lxyz(2)*Lxyz(3))
-!
-      if (heating_select == 'thermal-hs') then
-        call thermal_hs(f,zrho)
-        call heat_interstellar(f,heat_z,zrho)
-      endif
-!
-!  Cooling cutoff in shocks
-!
-      if (heatcool_shock_cutoff_rate/=0.) then
-        lheatcool_shock_cutoff=.true.
-        heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
-      else
-        lheatcool_shock_cutoff=.false.
-      endif
-!
-!  SNRdamping factor
-!
-      if (SNR_damping/=0.) lSNR_damping=.true.
-!
-!  Slopeyness used for tanh rounding profiles etc.
-!
-      sigma_SN=dxmax*3
-      sigma_SN1=1./sigma_SN
-!
-      preSN(:,:)=0
-!
-      t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
-      average_SNI_heating = &
-          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
-      average_SNII_heating= &
-          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
-      if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
-          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
-!
-      if (lroot .and. (ip<14)) then
-        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-        print*,'initialize_interstellar: finished'
-      endif
-!
-      if (lroot .and. lstart) then
-        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-        write(1,'("#",4A)')  &
-            '---it----------t--------itype-iproc----l-----m----n---', &
-            '-----x------------y------------z-------', &
-            '----rho-----------TT-----------EE---------t_sedov----', &
-            '--radius------site_mass------maxTT----t_interval---'
-        close(1)
-      endif
-!
-!  Write unit_Lambda to pc_constants file
-!
-      if (lroot) then
-        print*,"initialize_interstellar: t_next_SNI, t_next_SNII=", &
-            t_next_SNI, t_next_SNII
-        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-        write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
-        close (1)
-      endif
-!
-    endsubroutine initialize_interstellar
+    endsubroutine select_cooling
 !*****************************************************************************
     subroutine input_persistent_interstellar(id,done)
 !
@@ -1023,7 +1002,6 @@ module Interstellar
 !  (This needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        SNR_damping=0.
         idiag_taucmin=0
         idiag_Hmax=0
         idiag_Lamm=0
@@ -1062,7 +1040,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'icooling2=',icooling2
+        write(3,*) 'inetcool=',inetcool
       endif
 !
     endsubroutine rprint_interstellar
@@ -1088,11 +1066,11 @@ module Interstellar
           slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
           slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
-        case ('ism_cool2')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling2)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling2)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling2)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling2)
+        case ('ism_netcool')
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetcool)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetcool)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetcool)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetcool)
           slices%ready = .true.
 !
       endselect
@@ -1285,7 +1263,7 @@ module Interstellar
 !      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_interstellar
-!*****************************************************************************
+!***********************************************************************
     subroutine interstellar_before_boundary(f)
 !
 !  This routine calculates and applies the optically thin cooling function
@@ -1293,73 +1271,9 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
-      use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma1, eoscalc
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx) :: heat,cool,lnTT, lnrho
-      real, dimension (nx) :: damp_profile
-      real :: minqty
-      integer :: i,iSNR
-!
-      if (.not.(lcooltime_smooth.or.lcooltime_despike)) return
-!
-!  Identifier
-!
-      if (headtt) print*,'interstellar_before_boundary: ENTER'
-!
-!  Precalculate radiative cooling function
-!
-    do n=n1,n2
-    do m=m1,m2
-      if (ldensity_nolog) then
-        lnrho = log(f(l1:l2,m,n,irho))
-      else
-        lnrho = f(l1:l2,m,n,ilnrho)
-      endif
-      call eoscalc(f,nx,lnTT=lnTT)
-!
-      call calc_cool_func(cool,lnTT,lnrho)
-      call calc_heat(heat,lnTT)
-!
-      if (nSNR==0) then
-!
-!  05-sep-10/fred
-!  NB The applied net heating/cooling: (heat-cool)/temp is stored in
-!  icooling2. The radiative cooling rho*Lambda is stored in icooling.
-!  Both are diagnostic.
-!
-        if (ltemperature) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
-        elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
-        else
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)
-        endif
-      else
-        damp_profile=1.
-        do i=1,nSNR
-          iSNR=SNR_index(i)
-          if (SNRs(iSNR)%state==SNstate_damping) then
-            call proximity_SN(SNRs(iSNR))
-            minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-            damp_profile = damp_profile * ( (1.-minqty) * 0.5 * (1.+ &
-                tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
-                + minqty )
-          endif
-        enddo
-        if (ltemperature) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
-        elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
-        else
-          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*damp_profile
-        endif
-      endif
-    enddo
-    enddo
-!
+      call keep_compiler_quiet(f)
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
@@ -1379,13 +1293,11 @@ module Interstellar
 !  12-aug-10/fred: updated
 !
       use SharedVariables, only: put_shared_variable
-      use EquationOfState , only: getmu
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
 !
       real :: logrho
-      real :: muhs
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
       real :: g_B ,g_D
@@ -1411,14 +1323,12 @@ module Interstellar
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !  at solar radius.
 !
-      call getmu(f,muhs)
-!
       if (lroot) print*, 'thermal-hs: '// &
           'hydrostatic thermal equilibrium density and entropy profiles'
 !
       do n=1,mz
         if (lthermal_hse) then
-          logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
+          logrho = log(rho0ts)+(g_A*g_B*m_u*mu/k_B/T0hs)*(log(T0hs)- &
               log(T0hs/(g_A*g_B)* &
               (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)))
         else
@@ -1429,6 +1339,8 @@ module Interstellar
         if (logrho < -40.0) logrho=-40.0
         zrho(n)=exp(logrho)
       enddo
+      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'T0hs =',T0hs,'rho0ts =',rho0ts
+
 !
 !  Share zrho and T0hs for use with entropy to initialize density and
 !  temperature in thermal_hs_equilibrium_ism in entropy
@@ -1459,7 +1371,6 @@ module Interstellar
 !  12-aug-10/fred:
 !  included zrho & T0hs from thermal_hs
 !
-      use EquationOfState , only: getmu
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(in) :: zrho
@@ -1515,7 +1426,7 @@ module Interstellar
       if (lstart) then
         do n=n1,n2
           f(:,:,n,icooling)=zheat(n)
-          f(:,:,n,icooling2)=zheat(n)-lambda(n)*zrho(n)
+          f(:,:,n,inetcool)=zheat(n)-lambda(n)*zrho(n)
         enddo
       endif
 !
@@ -1537,7 +1448,6 @@ module Interstellar
 !  19-nov-02/graeme: adapted from calc_heat_cool
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
-!  05-sep-10/fred: added TT_cutoff option, comments, revised diagnostics.
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma1
@@ -1586,44 +1496,15 @@ module Interstellar
       endif
 !
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
-!  we now need to multiply by TT1. At very low temperatures this becomes
-!  unstable, so limit denominator to TT_cutoff to prevent unresolvable
-!  supercooling or heating spikes.
-!  This may have been caused by the use of smoothing and despiking discussed
-!  above, however am leaving this switch as an option until a long enough run
-!  has demonstrated whether or not it is required. Fred
+!  we now need to multiply by TT1. 
 !
       if (ltemperature) then
         heatcool=p%TT1*(heat-cool)*gamma
-        if (lTT_cutoff) then
-          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)*gamma
-        endif
       elseif (pretend_lnTT) then
         heatcool=p%TT1*(heat-cool)*gamma
-        if (lTT_cutoff) then
-          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)*gamma
-        endif
       else
         heatcool=p%TT1*(heat-cool)
-        if (lTT_cutoff) then
-          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)
-        endif
       endif
-!
-!  Prevent unresolved heating/cooling in early SNR core.
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state==SNstate_damping) then
-          call proximity_SN(SNRs(iSNR))
-          minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-          damp_profile = &
-              minqty + (1.-minqty) * 0.5 * &
-              (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.))
-          heatcool=heatcool*damp_profile
-          cool=cool*damp_profile
-        endif
-      enddo
 !
 !  Prevent unresolved heating/cooling in shocks. This is recommended as
 !  early cooling in the shock prematurely inhibits the strength of the
@@ -1643,7 +1524,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,icooling2)=heatcool
+      f(l1:l2,m,n,inetcool)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
@@ -1785,11 +1666,9 @@ module Interstellar
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme).
 !
       if (t < t_settle) return
-      call calc_snr_damping_factor(f)
       call tidy_SNRs
       if (lSNI)  call check_SNI (f,l_SNI)
       if (lSNII) call check_SNII(f,l_SNI)
-      call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !*****************************************************************************
@@ -2004,10 +1883,9 @@ module Interstellar
     subroutine set_interval(f,t_interval,l_SNI)
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-      use EquationOfState, only: getmu
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: t_interval, surface_massII, mu
+      real :: t_interval, surface_massII
       integer :: iz
       real, dimension(nx,ny,nz) :: disk_massII
       real :: MmpiII, msumtmpII
@@ -2043,8 +1921,6 @@ module Interstellar
       call mpireduce_sum(msumtmpII,MmpiII)
       call mpibcast_real(MmpiII)
       surface_massII=MmpiII*dv
-!
-      call getmu(f,mu)
 !
       if (l_SNI) then
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/ &
@@ -3388,196 +3264,14 @@ module Interstellar
         preSN(3,npreSN)= SNR%n
         preSN(4,npreSN)= SNR%iproc
       endif
-!
-      if (lSNR_damping) then
-        SNR%state=SNstate_damping
-        SNR%t_damping=SNR_damping_time-SNR%t_sedov+t
-      else
-        SNR%state=SNstate_finished
-      endif
+      SNR%state=SNstate_finished
 !
       if (present(ierr)) then
         ierr=iEXPLOSION_OK
       endif
 !
     endsubroutine explode_SN
-!*****************************************************************************
-    subroutine calc_snr_damping_factor(f)
-!
-      use Sub, only: dot,dot2
-      use Mpicomm
-!
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,3) :: r_vec, uu
-      real, dimension(nx) :: uur
-      real, dimension(nx) :: r2, lnrho
-      real :: radius2, fac, fac2
-      integer :: i, iSNR
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state/=SNstate_damping) cycle
-!
-        if ((t-SNRs(iSNR)%t_damping)/SNR_damping_rate >= 2.5) then
-          if (lroot) print*,"No more damping!!"
-          SNRs(iSNR)%state=SNstate_finished
-          return
-        endif
-!
-        fac=0.
-        radius2=SNRs(iSNR)%radius**2
-        do n=n1,n2
-        do m=m1,m2
-          call proximity_SN(SNRs(iSNR))
-          uu = f(l1:l2,m,n,iux:iuz)
-          if (ldensity_nolog) then
-            lnrho = log(f(l1:l2,m,n,irho))
-          else
-            lnrho = f(l1:l2,m,n,ilnrho)
-          endif
-          r_vec=0.
-          r_vec(:,1) = x(l1:l2) - SNRs(iSNR)%x
-          r_vec(:,2) = y(m)     - SNRs(iSNR)%y
-          r_vec(:,3) = z(n)     - SNRs(iSNR)%z
-          call dot2(r_vec,r2)
-          call dot(r_vec,uu,uur)
-          where (uur > 0.)
-            uur=-uur/r2
-          endwhere
-          where (r2 > radius2)
-            uur=0.
-          endwhere
-          fac=max(fac,maxval(uur))
-        enddo
-        enddo
-!
-        call mpiallreduce_max(fac,fac2)
-!
-        SNRs(iSNR)%damping_factor = fac2 * 2E-4 &
-            * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-      enddo
-!
-    endsubroutine calc_snr_damping_factor
-!*****************************************************************************
-    subroutine calc_snr_unshock(penc)
-!
-      real, dimension(mx), intent(inout) :: penc
-      real, dimension(mx) :: dr2_SN_mx
-      integer :: i, iSNR
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state/=SNstate_damping) cycle
-        call proximity_SN_mx(SNRs(iSNR),dr2_SN_mx)
-        penc = penc*(1.-exp(-(dr2_SN_mx/SNRs(iSNR)%radius**2)))
-      enddo
-!
-    endsubroutine calc_snr_unshock
-!*****************************************************************************
-    subroutine calc_snr_damping(p)
-!
-      use Sub, only: multsv, multsv_add, dot
-!
-      type (pencil_case) :: p
-      real, dimension(nx) :: profile
-      real, dimension(nx,3) :: tmp, tmp2, gprofile
-      integer :: i, iSNR
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state/=SNstate_damping) cycle
-        if (lfirst) SNRs(iSNR)%energy_loss=0.
-!
-        call proximity_SN(SNRs(iSNR))
-        profile=SNRs(iSNR)%damping_factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
-        gprofile=-SNRs(iSNR)%damping_factor* &
-            spread(dr2_SN**2/(SNRs(iSNR)%radius**(2.5))* &
-            exp(-(dr2_SN/SNRs(iSNR)%radius**2)),2,3)
-        gprofile(:,1)= gprofile(:,1) * x(l1:l2)
-        gprofile(:,2)= gprofile(:,2) * y(m)
-        gprofile(:,3)= gprofile(:,3) * z(n)
-        if (ldensity) then
-          call multsv(p%divu,p%glnrho,tmp2)
-          tmp=tmp2 + p%graddivu
-          call multsv(profile,tmp,tmp2)
-          call multsv_add(tmp2,p%divu,gprofile,tmp)
-          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile)
-          SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%divu**2)
-          p%fvisc=p%fvisc+tmp
-        endif
-!
-!  Have to divide by dxmin**2 to compensate for the * dxmin**2 in the shock
-!  code. This was commented out, but needs checking as I do not currently use
-!  damping so have generally left all damping references unchanged except for
-!  format. Fred
-!
-!        penc=max(penc,SNR_damping* &
-!            exp(-(dr2_SN_mx/SNRs(iSNR)%radius**2))/dxmin**2)
-!
-      enddo
-!
-    endsubroutine calc_snr_damping
-!*****************************************************************************
-    subroutine calc_snr_damp_int(int_dt)
-!
-      real :: int_dt
-      integer :: i,iSNR
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state/=SNstate_damping) cycle
-        SNRs(iSNR)%heat_energy = SNRs(iSNR)%heat_energy &
-            + int_dt*SNRs(iSNR)%energy_loss*dv*int_dt
-      enddo
-!
-    endsubroutine calc_snr_damp_int
 !***********************************************************************
-    subroutine calc_snr_damping_add_heat(f)
-!
-      use Mpicomm
-      use EquationOfState, only: eoscalc, eosperturb
-!
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: profile, ee_old, rho, lnrho
-      real :: factor, fmpi, fmpi_tmp
-      integer :: i, iSNR
-!
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        if (SNRs(iSNR)%state/=SNstate_damping) cycle
-!
-        fmpi_tmp=SNRs(iSNR)%heat_energy
-        call mpireduce_sum(fmpi_tmp,fmpi)
-        call mpibcast_real(fmpi)
-        SNRs(iSNR)%heat_energy=fmpi
-!
-        factor = SNRs(iSNR)%heat_energy &
-            / (cnorm_gaussian_SN(dimensionality)*SNRs(iSNR)%radius**dimensionality)
-        do n=n1,n2
-        do m=m1,m2
-          call proximity_SN(SNRs(iSNR))
-          call eoscalc(f,nx,ee=ee_old)
-          if (ldensity_nolog) then
-            lnrho=log(f(l1:l2,m,n,irho))
-            rho=exp(lnrho)
-          else
-            lnrho=f(l1:l2,m,n,ilnrho)
-            rho=exp(lnrho)
-          endif
-          profile = factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
-          call eosperturb(f,nx,ee=real((ee_old*rho+profile)/exp(lnrho)))
-        enddo
-        enddo
-!
-        SNRs(iSNR)%heat_energy=0.
-!
-        if (t >= SNRs(iSNR)%t_damping) then
-          SNRs(iSNR)%state=SNstate_finished
-        endif
-      enddo
-!
-    endsubroutine calc_snr_damping_add_heat
-!*****************************************************************************
     subroutine get_properties(f,remnant,rhom,ekintot)
 !
 !  Calculate integral of mass cavity profile and total kinetic energy.
@@ -4207,7 +3901,7 @@ module Interstellar
       if (t >= t_next_mass) then
 !
 !  Determine multiplier required to restore mass to level before boundary
-!  losses. addrate (default=1.0) can be increased to raise mass levels if
+!  losses. lt=1.0) can be increased to raise mass levels if
 !  required.
 !
         add_ratio=1.0+prec_factor*addrate
