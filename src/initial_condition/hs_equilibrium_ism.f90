@@ -82,10 +82,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
-  real :: z_S, z_D
-  real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
   real :: a_S, a_D
+  real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
+  real :: z_S, z_D
+  real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
 !
   real, parameter :: rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
   real :: rho0ts=impossible, T0hs=impossible
@@ -141,6 +141,8 @@ module InitialCondition
 ! 
 !  SAMPLE IMPLEMENTATION
 !
+      
+
       call keep_compiler_quiet(f)
       if (present(profiles)) then
         call fatal_error('initial_condition_all', &
@@ -210,7 +212,7 @@ module InitialCondition
       do n=n1,n2
         f(:,:,n,ilnrho)=log(zrho(n))
       enddo
-      if (lroot) print*, 'zhro =',zrho
+      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'T0hs =',T0hs,'rho0ts =',rho0ts
 !
       call keep_compiler_quiet(f)
 !
@@ -525,7 +527,7 @@ module InitialCondition
       integer, intent(out) :: iostat
       include '../parallel_unit.h'
 !
-      iostat = 0
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
@@ -533,7 +535,7 @@ module InitialCondition
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
