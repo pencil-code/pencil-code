@@ -198,7 +198,7 @@ module Interstellar
 !  SNe composition
 !
   logical :: lSN_eth=.true., lSN_ecr=.true., lSN_mass=.true., &
-      lSN_velocity=.false.
+      lSN_velocity=.false., lSN_fcr=.false.
 !
 !  Total mass added by a SNe
 !
@@ -370,20 +370,20 @@ module Interstellar
       lSN_scale_rad, ampl_SN, kampl_SN, mass_SN, velocity_SN, width_SN, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
-      lSN_velocity, lSN_eth, lSN_ecr, lSN_mass, mass_movement, uu_sedov_max, &
-      frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
-      uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, &
-      T0hs, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
-      lthermal_hse, lheatz_min
+      lSN_velocity, lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, mass_movement, &
+      uu_sedov_max, frac_ecr, frac_eth, thermal_profile, velocity_profile, &
+      mass_profile, uniform_zdist_SNI, inner_shell_proportion, &
+      outer_shell_proportion, SNR_damping, cooling_select, heating_select, &
+      heating_rate, rho0ts, T0hs, TT_SN_max, rho_SN_min, N_mass, &
+      lSNII_gaussian, rho_SN_max, lthermal_hse, lheatz_min
 !
 ! run parameters
 !
   namelist /interstellar_run_pars/ &
       ampl_SN, kampl_SN, mass_SN, velocity_SN, t_next_SNI, t_next_SNII, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
-      lSN_velocity, lSN_eth, lSN_ecr, lSN_mass, width_SN, lSNI, lSNII, &
-      uniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
+      lSN_velocity, lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, &
+      lSNII, uniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
       inner_shell_proportion, outer_shell_proportion, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, SNR_damping, uu_sedov_max, lSN_scale_rad, &
@@ -3291,6 +3291,25 @@ module Interstellar
 !
         if (lcosmicray.and.lSN_ecr) then
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + (deltaEE * frac_ecr)
+          ! Optionally add cosmicray flux, consistent with addition to ecr, via
+          !    delta fcr = -K grad (delta ecr) 
+          ! Currently only set up for the 'gaussian3' profile in ecr.
+          ! Still experimental/in testing
+          if (lcosmicrayflux .and. lSN_fcr) then
+            if (thermal_profile=='gaussian3') then
+              do i=1,3
+                ! Currently hardwire factor of 0.05 as isotropic ecr diffusivity
+                ! (Should instead use Kpara and Kperp properly.)
+                f(l1:l2,m,n,ifcr+i-1) = f(l1:l2,m,n,ifcr+i-1)      &
+                  + deltaEE*frac_ecr                               &
+                    * 0.05*(6.*(sqrt(dr2_SN)**5)/width_energy**6)  &
+                      * outward_normal_SN(1:nx,i)  
+              enddo
+            else
+              call fatal_error("interstellar.explode_SN", &
+                "fcr insertion only set up for thermal_profile='gaussian3'")
+            endif
+          endif
         endif
 !
 !  Save changes to f-array.
