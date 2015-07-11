@@ -57,7 +57,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
     if verbose:
         print("Reading 1D averages", var, "...")
     t = np.zeros(nt)
-    avg = np.core.records.array(len(var) * [np.zeros((nt,nc))], names=var)
+    avg = np.rec.array(len(var) * [np.zeros((nt,nc))], names=var)
     for i in range(nt):
         t[i] = fetch(1)
         for v in var:
@@ -74,7 +74,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, verbose=True):
         tmin, tmax = t.min(), t.max()
         ti = tmin + (tmax - tmin) / (tsize - 1) * np.arange(tsize)
         ti[0], ti[-1] = tmin, tmax
-        avgi = np.core.records.array(len(var) * [np.zeros((tsize,nc))], names=var)
+        avgi = np.rec.array(len(var) * [np.zeros((tsize,nc))], names=var)
         for v in var:
             for k in range(nc):
                 avgi[v][:,k] = interp1d(t, avg[v][:,k])(ti)
@@ -109,7 +109,7 @@ def avg2d(datadir='./data', direction='z'):
     t, avg1 = proc_avg2d(datadir=datadir, direction=direction)
     nt = len(t)
     var = avg1.dtype.names
-    avg = np.core.records.array(len(var) * [np.zeros((nt,n1,n2))], names=var)
+    avg = np.rec.array(len(var) * [np.zeros((nt,n1,n2))], names=var)
     # Read the averages from each process and assemble the data.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         dim1 = proc_dim(datadir=datadir, proc=proc)
@@ -419,7 +419,7 @@ def proc_avg2d(datadir='./data', direction='z', proc=0):
     f.seek(0)
     # Read the data.
     t = np.zeros(nt)
-    avg = np.core.records.array(nvar * [np.zeros((nt,n1,n2))], names=var)
+    avg = np.rec.array(nvar * [np.zeros((nt,n1,n2))], names=var)
     for i in range(nt):
         t[i] = get_time()
         a = get_avg()
