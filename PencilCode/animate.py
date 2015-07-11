@@ -174,7 +174,7 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
         logscale
             Whether or not the color map is in logarithmic scale.
     """
-    # Chao-Chin Yang, 2015-05-05
+    # Chao-Chin Yang, 2015-07-11
     from collections.abc import Sequence
     import numpy as np
     from scipy.integrate import simps
@@ -221,32 +221,32 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
     # Guard against non-positive number if logscale is True.
     if logscale:
         vmin = max(vmin, vposmin)
-    # Center the range if requested.
-    if isinstance(center, bool) and center or not isinstance(center, bool) and isinstance(int, float):
-        # Function to center the range.
-        c = (1 if logscale else 0) if isinstance(center, bool) else center
-        def get_centered_range(vmin, vmax):
-            if logscale:
-                a, b = c / vmin, vmax / c
-                if a > 1 and b > 1:
-                    if a > b:
-                        vmin = c / b
-                    elif a < b:
-                        vmax = c * a
-            else:
-                a, b = c - vmin, vmax - c
-                if a > 0 and b > 0:
-                    if a > b:
-                        vmin = c - b
-                    elif a < b:
-                        vmax = c + a
-            return vmin, vmax
-        # Update the range.
-        if type(vmin) is np.ndarray:
-            for i in range(nt):
-                vmin[i], vmax[i] = get_centered_range(vmin[i], vmax[i])
+    # Function to center the range.
+    if not isinstance(center, bool) and not isinstance(center, (int, float)):
+        raise ValueError("Invalid value of the keyword center = {}".format(center))
+    c = (1 if logscale else 0) if isinstance(center, bool) else center
+    def get_centered_range(vmin, vmax):
+        if logscale:
+            a, b = c / vmin, vmax / c
+            if a > 1 and b > 1:
+                if a > b:
+                    vmin = c / b
+                elif a < b:
+                    vmax = c * a
         else:
-            vmin, vmax = get_centered_range(vmin, vmax)
+            a, b = c - vmin, vmax - c
+            if a > 0 and b > 0:
+                if a > b:
+                    vmin = c - b
+                elif a < b:
+                    vmax = c + a
+        return vmin, vmax
+    # Center the range if requested.
+    if type(vmin) is np.ndarray:
+        for i in range(nt):
+            vmin[i], vmax[i] = get_centered_range(vmin[i], vmax[i])
+    else:
+        vmin, vmax = get_centered_range(vmin, vmax)
     return vmin, vmax
 #=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, **kwarg):
