@@ -655,7 +655,8 @@ def pvar(datadir='./data', varfile='pvar.dat', verbose=True):
     if not all(exist):
         raise RuntimeError("Missing some particles. ")
     # Make and return a numpy record array.
-    return np.rec.array([t] + [fp[:,i] for i in range(nvar)], dtype = [("t", dtype)] + [(v, dtype, (pdim.npar,)) for v in var])
+    return np.rec.array([t] + [fp[:,i] for i in range(nvar)],
+                        dtype = [("t", dtype)] + [(v.lstrip('i'), dtype, (pdim.npar,)) for v in var])
 #=======================================================================
 def slices(field, datadir='./data'):
     """Reads the video slices.
