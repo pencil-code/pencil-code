@@ -509,6 +509,50 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
+def proc_pvar(datadir='./data', proc=0, varfile='pvar.dat'):
+    """Returns the particles in one snapshot held by one process.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        proc
+            Process ID.
+        varfile
+            Name of the snapshot file.
+    """
+    # Chao-Chin Yang, 2015-07-12
+    from collections import namedtuple
+    import numpy as np
+    from struct import calcsize, unpack
+    # Check the dimensions and precision.
+    dim = proc_dim(datadir=datadir, proc=proc)
+    fmt, dtype, nb = _get_precision(dim)
+    fmti, nbi = 'i', calcsize('i')
+    pardim = pdim(datadir=datadir)
+    mparray = pardim.mpvar + pardim.mpaux
+    # Read the number of particles.
+    f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
+    f.read(hsize)
+    npar_loc = unpack(fmti, f.read(nbi))[0]
+    fpdim = np.array((npar_loc, mparray))
+    # Read particle data.
+    f.read(2*hsize)
+    ipar = np.frombuffer(f.read(nbi*npar_loc), dtype='i4')
+    f.read(2*hsize)
+    fp = np.frombuffer(f.read(nb*fpdim.prod()), dtype=dtype).reshape(fpdim, order='F')
+    # Read the time and grid.
+    f.read(2*hsize)
+    t = unpack(fmt, f.read(nb))[0]
+    x = np.frombuffer(f.read(nb*dim.mx), dtype=dtype)
+    y = np.frombuffer(f.read(nb*dim.my), dtype=dtype)
+    z = np.frombuffer(f.read(nb*dim.mz), dtype=dtype)
+    dx, dy, dz = unpack(3*fmt, f.read(3*nb))
+    f.read(hsize)
+    f.close()
+    # Define and return a named tuple.
+    PVar = namedtuple('PVar', ['npar_loc', 'fp', 'ipar', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz'])
+    return PVar(npar_loc=npar_loc, fp=fp, ipar=ipar, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz)
+#=======================================================================
 def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     """Returns the patch of one snapshot saved by one process.
 
