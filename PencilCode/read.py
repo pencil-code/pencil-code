@@ -334,7 +334,7 @@ def parameters(datadir='./data', par2=False, warning=True):
                 setattr(self, key, value)
     return Parameter(dict(zip(keys, values)))
 #=======================================================================
-def pdim(datadir='./data'):
+def pardim(datadir='./data'):
     """Returns the numbers associated with particles.
 
     Keyword Arguments:
@@ -528,8 +528,8 @@ def proc_pvar(datadir='./data', proc=0, varfile='pvar.dat'):
     dim = proc_dim(datadir=datadir, proc=proc)
     fmt, dtype, nb = _get_precision(dim)
     fmti, nbi = 'i', calcsize('i')
-    pardim = pdim(datadir=datadir)
-    mparray = pardim.mpvar + pardim.mpaux
+    pdim = pardim(datadir=datadir)
+    mparray = pdim.mpvar + pdim.mpaux
     # Read the number of particles.
     f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
     f.read(hsize)
