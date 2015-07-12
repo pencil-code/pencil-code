@@ -509,12 +509,15 @@ def proc_grid(datadir='./data', dim=None, proc=0):
     return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
-def proc_pvar(datadir='./data', proc=0, varfile='pvar.dat'):
+def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
     """Returns the particles in one snapshot held by one process.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        pdim
+            Particle dimensions returned by pardim().  If None, pardim()
+            will be called.
         proc
             Process ID.
         varfile
@@ -528,7 +531,8 @@ def proc_pvar(datadir='./data', proc=0, varfile='pvar.dat'):
     dim = proc_dim(datadir=datadir, proc=proc)
     fmt, dtype, nb = _get_precision(dim)
     fmti, nbi = 'i', calcsize('i')
-    pdim = pardim(datadir=datadir)
+    if pdim is None:
+        pdim = pardim(datadir=datadir)
     mparray = pdim.mpvar + pdim.mpaux
     # Read the number of particles.
     f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
@@ -635,7 +639,7 @@ def pvar(datadir='./data', varfile='pvar.dat', verbose=True):
         # Read data.
         if verbose:
             print("Reading", datadir.strip() + "/proc" + str(proc) + "/" + varfile.strip(), "...")
-        p = proc_pvar(datadir=datadir, proc=proc, varfile=varfile) 
+        p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc, varfile=varfile) 
         ipar = p.ipar - 1
         # Check the integrity of the time and particle IDs.
         if any(exist[ipar]):
