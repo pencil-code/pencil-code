@@ -604,6 +604,55 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
     return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
+def pvar(datadir='./data', varfile='pvar.dat', verbose=True):
+    """Returns particles in one snapshot.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        varfile
+            Name of the snapshot file.
+        verbose
+            Verbose output or not.
+    """
+    # Chao-Chin Yang, 2015-07-12
+    import numpy as np
+    # Get the dimensions.
+    dim = dimensions(datadir=datadir)
+    pdim = pardim(datadir=datadir)
+    var = varname(datadir=datadir, filename="pvarname.dat")
+    nvar = len(var)
+    if nvar != pdim.mpvar + pdim.mpaux:
+        raise RuntimeError("Inconsistent number of variables. ")
+    # Check the precision.
+    fmt, dtype, nb = _get_precision(dim)
+    # Allocate arrays.
+    fp = np.zeros((pdim.npar, nvar), dtype=dtype)
+    exist = np.full((pdim.npar,), False)
+    t = np.inf
+    # Loop over each process.
+    for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+        # Read data.
+        if verbose:
+            print("Reading", datadir.strip() + "/proc" + str(proc) + "/" + varfile.strip(), "...")
+        p = proc_pvar(datadir=datadir, proc=proc, varfile=varfile) 
+        ipar = p.ipar - 1
+        # Check the integrity of the time and particle IDs.
+        if any(exist[ipar]):
+            raise RuntimeError("Duplicate particles in multiple processes. ")
+        if t == np.inf:
+            t = p.t
+        elif p.t != t:
+            raise RuntimeError("Inconsistent time stamps in multiple processes. ")
+        # Assign the particle data.
+        fp[ipar,:] = p.fp
+        exist[ipar] = True
+    # Final integrity check.
+    if not all(exist):
+        raise RuntimeError("Missing some particles. ")
+    # Make and return a numpy record array.
+    return np.rec.array([t] + [fp[:,i] for i in range(nvar)], dtype = [("t", dtype)] + [(v, dtype, (pdim.npar,)) for v in var])
+#=======================================================================
 def slices(field, datadir='./data'):
     """Reads the video slices.
 
