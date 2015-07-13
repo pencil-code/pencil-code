@@ -345,6 +345,13 @@ module Interstellar
   real :: boldmass=0.0
   logical :: ladd_massflux = .false.
 !
+!  Gravity constansts - rquired for pre-2015 vertical heating profile
+!
+  real :: a_S, a_D
+  real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
+  real :: z_S, z_D, H_z
+  real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21, H_z_cgs=9.258E20
+!
 !  start parameters
 !
   namelist /interstellar_init_pars/ &
@@ -507,8 +514,8 @@ module Interstellar
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
       if (heating_select == 'thermal-hs') then
-        call thermal_hs(f,zrho)
-        call heat_interstellar(f,heat_z,zrho)
+!        call thermal_hs(f,zrho)
+        call heat_interstellar(f,heat_z)
       endif
 !
 !  Cooling cutoff in shocks
@@ -1277,111 +1284,25 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
-    subroutine thermal_hs(f,zrho)
-!
-!  This routine calculates a vertical profile for density for an appropriate
-!  isothermal entropy designed to balance the vertical 'Ferriere' gravity.
-!  T0hs and rho0ts are chosen to ensure uv-heating approx 0.0147 at z=0.
-!  Initial thermal & hydrostatice equilibrium is achieved by ensuring
-!  Lambda*rho(z)=Gamma(z).
-!
-!  Requires gravz_profile='Ferriere' in gravity_simple.f90,
-!  init_lnrho & initss='thermal-hs' in density & entropy.f90.
-!  Constants g_A..D from gravz_profile.
-!
-!  22-mar-10/fred: coded
-!  12-aug-10/fred: updated
-!
-      use SharedVariables, only: put_shared_variable
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mz), intent(out) :: zrho
-!
-      real :: logrho
-      real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
-      real :: g_B ,g_D
-      real, parameter :: g_B_cgs=6.172E20 , g_D_cgs=3.086E21
-      integer :: ierr
-!
-!  Identifier
-!
-      if (lroot.and.headtt.and.ip<14) print*,'thermal_hs: ENTER'
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
-      else if (unit_system=='SI') then
-        call fatal_error('initialize_entopy', &
-            'SI unit conversions not inplemented')
-      endif
-!
-!  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!  at solar radius.
-!
-      if (lroot) print*, 'thermal-hs: '// &
-          'hydrostatic thermal equilibrium density and entropy profiles'
-!
-      do n=1,mz
-        if (lthermal_hse) then
-          logrho = log(rho0ts)+(g_A*g_B*m_u*mu/k_B/T0hs)*(log(T0hs)- &
-              log(T0hs/(g_A*g_B)* &
-              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)))
-        else
-          logrho = log(rho0ts)-0.015*(- &
-              g_A*g_B+ &
-              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
-        endif
-        if (logrho < -40.0) logrho=-40.0
-        zrho(n)=exp(logrho)
-      enddo
-      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'T0hs =',T0hs,'rho0ts =',rho0ts
-
-!
-!  Share zrho and T0hs for use with entropy to initialize density and
-!  temperature in thermal_hs_equilibrium_ism in entropy
-!
-      call put_shared_variable('zrho', zrho, ierr)
-      if (ierr/=0) call fatal_error('thermal_hs', &
-          'there was a problem when putting zrho')
-      call put_shared_variable('T0hs', T0hs, ierr)
-      if (ierr/=0) call fatal_error('thermal_hs', &
-          'there was a problem when putting T0hs')
-!
-    endsubroutine thermal_hs
-!*****************************************************************************
-    subroutine heat_interstellar(f,zheat,zrho)
+    subroutine heat_interstellar(f,zheat)
 !
 !  This routine calculates a vertical profile for uv-heating designed to
-!  satisfy an initial condition with heating and cooling balanced for an
-!  isothermal hydrostatic equilibrium.
+!  satisfy an initial condition with heating and cooling approximately balanced
+!  for an isothermal hydrostatic equilibrium.
 !  Requires: gravz_profile='Ferriere' in gravity_simple.f90
-!            initlnrho='thermal-hs' in density.f90
-!            initss='thermal-hs' in entropy.f90
 !            heating_select='thermal-hs' in interstellar.f90
 !  Using here a similar method to O. Gressel 2008 (PhD) lthermal_hse=T
 !  or similar to Joung & Mac Low Apj 653 Dec 2006 without hse
 !
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
-!  12-aug-10/fred:
-!  included zrho & T0hs from thermal_hs
-!
+!  13-jul-15/fred: requires initial_condition/hs_equilibrium_ism.f90
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mz), intent(in) :: zrho
       real, dimension(mz), intent(out) :: zheat
 !
-      real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4E-9, g_C_cgs=1.7E-9
-      real :: g_B ,g_D, H_z
-      real, parameter :: g_B_cgs=6.172E20 , g_D_cgs=3.086E21, &
-                                     H_z_cgs=9.258E20
-      real, dimension(mz) :: lambda=0.0, lnTT, TT
+      real, dimension(mz) :: lambda=0.0, lnTT, zrho
+      real :: logrho, TT
       integer :: j
 !
 !  Identifier
@@ -1395,10 +1316,10 @@ module Interstellar
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
+        a_S = a_S_cgs/unit_velocity*unit_time
+        a_D = a_D_cgs/unit_velocity*unit_time
+        z_D = z_D_cgs/unit_length
+        z_S = z_S_cgs/unit_length
         H_z = H_z_cgs/unit_length
       else if (unit_system=='SI') then
         call fatal_error('initialize_entopy', &
@@ -1406,9 +1327,20 @@ module Interstellar
       endif
 !
       do n=1,mz
-        TT(n)=T0hs/(g_A*g_B)* &
-            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
-        lnTT(n)=log(TT(n))
+        if (lthermal_hse) then
+          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/T0hs)*(log(T0hs)- &
+              log(T0hs/(a_S*z_S)* &
+              (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
+        else
+          logrho = log(rho0ts)-0.015*(- &
+              a_S*z_S+ &
+              a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
+        endif
+        if (logrho < -40.0) logrho=-40.0
+        zrho(n)=exp(logrho)
+        TT=T0hs/(a_S*z_S)* &
+            (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
+        lnTT(n)=log(TT)
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
       enddo
       lam_loop: do j=1,ncool
@@ -1422,12 +1354,6 @@ module Interstellar
       endif
       if (lheatz_min) then
         where (zheat<1E-5*GammaUV) zheat=1E-5*GammaUV
-      endif
-      if (lstart) then
-        do n=n1,n2
-          f(:,:,n,icooling)=zheat(n)
-          f(:,:,n,inetcool)=zheat(n)-lambda(n)*zrho(n)
-        enddo
       endif
 !
       call keep_compiler_quiet(f)
@@ -1623,6 +1549,7 @@ module Interstellar
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
+      real, dimension (mz) :: TT
 !
 !  Constant heating with a rate heating_rate[erg/g/s].
 !
