@@ -2514,6 +2514,10 @@ You can specify the position of the slice planes by setting the parameters
 in \file{run.in}.
 Alternatively, you can set the input parameter \var{slice_position} to one
 of \code{'p'} (periphery of box) or \code{'m'} (middle of box).
+Or you can also specify the $z-$position in terms of z using
+the tags \var{zbot_slice} and \var{ztop_slice}. In this case, the \var{zbot_slice}
+slice will have the suffix \code{.xy} and the \var{ztop_slice} the suffix \code{.xy2}
+
 
 In the file \file{video.in} of your run directory, you can choose for
 which variables you want to get video files;
@@ -2592,6 +2596,66 @@ following:
   etc.
 
 \end{enumerate}
+
+
+\paragraph{Another example}
+Suppose you have set up a run using \name{magnetic.f90} and some other modules. 
+This run studies some process in a ``surface'' layer inside the box. This
+``surface'' can represent a sharp change in density or turbulence. So you defined
+your box setting the $z=0$ point at the surface.
+Therefore, your \file{start.in} file will look something similar to:
+\begin{Verbatim}
+&init_pars
+  lperi=T,T,F
+  bcz = 's','s','a','hs','s','s','a'
+  xyz0 = -3.14159, -3.14159, -3.14159
+  Lxyz = 6.28319, 6.28319, 9.42478
+\end{Verbatim}
+Now you can analyze quickly the surface of interest and some other $xy-$slice
+setting \var{zbot_slice} and \var{ztop_slice} in the \file{run.in} file:
+\begin{Verbatim}
+&run_pars
+  slice_position='c'
+  zbot_slice=0.
+  ztop_slice=0.2
+\end{Verbatim}
+In this case, the slices with the suffix \code{.xy} will be at the ``surface''
+and the ones with the suffix \code{.xy2} will be at the position $z=0.2$ above
+the surface. And you can visualize this slices by:
+\begin{enumerate}
+
+\item Write the following lines to \file{video.in} in your run directory:
+  \begin{Verbatim}
+  bb
+  \end{Verbatim}
+
+\item Edit the namelist \name{run_pars} in the file \file{run.in} to include 
+\var{zbot_slice} and \var{ztop_slice}.
+
+\item Run the {\sc Pencil Code}:
+  \begin{alltt}
+  \prompt{unix> } start.csh
+  \prompt{unix> } run.csh
+  \end{alltt}
+
+\item Run \file{src/read_videofiles.x} to assemble global slice files from
+  those scattered across \file{data/proc*/}:
+  \begin{alltt}
+  \prompt{unix> } src/read_videofiles.x
+    enter name of variable (lnrho, uu1, ..., bb3):  \emph{bb3} \
+  \end{alltt}
+
+\item Start \name{IDL},  load the slices with \file{pc_read_video} and plot them at some time:
+  \begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> } pc_read_video, field='bb3',ob=bb3,nt=ntv  
+  \prompt{IDL> } tvscl,bb3.xy(*,*,100) 
+  \prompt{IDL> } tvscl,bb3.xy2(*,*,100)
+  \end{alltt}
+  etc.
+
+\end{enumerate}
+
 
 
 \paragraph{File structure}
@@ -11266,6 +11330,20 @@ the latest set of parameters, you need to look at the code.
                  \end{description}
                  These settings are overridden by explicitly setting
                  \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{zbot_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy}.
+                 See \S~\ref{S-slices}) for details. \\
+   \var{ztop_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy2}.
                  See \S~\ref{S-slices}) for details. \\
   \var{tavg} [$0$]
                & averaging time $\tau_{\rm avg}$ for time averages (if
