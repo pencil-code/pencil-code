@@ -79,9 +79,6 @@ module Interstellar
   integer, parameter :: npreSN = 5
   integer, dimension(4,npreSN) :: preSN
 !
-!  integer :: icooling=0
-!  integer :: inetcool=0
-!
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil
 !
@@ -272,13 +269,6 @@ module Interstellar
   real :: heatcool_shock_cutoff_rate = 0.
   real :: heatcool_shock_cutoff_rate1 = 0.0
 !
-  real :: cooltime_despike_factor = 2.
-!
-!  Set .true. to smooth the radiative cooling in cooling time space.
-!
-  logical :: lcooltime_despike = .false.
-  logical :: lcooltime_smooth = .false.
-!
 !  Set .true. to smoothly turn off the heating and cooling where the
 !  shock_profile is > heatcool_shock_cutoff
 !
@@ -286,18 +276,16 @@ module Interstellar
 !
 !  SN type flags
 !
-  logical :: lSNI=.true., lSNII=.false., lSNII_gaussian=.true.
+  logical :: lSNI=.true., lSNII=.false.
 !
 !  Cooling & heating flags
 !
-  logical :: lsmooth_coolingfunc = .false.
   logical :: laverage_SN_heating = .false.
   logical :: lheating_UV         = .true.
 !
 !  Remnant location flags
 !
-  logical :: lforce_locate_SNI=.false.
-  logical :: uniform_zdist_SNI = .false.
+  logical :: luniform_zdist_SNI = .false., lSNII_gaussian=.true.
   logical :: lOB_cluster = .false. ! SN clustering
   real    :: p_OB=0.7 ! Probability that an SN is in a cluster
   real    :: SN_clustering_radius=impossible
@@ -361,7 +349,7 @@ module Interstellar
       t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
       lSN_velocity, lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, mass_movement, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
-      uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
+      luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       cooling_select, heating_select, heating_rate, rho0ts, &
       T0hs, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min
@@ -372,16 +360,15 @@ module Interstellar
       ampl_SN, kampl_SN, mass_SN, velocity_SN, t_next_SNI, t_next_SNII, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_velocity, lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
-      uniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
+      luniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
       inner_shell_proportion, outer_shell_proportion, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, uu_sedov_max, lSN_scale_rad, &
       mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
-      laverage_SN_heating, coolingfunction_scalefactor,  lforce_locate_SNI,&
-      lsmooth_coolingfunc, heatingfunction_scalefactor, t_settle, &
+      laverage_SN_heating, coolingfunction_scalefactor,&
+      heatingfunction_scalefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
-      lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
       N_mass, addrate, T0hs, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
@@ -438,7 +425,7 @@ module Interstellar
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
-      if (lroot.and.uniform_zdist_SNI) then
+      if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 !
@@ -1219,7 +1206,7 @@ module Interstellar
             SNRs(iSNR)%t=0.
             SNRs(iSNR)%SN_type=1
             SNRs(iSNR)%radius=width_SN
-            if (uniform_zdist_SNI) then
+            if (luniform_zdist_SNI) then
               call position_SN_uniformz(f,SNRs(i))
             else
               call position_SN_gaussianz(f,h_SNII,SNRs(i))
@@ -1363,8 +1350,10 @@ module Interstellar
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  This routine calculates and applies the optically thin cooling function
-!  together with UV heating.
+!  together with UV heating. 
 !
+!  This public subroutine is called by entropy.f90. If other energy/temp/entopy
+!  modules are selected an equivalent call should be included. 
 !  We may want to move it to the entropy module for good, because its use
 !  is not restricted to interstellar runs (could be used for solar corona).
 !  Also, it doesn't pose an extra load on memory usage or compile time.
@@ -1377,7 +1366,7 @@ module Interstellar
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma1
-      use Sub, only: smooth_kernel, despike, dot2
+      use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1386,40 +1375,17 @@ module Interstellar
       real, dimension (nx), intent(inout) :: Hmax
       real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
       real, dimension (nx) :: damp_profile,gsh2
-      real :: minqty
       integer :: i, iSNR
 !
 !  Identifier
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-!  05-sep-10/fred
-!  NB redistributing the applied cooling/heating using smooth_kernel or
-!  despike was found to add to the thermal instability at low temperatures.
-!  Since heatcool is divided by TT for the entropy equation, heatcool is
-!  shared with neighbours with low temperatures ~0.001 they are rapidly
-!  amplified producing both superfluids and hyper-heating to crash the code.
-!  I therefore recommend not using them at all.
+!  13-jul-15/fred
+!  Removed obsolete calls to spatial and temporal smoothing
 !
-      if (lcooltime_smooth) then
-        call calc_heat(heat,p%lnTT)
-        call calc_cool_func(cool,p%lnTT,p%lnrho)
-        f(l1:l2,m,n,icooling)=cool
-        call smooth_kernel(f,icooling,cool)
-      elseif (lcooltime_despike) then
-        call calc_heat(heat,p%lnTT)
-        call calc_cool_func(cool,p%lnTT,p%lnrho)
-        f(l1:l2,m,n,icooling)=cool
-        call despike(f,icooling,cool,cooltime_despike_factor)
-      else
-        call calc_cool_func(cool,p%lnTT,p%lnrho)
-!
-!  Possibility of temporal smoothing of cooling function
-!
-        if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
-!
-        call calc_heat(heat,p%lnTT)
-      endif
+      call calc_cool_func(cool,p%lnTT,p%lnrho)
+      call calc_heat(heat,p%lnTT)
 !
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
 !  we now need to multiply by TT1. 
@@ -1446,7 +1412,7 @@ module Interstellar
         heatcool=heatcool*damp_profile
       endif
 !
-!  Save result in diagnostic aux variable
+!  Save result in aux variables
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
@@ -1627,15 +1593,10 @@ module Interstellar
           ierr=iEXPLOSION_OK
           try_count=try_count-1
 !
-          if (uniform_zdist_SNI) then
+          if (luniform_zdist_SNI) then
             call position_SN_uniformz(f,SNRs(iSNR))
           else
             call position_SN_gaussianz(f,h_SNI,SNRs(iSNR))
-          endif
-!
-          if (lforce_locate_SNI.and.(SNRs(iSNR)%site%rho < rho_SN_min).or. &
-              (SNRs(iSNR)%site%TT > TT_SN_max)) then
-            call find_nearest_SNI(f,SNRs(iSNR))
           endif
 !
           if (.not.lSN_scale_rad) then
@@ -1708,15 +1669,10 @@ module Interstellar
           ierr=iEXPLOSION_OK
           try_count=try_count-1
 !
-          if (uniform_zdist_SNI) then
+          if (luniform_zdist_SNI) then
             call position_SN_uniformz(f,SNRs(iSNR))
           else
             call position_SN_gaussianz(f,h_SNII,SNRs(iSNR))
-          endif
-!
-          if (lforce_locate_SNI.and.(SNRs(iSNR)%site%rho < rho_SN_min).or. &
-              (SNRs(iSNR)%site%TT > TT_SN_max)) then
-            call find_nearest_SNI(f,SNRs(iSNR))
           endif
 !
           if (.not.lSN_scale_rad) then
@@ -1889,6 +1845,14 @@ module Interstellar
       if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
 !
       if (l_SNI) return         ! Only do if no SNI this step.
+!
+!  13-jul-15/fred:
+!  Location by mass was found to lose too much energy due to the numerically 
+!  necessarily high thermal conductivity coefficients. SNe in OBs mainly explode
+!  into diffuse bubbles left by their neighbours anyway. This routine left for
+!  reference and possible later applications for clustering and feedback through
+!  star formation, which to date has been neglected
+!  l_SNII_guassian skips this algorithm and switches to check_SNIIb. 
 !
       if (lSNII_gaussian) then  ! Skip location by mass.
         call check_SNIIb(f,l_SNI)
@@ -2162,6 +2126,9 @@ module Interstellar
 !
 !  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
+!  13-jul-15/fred: NB need to revisit OB clustering x,y not updated or time
+!  constrained. May nedd to include z also
+!
     if (lroot) then
       if (lOB_cluster .and. h_SN==h_SNII) then
         previous_SNl = int(( x_next_SNII - xyz0(1) )/Lxyz(1))*nxgrid +1
@@ -2415,102 +2382,6 @@ module Interstellar
       ierr=iEXPLOSION_OK
 !
     endsubroutine position_SN_bycloudmass
-!*****************************************************************************
-    subroutine find_nearest_SNI(f,SNR)
-!
-!  Given a presently unsuitable SNI explosion site... Find the nearest
-!  suitable location.
-!
-    use EquationOfState, only: eoscalc
-    use Mpicomm, only: mpibcast_int
-    use General, only: random_number_wrapper
-!
-    real, intent(in), dimension(mx,my,mz,mfarray) :: f
-    type (SNRemnant), intent(inout) :: SNR
-!
-    real, dimension(nx) :: rho_test, lnTT_test, TT_test
-    real, dimension(1) :: fran_location
-    integer, dimension(4) :: new_lmn
-    integer :: ii
-    integer :: deltar2, deltar2_test
-    integer :: nfound=0, chosen_site
-    integer :: m,n
-!
-      if (headtt) print*,'find_nearest_SNI: ENTER'
-!
-      call random_number_wrapper(fran_location)
-      if (iproc==SNR%iproc) then
-        deltar2=nx**2+ny**2+nx**2
-        do n=n1,n2
-        do m=m1,m2
-          if (ldensity_nolog) then
-            rho_test=f(l1:l2,m,n,irho)
-          else
-            rho_test=exp(f(l1:l2,m,n,ilnrho))
-          endif
-          call eoscalc(f,nx,lnTT=lnTT_test)
-          TT_test=exp(lnTT_test)
-!
-          do ii=l1,l2
-            if ((SNR%site%rho>rho_SN_min).and.(SNR%site%TT < TT_SN_max)) then
-              deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
-              if (deltar2_test < deltar2) then
-                nfound=1
-                deltar2=deltar2_test
-                new_lmn=(/ nfound, ii, m, n /)
-              elseif (deltar2==deltar2_test) then
-                nfound=nfound+1
-              endif
-            endif
-          enddo
-!
-        enddo
-        enddo
-!
-        if (nfound==0) then
-          new_lmn=(/ nfound, SNR%l, SNR%m, SNR%n /)
-        elseif (nfound>1) then
-          chosen_site=int(nfound*fran_location(1)+0.5)
-          nfound=0
-          search_two: do n=n1,n2
-          do m=m1,m2
-            if (ldensity_nolog) then
-              rho_test=f(l1:l2,m,n,irho)
-            else
-              rho_test=exp(f(l1:l2,m,n,ilnrho))
-            endif
-            call eoscalc(f,nx,lnTT=lnTT_test)
-            TT_test=exp(lnTT_test)
-!
-            do ii=l1,l2
-              if ((SNR%site%rho>rho_SN_min).and.(SNR%site%TT<TT_SN_max)) then
-                deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
-                if (deltar2==deltar2_test) then
-                  nfound=nfound+1
-                  if (nfound==chosen_site) then
-                    new_lmn=(/ 1, SNR%l, SNR%m, SNR%n /)
-                    exit search_two
-                  endif
-                endif
-              endif
-            enddo
-!
-          enddo
-          enddo search_two
-        endif
-      endif
-!
-      call mpibcast_int(new_lmn,4,SNR%iproc)
-      nfound=new_lmn(1)
-!
-      if (nfound>0) then
-        SNR%l=new_lmn(2)
-        SNR%m=new_lmn(3)
-        SNR%n=new_lmn(4)
-        call share_SN_parameters(f,SNR)
-      endif
-!
-    endsubroutine find_nearest_SNI
 !*****************************************************************************
     subroutine share_SN_parameters(f,SNR)
 !
