@@ -13,16 +13,18 @@ integer, parameter :: id_record_RANDOM_SEEDS     = 1
 ! deprecated:
 integer, parameter :: id_record_ISM_T_NEXT_OLD   = 250
 integer, parameter :: id_record_ISM_POS_NEXT_OLD = 251
-! currently active:
 integer, parameter :: id_record_ISM_BOLD_MASS    = 252
+! currently active:
 integer, parameter :: id_record_ISM_T_NEXT_SNI   = 253
 integer, parameter :: id_record_ISM_T_NEXT_SNII  = 254
-integer, parameter :: id_record_ISM_X_NEXT_SNII  = 255
-integer, parameter :: id_record_ISM_Y_NEXT_SNII  = 256
+integer, parameter :: id_record_ISM_X_CLUSTER    = 255
+integer, parameter :: id_record_ISM_Y_CLUSTER    = 256
+integer, parameter :: id_record_ISM_Z_CLUSTER    = 260
+integer, parameter :: id_record_ISM_T_CLUSTER    = 261
 integer, parameter :: id_record_ISM_TOGGLE_SNI   = 257
 integer, parameter :: id_record_ISM_TOGGLE_SNII  = 258
-integer, parameter :: id_record_ISM_SNRS         = 259
 ! deprecated:
+integer, parameter :: id_record_ISM_SNRS         = 259
 integer, parameter :: id_record_ISM_TOGGLE_OLD   = 1001
 integer, parameter :: id_record_ISM_SNRS_OLD     = 1002
 
