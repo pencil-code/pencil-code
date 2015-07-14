@@ -30,6 +30,8 @@
 /
 &interstellar_run_pars
   TT_SN_min=0
+  frac_eth=1.
+  frac_ecr=0.
 /
 &shear_run_pars
 /
