@@ -29,7 +29,6 @@
   lupw_ss=T
 /
 &interstellar_run_pars
-!  lcooltime_smooth=T
   TT_SN_min=0
 /
 &shear_run_pars
