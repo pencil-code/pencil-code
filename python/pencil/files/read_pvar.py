@@ -33,7 +33,7 @@ class pcpvar(object):
             if (proc==-1):
                 procdirs = filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir))
                 nprocs=len(procdirs)
-                ipars,pvars = collect_class_pdata(casedir=casedir,datadir=datadir,nprocs=nprocs)
+                ipars,pvars = collect_class_pdata(casedir=casedir,pfile=varfile,datadir=datadir,nprocs=nprocs)
             else:
                 ipars,pvars = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=proc)
             
@@ -116,14 +116,14 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
     ipar = np.squeeze(p_data['ipar'].reshape(p_data['ipar'].size))
     return ipar,partpars
     
-def collect_class_pdata(casedir='.',datadir='/data',nprocs='0'):
+def collect_class_pdata(casedir='.',pfile='pvar.dat',datadir='/data',nprocs='0'):
     if (nprocs==0):
         print "this should be greater than zero"
     else:
         procs=range(nprocs)
     
     for i in procs:
-        dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=i)
+        dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
         if i == 0:
             ipars = dom_ipar
             pvars = dom_pvar
