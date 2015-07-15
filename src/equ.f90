@@ -49,7 +49,7 @@ module Equ
       use Grid, only: calc_pencils_grid, get_grid_mn
       use Heatflux
       use Hydro
-!FAG      use Interstellar, only: interstellar_before_boundary
+      use Interstellar, only: interstellar_before_boundary
       use Lorenz_gauge
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
@@ -205,7 +205,7 @@ module Equ
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
-!FAG      if (linterstellar) call interstellar_before_boundary(f)
+      if (linterstellar) call interstellar_before_boundary(f)
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)

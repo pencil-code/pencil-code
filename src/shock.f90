@@ -387,7 +387,6 @@ module Shock
       use Boundcond
       use Mpicomm
       use Sub
-!FAG      use Interstellar, only: calc_snr_unshock
       use Magnetic, only: bb_unitvec_shock
 !
       logical :: early_finalize
@@ -499,7 +498,6 @@ module Shock
           if (lshock_max3_interp) then
             do n=n1+2,n2-2; do m=m1+2,m2-2
               call shock_max3_interp(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3_interp(f,ishock_perp,penc_perp)
@@ -510,7 +508,6 @@ module Shock
           else
             do n=n1+2,n2-2; do m=m1+2,m2-2
               call shock_max3(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3(f,ishock_perp,penc_perp)
@@ -583,7 +580,6 @@ module Shock
             do n=3,mz-2; do jj=2,4
               m=1+jj
               call shock_max3_interp(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3_interp(f,ishock_perp,penc_perp)
@@ -592,13 +588,11 @@ module Shock
               endif
               m=my-jj
               call shock_max3_interp(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
             enddo; enddo
             do kk=2,4; do m=6,my-5
               n=1+kk
               call shock_max3_interp(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3_interp(f,ishock_perp,penc_perp)
@@ -607,7 +601,6 @@ module Shock
               endif
               n=mz-kk
               call shock_max3_interp(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3_interp(f,ishock_perp,penc_perp)
@@ -619,7 +612,6 @@ module Shock
             do n=3,mz-2; do jj=2,4
               m=1+jj
               call shock_max3(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3(f,ishock_perp,penc_perp)
@@ -628,7 +620,6 @@ module Shock
               endif
               m=my-jj
               call shock_max3(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3(f,ishock_perp,penc_perp)
@@ -639,7 +630,6 @@ module Shock
             do kk=2,4; do m=6,my-5
               n=1+kk
               call shock_max3(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3(f,ishock_perp,penc_perp)
@@ -648,7 +638,6 @@ module Shock
               endif
               n=mz-kk
               call shock_max3(f,ishock,penc)
-!FAG              if (linterstellar) call calc_snr_unshock(penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
                 call shock_max3(f,ishock_perp,penc_perp)
