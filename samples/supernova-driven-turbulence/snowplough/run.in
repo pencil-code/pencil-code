@@ -29,8 +29,9 @@
   lupw_ss=T
 /
 &interstellar_run_pars
-  lcooltime_smooth=T
   TT_SN_min=0
+  cooling_select='WSW'
+  heating_select='wolfire'
 /
 &shear_run_pars
 /

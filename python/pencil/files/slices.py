@@ -497,7 +497,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
 
         if (t > tmin and t < tmax):
             ax.cla()
-            ax.imshow(plane)
+            ax.imshow(plane,vmin=amin,vmax=amax)
             fname = '_tmp%03d.png'%islice
             print 'Saving frame', fname
             fig.savefig(fname)
