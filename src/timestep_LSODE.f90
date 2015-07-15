@@ -30,7 +30,6 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ
-!FAG      use Interstellar, only: calc_snr_damp_int
       use Mpicomm
       use Particles_main
       use Shear, only: advance_shear
@@ -127,11 +126,6 @@ module Timestep
 !
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
-!
-!  Add artificial damping at the location of SN explosions for a short time
-!  after insertion.
-!
-!FAG        if (linterstellar) call calc_snr_damp_int(dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)

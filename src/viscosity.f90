@@ -1003,7 +1003,6 @@ module Viscosity
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
-!      use Interstellar, only: calc_snr_damping
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1731,12 +1730,6 @@ module Viscosity
         endif
         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
-!
-!  Special settings for interstellar runs.
-!
-!      if (linterstellar.and.lvisc_snr_damp) then
-!        call calc_snr_damping(p)
-!      endif
 !
 !  viscous force: Handle damping at the core of SNRs
 !
