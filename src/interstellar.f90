@@ -258,9 +258,9 @@ module Interstellar
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
 !  Appended null last term to all arrays for RBN and SS cooling
 !
-  double precision, dimension(11) :: coolH_cgs
+  double precision, dimension(11) :: lncoolH, coolH_cgs
   real, dimension(11) :: coolT_cgs
-  real, dimension(11) :: coolB, lncoolH, lncoolT
+  real, dimension(11) :: coolB, lncoolT
   integer :: ncool
 !
 !  TT & z-dependent uv-heating profile
@@ -515,7 +515,6 @@ module Interstellar
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
       if (heating_select == 'thermal-hs') then
-!        call thermal_hs(f,zrho)
         call heat_interstellar(f,heat_z)
       endif
 !
