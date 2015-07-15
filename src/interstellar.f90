@@ -211,7 +211,7 @@ module Interstellar
   real :: sigma_SN, sigma_SN1
   real, parameter :: width_SN_cgs=3.086E19
   real :: energy_width_ratio=1.
-  real :: mass_width_ratio=2.
+  real :: mass_width_ratio=1.
   real :: velocity_width_ratio=1.
   real :: outer_shell_proportion = 1.2
   real :: inner_shell_proportion = 1.
@@ -939,11 +939,11 @@ module Interstellar
         case (id_record_ISM_T_NEXT_SNII)
           if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
           done = .true.
-        case (id_record_ISM_X_NEXT_SNII)
-          if (read_persist ('ISM_X_NEXT_SNII', x_next_SNII)) return
+        case (id_record_ISM_X_CLUSTER)
+          if (read_persist ('ISM_X_CLUSTER', x_next_SNII)) return
           done = .true.
-        case (id_record_ISM_Y_NEXT_SNII)
-          if (read_persist ('ISM_Y_NEXT_SNII', y_next_SNII)) return
+        case (id_record_ISM_Y_CLUSTER)
+          if (read_persist ('ISM_Y_CLUSTER', y_next_SNII)) return
           done = .true.
         case (id_record_ISM_TOGGLE_SNI)
           if (read_persist ('ISM_TOGGLE_SNI', lSNI)) return
@@ -987,8 +987,8 @@ module Interstellar
 !
       if (write_persist ('ISM_T_NEXT_SNI', id_record_ISM_T_NEXT_SNI, t_next_SNI)) return
       if (write_persist ('ISM_T_NEXT_SNII', id_record_ISM_T_NEXT_SNII, t_next_SNII)) return
-      if (write_persist ('ISM_X_NEXT_SNII', id_record_ISM_X_NEXT_SNII, x_next_SNII)) return
-      if (write_persist ('ISM_Y_NEXT_SNII', id_record_ISM_Y_NEXT_SNII, y_next_SNII)) return
+      if (write_persist ('ISM_X_CLUSTER', id_record_ISM_X_CLUSTER, x_next_SNII)) return
+      if (write_persist ('ISM_Y_CLUSTER', id_record_ISM_Y_CLUSTER, y_next_SNII)) return
       if (write_persist ('ISM_TOGGLE_SNI', id_record_ISM_TOGGLE_SNI, lSNI)) return
       if (write_persist ('ISM_TOGGLE_SNII', id_record_ISM_TOGGLE_SNII, lSNII)) return
       if (write_persist ('ISM_BOLD_MASS', id_record_ISM_BOLD_MASS, boldmass)) return
