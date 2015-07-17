@@ -8,11 +8,6 @@
 # first directory level
 samples/*/src/*
 !samples/*/src/*.local
-samples/backwards-compatible/data/*
-!samples/backwards-compatible/data/param.nml
-!samples/backwards-compatible/data/proc0/var.dat
-!samples/backwards-compatible/data/proc0/dim.dat
-!samples/backwards-compatible/data/proc0/grid.dat
 samples/*/*.csh
 samples/*/*.log
 samples/*/Makefile
@@ -40,3 +35,9 @@ samples/*/*/*/.pc_build_history
 samples/*/*/*/COMPLETED
 samples/*/*/*/runtime
 samples/*/*/*/fort.*
+# exceptions for indivudual samples
+samples/backwards-compatible/data/*
+!samples/backwards-compatible/data/param.nml
+!samples/backwards-compatible/data/proc0/var.dat
+!samples/backwards-compatible/data/proc0/dim.dat
+!samples/backwards-compatible/data/proc0/grid.dat
