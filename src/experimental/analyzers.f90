@@ -17,7 +17,7 @@ module Analyzers
   
   contains
 
-  subroutine setAnalyzer(analyzername,analyzer,resultlen)
+  subroutine getAnalyzer(analyzername,analyzer,resultlen)
     implicit none
     character(len=30), intent(in) :: analyzername
     procedure(AnalyzerTemplate), pointer , intent(inout):: analyzer
@@ -32,14 +32,14 @@ module Analyzers
       resultlen = 1
       analyzer => identity
     end if
-  end subroutine setAnalyzer
+  end subroutine getAnalyzer
 
   function sumt(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen
     real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
     real, dimension(xdim1,xdim2,resultlen) :: analysis
-    write(*,*) 'analyzing...sumt', xdim1, xdim2, tlen, resultlen
+    !write(*,*) 'analyzing...sumt', xdim1, xdim2, tlen, resultlen
     analysis(1:xdim1,1:xdim2,1) = sum(dataset,dim=3)
   end function
 
