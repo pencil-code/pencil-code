@@ -109,6 +109,15 @@ def fetch_particle_data(datadir, dims, pdims):
     # TODO: Chek if all particles are found exactly once.
     # Allow for particles not being found if particles are inserted continously.
 
+
+    # Check if any removed particles are found. If not, print statement
+    # and return None-object to avoid errors.
+    if (not 'index_rmv' in locals()):
+        print 'Warning: No particles removed from simulation'
+        index_rmv = None
+        time_rmv = None
+        part_rmv = np.array([[None]*5])
+
     # Return object with all information about removed particles
     return par_rmv(index_rmv, time_rmv, part_rmv)
 
