@@ -126,6 +126,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
+      lwrite_dim_again,&
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &

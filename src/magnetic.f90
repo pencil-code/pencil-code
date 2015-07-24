@@ -190,7 +190,7 @@ module Magnetic
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
-  logical :: lskip_projection_aa=.false., lno_second_ampl_aa=.false.
+  logical :: lskip_projection_aa=.false., lno_second_ampl_aa=.true.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -824,7 +824,7 @@ module Magnetic
 !  Writing files for use with IDL
 !
         if (lroot) write(4,*) ',ee $'
-        write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+        if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
 !
 !  register the mean-field module
@@ -1434,7 +1434,7 @@ module Magnetic
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection_aa,lno_second_ampl_aa)
+            lskip_projection_aa,lno_second_ampl_aa,.true.)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')

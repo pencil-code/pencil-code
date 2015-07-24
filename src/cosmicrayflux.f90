@@ -30,6 +30,7 @@ module Cosmicrayflux
   real, dimension(nx) :: b_exp
   logical :: lbb_dependent_perp_diff = .false.
   logical :: lcosmicrayflux_diffus_dt = .false.
+  logical :: ladvect_fcr=.false., lupw_fcr=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
       tau, kpara, kperp, lbb_dependent_perp_diff, &
@@ -37,7 +38,7 @@ module Cosmicrayflux
 !
   namelist /cosmicrayflux_run_pars/ &
       tau, kpara, kperp, lbb_dependent_perp_diff, bmin, &
-      lcosmicrayflux_diffus_dt
+      lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr
 !
   contains
 !***********************************************************************
@@ -177,6 +178,8 @@ module Cosmicrayflux
       real, dimension(nx,3) :: BuiBujgecr, bunit
       real, dimension(nx)   :: b2, b21, b_abs
       real, dimension(nx)   :: tmp
+      real, dimension (nx,3,3) :: gfcr
+      real, dimension (nx,3) :: ugfcr
       integer :: i, j, k
       type (pencil_case) :: p
 !
@@ -227,6 +230,15 @@ module Cosmicrayflux
             - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
             - kperp*p%gecr                                    &
             - (kpara - kperp)*BuiBujgecr
+      endif
+!
+!  Allow optional use of advection term for fcr.
+!
+      if (ladvect_fcr) then
+        call gij(f,ifcr,gfcr,1)
+        call u_dot_grad(f,ifcr,gfcr,p%uu,ugfcr,UPWIND=lupw_fcr)
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
+            - ugfcr(1:nx,1:3)    
       endif
 !
 !  For the timestep calculation, needs maximum diffusion or advection.

@@ -168,8 +168,8 @@ my $rerunfile = './RERUN';
 my $newdirfile = './NEWDIR';
 my $copy_snapshots = 'copy-snapshots';
 my $copy_snapshots_log = './copy-snapshots.log';
-my $start_x = 'src/start.x';
-my $run_x   = 'src/run.x';
+my $start_x = './src/start.x';
+my $run_x   = './src/run.x';
 
 my $locked = 0;
 my $booted_lam = 0;
