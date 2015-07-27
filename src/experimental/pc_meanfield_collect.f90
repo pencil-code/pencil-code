@@ -42,15 +42,17 @@ program pc_meanfield_collect
 
   integer :: hdferr
   integer(HID_T) :: hdffileid, hdfavggroup, hdffieldgroup, hdfspace, hdfdataset, hdfmemtype
-  integer(HID_T) :: phdf_fileid, phdf_avggroup, phdf_memtype
-
+  integer(HID_T) :: phdf_fileid, phdf_avggroup, phdf_memtype, phdf_dataspace
   integer(HID_T), dimension(:), allocatable :: phdf_fieldgroups
-  integer(HID_T), dimension(:,:), allocatable :: phdf_spaces, phdf_datasets
-  integer(HSIZE_T) , dimension(:,:), allocatable :: phdf_dims
+  integer(HID_T), dimension(:,:), allocatable :: phdf_spaces, phdf_chunkspaces, phdf_datasets, &
+                                                 phdf_plist_ids
+
+  integer(HSIZE_T) , dimension(:,:), allocatable :: phdf_dims, phdf_chunkdims
   
   integer(HID_T) :: plist_id
                     
   integer(HSIZE_T) , dimension(3) :: hdfdims
+  integer(HSIZE_T) , dimension(3) :: phdf_stride, phdf_count, phdf_block, phdf_offsets
   logical :: hdfexists, phdf_exists
   
   
@@ -70,7 +72,7 @@ program pc_meanfield_collect
 
   logical :: initerror, runerror, received, filecheck
   
-  integer, dimension(:), allocatable :: fake_procs
+  integer, dimension(:), allocatable   :: fake_procs
   
   character (len=intlen) :: chproc
   
@@ -79,10 +81,12 @@ program pc_meanfield_collect
 
   ! Data read variables
   integer :: iavg, ierr, ntimesteps, navgs, ndim1, ndim2, &
+             ndim1_full, ndim2_full, &
              naverages, ndim2read, i, j, k, nanalyzers, &
              ianalyzer
   
   integer, dimension(:), allocatable :: avgdims
+  integer, dimension(:,:), allocatable :: offsets
 
   real, dimension(:,:,:,:)  , allocatable   :: tmparray2
   real, dimension(:,:,:)    , allocatable   :: dataarray, tmparray, tmparray3
@@ -180,6 +184,7 @@ program pc_meanfield_collect
     allocate(avgfields(len_avgfields))
     allocate(analyzernames(len_analyzers))
     allocate(fake_procs(nprocx*nprocy*nprocz))
+    allocate(offsets(2,nprocx*nprocy*nprocz))
     avgnames    = ''
     avgfields   = ''
     analyzernames   = ''
@@ -211,6 +216,8 @@ program pc_meanfield_collect
         else if (avgname == 'zaver') then
           ndim1 = nx
           ndim2 = ny
+          ndim1_full = nxgrid
+          ndim2_full = nygrid
           ndim2read=ny
           infile='zaver.in'
           datafilename='zaverages.dat'
@@ -242,6 +249,7 @@ program pc_meanfield_collect
             endif
             if (ipz == 0) then
               fake_procs(j) = fake_proc
+              offsets(:,j) = [ndim1*ipx, ndim2*ipy]
               j = j + 1
             end if
           end do
@@ -339,8 +347,10 @@ program pc_meanfield_collect
                           MPI_INT, analysisproc, 0, MPI_COMM_WORLD, mpierr)
             call MPI_SEND(fake_proc, 1, &
                           MPI_INT, analysisproc, 1, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND(offsets(:,i), 2, &
+                          MPI_INT, analysisproc, 2, MPI_COMM_WORLD, mpierr)
             call MPI_RECV(received, 1, &
-                          MPI_LOGICAL, analysisproc, 2, MPI_COMM_WORLD, mpistat, mpierr)
+                          MPI_LOGICAL, analysisproc, 3, MPI_COMM_WORLD, mpistat, mpierr)
             analysisproc = analysisproc+1
             if (analysisproc>=nprocs) then
               analysisproc = 1
@@ -401,8 +411,13 @@ program pc_meanfield_collect
           ! MPI communication part
           call MPI_RECV(fake_proc, 1, &
                         MPI_INT, root, 1, MPI_COMM_WORLD, mpistat, mpierr)
+          if (.not. allocated(offsets)) then
+            allocate(offsets(2,1))
+          end if
+          call MPI_RECV(offsets(:,1), 2, &
+                        MPI_INT, root, 2, MPI_COMM_WORLD, mpistat, mpierr)
           call MPI_SEND(received, 1, &
-                        MPI_LOGICAL, root, 2, MPI_COMM_WORLD, mpierr)
+                        MPI_LOGICAL, root, 3, MPI_COMM_WORLD, mpierr)
           chproc = itoa (fake_proc)
           call safe_character_assign (directory_dist, &
                                                   trim (datadir_snap)//'/proc'//chproc)
@@ -550,7 +565,6 @@ program pc_meanfield_collect
             read(1, IOSTAT=ierr) tmparray2(:,:,:,i)
           end do
           
-
           tmparray3 = tmparray2(:,:,avgdims(1),:)
           do ianalyzer=1,nanalyzers
             nullify(analyzerfunction)
@@ -593,7 +607,24 @@ program pc_meanfield_collect
               call H5Dclose_F(hdfdataset,hdferr)
               call H5Sclose_F(hdfspace, hdferr)
               call H5Gclose_F(hdffieldgroup, hdferr)
+
+              ! Parallel version
+              call H5Dget_space_F(phdf_datasets(ianalyzer,iavg), phdf_dataspace, hdferr)
+              phdf_offsets  = [ offsets(1,1), offsets(2,1), 0 ]
+              phdf_count    = [ 1, 1, 1 ]
+              phdf_stride   = [ 1, 1, 1 ]
+              phdf_block    = [ ndim1, ndim2, resultlen ]
+              write(*,*) fake_proc, phdf_offsets
+              call H5Sselect_hyperslab_F(phdf_dataspace, H5S_SELECT_SET_F, phdf_offsets, phdf_count, &
+                                         hdferr,phdf_stride, phdf_block)
+              call H5Dwrite_F(phdf_datasets(ianalyzer,iavg), hdfmemtype, dataarray, &
+                                         phdf_dims(:,ianalyzer), hdferr, &
+                                         file_space_id  = phdf_dataspace, &
+                                         mem_space_id   = phdf_chunkspaces(ianalyzer, iavg))
+
+              call H5Sclose_F(phdf_dataspace, hdferr)
             end do
+
           end do
           close(1)
           close(3)
@@ -745,6 +776,10 @@ program pc_meanfield_collect
                 MPI_INT,  0, MPI_COMM_WORLD, mpierr)
       call MPI_BCAST(ndim2read, 1, &
                 MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim1_full, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim2_full, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
       call MPI_BCAST(avgname, fnlen, &
                 MPI_CHAR, 0, MPI_COMM_WORLD, mpierr)
       call MPI_BCAST(datafilename, fnlen, &
@@ -789,19 +824,32 @@ program pc_meanfield_collect
       if (allocated(phdf_spaces)) then
         deallocate(phdf_spaces)
       end if
+      if (allocated(phdf_chunkspaces)) then
+        deallocate(phdf_chunkspaces)
+      end if
       if (allocated(phdf_datasets)) then
         deallocate(phdf_datasets)
+      end if
+      if (allocated(phdf_plist_ids)) then
+        deallocate(phdf_plist_ids)
       end if
       if (allocated(phdf_dims)) then
         deallocate(phdf_dims)
       end if
+      if (allocated(phdf_chunkdims)) then
+        deallocate(phdf_chunkdims)
+      end if
       allocate(phdf_fieldgroups(navgs))
       allocate(phdf_spaces(nanalyzers,navgs))
       allocate(phdf_datasets(nanalyzers,navgs))
+      allocate(phdf_chunkspaces(nanalyzers,navgs))
+      allocate(phdf_plist_ids(nanalyzers,navgs))
       allocate(phdf_dims(3,naverages))
+      allocate(phdf_chunkdims(3,naverages))
       do ianalyzer=1,nanalyzers
         call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-        phdf_dims(:,ianalyzer) = [ndim1, ndim2, resultlen]
+        phdf_dims(:,ianalyzer) = [ndim1_full, ndim2_full, resultlen]
+        phdf_chunkdims(:,ianalyzer) = [ndim1, ndim2, resultlen]
       end do
       
       call H5Gcreate_F(phdf_fileid, "/"//trim(avgname), phdf_avggroup, hdferr)
@@ -815,13 +863,20 @@ program pc_meanfield_collect
           write(*,*) 'CreatedG:', "/"//trim(avgname)//"/"//avgfields(iavg)
         end if
         do ianalyzer=1,nanalyzers
+          write(*,*) phdf_dims(:,ianalyzer)
+          write(*,*) phdf_chunkdims(:,ianalyzer)
           call H5Screate_simple_F(3, phdf_dims(:,ianalyzer), phdf_spaces(ianalyzer,iavg), hdferr)
+          call H5Screate_simple_F(3, phdf_chunkdims(:,ianalyzer), phdf_chunkspaces(ianalyzer,iavg), hdferr)
           if (lroot) then
             write(*,*) 'CreatedS:', iavg, ianalyzer
           end if
+          call H5Pcreate_F(H5P_DATASET_CREATE_F, phdf_plist_ids(ianalyzer,iavg), hdferr)
+          call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 3, phdf_chunkdims(:,ianalyzer), hdferr)
           call H5Dcreate_F(phdf_fieldgroups(iavg), trim(analyzernames(ianalyzer)), &
                            H5T_IEEE_F32LE, phdf_spaces(ianalyzer,iavg), &
-                           phdf_datasets(ianalyzer,iavg), hdferr)
+                           phdf_datasets(ianalyzer,iavg), hdferr, phdf_plist_ids(ianalyzer,iavg))
+          
+          call H5Sclose_F(phdf_spaces(ianalyzer,iavg), hdferr)
           if (lroot) then
             write(*,*) 'CreatedD:', iavg, ianalyzer
           end if
@@ -837,10 +892,11 @@ program pc_meanfield_collect
       do iavg=1,navgs
         do ianalyzer=1,nanalyzers
           call H5Dclose_F(phdf_datasets(ianalyzer,iavg),hdferr)
+          call H5Pclose_F(phdf_plist_ids(ianalyzer,iavg), hdferr)
           if (lroot) then
             write(*,*) 'ClosedD:', iavg, ianalyzer
           end if
-          call H5Sclose_F(phdf_spaces(ianalyzer,iavg), hdferr)
+          call H5Sclose_F(phdf_chunkspaces(ianalyzer,iavg), hdferr)
           if (lroot) then
             write(*,*) 'ClosedS:', iavg, ianalyzer
           end if
@@ -854,7 +910,6 @@ program pc_meanfield_collect
       if (lroot) then
         write(*,*) 'ClosedG:', "/"//trim(avgname)
       end if
-      
 
     end subroutine CloseH5Groups
 
