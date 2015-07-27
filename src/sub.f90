@@ -116,6 +116,7 @@ module Sub
 !
   interface notanumber          ! Overload the `notanumber' function
     module procedure notanumber_0
+    module procedure notanumber_0d
     module procedure notanumber_1
     module procedure notanumber_2
     module procedure notanumber_3
@@ -3199,6 +3200,9 @@ module Sub
 !
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
+!  27-jul-15/MR  : try to fix a strange behavior with gfortran:
+!                  when crashing, a big number of unmotivated snapshots
+!                  is output -> test of NaN in t
 !
       use General, only: itoa
 !
@@ -3214,6 +3218,11 @@ module Sub
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
+!
+      if (notanumber(t)) then
+        lout=.false.
+        return
+      endif
 !
 !  Use t_sp as a shorthand for either t or lg(t).
 !
@@ -3773,6 +3782,7 @@ module Sub
 !  Derivative of smooth unit STEP() function given above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
 !  inconsistenies.
+!  MR: perhaps to be merged with step
 !
 !  23-jan-02/wolf: coded
 !
@@ -4101,6 +4111,22 @@ module Sub
       notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
 !
     endfunction notanumber_0
+!***********************************************************************
+    function notanumber_0d(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_0d
+      double precision :: f
+!
+      notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+!
+    endfunction notanumber_0d
 !***********************************************************************
     function notanumber_1(f)
 !
