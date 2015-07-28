@@ -85,7 +85,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5
+   real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
    real, pointer :: eta
    integer :: itheta5, imu5
 !!   integer :: ispecaux=0
@@ -93,7 +93,7 @@ module Special
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial
+      initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
       diffmu5, lambda5
@@ -187,9 +187,12 @@ module Special
 !
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('test')
-          f(:,:,:,itheta5) = 5.
-          f(:,:,:,imu5) = 6.
+        case ('const')
+          f(:,:,:,itheta5) = theta5_const
+          f(:,:,:,imu5) = mu5_const
+        case ('zero')
+          f(:,:,:,itheta5) = 0.
+          f(:,:,:,imu5) = 0.
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -294,7 +297,7 @@ module Special
 !
 !  Evolution of mu5
 !
-      if (diffmu5/=0.) df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
         +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of theta5
