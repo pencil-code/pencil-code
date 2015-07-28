@@ -243,6 +243,7 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
+  integer :: idiag_Kkramersm=0   ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -939,7 +940,7 @@ module Energy
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
         call put_shared_variable('nkramers',nkramers)
       else
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
       star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
       call put_shared_variable('star_params',star_params)
@@ -4327,7 +4328,9 @@ module Energy
 !
       chix = p%cp1*Krho1
     
-      if (l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+      if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+
+      if (ldiagnos) call sum_mn_name(Krho1,idiag_Kkramersm)
 !
 !  Write radiative flux array.
 !
@@ -4567,7 +4570,7 @@ module Energy
 !  "Turbulent" entropy diffusion.
 !
 !  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not curently being checked.
+!  But this is not currently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -5638,7 +5641,7 @@ module Energy
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5677,6 +5680,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+        call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
