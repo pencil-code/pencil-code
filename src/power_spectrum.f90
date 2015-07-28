@@ -863,7 +863,7 @@ module power_spectrum
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fourier_transform, fft_xyz_parallel
+    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, cross, grad, curli
 !
@@ -1145,7 +1145,7 @@ module power_spectrum
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fourier_transform, fft_xyz_parallel
+    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
