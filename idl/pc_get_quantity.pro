@@ -672,6 +672,16 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
 	end
+	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
+		; Magnetic field helicity (positive part)
+		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
+		return, H_mag_pos
+	end
+	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
+		; Magnetic field helicity (negative part)
+		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
+		return, H_mag_neg
+	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
 		; Electric current helicity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')

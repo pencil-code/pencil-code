@@ -127,6 +127,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_parallel:'field-aligned electric field', $
 		E_perpendicular:'field-perpendicular electric field', $
 		H_mag:'magnetic field helicity', $
+		H_mag_pos:'positive magnetic field helicity', $
+		H_mag_neg:'negative magnetic field helicity', $
 		H_j:'electric current helicity', $
 		dH_mag_dt:'change rate of magnetic field helicity', $
 ;		grad_E_abs_abs:'grad electric field strength', $
@@ -286,6 +288,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_E_abs:'E', $
 		grad_E_abs_abs:'E', $
 		H_mag:['A','B'], $
+		H_mag_pos:'H_mag', $
+		H_mag_neg:'H_mag', $
 		H_j:['B','j'], $
 		dH_mag_dt:['H_j'], $
 		beta:['P_therm', 'B_2'], $
