@@ -197,7 +197,7 @@ module power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
       use Mpicomm, only: mpireduce_sum
       use Sub, only: curli
 !
@@ -267,7 +267,7 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-     call fourier_transform(a1,b1)
+     call fft_xyz_parallel(a1,b1)
 !
 !  integration over shells
 !
@@ -1335,7 +1335,7 @@ module power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-    use Fourier, only: fourier_transform
+    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: curli, grad
 !
@@ -1429,7 +1429,7 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-  call fourier_transform(a_re,a_im)
+  call fft_xyz_parallel(a_re,a_im)
 !
 !  integration over shells
 !
