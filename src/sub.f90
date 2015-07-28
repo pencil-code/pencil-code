@@ -116,7 +116,6 @@ module Sub
 !
   interface notanumber          ! Overload the `notanumber' function
     module procedure notanumber_0
-  ! module procedure notanumber_zero_d
     module procedure notanumber_1
     module procedure notanumber_2
     module procedure notanumber_3
@@ -3219,7 +3218,7 @@ module Sub
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
 !
-      if (notanumber(t)) then
+      if (notanumber_0d(t)) then
         lout=.false.
         return
       endif
@@ -4112,7 +4111,7 @@ module Sub
 !
     endfunction notanumber_0
 !***********************************************************************
-  ! function notanumber_zero_d(f)
+   function notanumber_0d(f)
 !
 !  Check for NaN or Inf values.
 !  Not well tested with all compilers and options, but avoids false
@@ -4121,12 +4120,12 @@ module Sub
 !
 !  27-Jul-15/MR: adapted
 !
-  !   logical :: notanumber_zero_d
-  !   double precision :: f
+     logical :: notanumber_0d
+     double precision :: f
 !
-  !   notanumber_zero_d = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
 !
-  ! endfunction notanumber_zero_d
+    endfunction notanumber_0d
 !***********************************************************************
     function notanumber_1(f)
 !
