@@ -174,7 +174,7 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
         logscale
             Whether or not the color map is in logarithmic scale.
     """
-    # Chao-Chin Yang, 2015-07-11
+    # Chao-Chin Yang, 2015-07-28
     from collections.abc import Sequence
     import numpy as np
     from scipy.integrate import simps
@@ -242,11 +242,12 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
                     vmax = c + a
         return vmin, vmax
     # Center the range if requested.
-    if type(vmin) is np.ndarray:
-        for i in range(nt):
-            vmin[i], vmax[i] = get_centered_range(vmin[i], vmax[i])
-    else:
-        vmin, vmax = get_centered_range(vmin, vmax)
+    if center:
+        if type(vmin) is np.ndarray:
+            for i in range(nt):
+                vmin[i], vmax[i] = get_centered_range(vmin[i], vmax[i])
+        else:
+            vmin, vmax = get_centered_range(vmin, vmax)
     return vmin, vmax
 #=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, **kwarg):
