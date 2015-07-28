@@ -87,6 +87,8 @@ module Sub
   public :: smooth, get_smooth_kernel
 !
   public :: ludcmp, lubksb
+  public :: bspline_basis, bspline_interpolation, bspline_precondition
+!
   public :: gij_psi, gij_psi_etc
   public :: xlocation, ylocation, zlocation, location_in_proc, position
   public :: register_report_aux
@@ -5471,6 +5473,148 @@ nameloop: do
       endif
 !
     endfunction interp1
+!***********************************************************************
+    subroutine bspline_basis(k, x, b)
+!
+!  Computes the values of the non-zero B-spline basis functions
+!  B_{i,k}(j+x) for i = j-k+1, j-k+2, ..., j.  The knot sequence {t_i)
+!  is assumed to be infinite and be integers, i.e., t_i = i for all
+!  integer i.
+!
+!  28-jul-15/ccyang: coded.
+!
+!  Input Arguments
+!      k   Number of knot spans for each basis function, which has order
+!          (k-1).
+!      x   A number in [0,1).
+!  Output Argument
+!      b   An array of k elements, where b(i) = B_{j-k+i,k}(j+x).
+!
+      integer, intent(in) :: k
+      real, intent(in) :: x
+      real, dimension(k), intent(out) :: b
+!
+      integer :: i, j
+!
+!  Work up the order column by column.
+!
+      b = 0.0
+      b(1) = 1.0
+      order: do j = 2, k
+        b(j) = x * b(j-1)
+        do i = j - 1, 2, -1
+          b(i) = (x - real(i-j)) * b(i-1) + (real(i) - x) * b(i)
+        end do
+        b(1) = (1.0 - x) * b(1)
+        b(1:j) = b(1:j) / real(j-1)
+      enddo order
+!
+    endsubroutine bspline_basis
+!***********************************************************************
+    subroutine bspline_interpolation(n, k, f, a, indx, shift)
+!
+!  Uses the B-spline interpolation to periodically shift a regular array
+!  of data nodes.
+!
+!  28-jul-15/ccyang: coded.
+!
+!  Input/Output Argument
+!      f   An array of node data; interpolated after shift on return.
+!  Input Arguments
+!      n   Number of nodes.
+!      k   Number of knot spans for each basis function, which has order
+!          (k-1).
+!      a   Preconditioned by bspline_precondition() and then LU
+!          decomposed by ludcmp().
+!      indx
+!          Index permutations returned by ludcmp().
+!      shift
+!          Shift in unit of array index.
+!
+      integer, intent(in) :: n, k
+      real, dimension(n), intent(inout) :: f
+      real, dimension(n,n), intent(in) :: a
+      integer, dimension(n), intent(in) :: indx
+      real, intent(in) :: shift
+!
+      real, dimension(n) :: b, c
+      integer :: i, j
+!
+!  Solve for the coefficients for the B-spline basis functions.
+!
+      c = f
+      call lubksb(a, indx, c)
+!
+!  Find the values of the basis functions at the interpolation points.
+!
+      b = 0.0
+      j = ceiling(shift - 0.5)
+      call bspline_basis(k, 0.5 - shift + real(j), b(1:k))
+!
+!  Make the interpolation.
+!
+      j = k + j
+      do i = 1, n
+        f(i) = sum(cshift(b, j - i) * c)
+      enddo
+!
+    endsubroutine bspline_interpolation
+!***********************************************************************
+    subroutine bspline_precondition(n, k, a)
+!
+!  Sets up the linear system for the coefficients of the B-spline basis
+!  functions, assuming periodic boundary conditions.  The linear system
+!  reads
+!
+!      A x = f,
+!
+!  where
+!          [ B_{1,k}(0.5)   B_{2,k}(0.5)   B_{3,k}(0.5)   ... B_{n,k}(0.5)   ]
+!      A = [ B_{1,k}(1.5)   B_{2,k}(1.5)   B_{3,k}(1.5)   ... B_{n,k}(1.5)   ],
+!          [ ...            ...            ...            ... ...            ]
+!          [ B_{1,k}(n-0.5) B_{2,k}{n-0.5) B_{3,k}(n-0.5) ... B_{n,k}(n-0.5) ]
+!
+!      x = [ alpha_1, alpha_2, alpha_3, ..., alpha_n ]^T,
+!
+!  is the coefficients,
+!
+!      f = [ f_1, f_2, f_3, ..., f_n ],
+!
+!  is the node data.  The B-spline interpolation is then given by
+!
+!      f(x) = sum_i B_{i,k)(x)
+!
+!  with
+!
+!      f(i-0.5) = f_i, i = 1, 2, ..., n.
+!
+!  28-jul-15/ccyang: coded.
+!
+!  Input Arguments
+!      n   Number of nodes.
+!      k   Number of knot spans for each B-spline basis function, which
+!          has order (k-1).
+!  Output Argument
+!      a   The square matrix for the linear system.
+!
+      integer, intent(in) :: n, k
+      real, dimension(n,n), intent(out) :: a
+!
+      real, dimension(n) :: b
+      integer :: i
+!
+!  Find the values of the B-spline basis functions.
+!
+      b = 0.0
+      call bspline_basis(k, 0.5, b(1:k))
+!
+!  Cyclically assign the basis functions into the square matrix.
+!
+      do i = 1, n
+        a(i,:) = cshift(b, k - i)
+      enddo
+!
+    endsubroutine bspline_precondition
 !***********************************************************************
     subroutine ludcmp(a,indx)
 !
