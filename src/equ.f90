@@ -26,6 +26,7 @@ module Equ
 !  12-may-12/MR: call of density_before_boundary added for boussinesq;
 !                moved call of timing after call of anelastic_after_mn
 !  26-aug-13/MR: added call of diagnostic for imaginary parts
+!   9-jun-15/MR: call of gravity_after_boundary added
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -325,6 +326,7 @@ module Equ
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
       if (lenergy)                call calc_lenergy_pars(f)
+      if (lgrav)                  call gravity_after_boundary(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
