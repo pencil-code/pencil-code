@@ -120,7 +120,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
-		E_abs:'electric field strength', $
+		EMF_abs:'electro motive force strength', $
+		E_j_abs:'current electric field strength', $
 		E_x:'electric field x', $
 		E_y:'electric field y', $
 		E_z:'electric field z', $
@@ -208,6 +209,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dy:'magnetic field y-derivative', $
 		dB_dz:'magnetic field z-derivative', $
 		E:'electric field', $
+		EMF:'electro motive force', $
+		E_j:'current electric field', $
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure' $
@@ -280,6 +283,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dz:'A', $
 		E:['u','A'], $
 		E_abs:'E', $
+		EMF:['u','A'], $
+		EMF_abs:'EMF', $
+		E_j:'j', $
+		E_j_abs:'E_j', $
 		E_x:'E', $
 		E_y:'E', $
 		E_z:'E', $
