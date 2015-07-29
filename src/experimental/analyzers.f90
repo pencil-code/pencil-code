@@ -11,9 +11,9 @@ module Analyzers
     end function AnalyzerTemplate
   end interface
 
-  integer, parameter :: npossibleanalyzers = 2
+  integer, parameter :: npossibleanalyzers = 3
   character(len=30), dimension(npossibleanalyzers), parameter :: possibleanalyzers = &
-                                       [ character(len=30) :: 'sumt', 'sumt2' ]
+                                       [ character(len=30) :: 'sum', 'average', 'identity']
   
   contains
 
@@ -22,38 +22,38 @@ module Analyzers
     character(len=30), intent(in) :: analyzername
     procedure(AnalyzerTemplate), pointer , intent(inout):: analyzer
     integer, intent(inout) :: resultlen
-    if (trim(analyzername) == 'sumt') then
+    if (trim(analyzername) == 'sum') then
       resultlen = 1
-      analyzer => sumt
-    else if (trim(analyzername) == 'sumt2') then
-      resultlen = 2
-      analyzer => sumt2
+      analyzer => analyzer_sum
+    else if (trim(analyzername) == 'average') then
+      resultlen = 1
+      analyzer => analyzer_average
+    else if (trim(analyzername) == 'identity') then
+      resultlen = 1
+      analyzer => analyzer_identity
     else
-      resultlen = 1
-      analyzer => identity
+      resultlen = -1
+      nullify(analyzer)
     end if
   end subroutine getAnalyzer
 
-  function sumt(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
+  function analyzer_sum(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen
     real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
     real, dimension(xdim1,xdim2,resultlen) :: analysis
-    !write(*,*) 'analyzing...sumt', xdim1, xdim2, tlen, resultlen
     analysis(1:xdim1,1:xdim2,1) = sum(dataset,dim=3)
   end function
 
-  function sumt2(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
+  function analyzer_average(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen
     real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
     real, dimension(xdim1,xdim2,resultlen) :: analysis
-    write(*,*) 'analyzing...sumt2', xdim1, xdim2, tlen, resultlen
-    analysis(1:xdim1,1:xdim2,1) = sum(dataset,dim=3)
-    analysis(1:xdim1,1:xdim2,2) = sum(dataset,dim=3)
+    analysis(1:xdim1,1:xdim2,1) = sum(dataset,dim=3)/tlen
   end function
 
-  function identity(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
+  function analyzer_identity(dataset, xdim1, xdim2, tlen, resultlen) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen
     real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
