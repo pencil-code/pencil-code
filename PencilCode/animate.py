@@ -173,11 +173,11 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
                 'mean'
                     Time-averaged minimum and maximum.
             Otherwise, user-defined range and returned as is.
+        logscale
+            Whether or not the color map is in logarithmic scale.
         tmin
             If not None, the range determination is restricted to
             t >= tmin.  No effect if drange is 'dynamic'.
-        logscale
-            Whether or not the color map is in logarithmic scale.
     """
     # Chao-Chin Yang, 2015-07-30
     from collections.abc import Sequence
