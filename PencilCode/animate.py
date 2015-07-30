@@ -158,6 +158,8 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
             Sequence of time points.
         data
             Sequence in time of numpy arrays.
+
+    Keyword Arguments:
         center
             If center is True, the range is centered at 0 for
             logscale = False, or 1 for logscale = True.  If center is
