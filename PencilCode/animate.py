@@ -177,7 +177,7 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
         logscale
             Whether or not the color map is in logarithmic scale.
     """
-    # Chao-Chin Yang, 2015-07-28
+    # Chao-Chin Yang, 2015-07-30
     from collections.abc import Sequence
     import numpy as np
     from scipy.integrate import simps
@@ -187,43 +187,40 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
         return drange
     # Find the data range at each time.
     nt = len(t)
-    vmin, vmax, vposmin = np.empty(nt), np.empty(nt), np.empty(nt)
+    vmin, vmax = np.empty(nt), np.empty(nt)
     tiny = float_info.min
     for i, d in enumerate(data):
         if d.dtype.names is None:
             vmin1, vmax1 = d.min(), d.max()
             indices = d > 0
-            vposmin1 = d[indices].min() if indices.any() else np.inf
+            vposmin = d[indices].min() if indices.any() else np.inf
         else:
-            vmin1, vmax1, vposmin1 = np.inf, -np.inf, np.inf
+            vmin1, vmax1, vposmin = np.inf, -np.inf, np.inf
             for n in d.dtype.names:
                 d1 = d[n]
                 vmin1 = min(vmin1, d1.min())
                 vmax1 = max(vmax1, d1.max())
                 indices = d1 > 0
-                vposmin1 = min(vposmin1, (d1[indices].min() if indices.any() else np.inf))
+                vposmin = min(vposmin, (d1[indices].min() if indices.any() else np.inf))
         vmin[i], vmax[i] = vmin1, vmax1
-        vposmin[i] = vposmin1 if vposmin1 is not np.inf else tiny
+        # Guard against non-positive number if logscale is True.
+        if logscale and vmin[i] <= 0:
+            vmin[i] = vposmin if vposmin is not np.inf else tiny
     # Check the type of range requested.
     if drange == 'dynamic':
         pass
     else:
         if tmin is not None:
             indices = t >= tmin
-            t, vmin, vmax, vposmin = t[indices], vmin[indices], vmax[indices], vposmin[indices]
+            t, vmin, vmax = t[indices], vmin[indices], vmax[indices]
             nt = len(t)
         if drange == 'full':
             vmin, vmax = vmin.min(), vmax.max()
-            vposmin = vposmin.min()
         elif drange == 'mean':
             dt = t[-1] - t[0]
             vmin, vmax = simps(vmin, t) / dt, simps(vmax, t) / dt
-            vposmin = vposmin.min()
         else:
             raise ValueError("Unknown type of range '{}'".format(drange))
-    # Guard against non-positive number if logscale is True.
-    if logscale:
-        vmin = max(vmin, vposmin)
     # Function to center the range.
     if not isinstance(center, bool) and not isinstance(center, (int, float)):
         raise ValueError("Invalid value of the keyword center = {}".format(center))
