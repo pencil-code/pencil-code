@@ -105,8 +105,9 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-26
+    # Chao-Chin Yang, 2015-07-29
     from collections.abc import Sequence
+    from matplotlib.animation import FuncAnimation
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     import numpy as np
@@ -121,9 +122,10 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     norm = LogNorm(vmin=vmin0, vmax=vmax0) if logscale else Normalize(vmin=vmin0, vmax=vmax0)
     if logscale:
         c = c.clip(min(vmin) if vmin_dynamic else vmin, np.inf)
-    # Create the first plot.
+    # Initialize the plot.
     fig = plt.figure()
     ax = fig.gca()
+    time_template = r"$t = {:#.4G}$"
     pc = ax.pcolormesh(x, y, c[0].transpose(), norm=norm)
     ax.minorticks_on()
     ax.set_xlim(x[0], x[-1])
@@ -131,13 +133,12 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     ax.set_aspect('equal')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title("$t = {:#.4G}$".format(t[0]))
+    ax.set_title(time_template.format(t[0]))
     cb = plt.colorbar(pc)
     cb.set_label(clabel)
-    plt.show(block=False)
     # Loop over each time and update the plot.
-    for i in range(1,len(t)):
-        ax.set_title("$t = {:#.4G}$".format(t[i]))
+    def update(i):
+        text = ax.set_title(time_template.format(t[i]))
         pc.set_array(c[i].ravel(order='F'))
         if vmin_dynamic and vmax_dynamic:
             pc.set_clim(vmin[i], vmax[i])
@@ -145,7 +146,9 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
             pc.set_clim(vmin=vmin[i])
         elif vmax_dynamic:
             pc.set_clim(vmax=vmax[i])
-        fig.canvas.draw()
+        return text, pc
+    anim = FuncAnimation(fig, update, len(t), interval=25, repeat=False)
+    plt.show()
 #=======================================================================
 def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
     """Determines the data range to be plotted.
