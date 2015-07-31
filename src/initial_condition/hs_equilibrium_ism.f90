@@ -88,7 +88,7 @@ module InitialCondition
   real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
 !
   real, parameter :: rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible
+  real :: rho0ts=impossible, T0hs=impossible, amplaa
 !
 !
 !  TT & z-dependent uv-heating profile
@@ -99,7 +99,7 @@ module InitialCondition
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      rho0ts, T0hs, lthermal_hse
+      rho0ts, T0hs, lthermal_hse, amplaa
 !
   contains
 !***********************************************************************
@@ -282,6 +282,7 @@ module InitialCondition
       real :: ampl,tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
+      ampl = amplaa
       tmp2(:)=0.0
       sumtmp(:)=0.0
       if (ldensity_nolog) then
@@ -312,9 +313,9 @@ module InitialCondition
       print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
       if (ampl==0) then
         f(:,:,:,iaa:iaa+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set B field to zero; i=',i
+        if (lroot) print*,'ferriere_uniform_y: set B field to zero' 
       else
-        print*,'ferriere_uniform_y: uniform y-field approx rho; i=',i
+        print*,'ferriere_uniform_y: uniform y-field approx rho'
         if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
         do n=n1,n2
         do m=m1,m2
