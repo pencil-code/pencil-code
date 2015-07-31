@@ -667,20 +667,17 @@ module Shear
           call transp_pencil_xy(b1, bt)
           scan_yx: do j = 1, nxpy
             shift = yshift((ipy * nprocx + ipx) * nxpy + j)
-            if (method == 'bspline') shift = shift + advec(2)
+            if (method == 'bspline') shift = (shift + advec(2)) / dy
             scan_yz: do k = 1, nz
-              if (method /= 'bspline') ynew1 = ynew - shift
-              pery: if (.not. tvd .or. method == 'poly') then
+              newy: if (method /= 'bspline') then
+                ynew1 = ynew - shift
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
-                by(mm1:mm2) = bt(:,j,k)
-                by(1:nghost) = by(mm2i:mm2)
-                by(mm2+1:mygrid) = by(mm1:mm1i)
-              endif pery
+              endif newy
 !
               ymethod: select case (method)
               case ('bspline') ymethod
                 py = bt(:,j,k)
-                call bspline_interpolation(nygrid, bspline_k, py, bspline_ay, bspline_iy, shift / dy)
+                call bspline_interpolation(nygrid, bspline_k, py, bspline_ay, bspline_iy, shift)
                 error = .false.
               case ('spline') ymethod
                 if (.not. lequidist(2)) &
@@ -688,6 +685,9 @@ module Shear
                 call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd, posdef=posdef)
                 error = .false.
               case ('poly') ymethod
+                by(mm1:mm2) = bt(:,j,k)
+                by(1:nghost) = by(mm2i:mm2)
+                by(mm2+1:mygrid) = by(mm1:mm1i)
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
@@ -857,17 +857,22 @@ module Shear
       logical :: error
       integer :: istat
       integer :: i, k
+      real :: s
 !
 !  Find the new y-coordinates after shift.
 !
-      ynew = ygrid - shift
-      newy: if (method == 'spline') then
-        if (.not. lequidist(2)) &
-            call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
-        ynew = (ynew - ygrid(1)) / dy
-      elseif (method == 'poly') then newy
-        ynew = ynew - floor((ynew - y0) / Ly) * Ly
-      endif newy
+      shifty: if (method == 'bspline') then
+        s = shift / dy
+      else shifty
+        ynew = ygrid - shift
+        newy: if (method == 'spline') then
+          if (.not. lequidist(2)) &
+              call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
+          ynew = (ynew - ygrid(1)) / dy
+        elseif (method == 'poly') then newy
+          ynew = ynew - floor((ynew - y0) / Ly) * Ly
+        endif newy
+      endif shifty
 !
 !  Check positive definiteness.
 !
@@ -888,7 +893,7 @@ module Shear
           dispatch: select case (method)
           case ('bspline') dispatch
             penc = work(i,:,k)
-            call bspline_interpolation(nygrid, bspline_k, penc, bspline_ay, bspline_iy, shift / dy)
+            call bspline_interpolation(nygrid, bspline_k, penc, bspline_ay, bspline_iy, s)
             error = .false.
           case ('spline') dispatch
             call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection, posdef=posdef)
