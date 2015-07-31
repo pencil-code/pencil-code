@@ -5515,7 +5515,7 @@ nameloop: do
 !  Uses the B-spline interpolation to periodically shift a regular array
 !  of data nodes.
 !
-!  28-jul-15/ccyang: coded.
+!  31-jul-15/ccyang: coded.
 !
 !  Input/Output Argument
 !      f   An array of node data; interpolated after shift on return.
@@ -5536,6 +5536,10 @@ nameloop: do
       integer, dimension(n), intent(in) :: indx
       real, intent(in) :: shift
 !
+      real, dimension(:), allocatable, save :: bk
+      integer :: k_old = -1
+      real :: shift_old = 0.0
+!
       real, dimension(n) :: b, c
       integer :: i, j
 !
@@ -5546,9 +5550,18 @@ nameloop: do
 !
 !  Find the values of the basis functions at the interpolation points.
 !
+      basis: if (k /= k_old .or. shift /= shift_old) then
+        alloc: if (k /= k_old) then
+          if (allocated(bk)) deallocate(bk)
+          allocate(bk(k))
+        endif alloc
+        j = ceiling(shift - 0.5)
+        call bspline_basis(k, 0.5 - shift + real(j), bk)
+        k_old = k
+        shift_old = shift
+      endif basis
       b = 0.0
-      j = ceiling(shift - 0.5)
-      call bspline_basis(k, 0.5 - shift + real(j), b(1:k))
+      b(1:k) = bk
 !
 !  Make the interpolation.
 !

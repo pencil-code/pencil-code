@@ -602,6 +602,7 @@ module Shear
       real, dimension(nxgrid) :: xnew, px, yshift
       real, dimension(nygrid) :: ynew, ynew1, py
       real, dimension(mygrid) :: by
+      real, dimension(3) :: advec
       character(len=256) :: message
       logical :: error
       integer :: istat
@@ -610,14 +611,18 @@ module Shear
 !
 !  Find the displacement traveled with the advection.
 !
-      xnew = xgrid - dt_shear * u0_advec(1)
-      ynew = ygrid - dt_shear * u0_advec(2)
+      advec = dt_shear * u0_advec
       yshift = Sshear * (xgrid - x0_shear) * dt_shear
-      scalex: if (method == 'spline') then
-        if (.not. lequidist(1)) &
-            call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
-        xnew = (xnew - xglobal(1)) / dx
-      endif scalex
+!
+      newcoord: if (method /= 'bspline') then
+        xnew = xgrid - advec(1)
+        ynew = ygrid - advec(2)
+        scalex: if (method == 'spline') then
+          if (.not. lequidist(1)) &
+              call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
+          xnew = (xnew - xglobal(1)) / dx
+        endif scalex
+      endif newcoord
 !
 !  Check positive definiteness.
 !
@@ -660,11 +665,11 @@ module Shear
         b1 = b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:)
         ydir: if (nygrid > 1 .and. (Sshear /= 0.0 .or. u0_advec(2) /= 0.0)) then
           call transp_pencil_xy(b1, bt)
-          scan_yz: do k = 1, nz
-            scan_yx: do j = 1, nxpy
-              shift = yshift((ipy * nprocx + ipx) * nxpy + j)
-              ynew1 = ynew - shift
-!
+          scan_yx: do j = 1, nxpy
+            shift = yshift((ipy * nprocx + ipx) * nxpy + j)
+            if (method == 'bspline') shift = shift + advec(2)
+            scan_yz: do k = 1, nz
+              if (method /= 'bspline') ynew1 = ynew - shift
               pery: if (.not. tvd .or. method == 'poly') then
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
                 by(mm1:mm2) = bt(:,j,k)
@@ -692,8 +697,8 @@ module Shear
               if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
               bt(:,j,k) = py
-            enddo scan_yx
-          enddo scan_yz
+            enddo scan_yz
+          enddo scan_yx
           call transp_pencil_xy(bt, b1)
         endif ydir
         call unmap_from_pencil_xy(b1, a1)
