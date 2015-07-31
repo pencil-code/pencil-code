@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
-!  Still in development.
+!  Replaces old module relabelled as interstellar_old Jul 15 FAG.
 !
 !***************** AUTOMATIC CPARAM.INC GENERATION ***************************
 ! Declare (for generation of cparam.inc) the number of f array
