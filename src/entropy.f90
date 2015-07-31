@@ -927,12 +927,8 @@ module Energy
       call put_shared_variable('chi_t',chi_t)
       call put_shared_variable('chit_prof1',chit_prof1)
       call put_shared_variable('chit_prof2',chit_prof2)
-!      call put_shared_variable('chi_th',chi_th)
-!      call put_shared_variable('chi_rho',chi_rho)
       call put_shared_variable('lmultilayer',lmultilayer)
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
-!      call put_shared_variable('lheatc_chitherm',lheatc_chitherm)
-!      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
       if (lheatc_kramers) then
@@ -3587,6 +3583,8 @@ module Energy
 !  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
 !        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
 !
+!  Now chi=chi_0 sqrt(T) so additional 0.5*glnTT.glnTT
+!
 !  with additional turbulent diffusion
 !  rho*T*Ds/Dt = ... + nab.(rho*T*chit*grads)
 !        Ds/Dt = ... + chit*[del2ss+(glnrho+glnTT).gss]
@@ -3595,18 +3593,16 @@ module Energy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      thchi=chi_th*sqrt(exp(p%lnTT))
-!      thchi=max(chi_th*(exp(p%lnTT))**0.5,dxmax*0.5)
+      thchi=chi_th*exp(0.5*p%lnTT)
       if (pretend_lnTT) then
-        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
       else
-        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-!AB:  divide by p%cp1, since we don't have cp here.
+        call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
         thdiff=thchi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
