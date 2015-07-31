@@ -5550,12 +5550,12 @@ nameloop: do
 !
 !  Find the values of the basis functions at the interpolation points.
 !
+      j = ceiling(shift - 0.5)
       basis: if (k /= k_old .or. shift /= shift_old) then
         alloc: if (k /= k_old) then
           if (allocated(bk)) deallocate(bk)
           allocate(bk(k))
         endif alloc
-        j = ceiling(shift - 0.5)
         call bspline_basis(k, 0.5 - shift + real(j), bk)
         k_old = k
         shift_old = shift
