@@ -134,9 +134,9 @@ module Particles
   logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
 !
   real, dimension(3) :: uup_shared=0
-  real :: turnover_shared=0
+  real :: turnover_shared=0, nu_draglaw=0.
   logical :: vel_call=.false., turnover_call=.false.
-  logical :: lreassign_strat_rhom=.true.
+  logical :: lreassign_strat_rhom=.true., lnu_draglaw=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -211,7 +211,7 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -4993,7 +4993,14 @@ module Particles
 !
       real :: cdrag,dia,nu,nu_
 !
-!  Find the kinematic viscosity
+!  Find the kinematic viscosity.
+!  Check whether we want to override the usual viscosity for the drag law.
+!
+      if (lnu_draglaw) then
+        nu=nu_draglaw
+      else
+!
+!  Use usual viscosity for the drag law.
 !
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
@@ -5011,6 +5018,7 @@ module Particles
             /interp_rho(k)
       else
         call fatal_error('calc_draglaw_steadystate','No such ivis!')
+      endif
       endif
 !
 !  Particle diameter

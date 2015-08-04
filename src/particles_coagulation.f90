@@ -204,7 +204,7 @@ module Particles_coagulation
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-!  Special treatment for kernel tets.
+!  Special treatment for kernel tests.
 !
                 if (lkernel_test) then
                   if (lconstant_kernel_test) then
