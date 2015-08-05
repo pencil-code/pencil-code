@@ -32,16 +32,15 @@ module Particles_stalker
   logical :: lstalk_uu=.true., lstalk_guu=.false.
   logical :: lstalk_rho=.true., lstalk_grho=.false.
   logical :: lstalk_bb=.true., lstalk_ap=.true.
-  logical :: lstalk_rhopswarm=.true., lstalk_potself=.true.
-  logical :: lstalk_npswarm=.false.
+  logical :: lstalk_npswarm=.false., lstalk_rhopswarm=.true., lstalk_potself=.true.
   logical :: lstalk_aps=.true.
   logical :: lstalk_sink_particles=.false.
 !
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
-      lstalk_bb, lstalk_ap, lstalk_rhopswarm, lstalk_potself, lstalk_aps, &
-      lstalk_sink_particles, lstalk_npswarm
+      lstalk_bb, lstalk_ap, lstalk_npswarm, lstalk_rhopswarm, lstalk_potself, &
+      lstalk_aps, lstalk_sink_particles
 !
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, lstalk_sink_particles
@@ -335,6 +334,9 @@ module Particles_stalker
             endif
             if (lstalk_ap) then
               ivalue=ivalue+1; values(ivalue,:)=ap(1:npar_stalk_loc)
+            endif
+            if (lstalk_npswarm) then
+              ivalue=ivalue+1; values(ivalue,:)=npswarm(1:npar_stalk_loc)
             endif
             if (lstalk_rhopswarm) then
               ivalue=ivalue+1; values(ivalue,:)=rhopswarm(1:npar_stalk_loc)
