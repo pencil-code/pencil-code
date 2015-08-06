@@ -553,6 +553,29 @@ function pc_compute_quantity, vars, index, quantity
 		; Electric field strengh [V/m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')))
 	end
+	if (strcmp (quantity, 'EMF', /fold_case)) then begin
+		; Electro motive force [V/m]
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		E = -cross (uu, bb)
+		return, E
+	end
+	if (strcmp (quantity, 'EMF_abs', /fold_case)) then begin
+		; Electro motive force strength [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'EMF')))
+	end
+	if (strcmp (quantity, 'E_j', /fold_case)) then begin
+		; Current electric field [V/m]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		E = jj
+		for pa = 0, 2 do E[*,*,*,pa] *= sigma_SI_inv
+		return, E
+	end
+	if (strcmp (quantity, 'E_j_abs', /fold_case)) then begin
+		; Current electric field strength [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E_j')))
+	end
 	if (strcmp (quantity, 'E_x', /fold_case)) then begin
 		; Electric field x-component [V/m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
@@ -671,6 +694,16 @@ function pc_compute_quantity, vars, index, quantity
 		aa = pc_compute_quantity (vars, index, 'A')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
+	end
+	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
+		; Magnetic field helicity (positive part)
+		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
+		return, H_mag_pos
+	end
+	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
+		; Magnetic field helicity (negative part)
+		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
+		return, H_mag_neg
 	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
 		; Electric current helicity

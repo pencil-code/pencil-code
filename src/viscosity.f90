@@ -376,9 +376,9 @@ module Viscosity
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           lvisc_smag_cross_simplified=.true.
-        case ('snr-damp','snr_damp')
-          if (lroot) print*,'viscous force: SNR damping'
-          lvisc_snr_damp=.true.
+!        case ('snr-damp','snr_damp')
+!          if (lroot) print*,'viscous force: SNR damping'
+!          lvisc_snr_damp=.true.
         case ('nu-mixture')
           if (lroot) print*,'viscous force: nu is calculated for a mixture'
           lvisc_mixture=.true.
@@ -501,6 +501,9 @@ module Viscosity
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ivisc_heat=',ivisc_heat
           close(3)
+          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
+          write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
+          close(15)
         endif
       endif
 !
@@ -1000,7 +1003,6 @@ module Viscosity
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use Interstellar, only: calc_snr_damping
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1727,12 +1729,6 @@ module Viscosity
           endif
         endif
         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
-      endif
-!
-!  Special settings for interstellar runs.
-!
-      if (linterstellar.and.lvisc_snr_damp) then
-        call calc_snr_damping(p)
       endif
 !
 !  viscous force: Handle damping at the core of SNRs

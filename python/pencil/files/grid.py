@@ -67,7 +67,7 @@ class Grid(object):
             mzloc = procdim.mz
 
             #read data
-            filename = datadir+directory+'/grid.dat'
+            filename = os.path.join(datadir, directory, 'grid.dat')
             infile = npfile(filename, endian=format)
             grid_raw = infile.fort_read(precision)
             dx, dy, dz = tuple(infile.fort_read(precision))

@@ -52,7 +52,6 @@
   thermal_profile='gaussian3'
   mass_width_ratio=1.0
   mass_profile='gaussian3'
-  mass_movement='off'
   velocity_profile='gaussian3'
   lSN_velocity=T
 !  ampl_SN=3.182093016 !without kinetic energy
@@ -63,8 +62,6 @@
   cooling_select='RBNr'
   lthermal_hse=T
   heating_select='thermal-hs'
-  lcooltime_smooth=F
-  SNR_damping=0.0 !any non-zero value ldamping=T value not used
 /
 &shear_run_pars
 /

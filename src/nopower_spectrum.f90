@@ -86,6 +86,16 @@ module power_spectrum
 !
     endsubroutine powerhel
 !***********************************************************************
+    subroutine powerLor(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerLor
+!***********************************************************************
     subroutine powerscl(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f

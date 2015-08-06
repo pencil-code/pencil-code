@@ -134,9 +134,9 @@ module Particles
   logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
 !
   real, dimension(3) :: uup_shared=0
-  real :: turnover_shared=0
+  real :: turnover_shared=0, nu_draglaw=0.
   logical :: vel_call=.false., turnover_call=.false.
-  logical :: lreassign_strat_rhom=.true.
+  logical :: lreassign_strat_rhom=.true., lnu_draglaw=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -211,7 +211,7 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -219,7 +219,7 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
-  integer :: idiag_vpzmin=0
+  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
@@ -2695,8 +2695,9 @@ module Particles
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
-        if (idiag_vpzmin/=0) call max_par_name(-fp(1:npar_loc,ivpz), &
-            idiag_vpzmin,lneg=.true.)
+        if (idiag_vpxmin/=0) call max_par_name(-fp(1:npar_loc,ivpx),idiag_vpxmin,lneg=.true.)
+        if (idiag_vpymin/=0) call max_par_name(-fp(1:npar_loc,ivpy),idiag_vpymin,lneg=.true.)
+        if (idiag_vpzmin/=0) call max_par_name(-fp(1:npar_loc,ivpz),idiag_vpzmin,lneg=.true.)
         if (idiag_eccpxm/=0) call sum_par_name( &
             sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
             sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
@@ -4992,7 +4993,14 @@ module Particles
 !
       real :: cdrag,dia,nu,nu_
 !
-!  Find the kinematic viscosity
+!  Find the kinematic viscosity.
+!  Check whether we want to override the usual viscosity for the drag law.
+!
+      if (lnu_draglaw) then
+        nu=nu_draglaw
+      else
+!
+!  Use usual viscosity for the drag law.
 !
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
@@ -5010,6 +5018,7 @@ module Particles
             /interp_rho(k)
       else
         call fatal_error('calc_draglaw_steadystate','No such ivis!')
+      endif
       endif
 !
 !  Particle diameter
@@ -5277,8 +5286,8 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
-        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpzmin=0
-        idiag_vpxmax=0
+        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
+        idiag_vpxmin=0; idiag_vpymin=0; idiag_vpzmin=0
         idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
         idiag_rhopvpxt=0; idiag_rhopvpyt=0; idiag_rhopvpzt=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
@@ -5330,6 +5339,8 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
+        call parse_name(iname,cname(iname),cform(iname),'vpxmin',idiag_vpxmin)
+        call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &

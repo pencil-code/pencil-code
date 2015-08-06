@@ -116,7 +116,7 @@ module Hydro
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
-  logical :: lskip_projection=.false., lno_second_ampl=.false.
+  logical :: lskip_projection=.false., lno_second_ampl=.true.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -1490,7 +1490,7 @@ module Hydro
         case ('power_randomphase_hel')
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
-            lskip_projection, lno_second_ampl)
+            lskip_projection, lno_second_ampl, .false.)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

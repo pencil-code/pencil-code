@@ -174,6 +174,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
@@ -308,7 +309,7 @@ module Cdata
   integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
-  integer :: icooling=0, icooling2=0
+  integer :: icooling=0, inetcool=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
 !
 !  Parameters related to message passing.
@@ -511,7 +512,7 @@ module Cdata
   logical :: sp_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
-  logical :: ub_spec=.false.
+  logical :: ub_spec=.false., Lor_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.

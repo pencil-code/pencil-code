@@ -491,12 +491,14 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	end
 	if (n_elements (allprocs) eq 0) then begin
 		allprocs = 1
-		procdir = datadir+"/allprocs/"
-		if (not file_test (procdir+varfile)) then begin
-			allprocs = 0
-			procdir = datadir+"/proc0/"
-			if (file_test (datadir+"/proc1/")) then begin
-				if (not file_test (datadir+"/proc1/"+varfile)) then allprocs = 2
+		procdir = datadir+'/allprocs/'
+		if (not file_test (procdir+varfile) and not file_test (procdir+'VAR*')) then begin
+			if (file_test (datadir+'/proc0/'+varfile) or file_test (datadir+'/proc0/VAR*')) then begin
+				allprocs = 0
+				procdir = datadir+'/proc0/'
+				if (file_test (datadir+'/proc1/')) then begin
+					if (not file_test (datadir+'/proc1/'+varfile) and file_test (datadir+'/proc1/VAR*')) then allprocs = 2
+				endif
 			endif
 		endif
 	end else begin

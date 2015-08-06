@@ -36,7 +36,7 @@ module Initcond
   public :: const_omega
   public :: powern, power_randomphase, power_randomphase_hel
   public :: planet, planet_hc
-  public :: random_isotropic_KS
+  public :: random_isotropic_KS, random_isotropic_shell
   public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
   public :: htube2_x
@@ -4555,7 +4555,7 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lno_second_ampl,lscale_tobox)
+      lskip_projection,lno_second_ampl,lvectorpotential,lscale_tobox)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4568,17 +4568,20 @@ module Initcond
 !
 !  08-sep-14/axel: adapted from power_randomphase
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
 !
       logical, intent(in), optional :: lscale_tobox
-      logical :: lscale_tobox1, lskip_projection, lno_second_ampl
+      logical :: lvectorpotential, lscale_tobox1
+      logical :: lskip_projection, lno_second_ampl
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
-      real :: nfact=4.,kpeak21,nexp1,nexp2,ncutoff,kgaussian
+      real :: nfact=4., kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
+!
+!  By default, don't scale wavenumbers to the box size.
 !
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
@@ -4650,8 +4653,8 @@ module Initcond
 !
         do i=1,3
           call random_number_wrapper(r)
-          u_re(:,:,:,i)=ampl*k2**mhalf*cos(pi*(2*r-1))
-          u_im(:,:,:,i)=ampl*k2**mhalf*sin(pi*(2*r-1))
+          u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+          u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
         enddo !i
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
@@ -4665,26 +4668,41 @@ module Initcond
 !
         nexp1=.25*nfact*(initpower-initpower2)
         nexp2=1./nfact
+        kpeak1=1./kpeak
         kpeak21=1./kpeak**2
+!
+!  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
+!  which comes from a kpeak^3 factor in the k^2 dk integration.
+!  The 1/2 factor comes from setting uk (as opposed to uk^2).
+!
+        if (lvectorpotential) then
+          fact=kpeak1**2.5
+          if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
+        else
+          fact=kpeak1**1.5
+          if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
+        endif
 !
 !  By mistake, a second ampl factor got introduced, so
 !  the resulting amplitudes depended quadratically on ampl.
-!  To keep continuity, we must keep this, but we can avoid
-!  this by setting lno_second_ampl=T in the call.
+!  To keep continuity and reproduce old runs, put lno_second_ampl=F.
 !
         if (lno_second_ampl) then
-          r=((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+          r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
         else
           r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
         endif
 !
-!  cutoff (changed to hyperviscous cutoff filter)
+!  cutoff (changed to hyperviscous cutoff filter).
+!  The 1/2 factor is needed to account for the fact that the
+!  spectrum (velocity squared) is proportional to exp(-k^2/cutoff^2).
+!  For ncutoff/=1, one has exp(-(k^2/cutoff^2)^ncutoff).
 !
-        if (cutoff /= 0.) r=r*exp(-(k2/cutoff**2.)**ncutoff)
+        if (cutoff /= 0.) r=r*exp(-.5*(k2/cutoff**2.)**ncutoff)
 !
 !  apply Gaussian on top of everything
 !
-        if (kgaussian /= 0.) r=r*exp(-.5*(k2/kgaussian**2.-1.))
+        if (kgaussian /= 0.) r=r*exp(-.25*(k2/kgaussian**2.-1.))
 !
 !  scale with r
 !
@@ -4773,7 +4791,7 @@ module Initcond
 !  back to real space
 !
         do i=1,3
-          call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         enddo !i
         f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
 !
@@ -4935,6 +4953,52 @@ module Initcond
       enddo
 !
     endsubroutine random_isotropic_KS
+!***********************************************************************
+    subroutine random_isotropic_shell(f,jf,ampl0)
+!
+!   random_isotropic_shell
+!
+!   25-jun-15/axel: coded
+!
+      use Sub, only: cross, dot, dot2
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      character (len=1) :: dummy
+      complex :: ii=(0.,1.)
+      integer :: jf,i,nvect,ivect
+      real, dimension (3) :: ee,kk,exk
+      real, dimension (nx) :: kdotx
+      real :: exk2,phik,ampl,ampl0
+!
+!  read header
+!
+      open(10,file='kvect.dat')
+      read(10,*) nvect
+      read(10,*) dummy
+!
+!  loop through all vectors
+!
+      f(:,:,:,jf:jf+2)=0.
+      do ivect=1,nvect
+        read(10,*) kk,ee,phik,ampl
+        call cross(ee,kk,exk)
+        call dot2(exk,exk2)
+        exk=exk/sqrt(exk2)
+!
+        do n=n1,n2
+          do m=m1,m2
+            kdotx=kk(1)*x(l1:l2)+kk(2)*y(m)+kk(3)*z(n)
+            do i=1,3
+              f(l1:l2,m,n,jf+i-1)=f(l1:l2,m,n,jf+i-1) &
+                +ampl0*ampl*exk(i)*real(exp(ii*(kdotx+phik)))
+            enddo
+          enddo
+        enddo
+      enddo
+      close(10)
+
+    endsubroutine random_isotropic_shell
 !***********************************************************************
     subroutine corona_init(f)
 !

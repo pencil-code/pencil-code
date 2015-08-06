@@ -1,0 +1,263 @@
+hostname = pc171.ics.hut.fi
+Non-MPI run
+1 CPU
+lparticles = 0
+lparticles_nbody = 0
+Wed Jul  8 19:06:52 2015
+Running
+  /usr/bin/time -p src/start.x
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid=          32          32          64
+ units_general: unit_velocity=   100000.00000000000     
+ units_general: unit_density=   9.9999999999999992E-025
+ units_general: unit_length=   3.1600000000000000E+021
+ units_general: unit_magnetic=   3.5449100000000002E-007
+ initialize_eos: unit_temperature=   44.741267293999996     
+ initialize_eos: cp, lnTT0, cs0, pp0=   1.5000001813464650       -1.2089763610508654E-007   1.0000000000000000       0.37200000000000000     
+ (x,y,z)(point)=  -1.9531250000000000E-003  -1.9531250000000000E-003  -1.9841269841269771E-003
+ (x,y,z)(point2)=  -4.1015625000000000E-002  -4.1015625000000000E-002  -7.3412698412698402E-002
+ initialize_gravity: no x-gravity
+ initialize_gravity: no y-gravity
+ diffusion: nothing (i.e. no mass diffusion)
+ select_eos_variable: Using rho and ss
+ initialize_energy: nheatc_max,iheatcond=           4 nothing                  nothing                  nothing                  nothing                  
+ heat conduction: nothing
+ resistivity: constant eta
+ initialize_interstellar: t_next_SNI   0.0000000000000000E+000
+ initialize_interstellar: unit_Lambda   3.1645569620253165E+017
+ initialize_interstellar: default RBN cooling fct
+ initialize_interstellar: solar_mass (code) =   6.3033806656268572E-008
+ initialize_interstellar: ampl_SN, kampl_SN =    3.1691204955388925        0.0000000000000000E+000
+ initialize_interstellar: t_interval_SNI =   1.5238642764780428E-002  0.12500000000000000       0.12500000000000000        4199.8490933796866     
+ initialize_interstellar: t_next_SNI, t_next_SNII=   0.0000000000000000E+000   0.0000000000000000E+000
+ initialize_shock: prenormalised shock_factor sum=   1.0000000000000000     
+
+ init_uu: nothing
+ thermal-hs: hydrostatic thermal equilibrium density and entropy profiles
+ zhro =   7.4685341234607709E-003   1.0006020353166088E-002   1.3362692618717155E-002   1.7783135904186113E-002   2.3576268954361806E-002   3.1128648716564771E-002   4.0919063594571578E-002   5.3533908777550467E-002   6.9682510909612569E-002   9.0211166466112200E-002  0.11611418933239658       0.14853975526939908       0.18878783204665456       0.23829706619123409       0.29861725777467019       0.37136411192623686       0.45815343933961500       0.56051301051715519       0.67977193962818705       0.81692980847097563       0.97251066495169580        1.1464103414966134        1.3377488916951830        1.5447428591712824        1.7646139994947379        1.9935513860272009        2.2267420469931110        2.4584811206884889        2.6823660243521545        2.8915707616301822        3.0791871120997070        3.2386102629630167        3.3639388431434223        3.4503546330257224        3.4944464640927460        3.4944464640927460        3.4503546330257224        3.3639388431434223        3.2386102629630167        3.0791871120997070        2.8915707616301822        2.6823660243521545        2.4584811206884889        2.2267420469931110        1.9935513860272009        1.7646139994947379        1.5447428591712824        1.3377488916951830        1.1464103414966134       0.97251066495169580       0.81692980847097563       0.67977193962818705       0.56051301051715519       0.45815343933961500       0.37136411192623686       0.29861725777467019       0.23829706619123409       0.18878783204665456       0.14853975526939908       0.11611418933239658        9.0211166466112200E-002   6.9682510909612569E-002   5.3533908777550467E-002   4.0919063594571578E-002   3.1128648716564771E-002   2.3576268954361806E-002   1.7783135904186113E-002   1.3362692618717155E-002   1.0006020353166212E-002   7.4685341234608637E-003
+ init_lnrho: nothing
+ init_lnrho: cs2bot,cs2top=   1.0000000000000000        1.0000000000000000     
+ init_energy: nothing
+ thermal-hs: hydrostatic thermal equilibrium density and entropy profiles
+ init_aa: nothing
+ sumtmp =   0.0000000000000000E+000
+ sumtmp on iproc =   0.0000000000000000E+000           0
+ ferriere_uniform_y: uniform y-field approx rho; i=           0
+ uniform_y: ampl=   6.9531059716788662E-310
+ init_interstellar: nothing
+ write_pencil_info: pencil information written to the file pencils.list
+
+ start.x has completed successfully
+
+
+Wed Jul  8 19:06:53 2015
+Wed Jul  8 19:06:53 2015
+Running
+  /usr/bin/time -p src/run.x
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ The verbose level is ip=          20  (ldebug= F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          32          32          64
+ Lx, Ly, Lz=  0.12500000000000000       0.12500000000000000       0.25000000000000000     
+       Vbox=   3.9062500000000000E-003
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ input_persistent_interstellar:    0.0000000000000000E+000   0.0000000000000000E+000
+ read_runpars: slice_position = p
+ read_runpars: ix,iy,iz,iz2 (video files) =  -1  -1  -1  -1
+ units_general: unit_velocity=   100000.00000000000     
+ units_general: unit_density=   1.0000000000000003E-024
+ units_general: unit_length=   3.1599999999999995E+021
+ units_general: unit_magnetic=   3.5449100000000002E-007
+ initialize_eos: unit_temperature=   44.741267293999996     
+ initialize_eos: cp, lnTT0, cs0, pp0=   1.5000001813464650       -1.2089763610508654E-007   1.0000000000000000       0.37200000000000000     
+ (x,y,z)(point)=  -1.9531250000000000E-003  -1.9531250000000000E-003  -1.9841269841269771E-003
+ (x,y,z)(point2)=  -4.1015625000000000E-002  -4.1015625000000000E-002  -7.3412698412698402E-002
+ initialize_gravity: no x-gravity
+ initialize_gravity: no y-gravity
+ diffusion: div(D*grad(rho))
+ diffusion: shock diffusion
+ select_eos_variable: Using rho and ss
+ initialize_energy: cs2top,cs2cool=   1.0000000000000000        0.0000000000000000E+000
+ initialize_energy: now set cs2cool=cs2top
+ initialize_energy: nheatc_max,iheatcond=           4 chi-therm                shock                    nothing                  nothing                  
+ heat conduction: chi scaled with c_s
+ heat conduction: shock
+ resistivity: constant eta
+ resistivity: shock
+ initialize_interstellar: t_next_SNI   0.0000000000000000E+000
+ initialize_interstellar: unit_Lambda   3.1645569620253158E+017
+ initialize_interstellar: RBN cooling fct (revised)
+ initialize_interstellar: solar_mass (code) =   6.3033806656268599E-008
+ initialize_interstellar: ampl_SN, kampl_SN =    1.5910465080000000        1.5910465080000000     
+ thermal-hs: hydrostatic thermal equilibrium density and entropy profiles
+ heat_interstellar: calculating z-dependent uv-heatingfunction for initial hydrostatic and thermal equilibrium
+ initialize_interstellar: t_interval_SNI =   1.5238642764780434E-002  0.12500000000000000       0.12500000000000000        4199.8490933796847     
+ initialize_interstellar: t_next_SNI, t_next_SNII=   0.0000000000000000E+000   0.0000000000000000E+000
+ initialize_shock: prenormalised shock_factor sum=   1.0000000000000000     
+ viscous force: mu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)
+ viscous force: nu_shock*(XXXXXXXXXXX)
+ choose_pencils: finding out which pencils are needed for the pencil case
+ write_pencil_info: pencil information written to the file pencils.list
+ pencil_consistency_check: checking pencil case
+ pencil_consistency_check: checking requested pencils
+ pencil_consistency_check: performing small pencil check
+ pencil_consistency_check: the small pencil check reported no problems
+ pencil_consistency_check: performing full pencil check (takes a while)
+ pencil_consistency_check: possible overcalculation... pencil rho (   4) is requested, but does not appear to be required!
+ pencil_consistency_check: possible overcalculation... pencil grho (   7) is requested, but does not appear to be required!
+ pencil_consistency_check: possible overcalculation... pencil ee (  38) is requested, but does not appear to be required!
+ pencil_consistency_check: checking dependence on pencil initialization
+ pencil_consistency_check: results are independent of pencil initialization
+ pencil_consistency_check: checking diagnostics pencils
+ pencil_consistency_check: performing small pencil check
+ pencil_consistency_check: the small pencil check reported no problems
+ pencil_consistency_check: performing full pencil check (takes a while)
+ pencil_consistency_check: set lpencil_check_diagnos_opti=T in run.in to report
+ pencil_consistency_check: optimisation possibilities for diagnostics pencils
+ pencil_consistency_check: checking dependence on pencil initialization
+ pencil_consistency_check: diagnostics are independent of pencil initialization
+ pencil_consistency_check: all tests passed
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+ calc_pencils_magnetic_pencpar: B_ext =    0.0000000000000000E+000   0.0000000000000000E+000   0.0000000000000000E+000
+ duu_dt: SOLVE
+Bcs for         ux,  x: <     she>, y: <       p>,  z: <       s>
+Bcs for         uy,  x: <     she>, y: <       p>,  z: <       s>
+Bcs for         uz,  x: <     she>, y: <       p>,  z: <     ubs>
+ duu_dt: add Coriolis force; Omega=   25.000000000000000     
+ duu_dt: max(advec_uu) =   0.0000000000000000E+000
+ duu_dt: Calculate maxima and rms values...
+ dlnrho_dt: SOLVE
+Bcs for      lnrho,  x: <     she>, y: <       p>,  z: <     cdz>
+ dlnrho_dt: diffrho=  0.20000000000000001     
+ dlnrho_dt: diffrho_shock=   1.0000000000000000     
+ dlnrho_dt: max(diffus_diffrho ) =   38915.200000000004     
+ dlnrho_dt: max(diffus_diffrho3) =   0.0000000000000000E+000
+ denergy_dt: SOLVE denergy_dt
+Bcs for         ss,  x: <     she>, y: <       p>,  z: <     ctz>
+ denergy_dt: lnTT,cs2,cp1=   2.9475650394675035        19.059490383183991       0.66666658606824758     
+ denergy_dt: max(advec_cs2) =   3708519.4007984083     
+ calc_heatcond_thermchi: chi_th=  0.20000000000000001     
+ calc_heatcond_thermchi: added thdiff
+ calc_heatcond_shock: chi_shock=   1.0000000000000000     
+ calc_heatcond_shock: use shock diffusion
+ calc_heatcond_shock: added thdiff
+ calc_heat_cool_interstellar: ENTER
+ daa_dt: SOLVE
+Bcs for         Ax,  x: <     she>, y: <       p>,  z: <       s>
+Bcs for         Ay,  x: <     she>, y: <       p>,  z: <       s>
+Bcs for         Az,  x: <     she>, y: <       p>,  z: <       a>
+ daa_dt: iresistivity=eta-const                eta-shock                                                                  
+ daa_dt: max(diffus_eta)  =   38.136896000000000     
+ daa_dt: max(diffus_eta2) =   0.0000000000000000E+000
+ daa_dt: max(diffus_eta3) =   0.0000000000000000E+000
+ shearing: Sshear,Sshear1=  -25.000000000000000       -25.000000000000000     
+ shearing: qshear,qshear0=   1.0000000000000000        0.0000000000000000E+000
+
+ --it-----------t------------------dt---------------urms--------------ekintot--------------ethtot---------------rhom------------------ssm----------------TTmin---------------TTmax-----------------TTm----------------dtc--------------dtu-------------dtnu-------------dtchi------
+    0  0.0000000000000E+00 3.53152166928E-07 0.000000000000E+00  0.000000000000E+00  7.174985885543E-02  1.2452874539264E+00  2.9581426152875E+00  1.584307822540E+01  1.905948807894E+01  1.6982389218551E+01  0.0068008336663  0.0000000000000  0.5999799784355  0.9999666307258
+ position_SN_gaussianz: zdisk =   0.0000000000000000E+000
+ share_SN_parameters: SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,=           0  -2.7343750000000000E-002   5.8593750000000000E-002   1.9841269841269847E-002          12          34          41
+ share_SN_parameters: SNR%site%rho,SNR%site%ss,SNR%site%TT,SNR%radius=   2.8914738212812963        1.8554028738727919        15.949103305215585        3.2000000000000001E-002
+ TOTAL KINETIC ENERGY CHANGE:   1.6070539237997981     
+ explode_SN:    step, time =            1   3.5315216692799413E-007
+ explode_SN:            dv =    6.0550750248015870E-008
+ explode_SN:       SN type =            1
+ explode_SN: proc, l, m, n =            0          12          34          41
+ explode_SN:       x, y, z =   -2.7343750000000000E-002   5.8593750000000000E-002   1.9841269841269847E-002
+ explode_SN:remnant radius =    3.2000000000000001E-002
+ explode_SN:       rho, TT =    2.8914738212812963        15.949103305215585     
+ explode_SN:    maximum TT =    7418.8080065176528     
+ explode_SN:  Mean density =    2.8304942306034659     
+ explode_SN:  Total energy =    3.1981004313881183     
+ explode_SN:    Added mass =    2.5316732033449331E-007
+ explode_SN:  Ambient mass =    3.9076589225744225E-004
+ explode_SN:    Sedov time =    1.2137519130689022E-004
+ explode_SN:    Shell velocity  =    105.45812420295951     
+    2  3.7102346929684E-07 1.78792252154E-08 1.675973925279E+01  1.593040594639E+00  1.669023428882E+00  1.2453513355920E+00  3.2645412138955E+00  1.584420351095E+01  7.412696301208E+03  1.8543891579636E+02  0.0067901827116  0.0089456212394  0.6081877863978  0.9999251331491
+    4  4.0678970235915E-07 1.78946591083E-08 1.661867259474E+01  1.565722548401E+00  1.680856797744E+00  1.2453513436180E+00  3.2660175115598E+00  1.584401989061E+01  7.400810635560E+03  1.8664541764535E+02  0.0067905935621  0.0088334327452  0.6078643644761  0.9999255979029
+    6  4.4258655161428E-07 1.79096128639E-08 1.648065067097E+01  1.539232041818E+00  1.691965576424E+00  1.2453513516500E+00  3.2674758196411E+00  1.584351577118E+01  7.389317800632E+03  1.8778075548613E+02  0.0067909890874  0.0087213511348  0.6075531059318  0.9999260619206
+    8  4.7841310381324E-07 1.79241817297E-08 1.634523323304E+01  1.513467230356E+00  1.702465401056E+00  1.2453513596875E+00  3.2689203581808E+00  1.584284466010E+01  7.378138897888E+03  1.8885837309702E+02  0.0067913703417  0.0086370904034  0.6072531666586  0.9999265240244
+   10  5.1426863799627E-07 1.79384643488E-08 1.621211439002E+01  1.488356053608E+00  1.712433455911E+00  1.2453513677297E+00  3.2703537332184E+00  1.584222018997E+01  7.367192790427E+03  1.8988652252922E+02  0.0067917382662  0.0085853280789  0.6069637933731  0.9999269832070
+   12  5.5015263322523E-07 1.79525662468E-08 1.608107416772E+01  1.463845427966E+00  1.721921201738E+00  1.2453513757765E+00  3.2717772805452E+00  1.584164316308E+01  7.356393266720E+03  1.9087009164945E+02  0.0067920937055  0.0085327824240  0.6066843104230  0.9999274386065
+   14  5.8606478488282E-07 1.79666040513E-08 1.595194898081E+01  1.439894695220E+00  1.730974019008E+00  1.2453513838274E+00  3.2731925610430E+00  1.584110956031E+01  7.345645644088E+03  1.9181386939790E+02  0.0067924374180  0.0084795458249  0.6064141111401  0.9999278894760
+   16  6.2200502736841E-07 1.79807052027E-08 1.582461322344E+01  1.416471577996E+00  1.739606966081E+00  1.2453513918822E+00  3.2745993838318E+00  1.584063155880E+01  7.334847151883E+03  1.9271867337025E+02  0.0067927701067  0.0084257127623  0.6061526335410  0.9999283351657
+   18  6.5797355371106E-07 1.79950029020E-08 1.569896766583E+01  1.393549646974E+00  1.747831880672E+00  1.2453513999407E+00  3.2759976768798E+00  1.584021080139E+01  7.323891128969E+03  1.9358525372650E+02  0.0067930924128  0.0083713782349  0.6058993650703  0.9999287751212
+   20  6.9397082333122E-07 1.80096280780E-08 1.557493169201E+01  1.371106638814E+00  1.755657151850E+00  1.2453514080027E+00  3.2773871852005E+00  1.583984893113E+01  7.312673639871E+03  1.9441403648882E+02  0.0067934049254  0.0083166348399  0.6056538354873  0.9999292088899
+   22  7.2999755286253E-07 1.80247000624E-08 1.545243829624E+01  1.349123361521E+00  1.763080898590E+00  1.2453514160683E+00  3.2787671288815E+00  1.583954454417E+01  7.301101084046E+03  1.9520416765410E+02  0.0067937081964  0.0082615692695  0.6054156043355  0.9999296361351
+   24  7.6605468859996E-07 1.80403184688E-08 1.533143079908E+01  1.327582971866E+00  1.770103799881E+00  1.2453514241375E+00  3.2801369927309E+00  1.583929205071E+01  7.289096727193E+03  1.9595560195208E+02  0.0067940027523  0.0082062593823  0.6051842524722  0.9999300566418
+   26  8.0214336401943E-07 1.80565579489E-08 1.521186044538E+01  1.306470459403E+00  1.776736899824E+00  1.2453514322104E+00  3.2814968829188E+00  1.583909916641E+01  7.276604787419E+03  1.9666914770976E+02  0.0067942890904  0.0081507724180  0.6049593842817  0.9999304703173
+   28  8.3826484865854E-07 1.80734669432E-08 1.509368476072E+01  1.285772281410E+00  1.782986444731E+00  1.2453514402872E+00  3.2828467438209E+00  1.583896763075E+01  7.263591239364E+03  1.9734507119306E+02  0.0067945676806  0.0080951649315  0.6047406269884  0.9999308771798
+
+ Simulation finished after           30  time-steps
+
+ Writing final snapshot at time t =   8.7442045570154945E-007
+
+ Wall clock time [hours] =  5.477E-03 (+/-  2.78E-07)
+ Wall clock time/timestep/meshpoint [microsec] =  10.0    
+
+
+Wed Jul  8 19:08:15 2015
+Running
+  pc_deprecated_slice_links

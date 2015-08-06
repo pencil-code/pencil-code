@@ -233,7 +233,8 @@ module Particles_radius
             enddo
           endif
 !
-!  lognormal distribution
+!  Lognormal distribution. Here, ap1 is the largest value in the distribution
+!  and ap0 is the smallest radius initially.
 !
         case ('lognormal')
 
@@ -252,7 +253,9 @@ module Particles_radius
           nn_initdist=(npar_high-npar_low+1)*nn_initdist/(sum(nn_initdist)-1)
 !
 !  is now normalized to the number of particles,
-!  so set the corresponding distribution
+!  so set the corresponding distribution.
+!  Normally, the number of bins is less than the number of available ones,
+!  so then we patch the rest with fp(kend+1:,iap)=a0_initdist.
 !
           k=npar_low
           do ibin=1,nbin_initdist

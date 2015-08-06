@@ -1536,10 +1536,18 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpiifort #(pfe|mfe)
 #CC=mpiicc #(pfe|mfe)
-#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe|mfe)
-#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe|mfe)
+#FFLAGS=-O3 -xAVX -ip -mp1 -w -fp-model precise #(pfe|mfe)
+#CFLAGS=-O3 -xAVX -ip -mp1 -w  -fp-model precise -DFUNDERSC=1 #(pfe|mfe)
 #FFLAGS_DOUBLE=-autodouble #(pfe|mfe)
 #LD_MPI=-lmpi #(pfe|mfe)
+## NTNU Vilje (service)
+##
+#FC=mpif90 #(service)
+#CC=mpicc #(service)
+#FFLAGS=-O3 -xAVX -ip -mp1 -fp-model precise  #(service)
+#CFLAGS=-O3 -xAVX -ip -mp1  -fp-model precise -DFUNDERSC=1 #(service)
+#FFLAGS_DOUBLE=-autodouble #(service)
+#LD_MPI=-lmpi #(service)
 ##
 ## Toulouse's machines:
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)
@@ -2356,7 +2364,7 @@ mpicomm_.f90: mpicomm.f90
 #	esac;
 
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)

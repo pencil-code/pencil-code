@@ -284,16 +284,6 @@ if (ibb gt 0) then begin
   varcontent[ibb].skip       = 2
 endif
 ;
-default, iEE, 0
-if (iEE gt 0) then begin
-  varcontent[iEE].variable   = 'Electric field (EE)'
-  varcontent[iEE].idlvar     = 'EE'
-  varcontent[iEE].idlinit    = INIT_3VECTOR
-  varcontent[iEE].idlvarloc  = 'EE_loc'
-  varcontent[iEE].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[iEE].skip       = 2
-endif
-;
 default, ijj, 0
 if (ijj gt 0) then begin
   varcontent[ijj].variable   = 'Current density (jj)'
@@ -587,6 +577,24 @@ if (ifcr gt 0) then begin
   varcontent[ifcr].skip       = 2
 endif
 ;
+default, itheta5, 0
+if (itheta5 gt 0) then begin
+  varcontent[itheta5].variable   = 'chem potential (theta5)'
+  varcontent[itheta5].idlvar     = 'theta5'
+  varcontent[itheta5].idlinit    = INIT_SCALAR
+  varcontent[itheta5].idlvarloc  = 'theta5_loc'
+  varcontent[itheta5].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, imu5, 0
+if (imu5 gt 0) then begin
+  varcontent[imu5].variable   = 'Cosmic ray energy density (ecr)'
+  varcontent[imu5].idlvar     = 'mu5'
+  varcontent[imu5].idlinit    = INIT_SCALAR
+  varcontent[imu5].idlvarloc  = 'mu5_loc'
+  varcontent[imu5].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, iam, 0
 if (iam gt 0) then begin
   varcontent[iam].variable   = 'meanfield_dynamo_z (Am)'
@@ -753,6 +761,16 @@ endif
 ;  Auxiliary variables (only if they have been saved).
 ;
 if ((param.lwrite_aux ne 0) and (not noaux)) then begin
+;
+  default, iEE, 0
+  if (iEE gt 0) then begin
+    varcontent[iEE].variable   = 'Electric field (EE)'
+    varcontent[iEE].idlvar     = 'EE'
+    varcontent[iEE].idlinit    = INIT_3VECTOR
+    varcontent[iEE].idlvarloc  = 'EE_loc'
+    varcontent[iEE].idlinitloc = INIT_3VECTOR_LOC
+    varcontent[iEE].skip       = 2
+  endif
 ;
   default, iQrad, 0
   if (iQrad gt 0) then begin
