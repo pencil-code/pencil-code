@@ -608,18 +608,21 @@ def proc_var(datadir='./data', dim=None, par=None, proc=0, varfile='var.dat'):
     Var = namedtuple('Var', ['f', 't', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'])
     return Var(f=a, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay)
 #=======================================================================
-def pvar(datadir='./data', varfile='pvar.dat', verbose=True):
+def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     """Returns particles in one snapshot.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        ivar
+            If not None, an integer specifying the snapshot number and
+            the argument varfile takes no effect.
         varfile
             Name of the snapshot file.
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-07-12
+    # Chao-Chin Yang, 2015-08-06
     import numpy as np
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
@@ -630,6 +633,9 @@ def pvar(datadir='./data', varfile='pvar.dat', verbose=True):
         raise RuntimeError("Inconsistent number of variables. ")
     # Check the precision.
     fmt, dtype, nb = _get_precision(dim)
+    # Get the file name of the snapshot.
+    if ivar is not None:
+        varfile = "PVAR{}".format(ivar)
     # Allocate arrays.
     fp = np.zeros((pdim.npar, nvar), dtype=dtype)
     exist = np.full((pdim.npar,), False)
@@ -767,18 +773,21 @@ def time_series(datadir='./data'):
     f.close()
     return ts
 #=======================================================================
-def var(datadir='./data', varfile='var.dat', verbose=True):
+def var(datadir='./data', ivar=None, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
         datadir
             Name of the data directory.
+        ivar
+            If not None, an integer specifying the snapshot number and
+            the argument varfile takes no effect.
         varfile
             Name of the snapshot file.
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-04-20
+    # Chao-Chin Yang, 2015-08-06
     from collections import namedtuple
     import numpy as np
     # Get the dimensions.
@@ -794,6 +803,9 @@ def var(datadir='./data', varfile='var.dat', verbose=True):
         mvar = dim.mvar
     # Check the precision.
     fmt, dtype, nb = _get_precision(dim)
+    # Get the file name of the snapshot.
+    if ivar is not None:
+        varfile = "VAR{}".format(ivar)
     # Allocate arrays.
     fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
     f = np.zeros(fdim, dtype=dtype)
