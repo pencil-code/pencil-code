@@ -596,6 +596,13 @@ module Hydro
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
       endif
 !
+!  Added mass
+!  JONAS indices save the advective derivative to
+      if (ladv_der_as_aux) then
+        call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
+        i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
+      endif
+!
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
