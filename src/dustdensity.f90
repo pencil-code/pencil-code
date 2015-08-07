@@ -1878,6 +1878,9 @@ module Dustdensity
 !
      endif
       if (ldiagnos) then
+!
+!  do loop for dust species
+!
         do k=1,ndustspec
           if (idiag_mdm(k)/=0) call sum_mn_name(p%md(:,k),idiag_mdm(k))
           if (idiag_ndm(k)/=0) call sum_mn_name(p%nd(:,k),idiag_ndm(k))
@@ -1975,7 +1978,9 @@ module Dustdensity
             endif
           endif
         enddo
-        endif
+!
+!  end of do loop for dust species above.
+!
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
@@ -1992,7 +1997,7 @@ module Dustdensity
             endif
           endif
         enddo
-!      endif
+      endif
 !
 !  2d-averages
 !
@@ -2655,6 +2660,7 @@ module Dustdensity
         idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdmtot=0
         idiag_ndmz=0; idiag_rmom=0
+        idiag_rmom=0; idiag_admom=0
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics).
