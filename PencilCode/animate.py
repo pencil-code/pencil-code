@@ -7,7 +7,7 @@
 #
 # Chao-Chin Yang, 2015-04-22
 #=======================================================================
-def avg2d(name, direction, datadir='./data', **kwarg):
+def avg2d(name, direction, datadir='./data', save=False, **kwarg):
     """Animates the time sequence of a line average.
 
     Positional Argument:
@@ -19,10 +19,12 @@ def avg2d(name, direction, datadir='./data', **kwarg):
     Keyword Arguments:
         datadir
             Path to the data directory.
+        save
+            If True, save the animation.
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-04
+    # Chao-Chin Yang, 2015-08-09
     from . import read
     # Check the direction of the line average.
     if direction == 'x':
@@ -45,7 +47,7 @@ def avg2d(name, direction, datadir='./data', **kwarg):
     xlabel, ylabel = "xyz"[xdir], "xyz"[ydir]
     x, y = getattr(grid, xlabel), getattr(grid, ylabel)
     # Animate.
-    _frame_rectangle(t, x, y, avg[name], xlabel=xlabel, ylabel=ylabel, clabel=name, **kwarg)
+    _frame_rectangle(t, x, y, avg[name], xlabel=xlabel, ylabel=ylabel, clabel=name, save=save, **kwarg)
 #=======================================================================
 def slices(field, datadir='./data', **kwarg):
     """Dispatches to the respective animator of video slices.
@@ -79,7 +81,7 @@ def slices(field, datadir='./data', **kwarg):
 #=======================================================================
 ###### Local Functions ######
 #=======================================================================
-def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg):
+def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=False, **kwarg):
     """Animates a sequence of two-dimensional rectangular data.
 
     Positional Arguments:
@@ -102,12 +104,14 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
             Label for the y axis.
         clabel
             Label for the color bar.
+        save
+            If True, the animation is saved to a video file.
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-07-29
+    # Chao-Chin Yang, 2015-08-09
     from collections.abc import Sequence
-    from matplotlib.animation import FuncAnimation
+    from matplotlib.animation import FuncAnimation, writers
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
     import numpy as np
@@ -123,7 +127,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
     if logscale:
         c = c.clip(min(vmin) if vmin_dynamic else vmin, np.inf)
     # Initialize the plot.
-    fig = plt.figure()
+    fig = plt.figure(dpi=72)
     ax = fig.gca()
     time_template = r"$t = {:#.4G}$"
     pc = ax.pcolormesh(x, y, c[0].transpose(), norm=norm)
@@ -147,8 +151,17 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, **kwarg)
         elif vmax_dynamic:
             pc.set_clim(vmax=vmax[i])
         return text, pc
-    anim = FuncAnimation(fig, update, len(t), interval=25, repeat=False)
-    plt.show()
+    # Save or show the animation.
+    anim = FuncAnimation(fig, update, len(t), interval=40, repeat=False)
+    if save:
+        fname = "pc_anim.mp4"
+        FFMpegWriter = writers["ffmpeg"]
+        metadata = dict(title='Pencil Code Animation', artist='ccyang')
+        writer = FFMpegWriter(fps=25, metadata=metadata, bitrate=16000)
+        anim.save(fname, writer=writer)
+        print("Saved the animation in {}. ".format(fname))
+    else:
+        plt.show()
 #=======================================================================
 def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
     """Determines the data range to be plotted.
