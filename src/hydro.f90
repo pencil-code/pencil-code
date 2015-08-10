@@ -596,8 +596,10 @@ module Hydro
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
       endif
 !
-!  Added mass
-!  JONAS indices save the advective derivative to
+!  To compute the added mass term for particle drag,
+!  the advective derivative is needed.
+!  The advective derivative is set as an auxiliary
+!
       if (ladv_der_as_aux) then
         call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
         i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
@@ -2524,6 +2526,13 @@ module Hydro
 !
       if (tau_diffrot1/=0) then
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+      endif
+!
+!  Save the advective derivative as an auxiliary
+!
+      if(ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
+            -p%fpres + p%fvisc
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
