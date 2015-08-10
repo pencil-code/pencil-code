@@ -794,7 +794,7 @@ module Solid_Cells
             objectform = objects(iobj)%form
             if (objectform == 'cylinder') then
               dlong = twopi/nforcepoints
-              surfaceelement = dlong*rforce
+              surfaceelement = dlong*rforce/nzgrid
               drag_norm = 1./(2*robj)
             elseif (objectform == 'sphere') then
               dlong = twopi/nlong
