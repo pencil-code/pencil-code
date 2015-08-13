@@ -270,8 +270,8 @@ module Special
             endif
         endif
         
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor*dt
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor*dt
       enddo
 !
     endsubroutine vel_driver
