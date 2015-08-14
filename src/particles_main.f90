@@ -1271,14 +1271,6 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_density) then
-        call read_particles_dens_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_dens_run_pars',iostat)
-          return
-        endif
-      endif
-!
       if (lparticles_selfgravity) then
         call read_particles_selfg_run_pars(iostat)
         if (iostat/=0) then
@@ -1418,7 +1410,6 @@ module Particles_main
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
         if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
-        if (lparticles_density)        print*,'&particles_dens_run_pars    /'
         if (lparticles_selfgravity)    print*,'&particles_selfgrav_run_pars/'
         if (lparticles_nbody)          print*,'&particles_nbody_run_pars   /'
         if (lparticles_viscosity)      print*,'&particles_visc_run_pars    /'
@@ -1457,7 +1448,6 @@ module Particles_main
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
-      if (lparticles_density)        call write_particles_dens_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
       if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
