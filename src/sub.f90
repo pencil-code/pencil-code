@@ -3146,6 +3146,7 @@ module Sub
       logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
+      real :: a
 !
       if (lroot) then
 !
@@ -3161,19 +3162,24 @@ module Sub
 !  Special treatment when dtout is negative.
 !  Now tout and nout refer to the next snapshopt to be written.
 !
-          if (dtout < 0.) then
-            tout=log10(t)
-          else
+          settout: if (dtout < 0.0) then
+            tout = log10(t)
+          else settout
             !  make sure the tout is a good time
-            if (dtout /= 0.) then
-              tout = t - mod(t, dble(abs(dtout))) + dtout
-            else
+            nonzero: if (dtout /= 0.0) then
+              a = modulo(t, dble(abs(dtout)))
+              if (a > 0.0) then
+                tout = t + (dtout - a)
+              else
+                tout = t
+              endif
+            else nonzero
               call warning("read_snaptime", &
                    "Am I writing snapshots every 0 time units? (check " // &
                    trim(file) // ")" )
               tout = t
-            endif
-          endif
+            endif nonzero
+          endif settout
           nout=1
           write(lun,*) tout,nout
         endif
