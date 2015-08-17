@@ -30,6 +30,7 @@
 ;   Spitzer_q        absolute value of Spitzer heat flux vector
 ;   HR_ohm           volumetric Ohmic heating rate
 ;   j_abs            current density
+;   species_5        number density of 5th chemical species
 ;   [...]            more are listed in "pc_check_quantities.pro":
 ;                    IDL> help, pc_check_quantities (/all), /str
 ;
@@ -863,7 +864,7 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (Poynting))
 	end
 
-	species = (stregex (quantity, '^species_([0-9]+)$', /subexpr, /extract))[1]
+	species = (stregex (quantity, '^species_([0-9]+)$', /subexpr, /extract, /fold_case))[1]
 	if (species ne '') then begin
 		result = execute ('species_index = index.yy'+species)
 		if (not result) then begin
