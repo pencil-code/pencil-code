@@ -163,6 +163,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer perp./par. heatflux', $
 		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
+		Spitzer_collision_frequency_e:'Spitzer electron collision frequency', $
+		Spitzer_conductivity:'Spitzer conductivity', $
+		Spitzer_mag_diffusivity:'Spitzer magnetic diffusivity', $
 		Coulomb_logarithm:'Coulomb logarithm', $
 		collision_frequency_e:'electron collision frequency', $
 		WKB_conductivity:'WKB electric conductivity', $
@@ -335,6 +338,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
 		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
+		Spitzer_collision_frequency_e:['Temp', 'n_rho', 'Coulomb_logarithm'], $
+		Spitzer_conductivity:['Temp', 'Coulomb_logarithm'], $
+		Spitzer_mag_diffusivity:'Spitzer_conductivity', $
 		Coulomb_logarithm:'Temp', $
 		collision_frequency_e:['B'], $
 		WKB_conductivity:['n_rho', 'collision_frequency_e'], $
