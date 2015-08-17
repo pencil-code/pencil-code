@@ -97,6 +97,9 @@ module InitialCondition
       integer, pointer :: iglobal_cs2
       integer :: ics2
 !
+      if (.not.lspherical_coords) call fatal_error("initial_condition_uu",&
+           "This method is only for spherical coordinates. Use centrifugal_balance for cylindrical.")
+!
 !  Set the sound speed
 !
       call set_sound_speed(f)

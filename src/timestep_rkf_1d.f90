@@ -30,7 +30,6 @@ module Timestep
       use Cdata
       use Messages
 !!      use Particles_main
-!!      use Interstellar, only: calc_snr_damp_int
 !!      use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mfarray) :: f

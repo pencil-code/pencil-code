@@ -1281,11 +1281,11 @@ module Mpicomm
 !
 !  11-jul-03/tobi: coded
 !  20-jul-05/tobi: use non-blocking MPI calls
+!   2-jun-15/MR: corrected parameters of MPI_SEND (blocking!)
 !
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx
       integer :: idest
-      integer, dimension(MPI_STATUS_SIZE) :: isend_zx
 !
 !  Identifier
 !
@@ -1299,7 +1299,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,isend_zx,mpierr)
+                    MPI_COMM_WORLD,mpierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -1309,11 +1309,11 @@ module Mpicomm
 !
 !  11-jul-03/tobi: coded
 !  20-jul-05/tobi: use non-blocking MPI calls
+!   2-jun-15/MR: corrected parameters of MPI_SEND (blocking!)
 !
       integer, intent(in) :: nrad,idir
       real, dimension(mx,my) :: Qsend_xy
       integer :: idest
-      integer, dimension(MPI_STATUS_SIZE) :: isend_xy
 !
 !  Identifier
 !
@@ -1327,7 +1327,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,isend_xy,mpierr)
+                    MPI_COMM_WORLD,mpierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
@@ -1405,10 +1405,10 @@ module Mpicomm
 !  actual MPI calls
 !
       call MPI_ALLGATHER(tau_yz,ny*nz,MPI_REAL,tau_yz_all,ny*nz,MPI_REAL, &
-          MPI_COMM_XBEAM,mpierr)
+                         MPI_COMM_XBEAM,mpierr)
 !
       call MPI_ALLGATHER(Qrad_yz,ny*nz,MPI_REAL,Qrad_yz_all,ny*nz,MPI_REAL, &
-          MPI_COMM_XBEAM,mpierr)
+                         MPI_COMM_XBEAM,mpierr)
 !
     endsubroutine radboundary_yz_periodic_ray
 !***********************************************************************
@@ -5006,7 +5006,7 @@ module Mpicomm
       integer, parameter :: xtag=125, ytag=126
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      real, dimension(:,:,:,:), allocatable :: y_row, extended
+      real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
 !
 !
       bnx = size (out, 1)
@@ -5068,6 +5068,8 @@ module Mpicomm
       endif
 !
       if (iproc == broadcaster) then
+        allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
         ! distribute the y-rows
         do px = 0, nprocx-1
           partner = px + pz*nprocxy
@@ -5076,10 +5078,11 @@ module Mpicomm
             y_row = in(px*cnx+1:px*cnx+mx,:,:,:)
           else
             ! send to partner
-            call MPI_SEND (in(px*cnx+1:px*cnx+mx,:,:,:), &
-                nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
+            buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
+            call MPI_SEND (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
+        deallocate (buffer)
       endif
 !
       if (lfirst_proc_y .and. (ipz == pz)) then
@@ -5088,6 +5091,8 @@ module Mpicomm
           call MPI_RECV (y_row, nrow, MPI_REAL, broadcaster, xtag, MPI_COMM_WORLD, stat, mpierr)
         endif
 !
+        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
         ! distribute the data along the y-direction
         do py = 0, nprocy-1
           partner = ipx + py*nprocx + pz*nprocxy
@@ -5096,10 +5101,11 @@ module Mpicomm
             out = y_row(:,py*cny+1:py*cny+my,:,:)
           else
             ! send to partner
-            call MPI_SEND (y_row(:,py*cny+1:py*cny+my,:,:), &
-                nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            buffer = y_row(:,py*cny+1:py*cny+my,:,:)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
+        deallocate (buffer)
       elseif (ipz == pz) then
         ! receive local data from y-row partner (lfirst_proc_y)
         partner = ipx + ipz*nprocxy

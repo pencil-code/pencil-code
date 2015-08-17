@@ -243,12 +243,14 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
+  integer :: idiag_Kkramersm=0   ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
   integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
   integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
   integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
+  integer :: idiag_ss2mz=0      ! XYAVG_DOC: $\left< s^2 \right>_{xy}$
   integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left< p \right>_{xy}$
   integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left< T \right>_{xy}$
   integer :: idiag_TT2mz=0      ! XYAVG_DOC: $\left< T^2 \right>_{xy}$
@@ -263,6 +265,7 @@ module Energy
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
+  integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -283,7 +286,10 @@ module Energy
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
                                 ! YZAVG_DOC: heat flux)
+  integer :: idiag_Kkramersmx=0 ! YZAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{yz}$
   integer :: idiag_dcoolx=0     ! YZAVG_DOC: surface cooling flux
+  integer :: idiag_fradx_kramers=0 ! YZAVG_DOC: $F_{\rm rad}$ (from Kramers'
+                                   ! YZAVG_DOC: opacity)
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -929,10 +935,13 @@ module Energy
 !      call put_shared_variable('lheatc_chitherm',lheatc_chitherm)
 !      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
-      call put_shared_variable('hcond0_kramers',hcond0_kramers)
-      call put_shared_variable('nkramers',nkramers)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
-!
+      if (lheatc_kramers) then
+        call put_shared_variable('hcond0_kramers',hcond0_kramers)
+        call put_shared_variable('nkramers',nkramers)
+      else
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
+      endif
       star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
       call put_shared_variable('star_params',star_params)
 !
@@ -2627,8 +2636,9 @@ module Energy
         lpenc_diagnos(i_divu)=.true.
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
-          idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0 .or. &
-          idiag_ssmx/=0 .or. idiag_ssmr/=0) lpenc_diagnos(i_ss)=.true.
+          idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. & 
+          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ssmr/=0) & 
+          lpenc_diagnos(i_ss)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
          lpenc_diagnos(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
@@ -2939,7 +2949,7 @@ module Energy
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT
 !  Otherwise, in the regular case with entropy, s is the dimensional
 !  specific entropy, i.e. it is not divided by cp.
-!  NOTE: in the entropy module is it lnTT that is advanced, so
+!  NOTE: in the entropy module it is lnTT that is advanced, so
 !  there are additional cv1 terms on the right hand side.
 !
       if (ladvection_entropy) then
@@ -3147,6 +3157,7 @@ module Energy
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
+        call xysum_mn_name_z(p%ss**2,idiag_ss2mz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
@@ -4282,8 +4293,10 @@ module Energy
 !
       intent(in) :: p
       intent(inout) :: df
-
-      real, dimension(nx) :: Krho1
+!
+      real, dimension(nx) :: Krho1, chit_prof, del2ss1
+      real, dimension(nx,3) :: glnchit_prof, gss1 
+      integer :: j
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -4294,23 +4307,45 @@ module Energy
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
+!
+      if (chi_t/=0.0) then
+        call chit_profile(chit_prof)
+        call gradlogchit_profile(glnchit_prof)
+      endif
+!
+      if (lcalc_ssmean) then
+        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+        del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        call dot(p%glnrho+p%glnTT,gss1,g2)
+        thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
+        call dot(glnchit_prof,gss1,g2)
+        thdiff=thdiff+chi_t*g2
+      endif
+!
       if (pretend_lnTT) thdiff = p%cv1*thdiff
+!
+!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
+!
+      chix = p%cp1*Krho1
+    
+      if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+
+      if (ldiagnos) call sum_mn_name(Krho1,idiag_Kkramersm)
 !
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-Krho1*p%rho*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
+        if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-Krho1*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
+        call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
+        call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
+        call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
       endif
 !
 !  2d-averages
 !
       if (l2davgfirst) then
-        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
+        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
       endif
-!
-!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
-!
-      chix = p%cp1*Krho1
 !
 !  Check for NaNs initially.
 !
@@ -4535,7 +4570,7 @@ module Energy
 !  "Turbulent" entropy diffusion.
 !
 !  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not curently being checked.
+!  But this is not currently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -5591,7 +5626,7 @@ module Energy
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
-        idiag_ssmx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ssmr=0; idiag_TTmr=0
+        idiag_ssmx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0; idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
@@ -5599,13 +5634,14 @@ module Energy
         idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
-        idiag_fradz_kramers=0; idiag_fradxy_kramers=0
+        idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5644,6 +5680,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+        call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -5658,7 +5695,9 @@ module Energy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzTTmx',idiag_uzTTmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradmx',idiag_fradmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fturbmx',idiag_fturbmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'Kkramersmx',idiag_Kkramersmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'dcoolx',idiag_dcoolx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradx_kramers',idiag_fradx_kramers)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -5679,7 +5718,9 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_constchi',idiag_fradz_constchi)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_kramers',idiag_fradz_kramers)
+        call parse_name(inamex,cnamez(inamez),cformz(inamez),'Kkramersmz',idiag_Kkramersmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ss2mz',idiag_ss2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2mz',idiag_TT2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)

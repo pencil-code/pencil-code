@@ -444,6 +444,14 @@ module Particles_sub
               fp(k,izp)=2*xyz1(3)-fp(k,izp)
               fp(k,ivpz)=-fp(k,ivpz)
             endif
+          elseif (boundz=='inc') then
+!
+!  Move particle from the boundary to the center of the box
+!
+            if (fp(k,izp)<=xyz0(3) .or. fp(k,izp)>=xyz1(3)) then
+              fp(k,izp)=xyz0(3)+(xyz1(3)-xyz0(3))/2.
+              fp(k,ivpx:ivpz)=0.
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition=', boundz
             call stop_it('boundconds_particles')
@@ -1176,9 +1184,9 @@ module Particles_sub
 !
 !  Reads the gas density at location (ix, iy, iz).
 !
-!  04-dec-14/ccyang: coded.
+!  19-jun-14/ccyang: coded.
 !
-      use EquationOfState, only: get_stratz
+      use EquationOfState, only: get_stratz, rho0
       use DensityMethods , only: getrho_s
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -1197,9 +1205,11 @@ module Particles_sub
 !  Find the gas density at (ix,iy,iz).
 !
       if (lstratz) then
-        rho = rho0z(iz) * (1.0 + f(ix, iy, iz, irho))
+        rho = rho0z(iz) * (1.0 + f(ix,iy,iz,irho))
+      elseif (ilnrho /= 0) then
+        rho = getrho_s(f(ix,iy,iz,ilnrho), ix)
       else
-        rho = getrho_s(f(ix, iy, iz, ilnrho),ix)
+        rho = rho0
       endif
 !
     endfunction get_gas_density

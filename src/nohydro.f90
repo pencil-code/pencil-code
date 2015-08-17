@@ -782,6 +782,22 @@ module Hydro
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
+    subroutine input_persistent_hydro(id,done)
+!
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
+!
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    logical function output_persistent_hydro()
+!
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
+!***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
       integer, intent(out) :: iostat

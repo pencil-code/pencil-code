@@ -36,9 +36,12 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0, qplaw=0.0
+  real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
+  real :: sigma_initdist=0.2, a0_initdist=5e-6
+  integer :: nbin_initdist=20
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
+  logical :: lcondensation_simplified=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -48,14 +51,16 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1, qplaw, eps_dtog
+      aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
+      sigma_initdist, a0_initdist
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean, TTocean
+      lborder_driving_ocean, ztop_ocean, TTocean, &
+      lcondensation_simplified, GS_condensation
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -127,7 +132,8 @@ module Particles_radius
             'mass per dust grain mpmat=', mpmat
       endif
 !
-      if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar) then
+      if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar &
+          .and..not.lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
       endif
@@ -163,8 +169,11 @@ module Particles_radius
       logical, optional :: init
 !
       real, dimension (ninit) :: radii_cumulative
+      real, dimension (nbin_initdist) :: n_initdist, a_initdist
+      integer, dimension (nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
-      integer :: i, j, k, ind
+      real :: lna0, lna1, lna, lna0_initdist
+      integer :: i, j, k, kend, ind, ibin
       logical :: initial
 !
       initial=.false.
@@ -223,6 +232,38 @@ module Particles_radius
                   (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhopm*nwgrid
             enddo
           endif
+!
+!  Lognormal distribution. Here, ap1 is the largest value in the distribution
+!  and ap0 is the smallest radius initially.
+!
+        case ('lognormal')
+
+          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+              'lognormal=', ap0(1), ap1
+          lna0=log(ap0(1))
+          lna1=log(ap1)
+          lna0_initdist=log(a0_initdist)
+          do ibin=1,nbin_initdist
+            lna=lna0+(lna1-lna0)*(ibin-1)/(nbin_initdist-1)
+            a_initdist(ibin)=exp(lna)
+            n_initdist(ibin)=exp(-0.5*(lna-lna0_initdist)**2/sigma_initdist**2) &
+                /(sqrt(twopi)*sigma_initdist*a_initdist(ibin))
+          enddo
+          nn_initdist=nint(n_initdist)
+          nn_initdist=(npar_high-npar_low+1)*nn_initdist/(sum(nn_initdist)-1)
+!
+!  is now normalized to the number of particles,
+!  so set the corresponding distribution.
+!  Normally, the number of bins is less than the number of available ones,
+!  so then we patch the rest with fp(kend+1:,iap)=a0_initdist.
+!
+          k=npar_low
+          do ibin=1,nbin_initdist
+            kend=k+nn_initdist(ibin)
+            fp(k:kend,iap)=a_initdist(ibin)
+            k=kend
+          enddo
+          fp(kend+1:,iap)=a0_initdist
 !
         case ('specify')
 !
@@ -579,8 +620,12 @@ module Particles_radius
                 dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
-              dapdt=0.25*vth(ix)*rhopmat1* &
-                  (rhovap(ix)-rhosat(ix))*alpha_cond_par
+              if (lcondensation_simplified) then
+                dapdt=GS_condensation/fp(k,iap)
+              else
+                dapdt=0.25*vth(ix)*rhopmat1* &
+                    (rhovap(ix)-rhosat(ix))*alpha_cond_par
+              endif
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
@@ -600,7 +645,11 @@ module Particles_radius
 !  Vapor monomers are added to the gas or removed from the gas.
 !
             if (lparticles_number) np_swarm=fp(k,inpswarm)
-            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
+            if (lcondensation_simplified) then
+              drhocdt=0.
+            else
+              drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
+            endif
 !
 !  Drive the vapor pressure towards the saturated pressure due to contact
 !  with "ocean" at the box bottom.
@@ -620,9 +669,10 @@ module Particles_radius
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
                   (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
-            else
+            elseif (lpscalar) then
               df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
                   (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+            else
             endif
 !
 !  Release latent heat to gas / remove heat from gas.

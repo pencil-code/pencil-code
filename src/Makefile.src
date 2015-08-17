@@ -127,7 +127,7 @@ CFLAGS       =
 FCCLEANER    =
 LIBMPISUFFIX =
 MAKEOPTS     =
-FFTPACK_RELAXED =
+CONVERSION_RELAXED =
 #
 # Defaults for external libraries.
 #
@@ -157,7 +157,13 @@ include Makefile.local
 #
 include Makefile.inc
 #
+# Fortran 2003 standard compilation settings.
+#
+include Makefile-standard.inc
+#
 # Can someone explain this?
+# Bourdin.KIS: In some cases, an underscore is added to the library name.
+#     I think that this is not needed with a correct compiler configuration.
 #
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 #
@@ -1530,10 +1536,18 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpiifort #(pfe|mfe)
 #CC=mpiicc #(pfe|mfe)
-#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe|mfe)
-#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe|mfe)
+#FFLAGS=-O3 -xAVX -ip -mp1 -w -fp-model precise #(pfe|mfe)
+#CFLAGS=-O3 -xAVX -ip -mp1 -w  -fp-model precise -DFUNDERSC=1 #(pfe|mfe)
 #FFLAGS_DOUBLE=-autodouble #(pfe|mfe)
 #LD_MPI=-lmpi #(pfe|mfe)
+## NTNU Vilje (service)
+##
+#FC=mpif90 #(service)
+#CC=mpicc #(service)
+#FFLAGS=-O3 -xAVX -ip -mp1 -fp-model precise  #(service)
+#CFLAGS=-O3 -xAVX -ip -mp1  -fp-model precise -DFUNDERSC=1 #(service)
+#FFLAGS_DOUBLE=-autodouble #(service)
+#LD_MPI=-lmpi #(service)
 ##
 ## Toulouse's machines:
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)
@@ -2070,7 +2084,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_95) -o $*.o -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2162,9 +2176,11 @@ pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(p
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x
 #
-experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+experimental/analyzers.o: Makefile.local
+experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) Makefile.local | experimental/analyzers.o
+
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
-	$(LD) $(LDFLAGS) experimental/pc_meanfield_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o experimental/pc_meanfield_collect.x
+	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) $(LDFLAGS) -o experimental/pc_meanfield_collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
@@ -2257,7 +2273,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	    ln -s cparam.inc cparam.inc; \
 	    ln -s cparam_pencils.inc cparam_pencils.inc; \
 	fi
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_95) -o cparam.o -c cparam.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
@@ -2289,7 +2305,7 @@ EXECUTABLES=start.x run.x \
 # delete already compiled .x files:
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-code: Makefile.inc cparam.inc
+code: Makefile.inc Makefile-standard.inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2333,18 +2349,33 @@ mpicomm_.f90: mpicomm.f90
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
+
+#
+# Compile MPICOMM with F2003 standard, if necessary.
+#
+#$(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
+#	@case "$(FILE_IO)" in \
+#	'file_io_f2003') \
+#		$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD_2003) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+#		;; \
+#	*) \
+#		$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90 ; \
+#		;; \
+#	esac;
+
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FFTPACK_RELAXED) -o fftpack.o -c fftpack.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o param_io.o -c param_io.f90
 diagnostics_outlog.o: diagnostics_outlog.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
-file_io_f2003.o: file_io_f2003.f90
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o file_io_f2003.o -c file_io_f2003.f90
+experimental/file_io_f2003.o: experimental/file_io_f2003.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_2003) -o experimental/file_io_f2003.o -c experimental/file_io_f2003.f90
 file_io_f95.o: file_io_f95.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
@@ -2382,6 +2413,7 @@ clean:
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
+	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
 #  Clean up all
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
@@ -2389,7 +2421,7 @@ clean:
 cleann: clean
 	rm -f Makefile src/Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
-	rm -f *.inc && touch Makefile.inc
+	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 #
 #  Same thing.
@@ -2400,7 +2432,7 @@ cleanall: cleann
 #
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
-	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
+	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile-standard.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.

@@ -211,7 +211,7 @@ module Special
           call fatal_error ('solar_corona/mag_driver', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
 !
-      if ((.not. lreloading) .and. lrun) nano_seed = 0.
+      if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
       if (lpencil_check_at_work) return
 !
@@ -668,7 +668,7 @@ module Special
         lpenc_requested(i_glnTT) = .true.
       endif
 !
-      if (idiag_dtchi2 /= 0.0) then
+      if (idiag_dtchi2 /= 0) then
         lpenc_diagnos(i_rho1) = .true.
         lpenc_diagnos(i_cv1) = .true.
         lpenc_diagnos(i_cs2) = .true.
@@ -766,12 +766,12 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtvel = 0.
-        idiag_dtchi2 = 0.
-        idiag_dtnewt = 0.
-        idiag_dtradloss = 0.
-        idiag_dtspitzer = 0.
-        idiag_mag_flux = 0.
+        idiag_dtvel = 0
+        idiag_dtchi2 = 0
+        idiag_dtnewt = 0
+        idiag_dtradloss = 0
+        idiag_dtspitzer = 0
+        idiag_mag_flux = 0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2793,7 +2793,7 @@ module Special
 ! Don't reset if RELOAD is used
       if (.not. lreloading) then
 !
-        points_rstate(:) = 0.
+        points_rstate(:) = 0
 !
         isnap = ceiling (t/dsnap)
         tsnap_uu = (isnap+1) * dsnap

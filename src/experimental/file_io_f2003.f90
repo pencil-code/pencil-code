@@ -112,9 +112,7 @@ module File_io
       character (len=*), optional, intent(in) :: form
       logical, optional, intent(in) :: remove_comments
 !
-      integer :: bytes, pos
-      character (len=fnlen) :: filename
-      character (len=fnlen) :: tmp_prefix
+      integer :: bytes
 !
  write (*,*) 'POA: ', iproc
  flush (6)
@@ -157,13 +155,13 @@ module File_io
       deallocate (parallel_unit)
  write (*,*) 'PCC: ', iproc
  flush (6)
-      if (allocated (buffer)) then
- write (*,*) "PC: DOUBLE DEALLOCATION!"
- flush (6)
-        deallocate (buffer)
-      endif
- write (*,*) 'PCD: ', iproc
- flush (6)
+!      if (allocated (buffer)) then
+! write (*,*) "PC: DOUBLE DEALLOCATION!"
+! flush (6)
+!        deallocate (buffer)
+!      endif
+! write (*,*) 'PCD: ', iproc
+! flush (6)
 !
     endsubroutine parallel_close
 !***********************************************************************

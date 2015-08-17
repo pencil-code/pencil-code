@@ -478,7 +478,7 @@ An up to date list of Pencil Code contributers can be found at
   ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
   NBabkovskaia & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.org/~nbabkovs/} & University of Helsinki\\
   mreinhardt  & \htmladdnormallink{Matthias Rheinhardt}{http://www.helsinki.fi/~rei/} & University of Helsinki\\
-  mkorpi  & \htmladdnormallink{Maarit J.\ Mantere (n\'ee Korpi)}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
+  mkorpi  & \htmladdnormallink{Maarit J.\ K\"apyl\"a (n\'ee Korpi, Mantere)}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
   miikkavaisala  & \htmladdnormallink{Miikka V\"ais\"al\"a}{https://tuhat.halvi.helsinki.fi/portal/en/persons/miikka-vaisala(90245497-b541-4d55-8409-03ea3e563d82).html} & University of Helsinki\\
   mee  & \htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/} & University of Newcastle\\
   mcmillan & \htmladdnormallink{David McMillan}{http://brunhes.eas.yorku.ca/dave/CV/} & York University, Toronto\\
@@ -1852,7 +1852,7 @@ simply execute \code{pc_build} without any options,
 you can clone an existing host-file, just include an existing
 compiler configuration, and simply only add the options you need.
 A good example of a host-file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
-You may save a clone unter \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+You may save a clone under \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
 where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
 This will be the new default for \code{pc_build}.
 
@@ -2514,6 +2514,10 @@ You can specify the position of the slice planes by setting the parameters
 in \file{run.in}.
 Alternatively, you can set the input parameter \var{slice_position} to one
 of \code{'p'} (periphery of box) or \code{'m'} (middle of box).
+Or you can also specify the $z-$position in terms of z using
+the tags \var{zbot_slice} and \var{ztop_slice}. In this case, the \var{zbot_slice}
+slice will have the suffix \code{.xy} and the \var{ztop_slice} the suffix \code{.xy2}
+
 
 In the file \file{video.in} of your run directory, you can choose for
 which variables you want to get video files;
@@ -2592,6 +2596,66 @@ following:
   etc.
 
 \end{enumerate}
+
+
+\paragraph{Another example}
+Suppose you have set up a run using \name{magnetic.f90} and some other modules. 
+This run studies some process in a ``surface'' layer inside the box. This
+``surface'' can represent a sharp change in density or turbulence. So you defined
+your box setting the $z=0$ point at the surface.
+Therefore, your \file{start.in} file will look something similar to:
+\begin{Verbatim}
+&init_pars
+  lperi=T,T,F
+  bcz = 's','s','a','hs','s','s','a'
+  xyz0 = -3.14159, -3.14159, -3.14159
+  Lxyz = 6.28319, 6.28319, 9.42478
+\end{Verbatim}
+Now you can analyze quickly the surface of interest and some other $xy-$slice
+setting \var{zbot_slice} and \var{ztop_slice} in the \file{run.in} file:
+\begin{Verbatim}
+&run_pars
+  slice_position='c'
+  zbot_slice=0.
+  ztop_slice=0.2
+\end{Verbatim}
+In this case, the slices with the suffix \code{.xy} will be at the ``surface''
+and the ones with the suffix \code{.xy2} will be at the position $z=0.2$ above
+the surface. And you can visualize this slices by:
+\begin{enumerate}
+
+\item Write the following lines to \file{video.in} in your run directory:
+  \begin{Verbatim}
+  bb
+  \end{Verbatim}
+
+\item Edit the namelist \name{run_pars} in the file \file{run.in} to include 
+\var{zbot_slice} and \var{ztop_slice}.
+
+\item Run the {\sc Pencil Code}:
+  \begin{alltt}
+  \prompt{unix> } start.csh
+  \prompt{unix> } run.csh
+  \end{alltt}
+
+\item Run \file{src/read_videofiles.x} to assemble global slice files from
+  those scattered across \file{data/proc*/}:
+  \begin{alltt}
+  \prompt{unix> } src/read_videofiles.x
+    enter name of variable (lnrho, uu1, ..., bb3):  \emph{bb3} \
+  \end{alltt}
+
+\item Start \name{IDL},  load the slices with \file{pc_read_video} and plot them at some time:
+  \begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> } pc_read_video, field='bb3',ob=bb3,nt=ntv  
+  \prompt{IDL> } tvscl,bb3.xy(*,*,100) 
+  \prompt{IDL> } tvscl,bb3.xy2(*,*,100)
+  \end{alltt}
+  etc.
+
+\end{enumerate}
+
 
 
 \paragraph{File structure}
@@ -4246,7 +4310,7 @@ Examples of good mesh layouts are listed in Table~\ref{GoodMeshes}.
 
 \begin{table}[h!]\caption{
 Examples of mesh layouts for which Fourier transforms with
-$x$ parallelization is ppossible.
+$x$ parallelization is possible.
 }\vspace{12pt}\centerline{\begin{tabular}{r|rrr|rrrrrrrr}
 ny & nprocyx & nprocy & nprocz & ncpus \\
 \hline
@@ -8295,6 +8359,50 @@ filtered and unfiltered initial conditions is almost the same.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+\subsection{Turbulent initial with given spectrum}
+
+The most general procedure for producing an initial condition
+with a turbulent spectrum is \code{inituu='power_randomphase_hel'},
+which allows one to set two different slopes, together with an
+exponential cutoff as well as a Gaussian peak within the spectrum.
+By default, the field is solenoidal inless one puts
+\code{lskip_projection=.true.} and can have fractional helicity
+by setting \code{relhel_uu} to a value between $-1$ and $1$.
+By default it is $0$, which means it is nonhelical.
+
+The spectral indices \var{initpower} and \var{initpower2} refer to
+energy spectral indices.
+By default, \var{initpower2=-5/3}, corresponding to a Kolmogov spectrum.
+For a delta-correlated spectrum, we have to put \var{initpower=2},
+corresponding to a $k^2$ energy spectrum for kinetic energy.
+This would be suitable for the subinertial range from $k=1$ to
+$k=k_{\rm p}$ (corresponding to the variable \var{kpeak}).
+
+If \var{cutoff=0}, no cutoff will be imposed.
+Otherwise, the spectrum will be multiplied by an exponential
+function with $\exp(-k^{2n})$, where $n=\mbox{'ncutoff=1'}$
+by default.
+
+Example, for \var{ampluu=1e-1}, \var{initpower=4.}, and \var{kpeak=3.},
+we get \var{urms=3.981E-01} when \var{relhel_uu=1} and
+\var{urms=3.981E-01} when \var{relhel_uu=0} and
+\var{urms=5.560E-01} when \var{relhel_uu=1}.
+The \var{urms} values scale linearly with \var{ampluu} and for
+\var{initpower=2} also approximately linearly with \var{kpeak}.
+For the magnetic field, we initialize the magnetic vector potential,
+so to get a $k^4$ spectrum, we have to put \var{initpower_aa=2.}
+Everything else is analogous; see, e.g.,
+\begin{verbatim}
+&hydro_init_pars
+  inituu='power_randomphase_hel', ampluu=1e-1, initpower=4., kpeak=3.
+  relhel_uu=0., cutoff=30.
+/
+&magnetic_init_pars
+  initaa='power_randomphase_hel', amplaa=1e-1, initpower_aa=2., kpeak_aa=3.
+  relhel_aa=0., cutoff_aa=30.
+/
+\end{verbatim}
+for which we get \var{urms=3.981E-01} and \var{brms=3.871E-01}.
 
 % ---------------------------------------------------------------------- %
 
@@ -11266,6 +11374,20 @@ the latest set of parameters, you need to look at the code.
                  \end{description}
                  These settings are overridden by explicitly setting
                  \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{zbot_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy}.
+                 See \S~\ref{S-slices}) for details. \\
+   \var{ztop_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy2}.
                  See \S~\ref{S-slices}) for details. \\
   \var{tavg} [$0$]
                & averaging time $\tau_{\rm avg}$ for time averages (if

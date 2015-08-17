@@ -379,12 +379,27 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	dx_tilde = grid.dx_tilde[xs:xe]
 	dy_tilde = grid.dy_tilde[ys:ye]
 	dz_tilde = grid.dz_tilde[zs:ze]
-	if (xe-xs eq mxgrid-1) then Ox = grid.Ox else Ox = grid.x[xns]
-	if (ye-ys eq mygrid-1) then Oy = grid.Oy else Oy = grid.y[yns]
-	if (ze-zs eq mzgrid-1) then Oz = grid.Oz else Oz = grid.z[zns]
-	if (xe-xs eq mxgrid-1) then Lx = grid.Lx else Lx = total (1.0/grid.dx_1[xns:xne])
-	if (ye-ys eq mygrid-1) then Ly = grid.Ly else Ly = total (1.0/grid.dy_1[yns:yne])
-	if (ze-zs eq mzgrid-1) then Lz = grid.Lz else Lz = total (1.0/grid.dz_1[zns:zne])
+	Ox = grid.Ox
+	Oy = grid.Oy
+	Oz = grid.Oz
+	Lx = grid.Lx
+	Ly = grid.Ly
+	Lz = grid.Lz
+	if (xe-xs ne mxgrid-1) then begin
+		Ox = grid.x[xns]
+		Lx = total (1.0/grid.dx_1[xns:xne])
+		lperi[0] = 0
+	endif
+	if (ye-ys ne mygrid-1) then begin
+		Oy = grid.y[yns]
+		Ly = total (1.0/grid.dy_1[yns:yne])
+		lperi[1] = 0
+	endif
+	if (ze-zs ne mzgrid-1) then begin
+		Oz = grid.z[zns]
+		Lz = total (1.0/grid.dz_1[zns:zne])
+		lperi[2] = 0
+	endif
 	ldegenerated = [ xe-xs, ye-ys, ze-zs ] lt 2 * [ nghostx, nghosty, nghostz ]
 
 	if (keyword_set (reduced)) then name += "reduced_"

@@ -102,6 +102,7 @@ module Cdata
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
+  real :: Area_xy=1., Area_yz=1., Area_xz=1.
   real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
@@ -173,6 +174,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
@@ -257,6 +259,7 @@ module Cdata
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
   logical :: lenergy=.false.
+  logical :: ladv_der_as_aux=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -289,6 +292,7 @@ module Cdata
   integer :: iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
+  integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
@@ -307,7 +311,7 @@ module Cdata
   integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
-  integer :: icooling=0, icooling2=0
+  integer :: icooling=0, inetcool=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
 !
 !  Parameters related to message passing.
@@ -510,7 +514,7 @@ module Cdata
   logical :: sp_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
-  logical :: ub_spec=.false.
+  logical :: ub_spec=.false., Lor_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.

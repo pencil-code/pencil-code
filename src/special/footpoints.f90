@@ -27,7 +27,6 @@ module Special
 !   xp = pivot point
 !   yp = pivot point
 !   rad = distance of the footpoint to the pivot point
-!   width = width of the footpoint
 !   lam_twist = Gaussian RMS width
 !   lam_u = coefficient for the exponential saturation for the velocity
 !   r_profile = velocity profile in the radial direction
@@ -45,13 +44,13 @@ module Special
   real, dimension(6) :: xp = (/0.,0.,0.,0.,0.,0./)
   real, dimension(6) :: yp = (/0.,0.,0.,0.,0.,0./)
   real, dimension(6) :: rad = (/2.,0.,0.,0.,0.,0./)
-  real, dimension(6) :: width = (/1.,0.,0.,0.,0.,0./)
   real, dimension(6) :: lam_twist = (/0.17,0.,0.,0.,0.,0./)
   real :: lam_u = 1
   character (len=labellen) :: r_profile = 'gaussian'
   character (len=labellen) :: z_profile = 'exp'
   real :: lam_z = 1
   logical, save :: lblink = .False.
+  real :: t_e3 = 8.
   real, dimension(6) :: delay_blink = (/0.,0.,0.,0.,0.,0./)
   real, dimension(6) :: t_blink_up = (/1.,0.,0.,0.,0.,0./)
   real, dimension(6) :: t_blink_0u = (/0.,0.,0.,0.,0.,0./)
@@ -63,8 +62,8 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    n_pivot, udrive, xp, yp, rad, width, lam_twist, lam_u, r_profile, z_profile, lam_z, &
-    lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
+    n_pivot, udrive, xp, yp, rad, lam_twist, lam_u, r_profile, z_profile, lam_z, &
+    t_e3, lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
 !
   contains
 !
@@ -87,7 +86,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-      use Mpicomm, only: parallel_file_exists
+!      use Mpicomm, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -185,7 +184,7 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-  subroutine vel_driver (f, df)
+  subroutine vel_driver(f, df)
 !
 ! Drive bottom boundary horizontal velocities with given velocity field.
 !
@@ -194,27 +193,42 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       integer :: ip
-      real :: offset                    ! offset for u = 0 at the edge of the foopoint
       real, dimension(mx) :: dist       ! distance of point to pivot point
       real, dimension(mx) :: ux, uy     ! velocity in x and y direction      
       real :: z_factor                  ! multiplication factor for the z-dependence
       integer :: blink                  ! either -1, 0 or 1, depending on the blinking stage
       real :: t_blink_tot               ! total time for a blink switching on, off and negative
+      real :: xc, yc, kc                ! variable sofr the e3 braid
 !
-      do ip = 1, n_pivot
-        offset = exp(-width(ip)**2/8./lam_twist(ip)**2)
+      if (r_profile == 'e3') n_pivot = 1
         
+      do ip = 1, n_pivot
         dist = sqrt((x(l1:l2)-xp(ip))**2 + (y(m)-yp(ip))**2)
+        
         select case (r_profile)
+        case ('e3')
+            yc = 0
+            if (mod(int(t/t_e3),2) == 0) then
+                xc = -1
+                kc = -1
+            else
+                xc = 1
+                kc = 1
+            endif
+            ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(-y(m)+yc)
+            uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(x(l1:l2)-xc)
         case ('gaussian')
-            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
-            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
+            ux = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(-y(m)+yp(ip))/dist
+            uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))/dist
         case ('linear_exp')
             ux = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(-y(m)+yp(ip))
             uy = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(x(l1:l2)-xp(ip))
-        case default
-            ux = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(-y(m)+yp(ip))/dist
-            uy = (exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))-offset)*udrive(ip)/(1-offset)*(x(l1:l2)-xp(ip))/dist
+            ! normalize
+            ux = ux*exp(1/sqrt(lam_twist(ip)))/sqrt(lam_twist(ip)) 
+            uy = uy*exp(1/sqrt(lam_twist(ip)))/sqrt(lam_twist(ip))
+         case default
+            ux = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(-y(m)+yp(ip))/dist
+            uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))/dist
         end select
         
         ! add z-dependence
@@ -256,8 +270,8 @@ module Special
             endif
         endif
         
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor*dt
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor*dt
       enddo
 !
     endsubroutine vel_driver

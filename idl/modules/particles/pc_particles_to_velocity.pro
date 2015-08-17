@@ -4,6 +4,9 @@
 ;;  Convert positions and velocities of particles to a grid velocity field
 ;;  and (optionally) a directional rms speed.
 ;;
+;;  fine: set to refraction factor (1 = no change, 2 = double resolution)
+;;  vprms: calculate velocity dispersion sigma, this is the rmsd of v, NOT rms of v !!
+;;
 ;;  Author: Anders Johansen
 ;;
 function pc_particles_to_velocity, xxp, vvp, x, y, z, vprms=vprms, $
@@ -230,7 +233,7 @@ case interpolation_scheme of
         izz0=iz0 & izz1=iz0
       endelse
 ;;  Calculate weight of each particle on the grid.
-      for ixx=ixx0,ixx1 do begin & for iyy=iyy0,iyy1 do begin & for izz=izz0,   izz1 do begin
+      for ixx=ixx0,ixx1 do begin & for iyy=iyy0,iyy1 do begin & for izz=izz0,izz1 do begin
         if ( ((ixx-ix0) eq -1) or ((ixx-ix0) eq +1) ) then begin
           weight_x = 1.125d - 1.5d*abs(xxp[k,0]-x[ixx])  *dx_1 + $
                               0.5d*abs(xxp[k,0]-x[ixx])^2*dx_2

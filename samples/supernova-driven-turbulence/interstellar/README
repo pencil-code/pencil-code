@@ -1,0 +1,31 @@
+Directory:
+    ${PENCIL_HOME}/samples/interstellar
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+    Fred A. Gent <fred.gent.ncl/gmail[dot]com>
+Added:
+    29-Aug-2003
+Status:
+    has been working in this form since 3-Jun-2006
+Recommended resolution:
+    at least 64x64x128
+Comments:
+    This model tests supernova energy injection and the cooling function
+References:
+    1. Brandenburg, A., Korpi, M. J., & Mee, A. J.: 2007, ``Thermal
+       instability in shearing and periodic turbulence,''
+       Astrophys. J. 654, 945-954
+    2. Korpi, M. J., Brandenburg, A., Shukurov, A., Tuominen, I.,
+       & Nordlund, Å.: 1999, ``A supernova regulated interstellar
+       medium: simulations of the turbulent multiphase medium,''
+       Astrophys. J. Lett. 514, L99-L102
+    3. Gent, F.A., Shukurov, A., Fletcher, A., Sarson, G.R.S., &
+       Mantere, M.J.: ``Supernova Driven Turbulence. I. The Multiphase
+       Structure'',
+       MNRAS, 432, 1396-1423 
+    4. Gent, F.A., Shukurov, A., Sarson, G.R.S., Fletcher, A., &
+       Mantere, M.J.: ``Supernova Driven Turbulence. II. The Mean
+       Magnetic Field'',
+       MNRAS, 430, L40-L44 

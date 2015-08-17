@@ -197,7 +197,7 @@ module power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
       use Mpicomm, only: mpireduce_sum
       use Sub, only: curli
 !
@@ -267,7 +267,7 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-     call fourier_transform(a1,b1)
+     call fft_xyz_parallel(a1,b1)
 !
 !  integration over shells
 !
@@ -863,7 +863,7 @@ module power_spectrum
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fourier_transform, fft_xyz_parallel
+    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, cross, grad, curli
 !
@@ -1134,6 +1134,200 @@ module power_spectrum
   !
   endsubroutine powerhel
 !***********************************************************************
+  subroutine powerLor(f,sp)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!  22-jan-13/axel: corrected for x parallelization
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,3) :: Lor
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx) :: bbi,jji
+  real, dimension(nx,3) :: uu,aa,bb,jj,jxb
+  real, dimension(nx,3,3) :: aij,bij
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+ real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true.
+!
+!  passive scalar contributions (hardwired for now)
+!
+  integer :: itmp1=8,itmp2=9
+  real, dimension(nx,3) :: gtmp1,gtmp2
+  real :: BextEP=.1 !(hard-wired for now/Axel)
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  !  compute Lorentz force
+  !
+  do m=m1,m2
+  do n=n1,n2
+     aa=f(l1:l2,m,n,iax:iaz)
+     call gij(f,iaa,aij,1)
+     call gij_etc(f,iaa,aa,aij,bij)
+     call curl_mn(aij,bb,aa)
+     call curl_mn(bij,jj,bb)
+     call cross_mn(jj,bb,jxb)
+     Lor(l1:l2,m,n,:)=jxb
+  enddo
+  enddo
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+!
+!  Lorentz force spectra (spectra of L*L^*)
+!
+    if (sp=='Lor') then
+      do n=n1,n2
+        do m=m1,m2
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=Lor(l1:l2,m,n,ivec)
+        enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,ivec)
+      a_im=0.
+      b_im=0.
+!
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +b_re(ikx,iky,ikz)**2 &
+               +b_im(ikx,iky,ikz)**2
+            spectrumhel(k+1)=spectrumhel(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (iproc==root) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine powerLor
+!***********************************************************************
   subroutine powerscl(f,sp)
 !
 !  Calculate power spectrum of scalar quantity (on spherical shells) of the
@@ -1141,7 +1335,7 @@ module power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-    use Fourier, only: fourier_transform
+    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: curli, grad
 !
@@ -1235,7 +1429,7 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-  call fourier_transform(a_re,a_im)
+  call fft_xyz_parallel(a_re,a_im)
 !
 !  integration over shells
 !

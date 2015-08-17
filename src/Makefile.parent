@@ -136,12 +136,13 @@ Makefile_inc:
 parallel_unit_h:
 	@echo "MAKING src/parallel_unit.h"
 	@case "$(FILE_IO)" in \
-	'file_io_f2003') \
+	'experimental/file_io_f2003') \
+	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
 	    echo "      character (len=:), allocatable :: parallel_unit" > src/parallel_unit_declaration.h ; \
 	    echo "      character (len=:), allocatable :: parallel_unit" > src/parallel_unit.h ; \
 	    echo "      parallel_unit = get_unit()" >> src/parallel_unit.h ; \
 	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)" > src/parallel_unit_broadcast.h ; \
-	    echo "      character(LEN=*) :: cbcast_array" >> src/parallel_unit_broadcast.h ; \
+	    echo "      character (len=*) :: cbcast_array" >> src/parallel_unit_broadcast.h ; \
 	    echo "      integer :: bytes" >> src/parallel_unit_broadcast.h ; \
 	    echo "      integer, optional :: proc" >> src/parallel_unit_broadcast.h ; \
 	    echo "      integer :: ibcast_proc" >> src/parallel_unit_broadcast.h ; \
@@ -153,7 +154,7 @@ parallel_unit_h:
 	    echo "      call MPI_BCAST(cbcast_array,bytes,MPI_CHARACTER,ibcast_proc,MPI_COMM_WORLD,mpierr)" >> src/parallel_unit_broadcast.h ; \
 	    echo "    endsubroutine mpibcast_char_alloc" >> src/parallel_unit_broadcast.h ; \
 	    echo "    subroutine mpibcast_char_alloc(cbcast_array,bytes,proc)" > src/parallel_unit_nobroadcast.h ; \
-	    echo "      character (len=:), allocatable :: cbcast_array" >> src/parallel_unit_nobroadcast.h ; \
+	    echo "      character (len=*) :: cbcast_array" >> src/parallel_unit_nobroadcast.h ; \
 	    echo "      integer :: bytes" >> src/parallel_unit_nobroadcast.h ; \
 	    echo "      integer, optional :: proc" >> src/parallel_unit_nobroadcast.h ; \
 	    echo "      if (ALWAYS_FALSE) print*, cbcast_array, bytes, proc" >> src/parallel_unit_nobroadcast.h ; \
@@ -161,6 +162,7 @@ parallel_unit_h:
 	    echo "    public :: mpibcast_char_alloc" > src/parallel_unit_broadcast_header.h ; \
 	    ;; \
 	*) \
+	    echo "FSTD=$(FSTD_95)" > src/Makefile-standard.inc; \
 	    echo "      integer :: parallel_unit" > src/parallel_unit_declaration.h ; \
 	    echo "      integer :: parallel_unit" > src/parallel_unit.h ; \
 	    echo "      parallel_unit = get_unit()" >> src/parallel_unit.h ; \

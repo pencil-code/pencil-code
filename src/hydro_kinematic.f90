@@ -42,7 +42,7 @@ module Hydro
   real, dimension(mz) :: profz_kinflow1=1., profz_kinflow2=1., profz_kinflow3=1.
 !
   real :: u_out_kep=0.0
-  real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0.
+  real :: tphase_kinflow=-1., phase1=0., phase2=0., tsforce=0.
   real ::  dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lupw_uu=.false.
@@ -2217,29 +2217,31 @@ module Hydro
 !
     endsubroutine KS_order
 !***********************************************************************
-    subroutine input_persistent_hydro(id,lun,done)
+    subroutine input_persistent_hydro(id,done)
 !
 !  Read in the stored time of the next random phase calculation.
 !
 !  12-apr-08/axel: adapted from input_persistent_forcing
 !
-      integer :: id,lun
+      use IO, only: read_persist
+!
+      integer :: id
       logical :: done
 !
-      if (id == id_record_NOHYDRO_TPHASE) then
-        read (lun) tphase_kinflow
+      if (id == id_record_HYDRO_TPHASE) then
+        if (read_persist ('HYDRO_TPHASE', tphase_kinflow)) return
         done = .true.
-      elseif (id == id_record_NOHYDRO_PHASE1) then
-        read (lun) phase1
+      elseif (id == id_record_HYDRO_PHASE1) then
+        if (read_persist ('HYDRO_PHASE1', phase1)) return
         done = .true.
-      elseif (id == id_record_NOHYDRO_PHASE2) then
-        read (lun) phase2
+      elseif (id == id_record_HYDRO_PHASE2) then
+        if (read_persist ('HYDRO_PHASE2', phase2)) return
         done = .true.
-      elseif (id == id_record_NOHYDRO_LOCATION) then
-        read (lun) location
+      elseif (id == id_record_HYDRO_LOCATION) then
+        if (read_persist ('HYDRO_LOCATION', location)) return
         done = .true.
-      elseif (id == id_record_NOHYDRO_TSFORCE) then
-        read (lun) tsforce
+      elseif (id == id_record_HYDRO_TSFORCE) then
+        if (read_persist ('HYDRO_TSFORCE', tsforce)) return
         done = .true.
       endif
 !
@@ -2247,29 +2249,29 @@ module Hydro
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
-    logical function output_persistent_hydro(lun)
+    logical function output_persistent_hydro()
 !
 !  Writes out the time of the next random phase calculation.
 !
 !  12-apr-08/axel: adapted from output_persistent_forcing
 !  16-nov-11/MR: changed into logical function to signal I/O errors, I/O error handling introduced
+!  01-Jun-2015/Bourdin.KIS: activated this code by inserting the call in input_/output_persistent
 !
-      integer :: lun
+      use IO, only: write_persist
 !
-      if (lroot .and. (ip < 14)) then
-        if (tphase_kinflow >= 0.) &
-            print*,'output_persistent_hydro: ',tphase_kinflow
-      endif
+      output_persistent_hydro = .false.
+      if (tphase_kinflow < 0.) return
+      if (lroot .and. (ip < 14)) print *,'output_persistent_hydro: ', tphase_kinflow
 !
 !  Write details.
 !
       output_persistent_hydro = .true.
 !
-      if (write_persist ('NOHYDRO_TPHASE', id_record_NOHYDRO_TPHASE, tphase_kinflow)) return
-      if (write_persist ('NOHYDRO_PHASE1', id_record_NOHYDRO_PHASE1, phase1)) return
-      if (write_persist ('NOHYDRO_PHASE2', id_record_NOHYDRO_PHASE2, phase2)) return
-      if (write_persist ('NOHYDRO_LOCATION', id_record_NOHYDRO_LOCATION, location)) return
-      if (write_persist ('NOHYDRO_TSFORCE', id_record_NOHYDRO_TSFORCE, tsforce)) return
+      if (write_persist ('HYDRO_TPHASE', id_record_HYDRO_TPHASE, tphase_kinflow)) return
+      if (write_persist ('HYDRO_PHASE1', id_record_HYDRO_PHASE1, phase1)) return
+      if (write_persist ('HYDRO_PHASE2', id_record_HYDRO_PHASE2, phase2)) return
+      if (write_persist ('HYDRO_LOCATION', id_record_HYDRO_LOCATION, location)) return
+      if (write_persist ('HYDRO_TSFORCE', id_record_HYDRO_TSFORCE, tsforce)) return
 !
       output_persistent_hydro = .false.
 !

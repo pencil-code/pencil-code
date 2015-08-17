@@ -29,14 +29,15 @@ module Cosmicrayflux
   real :: amplfcr=0., omegahat=0., fcr_const=0., J_param=0., Ma_param=1.
   real :: kx_fcr=1., ky_fcr=1., kz_fcr=1., cs2cr=1., gamma_cr=1., nu_cr=0.
   real, parameter :: rhocr0=1.
-  logical :: lupw_ucr=.false.
+  logical :: lupw_ucr=.false., lno_crflux_evol=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
        omegahat, initfcr, amplfcr, fcr_const, kx_fcr, ky_fcr, kz_fcr, &
        cs2cr, gamma_cr
 !
   namelist /cosmicrayflux_run_pars/ &
-       omegahat, lupw_ucr, J_param, Ma_param, cs2cr, nu_cr
+       omegahat, lupw_ucr, J_param, Ma_param, cs2cr, nu_cr, &
+       lno_crflux_evol
 !
   integer :: idiag_ekincr=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv_{\rm cr}^2\right>$
   integer :: idiag_ethmcr=0       ! DIAG_DOC: $\left<\varrho_{\rm cr} e_{\rm cr}\right>$
@@ -235,8 +236,10 @@ module Cosmicrayflux
 !
 !  Cosmic Ray Flux equation.
 !
-      df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-        +delucrxbb-p%ucrgucr-gecr_over_ecr+nu_cr*p%del2ucr
+      if (.not.lno_crflux_evol) then
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
+          +delucrxbb-p%ucrgucr-gecr_over_ecr+nu_cr*p%del2ucr
+      endif
 !
 !  Add Lorentz force
 !

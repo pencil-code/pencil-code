@@ -91,7 +91,7 @@ $(MESSAGES_OBJ): $(MESSAGES_SRC) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(SY
 #
 $(GHOSTFOLD_OBJ): $(GHOSTFOLD_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ)
 #
-$(PERSIST_OBJ): $(PERSIST_SRC) $(IO_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
+$(PERSIST_OBJ): $(PERSIST_SRC) $(IO_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MAGNETIC_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ) $(HYDRO_OBJ)
 #
 $(FILTER_OBJ): $(FILTER_SRC) $(CDATA_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ) $(MPICOMM_OBJ)
 #
@@ -105,7 +105,7 @@ $(GHOST_CHECK_OBJ): ghost_check.h $(GHOST_CHECK_SRC) $(MPICOMM_OBJ) $(CDATA_OBJ)
 #
 $(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INTERSTELLAR_OBJ)
 #
-$(SHEAR_OBJ): shear.h $(SHEAR_SRC) $(CDATA_OBJ) $(DERIV_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ)
+$(SHEAR_OBJ): shear.h $(SHEAR_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ)
 #
 $(GRAVITY_OBJ): gravity.h $(GRAVITY_SRC) $(COMMON_DEPS) $(SHARED_VARIABLES_OBJ)
 #
@@ -286,5 +286,7 @@ pre_and_post_processing/pc_configtest.o: $(physics) $(technical_nompi) $(EQU_OBJ
 #
 pre_and_post_processing/pc_tecplot.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
-experimental/pc_meanfield_collect.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+experimental/analyzers.o:
+#
+experimental/pc_meanfield_collect.o: experimental/analyzers.o $(physics) $(EQU_OBJ) $(LD_FOURIER) $(MPICOMM_OBJ)
 #

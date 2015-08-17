@@ -2184,6 +2184,7 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
+!   4-jun-2015/MR: factor cp added in front of tmp_xy
 !
       use DensityMethods, only: getdlnrho
 !
@@ -2268,11 +2269,11 @@ module EquationOfState
             tmp_xy=FbotKbot/cs2_xy
           endif
 !
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)   MR: factor c_p missing (in comment)?
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
 !
           do i=1,nghost
             call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d_z ln(rho)
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
           enddo
         endif
 !
@@ -2314,11 +2315,11 @@ module EquationOfState
             tmp_xy=FtopKtop/cs2_xy
           endif
 !
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)                     ! rho_xy=d_z ln(rho)
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
+            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)              ! here rho_xy=d_z ln(rho)
+            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
           enddo
         endif
 !
@@ -2336,9 +2337,13 @@ module EquationOfState
 !
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
+!    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
+!                   added branches for Kramers heat conductivity (using sigmaSB!)
 !
       logical, pointer :: lmeanfield_chitB
       real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
@@ -2360,6 +2365,11 @@ module EquationOfState
       call get_shared_variable('chi',chi)
       call get_shared_variable('hcondzbot',hcondzbot)
       call get_shared_variable('hcondztop',hcondztop)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+      endif
 !
 !  lmeanfield_chitB and chi_t0
 !
@@ -2399,9 +2409,14 @@ module EquationOfState
         dlnrhodz_xy= coeffs_1_z(1,1)*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
                     +coeffs_1_z(2,1)*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
                     +coeffs_1_z(3,1)*(f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho))
-
-        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondzbot*(gamma_m1)*dlnrhodz_xy)/ &
-                 (chit_prof1*chi_t*rho_xy+hcondzbot/cv)
+ 
+        if (lheatc_kramers) then
+          dsdz_xy= cv*( (sigmaSB/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
+                       +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
+        else
+          dsdz_xy=(sigmaSBt*TT_xy**3+hcondzbot*gamma_m1*dlnrhodz_xy)/ &
+                  (chit_prof1*chi_t*rho_xy+hcondzbot/cv)
+        endif
 !
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2448,11 +2463,14 @@ module EquationOfState
 !  Select to use either sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
 !      or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
 !
-        if (hcondztop==impossible) then
-          dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*(gamma_m1)*dlnrhodz_xy)/ &
+        if (lheatc_kramers) then
+          dsdz_xy=-cv*( (sigmaSB/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
+                       +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
+        elseif (hcondztop==impossible) then
+          dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
                    (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
         else
-          dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
+          dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*gamma_m1*dlnrhodz_xy)/ &
                    (chit_prof2*chi_t*rho_xy+hcondztop/cv)
         endif
 !
@@ -2481,6 +2499,7 @@ module EquationOfState
 !   20-jul-2010/pete: expanded to take into account hcond/=0
 !   21-jan-2015/MR: changes for reference state.
 !   22-jan-2015/MR: corrected bug in branches for pretend_lnTT=T
+!    6-jun-2015/MR: added branches for Kramers heat conductivity (using sigmaSB!)
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
@@ -2488,6 +2507,8 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       integer :: i
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2499,6 +2520,11 @@ module EquationOfState
       call get_shared_variable('chit_prof2',chit_prof2)
       call get_shared_variable('hcondxbot',hcondxbot)
       call get_shared_variable('hcondxtop',hcondxtop)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+      endif
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
@@ -2555,8 +2581,13 @@ module EquationOfState
 !
           endif
 !
-          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
-                   (chit_prof1*chi_t*rho_yz+hcondxbot/cv)
+          if (lheatc_kramers) then
+            dsdx_yz=-cv*( (sigmaSB/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
+                         +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
+          else
+            dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*gamma_m1*dlnrhodx_yz)/ &
+                     (chit_prof1*chi_t*rho_yz+hcondxbot/cv)
+          endif
 !
 !  Substract gradient of reference entropy.
 !
@@ -2625,8 +2656,13 @@ module EquationOfState
 
           endif
 !
-          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
-                   (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
+          if (lheatc_kramers) then
+            dsdx_yz=-cv*( (sigmaSB/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
+                         +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
+          else
+            dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*gamma_m1*dlnrhodx_yz)/ &
+                     (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
+          endif
 !
 !  Substract gradient of reference entropy.
 !
@@ -2653,6 +2689,8 @@ module EquationOfState
 !
 !   08-apr-2014/pete: coded
 !   21-jan-2015/MR: changes for reference state.
+!    4-jun-2015/MR: added missing factor cp in RB;
+!                   added branches for Kramers heat conductivity (using sigmaSB!)
 !
       use Mpicomm, only: stop_it
       use DensityMethods, only: getdlnrho
@@ -2662,8 +2700,10 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: dsdx_yz, cs2_yz, rho_yz, dlnrhodx_yz
+      real, dimension (my,mz) :: dsdx_yz, TT_yz, rho_yz, dlnrhodx_yz
       integer :: i
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_condturb: ENTER - cs20,cs0=',cs20,cs0
@@ -2677,9 +2717,14 @@ module EquationOfState
       call get_shared_variable('hcondxtop',hcondxtop)
       call get_shared_variable('Fbot',Fbot)
       call get_shared_variable('Ftop',Ftop)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+      endif
+!
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
-!
 !
       select case (topbot)
 !
@@ -2693,7 +2738,7 @@ module EquationOfState
 ! Do the pretend_lnTT=T case first
 !
         if (pretend_lnTT) then
-           call stop_it("bc_ss_flux_condturb_x: not implemented for pretend_lnTT=T")
+          call stop_it("bc_ss_flux_condturb_x: not implemented for pretend_lnTT=T")
         else
 !
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
@@ -2701,13 +2746,14 @@ module EquationOfState
           call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
 
           if (ldensity_nolog) then
-            cs2_yz=f(l1,:,:,iss)                         ! cs2_yz = here entropy
+            TT_yz=f(l1,:,:,iss)                                      ! TT_yz here entropy
             if (lreference_state) &
-              cs2_yz = cs2_yz+reference_state(BOT,iref_s)
-            cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
+              TT_yz = TT_yz+reference_state(BOT,iref_s)
+            TT_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*TT_yz)  ! TT_yz here cs2
           else
-            cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+            TT_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
           endif
+          TT_yz=TT_yz/(cp*gamma_m1)                                  ! TT_yz here temperature
 !
 !  Calculate d rho/d x   or   d ln(rho)/ d x
 !
@@ -2717,7 +2763,7 @@ module EquationOfState
 
           if (ldensity_nolog) then
 !
-!  Add gradient of reference density and divide by total density.
+!  Add gradient of reference density and divide by total density (but not used later!).
 !
             if (lreference_state) then
               dlnrhodx_yz=dlnrhodx_yz + reference_state(BOT,iref_grho)
@@ -2728,8 +2774,12 @@ module EquationOfState
 !
           endif
 !
-          dsdx_yz=(cp*gamma_m1*Fbot/cs2_yz)/ &
-                  (chit_prof1*chi_t*rho_yz + hcondxbot*gamma)
+          if (lheatc_kramers) then
+            dsdx_yz=gamma1*(Fbot/hcond0_kramers)*rho_yz**(2.*nkramers)/TT_yz**(6.5*nkramers+1.)
+                            ! no turbulent diffusivity considered here!
+          else
+            dsdx_yz=(Fbot/TT_yz)/(chit_prof1*chi_t*rho_yz + hcondxbot*gamma)
+          endif
 !
 !  Add gradient of reference entropy.
 !
@@ -2740,10 +2790,11 @@ module EquationOfState
           do i=1,nghost
             call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,BOT,rho_yz,dlnrhodx_yz)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &
-                (hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
-                dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
+                cp*(hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
+                   dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
           enddo
         endif
+!
 !  top boundary
 !  ============
 !
@@ -2890,6 +2941,8 @@ module EquationOfState
 !   Constant conductive + turbulent flux through the surface
 !
 !   15-jul-2014/pete: adapted from bc_ss_flux_condturb_x
+!    4-jun-2015/MR: added missing factor cp in RB
+!                   added branches for Kramers heat conductivity (using sigmaSB!)
 !
       use Mpicomm, only: stop_it
       use DensityMethods, only: getdlnrho
@@ -2901,8 +2954,10 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: dsdz_xy, cs2_xy, rho_xy
+      real, dimension (mx,my) :: dsdz_xy, TT_xy, rho_xy
       integer :: i
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2918,6 +2973,11 @@ module EquationOfState
       call get_shared_variable('chi',chi)
       call get_shared_variable('Fbot',Fbot)
       call get_shared_variable('Ftop',Ftop)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+      endif
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
 !
@@ -2938,32 +2998,37 @@ module EquationOfState
 !
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
 !
-          call getlnrho(f(:,:,n1,ilnrho),rho_xy)            ! here rho_xy = ln(rho)
-          cs2_xy=f(:,:,n1,iss)                              ! here cs2_xy = entropy
+          call getlnrho(f(:,:,n1,ilnrho),rho_xy)             ! here rho_xy = ln(rho)
+          TT_xy=f(:,:,n1,iss)                                ! here TT_xy = entropy
           if (lreference_state) &
-            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
-          cs2_xy=cs20*exp(gamma_m1*(rho_xy-lnrho0)+cv1*cs2_xy)
+            TT_xy(l1:l2,:) = TT_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
+          TT_xy=cs20*exp(gamma_m1*(rho_xy-lnrho0)+cv1*TT_xy) ! here TT_xy = cs2
+          TT_xy=TT_xy/(cp*gamma_m1)                          ! here TT_xy temperature
 !
-          call getrho(f(:,:,n1,ilnrho),rho_xy)              ! here rho_xy = rho
+          call getrho(f(:,:,n1,ilnrho),rho_xy)               ! here rho_xy = rho
 !
           !fac=(1./60)*dz_1(n1)
           !dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
           !                 -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
           !                 +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
 !
-          if (lheatc_chiconst) then
-            dsdz_xy= (gamma_m1*Fbot/cs2_xy)/(rho_xy*(chit_prof1*chi_t/cp + gamma*chi))
-            rho_xy = (chi*gamma_m1*rho_xy/(rho_xy*(chit_prof1*chi_t/cp+gamma*chi)))
+          if (lheatc_kramers) then
+            dsdz_xy=gamma1*(Fbot/hcond0_kramers)*rho_xy**(2.*nkramers)/TT_xy**(6.5*nkramers+1.)
+                                     ! no turbulent diffusivity considered here!
+            rho_xy=1.-gamma1         ! not efficient
+          elseif (lheatc_chiconst) then
+            dsdz_xy= (Fbot/TT_xy)/(rho_xy*(chit_prof1*chi_t + cp*gamma*chi))
+            rho_xy = chi*gamma_m1/(chit_prof1*chi_t/cp+gamma*chi)
           else
-            dsdz_xy= (cp*gamma_m1*Fbot/cs2_xy)/(chit_prof1*chi_t*rho_xy + hcondzbot*gamma)
-            rho_xy = (hcondzbot*gamma_m1/(chit_prof1*chi_t*rho_xy+gamma*hcondzbot))
+            dsdz_xy= (Fbot/TT_xy)/(chit_prof1*chi_t*rho_xy + hcondzbot*gamma)
+            rho_xy = hcondzbot*gamma_m1/(chit_prof1*chi_t*rho_xy+gamma*hcondzbot)
           endif
 !
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,cs2_xy)             ! cs2_xy = d_z ln(rho)
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + rho_xy*cs2_xy+dz2_bound(-i)*dsdz_xy
+            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,TT_xy)             ! here TT_xy = d_z ln(rho)
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + cp*(rho_xy*TT_xy+dz2_bound(-i)*dsdz_xy)
           enddo
 
         endif

@@ -267,7 +267,7 @@ sub get_host_id_system_info {
     my $id = 'host';
     $id .= "-$hostname"   if $hostname;
     $id .= "-$os_name"    if $os_name;
-    $id .= "-$linux_type" if $linux_type;
+    $id .= "-$linux_type" if ($linux_type && ($linux_type !~ /^\\.$/s));
 
     if ($id eq 'host') { return ""; }
     return $id;

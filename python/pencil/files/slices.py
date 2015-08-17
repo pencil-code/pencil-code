@@ -40,13 +40,13 @@ def read_slices(field='uu1',datadir='data/',proc=-1,
         precision = 'f'
 
     # set up slice plane
-    if (extension == 'xy' or extension == 'Xy'):
+    if extension.startswith('xy'):
         hsize = dim.nx
         vsize = dim.ny
-    if (extension == 'xz'):
+    if extension.startswith('xz'):
         hsize = dim.nx
         vsize = dim.nz
-    if (extension == 'yz'):
+    if extension.startswith('yz'):
         hsize = dim.ny
         vsize = dim.nz
 
@@ -497,7 +497,7 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
 
         if (t > tmin and t < tmax):
             ax.cla()
-            ax.imshow(plane)
+            ax.imshow(plane,vmin=amin,vmax=amax)
             fname = '_tmp%03d.png'%islice
             print 'Saving frame', fname
             fig.savefig(fname)

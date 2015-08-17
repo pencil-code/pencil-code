@@ -116,7 +116,7 @@ module Hydro
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
-  logical :: lskip_projection=.false., lno_second_ampl=.false.
+  logical :: lskip_projection=.false., lno_second_ampl=.true.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -594,6 +594,15 @@ module Hydro
       if (llinearized_hydro) then
         call farray_register_auxiliary('uu0',iuu0,vector=3)
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
+      endif
+!
+!  To compute the added mass term for particle drag,
+!  the advective derivative is needed.
+!  The advective derivative is set as an auxiliary
+!
+      if (ladv_der_as_aux) then
+        call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
+        i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
       endif
 !
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
@@ -1490,7 +1499,7 @@ module Hydro
         case ('power_randomphase_hel')
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
-            lskip_projection, lno_second_ampl)
+            lskip_projection, lno_second_ampl, .false.)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
@@ -2517,6 +2526,13 @@ module Hydro
 !
       if (tau_diffrot1/=0) then
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+      endif
+!
+!  Save the advective derivative as an auxiliary
+!
+      if(ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
+            -p%fpres + p%fvisc
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -3895,6 +3911,22 @@ module Hydro
         endif
 !
     endsubroutine udamping
+!***********************************************************************
+    subroutine input_persistent_hydro(id,done)
+!
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
+!
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(done)
+!
+    endsubroutine input_persistent_hydro
+!***********************************************************************
+    logical function output_persistent_hydro()
+!
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !

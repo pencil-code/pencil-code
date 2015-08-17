@@ -840,7 +840,8 @@ module Grid
 !  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
 !                coordinates into coords_aux; set coordinate switches at the
 !                beginning
-
+!   9-jun-15/MR: calculation of Area_* added
+!
       use Sub, only: remove_zprof
       use Mpicomm
 !
@@ -881,7 +882,10 @@ module Grid
 !
       call coords_aux(x,y,z)
 !
-!  Volume element.
+!  Volume element and area of coordinate surfaces.
+!  Note that in the area a factor depending only on the coordinate x_i which defines the surface by x_i=const. is dropped.
+!
+      Area_xy=1.; Area_yz=1.; Area_xz=1.
 !
       if (lcartesian_coords) then
 !
@@ -889,6 +893,8 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=xprim
+          Area_xy=Area_xy*Lxyz(1)
+          Area_xz=Area_xz*Lxyz(1)
         else
           dVol_x=1.
         endif
@@ -897,6 +903,8 @@ module Grid
 !
         if (nygrid/=1) then
           dVol_y=yprim
+          Area_xy=Area_xy*Lxyz(2)
+          Area_yz=Area_yz*Lxyz(2)
         else
           dVol_y=1.
         endif
@@ -905,6 +913,8 @@ module Grid
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          Area_yz=Area_yz*Lxyz(3)
+          Area_xz=Area_xz*Lxyz(3)
         else
           dVol_z=1.
         endif
@@ -925,24 +935,36 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=x**2*xprim
+          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
+          Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
         else
-          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
+          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)   !???
+          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)    !???
+          Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
         endif
 !
 !  Theta extent (if non-radially symmetric)
 !
         if (nygrid/=1) then
           dVol_y=sinth*yprim
+          Area_xy=Area_xy*Lxyz(2)
+          Area_yz=Area_yz*(cos(xyz0(2))-cos(xyz1(2)))
         else
           dVol_y=2.
+          Area_xy=Area_xy*pi
+          Area_yz=Area_yz*2.
         endif
 !
 !  phi extent (if non-axisymmetry)
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          Area_xz=Area_xz*Lxyz(3)
+          Area_yz=Area_yz*Lxyz(3)
         else
           dVol_z=2.*pi
+          Area_xz=Area_xz*2.*pi
+          Area_yz=Area_yz*2.*pi
         endif
 !
 !  weighted coordinates for integration purposes
@@ -989,22 +1011,32 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=x*xprim
+          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
+          Area_xz=Area_xz*Lxyz(1)
         else
-          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
+          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)   !???
+          Area_xy=Area_xy*dVol_x(1)
+          Area_xz=Area_xz*Lxyz(1)
         endif
 !
 !  theta extent (non-cylindrically symmetric)
 !
         if (nygrid/=1) then
           dVol_y=yprim
+          Area_xy=Area_xy*Lxyz(2)
+          Area_yz=Area_yz*Lxyz(2)
         else
           dVol_y=2.*pi
+          Area_xy=Area_xy*2.*pi
+          Area_yz=Area_yz*2.*pi
         endif
 !
 !  z extent (vertically extended)
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          Area_xz=Area_xz*Lxyz(3)
+          Area_yz=Area_yz*Lxyz(3)
         else
           dVol_z=1.
         endif
@@ -1024,6 +1056,7 @@ module Grid
         select case (pipe_func)
 !
         case ('error_function')
+          call warning('initialize_grid','calculation of Area_* not implemented')
           fact=.5/CrossSec_w**2
           glnCrossSec=glnCrossSec0*(-exp(-fact*(x(l1:l2)-CrossSec_x1)**2) &
                                     +exp(-fact*(x(l1:l2)-CrossSec_x2)**2))
