@@ -3146,7 +3146,6 @@ module Sub
       logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
-      real :: a
 !
       if (lroot) then
 !
@@ -3167,12 +3166,7 @@ module Sub
           else settout
             !  make sure the tout is a good time
             nonzero: if (dtout /= 0.0) then
-              a = modulo(t, dble(abs(dtout)))
-              if (a > 0.0) then
-                tout = t + (dtout - a)
-              else
-                tout = t
-              endif
+              tout = t + (dtout - modulo(t, dble(abs(dtout))))
             else nonzero
               call warning("read_snaptime", &
                    "Am I writing snapshots every 0 time units? (check " // &
