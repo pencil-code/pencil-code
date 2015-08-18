@@ -13,8 +13,7 @@
   public :: particles_write_snapshot, particles_write_dsnapshot
   public :: particles_pde, particles_pde_pencil, particles_write_pdim
   public :: particles_pde_blocks, particles_write_block
-  public :: particles_wparam
-  public :: particles_read_runpars, particles_wparam2
+  public :: particles_wparam, particles_wparam2
   public :: particles_powersnap, get_slices_particles
   public :: particles_doprepencil_calc
   public :: write_snapshot_particles, read_snapshot_particles
