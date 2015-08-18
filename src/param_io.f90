@@ -34,7 +34,33 @@ module Param_IO
   use NeutralDensity
   use NeutralVelocity
   use NSCBC
+  use Particles
+  use Particles_adaptation
+  use Particles_adsorbed
+  use Particles_cdata
+  use Particles_chemistry
+  use Particles_coagulation
+  use Particles_collisions
+  use Particles_density
+  use Particles_diagnos_dv
+  use Particles_diagnos_state
+  use Particles_drag
   use Particles_main
+  use Particles_map
+  use Particles_mass
+  use Particles_mpicomm
+  use Particles_nbody
+  use Particles_number
+  use Particles_radius
+  use Particles_sink
+  use Particles_spin
+  use Particles_selfgravity
+  use Particles_stalker
+  use Particles_stirring
+  use Particles_sub
+  use Particles_surfspec
+  use Particles_temperature
+  use Particles_viscosity
   use Poisson
   use Polymer
   use Power_spectrum
@@ -272,7 +298,7 @@ module Param_IO
       call read_pars(read_eos_init_pars            ,'eos',lierrl)
       call read_pars(read_hydro_init_pars          ,'hydro',lierrl)
       call read_pars(read_density_init_pars        ,'density',lierrl)
-      call read_pars(read_gravity_init_pars        ,'grav_init_pars',lierrl)
+      call read_pars(read_gravity_init_pars        ,'grav',lierrl)
       call read_pars(read_selfgravity_init_pars    ,'selfgrav',lierrl)
       call read_pars(read_poisson_init_pars        ,'poisson',lierrl)
       call read_pars(read_energy_init_pars         ,'entropy',lierrl)
@@ -298,7 +324,23 @@ module Param_IO
       call read_pars(read_solid_cells_init_pars    ,'solid_cells',lierrl)
       call read_pars(read_NSCBC_init_pars          ,'NSCBC',lierrl)
       call read_pars(read_polymer_init_pars        ,'polymer',lierrl)
-      call read_pars(particles_read_startpars      ,'particles',lierrl)
+!
+      call read_pars(read_particles_init_pars      ,'particles',lierrl,lparticles)
+      call read_pars(read_particles_rad_init_pars  ,'particles_radius',lierrl,lparticles_radius)
+!     call read_pars(read_particles_pot_init_pars  ,'particles_potential',lierrl,lparticles_potential)
+      call read_pars(read_particles_spin_init_pars ,'particles_spin',lierrl,lparticles_spin)
+      call read_pars(read_particles_sink_init_pars ,'particles_sink',lierrl,lparticles_sink)
+      call read_pars(read_particles_num_init_pars  ,'particles_number',lierrl,lparticles_number)
+      call read_pars(read_particles_dens_init_pars ,'particles_dens',lierrl,lparticles_density)
+      call read_pars(read_particles_selfg_init_pars,'particles_selfgrav',lierrl,lparticles_selfgravity)
+      call read_pars(read_particles_nbody_init_pars,'particles_nbody',lierrl,lparticles_nbody)
+      call read_pars(read_particles_mass_init_pars ,'particles_mass',lierrl,lparticles_mass)
+      call read_pars(read_particles_drag_init_pars ,'particles_drag',lierrl,lparticles_drag)
+      call read_pars(read_particles_TT_init_pars   ,'particles_TT',lierrl,lparticles_temperature)
+      call read_pars(read_particles_ads_init_pars  ,'particles_ads',lierrl,lparticles_adsorbed)
+      call read_pars(read_particles_surf_init_pars ,'particles_surf',lierrl,lparticles_surfspec)
+      call read_pars(read_particles_chem_init_pars ,'particles_chem',lierrl,lparticles_chemistry)
+      call read_pars(read_pstalker_init_pars       ,'particles_stalker',lierrl,lparticles_stalker)
 !
       call parallel_close(parallel_unit)
 !
@@ -409,7 +451,7 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
-    subroutine read_pars(reader,name,lierr)
+    subroutine read_pars(reader,name,lierr,lactive)
 !
 !  encapsulates reading of pars + error handling
 !
@@ -430,10 +472,15 @@ module Param_IO
 !
       character(len=*), intent(in) :: name
       logical, intent(in) :: lierr
+      logical, intent(in), optional :: lactive
 !
       integer :: ierr
       character(len=linelen) :: type
       include "parallel_unit.h"
+!
+      if (present (lactive)) then
+        if (.not. lactive) return
+      endif
 !
       call reader(ierr)
 !
