@@ -38,6 +38,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   real, dimension(mz) :: rho0z = 1.0
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0

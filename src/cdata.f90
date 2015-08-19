@@ -466,40 +466,6 @@ module Cdata
 !
   logical :: lbidiagonal_derij=.true.
 !
-!  Constant 'parameters' cannot occur in namelists, so in order to get the
-!  now constant module logicals into the lphysics name list...
-!  We have some proxies that are used to initialise private local variables
-!  called lhydro etc, in the lphysics namelist!
-!
-  logical, parameter :: lhydro_var=lhydro
-  logical, parameter :: ldensity_var=ldensity
-  logical, parameter :: lentropy_var=lentropy
-  logical, parameter :: ltemperature_var=ltemperature
-  logical, parameter :: lshock_var=lshock
-  logical, parameter :: lmagnetic_var=lmagnetic
-  logical, parameter :: lforcing_var=lforcing
-  logical, parameter :: llorenz_gauge_var=llorenz_gauge
-  logical, parameter :: ldustvelocity_var=ldustvelocity
-  logical, parameter :: ldustdensity_var=ldustdensity
-  logical, parameter :: ltestscalar_var=ltestscalar
-  logical, parameter :: ltestfield_var=ltestfield
-  logical, parameter :: ltestflow_var=ltestflow
-  logical, parameter :: linterstellar_var=linterstellar
-  logical, parameter :: lcosmicray_var=lcosmicray
-  logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
-  logical, parameter :: lshear_var=lshear
-  logical, parameter :: lpscalar_var=lpscalar
-  logical, parameter :: lradiation_var=lradiation
-  logical, parameter :: leos_var=leos
-  logical, parameter :: lchiral_var=lchiral
-  logical, parameter :: lneutralvelocity_var=lneutralvelocity
-  logical, parameter :: lneutraldensity_var=lneutraldensity
-  logical, parameter :: lpolymer_var=lpolymer
-  logical, parameter :: lsolid_cells_var=lsolid_cells
-  logical, parameter :: lpower_spectrum_var=lpower_spectrum
-  logical, parameter :: lparticles_var=lparticles
-  logical, parameter :: lparticles_drag_var=lparticles_drag
-!
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.

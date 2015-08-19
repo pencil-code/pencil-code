@@ -32,6 +32,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0

@@ -491,14 +491,14 @@ module Slices
       iz3_loc=max(iz3_loc,n1) ; iz4_loc=max(iz4_loc,n1)
 !
       if (lroot) then
-        write (*,*)'read_runpars: slice_position = '//slice_position
+        write (*,*)'read_all_run_pars: slice_position = '//slice_position
         write (*,'(1x,a,4i4)') &
-          'read_runpars: ix,iy,iz,iz2 (video files) =',&
+          'read_all_run_pars: ix,iy,iz,iz2 (video files) =',&
           ix,iy,iz,iz2
         if (slice_position=='s'.or.slice_position=='w') write (*,'(1x,a,2i4)') &
-          'read_runpars: iz3, iz4 (video files) =',iz3,iz4
+          'read_all_run_pars: iz3, iz4 (video files) =',iz3,iz4
         if (slice_position=='d') write (*,'(1x,a,1i4)') &
-          'read_runpars: iy2 (video files) =',iy2
+          'read_all_run_pars: iy2 (video files) =',iy2
       endif
 !
     endsubroutine setup_slices

@@ -20,6 +20,7 @@ module File_io
   endinterface
 !
   integer, parameter :: parallel_unit = 14
+  logical :: lignore_namelist_errors, lnamelist_error
 !
   contains
 !
@@ -407,5 +408,60 @@ module File_io
       write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
 !
     endfunction get_tmp_prefix
+!***********************************************************************
+    subroutine read_namelist(reader,name,lactive)
+!
+!  encapsulates reading of pars + error handling
+!
+!  31-oct-13/MR: coded
+!  16-dec-13/MR: handling of optional ierr corrected
+!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
+!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
+!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
+!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
+!  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
+!
+      use Messages, only: warning
+!
+      interface
+        subroutine reader(iostat)
+          integer, intent(out) :: iostat
+        endsubroutine reader
+      endinterface
+!
+      character(len=*), intent(in) :: name
+      logical, intent(in), optional :: lactive
+!
+      integer :: ierr
+      character(len=linelen) :: type
+      include "parallel_unit.h"
+!
+      if (present (lactive)) then
+        if (.not. lactive) return
+      endif
+!
+      call reader(ierr)
+!
+      if (lstart) then
+        type = '_init'
+        if (name == 'init') type = ''
+      else
+        type = '_run'
+        if (name == 'run') type = ''
+      endif
+!
+      if (.not. lignore_namelist_errors) then
+        if (ierr == -1) then
+          if (lroot) call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
+          lnamelist_error = .true.
+        elseif (ierr /= 0) then
+          if (lroot) call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
+          lnamelist_error = .true.
+        endif
+      endif
+!
+      call parallel_rewind(parallel_unit)
+!
+    endsubroutine read_namelist
 !**************************************************************************
 endmodule File_io

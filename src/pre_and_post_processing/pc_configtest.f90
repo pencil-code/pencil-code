@@ -49,24 +49,22 @@ program pc_configtest
 !
   call initialize_messages()
 !
-!  Read parameters from start.x (default values; may be overwritten by
-!  read_runpars).
+!  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   write (*,*) '>>> TESTING START.IN <<<'
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
   write (*,*) '>>> TESTING RUN.IN <<<'
   lstart = .false.
   lrun = .true.
-  call read_runpars()
+  call read_all_run_pars()
   lrun = .false.
   lstart = .true.
 !
 !  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly even in read_startpars
-!  or read_runpars]
+!  [might better be put into another routine, possibly in 'read_all_run_pars']
 !
   x0 = xyz0(1)
   y0 = xyz0(2)

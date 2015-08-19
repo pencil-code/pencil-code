@@ -34,33 +34,6 @@ module Param_IO
   use NeutralDensity
   use NeutralVelocity
   use NSCBC
-  use Particles
-  use Particles_adaptation
-  use Particles_adsorbed
-  use Particles_cdata
-  use Particles_chemistry
-  use Particles_coagulation
-  use Particles_collisions
-  use Particles_density
-  use Particles_diagnos_dv
-  use Particles_diagnos_state
-  use Particles_drag
-  use Particles_main
-  use Particles_map
-  use Particles_mass
-  use Particles_mpicomm
-  use Particles_nbody
-  use Particles_number
-  use Particles_radius
-  use Particles_sink
-  use Particles_spin
-  use Particles_selfgravity
-  use Particles_stalker
-  use Particles_stirring
-  use Particles_sub
-  use Particles_surfspec
-  use Particles_temperature
-  use Particles_viscosity
   use Poisson
   use Polymer
   use Power_spectrum
@@ -86,17 +59,11 @@ module Param_IO
   private
 !
   public :: get_datadir, get_snapdir
-  public :: read_startpars, print_startpars
-  public :: read_runpars,   print_runpars
-  public :: wparam, wparam2, write_pencil_info
-!
-! The following fixes namelist problems withi MIPSpro 7.3.1.3m
-! under IRIX -- at least for the moment
-!
-  character (len=labellen) :: mips_is_buggy='system'
+  public :: read_all_init_pars, read_all_run_pars
+  public :: write_all_init_pars, write_all_run_pars
+  public :: write_pencil_info
 !
   logical :: lforce_shear_bc = .true.
-  logical :: lnamelist_error, lignore_namelist_errors
 !
 ! local quantities
 !
@@ -274,23 +241,23 @@ module Param_IO
 !
     endsubroutine read_run_pars
 !***********************************************************************
-    subroutine read_startpars(print)
+    subroutine read_all_init_pars(print)
 !
 !  read input parameters (done by each processor)
 !
 !  Now no warning is produced when somebody sets lcylindrical.
-!  read_startpars: lcylindrical=T is now outdated'
-!  use instead: lcylinder_in_a_box=T'
-!  This renaming became necessary with the development of'
-!  cylindrical coordinates which led to very similar names'
-!  (coord_system="cylindrical_coords")'
+!  "lcylindrical=T" is now outdated, use instead: "lcylinder_in_a_box=T"
+!  This renaming became necessary with the development of
+!  cylindrical coordinates which led to very similar names
+!  (coord_system="cylindrical_coords")
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!  31-oct-13/MR  : shortened by use of read_pars
-!  18-aug-15/PABourdin : reworked to simplify code and display all errors at once
+!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
+!  19-aug-15/PABourdin: renamed from read_startpars to read_all_init_pars
 !
-      use File_io, only: parallel_open, parallel_rewind, parallel_close
+      use File_io, only: parallel_open, parallel_rewind, parallel_close, read_namelist, lnamelist_error, lignore_namelist_errors
+      use Particles_main, only: read_all_particles_init_pars
 !
       logical, optional, intent(IN) :: print
 !
@@ -312,61 +279,46 @@ module Param_IO
         lignore_namelist_errors = .true.
       endif
 !
-      call read_pars(read_init_pars                ,'init')
-      call read_pars(read_initial_condition_pars   ,'initial_condition_pars')
-      call read_pars(read_streamlines_init_pars    ,'streamlines')
-      call read_pars(read_eos_init_pars            ,'eos')
-      call read_pars(read_hydro_init_pars          ,'hydro')
-      call read_pars(read_density_init_pars        ,'density')
-      call read_pars(read_gravity_init_pars        ,'grav')
-      call read_pars(read_selfgravity_init_pars    ,'selfgrav')
-      call read_pars(read_poisson_init_pars        ,'poisson')
-      call read_pars(read_energy_init_pars         ,'entropy')
-      call read_pars(read_magnetic_init_pars       ,'magnetic')
-      call read_pars(read_lorenz_gauge_init_pars   ,'lorenz_gauge')
-      call read_pars(read_testscalar_init_pars     ,'testscalar')
-      call read_pars(read_testfield_init_pars      ,'testfield')
-      call read_pars(read_testflow_init_pars       ,'testflow')
-      call read_pars(read_radiation_init_pars      ,'radiation')
-      call read_pars(read_pscalar_init_pars        ,'pscalar')
-      call read_pars(read_chiral_init_pars         ,'chiral')
-      call read_pars(read_chemistry_init_pars      ,'chemistry')
-      call read_pars(read_signal_init_pars         ,'signal')
-      call read_pars(read_dustvelocity_init_pars   ,'dustvelocity')
-      call read_pars(read_dustdensity_init_pars    ,'dustdensity')
-      call read_pars(read_neutralvelocity_init_pars,'neutralvelocity')
-      call read_pars(read_neutraldensity_init_pars ,'neutraldensity')
-      call read_pars(read_cosmicray_init_pars      ,'cosmicray')
-      call read_pars(read_cosmicrayflux_init_pars  ,'cosmicrayflux')
-      call read_pars(read_interstellar_init_pars   ,'interstellar')
-      call read_pars(read_shear_init_pars          ,'shear')
-      call read_pars(read_special_init_pars        ,'special')
-      call read_pars(read_solid_cells_init_pars    ,'solid_cells')
-      call read_pars(read_NSCBC_init_pars          ,'NSCBC')
-      call read_pars(read_polymer_init_pars        ,'polymer')
+      call read_namelist(read_init_pars                ,'init')
+      call read_namelist(read_initial_condition_pars   ,'initial_condition_pars')
+      call read_namelist(read_streamlines_init_pars    ,'streamlines')
+      call read_namelist(read_eos_init_pars            ,'eos')
+      call read_namelist(read_hydro_init_pars          ,'hydro')
+      call read_namelist(read_density_init_pars        ,'density')
+      call read_namelist(read_gravity_init_pars        ,'grav')
+      call read_namelist(read_selfgravity_init_pars    ,'selfgrav')
+      call read_namelist(read_poisson_init_pars        ,'poisson')
+      call read_namelist(read_energy_init_pars         ,'entropy')
+      call read_namelist(read_magnetic_init_pars       ,'magnetic')
+      call read_namelist(read_lorenz_gauge_init_pars   ,'lorenz_gauge')
+      call read_namelist(read_testscalar_init_pars     ,'testscalar')
+      call read_namelist(read_testfield_init_pars      ,'testfield')
+      call read_namelist(read_testflow_init_pars       ,'testflow')
+      call read_namelist(read_radiation_init_pars      ,'radiation')
+      call read_namelist(read_pscalar_init_pars        ,'pscalar')
+      call read_namelist(read_chiral_init_pars         ,'chiral')
+      call read_namelist(read_chemistry_init_pars      ,'chemistry')
+      call read_namelist(read_signal_init_pars         ,'signal')
+      call read_namelist(read_dustvelocity_init_pars   ,'dustvelocity')
+      call read_namelist(read_dustdensity_init_pars    ,'dustdensity')
+      call read_namelist(read_neutralvelocity_init_pars,'neutralvelocity')
+      call read_namelist(read_neutraldensity_init_pars ,'neutraldensity')
+      call read_namelist(read_cosmicray_init_pars      ,'cosmicray')
+      call read_namelist(read_cosmicrayflux_init_pars  ,'cosmicrayflux')
+      call read_namelist(read_interstellar_init_pars   ,'interstellar')
+      call read_namelist(read_shear_init_pars          ,'shear')
+      call read_namelist(read_special_init_pars        ,'special')
+      call read_namelist(read_solid_cells_init_pars    ,'solid_cells')
+      call read_namelist(read_NSCBC_init_pars          ,'NSCBC')
+      call read_namelist(read_polymer_init_pars        ,'polymer')
 !
-      call read_pars(read_particles_init_pars      ,'particles',lparticles)
-      call read_pars(read_particles_rad_init_pars  ,'particles_radius',lparticles_radius)
-!     call read_pars(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
-      call read_pars(read_particles_spin_init_pars ,'particles_spin',lparticles_spin)
-      call read_pars(read_particles_sink_init_pars ,'particles_sink',lparticles_sink)
-      call read_pars(read_particles_num_init_pars  ,'particles_number',lparticles_number)
-      call read_pars(read_particles_dens_init_pars ,'particles_dens',lparticles_density)
-      call read_pars(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
-      call read_pars(read_particles_nbody_init_pars,'particles_nbody',lparticles_nbody)
-      call read_pars(read_particles_mass_init_pars ,'particles_mass',lparticles_mass)
-      call read_pars(read_particles_drag_init_pars ,'particles_drag',lparticles_drag)
-      call read_pars(read_particles_TT_init_pars   ,'particles_TT',lparticles_temperature)
-      call read_pars(read_particles_ads_init_pars  ,'particles_ads',lparticles_adsorbed)
-      call read_pars(read_particles_surf_init_pars ,'particles_surf',lparticles_surfspec)
-      call read_pars(read_particles_chem_init_pars ,'particles_chem',lparticles_chemistry)
-      call read_pars(read_pstalker_init_pars       ,'particles_stalker',lparticles_stalker)
+      call read_all_particles_init_pars()
 !
       call parallel_close(parallel_unit)
 !
       if (lnamelist_error) then
         call sample_pars()
-        call fatal_error ('read_startpars', 'Please fix all above WARNINGs for "start.in".')
+        call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for "start.in".')
       endif
 !
 !  Print SVN id from first line.
@@ -376,12 +328,12 @@ module Param_IO
 !  Give online feedback if called with the PRINT optional argument.
 !
       if (present (print)) then
-        if (print) call print_startpars()
+        if (print) call write_all_init_pars()
       endif
 !
 !  Write parameters to log file.
 !
-      if (lstart) call print_startpars(FILE=trim(datadir)//'/params.log')
+      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -408,127 +360,174 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
 !
-      call check_consistency_of_lperi('read_startpars')
+      call check_consistency_of_lperi('read_all_init_pars')
 !
-    endsubroutine read_startpars
+    endsubroutine read_all_init_pars
 !***********************************************************************
-    subroutine print_startpars(file)
+    subroutine read_all_run_pars(logging)
 !
-!  Print input parameters.
+!  Read input parameters.
 !
-!  4-oct02/wolf: adapted
-!
-      character (len=*), optional :: file
-      character (len=datelen) :: date
-      integer :: unit=6         ! default unit is 6=stdout
-!
-      if (lroot) then
-        if (present(file)) then
-          unit = 1
-          call date_time_string(date)
-          open(unit,FILE=file)
-          write(unit,*) &
-               '! -------------------------------------------------------------'
-          write(unit,'(A,A)') ' ! ', 'Initializing'
-          write(unit,'(A,A)') ' ! Date: ', trim(date)
-          write(unit,*) '! t=', t
-        endif
-!
-        write(unit,NML=init_pars)
-!
-        call write_initial_condition_pars(unit)
-        call write_streamlines_init_pars(unit)
-        call write_eos_init_pars(unit)
-        call write_hydro_init_pars(unit)
-        call write_density_init_pars(unit)
-        call write_gravity_init_pars(unit)
-        call write_selfgravity_init_pars(unit)
-        call write_poisson_init_pars(unit)
-        call write_energy_init_pars(unit)
-        call write_magnetic_init_pars(unit)
-        call write_lorenz_gauge_init_pars(unit)
-        call write_testscalar_init_pars(unit)
-        call write_testfield_init_pars(unit)
-        call write_testflow_init_pars(unit)
-        call write_radiation_init_pars(unit)
-        call write_pscalar_init_pars(unit)
-        call write_chiral_init_pars(unit)
-        call write_chemistry_init_pars(unit)
-        call write_signal_init_pars(unit)
-        call write_dustvelocity_init_pars(unit)
-        call write_dustdensity_init_pars(unit)
-        call write_neutralvelocity_init_pars(unit)
-        call write_neutraldensity_init_pars(unit)
-        call write_cosmicray_init_pars(unit)
-        call write_cosmicrayflux_init_pars(unit)
-        call write_interstellar_init_pars(unit)
-        call write_shear_init_pars(unit)
-        call write_special_init_pars(unit)
-        call write_solid_cells_init_pars(unit)
-        call write_NSCBC_init_pars(unit)
-        call write_polymer_init_pars(unit)
-        call particles_wparam(unit)
-!
-        if (present(file)) then
-          close(unit)
-        endif
-      endif
-!
-    endsubroutine print_startpars
-!***********************************************************************
-    subroutine read_pars(reader,name,lactive)
-!
-!  encapsulates reading of pars + error handling
-!
-!  31-oct-13/MR: coded
-!  16-dec-13/MR: handling of optional ierr corrected
-!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
-!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
-!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
+!  14-sep-01/axel: inserted from run.f90
+!  31-may-02/wolf: renamed from 'cread' to 'read_runpars'
+!   6-jul-02/axel: in case of error, print sample namelist
+!  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
+!  19-aug-15/PABourdin: renamed from 'read_runpars' to 'read_all_run_pars'
 !
-      use File_io, only: parallel_rewind, get_unit
+      use Dustvelocity, only: copy_bcs_dust
+      use File_io, only: parallel_open, parallel_rewind, parallel_close, read_namelist, lnamelist_error, lignore_namelist_errors
+      use Particles_main, only: read_all_particles_run_pars
+      use Sub, only: parse_bc
 !
-      interface
-        subroutine reader(iostat)
-          integer, intent(out) :: iostat
-        endsubroutine reader
-      endinterface
+      logical, optional :: logging
+      include "parallel_unit_declaration.h"
 !
-      character(len=*), intent(in) :: name
-      logical, intent(in), optional :: lactive
+      lnamelist_error = .false.
+      lignore_namelist_errors = .false.
+      tstart=impossible
 !
-      integer :: ierr
-      character(len=linelen) :: type
-      include "parallel_unit.h"
+!  Open namelist file.
 !
-      if (present (lactive)) then
-        if (.not. lactive) return
+      call parallel_open(parallel_unit,'run.in','formatted')
+!
+!  Read through all items that *may* be present in the various modules.
+!  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
+!
+      call read_namelist(read_run_pars                ,'run')
+      call read_namelist(read_streamlines_run_pars    ,'streamlines')
+      call read_namelist(read_eos_run_pars            ,'eos')
+      call read_namelist(read_hydro_run_pars          ,'hydro')
+      call read_namelist(read_density_run_pars        ,'density')
+      call read_namelist(read_forcing_run_pars        ,'forcing')
+      call read_namelist(read_gravity_run_pars        ,'grav')
+      call read_namelist(read_selfgravity_run_pars    ,'selfgrav')
+      call read_namelist(read_poisson_run_pars        ,'poisson')
+      call read_namelist(read_energy_run_pars         ,'entropy')
+!     call read_namelist(read_conductivity_run_pars   ,'conductivity')
+      call read_namelist(read_detonate_run_pars       ,'detonate')
+      call read_namelist(read_magnetic_run_pars       ,'magnetic')
+      call read_namelist(read_lorenz_gauge_run_pars   ,'lorenz_gauge')
+      call read_namelist(read_testscalar_run_pars     ,'testscalar')
+      call read_namelist(read_testfield_run_pars      ,'testfield')
+      call read_namelist(read_testflow_run_pars       ,'testflow')
+      call read_namelist(read_radiation_run_pars      ,'radiation')
+      call read_namelist(read_pscalar_run_pars        ,'pscalar')
+      call read_namelist(read_chiral_run_pars         ,'chiral')
+      call read_namelist(read_chemistry_run_pars      ,'chemistry')
+      call read_namelist(read_dustvelocity_run_pars   ,'dustvelocity')
+      call read_namelist(read_dustdensity_run_pars    ,'dustdensity')
+      call read_namelist(read_neutralvelocity_run_pars,'neutralvelocity')
+      call read_namelist(read_neutraldensity_run_pars ,'neutraldensity')
+      call read_namelist(read_cosmicray_run_pars      ,'cosmicray')
+      call read_namelist(read_cosmicrayflux_run_pars  ,'cosmicrayflux')
+      call read_namelist(read_heatflux_run_pars       ,'heatflux')
+      call read_namelist(read_interstellar_run_pars   ,'interstellar')
+      call read_namelist(read_shear_run_pars          ,'shear')
+      call read_namelist(read_testperturb_run_pars    ,'testperturb')
+      call read_namelist(read_viscosity_run_pars      ,'viscosity')
+      call read_namelist(read_special_run_pars        ,'special')
+      call read_namelist(read_shock_run_pars          ,'shock')
+      call read_namelist(read_solid_cells_run_pars    ,'solid_cells')
+      call read_namelist(read_NSCBC_run_pars          ,'NSCBC')
+      call read_namelist(read_polymer_run_pars        ,'polymer')
+      call read_namelist(read_power_spectrum_run_pars ,'power_spectrum')
+      call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion')
+!
+      call read_all_particles_run_pars()
+!
+      call parallel_close(parallel_unit)
+!
+      if (lnamelist_error) then
+        call sample_pars()
+        call fatal_error ('read_all_run_pars', 'Please fix all above WARNINGs for "start.in".')
       endif
 !
-      call reader(ierr)
+!  Print SVN id from first line.
 !
-      if (lstart) then
-        type = '_init'
-        if (name == 'init') type = ''
-      else
-        type = '_run'
-        if (name == 'run') type = ''
+      if (lroot) call svn_id(cvsid)
+!
+!  Set debug logical (easier to use than the combination of ip and lroot).
+!
+      ldebug = lroot .and. (ip < 7)
+!
+!  Write parameters to log file, if requested.
+!
+      if (present (logging)) then
+        if (logging) call write_all_run_pars()
       endif
 !
-      if (.not. lignore_namelist_errors) then
-        if (ierr == -1) then
-          if (lroot) call warning ('read_pars', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
-          lnamelist_error = .true.
-        elseif (ierr /= 0) then
-          if (lroot) call warning ('read_pars', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
-          lnamelist_error = .true.
-        endif
-      endif
-! 
-      call parallel_rewind(parallel_unit)
+!  Parse boundary conditions; compound conditions of the form `a:s' allow
+!  to have different variables at the lower and upper boundaries.
 !
-    endsubroutine read_pars
+      call parse_bc(bcx,bcx12)
+      call parse_bc(bcy,bcy12)
+      call parse_bc(bcz,bcz12)
+!
+      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
+      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
+
+      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
+      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
+      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
+
+      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
+      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
+      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
+!
+      if (lroot.and.ip<14) then
+        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
+        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
+        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
+      endif
+!
+      call check_consistency_of_lperi('read_all_run_pars')
+!
+      if (any(downsampl>1)) then
+!
+!  If downsampling, calculate local start indices and number of data in
+!  output for each direction; inner ghost zones are here disregarded
+!
+        ldownsampl = .true.
+        if (dsnap_down<=0.) dsnap_down=dsnap
+!
+        call get_downpars(1,nx,ipx)
+        call get_downpars(2,ny,ipy)
+        call get_downpars(3,nz,ipz)
+!
+      endif
+!
+    endsubroutine read_all_run_pars
+!***********************************************************************
+    subroutine get_downpars(ind,n,ip)
+!
+! Calculates start indices & lengths for downsampled output
+!
+! 13-feb-14/MR: coded
+! 19-aug-15/PABourdin: moved, please do not use 'contains' in subroutines
+!
+! coordinate direction, number of inner grid points, processor number
+!
+      integer, intent(IN) :: ind, n, ip
+!
+      if ( downsampl(ind)>n ) then
+        print*, 'get_downpars: Warning - stepsize for downsampling in '// &
+        coornames(ind)//'-direction ', downsampl(ind), 'greater than grid size ', n, &
+        '! Set to grid size.'
+        downsampl(ind)=n
+      endif
+!
+! first index in direction ind in local farray for output
+!
+      firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind))
+!
+! number of output items in direction ind *without* ghost zones
+!
+      ndown(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
+!
+      firstind(ind) = firstind(ind) + nghost
+!
+    endsubroutine get_downpars
 !***********************************************************************
     subroutine sample_pars()
 !
@@ -641,210 +640,110 @@ module Param_IO
 !
     endsubroutine sample_pars
 !***********************************************************************
-    subroutine read_runpars(logging)
+    subroutine write_all_init_pars(file)
 !
-!  Read input parameters.
+!  Print input parameters.
 !
-!  14-sep-01/axel: inserted from run.f90
-!  31-may-02/wolf: renamed from cread to read_runpars
-!   6-jul-02/axel: in case of error, print sample namelist
-!  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!  19-dec-13/MR  : adapted calls to read_pars
-!  18-aug-15/PABourdin : reworked to simplify code and display all errors at once
+!  4-oct-02/wolf: adapted
+!  19-aug-15/PABourdin: renamed from 'print_startpars' to 'write_all_init_pars'
 !
-      use Dustvelocity, only: copy_bcs_dust
-      use File_io, only: parallel_open, parallel_rewind, parallel_close
-      use Sub, only: parse_bc
+      use Particles_main, only: write_all_particles_init_pars
 !
-      logical, optional :: logging
-      include "parallel_unit_declaration.h"
+      character (len=*), optional :: file
 !
-      lnamelist_error = .false.
-      lignore_namelist_errors = .false.
-      tstart=impossible
+      character (len=datelen) :: date
+      integer :: unit
+      logical :: lidl_output
 !
-!  Open namelist file.
+      lidl_output = .false.
+      if (lroot) then
+        if (present(file)) then
+          unit = 1
+          if (file == 'IDL') then
+            open(unit,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe',STATUS='unknown')
+            lidl_output = .true.
+          else
+            open(unit,FILE=file)
+            call date_time_string(date)
+            write(unit,*) '! -------------------------------------------------------------'
+            write(unit,'(A,A)') ' ! ', 'Initializing'
+            write(unit,'(A,A)') ' ! Date: ', trim(date)
+            write(unit,*) '! t=', t
+          endif
+        else
+          unit = 6   ! default unit is 6=stdout
+        endif
 !
-      call parallel_open(parallel_unit,'run.in','formatted')
+! If the boundary condition has been changed by subroutines then
+! corresponding bc arrays need to be changed too. At present (june 2012)
+! it is done only for the bcx array because parker_wind.f90 is the only
+! subroutine that changes boundary conditions and it does it only for
+! the density in the x direction.
 !
-!  Read through all items that *may* be present in the various modules.
-!  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
+        if (lidl_output .and. lreset_boundary_values) call inverse_parse_bc(bcx,bcx12)
 !
-      call read_pars(read_run_pars                ,'run')
-      call read_pars(read_streamlines_run_pars    ,'streamlines')
-      call read_pars(read_eos_run_pars            ,'eos')
-      call read_pars(read_hydro_run_pars          ,'hydro')
-      call read_pars(read_density_run_pars        ,'density')
-      call read_pars(read_forcing_run_pars        ,'forcing')
-      call read_pars(read_gravity_run_pars        ,'grav')
-      call read_pars(read_selfgravity_run_pars    ,'selfgrav')
-      call read_pars(read_poisson_run_pars        ,'poisson')
-      call read_pars(read_energy_run_pars         ,'entropy')
-!     call read_pars(read_conductivity_run_pars   ,'conductivity')
-      call read_pars(read_detonate_run_pars       ,'detonate')
-      call read_pars(read_magnetic_run_pars       ,'magnetic')
-      call read_pars(read_lorenz_gauge_run_pars   ,'lorenz_gauge')
-      call read_pars(read_testscalar_run_pars     ,'testscalar')
-      call read_pars(read_testfield_run_pars      ,'testfield')
-      call read_pars(read_testflow_run_pars       ,'testflow')
-      call read_pars(read_radiation_run_pars      ,'radiation')
-      call read_pars(read_pscalar_run_pars        ,'pscalar')
-      call read_pars(read_chiral_run_pars         ,'chiral')
-      call read_pars(read_chemistry_run_pars      ,'chemistry')
-      call read_pars(read_dustvelocity_run_pars   ,'dustvelocity')
-      call read_pars(read_dustdensity_run_pars    ,'dustdensity')
-      call read_pars(read_neutralvelocity_run_pars,'neutralvelocity')
-      call read_pars(read_neutraldensity_run_pars ,'neutraldensity')
-      call read_pars(read_cosmicray_run_pars      ,'cosmicray')
-      call read_pars(read_cosmicrayflux_run_pars  ,'cosmicrayflux')
-      call read_pars(read_heatflux_run_pars       ,'heatflux')
-      call read_pars(read_interstellar_run_pars   ,'interstellar')
-      call read_pars(read_shear_run_pars          ,'shear')
-      call read_pars(read_testperturb_run_pars    ,'testperturb')
-      call read_pars(read_viscosity_run_pars      ,'viscosity')
-      call read_pars(read_special_run_pars        ,'special')
-      call read_pars(read_shock_run_pars          ,'shock')
-      call read_pars(read_solid_cells_run_pars    ,'solid_cells')
-      call read_pars(read_NSCBC_run_pars          ,'NSCBC')
-      call read_pars(read_polymer_run_pars        ,'polymer')
-      call read_pars(read_power_spectrum_runpars  ,'power_spectrum')
-      call read_pars(read_implicit_diffusion_pars ,'implicit_diffusion')
+        write(unit,NML=init_pars)
 !
-      call read_pars(read_particles_run_pars          ,'particles',lparticles)
-      call read_pars(read_particles_adapt_run_pars    ,'particles_adapt',lparticles_adaptation)
-      call read_pars(read_particles_rad_run_pars      ,'particles_radius',lparticles_radius)
-!     call read_pars(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
-      call read_pars(read_particles_spin_run_pars     ,'particles_spin',lparticles_spin)
-      call read_pars(read_particles_sink_run_pars     ,'particles_sink',lparticles_sink)
-      call read_pars(read_particles_num_run_pars      ,'particles_number',lparticles_number)
-      call read_pars(read_particles_selfg_run_pars    ,'particles_selfgrav',lparticles_selfgravity)
-      call read_pars(read_particles_nbody_run_pars    ,'particles_nbody',lparticles_nbody)
-      call read_pars(read_particles_visc_run_pars     ,'particles_visc',lparticles_viscosity)
-      call read_pars(read_particles_coag_run_pars     ,'particles_coag',lparticles_coagulation)
-      call read_pars(read_particles_coll_run_pars     ,'particles_coll',lparticles_collisions)
-      call read_pars(read_particles_stir_run_pars     ,'particles_stirring',lparticles_stirring)
-      call read_pars(read_pstalker_run_pars           ,'particles_stalker',lparticles_stalker)
-      call read_pars(read_pars_diagnos_dv_run_pars    ,'particles_diagnos_dv',lparticles_diagnos_dv)
-      call read_pars(read_pars_diag_state_run_pars    ,'particles_diagnos_state',lparticles_diagnos_state)
-      call read_pars(read_particles_mass_run_pars     ,'particles_mass',lparticles_mass)
-      call read_pars(read_particles_drag_run_pars     ,'particles_drag',lparticles_drag)
-      call read_pars(read_particles_TT_run_pars       ,'particles_TT',lparticles_temperature)
-      call read_pars(read_particles_ads_run_pars      ,'particles_ads',lparticles_adsorbed)
-      call read_pars(read_particles_surf_run_pars     ,'particles_surf',lparticles_surfspec)
-      call read_pars(read_particles_chem_run_pars     ,'particles_chem',lparticles_chemistry)
+        call write_initial_condition_pars(unit)
+        call write_streamlines_init_pars(unit)
+        call write_eos_init_pars(unit)
+        call write_hydro_init_pars(unit)
+        call write_density_init_pars(unit)
+        call write_gravity_init_pars(unit)
+        call write_selfgravity_init_pars(unit)
+        call write_poisson_init_pars(unit)
+        call write_energy_init_pars(unit)
+        call write_magnetic_init_pars(unit)
+        call write_lorenz_gauge_init_pars(unit)
+        call write_testscalar_init_pars(unit)
+        call write_testfield_init_pars(unit)
+        call write_testflow_init_pars(unit)
+        call write_radiation_init_pars(unit)
+        call write_pscalar_init_pars(unit)
+        call write_chiral_init_pars(unit)
+        call write_chemistry_init_pars(unit)
+        call write_signal_init_pars(unit)
+        call write_dustvelocity_init_pars(unit)
+        call write_dustdensity_init_pars(unit)
+        call write_neutralvelocity_init_pars(unit)
+        call write_neutraldensity_init_pars(unit)
+        call write_cosmicray_init_pars(unit)
+        call write_cosmicrayflux_init_pars(unit)
+        call write_interstellar_init_pars(unit)
+        call write_shear_init_pars(unit)
+        call write_special_init_pars(unit)
+        call write_solid_cells_init_pars(unit)
+        call write_NSCBC_init_pars(unit)
+        call write_polymer_init_pars(unit)
 !
-      call parallel_close(parallel_unit)
+        call write_all_particles_init_pars(unit)
 !
-      if (lnamelist_error) then
-        call sample_pars()
-        call fatal_error ('read_startpars', 'Please fix all above WARNINGs for "start.in".')
+        if (lidl_output) call write_IDL_logicals(unit)
+!
+        if (present(file)) close(unit)
       endif
 !
-!  Print SVN id from first line.
-!
-      if (lroot) call svn_id(cvsid)
-!
-!  Set debug logical (easier to use than the combination of ip and lroot).
-!
-      ldebug = lroot .and. (ip < 7)
-!
-!  Write parameters to log file, if requested.
-!
-      if (present (logging)) then
-        if (logging) call print_runpars()
-      endif
-!
-!  Parse boundary conditions; compound conditions of the form `a:s' allow
-!  to have different variables at the lower and upper boundaries.
-!
-      call parse_bc(bcx,bcx12)
-      call parse_bc(bcy,bcy12)
-      call parse_bc(bcz,bcz12)
-!
-      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
-      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
-
-      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
-      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
-      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
-
-      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
-      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
-      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
-!
-      if (lroot.and.ip<14) then
-        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
-        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
-        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
-      endif
-!
-      call check_consistency_of_lperi('read_runpars')
-!
-      if (any(downsampl>1)) then
-!
-!  If downsampling, calculate local start indices and number of data in
-!  output for each direction; inner ghost zones are here disregarded
-!
-        ldownsampl = .true.
-        if (dsnap_down<=0.) dsnap_down=dsnap
-!
-        call get_downpars(1,nx,ipx)
-        call get_downpars(2,ny,ipy)
-        call get_downpars(3,nz,ipz)
-!
-      endif
-!
-      contains
-!
-!---------------------------------------------------------------------------------------
-!
-      subroutine get_downpars(ind,n,ip)
-!
-! Calculates start indices & lengths for downsampled output
-!
-! 13-feb-14/MR: coded
-!
-        use General, only: get_range_no
-!
-! coordinate direction, number of inner grid points, processor number
-!
-        integer, intent(IN) :: ind, n, ip
-!
-      if ( downsampl(ind)>n ) then
-        print*, 'get_downpars: Warning - stepsize for downsampling in '// &
-        coornames(ind)//'-direction ', downsampl(ind), 'greater than grid size ', n, &
-        '! Set to grid size.'
-        downsampl(ind)=n
-      endif
-!
-! first index in direction ind in local farray for output
-!
-        firstind(ind) = downsampl(ind) - modulo(ip*n-1,downsampl(ind))
-!
-! number of output items in direction ind *without* ghost zones
-!
-        ndown(ind) = get_range_no((/firstind(ind),n,downsampl(ind)/),1)
-!
-        firstind(ind) = firstind(ind) + nghost
-!
-      endsubroutine get_downpars
-!
-    endsubroutine read_runpars
+    endsubroutine write_all_init_pars
 !***********************************************************************
-    subroutine print_runpars(file)
+    subroutine write_all_run_pars(file)
 !
 !  Print input parameters.
 !
 !  14-sep-01/axel: inserted from run.f90
-!  31-may-02/wolf: renamed from cprint to print_runpars
+!  31-may-02/wolf: renamed from 'cprint' to 'print_runpars'
 !   4-oct-02/wolf: added log file stuff
+!  19-aug-15/PABourdin: renamed from 'print_runpars' to 'write_all_run_pars'
+!
+      use Particles_main, only: write_all_particles_run_pars
 !
       character (len=*), optional :: file
 !
       integer :: unit=1
       character (len=linelen) :: line
       character (len=datelen) :: date
+      logical :: lidl_output
 !
+      lidl_output = .false.
       if (lroot) then
         if (lreloading) then
           ! get first line from file RELOAD
@@ -857,6 +756,9 @@ module Param_IO
         if (present(file)) then
           if (file == 'stdout') then
             unit = 6
+          elseif (file == 'IDL') then
+            open(unit,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
+            lidl_output = .true.
           else
             open(unit,FILE=file,position='append')
           endif
@@ -864,14 +766,14 @@ module Param_IO
           open(unit,FILE=trim(datadir)//'/params.log',position='append')
         endif
 !
-!  Add separator, comment, and time.
-!
-        call date_time_string(date)
-        write(unit,*) &
-            '! -------------------------------------------------------------'
-        write(unit,'(A,A)') ' ! ', trim(line)
-        write(unit,'(A,A)') ' ! Date: ', trim(date)
-        write(unit,*) '! t=', t
+        if (.not. lidl_output) then
+          ! Add separator, comment, and time.
+          call date_time_string(date)
+          write(unit,*) '! -------------------------------------------------------------'
+          write(unit,'(A,A)') ' ! ', trim(line)
+          write(unit,'(A,A)') ' ! Date: ', trim(date)
+          write(unit,*) '! t=', t
+        endif
 !
         write(unit,NML=run_pars)
 !
@@ -884,7 +786,7 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_energy_run_pars(unit)
-!        call write_conductivity_run_pars(unit)
+!       call write_conductivity_run_pars(unit)
         call write_detonate_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_lorenz_gauge_run_pars(unit)
@@ -909,16 +811,17 @@ module Param_IO
         call write_shock_run_pars(unit)
         call write_solid_cells_run_pars(unit)
         call write_NSCBC_run_pars(unit)
-        call write_power_spectrum_runpars(unit)
+        call write_power_spectrum_run_pars(unit)
         call write_polymer_run_pars(unit)
-        call particles_wparam2(unit)
-        call write_implicit_diffusion_pars(unit)
+        call write_implicit_diff_run_pars(unit)
+!
+        call write_all_particles_run_pars(unit)
 !
         if (unit /= 6) close(unit)
 !
       endif
 !
-    endsubroutine print_runpars
+    endsubroutine write_all_run_pars
 !***********************************************************************
     subroutine check_consistency_of_lperi(label)
 !
@@ -1011,193 +914,44 @@ module Param_IO
 !
     endsubroutine warning_lperi
 !***********************************************************************
-    subroutine wparam()
+    subroutine write_IDL_logicals(unit)
 !
-!  Write startup parameters
+!  Output logicals in namelist format for IDL.
 !
-!  21-jan-02/wolf: coded
+      integer, intent(in) :: unit
 !
-      logical :: lhydro           = lhydro_var
-      logical :: ldensity         = ldensity_var
-      logical :: lentropy         = lentropy_var
-!      logical :: lenergy          = lenergy_var
-      logical :: ltemperature     = ltemperature_var
-      logical :: lshock           = lshock_var
-      logical :: lmagnetic        = lmagnetic_var
-      logical :: lforcing         = lforcing_var
-      logical :: llorenz_gauge    = llorenz_gauge_var
-      logical :: ldustvelocity    = ldustvelocity_var
-      logical :: ldustdensity     = ldustdensity_var
-      logical :: ltestscalar      = ltestscalar_var
-      logical :: ltestfield       = ltestfield_var
-      logical :: ltestflow        = ltestflow_var
-      logical :: linterstellar    = linterstellar_var
-      logical :: lcosmicray       = lcosmicray_var
-      logical :: lcosmicrayflux   = lcosmicrayflux_var
-      logical :: lshear           = lshear_var
-      logical :: lpscalar         = lpscalar_var
-      logical :: lchiral          = lchiral_var
-      logical :: leos             = leos_var
-      logical :: lradiation       = lradiation_var
-      logical :: lneutralvelocity = lneutralvelocity_var
-      logical :: lneutraldensity  = lneutraldensity_var
-      logical :: lpolymer         = lpolymer_var
-      logical :: lsolid_cells     = lsolid_cells_var
-      logical :: lparticles       = lparticles_var
-      logical :: lparticles_drag  = lparticles_drag_var
-      integer, parameter :: unit=1
+      write(unit,'(A)') "&lphysics"
+      write(unit,'(A,L,A)') " lhydro=", lhydro, ","
+      write(unit,'(A,L,A)') " ldensity=", ldensity, ","
+      write(unit,'(A,L,A)') " lentropy=", lentropy, ","
+      write(unit,'(A,L,A)') " ltemperature=", ltemperature, ","
+      write(unit,'(A,L,A)') " lshock=", lshock, ","
+      write(unit,'(A,L,A)') " lmagnetic=", lmagnetic, ","
+      write(unit,'(A,L,A)') " lforcing=", lforcing, ","
+      write(unit,'(A,L,A)') " llorenz_gauge=", llorenz_gauge, ","
+      write(unit,'(A,L,A)') " ldustvelocity=", ldustvelocity, ","
+      write(unit,'(A,L,A)') " ldustdensity=", ldustdensity, ","
+      write(unit,'(A,L,A)') " ltestscalar=", ltestscalar, ","
+      write(unit,'(A,L,A)') " ltestfield=", ltestfield, ","
+      write(unit,'(A,L,A)') " ltestflow=", ltestflow, ","
+      write(unit,'(A,L,A)') " linterstellar=", linterstellar, ","
+      write(unit,'(A,L,A)') " lcosmicray=", lcosmicray, ","
+      write(unit,'(A,L,A)') " lcosmicrayflux=", lcosmicrayflux, ","
+      write(unit,'(A,L,A)') " lshear=", lshear, ","
+      write(unit,'(A,L,A)') " lpscalar=", lpscalar, ","
+      write(unit,'(A,L,A)') " lradiation=", lradiation, ","
+      write(unit,'(A,L,A)') " leos=", leos, ","
+      write(unit,'(A,L,A)') " lchiral=", lchiral, ","
+      write(unit,'(A,L,A)') " lneutralvelocity=", lneutralvelocity, ","
+      write(unit,'(A,L,A)') " lneutraldensity=", lneutraldensity, ","
+      write(unit,'(A,L,A)') " lpolymer=", lpolymer, ","
+      write(unit,'(A,L,A)') " lsolid_cells=", lsolid_cells, ","
+      write(unit,'(A,L,A)') " lpower_spectrum=", lpower_spectrum, ","
+      write(unit,'(A,L,A)') " lparticles=", lparticles, ","
+      write(unit,'(A,L,A)') " lparticles_drag=", lparticles_drag, ","
+      write(unit,'(A)') " /"
 !
-      namelist /lphysics/ &
-          lhydro, ldensity, lentropy, lenergy, lmagnetic, lshear, &
-          llorenz_gauge,  ltestscalar, ltestfield, ltestflow, lpscalar, &
-          lradiation, ldustvelocity, ldustdensity, lforcing, lgravz, lgravr, &
-          ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, lshock, &
-          lradiation_fld, leos_ionization, leos_fixed_ionization, &
-          lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
-          lneutralvelocity, lneutraldensity, ltemperature,lpolymer, &
-          lsolid_cells, &
-          lparticles, lparticles_drag
-!
-! If the boundary condition has been changed by subroutines then
-! corresponding bc arrays need to be changed too. At present (june 2012)
-! it is done only for the bcx array because parker_wind.f90 is the only
-! subroutine that changes boundary conditions and it does it only for
-! the density in the x direction.
-!
-        if  (lreset_boundary_values) then
-          call inverse_parse_bc(bcx,bcx12)
-        endif
-!
-!  Write the param.nml file only from root processor.
-!  However, for pacx-MPI (grid-style computations across different platforms)
-!  we'd need this on each site separately (not done yet).
-!  (In that case we'd need to identify separate master-like processors
-!  one at each site.)
-!
-      if (lroot) then
-        open(unit,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe', &
-               STATUS='unknown')
-!
-!  Write init_pars.
-!
-        write(unit,NML=init_pars)
-!
-!  Write each namelist separately.
-!
-        call write_eos_init_pars(unit)
-        call write_streamlines_init_pars(unit)
-        call write_hydro_init_pars(unit)
-        call write_density_init_pars(unit)
-        call write_gravity_init_pars(unit)
-        call write_selfgravity_init_pars(unit)
-        call write_poisson_init_pars(unit)
-        call write_energy_init_pars(unit)
-        call write_magnetic_init_pars(unit)
-        call write_lorenz_gauge_init_pars(unit)
-        call write_testscalar_init_pars(unit)
-        call write_testfield_init_pars(unit)
-        call write_testflow_init_pars(unit)
-        call write_radiation_init_pars(unit)
-        call write_pscalar_init_pars(unit)
-        call write_chiral_init_pars(unit)
-        call write_chemistry_init_pars(unit)
-        call write_signal_init_pars(unit)
-        call write_dustvelocity_init_pars(unit)
-        call write_dustdensity_init_pars(unit)
-        call write_neutralvelocity_init_pars(unit)
-        call write_neutraldensity_init_pars(unit)
-        call write_cosmicray_init_pars(unit)
-        call write_cosmicrayflux_init_pars(unit)
-        call write_interstellar_init_pars(unit)
-        call write_shear_init_pars(unit)
-        call write_special_init_pars(unit)
-        call write_solid_cells_init_pars(unit)
-        call write_NSCBC_init_pars(unit)
-        call write_polymer_init_pars(unit)
-        call write_initial_condition_pars(unit)
-        call particles_wparam(unit)
-        ! The following parameters need to be communicated to IDL
-        write(unit,NML=lphysics)
-        close(unit)
-      endif
-!
-      call keep_compiler_quiet(lhydro)
-      call keep_compiler_quiet(ldensity)
-      call keep_compiler_quiet(lentropy)
-      call keep_compiler_quiet(lenergy)
-      call keep_compiler_quiet(ltemperature)
-      call keep_compiler_quiet(lmagnetic)
-      call keep_compiler_quiet(lforcing)
-      call keep_compiler_quiet(ltestscalar,ltestfield,ltestflow)
-      call keep_compiler_quiet(lpscalar,lradiation,lcosmicray,lcosmicrayflux)
-      call keep_compiler_quiet(linterstellar,lshock)
-      call keep_compiler_quiet(ldustdensity,ldustvelocity)
-      call keep_compiler_quiet(llorenz_gauge)
-      call keep_compiler_quiet(lshear)
-      call keep_compiler_quiet(leos)
-      call keep_compiler_quiet(lchiral)
-      call keep_compiler_quiet(lneutralvelocity)
-      call keep_compiler_quiet(lneutraldensity)
-      call keep_compiler_quiet(lpolymer)
-      call keep_compiler_quiet(lsolid_cells)
-!
-    endsubroutine wparam
-!***********************************************************************
-    subroutine wparam2()
-!
-!  Write runtime parameters for IDL.
-!
-!  21-jan-02/wolf: coded
-!
-      integer :: unit=1
-!
-      if (lroot) then
-        open(unit,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
-!
-        write(unit,NML=run_pars)
-!
-        call write_streamlines_run_pars(unit)
-        call write_eos_run_pars(unit)
-        call write_hydro_run_pars(unit)
-        call write_density_run_pars(unit)
-        call write_forcing_run_pars(unit)
-        call write_gravity_run_pars(unit)
-        call write_selfgravity_run_pars(unit)
-        call write_poisson_run_pars(unit)
-        call write_energy_run_pars(unit)
-!        call write_conductivity_run_pars(unit)
-        call write_detonate_run_pars(unit)
-        call write_magnetic_run_pars(unit)
-        call write_lorenz_gauge_run_pars(unit)
-        call write_testscalar_run_pars(unit)
-        call write_testfield_run_pars(unit)
-        call write_testflow_run_pars(unit)
-        call write_radiation_run_pars(unit)
-        call write_pscalar_run_pars(unit)
-        call write_chiral_run_pars(unit)
-        call write_chemistry_run_pars(unit)
-        call write_dustvelocity_run_pars(unit)
-        call write_dustdensity_run_pars(unit)
-        call write_neutralvelocity_run_pars(unit)
-        call write_neutraldensity_run_pars(unit)
-        call write_cosmicray_run_pars(unit)
-        call write_cosmicrayflux_run_pars(unit)
-        call write_interstellar_run_pars(unit)
-        call write_shear_run_pars(unit)
-        call write_testperturb_run_pars(unit)
-        call write_viscosity_run_pars(unit)
-        call write_special_run_pars(unit)
-        call write_shock_run_pars(unit)
-        call write_solid_cells_run_pars(unit)
-        call write_NSCBC_run_pars(unit)
-        call write_power_spectrum_runpars(unit)
-        call write_polymer_run_pars(unit)
-        call particles_wparam2(unit)
-!
-        close(unit)
-      endif
-!
-    endsubroutine wparam2
+    endsubroutine write_IDL_logicals
 !***********************************************************************
     subroutine write_pencil_info()
 !

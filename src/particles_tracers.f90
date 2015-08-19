@@ -28,6 +28,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   real :: xp0=0.0, yp0=0.0, zp0=0.0, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0

@@ -301,41 +301,29 @@ module Particles_main
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
-    subroutine particles_read_startpars(iostat)
+    subroutine read_all_particles_init_pars()
 !
-      integer, intent (out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine particles_read_startpars
+    endsubroutine read_all_particles_init_pars
 !***********************************************************************
-    subroutine particles_rparam()
-!
-    endsubroutine particles_rparam
-!***********************************************************************
-    subroutine particles_wparam(unit)
+    subroutine write_all_particles_init_pars(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine particles_wparam
+    endsubroutine write_all_particles_init_pars
 !***********************************************************************
-    subroutine particles_read_runpars(iostat)
+    subroutine read_all_particles_run_pars()
 !
-      integer, intent (out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine particles_read_runpars
+    endsubroutine read_all_particles_run_pars
 !***********************************************************************
-    subroutine particles_wparam2(unit)
+    subroutine write_all_particles_run_pars(unit)
 !
       integer, intent (in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine particles_wparam2
+    endsubroutine write_all_particles_run_pars
 !***********************************************************************
     subroutine particles_powersnap(f)
 !

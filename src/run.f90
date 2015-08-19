@@ -47,8 +47,8 @@ program run
 !
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
 !               address
-! 31-oct-13/MR: replaced rparam by read_startpars
-! 10-feb-14/MR: initialize_mpicomm now called before read_runpars
+! 31-oct-13/MR: replaced rparam by read_all_init_pars
+! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
 ! 13-feb-13/MR: call of wsnap_down added
 !
   use Boundcond,       only: update_ghosts
@@ -115,8 +115,7 @@ program run
 !
 !  Identify version.
 !
-  if (lroot) call svn_id( &
-      '$Id$')
+  if (lroot) call svn_id('$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
@@ -126,18 +125,16 @@ program run
 !
   call initialize_mpicomm()
 !
-!  Read parameters from start.x (default values; may be overwritten by
-!  read_runpars).
+!  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_all_run_pars()
 !
 !  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly even in rparam or
-!  read_runpars]
+!  [might better be put into another routine, possibly in 'read_all_run_pars']
 !
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
@@ -432,7 +429,7 @@ program run
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t.
 !
-  call print_runpars()
+  call write_all_run_pars()
 !
 !  Initialize ionization array.
 !
@@ -448,7 +445,7 @@ program run
 !
 !  Write data to file for IDL.
 !
-  call wparam2()
+  call write_all_run_pars('IDL')
 !
 !  Possible debug output (can only be done after "directory" is set).
 !  Check whether mn array is correct.
@@ -553,7 +550,7 @@ program run
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
         dt=0.0
-        call read_runpars(logging=.true.)
+        call read_all_run_pars(logging=.true.)
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
@@ -577,7 +574,7 @@ program run
           call particles_initialize_modules(f)
         endif
         call choose_pencils()
-        call wparam2()
+        call write_all_run_pars('IDL')
 !
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
         lreload_file        = .false.

@@ -10,29 +10,29 @@ module Particles_main
   use Particles
   use Particles_adaptation
   use Particles_adsorbed
-  use Particles_chemistry
-  use Particles_surfspec
   use Particles_cdata
-  use Particles_collisions
+  use Particles_chemistry
   use Particles_coagulation
+  use Particles_collisions
+  use Particles_density
+  use Particles_diagnos_dv
+  use Particles_diagnos_state
   use Particles_drag
   use Particles_map
-  use Particles_density
+  use Particles_mass
   use Particles_mpicomm
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_selfgravity
   use Particles_sink
   use Particles_spin
-  use Particles_selfgravity
   use Particles_stalker
   use Particles_stirring
   use Particles_sub
+  use Particles_surfspec
   use Particles_temperature
-  use Particles_mass
   use Particles_viscosity
-  use Particles_diagnos_dv
-  use Particles_diagnos_state
 !
   implicit none
 !
@@ -55,7 +55,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-!      call register_particles_potential    ()
+!     call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_spin         ()
       call register_particles_number       ()
@@ -314,6 +314,60 @@ module Particles_main
           call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
 !
     endsubroutine write_dim_particles
+!***********************************************************************
+    subroutine read_all_particles_init_pars()
+!
+      use File_IO, only: read_namelist
+      use Particles, only: read_particles_init_pars
+!
+      call read_namelist(read_particles_init_pars      ,'particles',lparticles)
+      call read_namelist(read_particles_rad_init_pars  ,'particles_radius',lparticles_radius)
+!     call read_namelist(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
+      call read_namelist(read_particles_spin_init_pars ,'particles_spin',lparticles_spin)
+      call read_namelist(read_particles_sink_init_pars ,'particles_sink',lparticles_sink)
+      call read_namelist(read_particles_num_init_pars  ,'particles_number',lparticles_number)
+      call read_namelist(read_particles_dens_init_pars ,'particles_dens',lparticles_density)
+      call read_namelist(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
+      call read_namelist(read_particles_nbody_init_pars,'particles_nbody',lparticles_nbody)
+      call read_namelist(read_particles_mass_init_pars ,'particles_mass',lparticles_mass)
+      call read_namelist(read_particles_drag_init_pars ,'particles_drag',lparticles_drag)
+      call read_namelist(read_particles_TT_init_pars   ,'particles_TT',lparticles_temperature)
+      call read_namelist(read_particles_ads_init_pars  ,'particles_ads',lparticles_adsorbed)
+      call read_namelist(read_particles_surf_init_pars ,'particles_surf',lparticles_surfspec)
+      call read_namelist(read_particles_chem_init_pars ,'particles_chem',lparticles_chemistry)
+      call read_namelist(read_pstalker_init_pars       ,'particles_stalker',lparticles_stalker)
+!
+    endsubroutine read_all_particles_init_pars
+!***********************************************************************
+    subroutine read_all_particles_run_pars()
+!
+      use File_IO, only: read_namelist
+      use Particles, only: read_particles_run_pars
+!
+      call read_namelist(read_particles_run_pars          ,'particles',lparticles)
+      call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt',lparticles_adaptation)
+      call read_namelist(read_particles_rad_run_pars      ,'particles_radius',lparticles_radius)
+!     call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
+      call read_namelist(read_particles_spin_run_pars     ,'particles_spin',lparticles_spin)
+      call read_namelist(read_particles_sink_run_pars     ,'particles_sink',lparticles_sink)
+      call read_namelist(read_particles_num_run_pars      ,'particles_number',lparticles_number)
+      call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav',lparticles_selfgravity)
+      call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody',lparticles_nbody)
+      call read_namelist(read_particles_visc_run_pars     ,'particles_visc',lparticles_viscosity)
+      call read_namelist(read_particles_coag_run_pars     ,'particles_coag',lparticles_coagulation)
+      call read_namelist(read_particles_coll_run_pars     ,'particles_coll',lparticles_collisions)
+      call read_namelist(read_particles_stir_run_pars     ,'particles_stirring',lparticles_stirring)
+      call read_namelist(read_pstalker_run_pars           ,'particles_stalker',lparticles_stalker)
+      call read_namelist(read_pars_diagnos_dv_run_pars    ,'particles_diagnos_dv',lparticles_diagnos_dv)
+      call read_namelist(read_pars_diag_state_run_pars    ,'particles_diagnos_state',lparticles_diagnos_state)
+      call read_namelist(read_particles_mass_run_pars     ,'particles_mass',lparticles_mass)
+      call read_namelist(read_particles_drag_run_pars     ,'particles_drag',lparticles_drag)
+      call read_namelist(read_particles_TT_run_pars       ,'particles_TT',lparticles_temperature)
+      call read_namelist(read_particles_ads_run_pars      ,'particles_ads',lparticles_adsorbed)
+      call read_namelist(read_particles_surf_run_pars     ,'particles_surf',lparticles_surfspec)
+      call read_namelist(read_particles_chem_run_pars     ,'particles_chem',lparticles_chemistry)
+!
+    endsubroutine read_all_particles_run_pars
 !***********************************************************************
     subroutine particles_read_snapshot(filename)
 !
@@ -953,7 +1007,7 @@ module Particles_main
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine particles_wparam(unit)
+    subroutine write_all_particles_init_pars(unit)
 !
 !  Write particle start parameters to file.
 !
@@ -977,9 +1031,9 @@ module Particles_main
       if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
       if (lparticles_chemistry)   call write_particles_chem_init_pars(unit)
 !
-    endsubroutine particles_wparam
+    endsubroutine write_all_particles_init_pars
 !***********************************************************************
-    subroutine particles_wparam2(unit)
+    subroutine write_all_particles_run_pars(unit)
 !
 !  Write particle run parameters to file.
 !
@@ -1007,7 +1061,7 @@ module Particles_main
       if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
       if (lparticles_chemistry)      call write_particles_chem_run_pars(unit)
 !
-    endsubroutine particles_wparam2
+    endsubroutine write_all_particles_run_pars
 !***********************************************************************
     subroutine wsnap_particles(snapbase,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,varsize,flist,nobound)
 !
