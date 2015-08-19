@@ -301,18 +301,6 @@ module Particles_main
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
-    subroutine particles_create_sinks(f)
-!
-! Fetch fp and ineargrid to create_sinks
-!
-! 14-mar-08/wlad: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine particles_create_sinks
-!***********************************************************************
     subroutine particles_read_startpars(iostat)
 !
       integer, intent (out) :: iostat
