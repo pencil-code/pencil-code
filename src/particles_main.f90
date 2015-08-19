@@ -1147,7 +1147,7 @@ module Particles_main
 !
 !  Regular data snapshots must come synchronized with the fluid snapshots.
 !
-        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
+        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
         if (lsnap) then
           snapname=trim(snapbase)//nsnap_ch
           call particles_boundconds(f)

@@ -3194,7 +3194,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
-    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat). Done by all processors.
@@ -3213,9 +3213,11 @@ module Sub
       real, intent(in) :: dtout
       double precision, intent(in) :: t
       logical, intent(out) :: lout
+      logical, intent(in), optional :: nowrite
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
+      logical :: lwrite
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
@@ -3232,6 +3234,11 @@ module Sub
       else
         t_sp=t
       endif
+!
+!  Check if no writing tout is requested.
+!
+      lwrite = .true.
+      if (present(nowrite)) lwrite = .not. nowrite
 !
 !  Generate a running file number, if requested.
 !
@@ -3266,7 +3273,7 @@ module Sub
 !  the code craches. If the disk is full, however, we need to reset the values
 !  manually.
 !
-        if (lroot) then
+        writenext: if (lroot .and. lwrite) then
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
@@ -3275,7 +3282,7 @@ module Sub
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
           close(lun)
-        endif
+        endif writenext
       else
         lout=.false.
       endif
