@@ -1450,7 +1450,7 @@ module Density
 !
 !  Force mass conservation if requested
 !
-      if (lconserve_total_mass .and. total_mass > 0.) then
+      masscons: if (lconserve_total_mass .and. total_mass > 0.0) then
 !
         cur_mass=box_volume*mean_density(f)
 !
@@ -1475,7 +1475,11 @@ module Density
           f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
         endif
 !
-      endif
+!  Conserve the momentum.
+!
+        if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
+!
+      endif masscons
 !
    endsubroutine calc_ldensity_pars
 !***********************************************************************
