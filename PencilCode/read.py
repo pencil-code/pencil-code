@@ -773,7 +773,7 @@ def time_series(datadir='./data'):
     f.close()
     return ts
 #=======================================================================
-def var(datadir='./data', ivar=None, varfile='var.dat', verbose=True):
+def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
@@ -782,16 +782,20 @@ def var(datadir='./data', ivar=None, varfile='var.dat', verbose=True):
         ivar
             If not None, an integer specifying the snapshot number and
             the argument varfile takes no effect.
+        par
+            Parameters supplied by parameters().  If None, parameters()
+            will be called.
         varfile
             Name of the snapshot file.
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-08-06
+    # Chao-Chin Yang, 2015-08-18
     from collections import namedtuple
     import numpy as np
-    # Get the dimensions.
-    par = parameters(datadir=datadir, warning=verbose)
+    # Get the parameters.
+    if par is None:
+        par = parameters(datadir=datadir, warning=verbose)
     dim = dimensions(datadir=datadir)
     var = varname(datadir=datadir)
     if par.lwrite_aux:
