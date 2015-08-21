@@ -3166,7 +3166,7 @@ module Sub
           else settout
             !  make sure the tout is a good time
             nonzero: if (dtout /= 0.0) then
-              tout = t + (dtout - modulo(t, dble(abs(dtout))))
+              tout = dtout
             else nonzero
               call warning("read_snaptime", &
                    "Am I writing snapshots every 0 time units? (check " // &
