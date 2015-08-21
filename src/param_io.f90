@@ -596,7 +596,7 @@ module Param_IO
           if (lshock)              print*,'&shock_'//partype//'          /'
           if (lviscosity)          print*,'&viscosity_'//partype//'      /'
           if (lpower_spectrum)     print*,'&power_spectrum_'//partype//' /'
-          if (limplicit_diffusion) print*,'&implicit_diffusion_pars  /'
+          if (limplicit_diffusion) print*,'&implicit_diffusion_run_pars  /'
         endif
 !
 !  Particles section.
