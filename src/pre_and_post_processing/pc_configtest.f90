@@ -7,9 +7,8 @@ program pc_configtest
   use Cdata
   use Cparam, only: fnlen, intlen
   use Diagnostics
-  use File_io, only: file_exists
   use Filter
-  use General, only: itoa
+  use General, only: itoa, file_exists
   use Grid, only: initialize_grid
   use IO
   use Messages

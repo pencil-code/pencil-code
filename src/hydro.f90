@@ -3930,10 +3930,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
 !
@@ -3949,10 +3948,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
@@ -4760,14 +4758,15 @@ module Hydro
 !
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
+!  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
       use Mpicomm, only: mpibcast_real, mpireduce_sum
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
-      real, dimension (nx) :: uxmx,uymx,uzmx
-      real, dimension (ny) :: uxmy,uymy,uzmy,umx2,umy2
+      real, dimension (nx) :: uxmx,uymx,uzmx,umx2
+      real, dimension (ny) :: uxmy,uymy,uzmy,umy2
       real :: umx,umy,umz
 !
 !  For vector output (of oo vectors) we need orms
@@ -4802,9 +4801,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) then
+          if (lfirst_proc_yz) &
             call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
-          endif
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -4829,9 +4827,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) then
+          if (lfirst_proc_xz) &
             call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
-          endif
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)

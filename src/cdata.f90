@@ -174,6 +174,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lnamelist_error=.false.
   logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.

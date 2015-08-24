@@ -183,9 +183,8 @@ module Particles_surfspec
     endsubroutine initialize_particles_surf
 ! ******************************************************************************
     subroutine read_particles_surf_init_pars(iostat)
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read (parallel_unit, NML=particles_surf_init_pars, IOSTAT=iostat)
     endsubroutine read_particles_surf_init_pars
@@ -197,9 +196,8 @@ module Particles_surfspec
     endsubroutine write_particles_surf_init_pars
 ! ******************************************************************************
     subroutine read_particles_surf_run_pars(iostat)
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read (parallel_unit, NML=particles_surf_run_pars, IOSTAT=iostat)
     endsubroutine read_particles_surf_run_pars

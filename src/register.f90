@@ -17,7 +17,7 @@ module Register
 !
   contains
 !***********************************************************************
-    subroutine register_modules()
+    subroutine register_modules
 !
 !  Call all registration routines, i.e. initialise MPI and register
 !  physics modules. Registration implies getting slices of the f-array
@@ -705,8 +705,9 @@ module Register
 !                 dummy parameter (the latter standardized only since FORTRAN 2000)
 !   24-jan-11/MR: removed allocation
 !   26-aug-13/MR: modification for uncounted comment lines in input file
+!   24-aug-15/MR: introduced use of nitems in parallel_open etc.
 !
-      use File_io, only: parallel_open, parallel_close
+      use File_io, only: parallel_open, parallel_close, parallel_unit
       use Cdata  , only: comment_char
 !
       character (len=*), intent(in) :: in_file
@@ -715,27 +716,31 @@ module Register
 !
       character (len=30) :: cname_tmp
       integer :: io_err
-      include "parallel_unit_declaration.h"
 !
-      read_name_format = .false.
       nnamel = 0
 !
-      call parallel_open(parallel_unit, trim(in_file), form='formatted', remove_comments=.true.)
+      call parallel_open(trim(in_file), remove_comments=.true., nitems=nnamel)
 !
 !  Read names and formats.
 !
-      do
-        read(parallel_unit, *, iostat=io_err) cname_tmp
-        if (io_err < 0) exit ! EOF
-        if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
-        if ((cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
-          nnamel = nnamel+1
-          cnamel(nnamel) = cname_tmp
-          read_name_format = .true.
-        endif
-      enddo
+      if (nnamel>0) then
+        read(parallel_unit,*) cnamel(1:nnamel)
+      else
+        do
+          read(parallel_unit, *, iostat=io_err) cname_tmp
+          if (io_err < 0) exit ! EOF
+          if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
+          cname_tmp = adjustl(cname_tmp)
+          if ((cname_tmp /= ' ') .and. (cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
+            nnamel = nnamel+1
+            cnamel(nnamel) = cname_tmp
+          endif
+        enddo
+      endif
 !
-      call parallel_close(parallel_unit)
+      read_name_format = nnamel>0
+!
+      call parallel_close
 !
     endfunction read_name_format
 !***********************************************************************
@@ -748,7 +753,8 @@ module Register
 !                for homogeneity
 !  26-aug-13/MR: introduced use of parameter comment_chars when reading
 !                print.in to avoid counting comment lines
-!  28-May-2015/Bourdni.KIS: renamed comment_chars to strip_comments
+!  28-May-2015/Bourdin.KIS: renamed comment_chars to strip_comments
+!  24-Aug-2015/MR: broke up if ( read_name_format ... in two
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -788,7 +794,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
-      use File_io,         only: parallel_file_exists, parallel_count_lines
+      use Sub,             only: parallel_file_exists, parallel_count_lines
 !
       integer :: i,iadd,ios
       logical :: lreset, ldummy
@@ -870,24 +876,28 @@ module Register
         nname_sound = max(0,parallel_count_lines(sound_in_file))
 !
         if (nname_sound>0) then
+
           call allocate_sound(nname_sound)
 
-          if ( read_name_format(sound_in_file,cname_sound,nname_sound) &
-               .and. lwrite_sound ) then
+          if ( read_name_format(sound_in_file,cname_sound,nname_sound) ) then
+            if (lwrite_sound) then
 !
 !  Read the last sound output time from a soundfile, will be set to
 !  starttime otherwise
 !
-!            tsound=rnan
-            tsound=-1.0
-            open(1,file=trim(directory)//'/sound.dat',position='append', &
-                 status='old',iostat=ios)
-            if (ios==0) then
-              backspace(1)
-              read(1,*) tsound
+!              tsound=rnan
+              tsound=-1.0
+              open(1,file=trim(directory)//'/sound.dat',position='append', &
+                   status='old',iostat=ios)
+              if (ios==0) then
+                backspace(1)
+                read(1,*) tsound
+              endif
+              close(1)
+            else
+              nname_sound=0
             endif
-            close(1)
-!
+
           else
             nname_sound=0
           endif

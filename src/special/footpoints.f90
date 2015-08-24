@@ -86,7 +86,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-!      use Mpicomm, only: parallel_file_exists
+!      use Sub, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -122,10 +122,9 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
@@ -141,10 +140,9 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !

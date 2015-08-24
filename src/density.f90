@@ -1980,7 +1980,8 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'n,m=', n,m
+          print*, 'it,n,m=', it,n,m
+          print*, f(4,4,1:6,ilnrho)
           call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
         endif
         if (lpencil(i_grho)) then
@@ -2855,10 +2856,9 @@ module Density
 !***********************************************************************
     subroutine read_density_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_init_pars, IOSTAT=iostat)
 !
@@ -2874,10 +2874,9 @@ module Density
 !***********************************************************************
     subroutine read_density_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !

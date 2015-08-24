@@ -364,6 +364,7 @@ program run
 !  that we just read in from var.dat. (Note that grid information
 !  was also used above, so we really need to do it twice then.)
 !
+  f=0.
   call rsnap('var.dat',f,mvar_in)
 !
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)

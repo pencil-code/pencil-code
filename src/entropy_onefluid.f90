@@ -131,10 +131,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -150,10 +149,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !

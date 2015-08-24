@@ -940,10 +940,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=eos_init_pars, IOSTAT=iostat)
 !
@@ -959,10 +958,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=eos_run_pars, IOSTAT=iostat)
 !

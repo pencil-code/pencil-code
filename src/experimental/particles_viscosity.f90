@@ -280,10 +280,9 @@ module Particles_viscosity
 !***********************************************************************
     subroutine read_particles_visc_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=particles_visc_run_pars, IOSTAT=iostat)
 !

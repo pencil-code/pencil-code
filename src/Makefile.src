@@ -1652,8 +1652,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC=ftn #(sisu*)
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
-#FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
-#FFLAGS_DOUBLE=-s default64 #(sisu*)
+#FFLAGS=-O1 -ffree -e m -J . -p . #(sisu*)
+#FFLAGS_DOUBLE=-s real64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Piz Daint - CrayXC30 - (ETH Zurich)
@@ -2408,6 +2408,7 @@ clean:
 	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
 	rm -f special/*.o special/*.mod
 	rm -f initial_condition/*.o initial_condition/*.mod
+	rm -f experimental/*.o experimental/*.mod
 	rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files

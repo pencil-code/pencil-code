@@ -678,10 +678,9 @@ module Viscosity
 !***********************************************************************
     subroutine read_viscosity_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=viscosity_run_pars, IOSTAT=iostat)
 !
@@ -1352,7 +1351,7 @@ module Viscosity
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
-        prof2    = step(tmp3,xnu2,widthnu2)    !!! better with der_step in one call
+        prof2    = step(tmp3,xnu2,widthnu2)
         prof     = step(tmp3,xnu,widthnu)-prof2
         derprof2 = der_step(tmp3,xnu2,widthnu2)
         derprof  = der_step(tmp3,xnu,widthnu)-derprof2

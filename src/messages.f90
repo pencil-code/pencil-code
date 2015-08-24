@@ -258,7 +258,7 @@ module Messages
       if (.not.llife_support) then
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_warning()
-          write (*,'(A9)',ADVANCE='NO') "WARNING:"
+          write (*,'(A9)',ADVANCE='NO') "WARNING: "
           call terminal_defaultcolor()
           write (*,*) trim(scaller) // ": " // trim(message)
 !          call flush(6) ! has to wait until F2003

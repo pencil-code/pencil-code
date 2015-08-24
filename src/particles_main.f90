@@ -317,55 +317,53 @@ module Particles_main
 !***********************************************************************
     subroutine read_all_particles_init_pars()
 !
-      use File_IO, only: read_namelist
-      use Particles, only: read_particles_init_pars
+      use Sub, only: read_namelist
 !
-      call read_namelist(read_particles_init_pars      ,'particles',lparticles)
-      call read_namelist(read_particles_rad_init_pars  ,'particles_radius',lparticles_radius)
+      call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
+      call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
 !     call read_namelist(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
-      call read_namelist(read_particles_spin_init_pars ,'particles_spin',lparticles_spin)
-      call read_namelist(read_particles_sink_init_pars ,'particles_sink',lparticles_sink)
-      call read_namelist(read_particles_num_init_pars  ,'particles_number',lparticles_number)
-      call read_namelist(read_particles_dens_init_pars ,'particles_dens',lparticles_density)
+      call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
+      call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
+      call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
+      call read_namelist(read_particles_dens_init_pars ,'particles_dens'    ,lparticles_density)
       call read_namelist(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
-      call read_namelist(read_particles_nbody_init_pars,'particles_nbody',lparticles_nbody)
-      call read_namelist(read_particles_mass_init_pars ,'particles_mass',lparticles_mass)
-      call read_namelist(read_particles_drag_init_pars ,'particles_drag',lparticles_drag)
-      call read_namelist(read_particles_TT_init_pars   ,'particles_TT',lparticles_temperature)
-      call read_namelist(read_particles_ads_init_pars  ,'particles_ads',lparticles_adsorbed)
-      call read_namelist(read_particles_surf_init_pars ,'particles_surf',lparticles_surfspec)
-      call read_namelist(read_particles_chem_init_pars ,'particles_chem',lparticles_chemistry)
-      call read_namelist(read_pstalker_init_pars       ,'particles_stalker',lparticles_stalker)
+      call read_namelist(read_particles_nbody_init_pars,'particles_nbody'   ,lparticles_nbody)
+      call read_namelist(read_particles_mass_init_pars ,'particles_mass'    ,lparticles_mass)
+      call read_namelist(read_particles_drag_init_pars ,'particles_drag'    ,lparticles_drag)
+      call read_namelist(read_particles_TT_init_pars   ,'particles_TT'      ,lparticles_temperature)
+      call read_namelist(read_particles_ads_init_pars  ,'particles_ads'     ,lparticles_adsorbed)
+      call read_namelist(read_particles_surf_init_pars ,'particles_surf'    ,lparticles_surfspec)
+      call read_namelist(read_particles_chem_init_pars ,'particles_chem'    ,lparticles_chemistry)
+      call read_namelist(read_pstalker_init_pars       ,'particles_stalker' ,lparticles_stalker)
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
     subroutine read_all_particles_run_pars()
 !
-      use File_IO, only: read_namelist
-      use Particles, only: read_particles_run_pars
+      use Sub, only: read_namelist
 !
-      call read_namelist(read_particles_run_pars          ,'particles',lparticles)
-      call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt',lparticles_adaptation)
-      call read_namelist(read_particles_rad_run_pars      ,'particles_radius',lparticles_radius)
+      call read_namelist(read_particles_run_pars          ,'particles'              ,lparticles)
+      call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt'        ,lparticles_adaptation)
+      call read_namelist(read_particles_rad_run_pars      ,'particles_radius'       ,lparticles_radius)
 !     call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
-      call read_namelist(read_particles_spin_run_pars     ,'particles_spin',lparticles_spin)
-      call read_namelist(read_particles_sink_run_pars     ,'particles_sink',lparticles_sink)
-      call read_namelist(read_particles_num_run_pars      ,'particles_number',lparticles_number)
-      call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav',lparticles_selfgravity)
-      call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody',lparticles_nbody)
-      call read_namelist(read_particles_visc_run_pars     ,'particles_visc',lparticles_viscosity)
-      call read_namelist(read_particles_coag_run_pars     ,'particles_coag',lparticles_coagulation)
-      call read_namelist(read_particles_coll_run_pars     ,'particles_coll',lparticles_collisions)
-      call read_namelist(read_particles_stir_run_pars     ,'particles_stirring',lparticles_stirring)
-      call read_namelist(read_pstalker_run_pars           ,'particles_stalker',lparticles_stalker)
-      call read_namelist(read_pars_diagnos_dv_run_pars    ,'particles_diagnos_dv',lparticles_diagnos_dv)
+      call read_namelist(read_particles_spin_run_pars     ,'particles_spin'         ,lparticles_spin)
+      call read_namelist(read_particles_sink_run_pars     ,'particles_sink'         ,lparticles_sink)
+      call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
+      call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
+      call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody'        ,lparticles_nbody)
+      call read_namelist(read_particles_visc_run_pars     ,'particles_visc'         ,lparticles_viscosity)
+      call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
+      call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
+      call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
+      call read_namelist(read_pstalker_run_pars           ,'particles_stalker'      ,lparticles_stalker)
+      call read_namelist(read_pars_diagnos_dv_run_pars    ,'particles_diagnos_dv'   ,lparticles_diagnos_dv)
       call read_namelist(read_pars_diag_state_run_pars    ,'particles_diagnos_state',lparticles_diagnos_state)
-      call read_namelist(read_particles_mass_run_pars     ,'particles_mass',lparticles_mass)
-      call read_namelist(read_particles_drag_run_pars     ,'particles_drag',lparticles_drag)
-      call read_namelist(read_particles_TT_run_pars       ,'particles_TT',lparticles_temperature)
-      call read_namelist(read_particles_ads_run_pars      ,'particles_ads',lparticles_adsorbed)
-      call read_namelist(read_particles_surf_run_pars     ,'particles_surf',lparticles_surfspec)
-      call read_namelist(read_particles_chem_run_pars     ,'particles_chem',lparticles_chemistry)
+      call read_namelist(read_particles_mass_run_pars     ,'particles_mass'         ,lparticles_mass)
+      call read_namelist(read_particles_drag_run_pars     ,'particles_drag'         ,lparticles_drag)
+      call read_namelist(read_particles_TT_run_pars       ,'particles_TT'           ,lparticles_temperature)
+      call read_namelist(read_particles_ads_run_pars      ,'particles_ads'          ,lparticles_adsorbed)
+      call read_namelist(read_particles_surf_run_pars     ,'particles_surf'         ,lparticles_surfspec)
+      call read_namelist(read_particles_chem_run_pars     ,'particles_chem'         ,lparticles_chemistry)
 !
     endsubroutine read_all_particles_run_pars
 !***********************************************************************

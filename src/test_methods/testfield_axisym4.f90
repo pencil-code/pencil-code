@@ -498,10 +498,9 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=testfield_init_pars, IOSTAT=iostat)
 !
@@ -517,10 +516,9 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=testfield_run_pars, IOSTAT=iostat)
 !

@@ -1071,10 +1071,9 @@ module Interstellar
 !***********************************************************************
     subroutine read_interstellar_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include '../parallel_unit.h'
 !
       read(parallel_unit, NML=interstellar_init_pars, IOSTAT=iostat)
 !
@@ -1090,10 +1089,9 @@ module Interstellar
 !***********************************************************************
     subroutine read_interstellar_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include '../parallel_unit.h'
 !
       read(parallel_unit, NML=interstellar_run_pars, IOSTAT=iostat)
 !

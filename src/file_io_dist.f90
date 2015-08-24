@@ -1,364 +1,216 @@
 ! $Id$
 !
 !  This module goes straight and implements distributed file Input/Output.
-!  We use here only F95 features and are explicitly not HPC-friendly.
+!  We use here only F2003 features (HPC-friendly).
+!
+!  5-Aug-15/MR: shifted parallel_file_exists and parallel_count_lines to Sub,
+!               file_exists, file_size and count_lines to General
+!               removed unit parameters from parallel_open, parallel_rewind, 
+!               parallel_close: it is always parallel_unit, now an allocatable
+!               string array.
+!               Made parallel_unit public (but protected) hence removed get_unit.
 !
 module File_io
 !
-  use Cdata
-  use Cparam
-  use Mpicomm
-!
   implicit none
 !
-  external file_size_c
+! Fixed string length necessary as gfortran is compiling incorrectly otherwise.
+! For future debugged gfortran versions the commented lines should be used.
 !
-  integer, parameter :: parallel_unit = 14
-  logical :: lignore_namelist_errors, lnamelist_error
+  !character(LEN=:), dimension(:), allocatable, protected :: parallel_unit
+  character(LEN=36000), dimension(:), allocatable, protected :: parallel_unit
 !
+  include 'file_io.h'
+
+  private
+
   contains
-!
 !***********************************************************************
-    function get_unit()
+    subroutine parallel_read(file,remove_comments,nitems)
 !
-!  Returns the buffer for parallel reading.
-!
-!  29-May-2015/Bourdin.KIS: implemented
-!
-      integer :: get_unit
-!
-      get_unit = parallel_unit
-!
-    endfunction get_unit
-!***********************************************************************
-    function parallel_read(file,buffer,remove_comments)
-!
-!  Returns a buffer with the content of a global file read in parallel.
+!  Provides the (comment-purged) contents if an input file in parallel_unit.
+!  Reading from file system is done by root only.
+!  Returns number of valid records in nitems, if requested.
 !
 !  28-May-2015/Bourdin.KIS: implemented
+!  31-Jul-2015/MR: adapted to allocatable parallel_unit, 
+!                  reinstated comment removal as in former read_infile.
+!                  (seems to be necessary)
 !
-      integer :: parallel_read
-      character, dimension(:), allocatable :: buffer
-      character (len=*), intent(in) :: file
-      logical, optional :: remove_comments
+      use Mpicomm, only: lroot, mpibcast_int, mpibcast_char
+      use General, only: loptest, parser, file_exists, file_size
+      use Messages, only: fatal_error
+      use Cdata, only: comment_char, root
+
+      character (len=*), intent(in)            :: file
+      logical,           intent(in),  optional :: remove_comments
+      integer,           intent(out), optional :: nitems
 !
-      integer :: bytes, unit = 11
+      integer :: bytes, ios, ind, indc, inda, inda2, lenbuf, indmax, ni
+      integer, parameter :: unit = 11
+      character(LEN=14000) :: linebuf             ! string length overdimensioned, but needed so for some compilers.
+      character(LEN=:), allocatable :: buffer
+      character :: sepchar
+      logical :: l0
 !
       if (lroot) then
-        if (.not. file_exists(file)) call stop_it_if_any(.true., &
-            'parallel_read: file not found "'//trim(file)//'"')
+        if (.not. file_exists(file)) call fatal_error(&
+            'parallel_read', 'file "'//trim(file)//'" not found', force=.true.)
         bytes = file_size(file)
-        if (bytes < 0) call stop_it_if_any(.true., &
-            'parallel_read: could not determine file size "'//trim(file)//'"')
-        if (bytes == 0) call stop_it_if_any(.true., &
-            'parallel_read: file is empty "'//trim(file)//'"')
-      endif
+        if (bytes < 0) call fatal_error(&
+            'parallel_read', 'could not determine size of file "'//trim(file)//'"', force=.true.)
+        if (bytes == 0) call fatal_error(&
+            'parallel_read', 'file "'//trim(file)//'" is empty', force=.true.)
+
+        ! Allocate temporary memory.
+        !allocate(character(len=bytes) :: parallel_unit(1))
+        allocate(parallel_unit(1))
 !
-      ! Catch conditional errors of the MPI root rank.
-      call stop_it_if_any(.false.,'')
-!
-      ! Broadcast the file size.
-      call mpibcast_int(bytes)
-      parallel_read = bytes
-!
-      ! Allocate temporary memory.
-      if (allocated (buffer)) deallocate (buffer)
-      allocate(buffer(bytes))
-      buffer=char(0)
-!
-      if (lroot) then
         ! Read file content into buffer.
-        open(unit, file=file, FORM='unformatted', RECL=bytes, ACCESS='direct', status='old')
-        read(unit, REC=1) buffer
+        open(unit, file=file, status='old')
+
+        ! Namelist-read and non-namelist-read files need to be treated differently:
+        ! For the former a blank, for the latter, LF is inserted between the records
+        ! and the number of (non-comment) records is counted in nitems.
+        
+        if (present(nitems)) then
+          sepchar=char(10)
+        else
+          sepchar=' '
+        endif
+
+        l0=.true.; ni=0; indmax=0
+        do
+          read(unit,'(a)',iostat=ios) linebuf
+          if (ios<0) exit
+
+          linebuf=adjustl(linebuf)
+!
+          if (loptest(remove_comments)) then
+            inda=index(linebuf,"'")                                  ! position of an opening string bracket
+            ind=index(linebuf,'!'); indc=index(linebuf,comment_char) ! positions of comment indicators
+
+            ! check if comment indicators are within a string, hence irrelevant.
+
+            if (inda>0) then 
+              inda2=index(linebuf(inda+1:),"'")+inda    ! position of a closing string bracket
+              if (inda2==inda) inda2=len(linebuf)+1     ! if closing string bracket missing, assume it at end of record
+              if (ind>inda.and.ind<inda2) ind=0
+              if (indc>inda.and.indc<inda2) indc=0
+            endif
+
+            if (indc>0) ind=min(max(ind,1),indc)        ! determine smaller of the two comment indicators
+          else
+            ind=0
+          endif
+!
+          if (ind==0) then
+            ind=len(trim(linebuf))
+          else
+            ind=ind-1
+            if (ind>0) ind=len(trim(linebuf(1:ind)))  ! if comment appended, remove it
+          endif
+          indmax = max(indmax,ind)                    ! update maximum length of record
+!
+          if (ind==0) then                            ! line is a comment or empty -> skip
+            cycle
+          elseif (l0) then                            ! otherwise append it to parallel_unit with 
+            parallel_unit(1)=linebuf(1:ind)           ! separating character sepchar
+            lenbuf=ind
+            l0=.false.
+          else
+            parallel_unit(1)=parallel_unit(1)(1:lenbuf)//sepchar//linebuf(1:ind)
+            lenbuf=lenbuf+ind+1
+          endif
+          ni=ni+1                                     ! update number of valid records
+
+        enddo
         close(unit)
 !
-        if (present (remove_comments)) then
-          ! Strip comments.
-          if (remove_comments) call strip_comments(buffer)
-        endif
       endif
 !
-      ! Broadcast buffer to all MPI ranks.
-      call mpibcast_char(buffer, bytes)
+      ! Broadcast the size of parallel_unit.
+      call mpibcast_int(lenbuf)
 !
-    endfunction parallel_read
+      if (present(nitems)) then
+
+        ! broadcast number of valid records and maximum record length
+        if (lroot) nitems=ni
+        call mpibcast_int(nitems)
+        if (nitems==0) return
+        ni=nitems
+        call mpibcast_int(indmax)
+
+      else
+        ! let ni and indmax have valid values for namelist-read files
+        ni=1; indmax=lenbuf
+      endif
+
+      ! prepare broadcasting of parallel_unit.
+      if (lroot) then
+        if (present(nitems)) then
+
+          ! for non-namelist-read files: organize parallel_unit as array 
+          allocate(character(len=lenbuf) :: buffer)
+          buffer=parallel_unit(1)(1:lenbuf)
+          deallocate(parallel_unit)
+          !!allocate(character(len=indmax) :: parallel_unit(nitems))
+          allocate(parallel_unit(nitems))
+          ! decompose former parallel_unit into records guided by sepchar
+          if (parser(buffer,parallel_unit,sepchar)/=nitems) &
+            call fatal_error('parallel_read', 'too less elements found when parsing buffer')
+
+        endif 
+      else  
+        !allocate(character(len=indmax) :: parallel_unit(ni))
+        allocate(parallel_unit(ni))
+      endif
+!
+      ! broadcast parallel_unit
+      if (present(nitems)) then
+        call mpibcast_char(parallel_unit, nitems, root)
+      else  
+        call mpibcast_char(parallel_unit(1)(1:lenbuf), root)
+      endif
+!
+    endsubroutine parallel_read
 !***********************************************************************
-    subroutine parallel_open(unit,file,form,remove_comments)
+    subroutine parallel_open(file,form,remove_comments,nitems)
 !
 !  Read a global file.
 !
 !  18-mar-10/Bourdin.KIS: implemented
+!  30-jul-15/MR: reworked
 !
-      integer, intent(out) :: unit
-      character (len=*) :: file
-      character (len=*), optional :: form
-      logical, optional :: remove_comments
+      character (len=*), intent(in)            :: file
+      character (len=*), intent(in),  optional :: form
+      logical,           intent(in),  optional :: remove_comments
+      integer,           intent(out), optional :: nitems
 !
-      logical :: exists
+!  Parameter form is ignored as parallel_read is at present implemented for formatted reading only.
 !
-!  Test if file exists.
-!
-      inquire(file=file,exist=exists)
-      if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
-!
-!  Open file.
-!
-      if (present(form)) then
-        open(unit, file=file, FORM=form, status='old')
-      else
-        open(parallel_unit, file=file, status='old')
-      endif
-      unit = parallel_unit
+      call parallel_read(file, remove_comments, nitems)
 !
     endsubroutine parallel_open
 !***********************************************************************
-    subroutine parallel_rewind(unit)
+    subroutine parallel_rewind
 !
-!  Rewind a file unit opened by parallel_open.
+!  Dummy.
 !
-!  23-May-2014/Bourdin.KIS: implemented
-!
-      integer, intent(in) :: unit
-!
-      rewind(unit)
+!  30-Jul-2015/MR: implemented
 !
     endsubroutine parallel_rewind
 !***********************************************************************
-    subroutine parallel_close(unit)
+    subroutine parallel_close
 !
-!  Close a file unit opened by parallel_open and remove temporary file.
+!  Deallocates the internal file parallel_unit opened by parallel_open.
+!  Each call to parallel_open must be followed by a call to parallel_close
+!  before parallel_open can be called again.
+
+!  30-Jul-2015/MR: implemented
 !
-!  17-mar-10/Bourdin.KIS: implemented
-!
-      integer, intent(in) :: unit
-!
-      close(unit)
+      deallocate(parallel_unit)
 !
     endsubroutine parallel_close
-!***********************************************************************
-    function parallel_count_lines(file,ignore_comments)
-!
-!  Determines in parallel the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter ignore_comments added
-!  28-May-2015/Bourdin.KIS: reworked
-!
-      integer :: parallel_count_lines
-      character(len=*), intent(in) :: file
-      logical, optional, intent(in) :: ignore_comments
-!
-      if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
-      call mpibcast_int(parallel_count_lines)
-!
-    endfunction
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      logical :: parallel_file_exists
-      character(len=*) :: file
-      logical, optional :: delete
-!
-      logical :: ldelete
-!
-      if (present(delete)) then
-        ldelete = delete
-      else
-        ldelete = .false.
-      endif
-!
-      ! Let the root node do the dirty work
-      if (lroot) parallel_file_exists = file_exists(file,ldelete)
-!
-      call mpibcast_logical(parallel_file_exists)
-!
-    endfunction
-!***********************************************************************
-    function file_exists(file, delete)
-!
-!  Determines if a file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Logical containing the existence of a given file
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use Cparam, only: ip
-!
-      logical :: file_exists
-      character(len=*) :: file
-      logical, optional :: delete
-!
-      integer :: unit = 1
-!
-      inquire (file=file, exist=file_exists)
-!
-      if (file_exists .and. present(delete)) then
-        if (delete) then
-          if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
-          open (unit, file=file)
-          close (unit, status='delete')
-        endif
-      endif
-!
-    endfunction file_exists
-!***********************************************************************
-    function file_size(file)
-!
-!  Determines the size of a given file.
-!
-!  Returns:
-!  * positive integer containing the file size of a given file
-!  * -2 if the file could not be found or opened
-!  * -1 if retrieving the file size failed
-!
-!  23-may-2015/Bourdin.KIS: coded
-!
-      integer :: file_size
-      character(len=*) :: file
-!
-      file_size = -2
-      if (file_exists (trim(file)//char(0))) then
-        file_size = -1
-        call file_size_c(trim(file)//char(0), file_size)
-      endif
-!
-    endfunction file_size
-!***********************************************************************
-    function count_lines(file,ignore_comments)
-!
-!  Determines the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter ignore_comments added
-!  28-May-2015/Bourdin.KIS: reworked
-!
-      use General, only: operator(.in.)
-!
-      integer :: count_lines
-      character (len=*), intent(in) :: file
-      logical, optional, intent(in) :: ignore_comments
-!
-      integer :: ierr, unit = 1
-      character :: ch
-!
-      count_lines = -1
-      if (.not. file_exists(file)) return
-!
-      open (unit, file=file, status='old', iostat=ierr)
-      if (ierr /= 0) return
-      count_lines = 0
-      do while (ierr == 0)
-        read (unit,'(a)',iostat=ierr) ch
-        if (ierr == 0) then
-          if (present(ignore_comments)) then
-            if (ignore_comments .and. (ch .in. (/ '!', comment_char /))) cycle
-          endif
-          count_lines = count_lines + 1
-        endif
-      enddo
-      close (unit)
-!
-    endfunction count_lines
-!**************************************************************************
-    subroutine strip_comments(buffer)
-!
-!  Strip comments from a *.in-file
-!
-!  28-May-2015/Bourdin.KIS: inspired by MR's read_infile
-!
-      character, dimension(:), allocatable :: buffer
-!
-      integer :: num_bytes, pos
-      logical :: lcomment
-!
-      if (.not. allocated (buffer)) return
-!
-      num_bytes = size (buffer)
-      lcomment = .false.
-      do pos = 1, num_bytes
-        if (buffer(pos) == char(10)) then
-          lcomment = .false.
-        elseif ((buffer(pos) == '!') .or. (buffer(pos) == comment_char)) then
-          lcomment = .true.
-        endif
-        if (lcomment) buffer(pos) = ' '
-      enddo
-write (*,*) 'NEW: ==>', buffer, '<=='
-!
-    endsubroutine strip_comments
-!***********************************************************************
-    subroutine read_namelist(reader,name,lactive)
-!
-!  encapsulates reading of pars + error handling
-!
-!  31-oct-13/MR: coded
-!  16-dec-13/MR: handling of optional ierr corrected
-!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
-!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
-!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
-!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
-!  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
-!
-      use Messages, only: warning
-!
-      interface
-        subroutine reader(iostat)
-          integer, intent(out) :: iostat
-        endsubroutine reader
-      endinterface
-!
-      character(len=*), intent(in) :: name
-      logical, intent(in), optional :: lactive
-!
-      integer :: ierr
-      character(len=linelen) :: type
-      include "parallel_unit.h"
-!
-      if (present (lactive)) then
-        if (.not. lactive) return
-      endif
-!
-      call reader(ierr)
-!
-      if (lstart) then
-        type = '_init'
-        if (name == 'init') type = ''
-      else
-        type = '_run'
-        if (name == 'run') type = ''
-      endif
-!
-      if (.not. lignore_namelist_errors) then
-        if (ierr == -1) then
-          if (lroot) call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
-          lnamelist_error = .true.
-        elseif (ierr /= 0) then
-          if (lroot) call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
-          lnamelist_error = .true.
-        endif
-      endif
-!
-      call parallel_rewind(parallel_unit)
-!
-    endsubroutine read_namelist
 !***********************************************************************
 endmodule File_io

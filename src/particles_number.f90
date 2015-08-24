@@ -358,10 +358,9 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_number_init_pars, IOSTAT=iostat)
 !
@@ -377,10 +376,9 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_number_run_pars, IOSTAT=iostat)
 !

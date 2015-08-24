@@ -747,7 +747,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_logical
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !
@@ -1177,7 +1177,7 @@ module Io
 !                  three neighbouring points from the boundary point
 !  15-apr-15/MR  : automatic detection of precision added
 !
-      use File_io, only: file_size
+      use General, only: file_size
 !
       character (len=*) :: file
 !
