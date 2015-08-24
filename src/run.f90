@@ -125,6 +125,10 @@ program run
 !
   call initialize_mpicomm()
 !
+!  Define the lenergy logical
+!
+  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+!
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars()
@@ -246,10 +250,6 @@ program run
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   endif
-!
-!  Define the lenergy logical
-!
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
 !  Inform about verbose level.
 !
