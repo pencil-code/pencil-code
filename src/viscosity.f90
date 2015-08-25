@@ -2131,18 +2131,18 @@ module Viscosity
 !
     endsubroutine getnu
 !***********************************************************************
-    subroutine dynamical_viscosity(umax)
+    subroutine dynamical_viscosity(urms)
 !
 !  Dynamically set viscosity coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-viscosity coefficient
 !
-      if (nu_hyper3/=0.0) nu_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (nu_hyper3/=0.0) nu_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
+      if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************

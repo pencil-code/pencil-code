@@ -279,7 +279,7 @@ module Equ
       dyndiff: if (ldyndiff_urmsmxy) then
         ucz = find_xyrms_fvec(f, iuu)
       else if (ldynamical_diffusion) then dyndiff
-        uc = find_max_fvec(f, iuu)
+        uc = find_rms_fvec(f, iuu)
         call set_dyndiff_coeff(uc)
       endif dyndiff
 !

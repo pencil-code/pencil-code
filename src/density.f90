@@ -3222,18 +3222,18 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(umax)
+    subroutine dynamical_diffusion(urms)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-diffusion coefficient
 !
-      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
+      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
