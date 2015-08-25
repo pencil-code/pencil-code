@@ -2096,7 +2096,9 @@ module Radiation
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
+!      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=radiation_init_pars)
 !
     endsubroutine read_radiation_init_pars
 !***********************************************************************
