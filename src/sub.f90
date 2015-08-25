@@ -95,7 +95,7 @@ module Sub
   public :: fourier_single_mode
   public :: remove_mean,global_mean
   public :: insert
-  public :: find_max_fvec, find_xyrms_fvec
+  public :: find_max_fvec, find_rms_fvec, find_xyrms_fvec
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
@@ -6550,6 +6550,27 @@ nameloop: do
       call mpiallreduce_max(umax1, find_max_fvec)
 !
     endfunction find_max_fvec
+!***********************************************************************
+    real function find_rms_fvec(f, iv)
+!
+!  Find the root-mean-square of the modulus of a vector field.
+!
+!  25-aug-2015/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: iv
+!
+      real :: s1, s
+!
+!  Find the rms.
+!
+      s1 = sum(f(l1:l2,m1:m2,n1:n2,iv:iv+2)**2)
+      call mpiallreduce_sum(s1, s)
+      find_rms_fvec = sqrt(s / real(nwgrid))
+!
+    endfunction find_rms_fvec
 !***********************************************************************
     function find_xyrms_fvec(f, iv) result(rms)
 !
