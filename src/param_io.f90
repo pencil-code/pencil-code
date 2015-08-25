@@ -63,7 +63,7 @@ module Param_IO
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
 !
-  logical :: lforce_shear_bc = .true.
+  logical :: lforce_shear_bc = .true., ltolerate_namelist_errors=.false.
 !
 ! local quantities
 !
@@ -97,7 +97,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access
+      ldirect_access, ltolerate_namelist_errors
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -316,7 +316,7 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error) then
+      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
         call sample_pars
         call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
@@ -437,7 +437,7 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error) then
+      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
         call sample_pars
         call fatal_error ('read_all_run_pars', 'Please fix all above WARNINGs for file "run.in"')
       endif
