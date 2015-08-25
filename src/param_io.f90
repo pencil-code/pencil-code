@@ -588,7 +588,7 @@ module Param_IO
         if (lnscbc)                print*,'&NSCBC_'//partype//'          /'
         if (lpolymer)              print*,'&polymer_'//partype//'        /'
 !
-        if (lrun) then
+        if (.not.lstart) then
           if (lforcing)            print*,'&forcing_'//partype//'        /'
           if (lshock)              print*,'&shock_'//partype//'          /'
           if (lviscosity)          print*,'&viscosity_'//partype//'      /'
@@ -618,7 +618,7 @@ module Param_IO
         if (lparticles_surfspec)        print*,'&particles_surf_'//partype//'          /'
         if (lparticles_chemistry)       print*,'&particles_chem_'//partype//'          /'
 !
-        if (lrun) then
+        if (.not.lstart) then
           if (lparticles_adaptation)    print*,'&particles_adapt_'//partype//'         /'
           if (lparticles_coagulation)   print*,'&particles_coag_'//partype//'          /'
           if (lparticles_collisions)    print*,'&particles_coll_'//partype//'          /'
