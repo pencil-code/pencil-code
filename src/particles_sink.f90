@@ -38,6 +38,7 @@ module Particles_sink
   logical, allocatable, dimension (:) :: lsubgrid_accretion_attempt
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
+  logical :: lsink_create_one_per_cell = .false.
   logical :: lbondi_accretion=.false.
   logical :: lselfgravity_sinkparticles=.true.
   logical :: lsubgrid_accretion=.false., ldebug_subgrid_accretion=.false.
@@ -59,7 +60,7 @@ module Particles_sink
       lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles, &
       bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
       rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion, &
-      laccrete_sink_sink
+      laccrete_sink_sink, lsink_create_one_per_cell
 !
   contains
 !***********************************************************************
@@ -249,6 +250,7 @@ module Particles_sink
 !  Create sink particles based on local particle density.
 !
 !  07-aug-12/anders: coded
+!  25-aug-15/ccyang: added switch to create at most one sink per cell
 !
       use Boundcond
       use Diagnostics
@@ -258,8 +260,13 @@ module Particles_sink
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
+      logical :: lfirstcall = .true.
+!
+      integer, dimension(:,:,:), allocatable, save :: sid
+      real, dimension(:,:,:), allocatable, save :: srhop
       real, dimension(1) :: rhop_interp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
+      real :: rhoc
 !
       if (ip<=6) then
         print*, 'create_particles_sink: entering, iproc, it, itsub=', &
@@ -269,6 +276,22 @@ module Particles_sink
 !  Leave the subroutine if new sink particles are never created.
 !
       if (rhop_sink_create==-1.0) return
+!
+!  Allocate working arrays.
+!
+      alloc: if (lfirstcall) then
+        if (lsink_create_one_per_cell) allocate(sid(mx,my,mz), srhop(mx,my,mz))
+        lfirstcall = .false.
+      endif alloc
+!
+!  Initialization
+!
+      init: if (lsink_create_one_per_cell) then
+        sid = 0
+        srhop = 0.0
+      else init
+        rhoc = rhop_sink_create
+      endif init
 !
 !  Particle block domain decomposition.
 !
@@ -294,7 +317,8 @@ module Particles_sink
                 else
                   rhop_interp=fb(ix0,iy0,iz0,irhop:irhop,iblock)
                 endif
-                if (rhop_interp(1)>=rhop_sink_create) then
+                if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
+                creatb: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle at density rhop=', rhop_interp(1)
@@ -302,7 +326,12 @@ module Particles_sink
                         iproc, it, itsub, fp(k,ixp:izp)
                   endif
                   fp(k,iaps)=sink_radius
-                endif
+                  recb: if (lsink_create_one_per_cell) then
+                    if (sid(ix0,iy0,iz0) > 0) fp(sid(ix0,iy0,iz0),iaps) = 0.0
+                    sid(ix0,iy0,iz0) = k
+                    srhop(ix0,iy0,iz0) = rhop_interp(1)
+                  endif recb
+                endif creatb
               endif
             enddo
           endif
@@ -332,14 +361,20 @@ module Particles_sink
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
                 endif
-                if (rhop_interp(1)>=rhop_sink_create) then
+                if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
+                creat: if (rhop_interp(1) >= rhoc) then
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle with rhop=', rhop_interp(1)
                     print*, 'processor, position=', iproc, fp(k,ixp:izp)
                   endif
                   fp(k,iaps)=sink_radius
-                endif
+                  record: if (lsink_create_one_per_cell) then
+                    if (sid(ix0,iy0,iz0) > 0) fp(sid(ix0,iy0,iz0),iaps) = 0.0
+                    sid(ix0,iy0,iz0) = k
+                    srhop(ix0,iy0,iz0) = rhop_interp(1)
+                  endif record
+                endif creat
               endif
             enddo
           endif
