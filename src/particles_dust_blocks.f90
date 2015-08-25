@@ -979,7 +979,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call map_nearest_grid(fp,ineargrid)
       call boundconds_particles(fp,ipar)
 !
 !  Map particle positions on the grid. Doing this here is necessary for
