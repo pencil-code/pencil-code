@@ -110,11 +110,13 @@ module File_io
       bytes = parallel_read(file, buffer, remove_comments)
 !
       ! Create unique temporary filename.
-      pos=1; filel=file
+      filel = file
+      pos = scan(filel, '/')
       do while(pos /= 0)
-        pos=scan(filel, '/')
-        filel(pos:pos)='_'
+        filel(pos:pos) = '_'
+        pos = scan(filel, '/')
       enddo
+      print *, 'file1 = ', trim(filel)
       tmp_prefix = get_tmp_prefix()
       write(filename,'(A,I0)') trim(tmp_prefix)//trim(filel)//'-', iproc
 !
