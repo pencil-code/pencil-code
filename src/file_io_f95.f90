@@ -95,13 +95,13 @@ module File_io
 
       use Cparam, only: fnlen
 !
-      character (len=*)                       :: file
+      character (len=*),           intent(in) :: file
       character (len=*), optional, intent(in) :: form
       logical,           optional, intent(in) :: remove_comments
       integer,           optional, intent(out):: nitems
 !
       integer :: bytes, pos
-      character (len=fnlen) :: filename
+      character (len=fnlen) :: filel,filename
       character, dimension(:), allocatable :: buffer
       character (len=fnlen) :: tmp_prefix
 !
@@ -110,14 +110,15 @@ module File_io
       bytes = parallel_read(file, buffer, remove_comments)
 !
       ! Create unique temporary filename.
-      pos=scan(file, '/')
+      pos=1; filel=file
       do while(pos /= 0)
-        file(pos:pos)='_'
-        pos=scan(file, '/')
+        pos=scan(filel, '/')
+        filel(pos:pos)='_'
       enddo
       tmp_prefix = get_tmp_prefix()
-      write(filename,'(A,I0)') trim(tmp_prefix)//trim(file)//'-', iproc
+      write(filename,'(A,I0)') trim(tmp_prefix)//trim(filel)//'-', iproc
 !
+!print*, 'BUFFER=', buffer
       ! Write temporary file into local RAM disk (/tmp).
       call write_binary_file(filename, bytes, buffer)
       deallocate(buffer)
