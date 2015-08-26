@@ -116,7 +116,6 @@ module File_io
         filel(pos:pos) = '_'
         pos = scan(filel, '/')
       enddo
-      print *, 'file1 = ', trim(filel)
       tmp_prefix = get_tmp_prefix()
       write(filename,'(A,I0)') trim(tmp_prefix)//trim(filel)//'-', iproc
 !
