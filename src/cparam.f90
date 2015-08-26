@@ -94,7 +94,8 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
-  real, parameter :: max_real=huge(0.0)
+  real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
+                                               ! huge(0.) illegal when reading it from a namelist 
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.
