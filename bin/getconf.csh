@@ -695,7 +695,7 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
-else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche)) then
+else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ pekkila)) then
   echo "Sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
