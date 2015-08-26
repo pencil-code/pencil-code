@@ -96,6 +96,7 @@ GetOptions(\%opts,
                -H   --html
                -X   --xml
                -u   --update
+               -U
                -r   --reload
                -s   --short
                -c   --clean
