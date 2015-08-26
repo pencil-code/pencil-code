@@ -2764,7 +2764,9 @@ module Solid_Cells
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat)
+      !read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=solid_cells_init_pars)
 !
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
