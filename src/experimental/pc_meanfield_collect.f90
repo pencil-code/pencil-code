@@ -37,8 +37,8 @@ program pc_meanfield_collect
   character (len=fnlen), dimension(:)  , allocatable :: avgnames, avgfields, &
                                                      analyzernames
   namelist /collect_config/ avgnames
-  namelist /xaver_config/ avgfields, ndim2read, analyzernames
-  namelist /zaver_config/ avgfields, ndim2read, analyzernames
+  namelist /xaver_config/ avgfields, maxtlen, ndim2read, analyzernames
+  namelist /zaver_config/ avgfields, maxtlen, ndim2read, analyzernames
 
   integer :: hdferr
   integer(HID_T) :: hdfmemtype, phdf_fileid, phdf_avggroup, phdf_dataspace
@@ -50,7 +50,7 @@ program pc_meanfield_collect
   
   integer(HID_T) :: hdf_file_plist
                     
-  integer(HSIZE_T) , dimension(3) :: phdf_stride, phdf_count, phdf_block, phdf_offsets
+  integer(HSIZE_T) , dimension(4) :: phdf_stride, phdf_count, phdf_block, phdf_offsets
   logical :: phdf_exists
   
   
@@ -79,19 +79,20 @@ program pc_meanfield_collect
 
   ! Data read variables
   integer :: iavg, ierr, ntimesteps, navgs, ndim1, ndim2, &
-             ndim1_full, ndim2_full, &
+             ndim1_full, ndim2_full, maxtlen, &
              naverages, ndim2read, i, j, nanalyzers, &
              ianalyzer
   
   integer, dimension(:), allocatable :: avgdims
   integer, dimension(:,:), allocatable :: offsets
 
-  real, dimension(:,:,:)    , allocatable   :: dataarray, tmparray
-  real, dimension(:)        , allocatable   :: t_values
+  real(kind=8), dimension(:,:,:,:)  , allocatable   :: dataarray
+  real(kind=8), dimension(:,:,:)    , allocatable   :: tmparray
+  real(kind=8), dimension(:)        , allocatable   :: t_values
 
   integer               :: filesize, datalen, tlen, data_stride, &
                            data_start, tsteplen, dim2stride, pos, &
-                           averagelen, dim2runs, resultlen
+                           averagelen, dim2runs, resultlen, resultlen2
   
   integer , parameter   :: t_start = 5
 
@@ -200,11 +201,12 @@ program pc_meanfield_collect
         if (avgname == 'xaver') then
           ! This needs to be written based on zaver example 
         else if (avgname == 'zaver') then
-          ndim1 = nx
-          ndim2 = ny
-          ndim1_full = nxgrid
-          ndim2_full = nygrid
-          ndim2read=ny
+          ndim1       = nx
+          ndim2       = ny
+          ndim1_full  = nxgrid
+          ndim2_full  = nygrid
+          ndim2read   = ny
+          maxtlen     = 100
           infile='zaver.in'
           datafilename='zaverages.dat'
 
@@ -454,8 +456,10 @@ program pc_meanfield_collect
           end if
           data_stride = datalen/(naverages*ndim1*ndim2)
           if (data_stride == 4) then
+            write(*,*) 'Data is single'
             hdfmemtype = H5T_NATIVE_REAL
           else if (data_stride == 8) then
+            write(*,*) 'Data is double'
             hdfmemtype = H5T_NATIVE_DOUBLE
           else
             write(2,*) 'Could not determine the data type.'
@@ -524,12 +528,13 @@ program pc_meanfield_collect
             t_taken_analysis = MPI_WTIME()
             write(*,*) 'Analyzing with analyzer: '//trim(analyzernames(ianalyzer))
             nullify(analyzerfunction)
-            call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-            if (allocated(dataarray) .and. (resultlen /= size(dataarray,dim=3))) then
+            resultlen = maxtlen
+            call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen,resultlen2)
+            if (allocated(dataarray) .and. ((resultlen /= size(dataarray,dim=3)) .or. (resultlen2 /= size(dataarray,dim=4)))) then
               deallocate(dataarray)
             end if
             if (.not. allocated(dataarray)) then
-              allocate(dataarray(ndim1,ndim2,resultlen),stat=ierr)
+              allocate(dataarray(ndim1,ndim2,resultlen,resultlen2),stat=ierr)
               if (ierr /= 0) then
                 write(2,*) 'Error allocating dataarray'
                 runerror = .true.
@@ -544,7 +549,8 @@ program pc_meanfield_collect
                   read(1, pos=pos, IOSTAT=ierr) tmparray(:,:,i)
                   pos = pos + tsteplen
                 end do
-                dataarray(:,(j-1)*ndim2read+1:j*ndim2read,:) = analyzerfunction(tmparray, ndim1, ndim2read, ntimesteps, resultlen)
+                dataarray(1:ndim1,(j-1)*ndim2read+1:j*ndim2read,1:resultlen,1:resultlen2) = analyzerfunction(tmparray, &
+                                      ndim1, ndim2read, ntimesteps, resultlen, resultlen2)
               end do
             end do
             do iavg=1,navgs
@@ -559,16 +565,16 @@ program pc_meanfield_collect
                 exit
               end if
               do j=1,ndim2
-                write(3,*) dataarray(1:ndim1,j,1)
+                write(3,*) dataarray(1:ndim1,j,1,1)
               end do
               close(3)
 
               ! Parallel data writing to HDF file
               call H5Dget_space_F(phdf_datasets(ianalyzer,iavg), phdf_dataspace, hdferr)
-              phdf_offsets  = [ offsets(1,1), offsets(2,1), 0 ]
-              phdf_count    = [ 1, 1, 1 ]
-              phdf_stride   = [ 1, 1, 1 ]
-              phdf_block    = [ ndim1, ndim2, resultlen ]
+              phdf_offsets  = [ offsets(1,1), offsets(2,1), 0 , 0 ]
+              phdf_count    = [ 1, 1, 1, 1 ]
+              phdf_stride   = [ 1, 1, 1, 1 ]
+              phdf_block    = [ ndim1, ndim2, resultlen , resultlen2 ]
               call H5Sselect_hyperslab_F(phdf_dataspace, H5S_SELECT_SET_F, phdf_offsets, phdf_count, &
                                          hdferr,phdf_stride, phdf_block)
               call H5Dwrite_F(phdf_datasets(ianalyzer,iavg), hdfmemtype, dataarray, &
@@ -633,6 +639,8 @@ program pc_meanfield_collect
       call MPI_BCAST(ndim1, 1, &
                 MPI_INT,  0, MPI_COMM_WORLD, mpierr)
       call MPI_BCAST(ndim2, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(maxtlen, 1, &
                 MPI_INT,  0, MPI_COMM_WORLD, mpierr)
       call MPI_BCAST(ndim2read, 1, &
                 MPI_INT,  0, MPI_COMM_WORLD, mpierr)
@@ -726,12 +734,13 @@ program pc_meanfield_collect
       allocate(phdf_datasets(nanalyzers,navgs))
       allocate(phdf_chunkspaces(nanalyzers,navgs))
       allocate(phdf_plist_ids(nanalyzers,navgs))
-      allocate(phdf_dims(3,naverages))
-      allocate(phdf_chunkdims(3,naverages))
+      allocate(phdf_dims(4,naverages))
+      allocate(phdf_chunkdims(4,naverages))
       do ianalyzer=1,nanalyzers
-        call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-        phdf_dims(:,ianalyzer) = [ndim1_full, ndim2_full, resultlen]
-        phdf_chunkdims(:,ianalyzer) = [ndim1, ndim2, resultlen]
+        resultlen = maxtlen
+        call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen, resultlen2)
+        phdf_dims(:,ianalyzer) = [ndim1_full, ndim2_full, resultlen , resultlen2]
+        phdf_chunkdims(:,ianalyzer) = [ndim1, ndim2, resultlen, resultlen2]
       end do
       
       call H5Gcreate_F(phdf_fileid, "/"//trim(avgname), phdf_avggroup, hdferr)
@@ -745,13 +754,13 @@ program pc_meanfield_collect
           write(*,*) 'CreatedG: ', "/"//trim(avgname)//"/"//avgfields(iavg)
         end if
         do ianalyzer=1,nanalyzers
-          call H5Screate_simple_F(3, phdf_dims(:,ianalyzer), phdf_spaces(ianalyzer,iavg), hdferr)
-          call H5Screate_simple_F(3, phdf_chunkdims(:,ianalyzer), phdf_chunkspaces(ianalyzer,iavg), hdferr)
+          call H5Screate_simple_F(4, phdf_dims(:,ianalyzer), phdf_spaces(ianalyzer,iavg), hdferr)
+          call H5Screate_simple_F(4, phdf_chunkdims(:,ianalyzer), phdf_chunkspaces(ianalyzer,iavg), hdferr)
           if (lroot) then
             write(*,*) 'CreatedS: ', trim(analyzernames(ianalyzer))
           end if
           call H5Pcreate_F(H5P_DATASET_CREATE_F, phdf_plist_ids(ianalyzer,iavg), hdferr)
-          call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 3, phdf_chunkdims(:,ianalyzer), hdferr)
+          call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 4, phdf_chunkdims(:,ianalyzer), hdferr)
           call H5Dcreate_F(phdf_fieldgroups(iavg), trim(analyzernames(ianalyzer)), &
                            H5T_IEEE_F32LE, phdf_spaces(ianalyzer,iavg), &
                            phdf_datasets(ianalyzer,iavg), hdferr, phdf_plist_ids(ianalyzer,iavg))
