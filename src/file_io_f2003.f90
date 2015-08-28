@@ -17,8 +17,8 @@ module File_io
 ! Fixed string length necessary as gfortran is compiling incorrectly otherwise.
 ! For future debugged gfortran versions the commented lines should be used.
 !
-  character(LEN=:), dimension(:), allocatable, protected :: parallel_unit
-  !character(LEN=36000), dimension(:), allocatable, protected :: parallel_unit
+  !character(LEN=:), dimension(:), allocatable, protected :: parallel_unit
+  character(LEN=36000), dimension(:), allocatable, protected :: parallel_unit
 !
   include 'file_io.h'
 
@@ -63,8 +63,8 @@ module File_io
             'parallel_read', 'file "'//trim(file)//'" is empty', force=.true.)
 
         ! Allocate temporary memory.
-        allocate(character(len=bytes) :: parallel_unit(1))
-        !allocate(parallel_unit(1))
+        !allocate(character(len=bytes) :: parallel_unit(1))
+        allocate(parallel_unit(1))
 !
         ! Read file content into buffer.
         open(unit, file=file, status='old')
@@ -154,16 +154,16 @@ module File_io
           allocate(character(len=lenbuf) :: buffer)
           buffer=parallel_unit(1)(1:lenbuf)
           deallocate(parallel_unit)
-          allocate(character(len=indmax) :: parallel_unit(nitems))
-          !allocate(parallel_unit(nitems))
+          !allocate(character(len=indmax) :: parallel_unit(nitems))
+          allocate(parallel_unit(nitems))
           ! decompose former parallel_unit into records guided by sepchar
           if (parser(buffer,parallel_unit,sepchar)/=nitems) &
             call fatal_error('parallel_read', 'too less elements found when parsing buffer')
 
         endif 
       else  
-        allocate(character(len=indmax) :: parallel_unit(ni))
-        !allocate(parallel_unit(ni))
+        !allocate(character(len=indmax) :: parallel_unit(ni))
+        allocate(parallel_unit(ni))
         parallel_unit=' '
       endif
 !
