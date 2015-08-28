@@ -44,7 +44,7 @@
   tdown=0.1       ! Newton cooling strength
   allp=1.5        ! Newton cooling decay half-time
   cool_rtv=1.     ! Radiative losses
-  bmdi = 0.5      ! Refresh magnetogram
+  b_tau = 0.5     ! Refresh magnetogram
 !
   lgranulation=T
 !
