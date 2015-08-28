@@ -5,10 +5,6 @@
 !
 module File_io
 !
-  use Cdata
-  use Cparam
-  use Mpicomm
-!
   implicit none
 !
   integer, parameter :: parallel_unit = 14
@@ -25,17 +21,21 @@ module File_io
 !
 !  18-mar-10/Bourdin.KIS: implemented
 !
-      character (len=*) :: file
-      character (len=*), optional :: form
-      logical, optional :: remove_comments
-      integer, optional :: nitems
+      use Messages, only: fatal_error
+!
+      character(len=*)          , intent(in) :: file
+      character(len=*), optional, intent(in) :: form
+      logical,          optional, intent(in) :: remove_comments
+      integer,          optional, intent(out):: nitems
 !
       logical :: exists
 !
 !  Test if file exists.
 !
+      if (present(nitems)) nitems=0
+!
       inquire(file=file,exist=exists)
-      if (.not. exists) call stop_it('parallel_open: file "'//trim(file)//'" not found')
+      if (.not. exists) call fatal_error('parallel_open', 'file "'//trim(file)//'" not found')
 !
 !  Open file.
 !
@@ -67,30 +67,4 @@ module File_io
 !
     endsubroutine parallel_close
 !**************************************************************************
-    subroutine strip_comments(buffer)
-!
-!  Strip comments from a *.in-file
-!
-!  28-May-2015/Bourdin.KIS: inspired by MR's read_infile
-!
-      character, dimension(:), allocatable :: buffer
-!
-      integer :: num_bytes, pos
-      logical :: lcomment
-!
-      if (.not. allocated (buffer)) return
-!
-      num_bytes = size (buffer)
-      lcomment = .false.
-      do pos = 1, num_bytes
-        if (buffer(pos) == char(10)) then
-          lcomment = .false.
-        elseif ((buffer(pos) == '!') .or. (buffer(pos) == comment_char)) then
-          lcomment = .true.
-        endif
-        if (lcomment) buffer(pos) = ' '
-      enddo
-!
-    endsubroutine strip_comments
-!***********************************************************************
 endmodule File_io
