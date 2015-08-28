@@ -41,10 +41,10 @@
 !  hcond2=1.0e-1
 !  hcond3=1.0e-1
 !
-  tdown=0.1    ! Newton cooling strength
-  allp=1.5     !   and decay 
-  cool_rtv=1.  ! Radiative loss
-  bmdi = 0.5   ! Refresh magnetogram
+  tdown=0.1       ! Newton cooling strength
+  allp=1.5        ! Newton cooling decay half-time
+  cool_rtv=1.     ! Radiative losses
+  bmdi = 0.5      ! Refresh magnetogram
 !
   lgranulation=T
 !
