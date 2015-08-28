@@ -6,13 +6,13 @@ module EMD
 
   contains
 
-  function analyzer_emd(dataset,xdim1,xdim2,tlen,resultlen,resultlen2) result(analysis)
+  function analyzer_emd(dataset,xdim1,xdim2,tlen,resultlen1,resultlen2) result(analysis)
     implicit none
-    integer, intent(in) :: xdim1,xdim2,tlen,resultlen,resultlen2
+    integer, intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
     integer       :: iIMF,i1,i2,it,iround,crossings,extremas
-    logical       :: lIMF, lIMFstop
+    logical       :: lIMF
     real(kind=8), dimension(xdim1,xdim2,tlen), intent(in)       :: dataset
-    real(kind=8), dimension(xdim1,xdim2,resultlen,resultlen2)   :: analysis
+    real(kind=8), dimension(xdim1,xdim2,resultlen1,resultlen2)   :: analysis
     real(kind=8), dimension(tlen)          :: data_area,imf
     real(kind=8), dimension(tlen)       :: maxima,minima,yminima,ymaxima,&
                                                    tminima,tmaxima,sminima,smaxima
@@ -21,7 +21,7 @@ module EMD
     
     ! calculate Hilbert-Huang through IMFs
 
-    analysis(1:xdim1,1:xdim2,1:resultlen,1:resultlen2) = 0
+    analysis(1:xdim1,1:xdim2,1:resultlen1,1:resultlen2) = 0
     analysis(1:xdim1,1:xdim2,1:tlen,1) = dataset(1:xdim1,1:xdim2,1:tlen)
     jloop: do i2=1,xdim2
       iloop: do i1=1,xdim1
