@@ -7,9 +7,11 @@ my @files = ( "start.in", "run.in" );
 
 my %translation = (
 	# special/solar_corona
-	"Kgpara" => "K_spitzer",
-	"Kgpara2" => "K_iso",
-	"bmdi" => "b_tau",
+	special_run_pars => {
+		"Kgpara" => "K_spitzer",
+		"Kgpara2" => "K_iso",
+		"bmdi" => "b_tau",
+	},
 	# please extend here...
 );
 
@@ -40,14 +42,20 @@ foreach my $file (@files) {
 	open (IN, "< ".$file);
 	my @lines = <IN>;
 	close (IN);
+	my $num_lines = @lines;
 	my $change = 0;
-	foreach my $key (keys (%translation)) {
-		my $value = $translation{$key};
-		my $num = @lines;
-		for (my $pos = 0; $pos < $num; $pos++) {
-			while ($lines[$pos] =~ s/(^|[\s,])${key}(\s*=)/${1}${value}${2}/im) {
-				$change = 1;
-				if ($debug) { print "$file : $key => $value\n"; }
+	my $namelist = '';
+	foreach my $target (keys (%translation)) {
+		my %hash = %{$translation{$target}};
+		foreach my $search (keys (%hash)) {
+			my $replace = $hash{$search};
+			for (my $pos = 0; $pos < $num_lines; $pos++) {
+				if ($lines[$pos] =~ /(?:^|[\s\/])&([a-zA-Z][a-zA-Z0-9_]*)(?:\s+|$)/s) { $namelist = $1; }
+				if ($namelist ne $target) { next; }
+				while ($lines[$pos] =~ s/(^|[\s,])${search}(\s*=)/${1}${replace}${2}/im) {
+					$change = 1;
+					if ($debug) { print "$file | $namelist : $search => $replace\n"; }
+				}
 			}
 		}
 	}
