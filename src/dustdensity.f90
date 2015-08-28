@@ -1878,6 +1878,9 @@ module Dustdensity
 !
      endif
       if (ldiagnos) then
+!
+!  do loop for dust species
+!
         do k=1,ndustspec
           if (idiag_mdm(k)/=0) call sum_mn_name(p%md(:,k),idiag_mdm(k))
           if (idiag_ndm(k)/=0) call sum_mn_name(p%nd(:,k),idiag_ndm(k))
@@ -1975,7 +1978,9 @@ module Dustdensity
             endif
           endif
         enddo
-        endif
+!
+!  end of do loop for dust species above.
+!
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
@@ -1992,7 +1997,7 @@ module Dustdensity
             endif
           endif
         enddo
-!      endif
+      endif
 !
 !  2d-averages
 !
@@ -2564,10 +2569,9 @@ module Dustdensity
 !***********************************************************************
     subroutine read_dustdensity_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=dustdensity_init_pars, IOSTAT=iostat)
 !
@@ -2583,10 +2587,9 @@ module Dustdensity
 !***********************************************************************
     subroutine read_dustdensity_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=dustdensity_run_pars, IOSTAT=iostat)
 !
@@ -2655,6 +2658,7 @@ module Dustdensity
         idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdmtot=0
         idiag_ndmz=0; idiag_rmom=0
+        idiag_rmom=0; idiag_admom=0
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics).

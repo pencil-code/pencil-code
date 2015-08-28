@@ -33,14 +33,14 @@
 ;     /quiet: Suppress any information messages and summary statistics.
 ;
 ; EXAMPLES:
-;       pc_read_var_raw, obj=vars, tags=tags            ;; read from data/proc*
-;       pc_read_var_raw, obj=vars, tags=tags, proc=5    ;; read from data/proc5
-;       pc_read_var_raw, obj=vars, tags=tags, /allprocs ;; read from data/allprocs
-;       pc_read_var_raw, obj=vars, tags=tags, /reduced  ;; read from data/reduced
+;       pc_read_var_raw, obj=var, tags=tags            ;; read from data/proc*
+;       pc_read_var_raw, obj=var, tags=tags, proc=5    ;; read from data/proc5
+;       pc_read_var_raw, obj=var, tags=tags, /allprocs ;; read from data/allprocs
+;       pc_read_var_raw, obj=var, tags=tags, /reduced  ;; read from data/reduced
 ;
-;       cslice, vars
+;       cslice, var
 ; or:
-;       cmp_cslice, { uz:vars[*,*,*,tags.uz], lnrho:vars[*,*,*,tags.lnrho] }
+;       cmp_cslice, { uz:var[*,*,*,tags.uz], lnrho:var[*,*,*,tags.lnrho] }
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$

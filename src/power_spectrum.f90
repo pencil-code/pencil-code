@@ -46,7 +46,7 @@ module power_spectrum
 !
   contains
 !***********************************************************************
-    subroutine read_power_spectrum_runpars(iostat)
+    subroutine read_power_spectrum_run_pars(iostat)
 !
 ! 05-feb-14/MR: added ordering of z ranges
 ! 12-mar-14/MR: changed merge_ranges into function
@@ -122,7 +122,7 @@ module power_spectrum
       if (bxy_spec  ) n_spectra = n_spectra+1
       if (jxbxy_spec) n_spectra = n_spectra+1
 !
-    endsubroutine read_power_spectrum_runpars
+    endsubroutine read_power_spectrum_run_pars
 !***********************************************************************
     subroutine get_kranges( ckrange, kranges, ngrid )
 !
@@ -182,13 +182,13 @@ module power_spectrum
 !
     endsubroutine get_kranges
 !***********************************************************************
-    subroutine write_power_spectrum_runpars(unit)
+    subroutine write_power_spectrum_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=power_spectrum_run_pars)
 !
-    endsubroutine write_power_spectrum_runpars
+    endsubroutine write_power_spectrum_run_pars
 !***********************************************************************
     subroutine power(f,sp)
 !

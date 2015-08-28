@@ -549,7 +549,7 @@ if (@ARGV) {
             @sampdirs = get_sampdirs($level);
         } else {
             $max_level = $default_level unless defined($max_level);
-            @sampdirs = get_all_sampdirs($max_level);
+            @sampdirs = get_sampdirs("0-".$max_level);
         }
         @testdirs =
           ( map { "$topdir/samples/$_" } @sampdirs,
@@ -574,27 +574,27 @@ if (@ARGV) {
 
 
 # ---------------------------------------------------------------------- #
-sub get_all_sampdirs {
-# Return a flat list of all sample dirs that belong to a level <= $level .
-    my $level = shift;
-
-    my @dirs;
-    my @levels = grep { $_ <= $level } keys %tests;
-    foreach my $lev (sort {$a <=> $b} @levels) {
-        push @dirs, @{$tests{$lev}};
-    }
-
-    return @dirs;
-}
-# ---------------------------------------------------------------------- #
 sub get_sampdirs {
 # Return list of sample dirs that belong to $level .
     my $level = shift;
+    if ($level =~ /^\s*(\d+)\s*\-+\s*(\d+)\s*$/s) {
+        my $upper = $2;
+        $level = $1;
+        if ($2 < $1) { $level = $2; $upper = $1; }
+	if ($upper > $level) {
+            for (my $pos = $level + 1; $pos <= $upper; $pos++) {
+                $level .= ','.$pos;
+            }
+        }
+    }
 
+    my @requested_levels = split (/[,; ]+/s, $level);
     my @dirs;
-    my @levels = grep { $_ == $level } keys %tests;
-    foreach my $lev (sort {$a <=> $b} @levels) {
-        push @dirs, @{$tests{$lev}};
+    foreach my $requested (sort {$a <=> $b} @requested_levels) {
+        my @levels = grep { $_ == $requested } keys %tests;
+        foreach my $lev (sort {$a <=> $b} @levels) {
+            push @dirs, @{$tests{$lev}};
+        }
     }
 
     return @dirs;

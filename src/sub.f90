@@ -95,9 +95,9 @@ module Sub
   public :: fourier_single_mode
   public :: remove_mean,global_mean
   public :: insert
-  public :: find_max_fvec, find_xyrms_fvec
+  public :: find_max_fvec, find_rms_fvec, find_xyrms_fvec
   public :: finalize_aver
-  public :: fseek_pos
+  public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
 !
   interface poly                ! Overload the `poly' function
@@ -3161,19 +3161,19 @@ module Sub
 !  Special treatment when dtout is negative.
 !  Now tout and nout refer to the next snapshopt to be written.
 !
-          if (dtout < 0.) then
-            tout=log10(t)
-          else
+          settout: if (dtout < 0.0) then
+            tout = log10(t)
+          else settout
             !  make sure the tout is a good time
-            if (dtout /= 0.) then
-              tout = t - mod(t, dble(abs(dtout))) + dtout
-            else
+            nonzero: if (dtout /= 0.0) then
+              tout = dtout
+            else nonzero
               call warning("read_snaptime", &
                    "Am I writing snapshots every 0 time units? (check " // &
                    trim(file) // ")" )
               tout = t
-            endif
-          endif
+            endif nonzero
+          endif settout
           nout=1
           write(lun,*) tout,nout
         endif
@@ -3194,7 +3194,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
-    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat). Done by all processors.
@@ -3213,9 +3213,11 @@ module Sub
       real, intent(in) :: dtout
       double precision, intent(in) :: t
       logical, intent(out) :: lout
+      logical, intent(in), optional :: nowrite
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
+      logical :: lwrite
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
@@ -3232,6 +3234,11 @@ module Sub
       else
         t_sp=t
       endif
+!
+!  Check if no writing tout is requested.
+!
+      lwrite = .true.
+      if (present(nowrite)) lwrite = .not. nowrite
 !
 !  Generate a running file number, if requested.
 !
@@ -3266,7 +3273,7 @@ module Sub
 !  the code craches. If the disk is full, however, we need to reset the values
 !  manually.
 !
-        if (lroot) then
+        writenext: if (lroot .and. lwrite) then
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
@@ -3275,7 +3282,7 @@ module Sub
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
           close(lun)
-        endif
+        endif writenext
       else
         lout=.false.
       endif
@@ -4453,7 +4460,7 @@ nameloop: do
 !
 !  5-mar-02/wolf: coded
 !
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in) :: fname
 !
@@ -4471,8 +4478,6 @@ nameloop: do
 !  If DELETE is true, delete the file after checking for existence.
 !
 !  26-jul-09/wolf: coded
-!
-      use File_io, only : parallel_file_exists
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
@@ -4498,7 +4503,7 @@ nameloop: do
 !
 !  4-oct-02/wolf: coded
 !
-      use File_io, only : file_exists
+      use General, only : file_exists
 !
       character (len=linelen) :: read_line_from_file
       character (len=*) :: fname
@@ -6546,6 +6551,27 @@ nameloop: do
 !
     endfunction find_max_fvec
 !***********************************************************************
+    real function find_rms_fvec(f, iv)
+!
+!  Find the root-mean-square of the modulus of a vector field.
+!
+!  25-aug-2015/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: iv
+!
+      real :: s1, s
+!
+!  Find the rms.
+!
+      s1 = sum(f(l1:l2,m1:m2,n1:n2,iv:iv+2)**2)
+      call mpiallreduce_sum(s1, s)
+      find_rms_fvec = sqrt(s / real(nwgrid))
+!
+    endfunction find_rms_fvec
+!***********************************************************************
     function find_xyrms_fvec(f, iv) result(rms)
 !
 !  Find the rms magnitude of a vector field in each z.
@@ -6737,5 +6763,114 @@ nameloop: do
       endif
 !
     endsubroutine fseek_pos
+!***********************************************************************
+    function parallel_count_lines(file,ignore_comments)
+!
+!  Determines in parallel the number of lines in a file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter ignore_comments added
+!  28-May-2015/Bourdin.KIS: reworked
+!
+      use General, only: count_lines
+      use Mpicomm, only: mpibcast_int
+
+      integer :: parallel_count_lines
+      character (len=*), intent(in) :: file
+      logical, optional, intent(in) :: ignore_comments
+!
+      if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
+      call mpibcast_int(parallel_count_lines)
+!
+    endfunction parallel_count_lines
+!***********************************************************************
+    function parallel_file_exists(file, delete)
+!
+!  Determines in parallel if a given file exists.
+!  If delete is true, deletes the file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use General, only: file_exists, loptest
+      use Mpicomm, only: mpibcast_logical
+
+      character (len=*) :: file
+      logical :: parallel_file_exists
+      logical, optional :: delete
+!
+      ! Let the root node do the dirty work
+      if (lroot) parallel_file_exists = file_exists(file,loptest(delete))
+!
+      call mpibcast_logical(parallel_file_exists)
+!
+    endfunction parallel_file_exists
+!***********************************************************************
+    subroutine read_namelist(reader,name,lactive)
+!
+!  encapsulates reading of pars + error handling
+!
+!  31-oct-13/MR: coded
+!  16-dec-13/MR: handling of optional ierr corrected
+!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
+!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
+!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
+!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
+!  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
+!
+      use General, only: loptest
+      use Messages, only: warning
+      use File_io, only: parallel_rewind
+!
+      interface
+        subroutine reader(iostat)
+          integer, intent(out) :: iostat
+        endsubroutine reader
+      endinterface
+!
+      character(len=*),          intent(in) :: name
+      logical,         optional, intent(in) :: lactive
+!
+      integer :: ierr
+      character(len=5) :: type
+!
+      if (loptest(lactive,.true.)) then
+!
+        call reader(ierr)
+!
+        if (ierr/=0) then
+
+          if (lroot) then
+
+            if (lstart) then
+              type = 'init'
+            else
+              type = 'run'
+            endif
+            if (name/='') type='_'//type
+!
+            if (ierr == -1) then
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
+            else
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
+            endif
+          endif
+
+          lnamelist_error = .true.
+
+        endif
+!
+        call parallel_rewind
+
+      endif
+!
+    endsubroutine read_namelist
 !***********************************************************************
 endmodule Sub

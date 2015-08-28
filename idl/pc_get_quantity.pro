@@ -30,6 +30,7 @@
 ;   Spitzer_q        absolute value of Spitzer heat flux vector
 ;   HR_ohm           volumetric Ohmic heating rate
 ;   j_abs            current density
+;   species_5        number density of 5th chemical species
 ;   [...]            more are listed in "pc_check_quantities.pro":
 ;                    IDL> help, pc_check_quantities (/all), /str
 ;
@@ -863,15 +864,15 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (Poynting))
 	end
 
-	if (strcmp (quantity, 'species_1', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy1] * 100
-	if (strcmp (quantity, 'species_2', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy2] * 100
-	if (strcmp (quantity, 'species_3', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy3] * 100
-	if (strcmp (quantity, 'species_4', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy4] * 100
-	if (strcmp (quantity, 'species_5', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy5] * 100
-	if (strcmp (quantity, 'species_6', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy6] * 100
-	if (strcmp (quantity, 'species_7', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy7] * 100
-	if (strcmp (quantity, 'species_8', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy8] * 100
-	if (strcmp (quantity, 'species_9', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy9] * 100
+	species = (stregex (quantity, '^species_([0-9]+)$', /subexpr, /extract, /fold_case))[1]
+	if (species ne '') then begin
+		result = execute ('species_index = index.yy'+species)
+		if (not result) then begin
+			print, "ERROR: Unknown species 'yy"+species+"'"
+			return, !Values.D_NaN
+		end
+		return, vars[l1:l2,m1:m2,n1:n2,species_index] * 100
+	end
 
 	; Check for Pencil Code alias names
 	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)

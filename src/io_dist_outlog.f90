@@ -799,7 +799,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_logical
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

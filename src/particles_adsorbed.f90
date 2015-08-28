@@ -177,12 +177,14 @@ module Particles_adsorbed
         if (imuadsCO > 0) aac(imuadsCO) = 1
       endif
 !
-      call create_stoc(adsorbed_species_names,mu,.true., &
-          N_adsorbed_species,mu_power)
-      call create_stoc(adsorbed_species_names,mu_prime,.false., &
-          N_adsorbed_species)
-      call create_occupancy(adsorbed_species_names,site_occupancy)
+      if (N_adsorbed_species > 1) then
+        call create_stoc(adsorbed_species_names,mu,.true., &
+            N_adsorbed_species,mu_power)
+        call create_stoc(adsorbed_species_names,mu_prime,.false., &
+            N_adsorbed_species)
+        call create_occupancy(adsorbed_species_names,site_occupancy)
 !
+      endif
     endsubroutine register_indep_ads
 !***********************************************************************
     subroutine register_dep_ads()
@@ -220,36 +222,39 @@ module Particles_adsorbed
 !
       call keep_compiler_quiet(f)
 !
-      fp(:,iads:iads_end) = 0.
-      do j = 1,ninit
+      if (N_adsorbed_species > 1) then
+        fp(:,iads:iads_end) = 0.
+        do j = 1,ninit
 !
 !  Writing the initial adsorbed species fractions
 !
-        select case (init_adsorbed(j))
-        case ('nothing')
-          if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: nothing'
-        case ('constant')
-          if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
-          sum_ads = sum(init_surf_ads_frac(1:N_adsorbed_species))
+          select case (init_adsorbed(j))
+          case ('nothing')
+            if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: nothing'
+          case ('constant')
+            if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
+            sum_ads = sum(init_surf_ads_frac(1:N_adsorbed_species))
 !
 !  This ensures that we don't have unphysical values as init
 !
-          if (sum_ads > 1.) then
-            print*, 'sum of init_surf_ads_frac > 1, normalizing...'
-            init_surf_ads_frac(1:N_adsorbed_species) = &
-                init_surf_ads_frac(1:N_adsorbed_species) / sum_ads
-          endif
+            if (sum_ads > 1.) then
+              print*, 'sum of init_surf_ads_frac > 1, normalizing...'
+              init_surf_ads_frac(1:N_adsorbed_species) = &
+                  init_surf_ads_frac(1:N_adsorbed_species) / sum_ads
+            endif
 !
-          do i = 1,mpar_loc
-            fp(i,iads:iads_end) = init_surf_ads_frac(1:(iads_end-iads+1))
-          enddo
-        case default
-          if (lroot) &
-              print*, 'init_particles_ads: No such such value for init_adsorbed: ', &
-              trim(init_adsorbed(j))
-          call fatal_error('init_particles_ads','')
-        endselect
-      enddo
+            do i = 1,mpar_loc
+              fp(i,iads:iads_end) = init_surf_ads_frac(1:(iads_end-iads+1))
+            enddo
+          case default
+            if (lroot) &
+                print*, 'init_particles_ads: No such such value for init_adsorbed: ', &
+                trim(init_adsorbed(j))
+            call fatal_error('init_particles_ads','')
+          endselect
+        enddo
+      else
+      endif
 !
     endsubroutine init_particles_ads
 !***********************************************************************
@@ -340,10 +345,9 @@ module Particles_adsorbed
 !***********************************************************************
     subroutine read_particles_ads_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_ads_init_pars, IOSTAT=iostat)
 !
@@ -359,10 +363,9 @@ module Particles_adsorbed
 !***********************************************************************
     subroutine read_particles_ads_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_ads_run_pars, IOSTAT=iostat)
 !

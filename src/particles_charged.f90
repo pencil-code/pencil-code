@@ -31,6 +31,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: qbym_species=0.0
@@ -1922,10 +1923,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
@@ -1941,10 +1941,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !

@@ -32,6 +32,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
@@ -110,6 +111,7 @@ module Particles
   logical :: lcylindrical_gravity_par=.false.
   logical :: lpscalar_sink=.false.
   logical :: lsherwood_const=.true.
+  logical :: lbubble=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -211,7 +213,7 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3092,7 +3094,9 @@ module Particles
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
+      real, dimension (3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep,stocunn
+      real :: added_mass_beta = 0.0
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
@@ -3289,6 +3293,39 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!
+!  Account for added mass term beta
+!  JONAS: The advective derivative of velocity is interpolated for each
+!  particle
+!
+              if (lbubble) then
+                if (lhydro) then
+                  if (lparticlemesh_cic) then
+                    call interpolate_linear(f,i_adv_derx,i_adv_derz, &
+                      fp(k,ixp:izp),adv_der_uup,ineargrid(k,:),0,ipar(k))
+                  elseif (lparticlemesh_tsc) then
+                    if (linterpolate_spline) then
+                      call interpolate_quadratic_spline(f,i_adv_derx,i_adv_derz, &
+                        fp(k,ixp:izp),adv_der_uup,ineargrid(k,:),0,ipar(k))
+                    else
+                      call interpolate_quadratic(f,i_adv_derx,i_adv_derz, &
+                        fp(k,ixp:izp),adv_der_uup,ineargrid(k,:),0,ipar(k))
+                    endif
+                  else
+                    adv_der_uup=f(ix0,iy0,iz0,i_adv_derx:i_adv_derz)
+                  endif
+                else
+                  adv_der_uup=0.0
+                endif
+!
+!  Calculate the beta for the current particle
+!
+                call calc_added_mass_beta(fp,k,added_mass_beta)
+!
+!  Add the contribution of the added mass/virtual mass term to the velocity evolution
+!
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + added_mass_beta * adv_der_uup
+              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -4973,6 +5010,19 @@ module Particles
       enddo
 !
     endsubroutine calc_stokes_cunningham
+!**********************************************************************
+    subroutine calc_added_mass_beta(fp,k,added_mass_beta)
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      real, intent(out) :: added_mass_beta
+!
+      integer, intent(in) :: k
+!
+!  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
+!  problem: we would have to calculate beta every time for every particle
+        added_mass_beta=3*interp_rho(k)/(2*rhopmat+interp_rho(k))
+!
+    end subroutine calc_added_mass_beta
 !***********************************************************************
     subroutine calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
 !
@@ -5189,10 +5239,9 @@ module Particles
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
@@ -5208,12 +5257,18 @@ module Particles
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+!
+!  If we have bubbles, the advective derivative has to be saved in
+!  an auxiliary variable
+!  COMMENT: This would be better to do in a step between registering and
+!  initializing. Such a hook does not exist at the moment.
+!
+      if (lbubble) ladv_der_as_aux=.true.
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************

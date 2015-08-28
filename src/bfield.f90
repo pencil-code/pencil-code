@@ -662,10 +662,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
@@ -681,10 +680,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
@@ -971,17 +969,17 @@ module Magnetic
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(umax)
+    subroutine dynamical_resistivity(urms)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  19-may-14/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Mesh hyper-resistivity coefficient
 !
-      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

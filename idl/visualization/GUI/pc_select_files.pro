@@ -438,7 +438,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, reduced=reduced, /quiet
 	if (not keyword_set (start_param)) then pc_read_param, obj=start_param, datadir=datadir, dim=dim, /quiet
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=start_param, /quiet)
-	all_quant = pc_check_quantities (sources=varcontent, /available)
+	sources = varcontent
+	all_quant = pc_check_quantities (sources=sources, /available)
 	quant = all_quant
 	if (keyword_set (quantities)) then begin
 		quant = quantities
@@ -453,10 +454,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			end
 		end
 	end
-	all_over = pc_check_quantities (sources=varcontent, /vectorfields)
+	all_over = pc_check_quantities (sources=sources, /vectorfields)
 	if (keyword_set (overplots)) then over = overplots else over = all_over
-	sources = varcontent.idlvar
-	sources = sources[where (sources ne "dummy")]
 
 	; Fill common blocks
 	if (datadir eq "") then datadir = "."

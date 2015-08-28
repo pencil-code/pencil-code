@@ -1450,7 +1450,7 @@ module Density
 !
 !  Force mass conservation if requested
 !
-      if (lconserve_total_mass .and. total_mass > 0.) then
+      masscons: if (lconserve_total_mass .and. total_mass > 0.0) then
 !
         cur_mass=box_volume*mean_density(f)
 !
@@ -1475,7 +1475,11 @@ module Density
           f(:,:,:,ilnrho) = f(:,:,:,ilnrho)+alog(fact)
         endif
 !
-      endif
+!  Conserve the momentum.
+!
+        if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
+!
+      endif masscons
 !
    endsubroutine calc_ldensity_pars
 !***********************************************************************
@@ -1976,7 +1980,8 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'n,m=', n,m
+          print*, 'it,n,m=', it,n,m
+          print*, f(4,4,1:6,ilnrho)
           call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
         endif
         if (lpencil(i_grho)) then
@@ -2851,10 +2856,9 @@ module Density
 !***********************************************************************
     subroutine read_density_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_init_pars, IOSTAT=iostat)
 !
@@ -2870,10 +2874,9 @@ module Density
 !***********************************************************************
     subroutine read_density_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !
@@ -3219,18 +3222,18 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(umax)
+    subroutine dynamical_diffusion(urms)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-diffusion coefficient
 !
-      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
+      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

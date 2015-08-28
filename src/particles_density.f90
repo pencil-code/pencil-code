@@ -255,10 +255,9 @@ module Particles_density
 !***********************************************************************
     subroutine read_particles_dens_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_dens_init_pars, IOSTAT=iostat)
 !

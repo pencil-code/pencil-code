@@ -16,8 +16,8 @@
 !
     implicit none
 !
-    call print_startpars(FILE='default_start_pars.nml')
-    call print_runpars  (FILE='default_run_pars.nml'  )
+    call write_all_init_pars(FILE='default_start_pars.nml')
+    call write_all_run_pars(FILE='default_run_pars.nml'  )
 
   endprogram Write_default_namelists
 

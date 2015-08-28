@@ -2337,8 +2337,6 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    include "parallel_unit_broadcast.h"
-!***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
 !  Communicate real array between processors.

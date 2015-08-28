@@ -83,6 +83,7 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
+  real :: chimax_kramers=0., chimin_kramers=0.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -182,7 +183,8 @@ module Energy
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
-      hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
+      hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
+      xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
@@ -1003,10 +1005,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -1022,10 +1023,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -4282,6 +4282,7 @@ module Energy
 !  Heat conduction using Kramers' opacity law
 !
 !  23-feb-11/pete: coded
+!  24-aug-15/MR: bounds for chi introduced
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
@@ -4305,6 +4306,8 @@ module Energy
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      if (chimax_kramers>0.d0) &
+        Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
 !

@@ -11268,6 +11268,29 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{total_carbon_sites} [$1.08e-8$]
                & carbon sites per surface area [mol/cm]2\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_stalker_init_pars}} \\
+\midrule
+  \var{dstalk} [$0.1$]
+               & times between printout of stalker data\\
+  \var{lstalk_xx} [F]
+               & particles position\\
+  \var{lstalk_vv} [F]
+               & particles velocity\\
+  \var{lstalk_uu} [F]
+               & gas velocity at particles position\\
+  \var{lstalk_guu} [F]
+               & gas velocity gradient at particles position\\
+  \var{lstalk_rho} [F]
+               & gas density at particles position\\
+  \var{lstalk_grho} [F]
+               & gas density gradient at particles position\\
+  \var{lstalk_ap} [F]
+               & particles diameter\\
+  \var{lstalk_bb} [T]
+               & magnetic field at particles position\\
+  \var{lstalk_relvel} [F]
+               &  particles relative velocity to gas\\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -11658,6 +11681,8 @@ the latest set of parameters, you need to look at the code.
                & diffusion for passive scalar concentration $c$. \\
   \var{tensor_pscalar_diff} [$0.$]
                & coefficient for non-isotropic diffusion of passive scalar. \\
+  \var{reinitialize_lncc} [F]
+               & reinitialize the passive scalar to the value of cc\_const in start.in at next run\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{forcing_run_pars}} \\
@@ -11753,6 +11778,21 @@ the latest set of parameters, you need to look at the code.
 \midrule
   \var{qshear} [start]
                & See p.~\pageref{qshear-init}. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_run_pars}} \\
+\midrule
+  \var{ldragforce_dust_par} [F]
+               & dragforce on particles \\
+  \var{ldragforce_gas_par} [F]
+               & particle-gas friction force \\
+  \var{ldraglaw_steadystate} [F]
+               & particle forces only with $\frac{1}{\tau}\Delta v$ \\
+  \var{lpscalar_sink} [F]
+               & particles consume passive scalar \\
+  \var{pscalar_sink_rate} [0]
+               & volumetric pscalar consumption rate \\
+  \var{lbubble} [F]
+               & addition of the virtual mass term \\
 \midrule
   \multicolumn{2}{c}{Namelist \name{particles_ads_run_pars}} \\
 \midrule

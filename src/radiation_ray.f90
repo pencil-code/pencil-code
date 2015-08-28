@@ -2092,12 +2092,13 @@ module Radiation
 !***********************************************************************
     subroutine read_radiation_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
-      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
+!      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=radiation_init_pars)
 !
     endsubroutine read_radiation_init_pars
 !***********************************************************************
@@ -2111,10 +2112,9 @@ module Radiation
 !***********************************************************************
     subroutine read_radiation_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=radiation_run_pars, IOSTAT=iostat)
 !
