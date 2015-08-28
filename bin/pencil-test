@@ -73,8 +73,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   who explicitly requested this. Ignorant will not get emails if only 'hydro1'
 #   or 'hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
-# Crontab entry:
-#   30 02 * * *  $HOME/f90/pencil-auto-test/bin/pencil-test -D /home/wdobler/f90/pencil-auto-test -N15 -Uc -rs -T $HOME/public_html/pencil-code/tests/g95_debug_timings.txt -Hm my@email.net norlx50 > $HOME/public_html/pencil-code/tests/g95_debug.html
+# Sample crontab entry:
+#   30 02 * * *  cd $HOME/pencil-auto-test && svn up && bin/pencil-test --clean --html --mail=my@email.net --nice=15 --reload --short --timings-file=$HOME/public_html/autotest_timings.txt > $HOME/public_html/autotest.html
 
 use strict;
 use POSIX qw(strftime);
@@ -120,7 +120,7 @@ my $debug       = (              $opts{'debug'}       || 0 );
 my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $local       = ($opts{'l'} || $opts{'local'}       || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
-my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' );
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' || `pwd`);
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || $opts{'U'}  || 0 ); # keeping -U for backwards compatibility
