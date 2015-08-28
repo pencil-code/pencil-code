@@ -25,7 +25,9 @@ module EMD
     analysis(1:xdim1,1:xdim2,1:tlen,1) = dataset(1:xdim1,1:xdim2,1:tlen)
     jloop: do i2=1,xdim2
       iloop: do i1=1,xdim1
+        data_area(1:tlen) = 0
         data_area(1:tlen) = analysis(i1,i2,1:tlen,1)
+        !write(*,*) '1 min:',minval(data_area),' max:',maxval(data_area),i1,i2
         IMFloop: do iIMF=2,resultlen2
           ! Get minima-maxima
           roundloop: do iround=1,max_rounds
@@ -34,7 +36,11 @@ module EMD
             !do it=1,tlen
             !  write(*,'(100f7.3)') real(it), data_area(it), maxima(it), minima(it)
             !end do
+            !write(*,*) '2 min:',minval(data_area),' max:',maxval(data_area),i1,i2,iIMF,iround
+
             call calc_envelopes()
+           ! write(*,*) '3 min:',minval(data_area),' max:',maxval(data_area),i1,i2,iIMF,iround
+
             if (.not. lIMF) then
               exit roundloop
             end if
@@ -43,6 +49,7 @@ module EMD
               exit roundloop
             end if
           end do roundloop
+          imf(1:tlen) = 0
           imf(1:tlen) = data_area(1:tlen)
           analysis(i1,i2,1:tlen,iIMF) = analysis(i1,i2,1:tlen,iIMF-1)-imf(1:tlen)
           data_area(1:tlen) = analysis(i1,i2,1:tlen,iIMF)
@@ -51,7 +58,7 @@ module EMD
             write(*,*) 'Warning, IMF ',iIMF-1,' at (',i1,',',i2,') was not good'
             write(*,*) 'nmaxima:',nmaxima,' nminima:',nminima
             write(*,*) 'extrema:',extremas,' crossings:',crossings
-            write(*,'(100f8.3)') imf(1:tlen)
+            write(*,*) 'imf min:', minval(imf), maxval(imf)
             exit IMFloop
           end if
         end do IMFloop
@@ -108,14 +115,14 @@ module EMD
       if ((y0 - y1 >= 0) .and. (y2 - y1 >= 0)) then
         nminima = nminima + 1
         yminima(nminima) = y1
-        tminima(nminima) = real(t)
+        tminima(nminima) = real(t,kind=8)
         !nmaxima = nmaxima + 1
         !ymaxima(nmaxima) = 0.5*y1+0.5*ymaxima(nmaxima-1)
         !tmaxima(nmaxima) = real(t)
       else if ((y0 - y1 <= 0) .and. (y2 - y1 <= 0)) then
         nmaxima = nmaxima + 1
         ymaxima(nmaxima) = y1
-        tmaxima(nmaxima) = real(t)
+        tmaxima(nmaxima) = real(t,kind=8)
         !nminima = nminima + 1
         !yminima(nminima) = 0.5*y1+0.5*yminima(nminima-1)
         !tminima(nminima) = real(t)
@@ -140,12 +147,21 @@ module EMD
         y=real(t)
         call spline_cubic_val(nmaxima,tmaxima(1:nmaxima),ymaxima(1:nmaxima),smaxima(1:nmaxima),y,maxima(t),y1,y2)
       end do
-      call spline_cubic_set(nminima,tminima(1:nminima),yminima(1:nminima),2,0,2,0,sminima(1:nminima))
+      call spline_cubic_set(nminima,tminima(1:nminima),yminima(1:nminima),2,0.0,2,0.0,sminima(1:nminima))
       do t=1,tlen
         y=real(t)
         call spline_cubic_val(nminima,tminima(1:nminima),yminima(1:nminima),sminima(1:nminima),y,minima(t),y1,y2)
       end do
     end if
+
+    !if (iround == 1) then
+     ! write(*,*) '5-data_area min:',minval(data_area),' max:',maxval(data_area),i1,i2
+      !write(*,*) '5-yminima min:',minval(yminima),' max:',maxval(yminima),i1,i2
+      !write(*,*) '5-ymaxima min:',minval(ymaxima),' max:',maxval(ymaxima),i1,i2
+      !write(*,*) '5-minima min:',minval(minima),' max:',maxval(minima),i1,i2
+      !write(*,*) '5-maxima min:',minval(maxima),' max:',maxval(maxima),i1,i2
+      !write(*,*) '5-extremas nmaxima:',nmaxima,' nminima:',nminima,i1,i2
+    !end if
 
   end subroutine calc_envelopes
 

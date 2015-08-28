@@ -206,7 +206,7 @@ program pc_meanfield_collect
           ndim1_full  = nxgrid
           ndim2_full  = nygrid
           ndim2read   = ny
-          maxtlen     = 100
+          maxtlen     = 200
           infile='zaver.in'
           datafilename='zaverages.dat'
 
@@ -244,10 +244,58 @@ program pc_meanfield_collect
         else
           exit
         end if
+
          
         ! Universal part
         ! ----------------------------------------
         
+        ! Check datafile properties
+
+        call safe_character_assign (directory_dist, &
+                                                trim (datadir_snap)//'/proc'//chproc)
+        call safe_character_assign (datafile, &
+                                                trim(directory_dist)//'/'//trim(datafilename))
+        open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
+        if (ierr /= 0) then
+          write(2,*) 'Error opening datafile: '//datafile
+          runerror = .true.
+        end if
+
+        filesize = -1
+        tlen    = -1
+        datalen     = -1
+        
+        inquire(1, size=filesize)
+        pos=1
+        read(1, pos=pos, IOSTAT=ierr) tlen
+        if (ierr /= 0) then
+          write(2,*) 'Error reading tlen'
+          runerror = .true.
+        end if
+        pos=9+tlen
+        read(1, pos=pos, IOSTAT=ierr) datalen
+        if (ierr /= 0) then
+          write(2,*) 'Error reading datalen'
+          runerror = .true.
+        end if
+        data_stride = datalen/(naverages*ndim1*ndim2)
+        if (data_stride == 4) then
+          write(*,*) 'Data is double'
+          hdfmemtype = H5T_NATIVE_REAL
+        else if (data_stride == 8) then
+          write(*,*) 'Data is double'
+          hdfmemtype = H5T_NATIVE_DOUBLE
+        else
+          write(2,*) 'Could not determine the data type.'
+          runerror = .true.
+        end if
+        dim2stride  = data_stride*ndim1
+        ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
+        data_start  = t_start + tlen + 8
+        tsteplen    = 16 + tlen + datalen
+        averagelen  = datalen/naverages 
+        dim2runs   = ndim2/ndim2read
+
         ! Determine picked fields
         navgs = 0
         do i=1,len_avgfields
@@ -456,7 +504,7 @@ program pc_meanfield_collect
           end if
           data_stride = datalen/(naverages*ndim1*ndim2)
           if (data_stride == 4) then
-            write(*,*) 'Data is single'
+            write(*,*) 'Data is double'
             hdfmemtype = H5T_NATIVE_REAL
           else if (data_stride == 8) then
             write(*,*) 'Data is double'
