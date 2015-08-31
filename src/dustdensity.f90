@@ -125,6 +125,7 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0,idiag_ndmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
+  integer, dimension(ndustspec) :: idiag_divud2m=0
   integer, dimension(0:mmom)    :: idiag_rmom=0, idiag_admom=0
 !
   contains
@@ -1087,6 +1088,8 @@ module Dustdensity
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
           maxval(idiag_rhodmax)/=0) lpenc_diagnos(i_rhod)=.true.
 !
+      if (maxval(idiag_divud2m)/=0) lpenc_diagnos(i_divud)=.true.
+!
       if (idiag_ndmxy/=0)   lpenc_diagnos2d(i_nd)=.true.
       if (idiag_rhodmxy/=0) lpenc_diagnos2d(i_rhod)=.true.
 !
@@ -1893,6 +1896,9 @@ module Dustdensity
               call max_mn_name(-p%rhod(:,k),idiag_rhodmin(k),lneg=.true.)
           if (idiag_rhodmax(k)/=0) &
               call max_mn_name(p%rhod(:,k),idiag_rhodmax(k))
+          if (idiag_divud2m(k)/=0) then
+            call sum_mn_name(p%divud(:,k),idiag_divud2m(k))
+          endif
 !
 !  rms of dust-to-gas ratio
 !
@@ -2658,7 +2664,7 @@ module Dustdensity
         idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdmtot=0
         idiag_ndmz=0; idiag_rmom=0
-        idiag_rmom=0; idiag_admom=0
+        idiag_rmom=0; idiag_admom=0; idiag_divud2m=0
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics).
@@ -2695,6 +2701,8 @@ module Dustdensity
               'epsdmax'//trim(sdust),idiag_epsdmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'epsdmin'//trim(sdust),idiag_epsdmin(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'divud2m'//trim(sdust),idiag_divud2m(k))
         enddo
 !
 !  check for those quantities for which we want xy-averages
