@@ -92,7 +92,7 @@ module Radiation
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
-  integer, dimension (3) :: single_ray
+  integer, dimension (3) :: single_ray=0
   integer :: lrad, mrad, nrad, rad2
   integer :: idir, ndir
   integer :: l
@@ -2096,9 +2096,7 @@ module Radiation
 !
       integer, intent(out) :: iostat
 !
-!      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
-      iostat = 0
-      read(parallel_unit, NML=radiation_init_pars)
+      read(parallel_unit, NML=radiation_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_radiation_init_pars
 !***********************************************************************
