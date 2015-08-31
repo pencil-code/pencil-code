@@ -4553,6 +4553,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (iforcing_cont(1)=='(0,cosx*expmz2,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
+      if (idiag_qfm/=0) lpenc_requested(i_curlo)=.true.
 !
     endsubroutine pencil_criteria_forcing
 !***********************************************************************
