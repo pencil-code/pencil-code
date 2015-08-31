@@ -131,11 +131,11 @@ program pc_meanfield_collect
 !
 
 
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_all_run_pars()
 !
 ! Calculate dimensionality
 !
