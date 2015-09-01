@@ -6,15 +6,6 @@
 # 
 #
 
-import numpy as np
-import pylab as plt
-import time
-import os # for making the movie
-import thread # for GUI
-import mtTkinter as tk  # makes tkinter thread save
-from matplotlib.colors import LightSource
-
-
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
@@ -138,6 +129,13 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
        Remaining arguments are identical to those of pylab.imshow. Refer to that help.
     """
 
+    import numpy as np
+    import pylab as plt
+    import time
+    import os # for making the movie
+    import thread # for GUI
+    import mtTkinter as tk  # makes tkinter thread save
+    from matplotlib.colors import LightSource
 
     global tStep, sliderTime, pause
     

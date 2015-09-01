@@ -11,7 +11,6 @@ import array
 import numpy as np
 import os
 import pencil as pc
-import pylab as plt
 import multiprocessing as mp
 
 
@@ -445,7 +444,8 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
       *bitrate*:
         Bitrate of the movie file. Set to higher value for higher quality.
     """
-
+    
+    import pylab as plt
 
     # read the mapping and the fixed point positions
     tracers, mapping, t = pc.read_tracers(datadir = datadir, fileName = tracerFile, zlim = zlim, head_size = head_size)
