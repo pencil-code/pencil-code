@@ -306,16 +306,16 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-      integer :: wd1=0
+      integer :: wd1=0, unit=1
       logical, save :: lfirstcall = .true.
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
       if (lfirstcall) then
-        open(1, file=trim(datadir)//'/svnid.dat', status='replace')
+        open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
         lfirstcall = .false.
       else
-        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
+        open(unit, file=trim(datadir)//'/svnid.dat', status='old', position='append')
       endif
 !
 !  Construct format
@@ -377,7 +377,7 @@ module Messages
             date(1:wd), &
             trim(author)
 !
-        write(1,fmt) "SVN: ", &
+        write(unit,fmt) "SVN: ", &
             trim(filename), &
             revision(1:wv), &
             date(1:wd), &
@@ -389,7 +389,7 @@ module Messages
             '', &
             '', &
             svnid(1:wd1)
-        write(1,fmt) "SVN: ", &
+        write(unit,fmt) "SVN: ", &
             '-------', &
             '', &
             '', &
@@ -398,7 +398,7 @@ module Messages
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
-      close(1)
+      close(unit)
 !
     endsubroutine svn_id
 !***********************************************************************
