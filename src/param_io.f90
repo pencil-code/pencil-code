@@ -549,7 +549,7 @@ module Param_IO
       if (loptest (omit_suffix)) type = ''
 !
       write (*,'(A)') '&'//trim (namelist)//trim (type)
-      write (*,'(A)') ' /'
+      write (*,'(A)') '/'
 !
     endsubroutine write_stub
 !***********************************************************************
@@ -563,7 +563,11 @@ module Param_IO
       if (lroot) then
 !
         write (*,'(A)') ''
-        write (*,'(A)') '-----BEGIN sample namelist ------'
+        if (lstart) then
+          write (*,'(A)') '=== BEGIN SAMPLE "start.in" ===>'
+        else
+          write (*,'(A)') '=== BEGIN SAMPLE "run.in" ===>'
+        endif
         call write_stub ('', .true.)
 !
         if (lstart) then
@@ -646,7 +650,7 @@ module Param_IO
           call write_stub ('particles_diagnos_state', lparticles_diagnos_state)
         endif
 !
-        write (*,'(A)') '------END sample namelist -------'
+        write (*,'(A)') '<=== END SAMPLE ==='
         write (*,'(A)') ''
 !
       endif
