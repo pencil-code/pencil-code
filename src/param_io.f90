@@ -224,7 +224,7 @@ module Param_IO
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-
+!
       read(parallel_unit, NML=init_pars, IOSTAT=iostat)
 !
     endsubroutine read_init_pars

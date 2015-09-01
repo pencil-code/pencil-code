@@ -6835,8 +6835,8 @@ nameloop: do
         endsubroutine reader
       endinterface
 !
-      character(len=*),          intent(in) :: name
-      logical,         optional, intent(in) :: lactive
+      character(len=*), intent(in) :: name
+      logical, optional, intent(in) :: lactive
 !
       integer :: ierr
       character(len=5) :: type
@@ -6845,7 +6845,7 @@ nameloop: do
 !
         call reader(ierr)
 !
-        if (ierr/=0) then
+        if (ierr /= 0) then
 
           if (lroot) then
 
@@ -6854,10 +6854,10 @@ nameloop: do
             else
               type = 'run'
             endif
-            if (name/='') type='_'//type
+            if (name /= '') type = '_'//type
 !
             if (ierr == -1) then
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" missing!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" is missing!')
             else
               call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
             endif
