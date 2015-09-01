@@ -5,6 +5,7 @@ use Getopt::Long;
 # Settings
 my @files = ( "start.in", "run.in", "data/param.nml" );
 my $makefile = "src/Makefile.local";
+my $configtest = "pc_configtest";
 
 my %expansion = (
 	# special/solar_corona
