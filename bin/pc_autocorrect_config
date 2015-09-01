@@ -3,13 +3,15 @@ use strict;
 use Getopt::Long;
 
 # Settings
-my @files = ( "start.in", "run.in" );
+my @files = ( "start.in", "run.in", "data/param.nml" );
 
 my %translation = (
 	# special/solar_corona
 	special_run_pars => {
+		# 2012:
 		"Kgpara" => "K_spitzer",
 		"Kgpara2" => "K_iso",
+		# 2013:
 		"bmdi" => "b_tau",
 	},
 	# please extend here...
