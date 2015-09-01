@@ -38,15 +38,12 @@ if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
 
 if (! -e $makefile) { die ('ERROR: There is no "'.$makefile.'" available!\n'); }
 open (IN, "< ".$makefile);
-my @lines = <IN>;
-close (IN);
-my $num_lines = @lines;
 my %modules = ();
-for (my $pos = 0; $pos < $num_lines; $pos++) {
-	if ($lines[$pos] =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) {
-		$modules{$2} = $1;
-	}
+while (my $line = <IN>) {
+	if ($line =~ /^\s*REAL_PRECISION\s*=.*$/is) { next; }
+	if ($line =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) { $modules{$2} = $1; }
 }
+close (IN);
 
 
 my $autoexpand = 0;
