@@ -19,8 +19,8 @@ module File_io
   external write_binary_file_c
 !
   interface write_binary_file
+    module procedure write_binary_file_char
     module procedure write_binary_file_str
-    module procedure write_binary_file_carr
   endinterface
 !
   integer, parameter :: parallel_unit = 14
@@ -101,7 +101,7 @@ module File_io
       integer,           optional, intent(out):: nitems
 !
       integer :: bytes, pos
-      character (len=fnlen) :: filel,filename
+      character (len=fnlen) :: filename
       character, dimension(:), allocatable :: buffer
       character (len=fnlen) :: tmp_prefix
 !
@@ -110,16 +110,15 @@ module File_io
       bytes = parallel_read(file, buffer, remove_comments)
 !
       ! Create unique temporary filename.
-      filel = file
-      pos = scan(filel, '/')
+      filename = file
+      pos = scan(filename, '/')
       do while(pos /= 0)
-        filel(pos:pos) = '_'
-        pos = scan(filel, '/')
+        filename(pos:pos) = '_'
+        pos = scan(filename, '/')
       enddo
       tmp_prefix = get_tmp_prefix()
-      write(filename,'(A,I0)') trim(tmp_prefix)//trim(filel)//'-', iproc
+      write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc
 !
-!print*, 'BUFFER=', buffer
       ! Write temporary file into local RAM disk (/tmp).
       call write_binary_file(filename, bytes, buffer)
       deallocate(buffer)
@@ -155,7 +154,7 @@ module File_io
 !
     endsubroutine parallel_close
 !***********************************************************************
-    subroutine write_binary_file_carr(file,bytes,buffer)
+    subroutine write_binary_file_char(file,bytes,buffer)
 !
 !  Writes a given buffer (vector of single characters) to a binary file.
 !
@@ -171,22 +170,22 @@ module File_io
 
       if (result /= bytes) then
         if (result < 0) then
-          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
+          print *, 'write_binary_file_char: could not open file for writing "'//trim(file)//'"'
         elseif (result == 0) then
-          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
+          print *, 'write_binary_file_char: could not start writing "'//trim(file)//'"'
         else
-          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
+          print *, 'write_binary_file_char: could not finish writing "'//trim(file)//'"', result
         endif
         stop
       endif
 !
-    endsubroutine write_binary_file_carr
+    endsubroutine write_binary_file_char
 !***********************************************************************
     subroutine write_binary_file_str(file,bytes,buffer)
 !
 !  Writes a given buffer (string) to a binary file.
 !
-!  21-jan-2015/MR: copied from write_binary_file_carr 
+!  21-jan-2015/MR: copied from write_binary_file_char 
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: bytes
@@ -198,11 +197,11 @@ module File_io
       
       if (result /= bytes) then
         if (result < 0) then
-          print *, 'write_binary_file: could not open file for writing "'//trim(file)//'"'
+          print *, 'write_binary_file_str: could not open file for writing "'//trim(file)//'"'
         elseif (result == 0) then
-          print *, 'write_binary_file: could not start writing "'//trim(file)//'"'
+          print *, 'write_binary_file_str: could not start writing "'//trim(file)//'"'
         else
-          print *, 'write_binary_file: could not finish writing "'//trim(file)//'"', result
+          print *, 'write_binary_file_str: could not finish writing "'//trim(file)//'"', result
         endif
         stop
       endif

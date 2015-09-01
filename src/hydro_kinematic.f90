@@ -796,6 +796,25 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Another planar flow (from XXX 2015)
+!
+      case ('Another-Planar')
+        if (headtt) print*,'Another planar flow; ampl_kinflow=',ampl_kinflow
+        fac=ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*cos(ky_uukin*y(m))
+          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))
+          p%uu(:,3)=+fac*(sin(kx_uukin*x(l1:l2))+cos(ky_uukin*y(m)))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+!place holder
+          p%oo(:,1)=fac2*kx_uukin*cos(ky_uukin*y(m))
+          p%oo(:,2)=0.
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
+!
 !  Time-dependent, nearly symmetric flow
 !
       case ('Herreman')
@@ -880,6 +899,19 @@ module Hydro
           p%uu(:,2)=-ABC_A*(cos(2*kz_uukin*z(n))+cos(2*kx_uukin*x(l1:l2)))*sin(2*ky_uukin*y(m)) &
             +ABC_B*2./13.*(cos(kz_uukin*z(n))*cos(3*kx_uukin*x(l1:l2)) &
                           -cos(3*kz_uukin*z(n))*cos(kx_uukin*x(l1:l2)))*sin(ky_uukin*y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  modified Taylor-Green flow with (y,z,x) -> tilde(z,x,y), i.e., the x direction became z
+!
+      case ('Straining')
+        if (headtt) print*,'Straining motion; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac=ampl_kinflow
+          p%uu(:,1)=    fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)=    fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)=-2.*fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1249,6 +1281,18 @@ module Hydro
           p%uu(:,3)=ampl_kinflow*x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
 !*tanh(10.*(x(l1:l2)-x(l1)))
 !          write(*,*)'DM',m,n,p%uu(:,3)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  U_phi = sin(theta)
+!
+      case ('Uz=siny')
+        if (headtt) print*,'U_phi = sin(theta)',ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=ampl_kinflow*sinth(m)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !

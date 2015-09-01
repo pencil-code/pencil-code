@@ -24,8 +24,8 @@ module Testfield_general
   real, dimension(3)                        :: B_ext=(/0.,0.,0./)
   character (len=labellen), dimension(ninit):: initaatest='zero'
   real,                     dimension(ninit):: amplaatest=0.,                            &
-                                               kx_aatest,ky_aatest,kz_aatest,            &
-                                               phasex_aatest,phasey_aatest,phasez_aatest
+                                               kx_aatest=0.,ky_aatest=0.,kz_aatest=0.,   &
+                                               phasex_aatest=0.,phasey_aatest=0.,phasez_aatest=0.
 !
   logical                                   :: luxb_as_aux=.false.,ljxb_as_aux=.false.
 

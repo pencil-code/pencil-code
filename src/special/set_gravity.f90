@@ -122,6 +122,7 @@ module Special
         enddo
       enddo
 !
+      gravity(:,:,:,2:3)=0.
       do n=n1,n2
         do m=m1,m2
           call grad(potential,grav)
