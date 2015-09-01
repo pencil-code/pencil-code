@@ -2,7 +2,6 @@
 
 import pencil as pc
 import numpy as np
-import pylab as pyl
 
 from npfile import npfile
 import os

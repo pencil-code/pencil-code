@@ -6,12 +6,6 @@
 # 
 #
 
-import os
-import pylab as P
-import tempfile as T
-import numpy as N
-from mpl_toolkits.mplot3d import Axes3D
-
 def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1,min=-1,max=1,stride=1):
     """
     read 2D slices from data and assemble an animation in a movie.
@@ -29,6 +23,13 @@ def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1,min=-1,max=1
      max -- maximum data value
      def --  stride for 3D plot
     """
+    import os
+    import pylab as P
+    import tempfile as T
+    import numpy as N
+    from mpl_toolkits.mplot3d import Axes3D
+
+    
     files=""
     flist=[]
     fig = P.figure()

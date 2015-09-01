@@ -7,7 +7,6 @@
 #
 import os
 import numpy as N
-import pylab as P
 from npfile import npfile
 from param import read_param 
 from dim import read_dim 
@@ -99,6 +98,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
      transform --- insert arbitrary numerical code to modify the slice
      wait --- pause in seconds between animation slices
     """
+    
+    import pylab as P
     
     datadir = os.path.expanduser(datadir)
     if proc < 0:
@@ -320,6 +321,8 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
      outfile --- if set, write the slice values in the text file
     """
     
+    import pylab as P
+    
     datadir = os.path.expanduser(datadir)
     if outfile != "":
         outslice=file(outfile,"w")
@@ -441,6 +444,8 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to modify the slice
     """
+    
+    import pylab as P
     
     datadir = os.path.expanduser(datadir)
     if proc < 0:
