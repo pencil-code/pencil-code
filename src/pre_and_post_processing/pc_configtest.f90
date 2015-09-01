@@ -41,8 +41,7 @@ program pc_configtest
 !
 !  Identify version.
 !
-  if (lroot) call svn_id( &
-      '$Id$')
+  if (lroot) call svn_id('$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
