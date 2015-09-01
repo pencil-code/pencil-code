@@ -299,6 +299,8 @@ module Messages
 !
 !  25-jun-02/wolf: coded
 !
+      use Syscalls, only: directory_exists
+!
       character (len=*) :: svnid
 !
       character (len=20) :: filename, revision, author, date
@@ -312,6 +314,7 @@ module Messages
 !  Write string to screen and to 'svnid.dat' file.
 !
       if (lfirstcall) then
+        if (.not. directory_exists (datadir)) call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
         open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
         lfirstcall = .false.
       else
