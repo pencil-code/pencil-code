@@ -306,18 +306,16 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-      integer :: wd1=0, dist
-      logical, save :: lfirstcall=.true.
+      integer :: wd1=0
+      logical, save :: lfirstcall = .true.
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
       if (lfirstcall) then
         open(1, file=trim(datadir)//'/svnid.dat', status='replace')
-        dist=0
-        lfirstcall=.false.
+        lfirstcall = .false.
       else
         open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
-        dist=-1
       endif
 !
 !  Construct format
