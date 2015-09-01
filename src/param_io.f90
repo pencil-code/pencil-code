@@ -526,112 +526,128 @@ module Param_IO
 !
     endsubroutine get_downpars
 !***********************************************************************
+    subroutine write_stub(namelist, needed, omit_suffix)
+!
+!  prints one sample namelist
+!
+!   1-sep-15/PABourin: coded
+!
+      character(len=*) :: namelist
+      logical :: needed
+      logical, optional :: omit_suffix
+!
+      character(len=labellen) :: type
+!
+      if (.not. needed) return
+!
+      if (lstart) then
+        type = 'init_pars'
+      else
+        type = 'run_pars'
+      endif
+      if (namelist /= '') type = '_'//trim (type)
+      if (loptest (omit_suffix)) type = ''
+!
+      write (*,'(A)') '&'//trim (namelist)//trim (type)
+      write (*,'(A)') ' /'
+!
+    endsubroutine write_stub
+!***********************************************************************
     subroutine sample_pars
 !
 !  standardises handling of errors in namelist, both for init and run
 !
 !  31-oct-13/MR: coded
+!   1-sep-15/PABourin: reworked
 !
-      character(len=labellen):: partype
-
       if (lroot) then
-
-        if (lstart) then
-          partype='init_pars'
-        else
-          partype='run_pars'
-        endif
-
-        print*
-        print*,'-----BEGIN sample namelist ------'
-        print*,'&'//partype//'                /'
+!
+        write (*,'(A)') ''
+        write (*,'(A)') '-----BEGIN sample namelist ------'
+        call write_stub ('', .true.)
 !
         if (lstart) then
-          if (lsignal)             print*,'&signal_'//partype//'         /'
-          if (linitial_condition)  print*,'&initial_condition_pars   /'
+          call write_stub ('signal', lsignal)
+          call write_stub ('initial_condition_pars', linitial_condition, .false.)
         endif
 !
-        if (ltracers)              print*,'&streamlines_'//partype//'    /' !! questionable wg. ltracers
-        if (leos)                  print*,'&eos_'//partype//'            /'
-        if (lhydro .or. lhydro_kinematic) &
-                                   print*,'&hydro_'//partype//'          /'
-        if (ldensity)              print*,'&density_'//partype//'        /'
-        if (lgrav)                 print*,'&grav_'//partype//'           /'
-        if (lselfgravity)          print*,'&selfgrav_'//partype//'       /'
-        if (lpoisson)              print*,'&poisson_'//partype//'        /'
-        if (lentropy .or. ltemperature) &
-                                   print*,'&entropy_'//partype//'        /'
-        if (lthermal_energy)       print*,'&energy_'//partype//'         /'
-!       if (lconductivity)         print*,'&conductivity_'//partype//'   /'
-        if (ldetonate)             print*,'&detonate_'//partype//'       /'
-        if (lmagnetic)             print*,'&magnetic_'//partype//'       /'
-        if (lmagn_mf)              print*,'&magn_mf_'//partype//'        /'
-        if (llorenz_gauge)         print*,'&lorenz_gauge_'//partype//'   /'
-        if (ltestscalar)           print*,'&testscalar_'//partype//'     /'
-        if (ltestfield)            print*,'&testfield_'//partype//'      /'
-        if (ltestflow)             print*,'&testflow_'//partype//'       /'
-        if (lradiation)            print*,'&radiation_'//partype//'      /'
-        if (lpscalar)              print*,'&pscalar_'//partype//'        /'
-        if (lchiral)               print*,'&chiral_'//partype//'         /'
-        if (lchemistry)            print*,'&chemistry_'//partype//'      /'
-        if (ldustvelocity)         print*,'&dustvelocity_'//partype//'   /'
-        if (ldustdensity)          print*,'&dustdensity_'//partype//'    /'
-        if (lneutralvelocity)      print*,'&neutralvelocity_'//partype//'/'
-        if (lneutraldensity)       print*,'&neutraldensity_'//partype//' /'
-        if (lcosmicray)            print*,'&cosmicray_'//partype//'      /'
-        if (lcosmicrayflux)        print*,'&cosmicrayflux_'//partype//'  /'
-        if (linterstellar)         print*,'&interstellar_'//partype//'   /'
-        if (lshear)                print*,'&shear_'//partype//'          /'
-        if (ltestperturb)          print*,'&testperturb_'//partype//'    /'
-        if (lspecial)              print*,'&special_'//partype//'        /'
-        if (lsolid_cells)          print*,'&solid_cells_'//partype//'    /'
-        if (lnscbc)                print*,'&NSCBC_'//partype//'          /'
-        if (lpolymer)              print*,'&polymer_'//partype//'        /'
+        call write_stub ('streamlines', ltracers) !! questionable wg. ltracers
+        call write_stub ('eos', leos)
+        call write_stub ('hydro', lhydro .or. lhydro_kinematic)
+        call write_stub ('density', ldensity)
+        call write_stub ('grav', lgrav)
+        call write_stub ('selfgrav', lselfgravity)
+        call write_stub ('poisson', lpoisson)
+        call write_stub ('entropy', lentropy .or. ltemperature)
+        call write_stub ('energy', lthermal_energy)
+        ! call write_stub ('conductivity', lconductivity)
+        call write_stub ('detonate', ldetonate)
+        call write_stub ('magnetic', lmagnetic)
+        call write_stub ('magn_mf', lmagn_mf)
+        call write_stub ('lorenz_gauge', llorenz_gauge)
+        call write_stub ('testscalar', ltestscalar)
+        call write_stub ('testfield', ltestfield)
+        call write_stub ('testflow', ltestflow)
+        call write_stub ('radiation', lradiation)
+        call write_stub ('pscalar', lpscalar)
+        call write_stub ('chiral', lchiral)
+        call write_stub ('chemistry', lchemistry)
+        call write_stub ('dustvelocity', ldustvelocity)
+        call write_stub ('dustdensity', ldustdensity)
+        call write_stub ('neutralvelocity', lneutralvelocity)
+        call write_stub ('neutraldensity', lneutraldensity)
+        call write_stub ('cosmicray', lcosmicray)
+        call write_stub ('cosmicrayflux', lcosmicrayflux)
+        call write_stub ('interstellar', linterstellar)
+        call write_stub ('shear', lshear)
+        call write_stub ('testperturb', ltestperturb)
+        call write_stub ('special', lspecial)
+        call write_stub ('solid_cells', lsolid_cells)
+        call write_stub ('NSCBC', lnscbc)
+        call write_stub ('polymer', lpolymer)
 !
-        if (.not.lstart) then
-          if (lforcing)            print*,'&forcing_'//partype//'        /'
-          if (lshock)              print*,'&shock_'//partype//'          /'
-          if (lviscosity)          print*,'&viscosity_'//partype//'      /'
-          if (lpower_spectrum)     print*,'&power_spectrum_'//partype//' /'
-          if (limplicit_diffusion) print*,'&implicit_diffusion_run_pars  /'
+        if (.not. lstart) then
+          call write_stub ('forcing', lforcing)
+          call write_stub ('shock', lshock)
+          call write_stub ('viscosity', lviscosity)
+          call write_stub ('power_spectrum', lpower_spectrum)
+          call write_stub ('implicit_diffusion', limplicit_diffusion)
         endif
 !
 !  Particles section.
 !
         if (lstart) then
-          if (lparticles_density)       print*,'&particles_dens_'//partype//'          /'
+          call write_stub ('particles_dens', lparticles_density)
         endif
 !
-        if (lparticles)                 print*,'&particles_'//partype//'               /'
-        if (lparticles_radius)          print*,'&particles_radius_'//partype//'        /'
-!       if (lparticles_potential)       print*,'&particles_potential_'//partype//'     /'
-        if (lparticles_spin)            print*,'&particles_spin_'//partype//'          /'
-        if (lparticles_sink)            print*,'&particles_sink_'//partype//'          /'
-        if (lparticles_number)          print*,'&particles_number_'//partype//'        /'
-        if (lparticles_selfgravity)     print*,'&particles_selfgrav_'//partype//'      /'
-        if (lparticles_nbody)           print*,'&particles_nbody_'//partype//'         /'
-        if (lparticles_stalker)         print*,'&particles_stalker_'//partype//'       /'
-        if (lparticles_mass)            print*,'&particles_mass_'//partype//'          /'
-        if (lparticles_drag)            print*,'&particles_drag_'//partype//'          /'
-        if (lparticles_temperature)     print*,'&particles_TT_'//partype//'            /'
-        if (lparticles_adsorbed)        print*,'&particles_ads_'//partype//'           /'
-        if (lparticles_surfspec)        print*,'&particles_surf_'//partype//'          /'
-        if (lparticles_chemistry)       print*,'&particles_chem_'//partype//'          /'
+        call write_stub ('particles', lparticles)
+        call write_stub ('particles_radius', lparticles_radius)
+        ! call write_stub ('particles_potential', lparticles_potential)
+        call write_stub ('particles_spin', lparticles_spin)
+        call write_stub ('particles_sink', lparticles_sink)
+        call write_stub ('particles_number', lparticles_number)
+        call write_stub ('particles_selfgrav', lparticles_selfgravity)
+        call write_stub ('particles_nbody', lparticles_nbody)
+        call write_stub ('particles_stalker', lparticles_stalker)
+        call write_stub ('particles_mass', lparticles_mass)
+        call write_stub ('particles_drag', lparticles_drag)
+        call write_stub ('particles_TT', lparticles_temperature)
+        call write_stub ('particles_ads', lparticles_adsorbed)
+        call write_stub ('particles_surf', lparticles_surfspec)
+        call write_stub ('particles_chem', lparticles_chemistry)
 !
-        if (.not.lstart) then
-          if (lparticles_adaptation)    print*,'&particles_adapt_'//partype//'         /'
-          if (lparticles_coagulation)   print*,'&particles_coag_'//partype//'          /'
-          if (lparticles_collisions)    print*,'&particles_coll_'//partype//'          /'
-          if (lparticles_stirring)      print*,'&particles_stirring_'//partype//'      /'
-          if (lparticles_viscosity)     print*,'&particles_visc_'//partype//'          /'
-          if (lparticles_diagnos_dv)    print*,'&particles_diagnos_dv_'//partype//'    /'
-          if (lparticles_diagnos_state) print*,'&particles_diagnos_state_'//partype//' /'
+        if (.not. lstart) then
+          call write_stub ('particles_adapt', lparticles_adaptation)
+          call write_stub ('particles_coag', lparticles_coagulation)
+          call write_stub ('particles_coll', lparticles_collisions)
+          call write_stub ('particles_stirring', lparticles_stirring)
+          call write_stub ('particles_visc', lparticles_viscosity)
+          call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
+          call write_stub ('particles_diagnos_state', lparticles_diagnos_state)
         endif
-
-!!!        if (lstart.and.linitial_condition.and.present(label)) partype=''
-
-        print*,'------END sample namelist -------'
-        print*
+!
+        write (*,'(A)') '------END sample namelist -------'
+        write (*,'(A)') ''
 !
       endif
 !
