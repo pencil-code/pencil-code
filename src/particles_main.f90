@@ -237,14 +237,18 @@ module Particles_main
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
 !
-      if (lparticles_blocks .and. lrun) then
-        if (lroot) print*, 'particles_initialize_modules: reblocking particles'
-        call map_nearest_grid(fp,ineargrid)
-        call boundconds_particles(fp,ipar)
-        call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid,ipar)
-        call map_xxp_grid(f,fp,ineargrid)
-        call load_balance_particles(f,fp,ipar)
+      if (lparticles_blocks) then
+        if (lrun) then
+          if (lroot) print*, 'particles_initialize_modules: reblocking particles'
+          call map_nearest_grid(fp,ineargrid)
+          call boundconds_particles(fp,ipar)
+          call map_nearest_grid(fp,ineargrid)
+          call sort_particles_iblock(fp,ineargrid,ipar)
+          call map_xxp_grid(f,fp,ineargrid)
+          call load_balance_particles(f,fp,ipar)
+        else
+          inearblock=0
+        endif
       endif
 !
 !  Stop if rhop_swarm is zero.
