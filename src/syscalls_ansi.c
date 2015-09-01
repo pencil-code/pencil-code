@@ -107,6 +107,23 @@ void FTNIZE(get_env_var_c)
 
 /* ---------------------------------------------------------------------- */
 
+void FTNIZE(directory_exists_c)
+     (char *path, FINT *exists)
+/* Checks for existence of a directory.
+   Returns:
+   * 1, if 'path' points to a directory
+   * -1, on error
+   * 0, otherwise
+*/
+{
+  struct stat result;
+
+  *exists = stat (path, &result);
+  if (S_ISDIR (result.st_mode)) *exists = 1;
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FTNIZE(is_nan_c)
      (REAL *value, FINT *result)
 /* Determine if value is not a number.
