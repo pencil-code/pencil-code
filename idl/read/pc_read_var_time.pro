@@ -48,15 +48,31 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings.
 ;
-  default, allprocs, 0
   default, reduced, 0
   default, quiet, 0
+
   if (keyword_set(reduced)) then allprocs=1
+
+  if not is_defined(allprocs) then begin
+;
+; derive allprocs from the setting in Makefile.local
+;
+    spawn, "grep '^ *[^\#].*io_collect' src/Makefile.local", grepres, greperr
+
+    if strpos(grepres,'xy') ge 0 then $
+      allprocs=2 $
+    else if grepres ne '' then $
+      allprocs=1 $
+    else $
+      allprocs=0
+  endif
+
   if (arg_present(exit_status)) then exit_status=0
 ;
 ; Set f77 keyword according to allprocs.
 ;
-  if (keyword_set (allprocs)) then default, f77, 0
+  if (keyword_set (allprocs)) then $
+    if (allprocs eq 1) then default, f77, 0
   default, f77, 1
 ;
 ; Default data directory.
