@@ -341,7 +341,17 @@ module Particles_surfspec
           mean_molar_mass = (interp_rho(k)*Rgas*interp_TT(k)/ interp_pp(k))
 !
           if (lboundary_explicit) then
-!SOLVE explicitly
+            do i = 1,N_surface_reactants
+              term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*sum(ndot(k,:))+ &
+                  mass_trans_coeff_reactants(k,i)* &
+                  (interp_species(k,jmap(i)) / &
+                  species_constants(jmap(i),imass) * &
+                  mean_molar_mass-fp(k,isurf+i-1))
+!
+! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
+!
+              dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
+            enddo
           else
             if (linfinite_diffusion) then
               do i = 1,N_surface_reactants
@@ -350,19 +360,9 @@ module Particles_surfspec
                 dfp(k,isurf+i-1) = 0.
               enddo
             else
-              do i = 1,N_surface_reactants
-                term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*sum(ndot(k,:))+ &
-                    mass_trans_coeff_reactants(k,i)* &
-                    (interp_species(k,jmap(i)) / &
-                    species_constants(jmap(i),imass) * &
-                    mean_molar_mass-fp(k,isurf+i-1))
-!
-! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
-                dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
-!
-! JONAS: what was implemented was infinite diffusion, but without created species
-              enddo
-!SOLVE implicit
+              print*,'Must set linfinite_diffusion=T if lboundary_explicit=F.'
+              call fatal_error('dpsurf_dt_pencil',&
+                  'Implicit solver for surface consentrations is not implemented.')
             endif
           endif
 !
