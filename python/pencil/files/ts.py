@@ -133,7 +133,7 @@ class TimeSeries(object):
                 plt.xlabel('Time')
                 plt.ylabel(listargs[i])
                 i += 1
-        plt.show()
+        plt.show(block=False)
         plt.ion()
 
 
