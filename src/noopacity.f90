@@ -1,4 +1,17 @@
 ! $Id$
+!
+!  This module is the dummy for the opacity module(s).
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lopacity = .true.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+!***********************************************************************
 module Opacity
 !
   use General, only: keep_compiler_quiet
