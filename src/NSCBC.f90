@@ -70,7 +70,7 @@ include 'NSCBC.h'
   real :: Lx_in
   real :: Ly_in
   real :: Lz_in
-  real :: inlet_zz1, inlet_zz2
+  real :: inlet_zz1=0., inlet_zz2=0.
   real :: smooth_time=0.
 !
 !  Variables for inlet profiles
