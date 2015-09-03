@@ -6,7 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lopacity = .true.
+! CPARAM logical, parameter :: lopacity = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
