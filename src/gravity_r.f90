@@ -54,7 +54,7 @@ module Gravity
   character (len=labellen), dimension(ninit) :: ipotential='zero'
 !
   ! variables for compatibility with grav_z (used by Entropy and Density):
-  real :: z1,z2,zref,zgrav,gravz,zinfty
+  real :: z1,z2,zref,zgrav,gravz=0.,zinfty
   real :: nu_epicycle=1.0
   real :: t_ramp_mass=impossible,t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
