@@ -34,6 +34,7 @@ module Param_IO
   use NeutralDensity
   use NeutralVelocity
   use NSCBC
+  use Opacity, only: read_opacity_run_pars, write_opacity_run_pars
   use Poisson
   use Polymer
   use Power_spectrum
@@ -429,6 +430,7 @@ module Param_IO
       call read_namelist(read_shock_run_pars          ,'shock'             ,lshock)
       call read_namelist(read_solid_cells_run_pars    ,'solid_cells'       ,lsolid_cells)
       call read_namelist(read_NSCBC_run_pars          ,'NSCBC'             ,lnscbc)
+      call read_namelist(read_opacity_run_pars        ,'opacity'           ,lopacity)
       call read_namelist(read_polymer_run_pars        ,'polymer'           ,lpolymer)
       call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
       call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
@@ -803,6 +805,7 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_energy_run_pars(unit)
+        call write_opacity_run_pars(unit)
 !       call write_conductivity_run_pars(unit)
         call write_detonate_run_pars(unit)
         call write_magnetic_run_pars(unit)
@@ -938,34 +941,34 @@ module Param_IO
       integer, intent(in) :: unit
 !
       write(unit,'(A)') "&lphysics"
-      write(unit,'(A,L,A)') " lhydro=", lhydro, ","
-      write(unit,'(A,L,A)') " ldensity=", ldensity, ","
-      write(unit,'(A,L,A)') " lentropy=", lentropy, ","
-      write(unit,'(A,L,A)') " ltemperature=", ltemperature, ","
-      write(unit,'(A,L,A)') " lshock=", lshock, ","
-      write(unit,'(A,L,A)') " lmagnetic=", lmagnetic, ","
-      write(unit,'(A,L,A)') " lforcing=", lforcing, ","
-      write(unit,'(A,L,A)') " llorenz_gauge=", llorenz_gauge, ","
-      write(unit,'(A,L,A)') " ldustvelocity=", ldustvelocity, ","
-      write(unit,'(A,L,A)') " ldustdensity=", ldustdensity, ","
-      write(unit,'(A,L,A)') " ltestscalar=", ltestscalar, ","
-      write(unit,'(A,L,A)') " ltestfield=", ltestfield, ","
-      write(unit,'(A,L,A)') " ltestflow=", ltestflow, ","
-      write(unit,'(A,L,A)') " linterstellar=", linterstellar, ","
-      write(unit,'(A,L,A)') " lcosmicray=", lcosmicray, ","
-      write(unit,'(A,L,A)') " lcosmicrayflux=", lcosmicrayflux, ","
-      write(unit,'(A,L,A)') " lshear=", lshear, ","
-      write(unit,'(A,L,A)') " lpscalar=", lpscalar, ","
-      write(unit,'(A,L,A)') " lradiation=", lradiation, ","
-      write(unit,'(A,L,A)') " leos=", leos, ","
-      write(unit,'(A,L,A)') " lchiral=", lchiral, ","
-      write(unit,'(A,L,A)') " lneutralvelocity=", lneutralvelocity, ","
-      write(unit,'(A,L,A)') " lneutraldensity=", lneutraldensity, ","
-      write(unit,'(A,L,A)') " lpolymer=", lpolymer, ","
-      write(unit,'(A,L,A)') " lsolid_cells=", lsolid_cells, ","
-      write(unit,'(A,L,A)') " lpower_spectrum=", lpower_spectrum, ","
-      write(unit,'(A,L,A)') " lparticles=", lparticles, ","
-      write(unit,'(A,L,A)') " lparticles_drag=", lparticles_drag, ","
+      write(unit,'(A,L1,A)') " lhydro=", lhydro, ","
+      write(unit,'(A,L1,A)') " ldensity=", ldensity, ","
+      write(unit,'(A,L1,A)') " lentropy=", lentropy, ","
+      write(unit,'(A,L1,A)') " ltemperature=", ltemperature, ","
+      write(unit,'(A,L1,A)') " lshock=", lshock, ","
+      write(unit,'(A,L1,A)') " lmagnetic=", lmagnetic, ","
+      write(unit,'(A,L1,A)') " lforcing=", lforcing, ","
+      write(unit,'(A,L1,A)') " llorenz_gauge=", llorenz_gauge, ","
+      write(unit,'(A,L1,A)') " ldustvelocity=", ldustvelocity, ","
+      write(unit,'(A,L1,A)') " ldustdensity=", ldustdensity, ","
+      write(unit,'(A,L1,A)') " ltestscalar=", ltestscalar, ","
+      write(unit,'(A,L1,A)') " ltestfield=", ltestfield, ","
+      write(unit,'(A,L1,A)') " ltestflow=", ltestflow, ","
+      write(unit,'(A,L1,A)') " linterstellar=", linterstellar, ","
+      write(unit,'(A,L1,A)') " lcosmicray=", lcosmicray, ","
+      write(unit,'(A,L1,A)') " lcosmicrayflux=", lcosmicrayflux, ","
+      write(unit,'(A,L1,A)') " lshear=", lshear, ","
+      write(unit,'(A,L1,A)') " lpscalar=", lpscalar, ","
+      write(unit,'(A,L1,A)') " lradiation=", lradiation, ","
+      write(unit,'(A,L1,A)') " leos=", leos, ","
+      write(unit,'(A,L1,A)') " lchiral=", lchiral, ","
+      write(unit,'(A,L1,A)') " lneutralvelocity=", lneutralvelocity, ","
+      write(unit,'(A,L1,A)') " lneutraldensity=", lneutraldensity, ","
+      write(unit,'(A,L1,A)') " lpolymer=", lpolymer, ","
+      write(unit,'(A,L1,A)') " lsolid_cells=", lsolid_cells, ","
+      write(unit,'(A,L1,A)') " lpower_spectrum=", lpower_spectrum, ","
+      write(unit,'(A,L1,A)') " lparticles=", lparticles, ","
+      write(unit,'(A,L1,A)') " lparticles_drag=", lparticles_drag, ","
       write(unit,'(A)') " /"
 !
     endsubroutine write_IDL_logicals
