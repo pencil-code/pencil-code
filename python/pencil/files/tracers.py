@@ -11,7 +11,6 @@ import array
 import numpy as np
 import os
 import pencil as pc
-import pylab as plt
 import multiprocessing as mp
 
 
@@ -125,7 +124,6 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
         print("error: invalid processor number")
         return -1
     queue = mp.Queue()
-    proc = []
     
     # read the data
     # make sure to read the var files with the correct magic
@@ -197,6 +195,7 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
         subTracersLambda = lambda queue, vv, p, tracers, iproc: \
             subTracers(queue, vv, p, tracers, iproc, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
                        interpolation = interpolation, integration = integration, intQ = intQ)
+        proc = []
         for iproc in range(nproc):
             proc.append(mp.Process(target = subTracersLambda, args = (queue, vv, p, tracers[iproc::nproc,:,tIdx,:], iproc)))
         for iproc in range(nproc):
@@ -207,6 +206,8 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
             proc[iproc].join()
         for iproc in range(nproc):
             tracers[tmp[iproc][2]::nproc,:,tIdx,:], mapping[tmp[iproc][2]::nproc,:,tIdx,:] = (tmp[iproc][0], tmp[iproc][1])
+        for iproc in range(nproc):
+            proc[iproc].terminate()
         
     tracers = np.copy(tracers.swapaxes(0, 3), order = 'C')
     if (destination != ''):
@@ -443,7 +444,8 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
       *bitrate*:
         Bitrate of the movie file. Set to higher value for higher quality.
     """
-
+    
+    import pylab as plt
 
     # read the mapping and the fixed point positions
     tracers, mapping, t = pc.read_tracers(datadir = datadir, fileName = tracerFile, zlim = zlim, head_size = head_size)

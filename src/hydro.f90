@@ -596,6 +596,15 @@ module Hydro
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
       endif
 !
+!  To compute the added mass term for particle drag,
+!  the advective derivative is needed.
+!  The advective derivative is set as an auxiliary
+!
+      if (ladv_der_as_aux) then
+        call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
+        i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
+      endif
+!
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
@@ -2519,6 +2528,13 @@ module Hydro
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
       endif
 !
+!  Save the advective derivative as an auxiliary
+!
+      if(ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
+            -p%fpres + p%fvisc
+      endif
+!
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
 !  This tends to be the case when there is linear shear but no rotation
@@ -3914,10 +3930,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
 !
@@ -3933,10 +3948,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
@@ -4744,14 +4758,15 @@ module Hydro
 !
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
+!  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
       use Mpicomm, only: mpibcast_real, mpireduce_sum
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
-      real, dimension (nx) :: uxmx,uymx,uzmx
-      real, dimension (ny) :: uxmy,uymy,uzmy,umx2,umy2
+      real, dimension (nx) :: uxmx,uymx,uzmx,umx2
+      real, dimension (ny) :: uxmy,uymy,uzmy,umy2
       real :: umx,umy,umz
 !
 !  For vector output (of oo vectors) we need orms
@@ -4786,9 +4801,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) then
+          if (lfirst_proc_yz) &
             call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
-          endif
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -4813,9 +4827,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) then
+          if (lfirst_proc_xz) &
             call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
-          endif
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)

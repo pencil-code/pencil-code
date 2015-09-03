@@ -14,6 +14,7 @@
 %%   anelastic.f90
 %%   bfield.f90
 %%   chemistry.f90
+%%   chiral_fluids.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
 %%   density_stratified.f90
@@ -281,6 +282,7 @@
   \var{gTxgsrms}  & $(\nabla T\times\nabla s)_{\rm rms}$ \\
   \var{fconvm}    & $\left< c_p \varrho u_z T \right>$ \\
   \var{ufpresm}   & $\left< -u/\rho\nabla p \right>$ \\
+  \var{Kkramersm} & $\left< K_{\rm kramers} \right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -529,6 +531,8 @@
   \var{rhoccm}    & $\left<\varrho c\right>$ \\
   \var{ccmax}     & $\max(c)$ \\
   \var{ccglnrm}   & $\left<c\nabla_z\varrho\right>$ \\
+  \var{npccm}     & $\bar{(n_p\cdot X_{cc}}$ \\
+  \var{npccmax}   & $max(n_p\cdot X_{cc})$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{1D_loop.f90}} \\
 \midrule
@@ -716,6 +720,13 @@
   \var{Y17mz}     & $\left<Y_17\right>_{xy}(z)$ \\
   \var{Y18mz}     & $\left<Y_18\right>_{xy}(z)$ \\
   \var{Y19mz}     & $\left<Y_19\right>_{xy}(z)$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{chiral_fluids.f90}} \\
+\midrule
+  \var{mu5m}      & $\left<\mu_5\right>$ \\
+  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
+  \var{theta5m}   & $\left<\theta_5\right>$ \\
+  \var{theta5rms} & $\left<\theta_5^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule

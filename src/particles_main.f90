@@ -10,29 +10,29 @@ module Particles_main
   use Particles
   use Particles_adaptation
   use Particles_adsorbed
-  use Particles_chemistry
-  use Particles_surfspec
   use Particles_cdata
-  use Particles_collisions
+  use Particles_chemistry
   use Particles_coagulation
+  use Particles_collisions
+  use Particles_density
+  use Particles_diagnos_dv
+  use Particles_diagnos_state
   use Particles_drag
   use Particles_map
-  use Particles_density
+  use Particles_mass
   use Particles_mpicomm
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_selfgravity
   use Particles_sink
   use Particles_spin
-  use Particles_selfgravity
   use Particles_stalker
   use Particles_stirring
   use Particles_sub
+  use Particles_surfspec
   use Particles_temperature
-  use Particles_mass
   use Particles_viscosity
-  use Particles_diagnos_dv
-  use Particles_diagnos_state
 !
   implicit none
 !
@@ -55,7 +55,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-!      call register_particles_potential    ()
+!     call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_spin         ()
       call register_particles_number       ()
@@ -237,14 +237,18 @@ module Particles_main
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
 !
-      if (lparticles_blocks .and. lrun) then
-        if (lroot) print*, 'particles_initialize_modules: reblocking particles'
-        call map_nearest_grid(fp,ineargrid)
-        call boundconds_particles(fp,ipar)
-        call map_nearest_grid(fp,ineargrid)
-        call sort_particles_iblock(fp,ineargrid,ipar)
-        call map_xxp_grid(f,fp,ineargrid)
-        call load_balance_particles(f,fp,ipar)
+      if (lparticles_blocks) then
+        if (lrun) then
+          if (lroot) print*, 'particles_initialize_modules: reblocking particles'
+          call map_nearest_grid(fp,ineargrid)
+          call boundconds_particles(fp,ipar)
+          call map_nearest_grid(fp,ineargrid)
+          call sort_particles_iblock(fp,ineargrid,ipar)
+          call map_xxp_grid(f,fp,ineargrid)
+          call load_balance_particles(f,fp,ipar)
+        else
+          inearblock=0
+        endif
       endif
 !
 !  Stop if rhop_swarm is zero.
@@ -314,6 +318,58 @@ module Particles_main
           call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
 !
     endsubroutine write_dim_particles
+!***********************************************************************
+    subroutine read_all_particles_init_pars()
+!
+      use Sub, only: read_namelist
+!
+      call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
+      call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
+!     call read_namelist(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
+      call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
+      call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
+      call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
+      call read_namelist(read_particles_dens_init_pars ,'particles_dens'    ,lparticles_density)
+      call read_namelist(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
+      call read_namelist(read_particles_nbody_init_pars,'particles_nbody'   ,lparticles_nbody)
+      call read_namelist(read_particles_mass_init_pars ,'particles_mass'    ,lparticles_mass)
+      call read_namelist(read_particles_drag_init_pars ,'particles_drag'    ,lparticles_drag)
+      call read_namelist(read_particles_TT_init_pars   ,'particles_TT'      ,lparticles_temperature)
+      call read_namelist(read_particles_ads_init_pars  ,'particles_ads'     ,lparticles_adsorbed)
+      call read_namelist(read_particles_surf_init_pars ,'particles_surf'    ,lparticles_surfspec)
+      call read_namelist(read_particles_chem_init_pars ,'particles_chem'    ,lparticles_chemistry)
+      call read_namelist(read_pstalker_init_pars       ,'particles_stalker' ,lparticles_stalker)
+!
+    endsubroutine read_all_particles_init_pars
+!***********************************************************************
+    subroutine read_all_particles_run_pars()
+!
+      use Sub, only: read_namelist
+!
+      call read_namelist(read_particles_run_pars          ,'particles'              ,lparticles)
+      call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt'        ,lparticles_adaptation)
+      call read_namelist(read_particles_rad_run_pars      ,'particles_radius'       ,lparticles_radius)
+!     call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
+      call read_namelist(read_particles_spin_run_pars     ,'particles_spin'         ,lparticles_spin)
+      call read_namelist(read_particles_sink_run_pars     ,'particles_sink'         ,lparticles_sink)
+      call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
+      call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
+      call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody'        ,lparticles_nbody)
+      call read_namelist(read_particles_visc_run_pars     ,'particles_visc'         ,lparticles_viscosity)
+      call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
+      call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
+      call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
+      call read_namelist(read_pstalker_run_pars           ,'particles_stalker'      ,lparticles_stalker)
+      call read_namelist(read_pars_diagnos_dv_run_pars    ,'particles_diagnos_dv'   ,lparticles_diagnos_dv)
+      call read_namelist(read_pars_diag_state_run_pars    ,'particles_diagnos_state',lparticles_diagnos_state)
+      call read_namelist(read_particles_mass_run_pars     ,'particles_mass'         ,lparticles_mass)
+      call read_namelist(read_particles_drag_run_pars     ,'particles_drag'         ,lparticles_drag)
+      call read_namelist(read_particles_TT_run_pars       ,'particles_TT'           ,lparticles_temperature)
+      call read_namelist(read_particles_ads_run_pars      ,'particles_ads'          ,lparticles_adsorbed)
+      call read_namelist(read_particles_surf_run_pars     ,'particles_surf'         ,lparticles_surfspec)
+      call read_namelist(read_particles_chem_run_pars     ,'particles_chem'         ,lparticles_chemistry)
+!
+    endsubroutine read_all_particles_run_pars
 !***********************************************************************
     subroutine particles_read_snapshot(filename)
 !
@@ -953,237 +1009,7 @@ module Particles_main
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine particles_read_startpars(iostat)
-!
-!  Read particle parameters from start.in.
-!
-!  01-sep-05/anders: coded
-!  17-aug-08/wlad: added individual check for the modules inside the wrap
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent (out) :: iostat
-!
-      call read_particles_init_pars(iostat)
-      if (iostat/=0) then
-        call samplepar_startpars('particles_init_pars',iostat)
-        return
-      endif
-!
-      if (lparticles_radius) then
-        call read_particles_rad_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_radius_init_pars',iostat)
-          return
-        endif
-      endif
-!
-!      if (lparticles_potential) then
-!        call read_particles_pot_init_pars(iostat)
-!        if (iostat/=0) then
-!          call samplepar_startpars('particles_potential_init_pars',iostat)
-!          return
-!        endif
-!      endif
-!
-      if (lparticles_spin) then
-        call read_particles_spin_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_spin_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_sink) then
-        call read_particles_sink_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_sink_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_number) then
-        call read_particles_num_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_number_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_density) then
-        call read_particles_dens_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_dens_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_selfgravity) then
-        call read_particles_selfg_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_selfgrav_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_nbody) then
-        call read_particles_nbody_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_nbody_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_viscosity) then
-        call read_particles_visc_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_visc_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_stalker) then
-        call read_pstalker_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('particles_stalker_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_mass) then
-        call read_particles_mass_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('read_particles_mass_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_drag) then
-        call read_particles_drag_init_pars(iostat)
-        if (iostat /= 0) then
-          call samplepar_startpars('read_particles_drag_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_temperature) then
-        call read_particles_TT_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('read_particles_TT_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_adsorbed) then
-        call read_particles_ads_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('read_particles_ads_init_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_surfspec) then
-        call read_particles_surf_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('read_particles_surf_init_pars',iostat)
-          return
-        endif
-      endif
-!
-     if (lparticles_chemistry) then
-        call read_particles_chem_init_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_startpars('read_particles_chem_init_pars',iostat)
-          return
-        endif
-      endif
-!
-    endsubroutine particles_read_startpars
-!***********************************************************************
-    subroutine particles_rparam()
-!
-!  Read particle parameters from start.in.
-!
-!  13-may-09/anders: coded
-!
-      integer :: iostat
-!
-      call read_particles_init_pars(iostat)
-      if (lparticles_radius)      call read_particles_rad_init_pars(iostat)
-!      if (lparticles_potential)   call read_particles_pot_init_pars(iostat)
-      if (lparticles_spin)        call read_particles_spin_init_pars(iostat)
-      if (lparticles_sink)        call read_particles_sink_init_pars(iostat)
-      if (lparticles_number)      call read_particles_num_init_pars(iostat)
-      if (lparticles_density)     call read_particles_dens_init_pars(iostat)
-      if (lparticles_selfgravity) call read_particles_selfg_init_pars(iostat)
-      if (lparticles_nbody)       call read_particles_nbody_init_pars(iostat)
-      if (lparticles_viscosity)   call read_particles_visc_init_pars(iostat)
-      if (lparticles_mass)        call read_particles_mass_init_pars(iostat)
-      if (lparticles_temperature) call read_particles_TT_init_pars(iostat)
-      if (lparticles_adsorbed)    call read_particles_ads_init_pars(iostat)
-      if (lparticles_surfspec)    call read_particles_surf_init_pars(iostat)
-      if (lparticles_stalker)     call read_pstalker_init_pars(iostat)
-!
-    endsubroutine particles_rparam
-!***********************************************************************
-    subroutine samplepar_startpars(label,iostat)
-!
-!  Print sample of particle part of start.in.
-!
-!  17-aug-08/wlad: copied from param_io
-!
-      character (len=*), optional :: label
-      integer, optional :: iostat
-!
-      if (lroot) then
-        print*
-        print*,'-----BEGIN sample particles namelist ------'
-        if (lparticles) &
-            print*,'&particles_init_pars         /'
-        if (lparticles_radius) &
-            print*,'&particles_radius_init_pars  /'
-!        if (lparticles_potential) &
-!            print*,'&particles_potential_init_pars  /'
-        if (lparticles_spin) &
-            print*,'&particles_spin_init_pars    /'
-        if (lparticles_sink) &
-            print*,'&particles_sink_init_pars    /'
-        if (lparticles_number) &
-            print*,'&particles_number_init_pars  /'
-        if (lparticles_density) &
-            print*,'&particles_dens_init_pars  /'
-        if (lparticles_selfgravity) &
-            print*,'&particles_selfgrav_init_pars/'
-        if (lparticles_nbody) &
-            print*,'&particles_nbody_init_pars   /'
-        if (lparticles_viscosity) &
-            print*,'&particles_visc_init_pars    /'
-        if (lparticles_stalker) &
-            print*,'&particles_stalker_init_pars/'
-        if (lparticles_mass) &
-            print*,'&particles_mass_init_pars/'
-        if (lparticles_drag) &
-            print*,'&particles_drag_init_pars    /'
-        if (lparticles_temperature) &
-            print*,'&particles_TT_init_pars/'
-        if (lparticles_adsorbed) &
-            print*,'&particles_ads_init_pars/'
-        if (lparticles_chemistry) &
-            print*,'&particles_chem_init_pars/'
-        if (lparticles_surfspec) &
-            print*,'&particles_surf_init_pars/'
-        print*,'------END sample particles namelist -------'
-        print*
-        if (present(label)) &
-            print*, 'Found error in input namelist "' // trim(label)
-        if (present(iostat)) print*, 'iostat = ', iostat
-        if (present(iostat).or.present(label)) &
-            print*,  '-- use sample above.'
-      endif
-!
-    endsubroutine samplepar_startpars
-!***********************************************************************
-    subroutine particles_wparam(unit)
+    subroutine write_all_particles_init_pars(unit)
 !
 !  Write particle start parameters to file.
 !
@@ -1207,245 +1033,9 @@ module Particles_main
       if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
       if (lparticles_chemistry)   call write_particles_chem_init_pars(unit)
 !
-    endsubroutine particles_wparam
+    endsubroutine write_all_particles_init_pars
 !***********************************************************************
-    subroutine particles_read_runpars(iostat)
-!
-!  Read particle run parameters from run.in.
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent (out) :: iostat
-!
-      call read_particles_run_pars(iostat)
-      if (iostat/=0) then
-        call samplepar_runpars('particles_run_pars',iostat)
-        return
-      endif
-!
-      if (lparticles_adaptation) then
-        call read_particles_adapt_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_adapt_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_radius) then
-        call read_particles_rad_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_radius_run_pars',iostat)
-          return
-        endif
-      endif
-!
-!      if (lparticles_potential) then
-!        call read_particles_pot_run_pars(iostat)
-!        if (iostat/=0) then
-!          call samplepar_runpars('particles_potential_run_pars',iostat)
-!          return
-!        endif
-!      endif
-!
-      if (lparticles_spin) then
-        call read_particles_spin_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_spin_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_sink) then
-        call read_particles_sink_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_sink_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_number) then
-        call read_particles_num_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_number_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_density) then
-        call read_particles_dens_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_dens_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_selfgravity) then
-        call read_particles_selfg_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_selfgrav_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_nbody) then
-        call read_particles_nbody_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_nbody_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_viscosity) then
-        call read_particles_visc_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_visc_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_coagulation) then
-        call read_particles_coag_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_coag_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_collisions) then
-        call read_particles_coll_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_coll_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_stirring) then
-        call read_particles_stir_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_stirring_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_stalker) then
-        call read_pstalker_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_stalker_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_diagnos_dv) then
-        call read_pars_diagnos_dv_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_diagnos_dv_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_diagnos_state) then
-        call read_pars_diag_state_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('particles_diagnos_state_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_mass) then
-        call read_particles_mass_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('read_particles_mass_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_drag) then
-        call read_particles_drag_run_pars(iostat)
-        if (iostat /= 0) then
-          call samplepar_runpars('read_particles_drag_run_pars', iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_temperature) then
-        call read_particles_TT_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('read_particles_TT_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_adsorbed) then
-        call read_particles_ads_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('read_particles_ads_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_surfspec) then
-        call read_particles_surf_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('read_particles_surf_run_pars',iostat)
-          return
-        endif
-      endif
-!
-      if (lparticles_chemistry) then
-        call read_particles_chem_run_pars(iostat)
-        if (iostat/=0) then
-          call samplepar_runpars('read_particles_chem_run_pars',iostat)
-          return
-        endif
-      endif
-!
-    endsubroutine particles_read_runpars
-!***********************************************************************
-    subroutine samplepar_runpars(label,iostat)
-!
-!  Print sample of particle part of run.in.
-!
-      character (len=*), optional :: label
-      integer, optional :: iostat
-!
-      if (lroot) then
-        print*
-        print*,'-----BEGIN sample particle namelist ------'
-        if (lparticles)                print*,'&particles_run_pars         /'
-        if (lparticles_adaptation)     print*,'&particles_adapt_run_pars   /'
-        if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
-!        if (lparticles_potential)      print*,'&particles_potential_run_pars  /'
-        if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
-        if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
-        if (lparticles_number)         print*,'&particles_number_run_pars  /'
-        if (lparticles_density)        print*,'&particles_dens_run_pars    /'
-        if (lparticles_selfgravity)    print*,'&particles_selfgrav_run_pars/'
-        if (lparticles_nbody)          print*,'&particles_nbody_run_pars   /'
-        if (lparticles_viscosity)      print*,'&particles_visc_run_pars    /'
-        if (lparticles_coagulation)    print*,'&particles_coag_run_pars    /'
-        if (lparticles_collisions)     print*,'&particles_coll_run_pars    /'
-        if (lparticles_stirring)       print*,'&particles_stirring_run_pars/'
-        if (lparticles_stalker)        print*,'&particles_stalker_run_pars /'
-        if (lparticles_diagnos_dv)     print*,'&particles_diagnos_dv_run_pars/'
-        if (lparticles_diagnos_state)  print*,'&particles_diagnos_state_run_pars/'
-        if (lparticles_mass)           print*,'&particles_mass_run_pars /'
-        if (lparticles_drag)           print*,'&particles_drag_run_pars /'
-        if (lparticles_temperature)    print*,'&particles_TT_run_pars /'
-        if (lparticles_adsorbed)       print*,'&particles_ads_run_pars /'
-        if (lparticles_surfspec)       print*,'&particles_surf_run_pars /'
-        if (lparticles_chemistry)      print*,'&particles_chem_run_pars /'
-        print*,'------END sample particle namelist -------'
-        print*
-        if (present(label)) &
-            print*, 'Found error in input namelist "' // trim(label)
-        if (present(iostat)) print*, 'iostat = ', iostat
-        if (present(iostat).or.present(label)) &
-            print*,  '-- use sample above.'
-      endif
-!
-    endsubroutine samplepar_runpars
-!***********************************************************************
-    subroutine particles_wparam2(unit)
+    subroutine write_all_particles_run_pars(unit)
 !
 !  Write particle run parameters to file.
 !
@@ -1457,7 +1047,6 @@ module Particles_main
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
-      if (lparticles_density)        call write_particles_dens_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
       if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
@@ -1474,7 +1063,7 @@ module Particles_main
       if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
       if (lparticles_chemistry)      call write_particles_chem_run_pars(unit)
 !
-    endsubroutine particles_wparam2
+    endsubroutine write_all_particles_run_pars
 !***********************************************************************
     subroutine wsnap_particles(snapbase,f,fp,enum,lsnap,dsnap_par_minor,dsnap_par,ipar,varsize,flist,nobound)
 !
@@ -1560,7 +1149,7 @@ module Particles_main
 !
 !  Regular data snapshots must come synchronized with the fluid snapshots.
 !
-        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
+        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
         if (lsnap) then
           snapname=trim(snapbase)//nsnap_ch
           call particles_boundconds(f)

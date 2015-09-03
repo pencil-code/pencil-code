@@ -38,6 +38,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   real, dimension(mz) :: rho0z = 1.0
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
@@ -978,7 +979,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call map_nearest_grid(fp,ineargrid)
       call boundconds_particles(fp,ipar)
 !
 !  Map particle positions on the grid. Doing this here is necessary for
@@ -2422,10 +2422,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
@@ -2441,10 +2440,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !

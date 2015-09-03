@@ -17,7 +17,10 @@ from pencil.files.yaver import *
 from pencil.files.zaver import *
 from pencil.files.zprof import *
 from pencil.files.power import *
-from pencil.files.animate_interactive import *
+#try:
+    #from	 pencil.files.animate_interactive import *
+#except:
+    #pass
 from pencil.files.pc2vtk import *
 from pencil.files.post_processing import *
 from pencil.files.streamlines import *
@@ -28,5 +31,6 @@ from pencil.files.fixed_points import *
 from pencil.math.derivatives import *
 from pencil.math.vector_multiplication import *
 #from pencil.files.multi_slices import *
+from pencil.files.particles_removed import read_rmv_par
 
 

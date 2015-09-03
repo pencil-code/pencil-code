@@ -73,10 +73,9 @@ endsubroutine signal_prepare
 !***********************************************************************
     subroutine read_signal_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=signal_init_pars, IOSTAT=iostat)
 !

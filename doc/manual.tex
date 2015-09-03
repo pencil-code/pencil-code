@@ -478,7 +478,7 @@ An up to date list of Pencil Code contributers can be found at
   ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
   NBabkovskaia & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.org/~nbabkovs/} & University of Helsinki\\
   mreinhardt  & \htmladdnormallink{Matthias Rheinhardt}{http://www.helsinki.fi/~rei/} & University of Helsinki\\
-  mkorpi  & \htmladdnormallink{Maarit J.\ Mantere (n\'ee Korpi)}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
+  mkorpi  & \htmladdnormallink{Maarit J.\ K\"apyl\"a (n\'ee Korpi, Mantere)}{http://www.helsinki.fi/~mkorpi/} & University of Helsinki\\
   miikkavaisala  & \htmladdnormallink{Miikka V\"ais\"al\"a}{https://tuhat.halvi.helsinki.fi/portal/en/persons/miikka-vaisala(90245497-b541-4d55-8409-03ea3e563d82).html} & University of Helsinki\\
   mee  & \htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/} & University of Newcastle\\
   mcmillan & \htmladdnormallink{David McMillan}{http://brunhes.eas.yorku.ca/dave/CV/} & York University, Toronto\\
@@ -1852,7 +1852,7 @@ simply execute \code{pc_build} without any options,
 you can clone an existing host-file, just include an existing
 compiler configuration, and simply only add the options you need.
 A good example of a host-file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
-You may save a clone unter \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+You may save a clone under \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
 where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
 This will be the new default for \code{pc_build}.
 
@@ -4310,7 +4310,7 @@ Examples of good mesh layouts are listed in Table~\ref{GoodMeshes}.
 
 \begin{table}[h!]\caption{
 Examples of mesh layouts for which Fourier transforms with
-$x$ parallelization is ppossible.
+$x$ parallelization is possible.
 }\vspace{12pt}\centerline{\begin{tabular}{r|rrr|rrrrrrrr}
 ny & nprocyx & nprocy & nprocz & ncpus \\
 \hline
@@ -8359,6 +8359,50 @@ filtered and unfiltered initial conditions is almost the same.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+\subsection{Turbulent initial with given spectrum}
+
+The most general procedure for producing an initial condition
+with a turbulent spectrum is \code{inituu='power_randomphase_hel'},
+which allows one to set two different slopes, together with an
+exponential cutoff as well as a Gaussian peak within the spectrum.
+By default, the field is solenoidal inless one puts
+\code{lskip_projection=.true.} and can have fractional helicity
+by setting \code{relhel_uu} to a value between $-1$ and $1$.
+By default it is $0$, which means it is nonhelical.
+
+The spectral indices \var{initpower} and \var{initpower2} refer to
+energy spectral indices.
+By default, \var{initpower2=-5/3}, corresponding to a Kolmogov spectrum.
+For a delta-correlated spectrum, we have to put \var{initpower=2},
+corresponding to a $k^2$ energy spectrum for kinetic energy.
+This would be suitable for the subinertial range from $k=1$ to
+$k=k_{\rm p}$ (corresponding to the variable \var{kpeak}).
+
+If \var{cutoff=0}, no cutoff will be imposed.
+Otherwise, the spectrum will be multiplied by an exponential
+function with $\exp(-k^{2n})$, where $n=\mbox{'ncutoff=1'}$
+by default.
+
+Example, for \var{ampluu=1e-1}, \var{initpower=4.}, and \var{kpeak=3.},
+we get \var{urms=3.981E-01} when \var{relhel_uu=1} and
+\var{urms=3.981E-01} when \var{relhel_uu=0} and
+\var{urms=5.560E-01} when \var{relhel_uu=1}.
+The \var{urms} values scale linearly with \var{ampluu} and for
+\var{initpower=2} also approximately linearly with \var{kpeak}.
+For the magnetic field, we initialize the magnetic vector potential,
+so to get a $k^4$ spectrum, we have to put \var{initpower_aa=2.}
+Everything else is analogous; see, e.g.,
+\begin{verbatim}
+&hydro_init_pars
+  inituu='power_randomphase_hel', ampluu=1e-1, initpower=4., kpeak=3.
+  relhel_uu=0., cutoff=30.
+/
+&magnetic_init_pars
+  initaa='power_randomphase_hel', amplaa=1e-1, initpower_aa=2., kpeak_aa=3.
+  relhel_aa=0., cutoff_aa=30.
+/
+\end{verbatim}
+for which we get \var{urms=3.981E-01} and \var{brms=3.871E-01}.
 
 % ---------------------------------------------------------------------- %
 
@@ -11224,6 +11268,29 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{total_carbon_sites} [$1.08e-8$]
                & carbon sites per surface area [mol/cm]2\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_stalker_init_pars}} \\
+\midrule
+  \var{dstalk} [$0.1$]
+               & times between printout of stalker data\\
+  \var{lstalk_xx} [F]
+               & particles position\\
+  \var{lstalk_vv} [F]
+               & particles velocity\\
+  \var{lstalk_uu} [F]
+               & gas velocity at particles position\\
+  \var{lstalk_guu} [F]
+               & gas velocity gradient at particles position\\
+  \var{lstalk_rho} [F]
+               & gas density at particles position\\
+  \var{lstalk_grho} [F]
+               & gas density gradient at particles position\\
+  \var{lstalk_ap} [F]
+               & particles diameter\\
+  \var{lstalk_bb} [T]
+               & magnetic field at particles position\\
+  \var{lstalk_relvel} [F]
+               &  particles relative velocity to gas\\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -11614,6 +11681,8 @@ the latest set of parameters, you need to look at the code.
                & diffusion for passive scalar concentration $c$. \\
   \var{tensor_pscalar_diff} [$0.$]
                & coefficient for non-isotropic diffusion of passive scalar. \\
+  \var{reinitialize_lncc} [F]
+               & reinitialize the passive scalar to the value of cc\_const in start.in at next run\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{forcing_run_pars}} \\
@@ -11709,6 +11778,21 @@ the latest set of parameters, you need to look at the code.
 \midrule
   \var{qshear} [start]
                & See p.~\pageref{qshear-init}. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_run_pars}} \\
+\midrule
+  \var{ldragforce_dust_par} [F]
+               & dragforce on particles \\
+  \var{ldragforce_gas_par} [F]
+               & particle-gas friction force \\
+  \var{ldraglaw_steadystate} [F]
+               & particle forces only with $\frac{1}{\tau}\Delta v$ \\
+  \var{lpscalar_sink} [F]
+               & particles consume passive scalar \\
+  \var{pscalar_sink_rate} [0]
+               & volumetric pscalar consumption rate \\
+  \var{lbubble} [F]
+               & addition of the virtual mass term \\
 \midrule
   \multicolumn{2}{c}{Namelist \name{particles_ads_run_pars}} \\
 \midrule

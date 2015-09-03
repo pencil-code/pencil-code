@@ -303,10 +303,9 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_TT_init_pars, IOSTAT=iostat)
 !
@@ -322,10 +321,9 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_TT_run_pars, IOSTAT=iostat)
 !

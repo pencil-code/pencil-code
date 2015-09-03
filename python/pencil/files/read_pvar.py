@@ -2,7 +2,6 @@
 
 import pencil as pc
 import numpy as np
-import pylab as pyl
 
 from npfile import npfile
 import os
@@ -26,16 +25,16 @@ class pcpvar(object):
         """
         a class to hold the pvar data
         """
-        def __init__(self,varfile='',casedir='.',datadir='/data',proc=-1):
+        def __init__(self,varfile='pvar.dat',casedir='.',datadir='/data',proc=-1,verbose=False):
             keys,places=get_pvarnames(casedir=casedir,datadir=datadir)
             for i in places:
                 setattr(self,keys[int(i)-1].replace('(','P').replace(')','P'),int(i)-1)
             if (proc==-1):
                 procdirs = filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir))
                 nprocs=len(procdirs)
-                ipars,pvars = collect_class_pdata(casedir=casedir,pfile=varfile,datadir=datadir,nprocs=nprocs)
+                ipars,pvars = collect_class_pdata(casedir=casedir,pfile=varfile,datadir=datadir,nprocs=nprocs,verbose=verbose)
             else:
-                ipars,pvars = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=proc)
+                ipars,pvars = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=proc,verbose=verbose)
             
             setattr(self,'ipars',ipars)
             for i in places:
@@ -44,8 +43,7 @@ class pcpvar(object):
                 
                 
 def read_npar_loc(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
-    array_npar_loc=np.dtype([('header','<i4'),
-                            ('npar_loc','<i4')])
+    array_npar_loc=np.dtype([('header','<i4'),('npar_loc','<i4')])
     npars = np.fromfile(casedir+datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_npar_loc)
     return npars['npar_loc'][0]
 
@@ -79,12 +77,13 @@ def get_pvarnames(casedir='.',datadir='/data'):
         places.append(place)
     return keys,places
 
-def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
+def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0,verbose=False):
     
     dims = pc.read_dim(casedir+datadir,proc)
     pdims = pc.read_pdim(casedir+datadir)
     npar_loc = read_npar_loc(casedir=casedir,datadir=datadir,pfile=pfile,proc=proc)
-#    print npar_loc,' particles on processor: ',proc
+    if (verbose):
+		print npar_loc,' particles on processor: ',proc
     mvars = pdims.mpaux+pdims.mpvar
     ltot = npar_loc*mvars
     if (dims.precision == 'S'):
@@ -116,21 +115,21 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
     ipar = np.squeeze(p_data['ipar'].reshape(p_data['ipar'].size))
     return ipar,partpars
     
-def collect_class_pdata(casedir='.',pfile='pvar.dat',datadir='/data',nprocs='0'):
+def collect_class_pdata(casedir='.',pfile='pvar.dat',datadir='/data',nprocs='0',verbose=False):
     if (nprocs==0):
         print "this should be greater than zero"
     else:
         procs=range(nprocs)
-    
     for i in procs:
-        dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
-        if i == 0:
-            ipars = dom_ipar
-            pvars = dom_pvar
-        else:
-            ipars = np.hstack((ipars,dom_ipar))
-            pvars = np.hstack((pvars,dom_pvar))
-
+		dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
+		if i == 0:
+			ipars = dom_ipar
+			pvars = dom_pvar
+		else:
+			ipars = np.hstack((ipars,dom_ipar))
+			pvars = np.hstack((pvars,dom_pvar))
+		if (verbose):
+			print 'Reading processor '+ str(i)+'.'
     return ipars,pvars
     
 

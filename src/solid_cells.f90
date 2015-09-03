@@ -28,21 +28,21 @@ module Solid_Cells
   integer                       :: nobjects, nlong, nlat
   integer                       :: nforcepoints=200
   integer                       :: close_interpolation_method=1
-  real, dimension(max_items)    :: cylinder_radius
+  real, dimension(max_items)    :: cylinder_radius=0.
   real, dimension(max_items)    :: cylinder_temp=703.0
-  real, dimension(max_items)    :: cylinder_xpos, cylinder_ypos, cylinder_zpos
-  real, dimension(max_items)    :: sphere_radius
+  real, dimension(max_items)    :: cylinder_xpos=0., cylinder_ypos=0., cylinder_zpos=0.
+  real, dimension(max_items)    :: sphere_radius=0.
   real, dimension(max_items)    :: sphere_temp=703.0
-  real, dimension(max_items)    :: sphere_xpos, sphere_ypos, sphere_zpos
+  real, dimension(max_items)    :: sphere_xpos=0., sphere_ypos=0., sphere_zpos=0.
   integer, dimension(mx,my,mz,4):: ba, ba_shift
-  real :: skin_depth=0, init_uu=0, ampl_noise=0, object_skin=0
+  real :: skin_depth=0., init_uu=0., ampl_noise=0., object_skin=0.
   character(len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character(len=labellen) :: interpolation_method='staircase'
   logical :: lclose_interpolation=.false., lclose_linear=.false.
   logical :: lnointerception=.false., lcheck_ba=.false.
   logical :: lclose_quad_rad_inter=.true.
   logical :: lset_flow_dir=.false.
-  real                          :: rhosum, flow_dir, T0, flow_dir_set
+  real                          :: rhosum, flow_dir=0., T0, flow_dir_set=0.
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
@@ -794,7 +794,7 @@ module Solid_Cells
             objectform = objects(iobj)%form
             if (objectform == 'cylinder') then
               dlong = twopi/nforcepoints
-              surfaceelement = dlong*rforce
+              surfaceelement = dlong*rforce/nzgrid
               drag_norm = 1./(2*robj)
             elseif (objectform == 'sphere') then
               dlong = twopi/nlong
@@ -2760,12 +2760,13 @@ module Solid_Cells
 !***********************************************************************
     subroutine read_solid_cells_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
-      read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat)
+      !read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=solid_cells_init_pars)
 !
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
@@ -2779,10 +2780,9 @@ module Solid_Cells
 !***********************************************************************
     subroutine read_solid_cells_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=solid_cells_run_pars, IOSTAT=iostat)
 !

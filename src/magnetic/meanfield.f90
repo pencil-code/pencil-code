@@ -48,7 +48,7 @@ module Magnetic_meanfield
 ! Input parameters
 !
   real :: Omega_ampl=0.0, dummy=0.0
-  real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
+  real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0, alpha_zz=0.
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
@@ -82,6 +82,7 @@ module Magnetic_meanfield
   real :: mf_qJ2=0.0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0.
+  real, dimension(my,3,3) :: alpha_tensor_y=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
@@ -94,7 +95,7 @@ module Magnetic_meanfield
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
 !
   namelist /magn_mf_run_pars/ &
-      alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, &
+      alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, qp_width, &
@@ -198,9 +199,19 @@ module Magnetic_meanfield
       if (lroot) print*,'lalpha_aniso=',lalpha_aniso
 !
 !  check for (slightly less-simple minded) anisotropy
+!  Put alpha_zz=1 to get alpha_ij = delta_ij - OiOj.
 !
-      if (any(alpha_tensor/=0.)) then
+      if (any(alpha_tensor/=0.) .or. alpha_zz/=0.) then
         lalpha_tensor=.true.
+        if (alpha_zz /= 0.) then
+          alpha_tensor(1,1)=1.
+          alpha_tensor(2,2)=1.
+          alpha_tensor(3,3)=1.
+          alpha_tensor_y(:,1,1)=-alpha_zz*cos(y)**2
+          alpha_tensor_y(:,2,2)=-alpha_zz*sin(y)**2
+          alpha_tensor_y(:,1,2)=+alpha_zz*sin(y)*cos(y)
+          alpha_tensor_y(:,2,1)=alpha_tensor_y(:,1,2)
+        endif
       else
         lalpha_tensor=.false.
       endif
@@ -961,7 +972,12 @@ module Magnetic_meanfield
           do i=1,3
             p%mf_EMF(:,i)=0.
             do j=1,3
-              p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total*alpha_tensor(i,j)*p%bb(:,j)
+              if (alpha_zz /= 0.) then
+                p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total &
+                  *(alpha_tensor(i,j)+alpha_tensor_y(m,i,j))*p%bb(:,j)
+              else
+                p%mf_EMF(:,i)=p%mf_EMF(:,i)+alpha_total*alpha_tensor(i,j)*p%bb(:,j)
+              endif
             enddo
           enddo
         else
@@ -1378,10 +1394,9 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine read_magn_mf_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=magn_mf_init_pars, IOSTAT=iostat)
 !
@@ -1405,10 +1420,9 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine read_magn_mf_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=magn_mf_run_pars, IOSTAT=iostat)
 !

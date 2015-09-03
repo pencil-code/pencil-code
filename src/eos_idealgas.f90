@@ -1945,10 +1945,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=eos_init_pars, IOSTAT=iostat)
 !
@@ -1964,10 +1963,9 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=eos_run_pars, IOSTAT=iostat)
 !
@@ -2338,7 +2336,7 @@ module EquationOfState
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
 !    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
-!                   added branches for Kramers heat conductivity (using sigmaSB!)
+!                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
       logical, pointer :: lmeanfield_chitB
       real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
@@ -2411,7 +2409,7 @@ module EquationOfState
                     +coeffs_1_z(3,1)*(f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho))
  
         if (lheatc_kramers) then
-          dsdz_xy= cv*( (sigmaSB/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
+          dsdz_xy= cv*( (sigmaSBt/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
                        +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
         else
           dsdz_xy=(sigmaSBt*TT_xy**3+hcondzbot*gamma_m1*dlnrhodz_xy)/ &
@@ -2438,12 +2436,14 @@ module EquationOfState
           cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
 
-        call getrho(f(:,:,n2,ilnrho),rho_xy)
+        call getrho(f(:,:,n2,ilnrho),rho_xy)              ! here rho_xy=rho
         TT_xy=cs2_xy/(gamma_m1*cp)
-
+!print*, 'TT_xy=', TT_xy(4,4)
         dlnrhodz_xy= coeffs_1_z(1,2)*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                     +coeffs_1_z(2,2)*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                     +coeffs_1_z(3,2)*(f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho))
+
+        if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy
 !
 !  Set chi_xy=chi, which sets also the ghost zones.
 !  chi_xy consists of molecular and possibly turbulent values.
@@ -2460,11 +2460,11 @@ module EquationOfState
         endif
       endif
 !
-!  Select to use either sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
-!      or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
+!  Select to use either: sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
+!                    or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
 !
         if (lheatc_kramers) then
-          dsdz_xy=-cv*( (sigmaSB/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
+          dsdz_xy=-cv*( (sigmaSBt/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
                        +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
         elseif (hcondztop==impossible) then
           dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
@@ -2499,7 +2499,7 @@ module EquationOfState
 !   20-jul-2010/pete: expanded to take into account hcond/=0
 !   21-jan-2015/MR: changes for reference state.
 !   22-jan-2015/MR: corrected bug in branches for pretend_lnTT=T
-!    6-jun-2015/MR: added branches for Kramers heat conductivity (using sigmaSB!)
+!    6-jun-2015/MR: added branches for Kramers heat conductivity (using sigmaSBt!)
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
@@ -2582,7 +2582,7 @@ module EquationOfState
           endif
 !
           if (lheatc_kramers) then
-            dsdx_yz=-cv*( (sigmaSB/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
+            dsdx_yz=-cv*( (sigmaSBt/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
                          +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
           else
             dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*gamma_m1*dlnrhodx_yz)/ &
@@ -2657,7 +2657,7 @@ module EquationOfState
           endif
 !
           if (lheatc_kramers) then
-            dsdx_yz=-cv*( (sigmaSB/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
+            dsdx_yz=-cv*( (sigmaSBt/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
                          +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
           else
             dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*gamma_m1*dlnrhodx_yz)/ &
@@ -2690,7 +2690,7 @@ module EquationOfState
 !   08-apr-2014/pete: coded
 !   21-jan-2015/MR: changes for reference state.
 !    4-jun-2015/MR: added missing factor cp in RB;
-!                   added branches for Kramers heat conductivity (using sigmaSB!)
+!                   added branches for Kramers heat conductivity
 !
       use Mpicomm, only: stop_it
       use DensityMethods, only: getdlnrho
@@ -2942,7 +2942,7 @@ module EquationOfState
 !
 !   15-jul-2014/pete: adapted from bc_ss_flux_condturb_x
 !    4-jun-2015/MR: added missing factor cp in RB
-!                   added branches for Kramers heat conductivity (using sigmaSB!)
+!                   added branches for Kramers heat conductivity
 !
       use Mpicomm, only: stop_it
       use DensityMethods, only: getdlnrho
@@ -3381,13 +3381,13 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
-!
-!  Distinguish cases for linear and logarithmic density
-!
+
            tmp = 2*cv*log(cs2bot/cs20)
            call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
            f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
-
+!
+!  Distinguish cases for linear and logarithmic density
+!
            if (ldensity_nolog) then
 
              if (lreference_state) &
@@ -3395,7 +3395,7 @@ module EquationOfState
 
              do i=1,nghost
                f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               !   - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
+!                  - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
 !AB: this could be better
                   - 2*(cp-cv)*(lnrho_xy-lnrho0)
              enddo

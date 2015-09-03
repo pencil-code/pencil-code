@@ -4553,6 +4553,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (iforcing_cont(1)=='(0,cosx*expmz2,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
+      if (idiag_qfm/=0) lpenc_requested(i_curlo)=.true.
 !
     endsubroutine pencil_criteria_forcing
 !***********************************************************************
@@ -4613,7 +4614,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
-      use SharedVariables, only: get_shared_variable
       use Sub, only: quintic_step, quintic_der_step
       use Viscosity, only: getnu
 !
@@ -4621,7 +4621,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx,3), intent(out):: force
       real, dimension (nx), optional, intent(in) :: rho1
 !
-      real, pointer :: gravx
       real, dimension (nx) :: tmp
       real :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
@@ -4653,13 +4652,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0
           force(:,2)=0
           force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
-        case ('grav_xz')
-          call get_shared_variable('gravx', gravx, ierr)
-          if (ierr/=0) call stop_it("forcing: "//&
-            "there was a problem when getting gravx")
-          force(:,1)=gravx*ampl_ff(i)*cos(omega_ff*t)
+        case ('uniform_vorticity')
+          force(:,1)=z(n)*ampl_ff(i)*cos(omega_ff*t)
           force(:,2)=0
-          force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
+          force(:,3)=-x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
         case('KolmogorovFlow-x')
           fact=ampl_ff(i)
           force(:,1)=0
@@ -4933,10 +4929,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !***********************************************************************
     subroutine read_forcing_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=forcing_run_pars, IOSTAT=iostat)
 !

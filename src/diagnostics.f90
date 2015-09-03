@@ -249,9 +249,9 @@ module Diagnostics
 !  Write to stdout.
 !
         write(*,'(a)') trim(line)
-        ! flush(6) ! this is a F2003 feature....
+        !flush(6)                 ! this is a F2003 feature....
 !
-      endif
+      endif                      ! (lroot)
 !
       if (ldebug) write(*,*) 'exit prints'
       lfirst_call = .false.
@@ -2442,9 +2442,9 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_count_lines, parallel_open, parallel_close
+      use File_io, only : parallel_unit, parallel_open, parallel_close
       use General, only : itoa
-      use Sub, only     : location_in_proc
+      use Sub, only     : location_in_proc, parallel_count_lines
 !
       integer, intent(in) :: nnamel
 !
@@ -2455,8 +2455,7 @@ module Diagnostics
       integer :: mcoords_sound
       integer, allocatable, dimension (:,:) :: temp_sound_coords
       real    :: xsound, ysound, zsound
-      integer :: lsound, msound, nsound
-      include "parallel_unit_declaration.h"
+      integer :: lsound, msound, nsound, nitems
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2468,9 +2467,9 @@ module Diagnostics
       if (ierr>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for temp_sound_coords')
 !
-      ncoords_sound = 0
+      ncoords_sound = 0; nitems = 0
 !
-      call parallel_open(parallel_unit,sound_coord_file)
+      call parallel_open(sound_coord_file,nitems=nitems)
 !
       do isound=1,mcoords_sound
 !
@@ -2502,16 +2501,18 @@ module Diagnostics
         endif
       enddo
 !
-      call parallel_close(parallel_unit)
+      call parallel_close
+!
+! cname_sound is allocated also for ncoords_sound=0 as needed in read_name_format.
+!
+      if (.not. allocated(cname_sound)) then
+        allocate(cname_sound(nnamel),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+              'Could not allocate memory for cname_sound')
+      endif
 !
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then
-!
-        if (.not. allocated(cname_sound)) then
-          allocate(cname_sound(nnamel),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for cname_sound')
-        endif
 !
         if (.not. allocated(sound_coords_list)) then
           allocate(sound_coords_list(ncoords_sound,3),stat=ierr)

@@ -50,6 +50,7 @@ module Special
   character (len=labellen) :: z_profile = 'exp'
   real :: lam_z = 1
   logical, save :: lblink = .False.
+  real :: t_e3 = 8.
   real, dimension(6) :: delay_blink = (/0.,0.,0.,0.,0.,0./)
   real, dimension(6) :: t_blink_up = (/1.,0.,0.,0.,0.,0./)
   real, dimension(6) :: t_blink_0u = (/0.,0.,0.,0.,0.,0./)
@@ -62,7 +63,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
     n_pivot, udrive, xp, yp, rad, lam_twist, lam_u, r_profile, z_profile, lam_z, &
-    lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
+    t_e3, lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
 !
   contains
 !
@@ -85,7 +86,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-!      use Mpicomm, only: parallel_file_exists
+!      use Sub, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -121,10 +122,9 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
@@ -140,10 +140,9 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
@@ -207,15 +206,15 @@ module Special
         select case (r_profile)
         case ('e3')
             yc = 0
-            if (mod(int(t/8.),2) == 0) then
+            if (mod(int(t/t_e3),2) == 0) then
                 xc = -1
                 kc = -1
             else
                 xc = 1
                 kc = 1
             endif
-            ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(-y(m)+yc)
-            uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,8.)**2)/4)*(x(l1:l2)-xc)
+            ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(-y(m)+yc)
+            uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(x(l1:l2)-xc)
         case ('gaussian')
             ux = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(-y(m)+yp(ip))/dist
             uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))/dist
@@ -269,8 +268,8 @@ module Special
             endif
         endif
         
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - (f(l1:l2,m,n,iux) - blink*ux)/lam_u*z_factor*dt
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - (f(l1:l2,m,n,iuy) - blink*uy)/lam_u*z_factor*dt
       enddo
 !
     endsubroutine vel_driver

@@ -24,7 +24,6 @@ module Timestep
       use Boundcond
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
-!FAG      use Interstellar, only: calc_snr_damp_int
       use Mpicomm
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second

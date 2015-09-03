@@ -29,8 +29,8 @@ program pc_meanfield_collect
 
   ! Input and output variables & parameters
 
-  character (len=fnlen) :: datafile, inputfile, avgname, logfile, &
-                            outputfile, hdffile, avgfield
+  character (len=fnlen) :: datafile, datafilename,infile, avgname, logfile, &
+                            hdffile, avgfield, phdffile
   character (len=*), parameter :: directory_out = 'data/allprocs'
   character (len=*), parameter :: mfcollect_in_file = 'mfcollect.in'
 
@@ -41,10 +41,17 @@ program pc_meanfield_collect
   namelist /zaver_config/ avgfields, ndim2read, analyzernames
 
   integer :: hdferr
-  integer(HID_T) :: hdffileid, hdfavggroup, hdffieldgroup, hdfspace, hdfdataset, hdfmemtype
+  integer(HID_T) :: hdfmemtype, phdf_fileid, phdf_avggroup, phdf_dataspace
+  integer(HID_T), dimension(:), allocatable :: phdf_fieldgroups
+  integer(HID_T), dimension(:,:), allocatable :: phdf_spaces, phdf_chunkspaces, phdf_datasets, &
+                                                 phdf_plist_ids
+
+  integer(HSIZE_T) , dimension(:,:), allocatable :: phdf_dims, phdf_chunkdims
+  
+  integer(HID_T) :: hdf_file_plist
                     
-  integer(HSIZE_T), dimension(3) :: hdfdims
-  logical :: hdfexists
+  integer(HSIZE_T) , dimension(4) :: phdf_stride, phdf_count, phdf_block, phdf_offsets
+  logical :: phdf_exists
   
   
   ! Internal parameters
@@ -53,41 +60,45 @@ program pc_meanfield_collect
                                    rkind = selected_real_kind(10,40)
 
   ! Job communication parameters and variables
-  integer, parameter            :: command_shutdown = 0, &
-                                   command_analyze = 1
+  integer, parameter            :: command_shutdown   = 0, &
+                                   command_analyze    = 1, &
+                                   command_hdfopen    = 2, &
+                                   command_hdfclose   = 3 
              
   integer  :: nprocs_needed, analysisproc, command, fake_proc, nprocs, &
               mpierr, mpistat
 
   logical :: initerror, runerror, received, filecheck
   
-  integer, dimension(:), allocatable :: fake_procs
+  integer, dimension(:), allocatable   :: fake_procs
   
   character (len=intlen) :: chproc
   
   ! Timing variables
-  real(kind=rkind)     :: t1,t2,analysisstart
+  real(kind=rkind)     :: t_taken_full, t_taken_analysis, analysisstart
 
   ! Data read variables
   integer :: iavg, ierr, ntimesteps, navgs, ndim1, ndim2, &
-             naverages, ndim2read, i, j, k, nanalyzers, &
+             ndim1_full, ndim2_full, &
+             naverages, ndim2read, i, j, nanalyzers, &
              ianalyzer
   
   integer, dimension(:), allocatable :: avgdims
+  integer, dimension(:,:), allocatable :: offsets
 
-  real, dimension(:,:,:,:)  , allocatable   :: tmparray2
-  real, dimension(:,:,:)    , allocatable   :: dataarray, tmparray, tmparray3
-  real, dimension(:)        , allocatable   :: t_values
+  real(kind=8), dimension(:,:,:,:)  , allocatable   :: dataarray
+  real(kind=8), dimension(:,:,:)    , allocatable   :: tmparray
+  real(kind=8), dimension(:)        , allocatable   :: t_values
 
   integer               :: filesize, datalen, tlen, data_stride, &
                            data_start, tsteplen, dim2stride, pos, &
-                           avgnumber, averagelen, dim2runs, resultlen
+                           averagelen, dim2runs, resultdim1, resultdim2, &
+                           filesize_check
   
   integer , parameter   :: t_start = 5
 
   ! Analyzer parameters
   procedure(AnalyzerTemplate), pointer :: analyzerfunction
-  character(len=fnlen) :: analyzername
 
   nullify(analyzerfunction)
 
@@ -108,10 +119,6 @@ program pc_meanfield_collect
 
   lroot = (iproc==root)
 
-! Initialize HDF5
-
-  call H5open_f(hdferr)
-
 !
 !  Identify version.
 !
@@ -124,11 +131,11 @@ program pc_meanfield_collect
 !
 
 
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_all_run_pars()
 !
 ! Calculate dimensionality
 !
@@ -147,6 +154,9 @@ program pc_meanfield_collect
     end if
   end if
 
+  call H5open_F(hdferr)
+  call OpenH5File()
+
 ! Root part of the analysis, read config and co-ordinate other programs
 
   if (lroot) then
@@ -162,6 +172,7 @@ program pc_meanfield_collect
     allocate(avgfields(len_avgfields))
     allocate(analyzernames(len_analyzers))
     allocate(fake_procs(nprocx*nprocy*nprocz))
+    allocate(offsets(2,nprocx*nprocy*nprocz))
     avgnames    = ''
     avgfields   = ''
     analyzernames   = ''
@@ -184,18 +195,20 @@ program pc_meanfield_collect
       analysisproc = 1
       do iavg=1,len_avgnames
 
-        avgname = avgnames(iavg)
+        avgname = trim(avgnames(iavg))
         ! Field dependent part
         ! ----------------------------------------
         nprocs_needed = 0
         if (avgname == 'xaver') then
-          ! This needs to be written based on zaver 
+          ! This needs to be written based on zaver example 
         else if (avgname == 'zaver') then
-          ndim1 = nx
-          ndim2 = ny
-          ndim2read=ny
-          inputfile='zaver.in'
-          datafile='zaverages.dat'
+          ndim1       = nx
+          ndim2       = ny
+          ndim1_full  = nxgrid
+          ndim2_full  = nygrid
+          ndim2read   = ny
+          infile='zaver.in'
+          datafilename='zaverages.dat'
 
           ! Read configuration
           read(1, NML=zaver_config, IOSTAT=ierr)
@@ -224,16 +237,18 @@ program pc_meanfield_collect
             endif
             if (ipz == 0) then
               fake_procs(j) = fake_proc
+              offsets(:,j) = [ndim1*ipx, ndim2*ipy]
               j = j + 1
             end if
           end do
         else
           exit
         end if
+
          
         ! Universal part
         ! ----------------------------------------
-        
+       
         ! Determine picked fields
         navgs = 0
         do i=1,len_avgfields
@@ -248,9 +263,9 @@ program pc_meanfield_collect
           allocate(avgdims(navgs))
           avgdims = 0
           naverages = 0
-          open(UNIT=2, FILE=inputfile, STATUS='old', IOSTAT=ierr)
+          open(UNIT=2, FILE=infile, STATUS='old', IOSTAT=ierr)
           if (ierr /= 0) then
-            write(*,*) 'Could not open '//inputfile
+            write(*,*) 'Could not open '//infile
             initerror = .true.
             exit
           else
@@ -298,6 +313,79 @@ program pc_meanfield_collect
             exit
           end if
         end do
+ 
+        ! Check datafile properties
+
+        chproc = itoa(fake_procs(1))
+        call safe_character_assign (directory_dist, &
+             trim (datadir_snap)//'/proc'//chproc)
+        call safe_character_assign (datafile, &
+             trim(directory_dist)//'/'//trim(datafilename))
+        open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
+        if (ierr /= 0) then
+          write(2,*) 'Error opening datafile: '//datafile
+          initerror = .true.
+        end if
+
+        inquire(1, size=filesize)
+        pos=1
+        read(1, pos=pos, IOSTAT=ierr) tlen
+        if (ierr /= 0) then
+          write(*,*) 'Error reading tlen'
+          initerror = .true.
+        end if
+        pos=9+tlen
+        read(1, pos=pos, IOSTAT=ierr) datalen
+        if (ierr /= 0) then
+          write(*,*) 'Error reading datalen'
+          initerror = .true.
+        end if
+        data_stride = datalen/(naverages*ndim1*ndim2)
+
+        dim2stride  = data_stride*ndim1
+        ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
+        data_start  = t_start + tlen + 8
+        tsteplen    = 16 + tlen + datalen
+        averagelen  = datalen/naverages 
+        dim2runs   = ndim2/ndim2read
+
+        write(*,'(a30)')     ' Analysis information          '
+        write(*,'(a30)')     ' ----------------------------- '
+        write(*,'(a30,a)') &
+        ' Average type:                 ', trim(avgname)
+        write(*,'(a30,a30)') &
+        ' Dimension 1 size:             ', ljustifyI(ndim1)
+        write(*,'(a30,a30)') &
+        ' Dimension 2 size:             ', ljustifyI(ndim2)
+        write(*,'(a30,a)') &
+        ' Datafile:                     ', trim(datafile)
+        write(*,'(a30,a30)') &
+        ' Number of averages:           ', ljustifyI(naverages)
+        write(*,'(a30,a30)') &
+        ' File size (bytes):            ', ljustifyI(filesize)
+        write(*,'(a30,a30)') &
+        ' Number of timesteps:          ', ljustifyI(ntimesteps)
+        write(*,'(a30,a30)') &
+        ' Datapoints per timestep:      ', ljustifyI(datalen/data_stride)
+        write(*,'(a30,a30)') &
+        ' Single precision time values: ', ljustifyL(tlen==4)
+        write(*,'(a30,a30)') &
+        ' Single precision data values: ', ljustifyL(data_stride==4)
+        close(1)
+
+        ! Send datasets to create
+        if ((nanalyzers>0) .and. (navgs > 0) .and. (nprocs_needed > 0) &
+          .and. (.not. initerror)) then
+          command = command_hdfopen
+          do i=1,nprocs-1
+            call MPI_SEND(command, 1, &
+                          MPI_INT, i, 0, MPI_COMM_WORLD, mpierr)
+          end do
+          call BCastInfo()
+          call OpenH5Groups()
+        end if
+
+        write(*,*) 'Starting analysis...'
 
         ! Commence the analysis
         if ((nanalyzers>0) .and. (navgs > 0) .and. (nprocs_needed > 0) &
@@ -305,70 +393,30 @@ program pc_meanfield_collect
           command = command_analyze
           do i=1, nprocs_needed
             fake_proc = fake_procs(i)
-            write(*,'(a30,a5)') &
-            ' Send 1: command to            ',ljustifyI(analysisproc)
             call MPI_SEND(command, 1, &
                           MPI_INT, analysisproc, 0, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 2: fake_proc to          ',ljustifyI(analysisproc)
             call MPI_SEND(fake_proc, 1, &
                           MPI_INT, analysisproc, 1, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 3: naverages to          ',ljustifyI(analysisproc)
-            call MPI_SEND(naverages, 1, &
+            call MPI_SEND(offsets(:,i), 2, &
                           MPI_INT, analysisproc, 2, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 4: ndim1 to              ',ljustifyI(analysisproc)
-            call MPI_SEND(ndim1, 1, &
-                          MPI_INT, analysisproc, 3, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 5: ndim2 to              ',ljustifyI(analysisproc)
-            call MPI_SEND(ndim2, 1, &
-                          MPI_INT, analysisproc, 4, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 5: ndim2read to          ',ljustifyI(analysisproc)
-            call MPI_SEND(ndim2read, 1, &
-                          MPI_INT, analysisproc, 5, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 6: datafile to           ',ljustifyI(analysisproc)
-            call MPI_SEND(datafile, fnlen, &
-                          MPI_CHAR, analysisproc, 6, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 7: navgs to              ',ljustifyI(analysisproc)
-            call MPI_SEND(navgs, 1, &
-                          MPI_INT, analysisproc, 7, MPI_COMM_WORLD, mpierr)
-            do j=1,navgs
-              write(*,'(a8,i1,a20,a5)') &
-              ' Send 8-',j,': average to          ',ljustifyI(analysisproc)
-              call MPI_SEND(avgfields(j), fnlen, &
-                            MPI_CHAR, analysisproc, 8*j, MPI_COMM_WORLD, mpierr)
-            end do
-            write(*,'(a30,a5)') &
-            ' Send 9: navgs to              ',ljustifyI(analysisproc)
-            call MPI_SEND(avgdims, navgs, &
-                          MPI_INT, analysisproc, 9, MPI_COMM_WORLD, mpierr)
-            write(*,'(a30,a5)') &
-            ' Send 10: nanalyzers to         ',ljustifyI(analysisproc)
-            call MPI_SEND(nanalyzers, 1, &
-                          MPI_INT, analysisproc, 10, MPI_COMM_WORLD, mpierr)
-            do j=1,nanalyzers
-              write(*,'(a9,i1,a20,a5)') &
-              ' Send 11-',j,': analyzer to         ',ljustifyI(analysisproc)
-              call MPI_SEND(analyzernames(j), fnlen, &
-                            MPI_CHAR, analysisproc, 11*j, MPI_COMM_WORLD, mpierr)
-            end do
-            call MPI_SEND(avgname, fnlen, &
-                          MPI_CHAR, analysisproc, 12, MPI_COMM_WORLD, mpierr)
             call MPI_RECV(received, 1, &
-                          MPI_LOGICAL, analysisproc, 0, MPI_COMM_WORLD, mpistat, mpierr)
-            write(*,'(a30,a5)') &
-            ' Receive last: received from   ',ljustifyI(analysisproc)
+                          MPI_LOGICAL, analysisproc, 3, MPI_COMM_WORLD, mpistat, mpierr)
             analysisproc = analysisproc+1
             if (analysisproc>=nprocs) then
               analysisproc = 1
             end if
           end do
+          command = command_hdfclose
+          do i=1,nprocs-1
+            call MPI_SEND(command, 1, MPI_INT, analysisproc, 0, MPI_COMM_WORLD, mpierr)
+            analysisproc = analysisproc + 1
+            if (analysisproc>=nprocs) then
+              analysisproc = 1
+            end if
+            call CloseH5Groups()
+          end do
         end if
+
         if (allocated(avgdims)) then
             deallocate(avgdims)
         end if
@@ -376,7 +424,6 @@ program pc_meanfield_collect
       ! Send shutdown to other fields
       command = command_shutdown
       do i=1,nprocs-1
-        write(*,*) 'Sent ', command, ' to ', analysisproc
         call MPI_SEND(command, 1, MPI_INT, analysisproc, 0, MPI_COMM_WORLD, mpierr)
         analysisproc = analysisproc + 1
         if (analysisproc>=nprocs) then
@@ -401,52 +448,41 @@ program pc_meanfield_collect
     ! Non-root part of the analysis. Do the analysis.
     call MPI_BCAST(initerror, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, ierr)
     if (.not. initerror) then
-      command = 0
+      command = -1
       do
         call MPI_RECV(command, 1, &
                       MPI_INT, root, 0, MPI_COMM_WORLD, mpistat, mpierr)
-        if (command == command_analyze) then
+        if (command == command_hdfopen) then
+          call BCastInfo()
+          call OpenH5Groups()
+        else if (command == command_hdfclose) then
+          call CloseH5Groups()
+        else if (command == command_analyze) then
           ! MPI communication part
           call MPI_RECV(fake_proc, 1, &
                         MPI_INT, root, 1, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(naverages, 1, &
+          if (.not. allocated(offsets)) then
+            allocate(offsets(2,1))
+          end if
+          call MPI_RECV(offsets(:,1), 2, &
                         MPI_INT, root, 2, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(ndim1, 1, &
-                        MPI_INT, root, 3, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(ndim2, 1, &
-                        MPI_INT, root, 4, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(ndim2read, 1, &
-                        MPI_INT, root, 5, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(datafile, fnlen, &
-                        MPI_CHAR, root, 6, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(navgs, 1, &
-                        MPI_INT, root, 7, MPI_COMM_WORLD, mpistat, mpierr)
-          allocate(avgdims(navgs))
-          allocate(avgfields(navgs))
-          do j=1,navgs
-            call MPI_RECV(avgfields(j), fnlen, &
-                          MPI_CHARACTER, root, 8*j, MPI_COMM_WORLD, mpistat, mpierr)
-          end do
-          call MPI_RECV(avgdims, navgs, &
-                        MPI_INT, root, 9, MPI_COMM_WORLD, mpistat, mpierr)
-          call MPI_RECV(nanalyzers, 1, &
-                        MPI_INT, root, 10, MPI_COMM_WORLD, mpistat, mpierr)
-          allocate(analyzernames(nanalyzers))
-          do j=1,nanalyzers
-            call MPI_RECV(analyzernames(j),fnlen, &
-                          MPI_CHARACTER, root, 11*j, MPI_COMM_WORLD, mpistat, mpierr)
-          end do
-          call MPI_RECV(avgname, fnlen, &
-                        MPI_CHAR, root, 12, MPI_COMM_WORLD, mpistat, mpierr)
           call MPI_SEND(received, 1, &
-                        MPI_LOGICAL, root, 0, MPI_COMM_WORLD, mpierr)
+                        MPI_LOGICAL, root, 3, MPI_COMM_WORLD, mpierr)
           chproc = itoa (fake_proc)
           call safe_character_assign (directory_dist, &
-                                                  trim (datadir_snap)//'/proc'//chproc)
+               trim (datadir_snap)//'/proc'//chproc)
           call safe_character_assign (datafile, &
-                                                  trim(directory_dist)//'/'//trim(datafile))
+               trim(directory_dist)//'/'//trim(datafilename))
+          if (lprocz_slowest) then
+            ipx = modulo(fake_proc, nprocx)
+            ipy = modulo(fake_proc/nprocx, nprocy)
+            ipz = fake_proc/nprocxy
+          else
+            ipx = modulo(fake_proc, nprocx)
+            ipy = fake_proc/nprocxy
+            ipz = modulo(fake_proc/nprocx, nprocy)
+          endif
 
-          
           ! Data reading part
           ! -------------------------------------------------------------
 
@@ -455,26 +491,6 @@ program pc_meanfield_collect
           open(2, file=logfile, action='write', status='replace', iostat=ierr)
           runerror = .false.
 
-          ! Open hdf5-file
-          hdffile = trim(directory_dist)//'/mfcollect.h5'
-          inquire(file=hdffile, exist=hdfexists)
-          if (hdfexists) then
-            open(11, file=hdffile, action='write', status='replace', iostat=ierr)
-            close(11, status='delete')
-          end if
-          inquire(file=hdffile, exist=hdfexists)
-
-          call H5Fcreate_F(hdffile, H5F_ACC_TRUNC_F, hdffileid, hdferr)
-          if (hdferr /= 0) then
-            write(*,*) 'Could not open file:'//hdffile
-            runerror = .true.
-          end if
-
-          call H5Gcreate_F(hdffileid, "/"//trim(avgname), hdfavggroup, hdferr)
-          do iavg=1,navgs
-            call H5Gcreate_F(hdfavggroup, "/"//trim(avgname)//"/"//avgfields(iavg), hdffieldgroup, hdferr)
-            call H5Gclose_F(hdffieldgroup, hdferr)
-          end do
           ! Check datafile properties
 
           open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
@@ -482,39 +498,12 @@ program pc_meanfield_collect
             write(2,*) 'Error opening datafile: '//datafile
             runerror = .true.
           end if
-
-          filesize = -1
-          tlen    = -1
-          datalen     = -1
           
-          inquire(1, size=filesize)
-          pos=1
-          read(1, pos=pos, IOSTAT=ierr) tlen
-          if (ierr /= 0) then
-            write(2,*) 'Error reading tlen'
+          inquire(1, size=filesize_check)
+          if (filesize_check /= filesize) then
+            write(2,*) 'File sizes differ between procs'
             runerror = .true.
           end if
-          pos=9+tlen
-          read(1, pos=pos, IOSTAT=ierr) datalen
-          if (ierr /= 0) then
-            write(2,*) 'Error reading datalen'
-            runerror = .true.
-          end if
-          data_stride = datalen/(naverages*ndim1*ndim2)
-          if (data_stride == 4) then
-            hdfmemtype = H5T_NATIVE_REAL
-          else if (data_stride == 8) then
-            hdfmemtype = H5T_NATIVE_DOUBLE
-          else
-            write(*,*) 'Could not determine the data type.'
-            runerror = .true.
-          end if
-          dim2stride  = data_stride*ndim1
-          ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
-          data_start  = t_start + tlen + 8
-          tsteplen    = 16 + tlen + datalen
-          averagelen  = datalen/naverages 
-          dim2runs   = ndim2/ndim2read
 
           ! Log analysis parameters
 
@@ -552,101 +541,13 @@ program pc_meanfield_collect
             write(2,*) 'Error allocating tmparray'
             runerror = .true.
           end if
-          allocate(tmparray2(ndim1,ndim2,naverages,ntimesteps),stat=ierr)
-          if (ierr /= 0) then
-            write(2,*) 'Error allocating tmparray2'
-            runerror = .true.
-          end if
-          allocate(tmparray3(ndim1,ndim2,ntimesteps),stat=ierr)
-          if (ierr /= 0) then
-            write(2,*) 'Error allocating tmparray3'
-            runerror = .true.
-          end if
-
-          ! Test values
-          ! -------------------------
-          outputfile = trim(directory_dist)//'/testvalues_test.dat'
-          open(3, file=outputfile, action='write', status='replace', IOSTAT=ierr)
-
-          t_values    = 0
-          
-          write(*,*) 'Test output:'
-          write(2,*) 'Test output:'
-          
-          t1 = MPI_WTIME()
-          open(1,file=datafile, form='unformatted', action='read', status='old', IOSTAT=ierr)
-          do i=1,ntimesteps
-            read(1, IOSTAT=ierr) t_values(i)
-            read(1, IOSTAT=ierr) tmparray2(:,:,:,i)
-          end do
-          
-
-          tmparray3 = tmparray2(:,:,avgdims(1),:)
-          do ianalyzer=1,nanalyzers
-            nullify(analyzerfunction)
-            call setAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-            if (.not. allocated(dataarray)) then
-              allocate(dataarray(ndim1,ndim2,resultlen),stat=ierr)
-              write(*,*) 'Allocated dataarray, dim3 is' , size(dataarray,dim=3)
-              if (ierr /= 0) then
-                write(2,*) 'Error allocating dataarray'
-                runerror = .true.
-                exit
-              end if
-            else if (resultlen /= size(dataarray,dim=3)) then
-              deallocate(dataarray)
-              allocate(dataarray(ndim1,ndim2,resultlen),stat=ierr)
-              write(*,*) size(dataarray,dim=3)
-              if (ierr /= 0) then
-                write(2,*) 'Error allocating dataarray'
-                runerror = .true.
-                exit
-              end if
-            end if
-            hdfdims = [ ndim1, ndim2, resultlen ]
-            dataarray = analyzerfunction(tmparray3, ndim1, ndim2, ntimesteps, resultlen)
-            
-!            do iavg=1,navgs
-!              do j=1,ndim2
-!                write(2,*) tmparray2(10:15,j,avgdims(iavg),1)
-!                write(3,*) tmparray2(10:15,j,avgdims(iavg),1)
-!              end do
-!            end do
-            do iavg=1,navgs
-              do j=1,ndim2
-                write(3,*) dataarray(1:ndim1,j,1)
-              end do
-              call H5Gopen_F(hdfavggroup, "/"//trim(avgname)//"/"//avgfields(iavg), hdffieldgroup, hdferr)
-              call H5Screate_simple_F(3, hdfdims, hdfspace, hdferr)
-              call H5Dcreate_F(hdffieldgroup, trim(analyzernames(ianalyzer))//'_test',H5T_IEEE_F32LE,hdfspace,hdfdataset,hdferr)
-              call H5Dwrite_F(hdfdataset, hdfmemtype, dataarray, hdfdims, hdferr)
-              call H5Dclose_F(hdfdataset,hdferr)
-              call H5Sclose_F(hdfspace, hdferr)
-              call H5Gclose_F(hdffieldgroup, hdferr)
-            end do
-          end do
-          close(1)
-          close(3)
-          write(2,*) t_values(:ntimesteps)
-          if (allocated(dataarray)) then
-            deallocate(dataarray)
-          end if
-
-          t1 = Timer(t1)
-          write(*,*) 'Time taken: ' , t1
-          write(2,*) 'Time taken: ' , t1
-          
+     
           ! Stream I/O values
           ! -------------------------
-          outputfile = trim(directory_dist)//'/testvalues_stream.dat'
-          open(3, file=outputfile, action='write', status='replace', IOSTAT=ierr)
 
           t_values    = 0
 
-          write(*,*) 'Stream I/O output:'
-          write(2,*) 'Stream I/O output:'
-          
-          t2 = MPI_WTIME()
+          t_taken_full = MPI_WTIME()
           open(1,file=datafile, access='stream',form='unformatted', &
               action='read', status='old', IOSTAT=ierr)
           
@@ -657,26 +558,23 @@ program pc_meanfield_collect
           end do
           
           do ianalyzer=1,nanalyzers
+            t_taken_analysis = MPI_WTIME()
+            write(*,*) 'Analyzing with analyzer: '//trim(analyzernames(ianalyzer))
             nullify(analyzerfunction)
-            call setAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-            if (.not. allocated(dataarray)) then
-              allocate(dataarray(ndim1,ndim2,resultlen),stat=ierr)
-              write(*,*) 'Allocated dataarray, dim3 is' , size(dataarray,dim=3)
-              if (ierr /= 0) then
-                write(2,*) 'Error allocating dataarray'
-                runerror = .true.
-                exit
-              end if
-            else if (resultlen /= size(dataarray,dim=3)) then
+            resultdim1 = ntimesteps
+            call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultdim1,resultdim2)
+            if (allocated(dataarray) .and. ((resultdim1 /= size(dataarray,dim=3)) .or. (resultdim2 /= size(dataarray,dim=4)))) then
               deallocate(dataarray)
-              allocate(dataarray(ndim1,ndim2,resultlen),stat=ierr)
-              write(*,*) size(dataarray,dim=3)
+            end if
+            if (.not. allocated(dataarray)) then
+              allocate(dataarray(ndim1,ndim2,resultdim1,resultdim2),stat=ierr)
               if (ierr /= 0) then
                 write(2,*) 'Error allocating dataarray'
                 runerror = .true.
                 exit
               end if
             end if
+
             do iavg=1,navgs
               do j=1,dim2runs
                 pos = data_start+(avgdims(iavg)-1)*averagelen+(j-1)*dim2stride*ndim2read
@@ -684,46 +582,41 @@ program pc_meanfield_collect
                   read(1, pos=pos, IOSTAT=ierr) tmparray(:,:,i)
                   pos = pos + tsteplen
                 end do
-                write(*,*) j, (j-1)*ndim2read+1, j*ndim2read
-                dataarray(:,(j-1)*ndim2read+1:j*ndim2read,:) = analyzerfunction(tmparray, ndim1, ndim2read, ntimesteps, resultlen)
-!                do k=1,ndim2read
-!                  write(2,*) tmparray(10:15,k,1)
-!                  write(3,*) tmparray(10:15,k,1)
-!                end do
+                dataarray(1:ndim1,(j-1)*ndim2read+1:j*ndim2read,1:resultdim1,1:resultdim2) = analyzerfunction(tmparray, &
+                                      ndim1, ndim2read, ntimesteps, resultdim1, resultdim2)
               end do
             end do
             do iavg=1,navgs
-              do j=1,ndim2
-                write(3,*) dataarray(1:ndim1,j,1)
-              end do
-              call H5Gopen_F(hdfavggroup, "/"//trim(avgname)//"/"//avgfields(iavg), hdffieldgroup, hdferr)
-              call H5Screate_simple_F(3, hdfdims, hdfspace, hdferr)
-              call H5Dcreate_F(hdffieldgroup, trim(analyzernames(ianalyzer)),H5T_IEEE_F32LE,hdfspace,hdfdataset,hdferr)
-              call H5Dwrite_F(hdfdataset, hdfmemtype, dataarray, hdfdims, hdferr)
-              call H5Dclose_F(hdfdataset,hdferr)
-              call H5Sclose_F(hdfspace, hdferr)
-              call H5Gclose_F(hdffieldgroup, hdferr)
-            end do
-          end do
-          write(2,*) t_values(:ntimesteps)
-          
-          if (allocated(dataarray)) then
-            deallocate(dataarray)
-          end if
+ 
+              ! Parallel data writing to HDF file
+              call H5Dget_space_F(phdf_datasets(ianalyzer,iavg), phdf_dataspace, hdferr)
+              phdf_offsets  = [ offsets(1,1), offsets(2,1), 0 , 0 ]
+              phdf_count    = [ 1, 1, 1, 1 ]
+              phdf_stride   = [ 1, 1, 1, 1 ]
+              phdf_block    = [ ndim1, ndim2, resultdim1 , resultdim2 ]
+              call H5Sselect_hyperslab_F(phdf_dataspace, H5S_SELECT_SET_F, phdf_offsets, phdf_count, &
+                                         hdferr,phdf_stride, phdf_block)
+              call H5Dwrite_F(phdf_datasets(ianalyzer,iavg), hdfmemtype, dataarray, &
+                                         phdf_dims(:,ianalyzer), hdferr, &
+                                         file_space_id  = phdf_dataspace, &
+                                         mem_space_id   = phdf_chunkspaces(ianalyzer, iavg))
 
-          t2 = Timer(t2)
-          write(*,*) 'Time taken: ' , t2
-          write(2,*) 'Time taken: ' , t2
+              call H5Sclose_F(phdf_dataspace, hdferr)
+            end do
+
+            t_taken_analysis = MPI_WTIME() - t_taken_analysis
+            write(*,*) 'Time taken by analyzer '//trim(analyzernames(ianalyzer))//':' , t_taken_analysis
+            write(2,*) 'Time taken by analyzer '//trim(analyzernames(ianalyzer))//':' , t_taken_analysis
           
-          write(*,*) 'Speedup: ', t1/t2
-          write(2,*) 'Speedup: ', t1/t2
+          end do
+
+          t_taken_full = MPI_WTIME() - t_taken_full
+          write(*,*) 'Time taken by the whole analysis: ' , t_taken_full
+          write(2,*) 'Time taken by the whole analysis: ' , t_taken_full
 
           close(1)
-          close(3)
 
           !call H5SCLOSE_F(hdfspace, hdferr)
-          call H5Gclose_F(hdfavggroup, hdferr)
-          call H5Fclose_F(hdffileid, hdferr)
           
           if (allocated(dataarray)) then
             deallocate(dataarray)
@@ -734,22 +627,8 @@ program pc_meanfield_collect
           if (allocated(tmparray)) then
             deallocate(tmparray)
           end if
-          if (allocated(tmparray2)) then
-            deallocate(tmparray2)
-          end if
-          if (allocated(tmparray3)) then
-            deallocate(tmparray3)
-          end if
-          if (allocated(analyzernames)) then
-            deallocate(analyzernames)
-          end if
-          if (allocated(avgfields)) then
-            deallocate(avgfields)
-          end if
-          if (allocated(avgdims)) then
-            deallocate(avgdims)
-          end if
           nullify(analyzerfunction)
+
           close(2)
         else
           write(*,*) 'Received shutdown command at ', iproc
@@ -759,20 +638,216 @@ program pc_meanfield_collect
     end if
   end if
 
-  write(*,*) 'Time taken: ', Timer(analysisstart)
+  write(*,*) 'Time taken: ', MPI_WTIME() - analysisstart
   call fnames_clean_up()
   call vnames_clean_up()
-  call H5close_f(hdferr)
+  call CloseH5File()
+  call H5close_F(hdferr)
   call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
   call MPI_FINALIZE(mpierr)
 
   contains
 
-    real(kind=rkind) function Timer(t)
-        real(kind=rkind),intent(in) :: t
-        Timer = MPI_WTIME()-t
-        return
-    end function Timer
+    subroutine BCastInfo()
+      call MPI_BCAST(navgs, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(naverages, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(nanalyzers, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim1, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim2, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim2read, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim1_full, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ndim2_full, 1, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(avgname, fnlen, &
+                MPI_CHAR, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(datafilename, fnlen, &
+                MPI_CHAR, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(datalen, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(filesize, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(tlen, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(ntimesteps, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(data_stride, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(data_start, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(tsteplen, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(dim2stride, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(dim2runs, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      call MPI_BCAST(averagelen, 1, &
+                MPI_INT, 0, MPI_COMM_WORLD, mpierr)
+      if (.not. lroot) then
+        if (allocated(avgdims)) then
+          deallocate(avgdims)
+        end if
+        allocate(avgdims(navgs))
+        if (allocated(avgfields)) then
+          deallocate(avgfields)
+        end if
+        allocate(avgfields(navgs))
+        if (allocated(analyzernames)) then
+          deallocate(analyzernames)
+        end if
+        allocate(analyzernames(nanalyzers))
+      end if
+      call MPI_BCAST(avgdims, navgs, &
+                MPI_INT,  0, MPI_COMM_WORLD, mpierr)
+      do j=1,navgs
+        call MPI_BCAST(avgfields(j), fnlen, &
+                  MPI_CHAR, 0, MPI_COMM_WORLD, mpierr)
+      end do
+      do j=1,nanalyzers
+        call MPI_BCAST(analyzernames(j), fnlen, &
+                  MPI_CHAR, 0, MPI_COMM_WORLD, mpierr)
+      end do
+      filecheck = .true.
+      call MPI_REDUCE(filecheck, received, 1, &
+                      MPI_LOGICAL, MPI_LAND, 0, MPI_COMM_WORLD, mpistat, mpierr)
+
+    end subroutine BCastInfo
+
+    subroutine OpenH5File()
+
+    ! Initialize HDF5
+
+      call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_file_plist, hdferr)
+      call H5Pset_fapl_mpio_F(hdf_file_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+      phdffile = trim(datadir_snap)//'/mfcollect.h5'
+      ! Open hdf5-file
+      inquire(file=hdffile, exist=phdf_exists)
+      if (phdf_exists) then
+        open(11, file=phdffile, action='write', status='replace', iostat=ierr)
+        close(11, status='delete')
+      end if
+      call H5Fcreate_F(phdffile, H5F_ACC_TRUNC_F, phdf_fileid, hdferr, access_prp = hdf_file_plist)
+
+    end subroutine OpenH5File
+
+    subroutine CloseH5File()
+
+      call H5Pclose_F(hdf_file_plist,hdferr)
+      call H5Fclose_F(phdf_fileid, hdferr)
+
+    end subroutine CloseH5File
+    subroutine OpenH5Groups()
+    
+      if (data_stride == 4) then
+        hdfmemtype = H5T_NATIVE_REAL
+      else if (data_stride == 8) then
+        hdfmemtype = H5T_NATIVE_DOUBLE
+      else
+        write(*,*) 'Could not determine the data type.'
+        call exit(1)
+      end if
+
+      ! Create dataset
+
+      if (allocated(phdf_fieldgroups)) then
+        deallocate(phdf_fieldgroups)
+      end if
+      if (allocated(phdf_spaces)) then
+        deallocate(phdf_spaces)
+      end if
+      if (allocated(phdf_chunkspaces)) then
+        deallocate(phdf_chunkspaces)
+      end if
+      if (allocated(phdf_datasets)) then
+        deallocate(phdf_datasets)
+      end if
+      if (allocated(phdf_plist_ids)) then
+        deallocate(phdf_plist_ids)
+      end if
+      if (allocated(phdf_dims)) then
+        deallocate(phdf_dims)
+      end if
+      if (allocated(phdf_chunkdims)) then
+        deallocate(phdf_chunkdims)
+      end if
+      allocate(phdf_fieldgroups(navgs))
+      allocate(phdf_spaces(nanalyzers,navgs))
+      allocate(phdf_datasets(nanalyzers,navgs))
+      allocate(phdf_chunkspaces(nanalyzers,navgs))
+      allocate(phdf_plist_ids(nanalyzers,navgs))
+      allocate(phdf_dims(4,naverages))
+      allocate(phdf_chunkdims(4,naverages))
+      do ianalyzer=1,nanalyzers
+        resultdim1 = ntimesteps
+        call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultdim1, resultdim2)
+        phdf_dims(:,ianalyzer) = [ndim1_full, ndim2_full, resultdim1, resultdim2]
+        phdf_chunkdims(:,ianalyzer) = [ndim1, ndim2, resultdim1, resultdim2]
+      end do
+      
+      call H5Gcreate_F(phdf_fileid, "/"//trim(avgname), phdf_avggroup, hdferr)
+      if (lroot) then
+        write(*,*) 'CreatedG: ', "/"//trim(avgname)
+      end if
+      do iavg=1,navgs
+        call H5Gcreate_F(phdf_avggroup, "/"//trim(avgname)//"/"//avgfields(iavg), &
+                       phdf_fieldgroups(iavg), hdferr)
+        if (lroot) then
+          write(*,*) 'CreatedG: ', "/"//trim(avgname)//"/"//avgfields(iavg)
+        end if
+        do ianalyzer=1,nanalyzers
+          call H5Screate_simple_F(4, phdf_dims(:,ianalyzer), phdf_spaces(ianalyzer,iavg), hdferr)
+          call H5Screate_simple_F(4, phdf_chunkdims(:,ianalyzer), phdf_chunkspaces(ianalyzer,iavg), hdferr)
+          if (lroot) then
+            write(*,*) 'CreatedS: ', trim(analyzernames(ianalyzer))
+          end if
+          call H5Pcreate_F(H5P_DATASET_CREATE_F, phdf_plist_ids(ianalyzer,iavg), hdferr)
+          call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 4, phdf_chunkdims(:,ianalyzer), hdferr)
+          call H5Dcreate_F(phdf_fieldgroups(iavg), trim(analyzernames(ianalyzer)), &
+                           H5T_IEEE_F32LE, phdf_spaces(ianalyzer,iavg), &
+                           phdf_datasets(ianalyzer,iavg), hdferr, phdf_plist_ids(ianalyzer,iavg))
+          
+          call H5Sclose_F(phdf_spaces(ianalyzer,iavg), hdferr)
+          if (lroot) then
+            write(*,*) 'CreatedD: ', trim(analyzernames(ianalyzer))
+          end if
+        end do
+      end do
+
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+
+    end subroutine OpenH5Groups
+
+    subroutine CloseH5Groups
+
+      do iavg=1,navgs
+        do ianalyzer=1,nanalyzers
+          call H5Dclose_F(phdf_datasets(ianalyzer,iavg),hdferr)
+          call H5Pclose_F(phdf_plist_ids(ianalyzer,iavg), hdferr)
+          if (lroot) then
+            write(*,*) 'ClosedD: ', trim(analyzernames(ianalyzer))
+          end if
+          call H5Sclose_F(phdf_chunkspaces(ianalyzer,iavg), hdferr)
+          if (lroot) then
+            write(*,*) 'ClosedS: ', trim(analyzernames(ianalyzer))
+          end if
+        end do
+        call H5Gclose_F(phdf_fieldgroups(iavg), hdferr)
+        if (lroot) then
+          write(*,*) 'ClosedG: ', "/"//trim(avgname)//"/"//avgfields(iavg)
+        end if
+      end do
+      call H5Gclose_F(phdf_avggroup, hdferr)
+      if (lroot) then
+        write(*,*) 'ClosedG: ', "/"//trim(avgname)
+      end if
+
+    end subroutine CloseH5Groups
 
     character(len=fnlen) function ljustifyI(i)
         integer, intent(in) :: i

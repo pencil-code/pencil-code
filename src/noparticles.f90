@@ -59,6 +59,30 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
+    subroutine read_particles_init_pars()
+!
+    endsubroutine read_particles_init_pars
+!***********************************************************************
+    subroutine write_particles_init_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_init_pars
+!***********************************************************************
+    subroutine read_particles_run_pars()
+!
+    endsubroutine read_particles_run_pars
+!***********************************************************************
+    subroutine write_particles_run_pars(unit)
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_run_pars
+!***********************************************************************
     subroutine pencil_criteria_particles()
 !
 !  All pencils that the Particles module depends on are specified here.
@@ -246,38 +270,6 @@ module Particles
 !
     endsubroutine create_particles_sink_simple
 !***********************************************************************
-    subroutine read_particles_init_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_particles_init_pars
-!***********************************************************************
-    subroutine write_particles_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_init_pars
-!***********************************************************************
-    subroutine read_particles_run_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_particles_run_pars
-!***********************************************************************
-    subroutine write_particles_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_particles_run_pars
-!***********************************************************************
     subroutine powersnap_particles(f)
 !
 !  Calculate power spectra of particle variables.
@@ -291,27 +283,25 @@ module Particles
     endsubroutine powersnap_particles
 !***********************************************************************
     subroutine insert_particles(f,fp,ineargrid)
-      !
-      ! Insert particles continuously (when linsert_particles_continuously == T),
-      ! i.e. in each timestep. If number of particles to be inserted are less
-      ! than unity, accumulate number over several timesteps until the integer value
-      ! is larger than one. Keep the remainder and accumulate this to the next insert.
-      !
-      ! Works only for particles_dust - add neccessary variable
-      ! declarations in particles_tracers to make it work here.
-      !
-      !
+!
+! Insert particles continuously (when linsert_particles_continuously == T),
+! i.e. in each timestep. If number of particles to be inserted are less
+! than unity, accumulate number over several timesteps until the integer value
+! is larger than one. Keep the remainder and accumulate this to the next insert.
+!
+! Works only for particles_dust - add neccessary variable
+! declarations in particles_tracers to make it work here.
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
-      !
+!
       intent (inout) :: fp,ineargrid
-      !
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
-      !
-      !
+!
     endsubroutine insert_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)

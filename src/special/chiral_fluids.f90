@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; del2mu5; gtheta5(3); ugtheta5; bgtheta5
+! PENCILS PROVIDED mu5; theta5; del2mu5; gtheta5(3); ugtheta5; bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -85,7 +85,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5
+   real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
    real, pointer :: eta
    integer :: itheta5, imu5
 !!   integer :: ispecaux=0
@@ -93,7 +93,7 @@ module Special
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial
+      initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
       diffmu5, lambda5
@@ -102,6 +102,8 @@ module Special
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
+  integer :: idiag_theta5m=0   ! DIAG_DOC: $\left<\theta_5\right>$
+  integer :: idiag_theta5rms=0 ! DIAG_DOC: $\left<\theta_5^2\right>^{1/2}$
 !
   contains
 !***********************************************************************
@@ -187,9 +189,12 @@ module Special
 !
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('test')
-          f(:,:,:,itheta5) = 5.
-          f(:,:,:,imu5) = 6.
+        case ('const')
+          f(:,:,:,itheta5) = theta5_const
+          f(:,:,:,imu5) = mu5_const
+        case ('zero')
+          f(:,:,:,itheta5) = 0.
+          f(:,:,:,imu5) = 0.
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -206,6 +211,7 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_mu5)=.true.
+      lpenc_requested(i_theta5)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_ugtheta5)=.true.
@@ -247,6 +253,7 @@ module Special
 !  del2mu5
 !
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
+      if (lpencil(i_theta5)) p%theta5=f(l1:l2,m,n,itheta5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_gtheta5)) call grad(f,imu5,p%gtheta5)
       if (lpencil(i_ugtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
@@ -279,7 +286,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb
+      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -294,31 +301,44 @@ module Special
 !
 !  Evolution of mu5
 !
-      if (diffmu5/=0.) df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
         +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of theta5
 !
       df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5
 !
-      call multsv(p%mu5,p%bb,mu5bb)
-      call multsv(p%ub,p%gtheta5,ubgtheta5)
-      if (lmagnetic) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz) &
-        +eta*(mu5bb-ubgtheta5)
+!  Additions to evolution of bb
+!
+      if (lmagnetic) then
+        call multsv(p%mu5,p%bb,mu5bb)
+        call multsv(p%ub,p%gtheta5,ubgtheta5)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
+      endif
+!
+!  Additions to evolution of uu
+!
+      if (lhydro) then
+        call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
+      endif
+!
+!  diagnostics
 !
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
+        if (idiag_theta5m/=0) call sum_mn_name(p%theta5,idiag_theta5m)
+        if (idiag_theta5rms/=0) call sum_mn_name(p%theta5**2,idiag_theta5rms,lsqrt=.true.)
       endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
@@ -334,10 +354,9 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
@@ -370,12 +389,14 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_theta5m=0; idiag_theta5rms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'theta5m',idiag_theta5m)
+        call parse_name(iname,cname(iname),cform(iname),'theta5rms',idiag_theta5rms)
       enddo
 !
     endsubroutine rprint_special

@@ -166,9 +166,9 @@ program start
 !
   call initialize_mpicomm()
 !
-!  Read parameters from start.in.
+!  Read initialization parameters from "start.in".
 !
-  call read_startpars
+  call read_all_init_pars()
 !
 !  Register variables in the f array.
 !
@@ -563,7 +563,7 @@ program start
 !  Write input parameters to a parameter file (for run.x and IDL).
 !  Do this late enough, so init_entropy etc. can adjust them.
 !
-  call wparam()
+  call write_all_init_pars('IDL')
 !
 !  Write information about pencils to disc.
 !

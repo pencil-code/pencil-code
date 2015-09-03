@@ -32,15 +32,16 @@ module Particles_stalker
   logical :: lstalk_uu=.true., lstalk_guu=.false.
   logical :: lstalk_rho=.true., lstalk_grho=.false.
   logical :: lstalk_bb=.true., lstalk_ap=.true.
-  logical :: lstalk_rhopswarm=.true., lstalk_potself=.true.
+  logical :: lstalk_npswarm=.false., lstalk_rhopswarm=.true., lstalk_potself=.true.
   logical :: lstalk_aps=.true.
   logical :: lstalk_sink_particles=.false.
+  logical :: lstalk_relvel=.false.
 !
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
-      lstalk_bb, lstalk_ap, lstalk_rhopswarm, lstalk_potself, lstalk_aps, &
-      lstalk_sink_particles
+      lstalk_bb, lstalk_ap, lstalk_npswarm, lstalk_rhopswarm, lstalk_potself, &
+      lstalk_aps, lstalk_sink_particles, lstalk_relvel
 !
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, lstalk_sink_particles
@@ -70,6 +71,7 @@ module Particles_stalker
 !
       if (ivpx==0)       lstalk_vv=.false.
       if (iap==0)        lstalk_ap=.false.
+      if (inpswarm==0)   lstalk_npswarm=.false.
       if (irhopswarm==0) lstalk_rhopswarm=.false.
       if (iaps==0)       lstalk_aps=.false.
       if (iuu==0)        lstalk_uu=.false.
@@ -78,6 +80,7 @@ module Particles_stalker
       if (ilnrho==0)     lstalk_grho=.false.
       if (iaa==0)        lstalk_bb=.false.
       if (ipotself==0)   lstalk_potself=.false.
+      if (iuu==0 .or. ivpx==0) lstalk_relvel=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
@@ -90,6 +93,7 @@ module Particles_stalker
       if (lstalk_xx)        nvar_stalk=nvar_stalk+3
       if (lstalk_vv)        nvar_stalk=nvar_stalk+3
       if (lstalk_ap)        nvar_stalk=nvar_stalk+1
+      if (lstalk_npswarm)   nvar_stalk=nvar_stalk+1
       if (lstalk_rhopswarm) nvar_stalk=nvar_stalk+1
       if (lstalk_aps)       nvar_stalk=nvar_stalk+1
       if (lstalk_uu)        nvar_stalk=nvar_stalk+3
@@ -98,6 +102,7 @@ module Particles_stalker
       if (lstalk_grho)      nvar_stalk=nvar_stalk+3
       if (lstalk_bb)        nvar_stalk=nvar_stalk+3
       if (lstalk_potself)   nvar_stalk=nvar_stalk+1
+      if (lstalk_relvel)    nvar_stalk=nvar_stalk+1
 !
 !  Write information on which variables are stalked to file.
 !
@@ -107,6 +112,7 @@ module Particles_stalker
           if (lstalk_xx)        write(1,'(A)',advance='no') 'xp,yp,zp,'
           if (lstalk_vv)        write(1,'(A)',advance='no') 'vpx,vpy,vpz,'
           if (lstalk_ap)        write(1,'(A)',advance='no') 'ap,'
+          if (lstalk_npswarm)   write(1,'(A)',advance='no') 'npswarm,'
           if (lstalk_rhopswarm) write(1,'(A)',advance='no') 'rhopswarm,'
           if (lstalk_aps)       write(1,'(A)',advance='no') 'aps,'
           if (lstalk_uu)        write(1,'(A)',advance='no') 'ux,uy,uz,'
@@ -117,6 +123,7 @@ module Particles_stalker
           if (lstalk_grho)      write(1,'(A)',advance='no') 'drhodx,drhody,drhodz,'
           if (lstalk_bb)        write(1,'(A)',advance='no') 'bx,by,bz,'
           if (lstalk_potself)   write(1,'(A)',advance='no') 'potself,'
+          if (lstalk_relvel)    write(1,'(A)',advance='no') 'relvel,'
          close (1)
       endif
 !
@@ -158,8 +165,9 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duxdx, duxdy, duxdz
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
-      real, dimension (npar_stalk) :: bx, by, bz, ap, rhopswarm
+      real, dimension (npar_stalk) :: bx, by, bz, ap, npswarm, rhopswarm
       real, dimension (npar_stalk) :: potself, aps
+      real, dimension (npar_stalk) :: relvel
       real, dimension (:,:), allocatable :: values
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, npar_stalk_loc, ivalue
@@ -225,6 +233,14 @@ module Particles_stalker
         if (lstalk_ap) then
           do i=1,npar_stalk_loc
             ap(i)=fp(k_stalk(i),iap)
+           enddo
+        endif
+!
+!  Particle number density.
+!
+        if (lstalk_npswarm) then
+          do i=1,npar_stalk_loc
+            npswarm(i)=fp(k_stalk(i),inpswarm)
            enddo
         endif
 !
@@ -296,6 +312,22 @@ module Particles_stalker
               potself)
         endif
 !
+!  Relative velocity of gas and particle
+!
+        if (lstalk_relvel) then
+          do i=1,npar_stalk_loc
+            vpx(i)=fp(k_stalk(i),ivpx)
+            vpy(i)=fp(k_stalk(i),ivpy)
+            vpz(i)=fp(k_stalk(i),ivpz)
+          enddo
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iux,ux)
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuy,uy)
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuz,uz)
+          do i=1,npar_stalk_loc
+             relvel(i)=sqrt(((vpx(i)-ux(i))**2)+((vpy(i)-uy(i))**2)+((vpz(i)-uz(i))**2))
+          enddo
+        endif
+!
 !  Write information to a file
 !
         open(1,file=trim(directory_dist)//'/particles_stalker.dat', &
@@ -323,6 +355,9 @@ module Particles_stalker
             endif
             if (lstalk_ap) then
               ivalue=ivalue+1; values(ivalue,:)=ap(1:npar_stalk_loc)
+            endif
+            if (lstalk_npswarm) then
+              ivalue=ivalue+1; values(ivalue,:)=npswarm(1:npar_stalk_loc)
             endif
             if (lstalk_rhopswarm) then
               ivalue=ivalue+1; values(ivalue,:)=rhopswarm(1:npar_stalk_loc)
@@ -361,6 +396,9 @@ module Particles_stalker
             endif
             if (lstalk_potself) then
               ivalue=ivalue+1; values(ivalue,:)=potself(1:npar_stalk_loc)
+            endif
+            if (lstalk_relvel) then
+              ivalue=ivalue+1; values(ivalue,:)=relvel(1:npar_stalk_loc)
             endif
             write(1) values
             deallocate(values)
@@ -522,12 +560,22 @@ module Particles_stalker
 !
     endsubroutine stalk_magnetic
 !***********************************************************************
+!    subroutine stalk_rep(fp,npar_stalk_loc,rep)
+!      real, dimension (mpar_loc,mparray) :: fp
+!      real, dimension (npar_stalk) :: rep,nu
+!      integer :: npar_stalk_loc
+!      integer :: k
+!
+!      do k=1,npar_stalk
+!        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu(k)
+!      enddo
+!    endsubroutine stalk_rep
+!***********************************************************************
     subroutine read_pstalker_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_stalker_init_pars, IOSTAT=iostat)
 !
@@ -543,10 +591,9 @@ module Particles_stalker
 !***********************************************************************
     subroutine read_pstalker_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_stalker_run_pars, IOSTAT=iostat)
 !

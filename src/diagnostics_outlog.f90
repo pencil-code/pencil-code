@@ -2601,9 +2601,9 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_count_lines, parallel_open, parallel_close, get_unit
+      use File_io, only : parallel_open, parallel_close, parallel_unit
       use General, only : itoa
-      use Sub, only     : location_in_proc
+      use Sub, only     : parallel_count_lines, location_in_proc
 !
       integer, intent(in) :: nnamel
 !
@@ -2616,7 +2616,6 @@ module Diagnostics
       real    :: xsound, ysound, zsound
       integer :: lsound, msound, nsound
       character (LEN=80) :: line
-      include "parallel_unit.h"
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2630,7 +2629,7 @@ module Diagnostics
 !
       ncoords_sound = 0
 !
-      call parallel_open(parallel_unit,sound_coord_file)
+      call parallel_open(sound_coord_file)
 !
       do isound=1,mcoords_sound
 !

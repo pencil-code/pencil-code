@@ -336,13 +336,13 @@ module Magnetic
 !
     endfunction output_persistent_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(umax)
+    subroutine dynamical_resistivity(urms)
 !
 !  dummy
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
-      call keep_compiler_quiet(umax)
+      call keep_compiler_quiet(urms)
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

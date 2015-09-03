@@ -91,7 +91,30 @@ end
 ; Return available quantities.
 function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, available=avail, aliases=aliases, additionals=add_quant, vectorfields=vectorfields, warn=warn, indices=indices
 
-	; List of available quantities.
+	; Get available sources
+	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
+	if (size (sources, /type) eq 8) then begin
+		; Create array of IDL names out of given varcontent structure
+		sources = sources.idlvar
+		sources = sources[where (sources ne "dummy")]
+	end
+	num_sources = n_elements (sources)
+	num_species = 0
+	for pos = 0, num_sources - 1 do begin
+		species = (stregex (sources[pos], '^YY([0-9]+)$', /subexpr, /extract, /fold_case))[1]
+		if (species ne '') then begin
+			num_species += 1
+			if (num_species eq 1) then begin
+				species_available = create_struct ('species_'+species, 'chemical species '+species+' mass-%')
+				species_depend = create_struct ('species_'+species, 'YY'+species)
+			end else begin
+				species_available = create_struct (species_available, 'species_'+species, 'chemical species '+species+' mass-%')
+				species_depend = create_struct (species_depend, 'species_'+species, 'YY'+species)
+			end
+		end
+	end
+
+	; List of available quantities
 	available = { $
 		Temp:'temperature', $
 		ln_Temp:'ln temperature', $
@@ -120,13 +143,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
-		E_abs:'electric field strength', $
+		EMF_abs:'electro motive force strength', $
+		E_j_abs:'current electric field strength', $
 		E_x:'electric field x', $
 		E_y:'electric field y', $
 		E_z:'electric field z', $
 		E_parallel:'field-aligned electric field', $
 		E_perpendicular:'field-perpendicular electric field', $
 		H_mag:'magnetic field helicity', $
+		H_mag_pos:'positive magnetic field helicity', $
+		H_mag_neg:'negative magnetic field helicity', $
 		H_j:'electric current helicity', $
 		dH_mag_dt:'change rate of magnetic field helicity', $
 ;		grad_E_abs_abs:'grad electric field strength', $
@@ -160,6 +186,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer perp./par. heatflux', $
 		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
+		Spitzer_collision_frequency_e:'Spitzer electron collision frequency', $
+		Spitzer_conductivity:'Spitzer conductivity', $
+		Spitzer_mag_diffusivity:'Spitzer magnetic diffusivity', $
 		Coulomb_logarithm:'Coulomb logarithm', $
 		collision_frequency_e:'electron collision frequency', $
 		WKB_conductivity:'WKB electric conductivity', $
@@ -169,16 +198,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho:'density', $
 		ln_rho:'ln density', $
 		log_rho:'log density', $
-		n_rho:'particle density', $
-		species_1:'chemical species 1 mass-%', $
-		species_2:'chemical species 2 mass-%', $
-		species_3:'chemical species 3 mass-%', $
-		species_4:'chemical species 4 mass-%', $
-		species_5:'chemical species 5 mass-%', $
-		species_6:'chemical species 6 mass-%', $
-		species_7:'chemical species 7 mass-%', $
-		species_8:'chemical species 8 mass-%', $
-		species_9:'chemical species 9 mass-%' $
+		n_rho:'particle density' $
 	}
 
 	; List of code variable aliases.
@@ -206,6 +226,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dy:'magnetic field y-derivative', $
 		dB_dz:'magnetic field z-derivative', $
 		E:'electric field', $
+		EMF:'electro motive force', $
+		E_j:'current electric field', $
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure' $
@@ -278,6 +300,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dz:'A', $
 		E:['u','A'], $
 		E_abs:'E', $
+		EMF:['u','A'], $
+		EMF_abs:'EMF', $
+		E_j:'j', $
+		E_j_abs:'E_j', $
 		E_x:'E', $
 		E_y:'E', $
 		E_z:'E', $
@@ -286,6 +312,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_E_abs:'E', $
 		grad_E_abs_abs:'E', $
 		H_mag:['A','B'], $
+		H_mag_pos:'H_mag', $
+		H_mag_neg:'H_mag', $
 		H_j:['B','j'], $
 		dH_mag_dt:['H_j'], $
 		beta:['P_therm', 'B_2'], $
@@ -324,6 +352,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
 		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
+		Spitzer_collision_frequency_e:['Temp', 'n_rho', 'Coulomb_logarithm'], $
+		Spitzer_conductivity:['Temp', 'Coulomb_logarithm'], $
+		Spitzer_mag_diffusivity:'Spitzer_conductivity', $
 		Coulomb_logarithm:'Temp', $
 		collision_frequency_e:['B'], $
 		WKB_conductivity:['n_rho', 'collision_frequency_e'], $
@@ -334,15 +365,6 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'rho', $
 		log_rho:'rho', $
 		n_rho:'rho', $
-		species_1:'YY1', $
-		species_2:'YY2', $
-		species_3:'YY3', $
-		species_4:'YY4', $
-		species_5:'YY5', $
-		species_6:'YY6', $
-		species_7:'YY7', $
-		species_8:'YY8', $
-		species_9:'YY9', $
 		; Virtual combined dependencies:
 		TT_rho:['TT', 'rho'], $
 		S_rho:['S', 'rho'], $
@@ -367,6 +389,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		origin_z:'' $
 	}
 
+	if (num_species ge 1) then begin
+		available = create_struct (available, species_available)
+		depend = create_struct (depend, species_depend)
+	end
+
 	; Fill default values
 	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias, additional)
 	if (keyword_set (avail)) then return, available
@@ -374,13 +401,6 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	if (keyword_set (add_quant)) then return, additional
 	if (keyword_set (vectorfields)) then return, available_vectorfields
 	if (not keyword_set (check)) then check = create_struct (available)
-	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
-
-	if (size (sources, /type) eq 8) then begin
-		; Create array of IDL names out of given varcontent structure
-		sources = sources.idlvar
-		sources = sources[where (sources ne "dummy")]
-	end
 
 	if (size (check, /type) eq 7) then begin
 		; Create structure out of given array

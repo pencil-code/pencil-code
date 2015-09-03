@@ -171,7 +171,7 @@ module Special
 !  13-sep-10/bing: coded
 !
       use EquationOfState, only: gamma,get_cp1
-      use File_io, only: parallel_file_exists
+      use Sub, only: parallel_file_exists
       use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
@@ -185,11 +185,8 @@ module Special
       real,dimension(:,:,:),allocatable :: ltemp
 !
 !  Get the external magnetic field if exists.
-      if (lmagnetic) then
-        call get_shared_variable('B_ext', B_ext, ierr)
-        if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
-                                        'unable to get shared variable B_ext')
-      endif
+      if (lmagnetic) &
+        call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -310,10 +307,9 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
@@ -2275,7 +2271,7 @@ module Special
 !
 !  15-jan-11/bing: coded
 !
-      use File_io, only: file_exists
+      use General, only: file_exists
       use Fourier, only: fourier_transform_other
       use Mpicomm, only: mpibcast_real, stop_it_if_any
 !
@@ -2626,7 +2622,7 @@ module Special
       use General, only: random_seed_wrapper
       use Mpicomm, only: mpisend_real, mpirecv_real
       use Sub, only: cubic_step
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, save, dimension(mseed) :: global_rstate
@@ -3179,7 +3175,7 @@ module Special
 !***********************************************************************
     subroutine read_points(level)
 !
-      use File_io, only: file_exists, file_size
+      use General, only: file_exists, file_size
 !
       integer, intent(in) :: level
       integer :: unit=12,lend,lend_b8
