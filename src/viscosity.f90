@@ -386,9 +386,7 @@ module Viscosity
           if (lroot) print*,'viscous force: temperature dependent nu'
           lpenc_requested(i_sij)=.true.
           lvisc_spitzer=.true.
-        case ('none')
-          ! do nothing
-        case ('')
+        case ('none',' ')
           ! do nothing
         case default
           if (lroot) print*, 'No such value for ivisc(',i,'): ', trim(ivisc(i))
@@ -543,7 +541,6 @@ module Viscosity
           call get_shared_variable('detat_x',detat_x)
           call get_shared_variable('detat_y',detat_y)
           call get_shared_variable('detat_z',detat_z)
-          print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2
             print*,ipz,z(n),etat_z(n),detat_z(n)
           enddo
@@ -663,6 +660,7 @@ module Viscosity
         call fatal_error('initialize_lambda',&
             'default lambda_profile is uniform ! ')
       endselect
+
       lambda_V0t=lambda_V0*LV0_rprof(nx)
       lambda_V1t=lambda_V1*LV1_rprof(nx)
       lambda_V0b=lambda_V0*LV0_rprof(1)
@@ -674,7 +672,7 @@ module Viscosity
       call put_shared_variable('Lambda_H1',Lambda_H1)
       call put_shared_variable('LH1_rprof',LH1_rprof)
 !
-        endsubroutine initialize_lambda
+    endsubroutine initialize_lambda
 !***********************************************************************
     subroutine read_viscosity_run_pars(iostat)
 !
@@ -867,9 +865,12 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nu_profr_twosteps .or. lvisc_sqrtrho_nu_const .or. &
-          lvisc_nut_from_magnetic.or.lvisc_nu_therm .or.  &
-          lvisc_mu_therm .or. lvisc_spitzer) &
+          lvisc_nut_from_magnetic.or.lvisc_nu_therm) &
           lpenc_requested(i_sglnrho)=.true.
+!
+      if (lvisc_spitzer .or. lvisc_mu_therm .or. lvisc_nu_therm) &
+          lpenc_requested(i_sglnTT)=.true.
+!
       if (lvisc_nu_const .and. lmagfield_nu) lpenc_requested(i_b2)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if (ldensity.and.lvisc_nu_shock) then
@@ -1120,27 +1121,25 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
       endif
 !
-!  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+2S.glnrho)
+!  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+S.glnTT)
 !
       if (lvisc_mu_therm) then
-        muTT=nu*p%rho1*sqrt(exp(p%lnTT))
+        muTT=nu*p%rho1*exp(0.5*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
-              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
-              + 2*muTT*p%sglnrho(:,i)
+              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+p%sglnTT(:,i))
         enddo
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+muTT
       endif
 !
-!  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+2S.glnrho)
+!  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+5S.glnTT)
 !
       if (lvisc_spitzer) then
         muTT=nu_spitzer*p%rho1*exp(2.5*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
-              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
-              + 2*muTT*p%sglnrho(:,i)
+              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+5.*p%sglnTT(:,i))
         enddo
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+muTT
@@ -1150,7 +1149,7 @@ module Viscosity
 !  -- for numerical stability viscous force propto soundspeed in interstellar run
 !
       if (lvisc_nu_therm) then
-        muTT=nu*sqrt(exp(p%lnTT))
+        muTT=nu*exp(0.5*p%lnTT)
         if (ldensity) then
           do i=1,3
             p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)&
@@ -1263,7 +1262,7 @@ module Viscosity
           print*,'You are using both radial and horizontal '
           print*,'profiles for a viscosity jump. Are you sure '
           print*,'this is reasonable? Better stop and check.'
-          call fatal_error("","")
+          call fatal_error("calc_pencils_viscosity","")
         endif
         pnu = nu + nu_jump1*(step(tmp3,xnu ,widthnu) - step(tmp3,xnu2,widthnu))
         tmp4=nu_jump1*(der_step(tmp3,xnu ,widthnu)-der_step(tmp3,xnu2,widthnu)) 
