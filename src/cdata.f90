@@ -309,7 +309,7 @@ module Cdata
   integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
-  integer :: icooling=0, inetcool=0
+  integer :: icooling=0, iheatcool=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
 !
 !  Parameters related to message passing.

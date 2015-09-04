@@ -392,7 +392,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netcool',inetcool,communicated=.true.)
+      call farray_register_auxiliary('netcool',iheatcool,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -430,7 +430,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,inetcool)=0.0
+      f(:,:,:,iheatcool)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -1031,7 +1031,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'inetcool=',inetcool
+        write(3,*) 'iheatcool=',iheatcool
       endif
 !
     endsubroutine rprint_interstellar
@@ -1058,10 +1058,10 @@ module Interstellar
           slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
         case ('ism_netcool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetcool)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetcool)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetcool)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetcool)
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iheatcool)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,iheatcool)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,iheatcool)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,iheatcool)
           slices%ready = .true.
 !
       endselect
@@ -1413,7 +1413,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,inetcool)=heatcool
+      f(l1:l2,m,n,iheatcool)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
