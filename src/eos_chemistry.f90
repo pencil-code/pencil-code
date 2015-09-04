@@ -531,6 +531,10 @@ module EquationOfState
          else
            p%TT=exp(f(l1:l2,m,n,ilnTT))
          endif
+!
+         if (minval(p%TT)==0.) then
+           call fatal_error('calc_pencils_eos','p%TT=0!')
+         endif         
        endif
 !
        if (lpencil(i_TT1)) then
@@ -540,11 +544,6 @@ module EquationOfState
            p%TT1=1./exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
-
-!
-        if (minval(p%TT)==0.) then
-          call fatal_error('calc_pencils_eos','p%TT=0!')
-        endif
 !
 !  Temperature laplacian and gradient
 !
