@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos !,dsdr
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
 ! PENCILS PROVIDED initss; initlnrho
 !
 !***************************************************************
@@ -2753,6 +2753,10 @@ module Energy
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
+      if (lpencil_in(i_sglnTT)) then
+        lpencil_in(i_sij)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
@@ -2783,7 +2787,7 @@ module Energy
 !  15-mar-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad, grad
+      use Sub, only: u_dot_grad, grad, multmv
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2794,6 +2798,7 @@ module Energy
 !
       real, dimension(nx,3) :: gradS
       integer :: j
+!
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
@@ -2805,6 +2810,8 @@ module Energy
 ! for pretend_lnTT
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
+! sglnTT
+      if (lpencil(i_sglnTT)) call multmv(p%sij,p%glnTT,p%sglnTT)
 ! dsdr
      !if (lpencil(i_dsdr)) then
      !    call grad(f,iss,gradS)
