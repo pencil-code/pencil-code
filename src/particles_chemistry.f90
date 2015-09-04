@@ -1491,7 +1491,7 @@ module Particles_chemistry
         call calc_entropy_of_reaction()
 !
         call calc_K_k(f,fp,p,ineargrid)
-        call calc_Cg(p,ineargrid)
+        call calc_Cg(fp,p,ineargrid)
         if (N_adsorbed_species > 1) call calc_Cs(fp)
         call calc_A_p(fp)
         call calc_RR_hat(f,fp)
@@ -1505,6 +1505,7 @@ module Particles_chemistry
 !JONAS:  We also need to make a subroutine calculcating the Sherwood
 !JONAS:  number.
         else
+          Nu_p = 2.
           q_reac = 0.0
         endif
 !
@@ -1854,9 +1855,11 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_Cg(p,ineargrid)
+    subroutine calc_Cg(fp,p,ineargrid)
+      real, dimension(:,:) :: fp
       integer :: k, k1, k2
       integer :: ix0
+      real :: Tfilm
       type (pencil_case) :: p
       integer, dimension(:,:) :: ineargrid
 !
@@ -1864,7 +1867,8 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       do k = k1,k2
-        Cg(k) = interp_pp(k)/(Rgas*interp_TT(k))
+        Tfilm=fp(k,iTp)+(interp_TT(k)-fp(k,iTp))/3.
+        Cg(k) = interp_pp(k)/(Rgas*Tfilm)
       enddo
     endsubroutine calc_Cg
 ! ******************************************************************************
