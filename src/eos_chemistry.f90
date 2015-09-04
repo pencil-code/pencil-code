@@ -656,7 +656,7 @@ module EquationOfState
       else
         rho_full_tmp=exp(f(:,:,:,ilnrho))
       endif
-        rho_full=rho_full_tmp
+      rho_full=rho_full_tmp
 !
       call keep_compiler_quiet(present(yH))
       call keep_compiler_quiet(present(EE))
