@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); tcond; dsdr
+! PENCILS PROVIDED Ma2; fpres(3); tcond; dsdr; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -252,9 +252,9 @@ module Energy
 !
 ! tcond (dummy)
 !
-      if (lpencil(i_tcond)) then
-        p%tcond=0.
-      endif
+      if (lpencil(i_tcond)) p%tcond=0.
+! sglnTT (dummy)
+      if (lpencil(i_sglnTT)) p%sglnTT=0.
 !
       call keep_compiler_quiet(f)
 !
