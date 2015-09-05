@@ -601,8 +601,8 @@ module InitialCondition
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
-      intent(in)  :: temperature_power_law
-      intent(out) :: f
+      intent(in)    :: temperature_power_law
+      intent(inout) :: f
 !
 !  Break if llocal_iso is used with entropy or temperature
 !
