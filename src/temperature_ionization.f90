@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -550,6 +550,10 @@ module Energy
         call fatal_error('calc_pencils_energy', &
                   'calculation of pressure force not yet implemented'//&
                   ' for temperature_ionization')
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for temperature_ionization')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************

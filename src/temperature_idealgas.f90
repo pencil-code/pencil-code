@@ -22,7 +22,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond;
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -918,6 +918,10 @@ module Energy
               'This heatcond is not implemented to work with lpencil(i_cond)!')
         endif
       endif
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for temperature_idealgas')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
