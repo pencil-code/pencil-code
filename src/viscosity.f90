@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
-! PENCILS PROVIDED visc_heat; nu; gradnu(3); sgnu(3)
+! PENCILS PROVIDED visc_heat; nu; gradnu(3)
 !
 !***************************************************************
 module Viscosity
@@ -913,7 +913,6 @@ module Viscosity
         lpenc_requested(i_sglnrho)=.true.
         lpenc_requested(i_nu)=.true.
         lpenc_requested(i_gradnu)=.true.
-        lpenc_requested(i_sgnu)=.true.
         lpenc_requested(i_sij)=.true.
         if ((lentropy.or.ltemperature).and.lviscosity_heat) &
             lpenc_requested(i_sij2)=.true.
@@ -1230,12 +1229,13 @@ module Viscosity
 !  Viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
 !
       if (lvisc_mixture) then
-        if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
+        call multmv(p%sij,p%gradnu,sgradnu)
+        do i=1,3
+          p%fvisc(:,i)=p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) + 2*sgradnu(:,i)
+        enddo
         if (ldensity) then
           do i=1,3
-            p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i) &
-            +p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
-            +2*p%sgnu(:,i)
+            p%fvisc(:,i)=p%fvisc(:,i) + 2*p%nu*p%sglnrho(:,i)
           enddo
         endif
 !
