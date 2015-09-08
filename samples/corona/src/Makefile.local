@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 MPICOMM   =   mpicomm
-IO        =   io_collect_xy
+#IO        =   io_collect_xy
 # FILE_IO   =   experimental/file_io_f2003
 
 HYDRO     =   hydro
