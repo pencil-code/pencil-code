@@ -9,7 +9,7 @@
 include src/Makefile.local
 
 # Build the code:
-default: Makefile_inc
+default: Makefile_inc Fortran_standard
 	touch src/.build-history
 	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
 	( cd src && \
@@ -132,3 +132,14 @@ Makefile_inc:
 	    ;; \
 	esac; \
 	./src/scripts/precision-check src/.current-precision "$$desired_precision"
+
+Fortran_standard:
+	@case "$(FILE_IO)" in \
+	'file_io_f2003') \
+	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
+	    ;; \
+	*) \
+	    echo "FSTD=$(FSTD_95)" > src/Makefile-standard.inc; \
+	    ;; \
+	esac;
+

@@ -2092,7 +2092,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_95) -o $*.o -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2281,7 +2281,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	    ln -s cparam.inc cparam.inc; \
 	    ln -s cparam_pencils.inc cparam_pencils.inc; \
 	fi
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD_95) -o cparam.o -c cparam.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
@@ -2359,7 +2359,7 @@ mpicomm_.f90: mpicomm.f90
 #
 
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD_95) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) $(FSTD) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)

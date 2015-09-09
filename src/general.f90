@@ -3454,27 +3454,40 @@ module General
 !  Skips over possible persistent data blocks from end of snapshot to time record.
 !
 !  9-mar-15/MR: coded
+!  8-sep-15/MR: excluded false detection of id_block_PERSISTENT for double precision version.
+!               (in single precision false detection is impossible as id_block_PERSISTENT=2000
+!                corresponds to the non-normalized real 2.80259693E-42)
 !
       integer,           intent(in) :: lun
       logical, optional, intent(in) :: lroot
 
-      integer :: i,id
+      integer :: i,id,ios
+      real :: x
 
       backspace(lun)
       read(lun) id
 
+      ios=1
       if (id==id_block_PERSISTENT) then
-        backspace(lun)
 
-        do
-          do i=1,3; backspace(lun); enddo
-          read(lun) id
-          if (id==id_block_PERSISTENT) exit
-        enddo
         backspace(lun)
+        if (kind(x)==rkind8) then      ! if PC is in double precision version
+          read(lun,iostat=ios) x       ! try to read a double precision number from the same position as id
+          backspace(lun)
+        endif
+
+        if (ios/=0) then               ! if read try not done or unsuccessful: id_block_PERSISTENT was properly found
+          do
+            do i=1,3; backspace(lun); enddo
+            read(lun) id
+            if (id==id_block_PERSISTENT) exit
+          enddo
+          backspace(lun)
+        endif
       endif
 
-      backspace(lun)
+      if (ios/=0) backspace(lun)         ! if read try successful (ios==0), i.e., id_block_PERSISTENT was falsely detected,
+                                         ! one backspace already done
       if (loptest(lroot)) backspace(lun)
 
     endsubroutine backskip_to_time

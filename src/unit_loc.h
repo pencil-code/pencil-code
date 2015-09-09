@@ -8,8 +8,8 @@
 ! In any case one of the two declarations must finally be present.
 !
 !#IFDEF f2003
-!     character(LEN=:), allocatable :: unit
+     character(LEN=:), allocatable :: unit
 !#ELSE
-      integer, parameter :: unit=1
+!      integer, parameter :: unit=1
 !#ENDIF
 
