@@ -7,3 +7,6 @@
   - pc_read_var_raw: reads a varfile efficiently
   - pc_read_subvol_raw: reads out only part of a var.dat or VARX
   - pc_read_slice_raw: reads any 2D-slice from a varfile, wraps around 'pc_read_subvol_raw'
+
+* use multi core capabilities to spead up processes, e.g. threads or multicore library
+
