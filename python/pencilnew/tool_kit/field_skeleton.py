@@ -164,6 +164,8 @@ class NullPoint(object):
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
                 roots_x = -np.ones(2)                
+            if len(roots_x) == 1:
+                roots_x = np.array([roots_x, roots_x])
             roots_y = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
                        (coefBi[2, 0]+coefBi[3, 0]*roots_x)
             if np.real(roots_x[0]) >= 0 and np.real(roots_x[0]) <= 1 and \
@@ -176,10 +178,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 0]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
 
             # face 2
             intersection = False
@@ -200,6 +204,8 @@ class NullPoint(object):
             roots_x = np.roots(polynomial)            
             if len(roots_x) == 0:
                 roots_x = -np.ones(2)                
+            if len(roots_x) == 1:
+                roots_x = np.array([roots_x, roots_x])
             roots_y = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
                        (coefBi[2, 0]+coefBi[3, 0]*roots_x)
             if np.real(roots_x[0]) >= 0 and np.real(roots_x[0]) <= 1 and \
@@ -212,24 +218,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 1]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
-            
-            if ((roots_x[0] >= 0) and (roots_x[0] <= 1)) or \
-            ((roots_x[1] >= 0) and (roots_x[1] <= 1)):
-                roots_y = -(coefBi[0, 0] + coefBi[1, 0]*roots_x)/ \
-                           (coefBi[2, 0] + coefBi[3, 0]*roots_x)
-                if ((roots_y[0] >= 0) and (roots_y[0] <= 1)) or \
-                ((roots_y[1] >= 0) and (roots_y[1] <= 1)):
-                    intersection = True
-            if intersection:
-                xyz0 = [roots_x[1], roots_y[1], 1]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
 
             # face 3
             intersection = False
@@ -250,6 +244,8 @@ class NullPoint(object):
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
                 roots_x = -np.ones(2)                
+            if len(roots_x) == 1:
+                roots_x = np.array([roots_x, roots_x])
             roots_z = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
                        (coefBi[2, 0]+coefBi[3, 0]*roots_x)
             if np.real(roots_x[0]) >= 0 and np.real(roots_x[0]) <= 1 and \
@@ -262,10 +258,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 0, roots_z[root_idx]]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
 
             # face 4
             intersection = False
@@ -286,6 +284,8 @@ class NullPoint(object):
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
                 roots_x = -np.ones(2)                
+            if len(roots_x) == 1:
+                roots_x = np.array([roots_x, roots_x])
             roots_z = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
                        (coefBi[2, 0]+coefBi[3, 0]*roots_x)
             if np.real(roots_x[0]) >= 0 and np.real(roots_x[0]) <= 1 and \
@@ -298,10 +298,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 1, roots_z[root_idx]]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
                                   
             # face 5
             intersection = False
@@ -322,6 +324,8 @@ class NullPoint(object):
             roots_y = np.roots(polynomial)
             if len(roots_y) == 0:
                 roots_y = -np.ones(2)
+            if len(roots_y) == 1:
+                roots_y = np.array([roots_y, roots_y])
             roots_z = -(coefBi[0, 1]+coefBi[1, 1]*roots_y)/ \
                        (coefBi[2, 1]+coefBi[3, 1]*roots_y)
             if np.real(roots_y[0]) >= 0 and np.real(roots_y[0]) <= 1 and\
@@ -334,10 +338,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [0, roots_y[root_idx], roots_z[root_idx]]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
 
             # face 6
             intersection = False
@@ -358,6 +364,8 @@ class NullPoint(object):
             roots_y = np.roots(polynomial)
             if len(roots_y) == 0:
                 roots_y = -np.ones(2)
+            if len(roots_y) == 1:
+                roots_y = np.array([roots_y, roots_y])
             roots_z = -(coefBi[0, 1]+coefBi[1, 1]*roots_y)/ \
                        (coefBi[2, 1]+coefBi[3, 1]*roots_y)
             if np.real(roots_y[0]) >= 0 and np.real(roots_y[0]) <= 1 and \
@@ -370,10 +378,12 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [1, roots_y[root_idx], roots_z[root_idx]]
-                xyz = __newton_raphson(xyz0, coefTri)
-                null_cell.append([xyz[0]*var.dx + x[idx_x],
-                                  xyz[1]*var.dy + y[idx_y],
-                                  xyz[2]*var.dz + z[idx_z]])
+                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                # Check if the null point lies inside the cell.
+                if np.all(xyz >= 0) and np.all(xyz <= 1):
+                    null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                      xyz[1]*var.dy + y[idx_y],
+                                      xyz[2]*var.dz + z[idx_z]])
 
             # Compute the average of the null found from different faces.
             if null_cell:
