@@ -653,8 +653,6 @@ module Snapshot
       if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
         dt_=tsnap-t
         lfirst_call=.true.
-      else
-        dt_=dt_
       endif
 !
     endsubroutine shift_dt
