@@ -110,11 +110,7 @@ COMPILE_OPT IDL2,HIDDEN
   point_lun, file, additional
   if (allprocs eq 1) then begin
     ; collectively written files
-    t = one*!Values.F_NaN
-    fstat = file_info (procdir+varfile)
-    if (fstat.size gt additional) then begin
-      readu, file, t, x, y, z, dx, dy, dz
-    endif
+    readu, file, t, x, y, z, dx, dy, dz
   endif else if (allprocs eq 2) then begin
     ; xy-collectively written files for each ipz-layer
     readu, file, t
