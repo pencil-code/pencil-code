@@ -8,6 +8,16 @@ Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751).
 """
 
 import numpy as np
+import os as os
+try:
+    import vtk as vtk
+    from vtk.util import numpy_support as VN
+except:
+    print("Warning: no vtk library found.")
+try:
+    import h5py as h5py
+except:
+    print("Warning: no h5py library found.")
 
 
 class NullPoint(object):
@@ -399,4 +409,32 @@ class NullPoint(object):
                 diff_nulls[2] < var.dz:
                     keep_null[idx_null_2] = False
         self.nulls = self.nulls[keep_null == True]
+
+    
+    def write_vtk(self, data_dir='./data', file_name='nulls.vtk'):
+        """
+        Write the null point into a vtk file.
+
+        call signature:
+
+            write_vtk(data_dir='./data', file_name='nulls.vtk')
             
+        Arguments:
+
+        *data_dir*:
+            Target data directory.
+
+        *file_name*:
+            Target file name.
+        """
+        
+        writer = vtk.vtkPolyDataWriter()
+        writer.SetFileName(os.path.join(data_dir, file_name))
+        poly_data = vtk.vtkPolyData()
+        points = vtk.vtkPoints()
+        for null in self.nulls:
+            points.InsertNextPoint(null)
+        poly_data.SetPoints(points)
+        writer.SetInput(poly_data)
+        writer.Write()
+        
