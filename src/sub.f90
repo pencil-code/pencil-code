@@ -3133,6 +3133,7 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
+!  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
       use Mpicomm, only: mpibcast_real
 !
@@ -3166,7 +3167,7 @@ module Sub
           else settout
             !  make sure the tout is a good time
             nonzero: if (dtout /= 0.0) then
-              tout = dtout
+              tout = t
             else nonzero
               call warning("read_snaptime", &
                    "Am I writing snapshots every 0 time units? (check " // &
