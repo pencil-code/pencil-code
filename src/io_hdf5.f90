@@ -19,10 +19,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface output_form
-    module procedure output_form_int_0D
-  endinterface
-!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D

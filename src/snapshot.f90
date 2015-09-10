@@ -16,7 +16,11 @@ module Snapshot
 !
   private
 !
-  public :: rsnap, wsnap, wsnap_down, powersnap
+  interface output_form
+    module procedure output_form_int_0D
+  endinterface
+!
+  public :: rsnap, wsnap, wsnap_down, powersnap, output_form
   public :: shift_dt
 !
   contains
@@ -654,6 +658,38 @@ module Snapshot
       endif
 !
     endsubroutine shift_dt
+!***********************************************************************
+    subroutine output_form_int_0D(file,data,lappend)
+!
+!  Write formatted integer data to a file.
+!  Set lappend to false to overwrite the file, default is to append the data.
+!
+!  CANDIDATE FOR REMOVAL:
+!  This routine is only used from "run.f90" if 'ialive' is set.
+!  This is a completely useless feature, because the MPI library does the job
+!  of checking, if all processes are still alive.
+!
+!  10-Sep-2015/Bourdin.KIS: marked as candidate for removal
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: data
+      logical, intent(in), optional :: lappend
+!
+      logical :: lappend_opt
+      integer :: lun_output = 1
+!
+      lappend_opt = .false.
+      if (present(lappend)) lappend_opt = lappend
+!
+      if (lappend_opt) then
+        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', position='append', status='old')
+      else
+        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', status='replace')
+      endif
+      write (lun_output,*) data
+      close (lun_output)
+!
+    endsubroutine output_form_int_0D
 !***********************************************************************
     subroutine output_snap_form(file,a,nv)
 !
