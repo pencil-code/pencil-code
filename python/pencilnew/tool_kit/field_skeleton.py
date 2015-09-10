@@ -3,7 +3,7 @@
 
 """
 Finds the structure of the field's skeleton, i.e. null points, separatrix
-layers and separators using the trilinear method
+layers and separators using the trilinear method by
 Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751).
 """
 
@@ -20,15 +20,28 @@ class NullPoint(object):
         Fill members with default values.
         """
 
-        self.null = []
+        self.nulls = []
+        self.reduced_cells = []
 
     def find_nullpoints(self, var, field):
         """
         Find the null points to the field 'field' with information from 'var'.
+
+        call signature:
+
+            find_nullpoints(var, field)
+
+        Arguments:
+
+        *var*:
+            The var object from the read_var routine.
+
+        *field*:
+            The vector field.
         """
 
         def __triLinear_interpolation(x, y, z, coefTri):
-            """ Compute the interpolated field at (normalized) x, y, z."""
+            """ Compute the interpolated field at (normalized) x, y, z. """
             return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
                    coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
                    coefTri[7]*x*y*z
@@ -55,7 +68,7 @@ class NullPoint(object):
             iterMax = 10
             dd = 1e-4
             tol = 1e-5
-            
+
             for i in range(iterMax):
                 diff = __triLinear_interpolation(xyz[0], xyz[1],
                                                  xyz[2], coefTri) * \
@@ -73,15 +86,18 @@ class NullPoint(object):
         reduced_cells = True
         for comp in range(3):
             reduced_cells *= \
-            (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, 1:, 1:] < 0) + \
+            ((sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, 1:, 1:] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, 1:, :-1, 1:] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, 1:, 1:, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, :-1, 1:] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, 1:, :-1, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, 1:, :-1] < 0) + \
-            (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, :-1, :-1] < 0)
+            (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, :-1, :-1] < 0))
+
+        self.reduced_cells = reduced_cells
 
         # Find null points in these cells.
+        self.nulls = []
         for cell_idx in range(np.sum(reduced_cells)):
             # 2) Analysis step.
 
@@ -123,6 +139,9 @@ class NullPoint(object):
                          field[:, idx_z+1, idx_y, idx_x] - \
                          field[:, idx_z, idx_y, idx_x]
 
+            # Contains the nulls obtained from each face.
+            null_cell = []
+
             # Find the intersection of the curves field_i = field_j = 0.
             # The units are first normalized to the unit cube from 000 to 111.
 
@@ -155,10 +174,9 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [roots_x[1], roots_y[1], 0]
                 xyz = __newton_raphson(xyz0, coefTri)
-                xyz1 = [xyz[0]*var.dx + x[idx_x],
-                       xyz[1]*var.dy + y[idx_y],
-                       xyz[2]*var.dz + z[idx_z]]
-                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
             # face 2
             intersection = False
@@ -189,10 +207,9 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [roots_x[1], roots_y[1], 0]
                 xyz = __newton_raphson(xyz0, coefTri)
-                xyz1 = [xyz[0]*var.dx + x[idx_x],
-                       xyz[1]*var.dy + y[idx_y],
-                       xyz[2]*var.dz + z[idx_z]]
-                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
             # face 3
             intersection = False
@@ -223,10 +240,9 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [roots_x[1], 0, roots_z[1]]
                 xyz = __newton_raphson(xyz0, coefTri)
-                xyz1 = [xyz[0]*var.dx + x[idx_x],
-                       xyz[1]*var.dy + y[idx_y],
-                       xyz[2]*var.dz + z[idx_z]]
-                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
             # face 4
             intersection = False
@@ -257,11 +273,9 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [roots_x[1], 0, roots_z[1]]
                 xyz = __newton_raphson(xyz0, coefTri)
-                print "shape = ", x.shape, xyz.shape
-#                xyz1 = [xyz[0]*var.dx + x[idx_x],
-#                       xyz[1]*var.dy + y[idx_y],
-#                       xyz[2]*var.dz + z[idx_z]]
-#                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
             # face 5
             intersection = False
@@ -292,16 +306,10 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [0, roots_y[1], roots_z[1]]
                 xyz = __newton_raphson(xyz0, coefTri)
-                xyz1 = [xyz[0]*var.dx + x[idx_x],
-                       xyz[1]*var.dy + y[idx_y],
-                       xyz[2]*var.dz + z[idx_z]]
-                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
-            # Convert from unit cube into real values.
-            self.null = [xyz[0]*var.dx + x[idx_x],
-                         xyz[1]*var.dy + y[idx_y],
-                         xyz[2]*var.dz + z[idx_z]]
-                         
             # face 6
             intersection = False
             coefBi = np.zeros((4, 3))
@@ -331,8 +339,25 @@ class NullPoint(object):
             if intersection:
                 xyz0 = [0, roots_y[1], roots_z[1]]
                 xyz = __newton_raphson(xyz0, coefTri)
-                xyz1 = [xyz[0]*var.dx + x[idx_x],
-                       xyz[1]*var.dy + y[idx_y],
-                       xyz[2]*var.dz + z[idx_z]]
-                print xyz1
+                null_cell.append([xyz[0]*var.dx + x[idx_x],
+                                  xyz[1]*var.dy + y[idx_y],
+                                  xyz[2]*var.dz + z[idx_z]])
 
+            # Compute the average of the null found from different faces.
+            if null_cell:
+                self.nulls.append(np.mean(null_cell, axis=0))
+
+        # Discard null which are too close to each other.
+        self.nulls = np.array(self.nulls)
+        keep_null = np.ones(len(self.nulls), dtype=bool)
+        for idx_null_1 in range(len(self.nulls)):
+            for idx_null_2 in range(idx_null_1+1, len(self.nulls)):
+                diff_nulls = abs(self.nulls[idx_null_1]-self.nulls[idx_null_2])
+                print idx_null_1, idx_null_2, diff_nulls
+                if diff_nulls[0] < var.dx and diff_nulls[1] < var.dy and \
+                diff_nulls[2] < var.dz:
+                    print "discard ", idx_null_2
+                    keep_null[idx_null_2] = False
+        print self.nulls
+        self.nulls = self.nulls[keep_null == True]
+            
