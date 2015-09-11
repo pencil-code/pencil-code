@@ -172,7 +172,7 @@ class NullPoint(object):
                                    coefBi[0, 1]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
-                roots_x = -np.ones(2)                
+                roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
             roots_y = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
@@ -210,9 +210,9 @@ class NullPoint(object):
                                    coefBi[2, 0]*coefBi[1, 1],
                                    coefBi[0, 0]*coefBi[2, 1] -
                                    coefBi[0, 1]*coefBi[2, 0]])
-            roots_x = np.roots(polynomial)            
+            roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
-                roots_x = -np.ones(2)                
+                roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
             roots_y = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
@@ -252,7 +252,7 @@ class NullPoint(object):
                                    coefBi[0, 2]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
-                roots_x = -np.ones(2)                
+                roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
             roots_z = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
@@ -292,7 +292,7 @@ class NullPoint(object):
                                    coefBi[0, 2]*coefBi[2, 0]])
             roots_x = np.roots(polynomial)
             if len(roots_x) == 0:
-                roots_x = -np.ones(2)                
+                roots_x = -np.ones(2)
             if len(roots_x) == 1:
                 roots_x = np.array([roots_x, roots_x])
             roots_z = -(coefBi[0, 0]+coefBi[1, 0]*roots_x)/ \
@@ -313,7 +313,7 @@ class NullPoint(object):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
                                       xyz[1]*var.dy + y[idx_y],
                                       xyz[2]*var.dz + z[idx_z]])
-                                  
+
             # face 5
             intersection = False
             coefBi = np.zeros((4, 3))
@@ -409,7 +409,7 @@ class NullPoint(object):
                     keep_null[idx_null_2] = False
         self.nulls = self.nulls[keep_null == True]
 
-    
+
     def write_vtk(self, data_dir='./data', file_name='nulls.vtk'):
         """
         Write the null point into a vtk file.
@@ -417,7 +417,7 @@ class NullPoint(object):
         call signature:
 
             write_vtk(data_dir='./data', file_name='nulls.vtk')
-            
+
         Arguments:
 
         *data_dir*:
@@ -426,7 +426,7 @@ class NullPoint(object):
         *file_name*:
             Target file name.
         """
-        
+
         writer = vtk.vtkPolyDataWriter()
         writer.SetFileName(os.path.join(data_dir, file_name))
         poly_data = vtk.vtkPolyData()
@@ -434,9 +434,9 @@ class NullPoint(object):
         for null in self.nulls:
             points.InsertNextPoint(null)
         poly_data.SetPoints(points)
-        writer.SetInput(poly_data)
+        writer.SetInputData(poly_data)
         writer.Write()
-        
+
     def read_vtk(self, data_dir='./data', file_name='nulls.vtk'):
         """
         Read the null point from a vtk file.
@@ -444,7 +444,7 @@ class NullPoint(object):
         call signature:
 
             read_vtk(data_dir='./data', file_name='nulls.vtk')
-            
+
         Arguments:
 
         *data_dir*:
@@ -453,7 +453,7 @@ class NullPoint(object):
         *file_name*:
             Origin file name.
         """
-        
+
         reader = vtk.vtkPolyDataReader()
         reader.SetFileName(os.path.join(data_dir, file_name))
         reader.Update()
