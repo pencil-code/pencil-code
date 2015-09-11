@@ -11,7 +11,6 @@ import numpy as np
 import os as os
 try:
     import vtk as vtk
-    from vtk.util import numpy_support as VN
 except:
     print("Warning: no vtk library found.")
 try:
@@ -437,4 +436,31 @@ class NullPoint(object):
         poly_data.SetPoints(points)
         writer.SetInput(poly_data)
         writer.Write()
+        
+    def read_vtk(self, data_dir='./data', file_name='nulls.vtk'):
+        """
+        Read the null point from a vtk file.
+
+        call signature:
+
+            read_vtk(data_dir='./data', file_name='nulls.vtk')
+            
+        Arguments:
+
+        *data_dir*:
+            Origin data directory.
+
+        *file_name*:
+            Origin file name.
+        """
+        
+        reader = vtk.vtkPolyDataReader()
+        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.Update()
+        output = reader.GetOutput()
+        points = output.GetPoints()
+        self.nulls = []
+        for null in range(points.GetNumberOfPoints()):
+            self.nulls.append(points.GetPoint(null))
+        self.nulls = np.array(self.nulls)
         
