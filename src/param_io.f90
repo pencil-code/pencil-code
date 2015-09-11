@@ -647,7 +647,6 @@ module Param_IO
           call write_stub ('particles_coag', lparticles_coagulation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
-          call write_stub ('particles_visc', lparticles_viscosity)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
           call write_stub ('particles_diagnos_state', lparticles_diagnos_state)
         endif

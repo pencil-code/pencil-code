@@ -32,7 +32,6 @@ module Particles_main
   use Particles_sub
   use Particles_surfspec
   use Particles_temperature
-  use Particles_viscosity
 !
   implicit none
 !
@@ -69,7 +68,6 @@ module Particles_main
       call register_particles_chem         ()
       call register_particles_ads          ()
       call register_particles_surfspec     ()
-      call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
       call register_particles_special      (npvar)
 !
@@ -103,7 +101,6 @@ module Particles_main
       call rprint_particles_density      (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
-      call rprint_particles_viscosity    (lreset,LWRITE=lroot)
       call rprint_particles_TT           (lreset,LWRITE=lroot)
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
@@ -226,7 +223,6 @@ module Particles_main
       call initialize_particles_sink         (f)
       call initialize_particles_spin         (f)
       call initialize_particles_stalker      (f)
-      call initialize_particles_viscosity    (f)
       call initialize_particles_TT           (f)
       call initialize_particles_mass         (f)
       call initialize_particles_drag
@@ -355,7 +351,6 @@ module Particles_main
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
       call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
       call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody'        ,lparticles_nbody)
-      call read_namelist(read_particles_visc_run_pars     ,'particles_visc'         ,lparticles_viscosity)
       call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
       call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
       call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
@@ -712,7 +707,6 @@ module Particles_main
 !  for the grid and interpolate to the position of the particles.
 !
       if (lparticles_nbody)     call calc_nbodygravity_particles(f)
-      if (lparticles_viscosity) call calc_particles_viscosity(f,fp,ineargrid)
       if (lparticles_potential)  call boundcond_neighbour_list()
 !
     endsubroutine particles_before_boundary
@@ -889,8 +883,6 @@ module Particles_main
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_nbody) &
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_viscosity) &
-          call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_potential) &
 !          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_polymer) &
@@ -1024,7 +1016,6 @@ module Particles_main
       if (lparticles_density)     call write_particles_dens_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
-      if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
       if (lparticles_drag)        call write_particles_drag_init_pars(unit)
@@ -1049,7 +1040,6 @@ module Particles_main
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
-      if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
       if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
       if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
