@@ -254,7 +254,20 @@ sub build_remote_cmd {
 # Construct the command to send to the remote host
 
     my $remcmd = "cd $pencil_home; ";
-    if ($update)            { $remcmd .= "svn -q update; " };
+    if ($update) {
+        $remcmd .= ''
+          . 'if [ -e .git ]; then'  # .git can be a directory or a file
+          . '    git stash -q --include-untracked;'
+          . '    git fetch -q;'
+          . '    git reset -q --hard @{u};'
+          . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
+          . 'elif [ -d .svn ]; then'
+          . '    svn -q update;'
+          . 'else'
+          . '    echo "CANNOT UPDATE: Neither git nor svn checkout";'
+          . '    false;'
+          . 'fi;'
+    }
     if ($use_build) {
         $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/pc_auto-test ";
     } else {
