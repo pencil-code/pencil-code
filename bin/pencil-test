@@ -218,7 +218,7 @@ sub run_tests_on {
         open(TIMINGS, ">> $timingsfile")
           or warn "Couldn't open $timingsfile for writing\n";
     }
-    my ($line,$timings,$result);
+    my ($line,$timings,$result,$update_error);
     while (defined($line=<POUT>)) {
         # Extract timing lines
         if ($line =~ /^#TIMING\s+(.*)/) {
@@ -230,6 +230,11 @@ sub run_tests_on {
         # Extract maintainers line
         if ($line =~ /Maintainers of failed tests:\s*(.*?)\s*$/) {
             parse_maintainers($1);
+        }
+
+        # Identify errors
+        if ($line =~ /^UPDATE ERROR:/) {
+            $update_error = 1;
         }
 
         # Print all other lines
@@ -245,7 +250,7 @@ sub run_tests_on {
     tag_stable_on_success($result,$host) if ($tag_stable);
 
     # Send emails if necessary
-    notify_on_error($result,$shost);
+    notify_on_error($result,$shost,$update_error);
 
    $first = 0;
 }
@@ -264,7 +269,7 @@ sub build_remote_cmd {
           . 'elif [ -d .svn ]; then'
           . '    svn -q update;'
           . 'else'
-          . '    echo "CANNOT UPDATE: Neither git nor svn checkout";'
+          . '    echo "UPDATE ERROR: Neither git nor svn checkout";'
           . '    false;'
           . 'fi;'
     }
@@ -369,14 +374,13 @@ sub tag_stable_on_success {
 # ---------------------------------------------------------------------- #
 sub notify_on_error {
 ## Check for errors and send emails
-    my $result = (shift || '');
-    my $host   = (shift || '');
+    my ($result, $host, $update_error) = @_;
 
     my $failed_marker = '### auto-test failed ###'; # only in version of
                                                     # auto-test later than
                                                     # 27-Feb-2006
 
-    return SUCCESS unless ($emails);  # nobody to report to
+    return SUCCESS unless ($emails or $update_error);  # nobody to report to
 
     my $failed = ($result =~ /^### auto-test failed ###$/m);
     print STDERR "\$failed (1) = <$failed>\n" if ($debug);
@@ -386,12 +390,13 @@ sub notify_on_error {
         $nerrors = $1;
     }
     if ($debug) {
+        print STDERR "Update error\n" if $update_error;
         print STDERR "\$failed (2) = <$failed>\n";
         print STDERR "\$nerrors    = <$nerrors>\n";
         print STDERR "\$result     = <$result>\n";
     }
 
-    return SUCCESS unless ($failed); # nothing to report
+    return SUCCESS unless ($failed or $update_error); # nothing to report
 
     # Analyze
     parse_emails($emails);      # ..so we can filter out individual tests
@@ -417,6 +422,11 @@ sub notify_on_error {
                 }
             }
         }
+    } elsif ($update_error) {
+        warn "[Couldn't update code]\n";
+        $summary = 'Failed to update the code';
+        $nerrors = '';
+        %sendmailto = %emails;  # Report this to everybody
     } else {
         warn "[No individual failing tests to report]\n";
         $summary = '';
