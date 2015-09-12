@@ -253,26 +253,26 @@ sub run_tests_on {
 sub build_remote_cmd {
 # Construct the command to send to the remote host
 
-    my $remcmd = "cd $pencil_home";
-    if ($update)            { $remcmd .= "; svn -q update" };
+    my $remcmd = "cd $pencil_home; ";
+    if ($update)            { $remcmd .= "svn -q update; " };
     if ($use_build) {
-        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/pc_auto-test";
+        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/pc_auto-test ";
     } else {
-        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
+        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/auto-test ";
     }
-    $remcmd .= " --time";
-    if ($emails)             { $remcmd .= " --list-maintainers"; }
-    if ($with_xml)           { $remcmd .= " --xml" };
-    if ($clean)              { $remcmd .= " --clean" };
-    if ($reload)             { $remcmd .= " --reload" };
-    if ($short)              { $remcmd .= " --short" };
-    if ($nice)               { $remcmd .= " --nice=$nice" };
-    if ($infofile ne '')     { $remcmd .= " --infofile=$infofile" };
-    if ($postproc)           { $remcmd .= " --postproc=\"$postproc\"" };
-    if ($script_tests ne '') { $remcmd .= " --script-tests=\"$script_tests\"" };
-    if ($time_limit ne '')   { $remcmd .= " --time-limit=\"$time_limit\"" };
-    if ($timingsfile ne '')  { $remcmd .= " --summarize-times" };
-    if (@auto_test_options)  { $remcmd .= " @auto_test_options"};
+    $remcmd .= "--time ";
+    if ($emails)             { $remcmd .= "--list-maintainers "; }
+    if ($with_xml)           { $remcmd .= "--xml " };
+    if ($clean)              { $remcmd .= "--clean " };
+    if ($reload)             { $remcmd .= "--reload " };
+    if ($short)              { $remcmd .= "--short " };
+    if ($nice)               { $remcmd .= "--nice=$nice " };
+    if ($infofile ne '')     { $remcmd .= "--infofile=$infofile " };
+    if ($postproc)           { $remcmd .= "--postproc=\"$postproc\" " };
+    if ($script_tests ne '') { $remcmd .= "--script-tests=\"$script_tests\" " };
+    if ($time_limit ne '')   { $remcmd .= "--time-limit=\"$time_limit\" " };
+    if ($timingsfile ne '')  { $remcmd .= "--summarize-times " };
+    if (@auto_test_options)  { $remcmd .= "@auto_test_options; "};
 
     return $remcmd;
 }
