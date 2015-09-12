@@ -267,7 +267,7 @@ sub build_remote_cmd {
           . '    git reset -q --hard @{u};'
           . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
           . 'elif [ -d .svn ]; then'
-          . '    svn -q update;'
+          . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
           . 'else'
           . '    echo "UPDATE ERROR: Neither git nor svn checkout";'
           . '    false;'
