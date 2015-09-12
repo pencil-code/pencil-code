@@ -3164,16 +3164,12 @@ module Sub
 !
           settout: if (dtout < 0.0) then
             tout = log10(t)
-          else settout
+          elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
-            nonzero: if (dtout /= 0.0) then
-              tout = t
-            else nonzero
-              call warning("read_snaptime", &
-                   "Am I writing snapshots every 0 time units? (check " // &
-                   trim(file) // ")" )
-              tout = t
-            endif nonzero
+            tout = (t - dt) + (dble(dtout) - modulo(t - dt, dble(dtout)))
+          else settout
+            call warning("read_snaptime", "Writing snapshot every time step. ")
+            tout = 0.0
           endif settout
           nout=1
           write(lun,*) tout,nout
