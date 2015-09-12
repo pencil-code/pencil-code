@@ -264,7 +264,8 @@ sub build_remote_cmd {
           . 'if [ -e .git ]; then'  # .git can be a directory or a file
           . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
           . '    (git fetch -q || echo "UPDATE ERROR: git fetch");'
-          . '    (git reset -q --hard @{u} || echo "UPDATE ERROR: git reset");'
+          # . '    (git reset -q --hard @{u} || echo "UPDATE ERROR: git reset");'
+          . '    (git pull --rebase || echo "UPDATE ERROR: git pull");'
           . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
           . 'elif [ -d .svn ]; then'
           . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
