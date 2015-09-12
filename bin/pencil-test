@@ -257,18 +257,18 @@ sub build_remote_cmd {
         $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
     }
     $remcmd .= " --time";
-    if ($emails)            { $remcmd .= " --list-maintainers"; }
-    if ($with_xml)          { $remcmd .= " --xml" };
-    if ($clean)             { $remcmd .= " --clean" };
-    if ($reload)            { $remcmd .= " --reload" };
-    if ($short)             { $remcmd .= " --short" };
-    if ($nice)              { $remcmd .= " --nice=$nice" };
-    if ($infofile ne '')    { $remcmd .= " --infofile=$infofile" };
-    if ($postproc)          { $remcmd .= " --postproc=\"$postproc\"" };
+    if ($emails)             { $remcmd .= " --list-maintainers"; }
+    if ($with_xml)           { $remcmd .= " --xml" };
+    if ($clean)              { $remcmd .= " --clean" };
+    if ($reload)             { $remcmd .= " --reload" };
+    if ($short)              { $remcmd .= " --short" };
+    if ($nice)               { $remcmd .= " --nice=$nice" };
+    if ($infofile ne '')     { $remcmd .= " --infofile=$infofile" };
+    if ($postproc)           { $remcmd .= " --postproc=\"$postproc\"" };
     if ($script_tests ne '') { $remcmd .= " --script-tests=\"$script_tests\"" };
-    if ($time_limit ne '')  { $remcmd .= " --time-limit=\"$time_limit\"" };
-    if ($timingsfile ne '') { $remcmd .= " --summarize-times" };
-    if (@auto_test_options) { $remcmd .= " @auto_test_options"};
+    if ($time_limit ne '')   { $remcmd .= " --time-limit=\"$time_limit\"" };
+    if ($timingsfile ne '')  { $remcmd .= " --summarize-times" };
+    if (@auto_test_options)  { $remcmd .= " @auto_test_options"};
 
     return $remcmd;
 }
