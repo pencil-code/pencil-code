@@ -265,7 +265,7 @@ sub build_remote_cmd {
           . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
           . '    (git fetch -q || echo "UPDATE ERROR: git fetch");'
           # . '    (git reset -q --hard @{u} || echo "UPDATE ERROR: git reset");'
-          . '    (git pull --rebase || echo "UPDATE ERROR: git pull");'
+          . '    (git pull --rebase -q || echo "UPDATE ERROR: git pull");'
           . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
           . 'elif [ -d .svn ]; then'
           . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
