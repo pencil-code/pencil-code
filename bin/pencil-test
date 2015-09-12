@@ -79,6 +79,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 use strict;
 use POSIX qw(strftime);
 use Getopt::Long;
+use IPC::Open2;
 use constant SUCCESS => 1;      # return value
 
 my (%opts);                     # Variables written by GetOptions
@@ -202,14 +203,17 @@ sub run_tests_on {
     ## Construct and execute remote command
     my @cmd;
     if ($local) {
-        @cmd = ("sh", "-c");
+        @cmd = ("sh");
     } else {
-        @cmd = ("ssh", "-x", "-n", "$host");
+        @cmd = ("ssh", "-x", "$host", "sh");
     }
     my $remcmd = build_remote_cmd();
 
-    if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\")\n" };
-    open(POUT, "@cmd '$remcmd' |");
+    if ($debug) { print STDERR "open2(*POUT, *PIN, \"@cmd\")\n" };
+    open2(*POUT, *PIN, "@cmd");
+    if ($debug) { print STDERR "print PIN $remcmd\n" };
+    print PIN "$remcmd\n";
+    close PIN;
     if ($timingsfile ne '') {
         open(TIMINGS, ">> $timingsfile")
           or warn "Couldn't open $timingsfile for writing\n";
@@ -232,10 +236,10 @@ sub run_tests_on {
         print $line;
         $result .= $line;
     }
+    close POUT;
     if ($timingsfile ne '') {
         close TIMINGS;
     }
-    close(POUT);
 
     # Create a stable tag if auto-test was successful
     tag_stable_on_success($result,$host) if ($tag_stable);
