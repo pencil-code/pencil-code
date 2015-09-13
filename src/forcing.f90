@@ -45,6 +45,7 @@ module Forcing
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1., d1profz_ampl=0., d2profz_ampl=0.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: kzlarge=1
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   integer :: iforcing_zsym=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -141,7 +142,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
-       n_hel_sin_pow
+       n_hel_sin_pow,kzlarge
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -227,6 +228,17 @@ module Forcing
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
+!
+!  sine profile for amplitude of forcing 
+!
+      elseif (iforce_profile=='sinz') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_hel=1.
+        do n=1,mz
+          profz_ampl(n)=sin(kzlarge*z(n))
+        enddo
+!
       elseif (iforce_profile=='equator') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
