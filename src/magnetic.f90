@@ -3583,7 +3583,9 @@ module Magnetic
 !AB: corrected by Patrick Adams
         dAdt = dAdt-battery_term*p%fpres
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
-            battery_term*maxval(baroclinic)
+!MR; corrected for the time being to fix the auto-test
+!            battery_term*maxval(baroclinic)
+            battery_term*maxval(p%fpres)
       endif
 !
 ! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
