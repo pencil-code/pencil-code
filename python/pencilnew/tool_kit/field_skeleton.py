@@ -32,7 +32,6 @@ class NullPoint(object):
         """
 
         self.nulls = []
-        self.reduced_cells = []
 
     def find_nullpoints(self, var, field):
         """
@@ -104,8 +103,6 @@ class NullPoint(object):
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, 1:, :-1, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, 1:, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, :-1, :-1] < 0))
-
-        self.reduced_cells = reduced_cells
 
         # Find null points in these cells.
         self.nulls = []
@@ -482,16 +479,17 @@ class Separatrix(object):
         self.eigen_vectors = []
         self.sign_trace = []
         self.fan_vectors = []
-        self.normal = []
-        self.separatrix = []
+        self.normals = []
+        self.separatrices = []
 
-    def find_separatrices(self, var, field, null_point, delta):
+    def find_separatrices(self, var, field, null_point, delta=0.1,
+                          iter_max=100):
         """
         Find the separatrices to the field 'field' with information from 'var'.
 
         call signature:
 
-            find_separatrices(var, field)
+            find_separatrices(var, field, null_point, delta=0.1, iter_max=100)
 
         Arguments:
 
@@ -506,18 +504,20 @@ class Separatrix(object):
             
         *delta*:
             Step length for the field line tracing.
+
+        *iter_max*:
+            Maximum iteration steps for the fiel line tracing.
         """
 
 
         for null in null_point.nulls:
-            separatrix = []
             # Find the Jacobian grad(field).
             grad_field = self.__grad_field(null, var, field,
                                            min((var.dx, var.dy, var.dz))/10)
             # Find the eigenvalues of the Jacobian.
-            eigen_values = np.linalg.eig(grad_field)[0]
+            eigen_values = np.array(np.linalg.eig(grad_field)[0])
             # Find the eigenvectors of the Jacobian.
-            eigen_vectors = np.linalg.eig(grad_field)[1].T
+            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
             # Determine which way to trace the streamlines.
             if np.linalg.det(grad_field) < 0:
                 sign_trace = 1
@@ -537,18 +537,35 @@ class Separatrix(object):
             self.eigen_vectors.append(eigen_vectors)
             self.sign_trace.append(sign_trace)
             self.fan_vectors.append(fan_vectors)
-            self.normal.append(normal)
+            self.normals.append(normal)
 
             # Trace the rings around the null.
-            separatrix.append(null)
+            tracing = True
             # Create the first ring of points.
-            ring = []
-            for theta in np.linspace(0, 2*np.pi*(1-1./10), 10):
-                ring.append(null + \
-                            self.__rotate_vector(normal, fan_vectors[0], theta))
-            self.separatrix.append(ring)
-#            while tracing:
-                
+            rings = []
+            rings.append(null)
+            rings.append([])
+            for theta in np.linspace(0, 2*np.pi*(1-1./10), 100):
+                rings[-1].append(null + self.__rotate_vector(normal, fan_vectors[0],
+                                                             theta) * delta)
+            i = 0
+            while tracing or i < iter_max:
+                rings.append([])
+                for point in rings[-2]:
+                    field_norm = vec_int(point, var, field)*sign_trace
+                    field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
+                    point = point + field_norm*delta
+                    rings[-1].append(point)
+                i += 1
+                tracing = False
+            self.separatrices.append(rings)
+        
+        self.eigen_values = np.array(self.eigen_values)
+        self.eigen_vectors = np.array(self.eigen_vectors)
+        self.sign_trace = np.array(self.sign_trace)
+        self.fan_vectors = np.array(self.fan_vectors)
+        self.normals = np.array(self.normals)
+        
                 
                 
 
@@ -581,5 +598,5 @@ class Separatrix(object):
                                 [u*w*(1-np.cos(theta))-v*np.sin(theta),
                                  v*w*(1-np.cos(theta))+u*np.sin(theta),
                                  w**2+(1-w**2)*np.cos(theta)]])
-        return np.array(vector*rot_matrix)
+        return np.array(vector*rot_matrix)[0]
         
