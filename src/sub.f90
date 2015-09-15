@@ -6836,7 +6836,7 @@ nameloop: do
       logical, optional, intent(in) :: lactive
 !
       integer :: ierr
-      character(len=5) :: type
+      character(len=5) :: type, suffix
 !
       if (loptest(lactive,.true.)) then
 !
@@ -6852,11 +6852,16 @@ nameloop: do
               type = 'run'
             endif
             if (name /= '') type = '_'//type
+            suffix = '_pars'
+            if (name == 'initial_condition_pars') then
+              type = ''
+              suffix = ''
+            endif
 !
             if (ierr == -1) then
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" is missing!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
             else
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" has an error!')
             endif
           endif
 
