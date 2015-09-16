@@ -749,7 +749,7 @@ module Chemistry
            lpenc_requested(i_Ywater)=.true.
          endif
 !
-         if (ldiffusion) then
+         if (ldiffusion .or. lparticles_chemistry) then
            lpenc_requested(i_Diff_penc_add)=.true.
            if (.not.lDiff_fick) then
              lpenc_requested(i_mukmu1)=.true.
@@ -6483,18 +6483,5 @@ module Chemistry
   if (allocated(Diff_full_add))  deallocate(Diff_full_add)
 !
   endsubroutine chemistry_clean_up
-!***********************************************************************
-  subroutine get_diff_coeff_reactants(m,n,diff_coeff_reactants)
-!
-!  This routine is used to transport the diffusion coefficients to the 
-!  particles_chemistry module, this is done for each cell until a better
-!  idea is found
-!
-    real, dimension(nx,nchemspec), intent(out) :: diff_coeff_reactants
-    integer, intent(in) :: m,n
-!
-    diff_coeff_reactants=Diff_full_add(l1:l2,m,n,:)
-!
-  endsubroutine get_diff_coeff_reactants
 !***********************************************************************
 endmodule Chemistry

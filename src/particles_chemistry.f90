@@ -9,8 +9,6 @@
 !
 ! CPARAM logical, parameter :: lparticles_chemistry=.true.
 !
-! PENCILS PROVIDED diff_coef(nchemspec)
-!
 !***************************************************************
 !
 !  The assumptions and equations implemented in this routine are
@@ -248,7 +246,7 @@ module Particles_chemistry
 !  16.09.2015/jonas + nils: coded
 !
       if (lthiele) then
-        lpenc_requested(i_diff_coef)=.true.
+        lpenc_requested(i_Diff_penc_add)=.true.
       endif
 !
     endsubroutine pencil_criteria_par_chem
@@ -263,9 +261,8 @@ module Particles_chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lpencil(i_diff_coef)) then
-        call get_diff_coeff_reactants(m,n,p%diff_coef)
-      endif
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_par_chem
 ! ******************************************************************************
@@ -1262,7 +1259,7 @@ module Particles_chemistry
         do i = 1,N_surface_reactants
           tmp3 = 8*Rgas*fp(k,iTp)/(pi*(species_constants(jmap(i),imass)))
           Knudsen = 2*pore_radius(k)*porosity(k)*sqrt(tmp3)/(3*tortuosity)
-          tmp1 = 1./p%diff_coef(ineargrid(k,1)-nghost,jmap(i))
+          tmp1 = 1./p%Diff_penc_add(ineargrid(k,1)-nghost,jmap(i))
           tmp2 = 1./Knudsen
           D_eff(k,i) = 1./(tmp1+tmp2)
         enddo
