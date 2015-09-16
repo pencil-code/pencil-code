@@ -268,4 +268,21 @@ module Chemistry
 !
     endsubroutine get_reac_rate
 !***********************************************************************
+  subroutine get_diff_coeff_reactants(xp,yp,zp,diff_coeff_reactants)
+!
+!  This routine is used to transport the diffusion coefficients to the 
+!  particles_chemistry module, this is done for each cell until a better
+!  idea is found
+!
+    real, dimension(nchemspec), intent(out) :: diff_coeff_reactants
+    integer, intent(in) :: xp,yp,zp
+!
+!
+      call keep_compiler_quiet(diff_coeff_reactants)
+      call keep_compiler_quiet(xp)
+      call keep_compiler_quiet(yp)
+      call keep_compiler_quiet(zp)
+!
+  endsubroutine get_diff_coeff_reactants
+!***********************************************************************
 endmodule Chemistry
