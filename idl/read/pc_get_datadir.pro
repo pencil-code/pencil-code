@@ -1,13 +1,8 @@
-;
-; $Id$
-;
-; pc_get_datadir
-;
 ; Returns: default data directory; or, if exists, directory from 'datadir.in'.
 ; 
 ; 03-Aug-2007 (Anders & Chao-Chin)
 ; 16-Sep-2015/PABourdin: rewritten
-;
+
 function pc_get_datadir
 
 COMPILE_OPT IDL2, HIDDEN
