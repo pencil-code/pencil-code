@@ -749,7 +749,7 @@ module Chemistry
            lpenc_requested(i_Ywater)=.true.
          endif
 !
-         if (ldiffusion) then
+         if (ldiffusion .or. lparticles_chemistry) then
            lpenc_requested(i_Diff_penc_add)=.true.
            if (.not.lDiff_fick) then
              lpenc_requested(i_mukmu1)=.true.

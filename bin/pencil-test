@@ -79,6 +79,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 use strict;
 use POSIX qw(strftime);
 use Getopt::Long;
+use IPC::Open2;
 use constant SUCCESS => 1;      # return value
 
 my (%opts);                     # Variables written by GetOptions
@@ -202,19 +203,22 @@ sub run_tests_on {
     ## Construct and execute remote command
     my @cmd;
     if ($local) {
-        @cmd = ("sh", "-c");
+        @cmd = ("sh");
     } else {
-        @cmd = ("ssh", "-x", "-n", "$host");
+        @cmd = ("ssh", "-x", "$host", "sh");
     }
     my $remcmd = build_remote_cmd();
 
-    if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\")\n" };
-    open(POUT, "@cmd '$remcmd' |");
+    if ($debug) { print STDERR "open2(*POUT, *PIN, \"@cmd\")\n" };
+    open2(*POUT, *PIN, "@cmd");
+    if ($debug) { print STDERR "print PIN $remcmd\n" };
+    print PIN "$remcmd\n";
+    close PIN;
     if ($timingsfile ne '') {
         open(TIMINGS, ">> $timingsfile")
           or warn "Couldn't open $timingsfile for writing\n";
     }
-    my ($line,$timings,$result);
+    my ($line,$timings,$result,$update_error);
     while (defined($line=<POUT>)) {
         # Extract timing lines
         if ($line =~ /^#TIMING\s+(.*)/) {
@@ -228,20 +232,25 @@ sub run_tests_on {
             parse_maintainers($1);
         }
 
+        # Identify errors
+        if ($line =~ /^UPDATE ERROR:/) {
+            $update_error = 1;
+        }
+
         # Print all other lines
         print $line;
         $result .= $line;
     }
+    close POUT;
     if ($timingsfile ne '') {
         close TIMINGS;
     }
-    close(POUT);
 
     # Create a stable tag if auto-test was successful
     tag_stable_on_success($result,$host) if ($tag_stable);
 
     # Send emails if necessary
-    notify_on_error($result,$shost);
+    notify_on_error($result,$shost,$update_error);
 
    $first = 0;
 }
@@ -249,26 +258,40 @@ sub run_tests_on {
 sub build_remote_cmd {
 # Construct the command to send to the remote host
 
-    my $remcmd = "cd $pencil_home";
-    if ($update)            { $remcmd .= "; svn -q update" };
-    if ($use_build) {
-        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/pc_auto-test";
-    } else {
-        $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test";
+    my $remcmd = "cd $pencil_home; ";
+    if ($update) {
+        $remcmd .= ''
+          . 'if [ -e .git ]; then'  # .git can be a directory or a file
+          . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
+          . '    (git fetch -q || echo "UPDATE ERROR: git fetch");'
+          # . '    (git reset -q --hard @{u} || echo "UPDATE ERROR: git reset");'
+          . '    (git pull --rebase -q || echo "UPDATE ERROR: git pull");'
+          . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
+          . 'elif [ -d .svn ]; then'
+          . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
+          . 'else'
+          . '    echo "UPDATE ERROR: Neither git nor svn checkout";'
+          . '    false;'
+          . 'fi;'
     }
-    $remcmd .= " --time";
-    if ($emails)            { $remcmd .= " --list-maintainers"; }
-    if ($with_xml)          { $remcmd .= " --xml" };
-    if ($clean)             { $remcmd .= " --clean" };
-    if ($reload)            { $remcmd .= " --reload" };
-    if ($short)             { $remcmd .= " --short" };
-    if ($nice)              { $remcmd .= " --nice=$nice" };
-    if ($infofile ne '')    { $remcmd .= " --infofile=$infofile" };
-    if ($postproc)          { $remcmd .= " --postproc=\"$postproc\"" };
-    if ($script_tests ne '') { $remcmd .= " --script-tests=\"$script_tests\"" };
-    if ($time_limit ne '')  { $remcmd .= " --time-limit=\"$time_limit\"" };
-    if ($timingsfile ne '') { $remcmd .= " --summarize-times" };
-    if (@auto_test_options) { $remcmd .= " @auto_test_options"};
+    if ($use_build) {
+        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/pc_auto-test ";
+    } else {
+        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/auto-test ";
+    }
+    $remcmd .= "--time ";
+    if ($emails)             { $remcmd .= "--list-maintainers "; }
+    if ($with_xml)           { $remcmd .= "--xml " };
+    if ($clean)              { $remcmd .= "--clean " };
+    if ($reload)             { $remcmd .= "--reload " };
+    if ($short)              { $remcmd .= "--short " };
+    if ($nice)               { $remcmd .= "--nice=$nice " };
+    if ($infofile ne '')     { $remcmd .= "--infofile=$infofile " };
+    if ($postproc)           { $remcmd .= "--postproc=\"$postproc\" " };
+    if ($script_tests ne '') { $remcmd .= "--script-tests=\"$script_tests\" " };
+    if ($time_limit ne '')   { $remcmd .= "--time-limit=\"$time_limit\" " };
+    if ($timingsfile ne '')  { $remcmd .= "--summarize-times " };
+    if (@auto_test_options)  { $remcmd .= "@auto_test_options; "};
 
     return $remcmd;
 }
@@ -352,14 +375,13 @@ sub tag_stable_on_success {
 # ---------------------------------------------------------------------- #
 sub notify_on_error {
 ## Check for errors and send emails
-    my $result = (shift || '');
-    my $host   = (shift || '');
+    my ($result, $host, $update_error) = @_;
 
     my $failed_marker = '### auto-test failed ###'; # only in version of
                                                     # auto-test later than
                                                     # 27-Feb-2006
 
-    return SUCCESS unless ($emails);  # nobody to report to
+    return SUCCESS unless ($emails or $update_error);  # nobody to report to
 
     my $failed = ($result =~ /^### auto-test failed ###$/m);
     print STDERR "\$failed (1) = <$failed>\n" if ($debug);
@@ -369,12 +391,13 @@ sub notify_on_error {
         $nerrors = $1;
     }
     if ($debug) {
+        print STDERR "Update error\n" if $update_error;
         print STDERR "\$failed (2) = <$failed>\n";
         print STDERR "\$nerrors    = <$nerrors>\n";
         print STDERR "\$result     = <$result>\n";
     }
 
-    return SUCCESS unless ($failed); # nothing to report
+    return SUCCESS unless ($failed or $update_error); # nothing to report
 
     # Analyze
     parse_emails($emails);      # ..so we can filter out individual tests
@@ -400,6 +423,11 @@ sub notify_on_error {
                 }
             }
         }
+    } elsif ($update_error) {
+        warn "[Couldn't update code]\n";
+        $summary = 'Failed to update the code';
+        $nerrors = '';
+        %sendmailto = %emails;  # Report this to everybody
     } else {
         warn "[No individual failing tests to report]\n";
         $summary = '';

@@ -10,3 +10,4 @@
 
 * use multi core capabilities to spead up processes, e.g. threads or multicore library
 
+* quick implementation of IDL routines by calling them using pyIDL

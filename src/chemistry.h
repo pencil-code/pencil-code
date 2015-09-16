@@ -28,7 +28,6 @@
   public :: get_gamma_full
   public :: get_RHS_Y_full
   public :: get_reac_rate
- 
 
   public :: Rgas
 

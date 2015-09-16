@@ -15,6 +15,7 @@ module Cparam
   integer, parameter :: nprocxz=nprocx*nprocz
   integer, parameter :: n_forcing_cont_max=2
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
+  logical, dimension(3), parameter :: lactive_dimension = (/ nxgrid > 1, nygrid > 1, nzgrid > 1 /)
 !
   include 'cparam.inc'
 !

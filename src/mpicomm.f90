@@ -475,8 +475,8 @@ module Mpicomm
         ipz = iproc/nprocxy
       else
         ipx = modulo(iproc, nprocx)
-        ipy = iproc/nprocxy
-        ipz = modulo(iproc/nprocx, nprocy)
+        ipy = iproc/nprocxz
+        ipz = modulo(iproc/nprocx, nprocz)
       endif
 !
 !  Set up flags for leading processors in each possible direction and plane

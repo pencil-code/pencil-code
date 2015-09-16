@@ -574,7 +574,7 @@ module Param_IO
 !
         if (lstart) then
           call write_stub ('signal', lsignal)
-          call write_stub ('initial_condition_pars', linitial_condition, .false.)
+          call write_stub ('initial_condition_pars', linitial_condition, .true.)
         endif
 !
         call write_stub ('streamlines', ltracers) !! questionable wg. ltracers
@@ -647,7 +647,6 @@ module Param_IO
           call write_stub ('particles_coag', lparticles_coagulation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
-          call write_stub ('particles_visc', lparticles_viscosity)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
           call write_stub ('particles_diagnos_state', lparticles_diagnos_state)
         endif

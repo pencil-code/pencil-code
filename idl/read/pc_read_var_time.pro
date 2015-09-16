@@ -83,10 +83,6 @@ COMPILE_OPT IDL2,HIDDEN
   dz=zero
   deltay=zero
 ;
-; Get a free unit number.
-;
-  get_lun, file
-;
 ; Build the full path and filename.
 ;
   filename = procdir + varfile
@@ -106,15 +102,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Open a varfile and read some data!
 ;
-  openr, file, filename, f77=f77, swap_endian=swap_endian
+  openr, file, filename, f77=f77, swap_endian=swap_endian, /get_lun
   point_lun, file, additional
   if (allprocs eq 1) then begin
     ; collectively written files
-    t = one*!Values.F_NaN
-    fstat = file_info (procdir+varfile)
-    if (fstat.size gt additional) then begin
-      readu, file, t, x, y, z, dx, dy, dz
-    endif
+    readu, file, t, x, y, z, dx, dy, dz
   endif else if (allprocs eq 2) then begin
     ; xy-collectively written files for each ipz-layer
     readu, file, t
@@ -130,8 +122,8 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endelse
 ;
-  close,file
-  free_lun,file
+  close, file
+  free_lun, file
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;

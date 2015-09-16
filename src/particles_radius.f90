@@ -437,8 +437,8 @@ module Particles_radius
         do k = k1,k2
           if (fp(k,irhosurf) < 0) then
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
-            mass_per_radius = 1./ 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))*mass_per_radius
+            mass_per_radius = 4. * pi * rho * fp(k,iap)**2
+            dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
           endif
           fp(k,ieffp) = effectiveness_factor(k)
         enddo

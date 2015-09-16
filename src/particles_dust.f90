@@ -94,6 +94,7 @@ module Particles
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
+  logical :: ldraglaw_purestokes=.false. 
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: ldraglaw_variable_density=.false.
@@ -164,6 +165,7 @@ module Particles
       ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
+      ldraglaw_purestokes,& 
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
@@ -198,6 +200,7 @@ module Particles
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
       ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
+      ldraglaw_purestokes,& 
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
@@ -512,6 +515,7 @@ module Particles
       if (ldraglaw_epstein_transonic    .or.&
           ldraglaw_eps_stk_transonic    .or.&
           ldraglaw_steadystate          .or.&
+          ldraglaw_purestokes          .or.&
           ldraglaw_simple) then
         ldraglaw_epstein=.false.
       endif
@@ -585,7 +589,7 @@ module Particles
       interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
-          .or. lthermophoretic_forces
+          .or. lthermophoretic_forces .or. ldraglaw_purestokes
       interp%lnu=lchemistry
       interp%lpp=lparticles_chemistry
       interp%lspecies=lparticles_surfspec
@@ -815,6 +819,19 @@ module Particles
               fp(k,izp)=zp3
             endif
           enddo
+!
+        case ('random-constz')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=zp0
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -3147,7 +3164,7 @@ module Particles
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
-        if (.not.ldraglaw_simple) then
+        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes)) then
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
@@ -4202,10 +4219,15 @@ module Particles
       else if (ldraglaw_eps_stk_transonic) then
 !
 ! ...and this is for a linear combination of Esptein and Stokes drag at
-! intermediate mach number. Pure Stokes drag is not implemented.
+! intermediate mach number. Pure Stokes drag is not implemented. (implemented now, see below)
 !
         call calc_draglaw_parameters(fp,k,uup,p,inx0,tausp1_par,lstokes=.true.)
 !
+!  draglaw_purestokes implemented below, it is simple stokes drag with no 
+!  dependence on partile's reynolds number. 
+!
+      elseif (ldraglaw_purestokes) then
+        call calc_draglaw_purestokes(fp,k,tausp1_par)
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
@@ -5023,6 +5045,61 @@ module Particles
         added_mass_beta=3*interp_rho(k)/(2*rhopmat+interp_rho(k))
 !
     end subroutine calc_added_mass_beta
+!***********************************************************************
+    subroutine calc_draglaw_purestokes(fp,k,tausp1_par)
+!
+!   Calculate relaxation time for particles under Pure Stokes drag 
+!
+!   6-Aug-15/nils+dhruba: coded
+!
+      use Viscosity, only: getnu
+      use Particles_radius
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer :: k
+      real :: tausp1_par
+      character (len=labellen) :: ivis=''
+!
+      intent(in) :: fp,k
+      intent(out) :: tausp1_par
+!
+      real :: dia,nu,nu_
+!
+!  Find the kinematic viscosity
+!
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu(k)
+      elseif (ivis=='rho-nu-const') then
+        nu=nu_/interp_rho(k)
+      elseif (ivis=='sqrtrho-nu-const') then
+        nu=nu_/sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k))&
+            /interp_rho(k)
+      else
+        call fatal_error('calc_draglaw_purestokes','No such ivis!')
+      endif
+!
+!  Particle diameter
+!
+      if (.not.lparticles_radius) then
+        print*,'calc_draglaw_purestokes: need particles_radius module to '// &
+            'calculate the relaxation time!'
+        call fatal_error('calc_draglaw_purestokes','')
+      endif
+!
+      dia=2.0*fp(k,iap)
+!
+!  Relaxation time:
+!
+      tausp1_par=18.0*nu/((rhopmat/interp_rho(k))*dia**2)
+!
+    endsubroutine calc_draglaw_purestokes
 !***********************************************************************
     subroutine calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
 !

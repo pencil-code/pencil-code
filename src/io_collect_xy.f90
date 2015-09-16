@@ -32,10 +32,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface output_form
-    module procedure output_form_int_0D
-  endinterface
-!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -353,50 +349,6 @@ module Io
       endif
 !
     endsubroutine output_snap_finalize
-!***********************************************************************
-    subroutine output_form_int_0D(file,data,lappend)
-!
-!  Write formatted integer data to a file.
-!  Set lappend to false to overwrite the file, default is to append the data.
-!
-!  19-Feb-2012/Bourdin.KIS: coded
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: data
-      logical, intent(in), optional :: lappend
-!
-      integer, dimension(ncpus) :: data_global
-      integer :: partner, buffer
-      integer, parameter :: tag_data = 683
-      logical :: lappend_opt
-!
-      lappend_opt = .false.
-      if (present(lappend)) lappend_opt = lappend
-!
-      if (lroot) then
-        ! collect data into global array
-        data_global(iproc) = data
-        do partner = 0, ncpus-1
-          if (partner == iproc) cycle
-          call mpirecv_int(buffer, partner, tag_data)
-          data_global(partner) = buffer
-        enddo
-        ! write global data to file
-        if (lappend_opt) then
-          open (lun_output, file=trim (directory_collect)//'/'//file, form='formatted', position='append', status='old')
-        else
-          open (lun_output, file=trim (directory_collect)//'/'//file, form='formatted', status='replace')
-        endif
-        write (lun_output,*) data_global
-        close (lun_output)
-      else
-        ! send local data
-        call mpisend_int(data, 0, tag_data)
-      endif
-!
-    endsubroutine output_form_int_0D
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
