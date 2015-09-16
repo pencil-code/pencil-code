@@ -268,4 +268,18 @@ module Chemistry
 !
     endsubroutine get_reac_rate
 !***********************************************************************
+    subroutine get_diff_coeff_reactants(xp,yp,zp,diff_coeff_reactants)
+!
+      real, dimension(nchemspec), intent(out) :: diff_coeff_reactants
+      integer, intent(in) :: xp, yp, zp
+!
+      ! [PABourdin] *** FIXME: is this a correct value for "nochemistry"?
+      diff_coeff_reactants = 0.0
+!
+      call keep_compiler_quiet(xp)
+      call keep_compiler_quiet(yp)
+      call keep_compiler_quiet(zp)
+!
+  endsubroutine get_diff_coeff_reactants
+!***********************************************************************
 endmodule Chemistry
