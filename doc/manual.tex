@@ -2999,10 +2999,6 @@ This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
 see Sect.~\ref{S-start-params}).
 
-[Occasionally, however, and only on some
-machines, one of the processors may not survive the MPI barrier and
-stops; we will need to look further into this.]
-
 Each time the parameters are reloaded, the new set of parameters is
 appended (in the form of \name{namelists}) to the file
 \file[params.log]{data/params.log} together with the time $t$, so you have
