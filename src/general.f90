@@ -21,6 +21,7 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index
+  public :: find_proc
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: cspline
@@ -126,6 +127,24 @@ module General
   character (len=labellen) :: random_gen='min_std'
 !
   contains
+!***********************************************************************
+    pure integer function find_proc(ipx, ipy, ipz)
+!
+!  Returns the rank of a process given its position in (ipx,ipy,ipz).
+!
+!  16-sep-15/ccyang: coded.
+!
+      use Cdata, only: lprocz_slowest
+!
+      integer, intent(in) :: ipx, ipy, ipz
+!
+      if (lprocz_slowest) then
+        find_proc = ipz * nprocxy + ipy * nprocx + ipx
+      else
+        find_proc = ipy * nprocxz + ipz * nprocx + ipx
+      endif
+!
+    endfunction find_proc
 !***********************************************************************
     subroutine setup_mm_nn()
 !
