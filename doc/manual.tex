@@ -859,7 +859,10 @@ Furthermore, one can change the list of variables for monitoring
 code reload new parameters or exit gracefully at runtime.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
-on any Linux or Unix system with a F90/F95 compiler.
+on any Linux or Unix system with a \name{F95} and \name{C} compiler suite,
+like \name{GNU gcc} and \name{gfortran}, together with the shell \name{CSH},
+and the \name{Perl} interpreter are mandatory requirements.
+
 Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
 more than 50\% of the users run their code also on Macs, and the other half
 uses either directly Linux on their laptops or they use VirtualBox
@@ -3071,8 +3074,7 @@ All input parameters in \file{start.in} and \file{run.in} are grouped in
 Fortran \name{namelists}.
 This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need no longer be in the correct order), as well as
-enhanced readability through
-inserted Fortran comments and whitespace.
+enhanced readability through inserted Fortran comments and whitespace.
 One namelist (\name{init_pars} / \name{run_pars}) contains general
 parameters for initialization/running and is always read in.
 All other namelists are specific to individual modules and will only
