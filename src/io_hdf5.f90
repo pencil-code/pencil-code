@@ -38,20 +38,20 @@ module Io
   endinterface
 !
   ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
+  integer :: lun_input = 88
+  integer :: lun_output = 91
 !
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
-  logical :: lcollective_IO=.true.
-  character (len=labellen) :: IO_strategy="MPI-IO"
+  logical :: lcollective_IO = .true.
+  character (len=labellen) :: IO_strategy = "MPI-IO"
 !
-  logical :: persist_initialized=.false.
-  integer :: persist_last_id=-max_int
+  logical :: persist_initialized = .false.
+  integer :: persist_last_id = -max_int
 !
   integer :: local_type, global_type, h5_err
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace
-  integer, parameter :: n_dims=3
+  integer, parameter :: n_dims = 3
   integer, dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer, dimension(n_dims+1) :: global_size, global_subsize, global_start
 !
