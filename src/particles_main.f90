@@ -742,6 +742,7 @@ module Particles_main
       if (lparticles_temperature) call pencil_criteria_par_TT()
       if (lparticles_mass)        call pencil_criteria_par_mass()
       if (lparticles_adsorbed)    call pencil_criteria_par_ads()
+      if (lparticles_chemistry)   call pencil_criteria_par_chem()
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -771,6 +772,7 @@ module Particles_main
       if (lparticles)             call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
       if (lparticles_nbody)       call calc_pencils_par_nbody(f,p)
+      if (lparticles_chemistry)   call calc_pencils_par_chem(f,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************

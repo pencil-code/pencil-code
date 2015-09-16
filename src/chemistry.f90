@@ -6484,16 +6484,16 @@ module Chemistry
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************
-  subroutine get_diff_coeff_reactants(xp,yp,zp,diff_coeff_reactants)
+  subroutine get_diff_coeff_reactants(m,n,diff_coeff_reactants)
 !
 !  This routine is used to transport the diffusion coefficients to the 
 !  particles_chemistry module, this is done for each cell until a better
 !  idea is found
 !
-    real, dimension(nchemspec), intent(out) :: diff_coeff_reactants
-    integer, intent(in) :: xp,yp,zp
+    real, dimension(nx,nchemspec), intent(out) :: diff_coeff_reactants
+    integer, intent(in) :: m,n
 !
-    diff_coeff_reactants=Diff_full_add(xp,yp,zp,:)
+    diff_coeff_reactants=Diff_full_add(l1:l2,m,n,:)
 !
   endsubroutine get_diff_coeff_reactants
 !***********************************************************************
