@@ -10,6 +10,8 @@
 ;
 function pc_get_datadir
 
+COMPILE_OPT IDL2, HIDDEN
+
 	; Default value of datadir.
 	default, data, 'data'
 	default, datadir_in, 'datadir.in'
