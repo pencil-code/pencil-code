@@ -574,7 +574,7 @@ module Param_IO
 !
         if (lstart) then
           call write_stub ('signal', lsignal)
-          call write_stub ('initial_condition_pars', linitial_condition, .false.)
+          call write_stub ('initial_condition_pars', linitial_condition, .true.)
         endif
 !
         call write_stub ('streamlines', ltracers) !! questionable wg. ltracers

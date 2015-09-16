@@ -859,7 +859,10 @@ Furthermore, one can change the list of variables for monitoring
 code reload new parameters or exit gracefully at runtime.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
-on any Linux or Unix system with a F90/F95 compiler.
+on any Linux or Unix system with a \name{F95} and \name{C} compiler suite,
+like \name{GNU gcc} and \name{gfortran}, together with the shell \name{CSH},
+and the \name{Perl} interpreter are mandatory requirements.
+
 Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
 more than 50\% of the users run their code also on Macs, and the other half
 uses either directly Linux on their laptops or they use VirtualBox
@@ -3071,8 +3074,7 @@ All input parameters in \file{start.in} and \file{run.in} are grouped in
 Fortran \name{namelists}.
 This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need no longer be in the correct order), as well as
-enhanced readability through
-inserted Fortran comments and whitespace.
+enhanced readability through inserted Fortran comments and whitespace.
 One namelist (\name{init_pars} / \name{run_pars}) contains general
 parameters for initialization/running and is always read in.
 All other namelists are specific to individual modules and will only
@@ -6007,34 +6009,6 @@ much, at least for the corner cases like \file{RERUN}, \file{NEWDIR},
 {\bf A}: The string array for the boundary condition, e.g.\ \var{bcx} or
 \var{bcz} is too long. Make sure it has exactly as many elements as \var{nvar}
 is big.
-
-\subsubsection{Namelist problem under IRIX}
-Under IRIX, I get
-\begin{Verbatim}
-  lib-4001 : UNRECOVERABLE library error
-
-  Encountered during a namelist READ from unit 1
-  Fortran unit 1 is connected to a sequential formatted text file: "run.in"
-  IOT Trap
-  Abort
-\end{Verbatim}
-
-\medskip
-
-{\bf A}: This is a compiler bug that has been found at least with the MIPSpro
-F90 compiler version 7.3.1.3m. The problem seems to have been fixed in  version
-7.4.20m.
-
-%  It has been reported to SGI in mid-2002; you should complain to SGI if a
-%  patch is still not available.
-
-The error comes and goes, depending on the configuration (and possibly even the
-input parameters) you are using.  Until SGI fix their compiler, you can
-experiment with adding new variables to the module \name{Param_IO}; this has
-solved the problem once for us.  If this trick does not help, you will need to
-turn your namelist input (at least \file{run.in} into Fortran statements,
-include them into a replacement version of \file{param_io.f90}, and recompile
-each time you make changes.
 
 \subsubsection{Code crashes after restarting}
 

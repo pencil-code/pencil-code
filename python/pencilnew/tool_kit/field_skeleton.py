@@ -4,11 +4,13 @@
 """
 Finds the structure of the field's skeleton, i.e. null points, separatrix
 layers and separators using the trilinear method by
-Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751).
+Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751) and
+Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499)
 """
 
 import numpy as np
 import os as os
+from pencilnew.math.interpolation import vec_int
 try:
     import vtk as vtk
 except:
@@ -30,7 +32,6 @@ class NullPoint(object):
         """
 
         self.nulls = []
-        self.reduced_cells = []
 
     def find_nullpoints(self, var, field):
         """
@@ -55,21 +56,21 @@ class NullPoint(object):
                    coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
                    coefTri[7]*x*y*z
 
-        def __gradB1(x, y, z, coefTri, dd):
-            """ Compute the inverse of the gradient of B. """
-            gb1 = np.zeros((3, 3))
-            gb1[0, :] = (__triLinear_interpolation(x+dd, y, z, coefTri) - \
+        def __grad_field_1(x, y, z, coefTri, dd):
+            """ Compute the inverse of the gradient of the field. """
+            gf1 = np.zeros((3, 3))
+            gf1[0, :] = (__triLinear_interpolation(x+dd, y, z, coefTri) - \
                          __triLinear_interpolation(x-dd, y, z, coefTri))/(2*dd)
-            gb1[1, :] = (__triLinear_interpolation(x, y+dd, z, coefTri) - \
+            gf1[1, :] = (__triLinear_interpolation(x, y+dd, z, coefTri) - \
                          __triLinear_interpolation(x, y-dd, z, coefTri))/(2*dd)
-            gb1[2, :] = (__triLinear_interpolation(x, y, z+dd, coefTri) - \
+            gf1[2, :] = (__triLinear_interpolation(x, y, z+dd, coefTri) - \
                          __triLinear_interpolation(x, y, z-dd, coefTri))/(2*dd)
             # Invert the matrix.
-            if np.linalg.det(gb1) != 0 and not np.max(np.isnan(gb1)):
-                gb1 = np.matrix(gb1).I
+            if np.linalg.det(gf1) != 0 and not np.max(np.isnan(gf1)):
+                gf1 = np.matrix(gf1).I
             else:
-                gb1 *= 0
-            return gb1
+                gf1 *= 0
+            return gf1
 
         def __newton_raphson(xyz0, coefTri):
             """ Newton-Raphson method for finding null-points. """
@@ -81,13 +82,13 @@ class NullPoint(object):
             for i in range(iterMax):
                 diff = __triLinear_interpolation(xyz[0], xyz[1],
                                                  xyz[2], coefTri) * \
-                       __gradB1(xyz[0], xyz[1], xyz[2], coefTri, dd)
+                       __grad_field_1(xyz[0], xyz[1], xyz[2], coefTri, dd)
                 diff = np.array(diff)[0]
                 xyz = xyz - diff
                 if any(abs(diff) < tol) or any(abs(diff) > 1):
                     return xyz
 
-            return np.array(xyz)[0]
+            return np.array(xyz)
 
         # 1) Reduction step.
         # Find all cells for which all three field components change sign.
@@ -102,8 +103,6 @@ class NullPoint(object):
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, 1:, :-1, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, 1:, :-1] < 0) + \
             (sign_field[comp, 1:, 1:, 1:]*sign_field[comp, :-1, :-1, :-1] < 0))
-
-        self.reduced_cells = reduced_cells
 
         # Find null points in these cells.
         self.nulls = []
@@ -463,4 +462,141 @@ class NullPoint(object):
         for null in range(points.GetNumberOfPoints()):
             self.nulls.append(points.GetPoint(null))
         self.nulls = np.array(self.nulls)
+
+
+class Separatrix(object):
+    """
+    Contains the separatrix layers.
+    """
+
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+        self.lines = []
+        self.eigen_values = []
+        self.eigen_vectors = []
+        self.sign_trace = []
+        self.fan_vectors = []
+        self.normals = []
+        self.separatrices = []
+
+    def find_separatrices(self, var, field, null_point, delta=0.1,
+                          iter_max=100):
+        """
+        Find the separatrices to the field 'field' with information from 'var'.
+
+        call signature:
+
+            find_separatrices(var, field, null_point, delta=0.1, iter_max=100)
+
+        Arguments:
+
+        *var*:
+            The var object from the read_var routine.
+
+        *field*:
+            The vector field.
+
+        *null_point*:
+            NullPoint object containing the magnetic null points.
+            
+        *delta*:
+            Step length for the field line tracing.
+
+        *iter_max*:
+            Maximum iteration steps for the fiel line tracing.
+        """
+
+
+        for null in null_point.nulls:
+            # Find the Jacobian grad(field).
+            grad_field = self.__grad_field(null, var, field,
+                                           min((var.dx, var.dy, var.dz))/10)
+            # Find the eigenvalues of the Jacobian.
+            eigen_values = np.array(np.linalg.eig(grad_field)[0])
+            # Find the eigenvectors of the Jacobian.
+            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
+            # Determine which way to trace the streamlines.
+            if np.linalg.det(grad_field) < 0:
+                sign_trace = 1
+                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
+            if np.linalg.det(grad_field) > 0:
+                sign_trace = -1
+                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
+            if np.linalg.det(grad_field) == 0:
+                print("error: Null point is not of x-type.")
+                continue
+            fan_vectors = np.array(fan_vectors)
+            # Compute the normal to the fan-plane.
+            normal = np.cross(fan_vectors[0], fan_vectors[1])
+            normal = normal/np.sqrt(np.sum(normal**2))
+
+            self.eigen_values.append(eigen_values)
+            self.eigen_vectors.append(eigen_vectors)
+            self.sign_trace.append(sign_trace)
+            self.fan_vectors.append(fan_vectors)
+            self.normals.append(normal)
+
+            # Trace the rings around the null.
+            tracing = True
+            # Create the first ring of points.
+            rings = []
+            rings.append(null)
+            rings.append([])
+            for theta in np.linspace(0, 2*np.pi*(1-1./10), 100):
+                rings[-1].append(null + self.__rotate_vector(normal, fan_vectors[0],
+                                                             theta) * delta)
+            i = 0
+            while tracing or i < iter_max:
+                rings.append([])
+                for point in rings[-2]:
+                    field_norm = vec_int(point, var, field)*sign_trace
+                    field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
+                    point = point + field_norm*delta
+                    rings[-1].append(point)
+                i += 1
+                tracing = False
+            self.separatrices.append(rings)
+        
+        self.eigen_values = np.array(self.eigen_values)
+        self.eigen_vectors = np.array(self.eigen_vectors)
+        self.sign_trace = np.array(self.sign_trace)
+        self.fan_vectors = np.array(self.fan_vectors)
+        self.normals = np.array(self.normals)
+        
+                
+                
+
+#            self.separatrix.append(separatrix)
+
+    def __grad_field(self, xyz, var, field, dd):
+        """ Compute the gradient if the field at xyz. """
+        gf = np.zeros((3, 3))
+        gf[0, :] = (vec_int(xyz+np.array([dd, 0, 0]), var, field) -
+                    vec_int(xyz-np.array([dd, 0, 0]), var, field))/(2*dd)
+        gf[1, :] = (vec_int(xyz+np.array([0, dd, 0]), var, field) -
+                    vec_int(xyz-np.array([0, dd, 0]), var, field))/(2*dd)
+        gf[2, :] = (vec_int(xyz+np.array([0, 0, dd]), var, field) -
+                    vec_int(xyz-np.array([0, 0, dd]), var, field))/(2*dd)
+
+        return np.matrix(gf)
+
+    def __rotate_vector(self, rot_normal, vector, theta):
+        """ Rotate vector around rot_normal by theta. """
+        # Compute the rotation matrix.
+        u = rot_normal[0]
+        v = rot_normal[1]
+        w = rot_normal[2]
+        rot_matrix = np.matrix([[u**2+(1-u**2)*np.cos(theta),
+                                 u*v*(1-np.cos(theta))-w*np.sin(theta),
+                                 u*w*(1-np.cos(theta)+v*np.sin(theta))],
+                                [u*v*(1-np.cos(theta)+w*np.sin(theta)),
+                                 v**2+(1-v**2)*np.cos(theta),
+                                 v*w*(1-np.cos(theta))-u*np.sin(theta)],
+                                [u*w*(1-np.cos(theta))-v*np.sin(theta),
+                                 v*w*(1-np.cos(theta))+u*np.sin(theta),
+                                 w**2+(1-w**2)*np.cos(theta)]])
+        return np.array(vector*rot_matrix)[0]
         
