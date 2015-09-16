@@ -6822,7 +6822,7 @@ nameloop: do
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use General, only: loptest
+      use General, only: loptest, itoa
       use Messages, only: warning
       use File_io, only: parallel_rewind
 !
@@ -6861,7 +6861,8 @@ nameloop: do
             if (ierr == -1) then
               call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
             else
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" has an error!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" has an error ('// &
+                                             trim(itoa(ierr))//')!')
             endif
           endif
 
