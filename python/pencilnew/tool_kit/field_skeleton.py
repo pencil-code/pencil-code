@@ -5,7 +5,7 @@
 Finds the structure of the field's skeleton, i.e. null points, separatrix
 layers and separators using the trilinear method by
 Haynes-Parnell-2007-14-8-PhysPlasm (http://dx.doi.org/10.1063/1.2756751) and
-Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499)
+Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499).
 """
 
 import numpy as np
@@ -541,35 +541,56 @@ class Separatrix(object):
 
             # Trace the rings around the null.
             tracing = True
+            separatrices = []
+            separatrices.append(null)
             # Create the first ring of points.
-            rings = []
-            rings.append(null)
-            rings.append([])
-            for theta in np.linspace(0, 2*np.pi*(1-1./10), 100):
-                rings[-1].append(null + self.__rotate_vector(normal, fan_vectors[0],
-                                                             theta) * delta)
-            i = 0
-            while tracing or i < iter_max:
-                rings.append([])
-                for point in rings[-2]:
+            ring = []
+            for theta in np.linspace(0, 2*np.pi*(1-1./8), 8):
+                ring.append(null + self.__rotate_vector(normal, fan_vectors[0],
+                                                        theta) * delta)
+                separatrices.append(ring[-1])
+            iteration = 0
+            while tracing and iteration < iter_max:
+                point_idx = 0
+                # Trace field lines on ring.
+                for point in ring:
                     field_norm = vec_int(point, var, field)*sign_trace
                     field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                     point = point + field_norm*delta
-                    rings[-1].append(point)
-                i += 1
-                tracing = False
-            self.separatrices.append(rings)
+                    ring[point_idx] = point
+                    separatrices.append(point)
+                    point_idx += 1
+
+                # Add points if distance becomes too large.
+                ring_new = []
+                ring_new.append(ring[0])
+                for point_idx in range(len(ring)-1):
+                    if self.__distance(ring[point_idx], ring[point_idx+1]) > delta:
+                        ring_new.append((ring[point_idx]+ring[point_idx+1])/2)
+                    ring_new.append(ring[point_idx+1])
+                if self.__distance(ring[0], ring[-1]) > delta:
+                    ring_new.append((ring[0]+ring[-1])/2)
+                ring = ring_new
+
+                # Remove points which lie outside.
+                ring_new = []
+                for point_idx in range(len(ring)):
+                    if self.__inside_domain(ring[point_idx], var):
+                        ring_new.append(ring[point_idx])
+                ring = ring_new
+                
+                iteration += 1
+                # Stop the tracing routine if there are no points in the ring.
+                if not ring:
+                    tracing = False
+            self.separatrices.append(np.array(separatrices))
         
         self.eigen_values = np.array(self.eigen_values)
         self.eigen_vectors = np.array(self.eigen_vectors)
         self.sign_trace = np.array(self.sign_trace)
         self.fan_vectors = np.array(self.fan_vectors)
         self.normals = np.array(self.normals)
-        
-                
-                
-
-#            self.separatrix.append(separatrix)
+        self.separatrices = np.array(self.separatrices)
 
     def __grad_field(self, xyz, var, field, dd):
         """ Compute the gradient if the field at xyz. """
@@ -599,4 +620,13 @@ class Separatrix(object):
                                  v*w*(1-np.cos(theta))+u*np.sin(theta),
                                  w**2+(1-w**2)*np.cos(theta)]])
         return np.array(vector*rot_matrix)[0]
+    
+    def __distance(self, point_a, point_b):
+        """ Compute the distance of two points (Euclidian geometry). """
+        return np.sqrt(np.sum((point_a-point_b)**2))
+    
+    def __inside_domain(self, point, var):
+        return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
+               (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
+               (point[2] > var.z[0]) * (point[2] < var.z[-1])
         
