@@ -273,7 +273,6 @@ module Chemistry
       real, dimension(nchemspec), intent(out) :: diff_coeff_reactants
       integer, intent(in) :: xp, yp, zp
 !
-      ! [PABourdin] *** FIXME: is this a correct value for "nochemistry"?
       diff_coeff_reactants = 0.0
 !
       call keep_compiler_quiet(xp)
