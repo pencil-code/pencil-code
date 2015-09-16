@@ -481,15 +481,17 @@ class Separatrix(object):
         self.fan_vectors = []
         self.normals = []
         self.separatrices = []
+        self.connectivity = []
 
     def find_separatrices(self, var, field, null_point, delta=0.1,
-                          iter_max=100):
+                          iter_max=100, ring_density=8):
         """
         Find the separatrices to the field 'field' with information from 'var'.
 
         call signature:
 
-            find_separatrices(var, field, null_point, delta=0.1, iter_max=100)
+            find_separatrices(var, field, null_point, delta=0.1,
+                              iter_max=100, density=8)
 
         Arguments:
 
@@ -507,6 +509,9 @@ class Separatrix(object):
 
         *iter_max*:
             Maximum iteration steps for the fiel line tracing.
+
+        *ring_density*:
+            Density of the tracer rings.
         """
 
 
@@ -539,26 +544,36 @@ class Separatrix(object):
             self.fan_vectors.append(fan_vectors)
             self.normals.append(normal)
 
-            # Trace the rings around the null.
             tracing = True
             separatrices = []
+            connectivity = []
             separatrices.append(null)
             # Create the first ring of points.
             ring = []
-            for theta in np.linspace(0, 2*np.pi*(1-1./8), 8):
+            for theta in np.linspace(0, 2*np.pi*(1-1./ring_density), ring_density):
                 ring.append(null + self.__rotate_vector(normal, fan_vectors[0],
                                                         theta) * delta)
                 separatrices.append(ring[-1])
+                # Set the connectivity with the null point.
+                connectivity.append(np.array([0, len(ring)]))
+
+            # Set the connectivity within the ring.
+            for idx in range(ring_density-1):
+                connectivity.append(np.array([idx+1, idx+2]))
+            connectivity.append(np.array([1, ring_density]))
+            
+            # Trace the rings around the null.
             iteration = 0
             while tracing and iteration < iter_max:
-                point_idx = 0
+                ring_old = ring
+                
                 # Trace field lines on ring.
+                point_idx = 0
                 for point in ring:
                     field_norm = vec_int(point, var, field)*sign_trace
                     field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                     point = point + field_norm*delta
                     ring[point_idx] = point
-                    separatrices.append(point)
                     point_idx += 1
 
                 # Add points if distance becomes too large.
@@ -577,13 +592,38 @@ class Separatrix(object):
                 for point_idx in range(len(ring)):
                     if self.__inside_domain(ring[point_idx], var):
                         ring_new.append(ring[point_idx])
+                        separatrices.append(ring[point_idx])
+                    
+                # Set the connectivity within the ring.
+                offset = len(separatrices)-len(ring_new)
+                for point_idx in range(len(ring_new)-1):
+                    connectivity.append(np.array([offset+point_idx,
+                                                  offset+point_idx+1]))
+                connectivity.append(np.array([offset, offset+len(ring_new)-1]))
                 ring = ring_new
+                
+                offset = len(separatrices)-len(ring_old)-len(ring)
+                # Compute connectivity arrays between the old and new ring.
+                for point_old_idx in range(len(ring_old)):
+                    point_old = ring_old[point_old_idx]
+                    dist_min = np.inf
+                    idx_min = -1
+                    for point_idx in range(len(ring)):
+                        point = ring[point_idx]
+                        dist = self.__distance(point_old, point)
+                        if dist < dist_min:
+                            dist_min = dist
+                            idx_min = point_idx
+                    if idx_min > -1:
+                        connectivity.append(np.array([offset+point_old_idx,
+                                                      offset+idx_min+len(ring_old)]))
                 
                 iteration += 1
                 # Stop the tracing routine if there are no points in the ring.
                 if not ring:
                     tracing = False
             self.separatrices.append(np.array(separatrices))
+            self.connectivity.append(np.array(connectivity))
         
         self.eigen_values = np.array(self.eigen_values)
         self.eigen_vectors = np.array(self.eigen_vectors)
@@ -592,6 +632,46 @@ class Separatrix(object):
         self.normals = np.array(self.normals)
         self.separatrices = np.array(self.separatrices)
 
+
+    def write_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
+        """
+        Write the separatrices into a vtk file.
+
+        call signature:
+
+            write_vtk(data_dir='./data', file_name='separatrices.vtk')
+
+        Arguments:
+
+        *data_dir*:
+            Target data directory.
+
+        *file_name*:
+            Target file name.
+        """
+
+        writer = vtk.vtkUnstructuredGridWriter()
+        writer.SetFileName(os.path.join(data_dir, file_name))
+        grid_data = vtk.vtkUnstructuredGrid()
+        points = vtk.vtkPoints()
+        cell_array = vtk.vtkCellArray()
+        offset = 0
+        for idx in range(len(self.separatrices)):
+            for point_idx in range(len(self.separatrices[idx])):
+                points.InsertNextPoint(self.separatrices[idx][point_idx, :])
+            for cell_idx in range(len(self.connectivity[idx])):
+                cell_array.InsertNextCell(2)
+                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 0]
+                                           +offset)
+                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 1]
+                                           +offset)
+            offset += point_idx+1
+        grid_data.SetPoints(points)
+        grid_data.SetCells(vtk.VTK_LINE, cell_array)
+        writer.SetInput(grid_data)
+        writer.Write()
+        
+        
     def __grad_field(self, xyz, var, field, dd):
         """ Compute the gradient if the field at xyz. """
         gf = np.zeros((3, 3))
@@ -603,6 +683,7 @@ class Separatrix(object):
                     vec_int(xyz-np.array([0, 0, dd]), var, field))/(2*dd)
 
         return np.matrix(gf)
+
 
     def __rotate_vector(self, rot_normal, vector, theta):
         """ Rotate vector around rot_normal by theta. """
@@ -621,9 +702,11 @@ class Separatrix(object):
                                  w**2+(1-w**2)*np.cos(theta)]])
         return np.array(vector*rot_matrix)[0]
     
+    
     def __distance(self, point_a, point_b):
         """ Compute the distance of two points (Euclidian geometry). """
         return np.sqrt(np.sum((point_a-point_b)**2))
+    
     
     def __inside_domain(self, point, var):
         return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
