@@ -856,7 +856,8 @@ Input parameters (which are set in the files \file{start.in},
 \file{run.in}) can be changed without recompilation.
 Furthermore, one can change the list of variables for monitoring
 (diagnostic) output on the fly, and there are mechanisms for making the
-code reload new parameters or exit gracefully at runtime.
+code reload new parameters or exit gracefully at runtime. You may want to
+check for correctness of these files with the command \code{pc_configtest}.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
 on any Linux or Unix system with a \name{F95} and \name{C} compiler suite,
@@ -1399,8 +1400,8 @@ Now we run the code:
 \begin{alltt}
   \prompt{unix> } run.csh
 \end{alltt}
-This runs \file[run.x]{src/run.x} and carries out \var{nt} time steps, where
-\var{nt} and other run time parameters are specified in \file{run.in}.
+This executes \file[run.x]{src/run.x} and carries out \var{nt} time steps,
+where \var{nt} and other run-time parameters are specified in \file{run.in}.
 On a decent PC (1.7\,GHz), 50 time steps take about 10 seconds.
 
 The relevant part of the code's output looks like\\
@@ -1690,8 +1691,10 @@ These files specify the startup and runtime parameters (see
 Sects.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
 diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under
-\name{svn}\index{svn} in
-the individual \file[samples/]{samples} directories.
+\name{svn}\index{svn} in the individual \file[samples/]{samples} directories.
+
+You may want to check for the correctness of these configuration files by
+issuing the command \code{pc_configtest}.
 
 \subsubsection{\file{datadir.in}}
 \label{Ss-datadir-in}
@@ -3097,6 +3100,9 @@ Thus, the typical file \file{start.in} will only contain a minimum set of
 variables or (if you are \emph{very} minimalistic) none at all.
 If you want to run a particular problem, it is best to start by
 modifying an existing example that is close to your application.
+
+Before starting a simulation run, you may want to execute the command \code{pc_configtest}
+in order to test the correctnes of your changes to these configuration files.
 
 As an example, we give here the start parameters for
 \file[helical-MHDturb]{samples/helical-MHDturb}
@@ -11284,6 +11290,10 @@ Not all parameters are used for a given scenario.
 This list is not necessarily up to date; also, in many cases it can only
 give an idea of the corresponding setup; to get more insight and
 the latest set of parameters, you need to look at the code.
+
+Once you have changed any of the \file{*.in} files, you may want to first
+execute the command \code{pc_configtest} in order to test the correctness of
+these configuration files, before you apply them in an active simulation run.
 
 
 % ---------------------------------------------------------------------- %
