@@ -589,17 +589,23 @@ class Separatrix(object):
 
                 # Remove points which lie outside.
                 ring_new = []
+                not_connect_to_next = []
                 for point_idx in range(len(ring)):
                     if self.__inside_domain(ring[point_idx], var):
                         ring_new.append(ring[point_idx])
                         separatrices.append(ring[point_idx])
+                    else:
+                        not_connect_to_next.append(len(ring_new)-1)
                     
                 # Set the connectivity within the ring.
                 offset = len(separatrices)-len(ring_new)
                 for point_idx in range(len(ring_new)-1):
-                    connectivity.append(np.array([offset+point_idx,
-                                                  offset+point_idx+1]))
-                connectivity.append(np.array([offset, offset+len(ring_new)-1]))
+                    if not np.any(np.array(not_connect_to_next) == point_idx):
+                        connectivity.append(np.array([offset+point_idx,
+                                                      offset+point_idx+1]))
+                if not np.any(np.array(not_connect_to_next) == len(ring_new)) and \
+                not np.any(np.array(not_connect_to_next) == -1):
+                    connectivity.append(np.array([offset, offset+len(ring_new)-1]))
                 ring = ring_new
                 
                 offset = len(separatrices)-len(ring_old)-len(ring)
