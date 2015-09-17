@@ -432,7 +432,8 @@ class NullPoint(object):
         writer.SetFileName(os.path.join(data_dir, file_name))
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
-                
+
+        # Write the null points.
         for null in self.nulls:
             points.InsertNextPoint(null)
         
@@ -464,9 +465,9 @@ class NullPoint(object):
         sign_trace_vtk.SetName('sign_trace')
         grid_data.GetPointData().AddArray(sign_trace_vtk)
         # Write out the fan plane normal.
-        normal_vtk = VN.numpy_to_vtk(self.normals)
-        normal_vtk.SetName('normal')
-        grid_data.GetPointData().AddArray(normal_vtk)
+        normals_vtk = VN.numpy_to_vtk(self.normals)
+        normals_vtk.SetName('normal')
+        grid_data.GetPointData().AddArray(normals_vtk)
         
         grid_data.SetPoints(points)
         writer.SetInput(grid_data)
@@ -490,16 +491,44 @@ class NullPoint(object):
             Origin file name.
         """
 
-        reader = vtk.vtkPolyDataReader()
+        reader = vtk.vtkUnstructuredGridReader()
         reader.SetFileName(os.path.join(data_dir, file_name))
         reader.Update()
         output = reader.GetOutput()
+        
+        # Read the null points.
         points = output.GetPoints()
         self.nulls = []
         for null in range(points.GetNumberOfPoints()):
             self.nulls.append(points.GetPoint(null))
         self.nulls = np.array(self.nulls)
 
+        point_data = output.GetPointData()
+        eigen_values_vtk = []
+        eigen_values = []        
+        eigen_vectors_vtk = []
+        eigen_vectors = []        
+        fan_vectors_vtk = []
+        fan_vectors = []        
+        for dim in range(3):
+            eigen_values_vtk.append(point_data.GetVectors('eigen_value_{0}'.format(dim)))
+            eigen_values.append(VN.vtk_to_numpy(eigen_values_vtk[-1]))
+            eigen_vectors_vtk.append(point_data.GetVectors('eigen_vector_{0}'.format(dim)))
+            eigen_vectors.append(VN.vtk_to_numpy(eigen_vectors_vtk[-1]))
+            if dim < 2:
+                fan_vectors_vtk.append(point_data.GetVectors('fan_vector_{0}'.format(dim)))
+                fan_vectors.append(VN.vtk_to_numpy(fan_vectors_vtk[-1]))
+        sign_trace_vtk = point_data.GetVectors('sign_trace')
+        sign_trace = VN.vtk_to_numpy(sign_trace_vtk)
+        normals_vtk = point_data.GetVectors('normal')
+        normals = VN.vtk_to_numpy(normals_vtk)
+        
+        self.eigen_values = np.swapaxes(np.array(eigen_values), 0, 1)
+        self.eigen_vectors = np.swapaxes(np.array(eigen_vectors), 0, 1)
+        self.fan_vectors = np.swapaxes(np.array(fan_vectors), 0, 1)
+        self.sign_trace = np.array(sign_trace)
+        self.normals = np.array(normals)
+        
 
     def __grad_field(self, xyz, var, field, dd):
         """ Compute the gradient if the field at xyz. """
@@ -607,6 +636,8 @@ class Separatrix(object):
         """
 
 
+        separatrices = []
+        connectivity = []
         for null_idx in range(len(null_point.nulls)):
             null = null_point.nulls[null_idx]
             normal = null_point.normals[null_idx]
@@ -614,8 +645,6 @@ class Separatrix(object):
             sign_trace = null_point.sign_trace[null_idx]
             
             tracing = True
-            separatrices = []
-            connectivity = []
             separatrices.append(null)
             # Create the first ring of points.
             ring = []
@@ -697,10 +726,9 @@ class Separatrix(object):
                 # Stop the tracing routine if there are no points in the ring.
                 if not ring:
                     tracing = False
-            self.separatrices.append(np.array(separatrices))
-            self.connectivity.append(np.array(connectivity))
         
-        self.separatrices = np.array(self.separatrices)
+        self.separatrices = np.array(separatrices)
+        self.connectivity = np.array(connectivity)
 
 
     def write_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
@@ -725,24 +753,55 @@ class Separatrix(object):
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
         cell_array = vtk.vtkCellArray()
-        offset = 0
         for idx in range(len(self.separatrices)):
             for point_idx in range(len(self.separatrices[idx])):
                 points.InsertNextPoint(self.separatrices[idx][point_idx, :])
             for cell_idx in range(len(self.connectivity[idx])):
                 cell_array.InsertNextCell(2)
-                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 0]
-                                           +offset)
-                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 1]
-                                           +offset)
-            offset += point_idx+1
+                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 0])
+                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 1])
+
         grid_data.SetPoints(points)
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
         writer.SetInput(grid_data)
         writer.Write()
         
         
-    
+    def read_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
+        """
+        Read the separatrices from a vtk file.
+
+        call signature:
+
+            read_vtk(data_dir='./data', file_name='separatrices.vtk')
+
+        Arguments:
+
+        *data_dir*:
+            Origin data directory.
+
+        *file_name*:
+            Origin file name.
+        """
+
+        reader = vtk.vtkUnstructuredGridReader()
+        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.Update()
+        output = reader.GetOutput()
+        
+        # Read the separatrices.
+        points = output.GetPoints()
+        cells = output.GetCells()
+        self.separatrices = []
+        self.connectivity = []
+        for separatrix in range(points.GetNumberOfPoints()):
+            self.separatrices.append(points.GetPoint(separatrix))
+        self.separatrices = np.array(self.separatrices)
+        self.connectivity = np.array([VN.vtk_to_numpy(cells.GetData())[1::3],
+                                      VN.vtk_to_numpy(cells.GetData())[2::3]])
+        self.connectivity = self.connectivity.swapaxes(0, 1)
+
+
     def __distance(self, point_a, point_b):
         """ Compute the distance of two points (Euclidian geometry). """
         return np.sqrt(np.sum((point_a-point_b)**2))
