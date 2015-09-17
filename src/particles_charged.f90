@@ -2218,13 +2218,17 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (.not. lonly_eforce) then
         if (ibb .ne. 0) then
-          call set_periodic_boundcond_on_aux(f,ibb)
+          call set_periodic_boundcond_on_aux(f,ibx)
+          call set_periodic_boundcond_on_aux(f,iby)
+          call set_periodic_boundcond_on_aux(f,ibz)
         else
           call fatal_error('periodic_boundcond_on_aux','particles_charged demands ibb ne 0')
         endif
       endif
       if (iEE .ne. 0) then
-        call set_periodic_boundcond_on_aux(f,iEE)
+        call set_periodic_boundcond_on_aux(f,iEEx)
+        call set_periodic_boundcond_on_aux(f,iEEy)
+        call set_periodic_boundcond_on_aux(f,iEEz)
       else
         call fatal_error('periodic_boundcond_on_aux','particles_charged demands iEE ne 0')
       endif
