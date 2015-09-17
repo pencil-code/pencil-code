@@ -648,17 +648,18 @@ class Separatrix(object):
             separatrices.append(null)
             # Create the first ring of points.
             ring = []
+            offset = len(separatrices)
             for theta in np.linspace(0, 2*np.pi*(1-1./ring_density), ring_density):
                 ring.append(null + self.__rotate_vector(normal, fan_vectors[0],
                                                         theta) * delta)
                 separatrices.append(ring[-1])
                 # Set the connectivity with the null point.
-                connectivity.append(np.array([0, len(ring)]))
+                connectivity.append(np.array([0, len(ring)])+offset)
 
             # Set the connectivity within the ring.
             for idx in range(ring_density-1):
-                connectivity.append(np.array([idx+1, idx+2]))
-            connectivity.append(np.array([1, ring_density]))
+                connectivity.append(np.array([idx+1, idx+2])+offset)
+            connectivity.append(np.array([1, ring_density])+offset)
             
             # Trace the rings around the null.
             iteration = 0
@@ -753,13 +754,13 @@ class Separatrix(object):
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
         cell_array = vtk.vtkCellArray()
-        for idx in range(len(self.separatrices)):
-            for point_idx in range(len(self.separatrices[idx])):
-                points.InsertNextPoint(self.separatrices[idx][point_idx, :])
-            for cell_idx in range(len(self.connectivity[idx])):
-                cell_array.InsertNextCell(2)
-                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 0])
-                cell_array.InsertCellPoint(self.connectivity[idx][cell_idx, 1])
+#        for idx in range(len(self.separatrices)):
+        for point_idx in range(len(self.separatrices)):
+            points.InsertNextPoint(self.separatrices[point_idx, :])
+        for cell_idx in range(len(self.connectivity)):
+            cell_array.InsertNextCell(2)
+            cell_array.InsertCellPoint(self.connectivity[cell_idx, 0])
+            cell_array.InsertCellPoint(self.connectivity[cell_idx, 1])
 
         grid_data.SetPoints(points)
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
