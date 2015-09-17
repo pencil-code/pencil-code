@@ -456,6 +456,9 @@ module Hydro
   integer :: idiag_oyuyymz=0    ! XYAVG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
   integer :: idiag_oxuzxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
   integer :: idiag_oyuzymz=0    ! XYAVG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
+  integer :: idiag_uyxuzxmz=0   ! XYAVG_DOC: $\left<u_{y,x} u_{z,x}\right>_{xy}$
+  integer :: idiag_uyyuzymz=0   ! XYAVG_DOC: $\left<u_{y,y} u_{z,y}\right>_{xy}$
+  integer :: idiag_uyzuzzmz=0   ! XYAVG_DOC: $\left<u_{y,z} u_{z,z}\right>_{xy}$
   integer :: idiag_ekinmz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}$
   integer :: idiag_oumz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! XYAVG_DOC: \cdot\uv\right>_{xy}$
@@ -2982,6 +2985,9 @@ module Hydro
         call xysum_mn_name_z(p%oo(:,2)*p%uij(:,2,2),idiag_oyuyymz)
         call xysum_mn_name_z(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxmz)
         call xysum_mn_name_z(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzymz)
+        call xysum_mn_name_z(p%uij(:,2,1)*p%uij(:,3,1),idiag_uyxuzxmz)
+        call xysum_mn_name_z(p%uij(:,2,2)*p%uij(:,3,2),idiag_uyyuzymz)
+        call xysum_mn_name_z(p%uij(:,2,3)*p%uij(:,3,3),idiag_uyzuzzmz)
         call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
         call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
@@ -4077,6 +4083,9 @@ module Hydro
         idiag_oyuyymz=0
         idiag_oxuzxmz=0
         idiag_oyuzymz=0
+        idiag_uyxuzxmz=0
+        idiag_uyyuzymz=0
+        idiag_uyzuzzmz=0
         idiag_umx=0
         idiag_umy=0
         idiag_umz=0
@@ -4543,6 +4552,9 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuyymz',idiag_oyuyymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuzxmz',idiag_oxuzxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuzymz',idiag_oyuzymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyxuzxmz',idiag_uyxuzxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyyuzymz',idiag_uyyuzymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyzuzzmz',idiag_uyzuzzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fmasszmz',idiag_fmasszmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
