@@ -87,7 +87,7 @@ module Particles
   logical :: lonly_eforce=.false.
 !
   namelist /particles_init_pars/ &
-      initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
+      initxxp, initvvp,amplvvp, xp0, yp0, zp0, Lx0, Ly0,Lz0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz,qbym,qbym_species,lcheck_exact_frontier, linsert_particles_continuously, &
       lnocalc_rhop,lonly_eforce,lparticlemesh_cic
 !
@@ -964,6 +964,36 @@ k_loop:   do while (.not. (k>npar_loc))
             call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
                 ineargrid(k,:),0,0)
             fp(k,ivpx:ivpz) = uup
+          enddo
+        case ('maxwell')
+          if (lroot) print*, 'init_particles: Random Maxwellian velocities; '// &
+              'delta_vp0=', delta_vp0
+!
+! Each component is distributed as a Gaussian with zero mean and a sigma given
+! by an input parameter.
+!
+          do k=1,npar_loc
+!
+! x component
+!
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            fp(k,ivpx) = fp(k,ivpx) + amplvvp*tmp
+!
+! y component
+!
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            fp(k,ivpy) = fp(k,ivpy) + amplvvp*tmp
+!
+! z component
+!
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            fp(k,ivpz) = fp(k,ivpz) + amplvvp*tmp
           enddo
 !
 !  Explosion.
