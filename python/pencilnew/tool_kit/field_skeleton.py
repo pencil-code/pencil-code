@@ -11,6 +11,7 @@ Haynes-Parnell-2010-17-9-PhysPlasm (http://dx.doi.org/10.1063/1.3467499).
 import numpy as np
 import os as os
 from pencilnew.math.interpolation import vec_int
+from vtk.util import numpy_support as VN
 try:
     import vtk as vtk
 except:
@@ -32,6 +33,11 @@ class NullPoint(object):
         """
 
         self.nulls = []
+        self.eigen_values = []
+        self.eigen_vectors = []
+        self.sign_trace = []
+        self.fan_vectors = []
+        self.normals = []
 
     def find_nullpoints(self, var, field):
         """
@@ -49,46 +55,6 @@ class NullPoint(object):
         *field*:
             The vector field.
         """
-
-        def __triLinear_interpolation(x, y, z, coefTri):
-            """ Compute the interpolated field at (normalized) x, y, z. """
-            return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
-                   coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
-                   coefTri[7]*x*y*z
-
-        def __grad_field_1(x, y, z, coefTri, dd):
-            """ Compute the inverse of the gradient of the field. """
-            gf1 = np.zeros((3, 3))
-            gf1[0, :] = (__triLinear_interpolation(x+dd, y, z, coefTri) - \
-                         __triLinear_interpolation(x-dd, y, z, coefTri))/(2*dd)
-            gf1[1, :] = (__triLinear_interpolation(x, y+dd, z, coefTri) - \
-                         __triLinear_interpolation(x, y-dd, z, coefTri))/(2*dd)
-            gf1[2, :] = (__triLinear_interpolation(x, y, z+dd, coefTri) - \
-                         __triLinear_interpolation(x, y, z-dd, coefTri))/(2*dd)
-            # Invert the matrix.
-            if np.linalg.det(gf1) != 0 and not np.max(np.isnan(gf1)):
-                gf1 = np.matrix(gf1).I
-            else:
-                gf1 *= 0
-            return gf1
-
-        def __newton_raphson(xyz0, coefTri):
-            """ Newton-Raphson method for finding null-points. """
-            xyz = np.array(xyz0)
-            iterMax = 10
-            dd = 1e-4
-            tol = 1e-5
-
-            for i in range(iterMax):
-                diff = __triLinear_interpolation(xyz[0], xyz[1],
-                                                 xyz[2], coefTri) * \
-                       __grad_field_1(xyz[0], xyz[1], xyz[2], coefTri, dd)
-                diff = np.array(diff)[0]
-                xyz = xyz - diff
-                if any(abs(diff) < tol) or any(abs(diff) > 1):
-                    return xyz
-
-            return np.array(xyz)
 
         # 1) Reduction step.
         # Find all cells for which all three field components change sign.
@@ -186,7 +152,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 0]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -226,7 +192,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 1]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -266,7 +232,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 0, roots_z[root_idx]]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -306,7 +272,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 1, roots_z[root_idx]]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -346,7 +312,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [0, roots_y[root_idx], roots_z[root_idx]]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -386,7 +352,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [1, roots_y[root_idx], roots_z[root_idx]]
-                xyz = np.real(__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -397,7 +363,7 @@ class NullPoint(object):
             if null_cell:
                 self.nulls.append(np.mean(null_cell, axis=0))
 
-        # Discard null which are too close to each other.
+        # Discard nulls which are too close to each other.
         self.nulls = np.array(self.nulls)
         keep_null = np.ones(len(self.nulls), dtype=bool)
         for idx_null_1 in range(len(self.nulls)):
@@ -407,7 +373,43 @@ class NullPoint(object):
                 diff_nulls[2] < var.dz:
                     keep_null[idx_null_2] = False
         self.nulls = self.nulls[keep_null == True]
+        
+        # Compute the field's characteristics around each null.
+        for null in self.nulls:
+            # Find the Jacobian grad(field).
+            grad_field = self.__grad_field(null, var, field,
+                                           min((var.dx, var.dy, var.dz))/10)
+            # Find the eigenvalues of the Jacobian.
+            eigen_values = np.array(np.linalg.eig(grad_field)[0])
+            # Find the eigenvectors of the Jacobian.
+            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
+            # Determine which way to trace the streamlines.
+            if np.linalg.det(grad_field) < 0:
+                sign_trace = 1
+                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
+            if np.linalg.det(grad_field) > 0:
+                sign_trace = -1
+                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
+            if np.linalg.det(grad_field) == 0:
+                print("error: Null point is not of x-type.")
+                continue
+            fan_vectors = np.array(fan_vectors)
+            # Compute the normal to the fan-plane.
+            normal = np.cross(fan_vectors[0], fan_vectors[1])
+            normal = normal/np.sqrt(np.sum(normal**2))
 
+            self.eigen_values.append(eigen_values)
+            self.eigen_vectors.append(eigen_vectors)
+            self.sign_trace.append(sign_trace)
+            self.fan_vectors.append(fan_vectors)
+            self.normals.append(normal)
+
+        self.eigen_values = np.array(self.eigen_values)
+        self.eigen_vectors = np.array(self.eigen_vectors)
+        self.sign_trace = np.array(self.sign_trace)
+        self.fan_vectors = np.array(self.fan_vectors)
+        self.normals = np.array(self.normals)
+        
 
     def write_vtk(self, data_dir='./data', file_name='nulls.vtk'):
         """
@@ -426,15 +428,50 @@ class NullPoint(object):
             Target file name.
         """
 
-        writer = vtk.vtkPolyDataWriter()
+        writer = vtk.vtkUnstructuredGridWriter()
         writer.SetFileName(os.path.join(data_dir, file_name))
-        poly_data = vtk.vtkPolyData()
+        grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
+                
         for null in self.nulls:
             points.InsertNextPoint(null)
-        poly_data.SetPoints(points)
-        writer.SetInputData(poly_data)
+        
+        eigen_values_vtk = []
+        eigen_values = []        
+        eigen_vectors_vtk = []
+        eigen_vectors = []        
+        fan_vectors_vtk = []
+        fan_vectors = []        
+        for dim in range(self.eigen_values.shape[1]):
+            # Write out the eigen values.
+            eigen_values.append(self.eigen_values[:, dim].copy())
+            eigen_values_vtk.append(VN.numpy_to_vtk(eigen_values[-1]))
+            eigen_values_vtk[-1].SetName('eigen_value_{0}'.format(dim))
+            grid_data.GetPointData().AddArray(eigen_values_vtk[-1])
+            # Write out the eigen vectors.
+            eigen_vectors.append(self.eigen_vectors[:, dim, :].copy())
+            eigen_vectors_vtk.append(VN.numpy_to_vtk(eigen_vectors[-1]))
+            eigen_vectors_vtk[-1].SetName('eigen_vector_{0}'.format(dim))
+            grid_data.GetPointData().AddArray(eigen_vectors_vtk[-1])
+            # Write out the fan vectors..
+            if dim < self.eigen_values.shape[1]-1:
+                fan_vectors.append(self.fan_vectors[:, dim, :].copy())
+                fan_vectors_vtk.append(VN.numpy_to_vtk(fan_vectors[-1]))
+                fan_vectors_vtk[-1].SetName('fan_vector_{0}'.format(dim))
+                grid_data.GetPointData().AddArray(fan_vectors_vtk[-1])
+        # Write out the sign for the vector field tracing.
+        sign_trace_vtk = VN.numpy_to_vtk(self.sign_trace)
+        sign_trace_vtk.SetName('sign_trace')
+        grid_data.GetPointData().AddArray(sign_trace_vtk)
+        # Write out the fan plane normal.
+        normal_vtk = VN.numpy_to_vtk(self.normals)
+        normal_vtk.SetName('normal')
+        grid_data.GetPointData().AddArray(normal_vtk)
+        
+        grid_data.SetPoints(points)
+        writer.SetInput(grid_data)
         writer.Write()
+
 
     def read_vtk(self, data_dir='./data', file_name='nulls.vtk'):
         """
@@ -462,6 +499,61 @@ class NullPoint(object):
         for null in range(points.GetNumberOfPoints()):
             self.nulls.append(points.GetPoint(null))
         self.nulls = np.array(self.nulls)
+
+
+    def __grad_field(self, xyz, var, field, dd):
+        """ Compute the gradient if the field at xyz. """
+        gf = np.zeros((3, 3))
+        gf[0, :] = (vec_int(xyz+np.array([dd, 0, 0]), var, field) -
+                    vec_int(xyz-np.array([dd, 0, 0]), var, field))/(2*dd)
+        gf[1, :] = (vec_int(xyz+np.array([0, dd, 0]), var, field) -
+                    vec_int(xyz-np.array([0, dd, 0]), var, field))/(2*dd)
+        gf[2, :] = (vec_int(xyz+np.array([0, 0, dd]), var, field) -
+                    vec_int(xyz-np.array([0, 0, dd]), var, field))/(2*dd)
+
+        return np.matrix(gf)
+
+
+    def __triLinear_interpolation(self, x, y, z, coefTri):
+        """ Compute the interpolated field at (normalized) x, y, z. """
+        return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
+               coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
+               coefTri[7]*x*y*z
+
+
+    def __grad_field_1(self, x, y, z, coefTri, dd):
+        """ Compute the inverse of the gradient of the field. """
+        gf1 = np.zeros((3, 3))
+        gf1[0, :] = (self.__triLinear_interpolation(x+dd, y, z, coefTri) - \
+                     self.__triLinear_interpolation(x-dd, y, z, coefTri))/(2*dd)
+        gf1[1, :] = (self.__triLinear_interpolation(x, y+dd, z, coefTri) - \
+                     self.__triLinear_interpolation(x, y-dd, z, coefTri))/(2*dd)
+        gf1[2, :] = (self.__triLinear_interpolation(x, y, z+dd, coefTri) - \
+                     self.__triLinear_interpolation(x, y, z-dd, coefTri))/(2*dd)
+        # Invert the matrix.
+        if np.linalg.det(gf1) != 0 and not np.max(np.isnan(gf1)):
+            gf1 = np.matrix(gf1).I
+        else:
+            gf1 *= 0
+        return gf1
+
+
+    def __newton_raphson(self, xyz0, coefTri):
+        """ Newton-Raphson method for finding null-points. """
+        xyz = np.array(xyz0)
+        iterMax = 10
+        dd = 1e-4
+        tol = 1e-5
+
+        for i in range(iterMax):
+            diff = self.__triLinear_interpolation(xyz[0], xyz[1],
+                                                  xyz[2], coefTri) * \
+                   self.__grad_field_1(xyz[0], xyz[1], xyz[2], coefTri, dd)
+            diff = np.array(diff)[0]
+            xyz = xyz - diff
+            if any(abs(diff) < tol) or any(abs(diff) > 1):
+                return xyz
+        return np.array(xyz)
 
 
 class Separatrix(object):
@@ -515,35 +607,12 @@ class Separatrix(object):
         """
 
 
-        for null in null_point.nulls:
-            # Find the Jacobian grad(field).
-            grad_field = self.__grad_field(null, var, field,
-                                           min((var.dx, var.dy, var.dz))/10)
-            # Find the eigenvalues of the Jacobian.
-            eigen_values = np.array(np.linalg.eig(grad_field)[0])
-            # Find the eigenvectors of the Jacobian.
-            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
-            # Determine which way to trace the streamlines.
-            if np.linalg.det(grad_field) < 0:
-                sign_trace = 1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
-            if np.linalg.det(grad_field) > 0:
-                sign_trace = -1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
-            if np.linalg.det(grad_field) == 0:
-                print("error: Null point is not of x-type.")
-                continue
-            fan_vectors = np.array(fan_vectors)
-            # Compute the normal to the fan-plane.
-            normal = np.cross(fan_vectors[0], fan_vectors[1])
-            normal = normal/np.sqrt(np.sum(normal**2))
-
-            self.eigen_values.append(eigen_values)
-            self.eigen_vectors.append(eigen_vectors)
-            self.sign_trace.append(sign_trace)
-            self.fan_vectors.append(fan_vectors)
-            self.normals.append(normal)
-
+        for null_idx in range(len(null_point.nulls)):
+            null = null_point.nulls[null_idx]
+            normal = null_point.normals[null_idx]
+            fan_vectors = null_point.fan_vectors[null_idx]
+            sign_trace = null_point.sign_trace[null_idx]
+            
             tracing = True
             separatrices = []
             connectivity = []
@@ -631,11 +700,6 @@ class Separatrix(object):
             self.separatrices.append(np.array(separatrices))
             self.connectivity.append(np.array(connectivity))
         
-        self.eigen_values = np.array(self.eigen_values)
-        self.eigen_vectors = np.array(self.eigen_vectors)
-        self.sign_trace = np.array(self.sign_trace)
-        self.fan_vectors = np.array(self.fan_vectors)
-        self.normals = np.array(self.normals)
         self.separatrices = np.array(self.separatrices)
 
 
@@ -678,17 +742,16 @@ class Separatrix(object):
         writer.Write()
         
         
-    def __grad_field(self, xyz, var, field, dd):
-        """ Compute the gradient if the field at xyz. """
-        gf = np.zeros((3, 3))
-        gf[0, :] = (vec_int(xyz+np.array([dd, 0, 0]), var, field) -
-                    vec_int(xyz-np.array([dd, 0, 0]), var, field))/(2*dd)
-        gf[1, :] = (vec_int(xyz+np.array([0, dd, 0]), var, field) -
-                    vec_int(xyz-np.array([0, dd, 0]), var, field))/(2*dd)
-        gf[2, :] = (vec_int(xyz+np.array([0, 0, dd]), var, field) -
-                    vec_int(xyz-np.array([0, 0, dd]), var, field))/(2*dd)
-
-        return np.matrix(gf)
+    
+    def __distance(self, point_a, point_b):
+        """ Compute the distance of two points (Euclidian geometry). """
+        return np.sqrt(np.sum((point_a-point_b)**2))
+    
+    
+    def __inside_domain(self, point, var):
+        return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
+               (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
+               (point[2] > var.z[0]) * (point[2] < var.z[-1])
 
 
     def __rotate_vector(self, rot_normal, vector, theta):
@@ -707,15 +770,6 @@ class Separatrix(object):
                                  v*w*(1-np.cos(theta))+u*np.sin(theta),
                                  w**2+(1-w**2)*np.cos(theta)]])
         return np.array(vector*rot_matrix)[0]
+
     
-    
-    def __distance(self, point_a, point_b):
-        """ Compute the distance of two points (Euclidian geometry). """
-        return np.sqrt(np.sum((point_a-point_b)**2))
-    
-    
-    def __inside_domain(self, point, var):
-        return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
-               (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
-               (point[2] > var.z[0]) * (point[2] < var.z[-1])
         
