@@ -337,19 +337,9 @@ if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;  from all of them.
 ;
 if ( (ipxread eq -1) and (ipzread eq -1) ) then begin
-  filename = strarr(nprocx*nprocz)
-  ipxarray = intarr(nprocx*nprocz)
-  ipzarray = intarr(nprocx*nprocz)
-  ip = 0
-  for ipz=0, nprocz-1 do begin
-    for ipx=0, nprocx-1 do begin
-      iproc = ipx+ipz*nprocx*nprocy
-      filename[ip] = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
-      ipxarray[ip] = ipx
-      ipzarray[ip] = ipz
-      ip = ip+1
-    endfor
-  endfor
+  ipxarray = indgen(nprocx*nprocz) mod nprocx
+  ipzarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
+  filename = datadir+'/proc'+strtrim(ipxarray+ipzarray*nprocx*nprocy,2)+'/'+varfile
   nxg = nxgrid
   nzg = nzgrid
 endif else begin
@@ -363,7 +353,7 @@ endif else begin
     print, '       ipz, nprocz', ipzread, nprocz
     stop
   endif
-  filename = datadir+'/proc'+strtrim(ipxread+nprocx*nprocy*ipzread,2)+'/'+varfile
+  filename = datadir+'/proc'+strtrim(ipxread+ipzread*nprocx*nprocy,2)+'/'+varfile
   ipxarray = intarr(1)
   ipzarray = intarr(1)
   nxg = nx
