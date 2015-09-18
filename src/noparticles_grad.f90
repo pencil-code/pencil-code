@@ -57,6 +57,27 @@ module Particles_grad
 !
     endsubroutine pencil_criteria_par_grad
 !***********************************************************************
+    subroutine set_particle_grad(f,fp,npar_low,npar_high,init)
+!
+!  Set radius of new particles.
+!
+!  18-sep-15/dhruba: dummy
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer :: npar_low,npar_high
+      logical, optional :: init
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(npar_low)
+      call keep_compiler_quiet(npar_high)
+      call keep_compiler_quiet(init)
+!
+      endsubroutine set_particle_grad
+!***********************************************************************
     subroutine dsigmap_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of the gradient of particle velocities.
@@ -174,13 +195,6 @@ module Particles_grad
         write(3,*) 'isigmap33=', isigmap33
       endif
 !
-!  Reset everything in case of reset.
-!
-      if (lreset) then
-        idiag_sigmap11max=0; idiag_sigmap12max=0; idiag_sigmap13max=0
-        idiag_sigmap21max=0; idiag_sigmap22max=0; idiag_sigmap23max=0
-        idiag_sigmap31max=0; idiag_sigmap32max=0; idiag_sigmap33max=0
-      endif
 !
     endsubroutine rprint_particles_grad
 !***********************************************************************
