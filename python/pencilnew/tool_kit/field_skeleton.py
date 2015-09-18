@@ -385,7 +385,7 @@ class NullPoint(object):
             # Find the eigenvectors of the Jacobian.
             eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
             # Determine which way to trace the streamlines.
-            if np.linalg.det(np.real(grad_field) < 0:
+            if np.linalg.det(np.real(grad_field)) < 0:
                 sign_trace = 1
                 fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
             if np.linalg.det(grad_field) > 0:
