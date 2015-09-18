@@ -2,7 +2,7 @@
 ### Makefile for modular pencil code -- local part
 ### Included by `Makefile'
 ###
-MPICOMM   =   mpicomm
+MPICOMM   =   nompicomm
 #IO        =   io_collect_xy
 # FILE_IO   =   experimental/file_io_f2003
 
