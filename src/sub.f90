@@ -55,6 +55,7 @@ module Sub
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st, doupwind
+  public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
@@ -652,6 +653,46 @@ module Sub
       enddo; enddo; enddo
 !
     endsubroutine contract_jk3
+!***********************************************************************
+    subroutine matrix2linarray(mm,aa)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(3,3),intent(in) :: mm
+      real,dimension(9),intent(out) :: aa
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          aa(ij) = mm(i,j)
+        enddo
+      enddo
+!
+    endsubroutine matrix2linarray
+!***********************************************************************
+    subroutine linarray2matrix(aa,mm)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(9),intent(in) :: aa
+      real,dimension(3,3),intent(out) :: mm
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          mm(i,j) = aa(ij)
+       enddo
+      enddo
+!
+    endsubroutine linarray2matrix
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !

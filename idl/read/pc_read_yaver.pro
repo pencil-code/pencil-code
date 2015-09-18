@@ -1,15 +1,18 @@
-;;
-;; $Id$
-;;
-;;   Read y-averages from file.
-;;
-;;   Default is to only plot the data (with tvscl), not to save it in memory.
-;;   The user can get the data returned in an object by specifying nit, the
-;;   number of snapshots to save.
-;;
-;;  We start with a script for plotting data plane - the main program follows
-;;  below.
-;;
+;
+; $Id$
+;
+;   Read y-averages from file.
+;
+;   Default is to only plot the data (with tvscl), not to save it in memory.
+;   The user can get the data returned in an object by specifying nit, the
+;   number of snapshots to save.
+;
+;  We start with a script for plotting data plane - the main program follows
+;  below.
+;
+;;; 18-Sep-2015/PABourdin:
+;;; FIXME: Please remove the replicated code and put into 'pc_read_2d_aver'.
+;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nzg=nzg, $
     min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
     xtitle=xtitle, ztitle=ztitle, title=title, $
@@ -167,9 +170,9 @@ if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
   !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;
 end
-;;
-;;  Main program.
-;;
+;
+;  Main program.
+;
 pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
     ipxread=ipxread, ipzread=ipzread, $
@@ -238,6 +241,7 @@ default, readpar, 0
 default, readgrid, 0
 default, debug, 0
 default, quiet, 0
+default, in_file, 'yaver.in'
 ;
 ;  Read additional information.
 ;
@@ -268,22 +272,25 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;
-;  Read variables from yaver.in
+;  Read variables from '*aver.in' file
 ;
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/yaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
+run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
+variables_all = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, variables_all
+close, lun
+free_lun, lun
 ;
-; Remove commented and empty elements from allvariables
+; Remove commented and empty elements from variables_all
 ;
-inds = where( strmid(allvariables,0,1) ne '#' and strtrim(allvariables,2) ne '' )
-if inds[0] ne -1 then $
-  allvariables = allvariables[inds]
-;
-nvarall=n_elements(allvariables)
+variables_all = strtrim (variables_all, 2)
+inds = where (stregex (variables_all, '^[a-zA-Z]', /boolean), nvar_all)
+if (nvar_all le 0) then message, "ERROR: there are no variables found."
+variables_all = variables_all[inds]
 ;
 if (variables[0] eq '') then begin
-  variables=allvariables
-  nvar = nvarall
+  variables = variables_all
+  nvar = nvar_all
   ivarpos = indgen(nvar)
 endif else begin
   nvar=n_elements(variables)
@@ -293,10 +300,10 @@ endif else begin
 ;  variables.
 ;
   for ivar=0,nvar-1 do begin
-    ivarpos_est=where(variables[ivar] eq allvariables)
+    ivarpos_est=where(variables[ivar] eq variables_all)
     if (ivarpos_est[0] eq -1) then $
         message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-                 ' in '+arraytostring(allvariables,/noleader)
+                 ' in '+arraytostring(variables_all,/noleader)
     ivarpos[ivar]=ivarpos_est[0]
   endfor
 endelse
@@ -407,8 +414,8 @@ endfor
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
 if (iplot eq -1) then begin
-  array_local=fltarr(nx,nz,nvarall)*one
-  array_global=fltarr(nxg,nzg,ceil(nit/double(njump)),nvarall)*one
+  array_local=fltarr(nx,nz,nvar_all)*one
+  array_global=fltarr(nxg,nzg,ceil(nit/double(njump)),nvar_all)*one
   t=zero
 ;
   for ip=0,n_elements(filename)-1 do begin
@@ -490,8 +497,8 @@ endif else begin
 ;
 ;  Variables to put single time snapshot in.
 ;
-  array=fltarr(nxg,nzg,nvarall)*one
-  array_local=fltarr(nx,nz,nvarall)*one
+  array=fltarr(nxg,nzg,nvar_all)*one
+  array_local=fltarr(nx,nz,nvar_all)*one
   tt_local=fltarr(n_elements(filename))*one
 ;
 ;  Read y-averages and put in arrays if requested.

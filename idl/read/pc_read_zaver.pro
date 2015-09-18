@@ -1,15 +1,18 @@
-;;
-;; $Id$
-;;
-;;   Read z-averages from file.
-;;
-;;   Default is to only plot the data (with tvscl), not to save it in memory.
-;;   The user can get the data returned in an object by specifying nit, the
-;;   number of snapshots to save.
-;;
-;;  We start with a script for plotting data plane - the main program follows
-;;  below.
-;;
+;
+; $Id$
+;
+;   Read z-averages from file.
+;
+;   Default is to only plot the data (with tvscl), not to save it in memory.
+;   The user can get the data returned in an object by specifying nit, the
+;   number of snapshots to save.
+;
+;  We start with a script for plotting data plane - the main program follows
+;  below.
+;
+;;; 18-Sep-2015/PABourdin:
+;;; FIXME: Please remove the replicated code and put into 'pc_read_2d_aver'.
+;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     xtitle=xtitle, ytitle=ytitle, title=title, $
@@ -167,9 +170,9 @@ if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
   !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;
 end
-;;
-;;  Main program.
-;;
+;
+;  Main program.
+;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     ipxread=ipxread, ipyread=ipyread, $
@@ -241,6 +244,7 @@ default, readpar, 0
 default, readgrid, 0
 default, debug, 0
 default, quiet, 0
+default, in_file, 'zaver.in'
 ;
 ;  Read additional information.
 ;
@@ -283,25 +287,41 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;
-;  Read variables from zaver.in
+;  Read variables from '*aver.in' file
 ;
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/zaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
-if (variables[0] eq '') then variables=allvariables
-nvarall=n_elements(allvariables)
-nvar=n_elements(variables)
-ivarpos=intarr(nvar)
+run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
+variables_all = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, variables_all
+close, lun
+free_lun, lun
+;
+; Remove commented and empty elements from variables_all
+;
+variables_all = strtrim (variables_all, 2)
+inds = where (stregex (variables_all, '^[a-zA-Z]', /boolean), nvar_all)
+if (nvar_all le 0) then message, "ERROR: there are no variables found."
+variables_all = variables_all[inds]
+;
+if (variables[0] eq '') then begin
+  variables = variables_all
+  nvar = nvar_all
+  ivarpos = indgen(nvar)
+endif else begin
+  nvar=n_elements(variables)
+  ivarpos=intarr(nvar)
 ;
 ;  Find the position of the requested variables in the list of all
 ;  variables.
 ;
-for ivar=0,nvar-1 do begin
-  ivarpos_est=where(variables[ivar] eq allvariables)
-  if (ivarpos_est[0] eq -1) then $
-      message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-               ' in '+arraytostring(allvariables,/noleader)
-  ivarpos[ivar]=ivarpos_est[0]
-endfor
+  for ivar=0,nvar-1 do begin
+    ivarpos_est=where(variables[ivar] eq variables_all)
+    if (ivarpos_est[0] eq -1) then $
+        message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
+                 ' in '+arraytostring(variables_all,/noleader)
+    ivarpos[ivar]=ivarpos_est[0]
+  endfor
+endelse
 ;  Die if attempt to plot a variable that does not exist.
 if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;
@@ -401,8 +421,8 @@ endfor
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
 if (iplot eq -1) then begin
-  array_local=fltarr(nx,ny,nvarall)*one
-  array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvarall)*one
+  array_local=fltarr(nx,ny,nvar_all)*one
+  array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvar_all)*one
   t=zero
 ;
   for ip=0,n_elements(filename)-1 do begin
@@ -460,7 +480,7 @@ if (iplot eq -1) then begin
 ;
   if (xshift ne 0) then begin
     for it=0,nit/njump-1 do begin
-      shift_plane, nvarall, array_global[*,*,it,*], xshift, par, timefix, ts, $
+      shift_plane, nvar_all, array_global[*,*,it,*], xshift, par, timefix, ts, $
           t, t0
     endfor
   endif
@@ -493,8 +513,8 @@ endif else begin
 ;
 ;  Variables to put single time snapshot in.
 ;
-  array=fltarr(nxg,nyg,nvarall)*one
-  array_local=fltarr(nx,ny,nvarall)*one
+  array=fltarr(nxg,nyg,nvar_all)*one
+  array_local=fltarr(nx,ny,nvar_all)*one
   tt_local=fltarr(n_elements(filename))*one
 ;
 ;  Read z-averages and put in arrays if requested.
@@ -533,7 +553,7 @@ endif else begin
 ;  Shift plane in the radial direction.
 ;
       if (xshift ne 0) then $
-          shift_plane, nvarall, array, xshift, par, timefix, ts, t
+          shift_plane, nvar_all, array, xshift, par, timefix, ts, t
 ;
 ;  Interpolate position of stalked particles to time of snapshot.
 ;
@@ -635,10 +655,10 @@ end
 ;
 ;  Script for shifting plane in the x-direction.
 ;
-pro shift_plane, nvarall, array=array, xshift=xshift, par=par, ts=ts, $
+pro shift_plane, nvar_all, array=array, xshift=xshift, par=par, ts=ts, $
     timefix=timefix, t=t, t0=t0
 ;
-for ivar=0,nvarall-1 do array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
+for ivar=0,nvar_all-1 do array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
 ;
 ;  With shear we need to displace part of the plane.
 ;
@@ -659,7 +679,7 @@ if (par.Sshear ne 0.0) then begin
   deltay_int=fix(deltay/grid.dy)
   if (debug) then print, 'it, t, deltay, deltay_int, deltay_frac', $
       it, t, deltay, deltay_int, deltay/grid.dy-deltay_int
-  for ivar=0,nvarall-1 do begin
+  for ivar=0,nvar_all-1 do begin
     array2=array[*,*,ivar]
     for ix=0,xshift-1 do begin
       array2[ix,*]=shift(reform(array2[ix,*]),deltay_int)

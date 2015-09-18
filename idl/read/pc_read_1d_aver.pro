@@ -1,9 +1,9 @@
 ;
-; $Id: pc_read_1daver.pro 23239 2015-03-26 20:29:51Z mreinhardt@nordita.org $
+; $Id: pc_read_1d_aver.pro 23239 2015-03-26 20:29:51Z mreinhardt@nordita.org $
 ;
 ;  Read 1d-averages from file.
 ;
-pro pc_read_1daver, dir, object=object, varfile=varfile, datadir=datadir, $
+pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     monotone=monotone, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
@@ -12,13 +12,20 @@ COMMON pc_precision, zero, one
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 
-if dir eq 'z' then $
-  avdirs='xy' $
-else if dir eq 'x' then $
-  avdirs='yz' $
-else $
-  avdirs='xz'
+if (dir eq 'z') then begin
+  ndir = dim.nz
+  avdirs = 'xy'
+end else if (dir eq 'y') then begin
+  ndir = dim.ny
+  avdirs = 'xz'
+end else if (dir eq 'x') then begin
+  ndir = dim.nx
+  avdirs = 'yz'
+end else begin
+  message, 'ERROR: unknown direction "'+dir+'"!'
+end
 
+default, in_file, avdirs+'aver.in'
 default, varfile, avdirs+'averages.dat'
 default, monotone, 0
 default, quiet, 0
@@ -27,13 +34,11 @@ default, quiet, 0
 ;
 pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 pc_set_precision, dim=dim, quiet=quiet
-cmd = 'ndir=dim.n'+dir
-dummy = execute(cmd,0)
 ;
 ;  Read variables from *aver.in
 ;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/'+avdirs+'aver.in', varnames
+spawn, 'cat '+datatopdir+'/'+in_file, varnames
 
 inds = where(varnames ne '')
 if inds[0] eq -1 then begin
