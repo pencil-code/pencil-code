@@ -477,9 +477,13 @@ class NullPoint(object):
         normals_vtk = VN.numpy_to_vtk(self.normals)
         normals_vtk.SetName('normal')
         grid_data.GetPointData().AddArray(normals_vtk)
-
         grid_data.SetPoints(points)
-        writer.SetInput(grid_data)
+        
+        # Insure compatability between vtk 5 and 6.
+        try:
+            writer.SetInputData(grid_data)
+        except:
+            writer.SetInput(grid_data)
         writer.Write()
 
 
@@ -784,7 +788,12 @@ class Separatrix(object):
 
         grid_data.SetPoints(points)
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
-        writer.SetInput(grid_data)
+        
+        # Insure compatability between vtk 5 and 6.
+        try:
+            writer.SetInputData(grid_data)
+        except:
+            writer.SetInput(grid_data)
         writer.Write()
 
 
@@ -980,7 +989,11 @@ class Spine(object):
         poly_data.SetPoints(points)
         poly_data.SetLines(cells)
 
-        writer.SetInput(poly_data)
+        # Insure compatability between vtk 5 and 6.
+        try:
+            writer.SetInputData(poly_data)
+        except:
+            writer.SetInput(poly_data)
         writer.Write()
 
 
