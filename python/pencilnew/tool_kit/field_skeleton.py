@@ -385,7 +385,7 @@ class NullPoint(object):
             # Find the eigenvectors of the Jacobian.
             eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
             # Determine which way to trace the streamlines.
-            if np.linalg.det(grad_field) < 0:
+            if np.linalg.det(np.real(grad_field) < 0:
                 sign_trace = 1
                 fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
             if np.linalg.det(grad_field) > 0:
@@ -405,11 +405,11 @@ class NullPoint(object):
             self.fan_vectors.append(fan_vectors)
             self.normals.append(normal)
 
-        self.eigen_values = np.array(self.eigen_values)
-        self.eigen_vectors = np.array(self.eigen_vectors)
+        self.eigen_values = np.array(np.real(self.eigen_values))
+        self.eigen_vectors = np.array(np.real(self.eigen_vectors))
         self.sign_trace = np.array(self.sign_trace)
-        self.fan_vectors = np.array(self.fan_vectors)
-        self.normals = np.array(self.normals)
+        self.fan_vectors = np.array(np.real(self.fan_vectors))
+        self.normals = np.array(np.real(self.normals))
 
 
     def write_vtk(self, data_dir='./data', file_name='nulls.vtk',
@@ -478,7 +478,7 @@ class NullPoint(object):
         normals_vtk.SetName('normal')
         grid_data.GetPointData().AddArray(normals_vtk)
         grid_data.SetPoints(points)
-        
+
         # Insure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
@@ -764,7 +764,7 @@ class Separatrix(object):
 
         *file_name*:
             Target file name.
-            
+
         *binary*:
             Write file in binary or ASCII format.
         """
@@ -788,7 +788,7 @@ class Separatrix(object):
 
         grid_data.SetPoints(points)
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
-        
+
         # Insure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
@@ -905,7 +905,6 @@ class Spine(object):
         spines = []
         for null_idx in range(len(null_point.nulls)):
             null = null_point.nulls[null_idx]
-            print "null = ", null
             spine_up = []
             spine_down = []
             spine_up.append(null)
