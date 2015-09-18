@@ -48,15 +48,12 @@ nvar=n_elements(varnames)
 ;
 ;  Check for existence of data file.
 ;
-get_lun, file
 filename=datadir+'/'+varfile
 if (not quiet) then print, 'Reading ', filename
 if (not file_test(filename)) then begin
   print, 'ERROR: cannot find file '+ filename
   stop
 endif
-close, file
-openr, file, filename
 ;
 ;  Define arrays to put data in.
 ;
@@ -83,20 +80,18 @@ times =fltarr(nit)*one
 ;
 ;  Read averages and put in arrays.
 ;
+openr, file, filename, /get_lun
 for it=0,nit-1 do begin
-; Read time
+  ; Read time
   readf, file, t
   times[it]=t
-; Read data
+  ; Read data
   readf, file, var
   for i=0,nvar-1 do begin
     cmd=varnames[i]+'[*,it]=var[i*ndir:(i+1)*ndir-1]'
     if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
   endfor
 endfor
-;
-;  Close file.
-;
 close, file
 free_lun, file
 ;
