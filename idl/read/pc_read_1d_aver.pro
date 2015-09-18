@@ -35,26 +35,29 @@ default, quiet, 0
 pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 pc_set_precision, dim=dim, quiet=quiet
 ;
-;  Read variables from *aver.in
+;  Read variables from '*aver.in' file
 ;
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/'+in_file, varnames
-
-inds = where(varnames ne '')
-if inds[0] eq -1 then begin
-  print, 'PC_READ_XYAVER: No variables provided!'
-  return
-endif else $
-  varnames = varnames[inds]
-
-if (not quiet) then print, 'Preparing to read '+avdirs+'-averages ', $
-    arraytostring(varnames,quote="'",/noleader)
-nvar=n_elements(varnames)
+run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
+varnames = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, varnames
+close, lun
+free_lun, lun
+;
+; Remove commented and empty elements from allvariables
+;
+varnames = strtrim (varnames, 2)
+inds = where (stregex (varnames, '^[a-zA-Z]', /boolean), nvar)
+if (nvar le 0) then message, "ERROR: there are no variables found."
+varnames = varnames[inds]
 ;
 ;  Check for existence of data file.
 ;
 filename=datadir+'/'+varfile
-if (not quiet) then print, 'Reading ', filename
+if (not quiet) then begin
+  print, 'Preparing to read '+avdirs+'-averages ', arraytostring(varnames,quote="'",/noleader)
+  print, 'Reading ', filename
+endif
 if (not file_test(filename)) then begin
   print, 'ERROR: cannot find file '+ filename
   stop
