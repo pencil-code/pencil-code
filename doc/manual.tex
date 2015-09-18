@@ -856,10 +856,14 @@ Input parameters (which are set in the files \file{start.in},
 \file{run.in}) can be changed without recompilation.
 Furthermore, one can change the list of variables for monitoring
 (diagnostic) output on the fly, and there are mechanisms for making the
-code reload new parameters or exit gracefully at runtime.
+code reload new parameters or exit gracefully at runtime. You may want to
+check for correctness of these files with the command \code{pc_configtest}.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
-on any Linux or Unix system with a F90/F95 compiler.
+on any Linux or Unix system with a \name{F95} and \name{C} compiler suite,
+like \name{GNU gcc} and \name{gfortran}, together with the shell \name{CSH},
+and the \name{Perl} interpreter are mandatory requirements.
+
 Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
 more than 50\% of the users run their code also on Macs, and the other half
 uses either directly Linux on their laptops or they use VirtualBox
@@ -1396,8 +1400,8 @@ Now we run the code:
 \begin{alltt}
   \prompt{unix> } run.csh
 \end{alltt}
-This runs \file[run.x]{src/run.x} and carries out \var{nt} time steps, where
-\var{nt} and other run time parameters are specified in \file{run.in}.
+This executes \file[run.x]{src/run.x} and carries out \var{nt} time steps,
+where \var{nt} and other run-time parameters are specified in \file{run.in}.
 On a decent PC (1.7\,GHz), 50 time steps take about 10 seconds.
 
 The relevant part of the code's output looks like\\
@@ -1687,8 +1691,10 @@ These files specify the startup and runtime parameters (see
 Sects.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
 diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under
-\name{svn}\index{svn} in
-the individual \file[samples/]{samples} directories.
+\name{svn}\index{svn} in the individual \file[samples/]{samples} directories.
+
+You may want to check for the correctness of these configuration files by
+issuing the command \code{pc_configtest}.
 
 \subsubsection{\file{datadir.in}}
 \label{Ss-datadir-in}
@@ -2993,10 +2999,6 @@ This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
 see Sect.~\ref{S-start-params}).
 
-[Occasionally, however, and only on some
-machines, one of the processors may not survive the MPI barrier and
-stops; we will need to look further into this.]
-
 Each time the parameters are reloaded, the new set of parameters is
 appended (in the form of \name{namelists}) to the file
 \file[params.log]{data/params.log} together with the time $t$, so you have
@@ -3071,8 +3073,7 @@ All input parameters in \file{start.in} and \file{run.in} are grouped in
 Fortran \name{namelists}.
 This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need no longer be in the correct order), as well as
-enhanced readability through
-inserted Fortran comments and whitespace.
+enhanced readability through inserted Fortran comments and whitespace.
 One namelist (\name{init_pars} / \name{run_pars}) contains general
 parameters for initialization/running and is always read in.
 All other namelists are specific to individual modules and will only
@@ -3095,6 +3096,9 @@ Thus, the typical file \file{start.in} will only contain a minimum set of
 variables or (if you are \emph{very} minimalistic) none at all.
 If you want to run a particular problem, it is best to start by
 modifying an existing example that is close to your application.
+
+Before starting a simulation run, you may want to execute the command \code{pc_configtest}
+in order to test the correctnes of your changes to these configuration files.
 
 As an example, we give here the start parameters for
 \file[helical-MHDturb]{samples/helical-MHDturb}
@@ -6007,34 +6011,6 @@ much, at least for the corner cases like \file{RERUN}, \file{NEWDIR},
 {\bf A}: The string array for the boundary condition, e.g.\ \var{bcx} or
 \var{bcz} is too long. Make sure it has exactly as many elements as \var{nvar}
 is big.
-
-\subsubsection{Namelist problem under IRIX}
-Under IRIX, I get
-\begin{Verbatim}
-  lib-4001 : UNRECOVERABLE library error
-
-  Encountered during a namelist READ from unit 1
-  Fortran unit 1 is connected to a sequential formatted text file: "run.in"
-  IOT Trap
-  Abort
-\end{Verbatim}
-
-\medskip
-
-{\bf A}: This is a compiler bug that has been found at least with the MIPSpro
-F90 compiler version 7.3.1.3m. The problem seems to have been fixed in  version
-7.4.20m.
-
-%  It has been reported to SGI in mid-2002; you should complain to SGI if a
-%  patch is still not available.
-
-The error comes and goes, depending on the configuration (and possibly even the
-input parameters) you are using.  Until SGI fix their compiler, you can
-experiment with adding new variables to the module \name{Param_IO}; this has
-solved the problem once for us.  If this trick does not help, you will need to
-turn your namelist input (at least \file{run.in} into Fortran statements,
-include them into a replacement version of \file{param_io.f90}, and recompile
-each time you make changes.
 
 \subsubsection{Code crashes after restarting}
 
@@ -11310,6 +11286,10 @@ Not all parameters are used for a given scenario.
 This list is not necessarily up to date; also, in many cases it can only
 give an idea of the corresponding setup; to get more insight and
 the latest set of parameters, you need to look at the code.
+
+Once you have changed any of the \file{*.in} files, you may want to first
+execute the command \code{pc_configtest} in order to test the correctness of
+these configuration files, before you apply them in an active simulation run.
 
 
 % ---------------------------------------------------------------------- %

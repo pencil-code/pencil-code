@@ -51,7 +51,6 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: nu, nu_prime
   real, dimension(:), allocatable :: aac, T_k
   real, dimension(:), allocatable :: dngas
-  real, dimension(:), allocatable :: diff_coeff_reactants
   integer, dimension(:), allocatable :: dependent_reactant
   real, dimension(:,:), allocatable, save :: part_power
 !
@@ -119,7 +118,7 @@ module Particles_chemistry
   real, dimension(:,:), allocatable :: R_j_hat
   real, dimension(:,:), allocatable :: Cs
   real, dimension(:), allocatable :: initial_density
-  real, dimension(:), allocatable :: diff_coeffs_species, Cg, A_p
+  real, dimension(:), allocatable :: Cg, A_p
   real, dimension(:), allocatable :: q_reac
   real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
@@ -201,9 +200,6 @@ module Particles_chemistry
       allocate(effectiveness_factor_old(N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_pchem', &
           'Could not allocate memory for effectiveness_factor_old')
-      allocate(diff_coeff_reactants(N_surface_reactants),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_pchem', &
-          'Could not allocate memory for diff_coeff_reactants')
 !
       effectiveness_factor_old = 1.
 !
@@ -242,6 +238,33 @@ module Particles_chemistry
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for heating_k')
     endsubroutine register_dep_pchem
+!***********************************************************************
+    subroutine pencil_criteria_par_chem()
+!
+!  All pencils that the Particles_chemistry module depends on are specified here.
+!
+!  16.09.2015/jonas + nils: coded
+!
+      if (lthiele) then
+        lpenc_requested(i_Diff_penc_add)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_par_chem
+!***********************************************************************
+    subroutine calc_pencils_par_chem(f,p)
+!
+!  Calculate Particles pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16.09.2015/jonas + nils: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_par_chem
 ! ******************************************************************************
 !  Set up required variables etc. for reactive particles
 !
@@ -416,6 +439,7 @@ module Particles_chemistry
       enddo
 !
       ER_k = ER_k/gas_constant
+      print*, 'ER_k'
     endsubroutine create_arh_param
 ! ******************************************************************************
     subroutine create_dependency(nu,dependent_reactant,n_surface_reactions, &
@@ -1005,11 +1029,13 @@ module Particles_chemistry
 !
 !  Calculates the area specific molar reaction rate from K_k
 !
-    subroutine calc_RR_hat(f,fp)
+    subroutine calc_RR_hat(f,fp,ineargrid,p)
+      type (pencil_case) :: p
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat
       integer :: i, j, k, k1, k2,l
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
@@ -1078,7 +1104,7 @@ module Particles_chemistry
 !  equation 56 ff.
 !
       if (lthiele) then
-        call calc_effectiveness_factor(fp)
+        call calc_effectiveness_factor(fp,ineargrid,p)
         do j = 1,N_surface_reactions
           RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
         enddo
@@ -1180,8 +1206,9 @@ module Particles_chemistry
 !  01-Oct-2014/Jonas: coded
 !  taken from solid_reac L. 149 and equations.pdf eq 35ff
 !
-    subroutine calc_effectiveness_factor(fp)
+    subroutine calc_effectiveness_factor(fp,ineargrid,p)
       real, dimension(:,:) :: fp
+      type (pencil_case) :: p
 !
       real, dimension(:,:), allocatable :: R_i_hat, D_eff
       real :: Knudsen, tmp3, tmp2, tmp1
@@ -1190,8 +1217,10 @@ module Particles_chemistry
       real, dimension(:), allocatable :: sum_R_i_hat_max
       real, dimension(:), allocatable :: volume, porosity
       integer :: i, dep, k, k1, k2,l
-      real :: r_f
+      integer, dimension(mpar_loc,3) :: ineargrid
+      real :: r_f,test
 !
+      test = 2.0
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
@@ -1228,13 +1257,14 @@ module Particles_chemistry
 !
       do k = k1,k2
         do i = 1,N_surface_reactants
-          tmp3 = 8*Rgas*fp(k,iTp)/(pi*molar_mass(jmap(i)))
+          tmp3 = 8*Rgas*fp(k,iTp)/(pi*(species_constants(jmap(i),imass)))
           Knudsen = 2*pore_radius(k)*porosity(k)*sqrt(tmp3)/(3*tortuosity)
-          tmp1 = 1./diff_coeff_reactants(i)
+          tmp1 = 1./p%Diff_penc_add(ineargrid(k,1)-nghost,jmap(i))
           tmp2 = 1./Knudsen
           D_eff(k,i) = 1./(tmp1+tmp2)
         enddo
       enddo
+!      print*,'D_eff', D_eff
 !
 !  Find thiele modulus and effectiveness factor
 !  JONAS: was with volume(k) before,
@@ -1247,10 +1277,12 @@ module Particles_chemistry
           else
             thiele(k,i) = 1.e-2
           endif
+!          print*, 'thiele: ',thiele
 !
 ! calculate the effectivenes factor (all particles, all reactants)
           effectiveness_factor_species(k,i) = 3/thiele(k,i)* &
               (1./tanh(thiele(k,i))-1./thiele(k,i))
+!          print*,'effectiveness', effectiveness_factor_species
         enddo
       enddo
 !
@@ -1276,8 +1308,14 @@ module Particles_chemistry
           endif
         enddo
       enddo
+!      print*,'sum_eta_i_R_i_hat_max',sum_eta_i_R_i_hat_max
+!      print*,'sum_R_i_hat_max',sum_R_i_hat_max
 !
-      effectiveness_factor(:) = sum_eta_i_R_i_hat_max(:)/sum_R_i_hat_max(:)
+      do k = k1,k2
+        if (sum_R_i_hat_max(k)/=0.0) then
+          effectiveness_factor(k) = sum_eta_i_R_i_hat_max(k)/sum_R_i_hat_max(k)
+        endif
+      enddo
 !
 !  The efficiency factor for each reaction can now be found from the thiele modulus
 !
@@ -1494,7 +1532,7 @@ module Particles_chemistry
         call calc_Cg(fp,p,ineargrid)
         if (N_adsorbed_species > 1) call calc_Cs(fp)
         call calc_A_p(fp)
-        call calc_RR_hat(f,fp)
+        call calc_RR_hat(f,fp,ineargrid,p)
 !
         if (lreactive_heating) then
           call calc_q_reac()
@@ -1848,6 +1886,10 @@ module Particles_chemistry
         if (iter < 1) startup_quench = 0.
         K_k = K_k*startup_quench
       endif
+!      print*,'k_k   ', k_k
+!      print*,'B_k   ', B_k
+!      print*,'ER_k  ', ER_k
+!      print*,'fp(T) ',fp(:,iTp)
 !
     endsubroutine calc_K_k
 ! ******************************************************************************
@@ -2167,6 +2209,7 @@ module Particles_chemistry
 !
       Nu_p_targ = Nu_p
       q_reac_targ = q_reac
+!      q_reac_targ = q_reac
 !
     endsubroutine get_temperature_chemistry
 ! ******************************************************************************
@@ -2179,7 +2222,6 @@ module Particles_chemistry
       if (allocated(sigma_k)) deallocate(sigma_k)
       if (allocated(reaction_order)) deallocate(reaction_order)
       if (allocated(effectiveness_factor_old)) deallocate(effectiveness_factor_old)
-      if (allocated(diff_coeff_reactants)) deallocate(diff_coeff_reactants)
       if (allocated(reaction_direction)) deallocate(reaction_direction)
       if (allocated(flags)) deallocate(flags)
       if (allocated(T_k)) deallocate(T_k)

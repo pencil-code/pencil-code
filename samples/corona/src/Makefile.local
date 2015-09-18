@@ -4,7 +4,7 @@
 ###
 MPICOMM   =   nompicomm
 #IO        =   io_collect_xy
-# FILE_IO   =   experimental/file_io_f2003
+# FILE_IO   =   file_io_f2003
 
 HYDRO     =   hydro
 DENSITY   =   density

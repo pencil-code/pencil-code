@@ -43,7 +43,7 @@ module Dustdensity
   integer, parameter :: ndiffd_max=4, mmom=24  !(largest possible moment)
 !  integer, parameter :: ndustspec0=10 !8
 !  real, dimension(mx,my,mz,ndustspec,ndustspec0), SAVE :: nd_full
-  real, dimension(nx,ndustspec,ndustspec0), SAVE :: dndr_full, ppsf_full
+  real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
@@ -489,6 +489,9 @@ module Dustdensity
 !  that the module can request the r ight pencils.
 !
       if (bordernd/='nothing') call request_border_driving(bordernd)
+!
+!MR: ad-hoc correction to fix the auto-test; needs to be checked!
+      ppsf_full = 0.
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************

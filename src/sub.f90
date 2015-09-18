@@ -55,6 +55,7 @@ module Sub
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st, doupwind
+  public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
@@ -652,6 +653,46 @@ module Sub
       enddo; enddo; enddo
 !
     endsubroutine contract_jk3
+!***********************************************************************
+    subroutine matrix2linarray(mm,aa)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(3,3),intent(in) :: mm
+      real,dimension(9),intent(out) :: aa
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          aa(ij) = mm(i,j)
+        enddo
+      enddo
+!
+    endsubroutine matrix2linarray
+!***********************************************************************
+    subroutine linarray2matrix(aa,mm)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(9),intent(in) :: aa
+      real,dimension(3,3),intent(out) :: mm
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          mm(i,j) = aa(ij)
+       enddo
+      enddo
+!
+    endsubroutine linarray2matrix
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
@@ -3133,6 +3174,7 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
+!  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
       use Mpicomm, only: mpibcast_real
 !
@@ -3163,16 +3205,12 @@ module Sub
 !
           settout: if (dtout < 0.0) then
             tout = log10(t)
-          else settout
+          elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
-            nonzero: if (dtout /= 0.0) then
-              tout = dtout
-            else nonzero
-              call warning("read_snaptime", &
-                   "Am I writing snapshots every 0 time units? (check " // &
-                   trim(file) // ")" )
-              tout = t
-            endif nonzero
+            tout = (t - dt) + (dble(dtout) - modulo(t - dt, dble(dtout)))
+          else settout
+            call warning("read_snaptime", "Writing snapshot every time step. ")
+            tout = 0.0
           endif settout
           nout=1
           write(lun,*) tout,nout
@@ -6825,7 +6863,7 @@ nameloop: do
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use General, only: loptest
+      use General, only: loptest, itoa
       use Messages, only: warning
       use File_io, only: parallel_rewind
 !
@@ -6839,7 +6877,7 @@ nameloop: do
       logical, optional, intent(in) :: lactive
 !
       integer :: ierr
-      character(len=5) :: type
+      character(len=5) :: type, suffix
 !
       if (loptest(lactive,.true.)) then
 !
@@ -6855,11 +6893,17 @@ nameloop: do
               type = 'run'
             endif
             if (name /= '') type = '_'//type
+            suffix = '_pars'
+            if (name == 'initial_condition_pars') then
+              type = ''
+              suffix = ''
+            endif
 !
             if (ierr == -1) then
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" is missing!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
             else
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
+              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" has an error ('// &
+                                             trim(itoa(ierr))//')!')
             endif
           endif
 

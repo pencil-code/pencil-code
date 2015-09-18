@@ -43,6 +43,24 @@ module Particles_chemistry
 
   subroutine get_pchem_info()
   endsubroutine get_pchem_info
+!***********************************************************************
+    subroutine pencil_criteria_par_chem()
+!
+!  16.09.2015/jonas + nils: coded
+!
+    endsubroutine pencil_criteria_par_chem
+!***********************************************************************
+    subroutine calc_pencils_par_chem(f,p)
+!
+!  16.09.2015/jonas + nils: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_par_chem
 ! ******************************************************************************
 !  09.09.14/jonas : coded
 

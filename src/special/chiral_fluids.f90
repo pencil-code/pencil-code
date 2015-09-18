@@ -88,6 +88,7 @@ module Special
    real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
    real, pointer :: eta
    integer :: itheta5, imu5
+  character (len=labellen) :: theta_prof='nothing'
 !!   integer :: ispecaux=0
 !
   character (len=labellen) :: initspecial='nothing'
@@ -96,7 +97,7 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5
+      diffmu5, lambda5, theta_prof
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -181,7 +182,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f,df
 !
       intent(inout) :: f
 !
@@ -195,6 +196,11 @@ module Special
         case ('zero')
           f(:,:,:,itheta5) = 0.
           f(:,:,:,imu5) = 0.
+        case ('theta_profile')
+	do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,itheta5)=theta5_const*cos(2.*pi*(y(m)-y0)/Ly)
+        enddo; enddo 
+          f(:,:,:,imu5) = mu5_const
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -261,6 +267,23 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+!***********************************************************************
+!    subroutine theta_profile(f,df)
+!
+!  5-sep-2015 coded by jennifer
+!
+!      use Sub, only: step
+!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, dimension (nx) :: prof_amp1
+!      integer :: llx
+!
+!      case ('theta_cos')
+!      f(:,:,:,itheta5) = prof_amp1*cos(x(l1:l2))
+!
+!    endsubroutine theta_profile
+!***********************************************************************
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -307,6 +330,7 @@ module Special
 !  Evolution of theta5
 !
       df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5
+!      print*,       df(l1:l2,m,n,itheta5), f(l1:l2,m,n,itheta5)
 !
 !  Additions to evolution of bb
 !
@@ -348,7 +372,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************

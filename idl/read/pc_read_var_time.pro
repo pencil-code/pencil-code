@@ -65,7 +65,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; find varfile and set configuration parameters accordingly
 ;
-  pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, mvar_io=mvar_io, start_param=param
+  pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
 ;
 ; Local shorthand for some parameters.
 ;
@@ -82,10 +82,6 @@ COMPILE_OPT IDL2,HIDDEN
   dy=zero
   dz=zero
   deltay=zero
-;
-; Get a free unit number.
-;
-  get_lun, file
 ;
 ; Build the full path and filename.
 ;
@@ -106,15 +102,16 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Open a varfile and read some data!
 ;
-  openr, file, filename, /f77, swap_endian=swap_endian
-  if (precision eq 'D') then bytes=8 else bytes=4
-  if (f77 eq 0) then markers=0 else markers=2
-  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)+long64(markers*4)
+  openr, file, filename, f77=f77, swap_endian=swap_endian, /get_lun
+  point_lun, file, additional
   if (allprocs eq 1) then begin
     ; collectively written files
     readu, file, t, x, y, z, dx, dy, dz
   endif else if (allprocs eq 2) then begin
     ; xy-collectively written files for each ipz-layer
+    readu, file, t
+  endif else if (allprocs eq 3) then begin
+    ; xy-collectively written files for each ipz-layer in F2003 stream access format
     readu, file, t
   endif else begin
     ; distributed files
@@ -125,8 +122,8 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endelse
 ;
-  close,file
-  free_lun,file
+  close, file
+  free_lun, file
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;

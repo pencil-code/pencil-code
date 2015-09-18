@@ -621,7 +621,7 @@ module Particles_surfspec
       type (pencil_case) :: p
       integer, dimension(:,:) :: ineargrid
       integer :: k, k1, k2,i
-      integer :: ix0, iy0, iz0
+      integer :: ix0
       integer::spec_glob, spec_chem
       real, dimension(:,:), allocatable :: diff_coeff_species
       real, dimension(:), allocatable :: Cg
@@ -635,8 +635,6 @@ module Particles_surfspec
 !
         do k = k1,k2
           ix0 = ineargrid(k,1)
-          iy0 = ineargrid(k,2)
-          iz0 = ineargrid(k,3)
           do i = 1,N_surface_species
             diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
           enddo

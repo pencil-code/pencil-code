@@ -10,6 +10,7 @@ my $configtest = "pc_configtest";
 my %expansion = (
 	# special/solar_corona
 	SPECIAL => {
+		# 2012:
 		"special/solar_corona" => { special_init_pars => { } },
 		"special/solar_corona" => { special_run_pars => { K_iso => 0.01234, K_spitzer => -1.234 } },
 	},
