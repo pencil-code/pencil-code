@@ -275,22 +275,22 @@ nprocz=dim.nprocz
 ;  Read variables from '*aver.in' file
 ;
 run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
-allvariables = strarr(file_lines(run_dir+in_file))
+variables_all = strarr(file_lines(run_dir+in_file))
 openr, lun, run_dir+in_file, /get_lun
-readf, lun, allvariables
+readf, lun, variables_all
 close, lun
 free_lun, lun
 ;
-; Remove commented and empty elements from allvariables
+; Remove commented and empty elements from variables_all
 ;
-allvariables = strtrim (allvariables, 2)
-inds = where (stregex (allvariables, '^[a-zA-Z]', /boolean), nvarall)
-if (nvarall le 0) then message, "ERROR: there are no variables found."
-allvariables = allvariables[inds]
+variables_all = strtrim (variables_all, 2)
+inds = where (stregex (variables_all, '^[a-zA-Z]', /boolean), nvar_all)
+if (nvar_all le 0) then message, "ERROR: there are no variables found."
+variables_all = variables_all[inds]
 ;
 if (variables[0] eq '') then begin
-  variables = allvariables
-  nvar = nvarall
+  variables = variables_all
+  nvar = nvar_all
   ivarpos = indgen(nvar)
 endif else begin
   nvar=n_elements(variables)
@@ -300,10 +300,10 @@ endif else begin
 ;  variables.
 ;
   for ivar=0,nvar-1 do begin
-    ivarpos_est=where(variables[ivar] eq allvariables)
+    ivarpos_est=where(variables[ivar] eq variables_all)
     if (ivarpos_est[0] eq -1) then $
         message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-                 ' in '+arraytostring(allvariables,/noleader)
+                 ' in '+arraytostring(variables_all,/noleader)
     ivarpos[ivar]=ivarpos_est[0]
   endfor
 endelse
@@ -414,8 +414,8 @@ endfor
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
 if (iplot eq -1) then begin
-  array_local=fltarr(nx,nz,nvarall)*one
-  array_global=fltarr(nxg,nzg,ceil(nit/double(njump)),nvarall)*one
+  array_local=fltarr(nx,nz,nvar_all)*one
+  array_global=fltarr(nxg,nzg,ceil(nit/double(njump)),nvar_all)*one
   t=zero
 ;
   for ip=0,n_elements(filename)-1 do begin
@@ -497,8 +497,8 @@ endif else begin
 ;
 ;  Variables to put single time snapshot in.
 ;
-  array=fltarr(nxg,nzg,nvarall)*one
-  array_local=fltarr(nx,nz,nvarall)*one
+  array=fltarr(nxg,nzg,nvar_all)*one
+  array_local=fltarr(nx,nz,nvar_all)*one
   tt_local=fltarr(n_elements(filename))*one
 ;
 ;  Read y-averages and put in arrays if requested.
