@@ -10,6 +10,9 @@
 ;;  We start with a script for plotting data plane - the main program follows
 ;;  below.
 ;;
+;;; 18-Sep-2015/PABourdin:
+;;; FIXME: Please change this to use the code from 'pc_read_1daver'.
+;;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nzg=nzg, $
     min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
     xtitle=xtitle, ztitle=ztitle, title=title, $
