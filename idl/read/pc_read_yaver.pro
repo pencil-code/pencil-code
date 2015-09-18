@@ -270,6 +270,9 @@ nprocz=dim.nprocz
 ;
 ;  Read variables from yaver.in
 ;
+;;; 18-Sep-2015/PABourdin:
+;;; FIXME: This code assumes a './' in front of each path, which is not standard.
+;;; FIXME: DO NOT USE 'spawn', it is operating-system dependent! You may use pure IDL 'STREGEX' instead to manipulate strings...
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/yaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
 ;
