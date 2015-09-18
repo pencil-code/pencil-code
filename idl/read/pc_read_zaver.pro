@@ -1,18 +1,18 @@
-;;
-;; $Id$
-;;
-;;   Read z-averages from file.
-;;
-;;   Default is to only plot the data (with tvscl), not to save it in memory.
-;;   The user can get the data returned in an object by specifying nit, the
-;;   number of snapshots to save.
-;;
-;;  We start with a script for plotting data plane - the main program follows
-;;  below.
-;;
+;
+; $Id$
+;
+;   Read z-averages from file.
+;
+;   Default is to only plot the data (with tvscl), not to save it in memory.
+;   The user can get the data returned in an object by specifying nit, the
+;   number of snapshots to save.
+;
+;  We start with a script for plotting data plane - the main program follows
+;  below.
+;
 ;;; 18-Sep-2015/PABourdin:
 ;;; FIXME: Please change this to use the code from 'pc_read_1daver'.
-;;
+;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     xtitle=xtitle, ytitle=ytitle, title=title, $
@@ -170,9 +170,9 @@ if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
   !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 ;
 end
-;;
-;;  Main program.
-;;
+;
+;  Main program.
+;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     ipxread=ipxread, ipyread=ipyread, $
