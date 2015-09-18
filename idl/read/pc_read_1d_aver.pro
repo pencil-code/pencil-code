@@ -65,12 +65,11 @@ endif
 ;
 ;  Define arrays to put data in.
 ;
-spawn, 'wc -l '+filename, nlines
-nlines=long(nlines[0])
+nlines=file_lines(filename)
 nlin_per_time=1L+ceil(nvar*ndir/8.)
 nit=nlines/nlin_per_time
-if nlines mod nlin_per_time ne 0 then $
-  print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!' 
+if ((nlines mod nlin_per_time) ne 0) then $
+    print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!'
 ;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 ;
