@@ -336,9 +336,9 @@ if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;  from all of them.
 ;
 if ( (ipxread eq -1) and (ipyread eq -1) ) then begin
-  filename = datadir+'/proc'+strtrim(indgen(nprocx*nprocy),2)+'/'+varfile
   ipxarray = indgen(nprocx*nprocy) mod nprocx
   ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
+  filename = datadir+'/proc'+strtrim(ipxarray+ipyarray*nprocx,2)+'/'+varfile
   nxg = nxgrid
   nyg = nygrid
 endif else begin
@@ -352,7 +352,7 @@ endif else begin
     print, '       ipy, nprocy', ipyread, nprocy
     stop
   endif
-  filename = datadir+'/proc'+strtrim(ipxread+nprocx*ipyread,2)+'/'+varfile
+  filename = datadir+'/proc'+strtrim(ipxread+ipyread*nprocx,2)+'/'+varfile
   ipxarray = intarr(1)
   ipyarray = intarr(1)
   nxg = nx
