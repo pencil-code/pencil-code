@@ -289,7 +289,7 @@ nprocz=dim.nprocz
 ;
 ;  Read variables from '*aver.in' file
 ;
-run_dir = stregex ('./'.datadir, '^(.*)data/', /extract)
+run_dir = stregex ('./'+datadir, '^(.*)data/', /extract)
 allvariables = strarr(file_lines(run_dir+in_file))
 openr, lun, run_dir+in_file, /get_lun
 readf, lun, allvariables
