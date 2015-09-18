@@ -73,6 +73,7 @@ class NullPoint(object):
 
         # Find null points in these cells.
         self.nulls = []
+        delta = min((var.dx, var.dy, var.dz))/500
         for cell_idx in range(np.sum(reduced_cells)):
             # 2) Analysis step.
 
@@ -153,7 +154,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 0]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -193,7 +194,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], roots_y[root_idx], 1]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -233,7 +234,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 0, roots_z[root_idx]]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -273,7 +274,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [roots_x[root_idx], 1, roots_z[root_idx]]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -313,7 +314,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [0, roots_y[root_idx], roots_z[root_idx]]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -353,7 +354,7 @@ class NullPoint(object):
                 root_idx = 1
             if intersection:
                 xyz0 = [1, roots_y[root_idx], roots_z[root_idx]]
-                xyz = np.real(self.__newton_raphson(xyz0, coefTri))
+                xyz = np.real(self.__newton_raphson(xyz0, coefTri, dd=delta))
                 # Check if the null point lies inside the cell.
                 if np.all(xyz >= 0) and np.all(xyz <= 1):
                     null_cell.append([xyz[0]*var.dx + x[idx_x],
@@ -374,12 +375,11 @@ class NullPoint(object):
                 diff_nulls[2] < var.dz:
                     keep_null[idx_null_2] = False
         self.nulls = self.nulls[keep_null == True]
-        
+
         # Compute the field's characteristics around each null.
         for null in self.nulls:
             # Find the Jacobian grad(field).
-            grad_field = self.__grad_field(null, var, field,
-                                           min((var.dx, var.dy, var.dz))/10)
+            grad_field = self.__grad_field(null, var, field, delta)
             # Find the eigenvalues of the Jacobian.
             eigen_values = np.array(np.linalg.eig(grad_field)[0])
             # Find the eigenvectors of the Jacobian.
@@ -410,15 +410,16 @@ class NullPoint(object):
         self.sign_trace = np.array(self.sign_trace)
         self.fan_vectors = np.array(self.fan_vectors)
         self.normals = np.array(self.normals)
-        
 
-    def write_vtk(self, data_dir='./data', file_name='nulls.vtk'):
+
+    def write_vtk(self, data_dir='./data', file_name='nulls.vtk',
+                  binary=False):
         """
         Write the null point into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='nulls.vtk')
+            write_vtk(data_dir='./data', file_name='nulls.vtk', binary=False)
 
         Arguments:
 
@@ -427,9 +428,16 @@ class NullPoint(object):
 
         *file_name*:
             Target file name.
+
+        *binary*:
+            Write file in binary or ASCII format.
         """
 
         writer = vtk.vtkUnstructuredGridWriter()
+        if binary:
+            writer.SetFileTypeToBinary()
+        else:
+            writer.SetFileTypeToASCII()
         writer.SetFileName(os.path.join(data_dir, file_name))
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
@@ -437,13 +445,13 @@ class NullPoint(object):
         # Write the null points.
         for null in self.nulls:
             points.InsertNextPoint(null)
-        
+
         eigen_values_vtk = []
-        eigen_values = []        
+        eigen_values = []
         eigen_vectors_vtk = []
-        eigen_vectors = []        
+        eigen_vectors = []
         fan_vectors_vtk = []
-        fan_vectors = []        
+        fan_vectors = []
         for dim in range(self.eigen_values.shape[1]):
             # Write out the eigen values.
             eigen_values.append(self.eigen_values[:, dim].copy())
@@ -469,7 +477,7 @@ class NullPoint(object):
         normals_vtk = VN.numpy_to_vtk(self.normals)
         normals_vtk.SetName('normal')
         grid_data.GetPointData().AddArray(normals_vtk)
-        
+
         grid_data.SetPoints(points)
         writer.SetInput(grid_data)
         writer.Write()
@@ -496,7 +504,7 @@ class NullPoint(object):
         reader.SetFileName(os.path.join(data_dir, file_name))
         reader.Update()
         output = reader.GetOutput()
-        
+
         # Read the null points.
         points = output.GetPoints()
         self.nulls = []
@@ -506,11 +514,11 @@ class NullPoint(object):
 
         point_data = output.GetPointData()
         eigen_values_vtk = []
-        eigen_values = []        
+        eigen_values = []
         eigen_vectors_vtk = []
-        eigen_vectors = []        
+        eigen_vectors = []
         fan_vectors_vtk = []
-        fan_vectors = []        
+        fan_vectors = []
         for dim in range(3):
             eigen_values_vtk.append(point_data.GetVectors('eigen_value_{0}'.format(dim)))
             eigen_values.append(VN.vtk_to_numpy(eigen_values_vtk[-1]))
@@ -523,13 +531,20 @@ class NullPoint(object):
         sign_trace = VN.vtk_to_numpy(sign_trace_vtk)
         normals_vtk = point_data.GetVectors('normal')
         normals = VN.vtk_to_numpy(normals_vtk)
-        
+
         self.eigen_values = np.swapaxes(np.array(eigen_values), 0, 1)
         self.eigen_vectors = np.swapaxes(np.array(eigen_vectors), 0, 1)
         self.fan_vectors = np.swapaxes(np.array(fan_vectors), 0, 1)
         self.sign_trace = np.array(sign_trace)
         self.normals = np.array(normals)
-        
+
+
+    def __triLinear_interpolation(self, x, y, z, coefTri):
+        """ Compute the interpolated field at (normalized) x, y, z. """
+        return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
+               coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
+               coefTri[7]*x*y*z
+
 
     def __grad_field(self, xyz, var, field, dd):
         """ Compute the gradient if the field at xyz. """
@@ -542,13 +557,6 @@ class NullPoint(object):
                     vec_int(xyz-np.array([0, 0, dd]), var, field))/(2*dd)
 
         return np.matrix(gf)
-
-
-    def __triLinear_interpolation(self, x, y, z, coefTri):
-        """ Compute the interpolated field at (normalized) x, y, z. """
-        return coefTri[0] + coefTri[1]*x + coefTri[2]*y + coefTri[3]*x*y +\
-               coefTri[4]*z + coefTri[5]*x*z + coefTri[6]*y*z + \
-               coefTri[7]*x*y*z
 
 
     def __grad_field_1(self, x, y, z, coefTri, dd):
@@ -568,12 +576,11 @@ class NullPoint(object):
         return gf1
 
 
-    def __newton_raphson(self, xyz0, coefTri):
+    def __newton_raphson(self, xyz0, coefTri, dd):
         """ Newton-Raphson method for finding null-points. """
         xyz = np.array(xyz0)
         iterMax = 10
-        dd = 1e-4
-        tol = 1e-5
+        tol = dd/10
 
         for i in range(iterMax):
             diff = self.__triLinear_interpolation(xyz[0], xyz[1],
@@ -626,7 +633,7 @@ class Separatrix(object):
 
         *null_point*:
             NullPoint object containing the magnetic null points.
-            
+
         *delta*:
             Step length for the field line tracing.
 
@@ -645,7 +652,7 @@ class Separatrix(object):
             normal = null_point.normals[null_idx]
             fan_vectors = null_point.fan_vectors[null_idx]
             sign_trace = null_point.sign_trace[null_idx]
-            
+
             tracing = True
             separatrices.append(null)
             # Create the first ring of points.
@@ -662,12 +669,12 @@ class Separatrix(object):
             for idx in range(ring_density-1):
                 connectivity.append(np.array([idx+1, idx+2])+offset)
             connectivity.append(np.array([1, ring_density])+offset)
-            
+
             # Trace the rings around the null.
             iteration = 0
             while tracing and iteration < iter_max:
                 ring_old = ring
-                
+
                 # Trace field lines on ring.
                 point_idx = 0
                 for point in ring:
@@ -681,7 +688,8 @@ class Separatrix(object):
                 ring_new = []
                 ring_new.append(ring[0])
                 for point_idx in range(len(ring)-1):
-                    if self.__distance(ring[point_idx], ring[point_idx+1]) > delta:
+                    if self.__distance(ring[point_idx],
+                                       ring[point_idx+1]) > delta:
                         ring_new.append((ring[point_idx]+ring[point_idx+1])/2)
                     ring_new.append(ring[point_idx+1])
                 if self.__distance(ring[0], ring[-1]) > delta:
@@ -697,18 +705,19 @@ class Separatrix(object):
                         separatrices.append(ring[point_idx])
                     else:
                         not_connect_to_next.append(len(ring_new)-1)
-                    
+
                 # Set the connectivity within the ring.
                 offset = len(separatrices)-len(ring_new)
                 for point_idx in range(len(ring_new)-1):
                     if not np.any(np.array(not_connect_to_next) == point_idx):
                         connectivity.append(np.array([offset+point_idx,
                                                       offset+point_idx+1]))
-                if not np.any(np.array(not_connect_to_next) == len(ring_new)) and \
-                not np.any(np.array(not_connect_to_next) == -1):
-                    connectivity.append(np.array([offset, offset+len(ring_new)-1]))
+                if not np.any(np.array(not_connect_to_next) == len(ring_new)) \
+                and not np.any(np.array(not_connect_to_next) == -1):
+                    connectivity.append(np.array([offset,
+                                                  offset+len(ring_new)-1]))
                 ring = ring_new
-                
+
                 offset = len(separatrices)-len(ring_old)-len(ring)
                 # Compute connectivity arrays between the old and new ring.
                 for point_old_idx in range(len(ring_old)):
@@ -724,23 +733,25 @@ class Separatrix(object):
                     if idx_min > -1:
                         connectivity.append(np.array([offset+point_old_idx,
                                                       offset+idx_min+len(ring_old)]))
-                
+
                 iteration += 1
                 # Stop the tracing routine if there are no points in the ring.
                 if not ring:
                     tracing = False
-        
+
         self.separatrices = np.array(separatrices)
         self.connectivity = np.array(connectivity)
 
 
-    def write_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
+    def write_vtk(self, data_dir='./data', file_name='separatrices.vtk',
+                  binary=False):
         """
         Write the separatrices into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='separatrices.vtk')
+            write_vtk(data_dir='./data', file_name='separatrices.vtk',
+                      binary=False)
 
         Arguments:
 
@@ -749,9 +760,16 @@ class Separatrix(object):
 
         *file_name*:
             Target file name.
+            
+        *binary*:
+            Write file in binary or ASCII format.
         """
 
         writer = vtk.vtkUnstructuredGridWriter()
+        if binary:
+            writer.SetFileTypeToBinary()
+        else:
+            writer.SetFileTypeToASCII()
         writer.SetFileName(os.path.join(data_dir, file_name))
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
@@ -768,8 +786,8 @@ class Separatrix(object):
         grid_data.SetCells(vtk.VTK_LINE, cell_array)
         writer.SetInput(grid_data)
         writer.Write()
-        
-        
+
+
     def read_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
         """
         Read the separatrices from a vtk file.
@@ -791,7 +809,7 @@ class Separatrix(object):
         reader.SetFileName(os.path.join(data_dir, file_name))
         reader.Update()
         output = reader.GetOutput()
-        
+
         # Read the separatrices.
         points = output.GetPoints()
         cells = output.GetCells()
@@ -808,8 +826,8 @@ class Separatrix(object):
     def __distance(self, point_a, point_b):
         """ Compute the distance of two points (Euclidian geometry). """
         return np.sqrt(np.sum((point_a-point_b)**2))
-    
-    
+
+
     def __inside_domain(self, point, var):
         return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
                (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
@@ -838,7 +856,7 @@ class Spine(object):
     """
     Contains the spines of the null points and their finding routines.
     """
- 
+
     def __init__(self):
         """
         Fill members with default values.
@@ -867,7 +885,7 @@ class Spine(object):
 
         *null_point*:
             NullPoint object containing the magnetic null points.
-            
+
         *delta*:
             Step length for the field line tracing.
 
@@ -883,7 +901,7 @@ class Spine(object):
             spine_down = []
             spine_up.append(null)
             spine_down.append(null)
-            
+
             # Trace spine above the null.
             iteration = 0
             point = null + null_point.normals[null_idx]*delta
@@ -898,7 +916,7 @@ class Spine(object):
                     tracing = False
                 iteration += 1
             spines.append(np.array(spine_up))
-            
+
             # Trace spine below the null.
             iteration = 0
             point = null - null_point.normals[null_idx]*delta
@@ -916,13 +934,13 @@ class Spine(object):
         self.spines = np.array(spines)
 
 
-    def write_vtk(self, data_dir='./data', file_name='spines.vtk'):
+    def write_vtk(self, data_dir='./data', file_name='spines.vtk', binary=False):
         """
         Write the spines into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='spines.vtk')
+            write_vtk(data_dir='./data', file_name='spines.vtk', binary=False)
 
         Arguments:
 
@@ -931,9 +949,16 @@ class Spine(object):
 
         *file_name*:
             Target file name.
+
+        *binary*:
+            Write file in binary or ASCII format.
         """
 
         writer = vtk.vtkPolyDataWriter()
+        if binary:
+            writer.SetFileTypeToBinary()
+        else:
+            writer.SetFileTypeToASCII()
         writer.SetFileName(os.path.join(data_dir, file_name))
         poly_data = vtk.vtkPolyData()
         points = vtk.vtkPoints()
@@ -951,14 +976,14 @@ class Spine(object):
                                                    point_idx + offset)
             cells.InsertNextCell(poly_lines[-1])
             offset += n_points
-        
+
         poly_data.SetPoints(points)
         poly_data.SetLines(cells)
-        
+
         writer.SetInput(poly_data)
         writer.Write()
-        
-        
+
+
     def read_vtk(self, data_dir='./data', file_name='spines.vtk'):
         """
         Read the spines from a vtk file.
@@ -980,7 +1005,7 @@ class Spine(object):
         reader.SetFileName(os.path.join(data_dir, file_name))
         reader.Update()
         output = reader.GetOutput()
-        
+
         # Read the spines.
         points = output.GetPoints()
         cells = output.GetLines()
@@ -997,10 +1022,10 @@ class Spine(object):
             self.spines.append(point_array)
         self.spines = np.array(self.spines)
 
-        
+
     def __inside_domain(self, point, var):
         return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
                (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
                (point[2] > var.z[0]) * (point[2] < var.z[-1])
-               
+
                 
