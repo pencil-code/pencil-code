@@ -39,6 +39,7 @@ class NullPoint(object):
         self.fan_vectors = []
         self.normals = []
 
+
     def find_nullpoints(self, var, field):
         """
         Find the null points to the field 'field' with information from 'var'.
@@ -604,6 +605,7 @@ class Separatrix(object):
         self.separatrices = []
         self.connectivity = []
 
+
     def find_separatrices(self, var, field, null_point, delta=0.1,
                           iter_max=100, ring_density=8):
         """
@@ -831,5 +833,174 @@ class Separatrix(object):
                                  w**2+(1-w**2)*np.cos(theta)]])
         return np.array(vector*rot_matrix)[0]
 
-    
+
+class Spine(object):
+    """
+    Contains the spines of the null points and their finding routines.
+    """
+ 
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+        self.spines = []
+
+
+    def find_spines(self, var, field, null_point, delta=0.1,
+                    iter_max=100):
+        """
+        Find the spines to the field 'field' with information from 'var'.
+
+        call signature:
+
+            find_spines(var, field, null_point, delta=0.1,
+                        iter_max=100)
+
+        Arguments:
+
+        *var*:
+            The var object from the read_var routine.
+
+        *field*:
+            The vector field.
+
+        *null_point*:
+            NullPoint object containing the magnetic null points.
+            
+        *delta*:
+            Step length for the field line tracing.
+
+        *iter_max*:
+            Maximum iteration steps for the fiel line tracing.
+        """
+
+        spines = []
+        for null_idx in range(len(null_point.nulls)):
+            null = null_point.nulls[null_idx]
+            print "null = ", null
+            spine_up = []
+            spine_down = []
+            spine_up.append(null)
+            spine_down.append(null)
+            
+            # Trace spine above the null.
+            iteration = 0
+            point = null + null_point.normals[null_idx]*delta
+            tracing = True
+            iteration = 0
+            while tracing and iteration < iter_max:
+                spine_up.append(point)
+                field_norm = vec_int(point, var, field)
+                field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
+                point = point + field_norm*delta
+                if not self.__inside_domain(point, var):
+                    tracing = False
+                iteration += 1
+            spines.append(np.array(spine_up))
+            
+            # Trace spine below the null.
+            iteration = 0
+            point = null - null_point.normals[null_idx]*delta
+            tracing = True
+            iteration = 0
+            while tracing and iteration < iter_max:
+                spine_down.append(point)
+                field_norm = vec_int(point, var, field)
+                field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
+                point = point + field_norm*delta
+                if not self.__inside_domain(point, var):
+                    tracing = False
+                iteration += 1
+            spines.append(np.array(spine_down))
+        self.spines = np.array(spines)
+
+
+    def write_vtk(self, data_dir='./data', file_name='spines.vtk'):
+        """
+        Write the spines into a vtk file.
+
+        call signature:
+
+            write_vtk(data_dir='./data', file_name='spines.vtk')
+
+        Arguments:
+
+        *data_dir*:
+            Target data directory.
+
+        *file_name*:
+            Target file name.
+        """
+
+        writer = vtk.vtkPolyDataWriter()
+        writer.SetFileName(os.path.join(data_dir, file_name))
+        poly_data = vtk.vtkPolyData()
+        points = vtk.vtkPoints()
+        # Create the cell to store the lines in.
+        cells = vtk.vtkCellArray()
+        poly_lines = []
+        offset = 0
+        for line_idx in range(len(self.spines)):
+            n_points = self.spines[line_idx].shape[0]
+            poly_lines.append(vtk.vtkPolyLine())
+            poly_lines[-1].GetPointIds().SetNumberOfIds(n_points)
+            for point_idx in range(n_points):
+                points.InsertNextPoint(self.spines[line_idx][point_idx])
+                poly_lines[-1].GetPointIds().SetId(point_idx,
+                                                   point_idx + offset)
+            cells.InsertNextCell(poly_lines[-1])
+            offset += n_points
         
+        poly_data.SetPoints(points)
+        poly_data.SetLines(cells)
+        
+        writer.SetInput(poly_data)
+        writer.Write()
+        
+        
+    def read_vtk(self, data_dir='./data', file_name='spines.vtk'):
+        """
+        Read the spines from a vtk file.
+
+        call signature:
+
+            read_vtk(data_dir='./data', file_name='spines.vtk')
+
+        Arguments:
+
+        *data_dir*:
+            Target data directory.
+
+        *file_name*:
+            Target file name.
+        """
+
+        reader = vtk.vtkPolyDataReader()
+        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.Update()
+        output = reader.GetOutput()
+        
+        # Read the spines.
+        points = output.GetPoints()
+        cells = output.GetLines()
+        id_list = vtk.vtkIdList()
+        self.spines = []
+        offset = 0
+        for cell_idx in range(cells.GetNumberOfCells()):
+            cells.GetNextCell(id_list)
+            n_points = id_list.GetNumberOfIds()
+            point_array = np.zeros((n_points, 3))
+            for point_idx in range(n_points):
+                point_array[point_idx] = points.GetPoint(point_idx + offset)
+            offset += n_points
+            self.spines.append(point_array)
+        self.spines = np.array(self.spines)
+
+        
+    def __inside_domain(self, point, var):
+        return (point[0] > var.x[0]) * (point[0] < var.x[-1]) * \
+               (point[1] > var.y[0]) * (point[1] < var.y[-1]) * \
+               (point[2] > var.z[0]) * (point[2] < var.z[-1])
+               
+                
