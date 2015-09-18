@@ -11,7 +11,7 @@
 ;  below.
 ;
 ;;; 18-Sep-2015/PABourdin:
-;;; FIXME: Please change this to use the code from 'pc_read_1daver'.
+;;; FIXME: Please remove the replicated code and put into 'pc_read_2d_aver'.
 ;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
@@ -244,6 +244,7 @@ default, readpar, 0
 default, readgrid, 0
 default, debug, 0
 default, quiet, 0
+default, in_file, 'zaver.in'
 ;
 ;  Read additional information.
 ;
@@ -286,28 +287,41 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;
-;  Read variables from zaver.in
+;  Read variables from '*aver.in' file
 ;
-;;; 18-Sep-2015/PABourdin:
-;;; FIXME: This code assumes a './' in front of each path, which is not standard.
-;;; FIXME: DO NOT USE 'spawn', it is operating-system dependent! You may use pure IDL 'STREGEX' instead to manipulate strings...
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/zaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
-if (variables[0] eq '') then variables=allvariables
-nvarall=n_elements(allvariables)
-nvar=n_elements(variables)
-ivarpos=intarr(nvar)
+run_dir = stregex ('./'.datadir, '^(.*)data/', /extract)
+allvariables = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, allvariables
+close, lun
+free_lun, lun
+;
+; Remove commented and empty elements from allvariables
+;
+allvariables = strtrim (allvariables, 2)
+inds = where (stregex (allvariables, '^[a-zA-Z]', /boolean), nvarall)
+if (nvarall le 0) then message, "ERROR: there are no variables found."
+allvariables = allvariables[inds]
+;
+if (variables[0] eq '') then begin
+  variables = allvariables
+  nvar = nvarall
+  ivarpos = indgen(nvar)
+endif else begin
+  nvar=n_elements(variables)
+  ivarpos=intarr(nvar)
 ;
 ;  Find the position of the requested variables in the list of all
 ;  variables.
 ;
-for ivar=0,nvar-1 do begin
-  ivarpos_est=where(variables[ivar] eq allvariables)
-  if (ivarpos_est[0] eq -1) then $
-      message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-               ' in '+arraytostring(allvariables,/noleader)
-  ivarpos[ivar]=ivarpos_est[0]
-endfor
+  for ivar=0,nvar-1 do begin
+    ivarpos_est=where(variables[ivar] eq allvariables)
+    if (ivarpos_est[0] eq -1) then $
+        message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
+                 ' in '+arraytostring(allvariables,/noleader)
+    ivarpos[ivar]=ivarpos_est[0]
+  endfor
+endelse
 ;  Die if attempt to plot a variable that does not exist.
 if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;

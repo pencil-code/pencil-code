@@ -11,7 +11,7 @@
 ;  below.
 ;
 ;;; 18-Sep-2015/PABourdin:
-;;; FIXME: Please change this to use the code from 'pc_read_1daver'.
+;;; FIXME: Please remove the replicated code and put into 'pc_read_2d_aver'.
 ;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nzg=nzg, $
     min=min, max=max, zoom=zoom, xax=xax, zax=zax, $
@@ -241,6 +241,7 @@ default, readpar, 0
 default, readgrid, 0
 default, debug, 0
 default, quiet, 0
+default, in_file, 'yaver.in'
 ;
 ;  Read additional information.
 ;
@@ -271,24 +272,24 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;
-;  Read variables from yaver.in
+;  Read variables from '*aver.in' file
 ;
-;;; 18-Sep-2015/PABourdin:
-;;; FIXME: This code assumes a './' in front of each path, which is not standard.
-;;; FIXME: DO NOT USE 'spawn', it is operating-system dependent! You may use pure IDL 'STREGEX' instead to manipulate strings...
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/yaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
+run_dir = stregex ('./'.datadir, '^(.*)data/', /extract)
+allvariables = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, allvariables
+close, lun
+free_lun, lun
 ;
 ; Remove commented and empty elements from allvariables
 ;
-inds = where( strmid(allvariables,0,1) ne '#' and strtrim(allvariables,2) ne '' )
-if inds[0] ne -1 then $
-  allvariables = allvariables[inds]
-;
-nvarall=n_elements(allvariables)
+allvariables = strtrim (allvariables, 2)
+inds = where (stregex (allvariables, '^[a-zA-Z]', /boolean), nvarall)
+if (nvarall le 0) then message, "ERROR: there are no variables found."
+allvariables = allvariables[inds]
 ;
 if (variables[0] eq '') then begin
-  variables=allvariables
+  variables = allvariables
   nvar = nvarall
   ivarpos = indgen(nvar)
 endif else begin
