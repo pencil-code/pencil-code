@@ -1,5 +1,6 @@
 ##  -*-Makefile-*- (for Emacs)    vim:set filetype=make:  (for vim)
 ##
+##
 ##  $Id$
 ##
 ##  Makefile dependencies for modular Pencil Code.
