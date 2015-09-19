@@ -5608,10 +5608,29 @@ module Particles
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! dummy
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      call keep_compiler_quiet(f)
+! Impose periodic boundary condition on gradu as auxiliary variable
+!
+      use Boundcond, only: set_periodic_boundcond_on_aux
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+
+!
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
 !
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************

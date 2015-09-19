@@ -24,6 +24,7 @@ module Particles_main
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_grad
   use Particles_selfgravity
   use Particles_sink
   use Particles_spin
@@ -56,6 +57,7 @@ module Particles_main
       call register_particles              ()
 !     call register_particles_potential    ()
       call register_particles_radius       ()
+      call register_particles_grad         ()
       call register_particles_spin         ()
       call register_particles_number       ()
       call register_particles_density      ()
@@ -95,6 +97,7 @@ module Particles_main
           STATUS='old', POSITION='append')
       call rprint_particles              (lreset,LWRITE=lroot)
       call rprint_particles_radius       (lreset,LWRITE=lroot)
+      call rprint_particles_grad         (lreset,LWRITE=lroot)
       call rprint_particles_sink         (lreset,LWRITE=lroot)
       call rprint_particles_spin         (lreset,LWRITE=lroot)
       call rprint_particles_number       (lreset,LWRITE=lroot)
@@ -219,6 +222,7 @@ module Particles_main
       call initialize_particles_nbody        (f)
       call initialize_particles_number       (f)
       call initialize_particles_radius       (f)
+      call initialize_particles_grad         (f)
       call initialize_particles_selfgrav     (f)
       call initialize_particles_sink         (f)
       call initialize_particles_spin         (f)
@@ -278,6 +282,7 @@ module Particles_main
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
+      if (lparticles_grad) call set_particle_grad(f,fp,1,npar_loc,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
       if (lparticles_density)       call init_particles_density(f,fp)
       call init_particles(f,fp,ineargrid)
