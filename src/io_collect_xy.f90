@@ -134,7 +134,7 @@ module Io
 !
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:my) = x
+        gx(1:mx) = x
         if (nprocx > 1) then
           do px = 1, nprocx-1
             call mpirecv_real (buf_x, l2, px, tag_gx)
