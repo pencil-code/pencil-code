@@ -652,6 +652,7 @@ class Separatrix(object):
         separatrices = []
         connectivity = []
         for null_idx in range(len(null_point.nulls)):
+#        for null_idx in range(1):
             null = null_point.nulls[null_idx]
             normal = null_point.normals[null_idx]
             fan_vectors = null_point.fan_vectors[null_idx]
@@ -661,12 +662,12 @@ class Separatrix(object):
             separatrices.append(null)
             
             # Only trace separatrices for x-point lilke nulls.
-            if abs(np.linalg.det(null.eigen_vectors)) < delta*1e-8:
+            if abs(np.linalg.det(null_point.eigen_vectors[null_idx])) < delta*1e-8:
                 continue
             
             # Create the first ring of points.
             ring = []
-            offset = len(separatrices)
+            offset = len(separatrices)-1
             for theta in np.linspace(0, 2*np.pi*(1-1./ring_density), ring_density):
                 ring.append(null + self.__rotate_vector(normal, fan_vectors[0],
                                                         theta) * delta)
@@ -693,6 +694,9 @@ class Separatrix(object):
                     ring[point_idx] = point
                     point_idx += 1
 
+                # Connectivity array between old and new ring.
+                connectivity_rings = np.ones((2, len(ring)), dtype = 'int')*range(len(ring))
+                
                 # Add points if distance becomes too large.
                 ring_new = []
                 ring_new.append(ring[0])
@@ -700,6 +704,7 @@ class Separatrix(object):
                     if self.__distance(ring[point_idx],
                                        ring[point_idx+1]) > delta:
                         ring_new.append((ring[point_idx]+ring[point_idx+1])/2)
+                        connectivity_rings[1, point_idx+1:] += 1
                     ring_new.append(ring[point_idx+1])
                 if self.__distance(ring[0], ring[-1]) > delta:
                     ring_new.append((ring[0]+ring[-1])/2)
@@ -708,12 +713,23 @@ class Separatrix(object):
                 # Remove points which lie outside.
                 ring_new = []
                 not_connect_to_next = []
+                left_shift = np.zeros(connectivity_rings.shape[1])
                 for point_idx in range(len(ring)):
                     if self.__inside_domain(ring[point_idx], var):
                         ring_new.append(ring[point_idx])
                         separatrices.append(ring[point_idx])
                     else:
                         not_connect_to_next.append(len(ring_new)-1)
+                        mask = connectivity_rings[1, :] == point_idx
+                        connectivity_rings[1, mask] = -1
+                        mask = connectivity_rings[1, :] > point_idx
+                        left_shift += mask
+                connectivity_rings[1, :] -= left_shift
+                ring = ring_new
+                
+                if not ring:
+                    tracing = False
+                    continue
 
                 # Set the connectivity within the ring.
                 offset = len(separatrices)-len(ring_new)
@@ -725,27 +741,34 @@ class Separatrix(object):
                 and not np.any(np.array(not_connect_to_next) == -1):
                     connectivity.append(np.array([offset,
                                                   offset+len(ring_new)-1]))
-                ring = ring_new
 
-                offset = len(separatrices)-len(ring_old)-len(ring)
-                # Compute connectivity arrays between the old and new ring.
+                # Set the connectivity between the old and new ring.
                 for point_old_idx in range(len(ring_old)):
-                    point_old = ring_old[point_old_idx]
-                    dist_min = np.inf
-                    idx_min = -1
-                    for point_idx in range(len(ring)):
-                        point = ring[point_idx]
-                        dist = self.__distance(point_old, point)
-                        if dist < dist_min:
-                            dist_min = dist
-                            idx_min = point_idx
-                    if idx_min > -1:
-                        connectivity.append(np.array([offset+point_old_idx,
-                                                      offset+idx_min+len(ring_old)]))
+                    if connectivity_rings[1, point_old_idx] >= 0:
+                        connectivity_rings[0, point_old_idx] += len(separatrices)-len(ring_old)-len(ring)
+                        connectivity_rings[1, point_old_idx] += len(separatrices)-len(ring)
+                        connectivity.append(np.array([connectivity_rings[0, point_old_idx],
+                                                      connectivity_rings[1, point_old_idx]]))
+                
+#                # Compute connectivity arrays between the old and new ring.
+#                for point_old_idx in range(len(ring_old)):
+#                    point_old = ring_old[point_old_idx]
+#                    dist_min = np.inf
+#                    idx_min = -1
+#                    for point_idx in range(len(ring)):
+#                        point = ring[point_idx]
+#                        dist = self.__distance(point_old, point)
+#                        if dist < dist_min:
+#                            dist_min = dist
+#                            idx_min = point_idx
+#                    if idx_min > -1:
+#                        connectivity.append(np.array([offset+point_old_idx,
+#                                                      offset+idx_min+len(ring_old)]))
 
                 iteration += 1
                 # Stop the tracing routine if there are no points in the ring.
                 if not ring:
+                    print 'ring = False'
                     tracing = False
 
         self.separatrices = np.array(separatrices)
