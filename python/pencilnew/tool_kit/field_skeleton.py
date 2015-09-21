@@ -652,7 +652,6 @@ class Separatrix(object):
         separatrices = []
         connectivity = []
         for null_idx in range(len(null_point.nulls)):
-#        for null_idx in range(1):
             null = null_point.nulls[null_idx]
             normal = null_point.normals[null_idx]
             fan_vectors = null_point.fan_vectors[null_idx]
@@ -727,6 +726,7 @@ class Separatrix(object):
                 connectivity_rings[1, :] -= left_shift
                 ring = ring_new
                 
+                # Stop the tracing routine if there are no points in the ring.
                 if not ring:
                     tracing = False
                     continue
@@ -750,26 +750,7 @@ class Separatrix(object):
                         connectivity.append(np.array([connectivity_rings[0, point_old_idx],
                                                       connectivity_rings[1, point_old_idx]]))
                 
-#                # Compute connectivity arrays between the old and new ring.
-#                for point_old_idx in range(len(ring_old)):
-#                    point_old = ring_old[point_old_idx]
-#                    dist_min = np.inf
-#                    idx_min = -1
-#                    for point_idx in range(len(ring)):
-#                        point = ring[point_idx]
-#                        dist = self.__distance(point_old, point)
-#                        if dist < dist_min:
-#                            dist_min = dist
-#                            idx_min = point_idx
-#                    if idx_min > -1:
-#                        connectivity.append(np.array([offset+point_old_idx,
-#                                                      offset+idx_min+len(ring_old)]))
-
                 iteration += 1
-                # Stop the tracing routine if there are no points in the ring.
-                if not ring:
-                    print 'ring = False'
-                    tracing = False
 
         self.separatrices = np.array(separatrices)
         self.connectivity = np.array(connectivity)
