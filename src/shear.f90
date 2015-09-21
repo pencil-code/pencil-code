@@ -30,8 +30,8 @@ module Shear
   real, dimension(3) :: u0_advec = 0.0
   character(len=7) :: shear_method = 'fft'
   logical, dimension(mcom) :: lposdef = .false.
+  logical, target :: lshearadvection_as_shift = .false.
   logical :: lshear_acceleration = .true.
-  logical :: lshearadvection_as_shift=.false.
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
@@ -70,7 +70,13 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
+      use SharedVariables, only: put_shared_variable
+!
       if (lroot) call svn_id("$Id$")
+!
+!  Share lshearadvection_as_shift.
+!
+      call put_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='register_shear')
 !
     endsubroutine register_shear
 !***********************************************************************

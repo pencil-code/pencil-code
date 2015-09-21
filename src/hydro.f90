@@ -180,6 +180,7 @@ module Hydro
   logical :: lno_meridional_flow=.false.
   logical :: lrotation_xaxis=.false.
   logical :: lpropagate_borderuu=.true.
+  logical :: lgradu_as_aux=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -640,6 +641,11 @@ module Hydro
         endif
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
+!
+! If we are to solve for gradient of dust particle velocity, we must store gradient 
+! of gas velocity as auxiliary
+!
+      if (lparticles_grad) lgradu_as_aux=.true.
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -1838,7 +1844,7 @@ module Hydro
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
-      if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
+      if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
           idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0 .or. &
@@ -2027,9 +2033,9 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju
+      integer :: i, j, ju, ij
 !
-      intent(in) :: f, lpenc_loc
+      intent(in) :: lpenc_loc
       intent(out):: p
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
@@ -2040,6 +2046,18 @@ module Hydro
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
+!
+!  if gradu is to be stored as auxiliary the we store it now
+!
+      if(lgradu_as_aux) then
+        ij=igradu-1
+        do i=1,3
+          do j=1,3
+            ij=ij+1
+            f(l1:l2,m,n,ij) = p%uij(:,i,j) 
+          enddo
+        enddo
+      endif
 ! divu
       if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij

@@ -141,6 +141,8 @@ module Particles
   logical :: vel_call=.false., turnover_call=.false.
   logical :: lreassign_strat_rhom=.true., lnu_draglaw=.false.
 !
+  logical :: lcdtp_shear = .true.
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -327,6 +329,7 @@ module Particles
 !
       real :: rhom
       integer :: ierr, jspec
+      logical, pointer :: lshearadvection_as_shift
       real, pointer :: reference_state_mass
 !
 !  This module is incompatible with particle block domain decomposition.
@@ -338,6 +341,14 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+!  Check if shear advection is on and decide if it needs to be included in the timestep condition.
+!
+      shear: if (lshear) then
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
+        lcdtp_shear = .not. lshearadvection_as_shift
+        nullify(lshearadvection_as_shift)
+      endif shear
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -3056,7 +3067,7 @@ module Particles
                 dt1_advpx=0.0
               endif
               if (nygrid/=1) then
-                if (lshear) then
+                if (lshear .and. lcdtp_shear) then
                   dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
                 else
                   dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
@@ -5608,10 +5619,29 @@ module Particles
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! dummy
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      call keep_compiler_quiet(f)
+! Impose periodic boundary condition on gradu as auxiliary variable
+!
+      use Boundcond, only: set_periodic_boundcond_on_aux
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+
+!
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
 !
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************

@@ -6,7 +6,7 @@
 pro pc_read_xyaver, object=object, varfile=varfile, datadir=datadir, $
     monotone=monotone, quiet=quiet
 
-  pc_read_1daver, 'z', object=object, varfile=varfile, datadir=datadir, $
+  pc_read_1d_aver, 'z', object=object, varfile=varfile, datadir=datadir, $
     monotone=monotone, quiet=quiet
 
 end

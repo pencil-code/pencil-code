@@ -1,15 +1,18 @@
-;;
-;; $Id$
-;;
-;;   Read z-averages from file.
-;;
-;;   Default is to only plot the data (with tvscl), not to save it in memory.
-;;   The user can get the data returned in an object by specifying nit, the
-;;   number of snapshots to save.
-;;
-;;  We start with a script for plotting data plane - the main program follows
-;;  below.
-;;
+;
+; $Id$
+;
+;   Read z-averages from file.
+;
+;   Default is to only plot the data (with tvscl), not to save it in memory.
+;   The user can get the data returned in an object by specifying nit, the
+;   number of snapshots to save.
+;
+;  We start with a script for plotting data plane - the main program follows
+;  below.
+;
+;;; 18-Sep-2015/PABourdin:
+;;; FIXME: Please remove the replicated code and put into 'pc_read_2d_aver'.
+;
 pro plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     xtitle=xtitle, ytitle=ytitle, title=title, $
@@ -29,7 +32,10 @@ pro plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
 ;  Define line and character thickness (will revert to old settings later).
 ;
 oldthick=thick
-!p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
+!p.charthick=thick
+!p.thick=thick
+!x.thick=thick
+!y.thick=thick
 ;
 if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 ;
@@ -52,7 +58,7 @@ if (ceiling) then begin
   ii=where(array_plot gt ceiling)
   if (max(ii) ne -1) then array_plot[ii]=ceiling
 endif
-;  Plot to post script (eps).      
+;  Plot to post script (eps).
 if (ps) then begin
   set_plot, 'ps'
   imgname='img_'+strtrim(string(itimg,'(i20.4)'),2)+'.eps'
@@ -73,17 +79,17 @@ endif else begin
   endelse
 endelse
 sym=texsyms()
-;  Put current time in title if requested.      
+;  Put current time in title if requested.
 if (t_title) then $
     title='t='+strtrim(string(time/t_scale-t_zero,format=tformat),2)
-;  tvscl-type plot with axes.        
+;  tvscl-type plot with axes.
 plotimage, array_plot, $
     range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
     xtitle=xtitle, ytitle=ytitle, title=title, $
     position=position, noerase=noerase, noaxes=noaxes, $
     interp=interp, charsize=charsize, thick=thick
 ;
-;  Enlargement of ``densest'' point.          
+;  Enlargement of ``densest'' point.
 ;
 if ( subbox and (time ge tsubbox) ) then begin
   if (subcen[0] eq -1) then begin
@@ -141,7 +147,7 @@ if ( subbox and (time ge tsubbox) ) then begin
          [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
          thick=thick, color=subcolor
 endif
-;  Overplot stalked particles.         
+;  Overplot stalked particles.
 if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [yystalk], $
         ps=1, color=255, thick=2.0
 ;  Colorbar indicating range.
@@ -149,14 +155,14 @@ if (colorbar) then begin
   colorbar_co, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
       title=bartitle, /normal, /vertical
 endif
-;  For png output, take image from z-buffer.          
+;  For png output, take image from z-buffer.
 if (png) then begin
   image = tvrd()
   tvlct, red, green, blue, /get
   imgname='img_'+strtrim(string(itimg,'(i20.4)'),2)+'.png'
   write_png, imgdir+'/'+imgname, image, red, green, blue
 endif
-;  Close postscript device.      
+;  Close postscript device.
 if (ps) then device, /close
 itimg=itimg+1
 if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
@@ -164,12 +170,15 @@ if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
 ;  Revert to old settings for line and character thickness.
 ;
   thick=oldthick
-  !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
+  !p.charthick=thick
+  !p.thick=thick
+  !x.thick=thick
+  !y.thick=thick
 ;
 end
-;;
-;;  Main program.
-;;
+;
+;  Main program.
+;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     ipxread=ipxread, ipyread=ipyread, $
@@ -187,7 +196,6 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 forward_function plot_plane
-forward_function shift_plane
 ;
 ;  Default values.
 ;
@@ -241,6 +249,7 @@ default, readpar, 0
 default, readgrid, 0
 default, debug, 0
 default, quiet, 0
+default, in_file, 'zaver.in'
 ;
 ;  Read additional information.
 ;
@@ -258,13 +267,15 @@ pc_set_precision, dim=dim, /quiet
 if (readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
 if (readgrid) then begin
   pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
-  xax=grid.x & yax=grid.y
+  xax=grid.x
+  yax=grid.y
 endif
 if (xshift ne 0) then begin
   if (not readpar) then pc_read_param, obj=par, datadir=datadir, /quiet
   if (not readgrid) then begin
     pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
-    xax=grid.x & yax=grid.y
+    xax=grid.x
+    yax=grid.y
   endif
 endif
 ;
@@ -283,28 +294,41 @@ nprocx=dim.nprocx
 nprocy=dim.nprocy
 nprocz=dim.nprocz
 ;
-;  Read variables from zaver.in
+;  Read variables from '*aver.in' file
 ;
-;;; 18-Sep-2015/PABourdin:
-;;; FIXME: This code assumes a './' in front of each path, which is not standard.
-;;; FIXME: DO NOT USE 'spawn', it is operating-system dependent! You may use pure IDL 'STREGEX' instead to manipulate strings...
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/zaver.in'+"|sed -e'/^ *#.*$/ d'", allvariables   ; comment lines starting with # are ignored
-if (variables[0] eq '') then variables=allvariables
-nvarall=n_elements(allvariables)
-nvar=n_elements(variables)
-ivarpos=intarr(nvar)
+run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
+variables_all = strarr(file_lines(run_dir+in_file))
+openr, lun, run_dir+in_file, /get_lun
+readf, lun, variables_all
+close, lun
+free_lun, lun
+;
+; Remove commented and empty elements from variables_all
+;
+variables_all = strtrim (variables_all, 2)
+inds = where (stregex (variables_all, '^[a-zA-Z]', /boolean), nvar_all)
+if (nvar_all le 0) then message, "ERROR: there are no variables found."
+variables_all = variables_all[inds]
+;
+if (variables[0] eq '') then begin
+  variables = variables_all
+  nvar = nvar_all
+  ivarpos = indgen(nvar)
+endif else begin
+  nvar=n_elements(variables)
+  ivarpos=intarr(nvar)
 ;
 ;  Find the position of the requested variables in the list of all
 ;  variables.
 ;
-for ivar=0,nvar-1 do begin
-  ivarpos_est=where(variables[ivar] eq allvariables)
-  if (ivarpos_est[0] eq -1) then $
-      message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-               ' in '+arraytostring(allvariables,/noleader)
-  ivarpos[ivar]=ivarpos_est[0]
-endfor
+  for ivar=0,nvar-1 do begin
+    ivarpos_est=where(variables[ivar] eq variables_all)
+    if (ivarpos_est[0] eq -1) then $
+        message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
+                 ' in '+arraytostring(variables_all,/noleader)
+    ivarpos[ivar]=ivarpos_est[0]
+  endfor
+endelse
 ;  Die if attempt to plot a variable that does not exist.
 if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;
@@ -312,11 +336,11 @@ if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;  from all of them.
 ;
 if ( (ipxread eq -1) and (ipyread eq -1) ) then begin
-  filename=datadir+'/proc'+strtrim(indgen(nprocx*nprocy),2)+'/'+varfile 
-  ipxarray=indgen(nprocx*nprocy) mod nprocx
-  ipyarray=(indgen(nprocx*nprocy)/nprocx) mod nprocy
-  nxg=nxgrid
-  nyg=nygrid
+  ipxarray = indgen(nprocx*nprocy) mod nprocx
+  ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
+  filename = datadir+'/proc'+strtrim(ipxarray+ipyarray*nprocx,2)+'/'+varfile
+  nxg = nxgrid
+  nyg = nygrid
 endif else begin
   if (ipxread lt 0 or ipxread gt nprocx-1) then begin
     print, 'ERROR: ipx is not within the proper bounds'
@@ -328,15 +352,15 @@ endif else begin
     print, '       ipy, nprocy', ipyread, nprocy
     stop
   endif
-  filename=datadir+'/proc'+strtrim(ipxread+nprocx*ipyread,2)+'/'+varfile 
-  ipxarray=[0]
-  ipyarray=[0]
-  nxg=nx
-  nyg=ny
+  filename = datadir+'/proc'+strtrim(ipxread+ipyread*nprocx,2)+'/'+varfile
+  ipxarray = intarr(1)
+  ipyarray = intarr(1)
+  nxg = nx
+  nyg = ny
 endelse
 ;
-;  Define arrays to put data in. The user may supply the length of 
-;  the time dimension (nit). Otherwise nit will be read from the 
+;  Define arrays to put data in. The user may supply the length of
+;  the time dimension (nit). Otherwise nit will be read from the
 ;  file data/t2davg.dat.
 ;
 if (not keyword_set(nit)) then begin
@@ -349,12 +373,12 @@ if (not keyword_set(nit)) then begin
     print, 'ERROR: cannot find file '+ file_t2davg
     stop
   endif
-  get_lun, filelun
-  close, filelun
-  openr, filelun, file_t2davg
-  dummy_real=0.0d0 & dummy_int=0L
-  readf, filelun, dummy_real, dummy_int
-  close, filelun
+  openr, lun, file_t2davg, /get_lun
+  dummy_real=0.0d0
+  dummy_int=0L
+  readf, lun, dummy_real, dummy_int
+  close, lun
+  free_lun, lun
   nit=dummy_int-1
 endif
 ;
@@ -382,11 +406,19 @@ endif
 if (n_elements(xax) eq 0) then xax=findgen(nxg)
 if (n_elements(yax) eq 0) then yax=findgen(nyg)
 if (n_elements(par) ne 0) then begin
-  x0=par.xyz0[0] & x1=par.xyz1[0] & y0=par.xyz0[1] & y1=par.xyz1[1]
-  Lx=par.Lxyz[0] & Ly=par.Lxyz[1]
+  x0=par.xyz0[0]
+  x1=par.xyz1[0]
+  y0=par.xyz0[1]
+  y1=par.xyz1[1]
+  Lx=par.Lxyz[0]
+  Ly=par.Lxyz[1]
 endif else begin
-  x0=xax[0] & x1=xax[nxg-1] & y0=yax[0] & y1=yax[nyg-1]
-  Lx=xax[nxg-1]-xax[0] & Ly=yax[nyg-1]-yax[0]
+  x0=xax[0]
+  x1=xax[nxg-1]
+  y0=yax[0]
+  y1=yax[nyg-1]
+  Lx=xax[nxg-1]-xax[0]
+  Ly=yax[nyg-1]-yax[0]
 endelse
 ;
 ;  Prepare for read.
@@ -394,7 +426,8 @@ endelse
 if (not quiet) then print, 'Preparing to read z-averages ', $
     arraytostring(variables,quote="'",/noleader)
 ;
-for ip=0,n_elements(filename)-1 do begin
+num_files = n_elements(filename)
+for ip=0, num_files-1 do begin
   if (not file_test(filename[ip])) then begin
     print, 'ERROR: cannot find file '+ filename[ip]
     stop
@@ -404,41 +437,39 @@ endfor
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
 if (iplot eq -1) then begin
-  array_local=fltarr(nx,ny,nvarall)*one
-  array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvarall)*one
+  array_local=fltarr(nx,ny,nvar_all)*one
+  array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvar_all)*one
   t=zero
 ;
-  for ip=0,n_elements(filename)-1 do begin
+  for ip=0, num_files-1 do begin
     if (not quiet) then print, 'Loading chunk ', strtrim(ip+1,2), ' of ', $
-        strtrim(n_elements(filename),2), ' (', filename[ip], ')'
+        strtrim(num_files,2), ' (', filename[ip], ')'
     ipx=ipxarray[ip]
     ipy=ipyarray[ip]
-    get_lun, filelun
-    close, filelun
-    openr, filelun, filename[ip], /f77, swap_endian=swap_endian
+    openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
     it=0
-    while ( not eof(filelun) and (nit eq 0 or it lt nit) ) do begin
+    while ( not eof(lun) and ((nit eq 0) or (it lt nit)) ) do begin
 ;
 ;  Read time.
 ;
-      readu, filelun, t
+      readu, lun, t
       if (it eq 0) then t0=t
 ;
 ;  Read full data, close and free lun after endwhile.
 ;
       if ( (t ge tmin) and (it mod njump eq 0) ) then begin
-        readu, filelun, array_local
+        readu, lun, array_local
         array_global[ipx*nx:(ipx+1)*nx-1,ipy*ny:(ipy+1)*ny-1,it/njump,*]= $
             array_local
         tt[it/njump]=t
       endif else begin
         dummy=zero
-        readu, filelun, dummy
+        readu, lun, dummy
       endelse
       it=it+1
     endwhile
-    close, filelun
-    free_lun, filelun
+    close, lun
+    free_lun, lun
 ;
   endfor
 ;
@@ -462,9 +493,8 @@ if (iplot eq -1) then begin
 ;  Possible to shift data in the x-direction.
 ;
   if (xshift ne 0) then begin
-    for it=0,nit/njump-1 do begin
-      shift_plane, nvarall, array_global[*,*,it,*], xshift, par, timefix, ts, $
-          t, t0
+    for it=0, nit/njump-1 do begin
+      pc_read_aver_shift_plane, nvar_all, array_global[*,*,it,*], xshift, par, timefix, ts, t, t0
     endfor
   endif
 ;
@@ -488,30 +518,31 @@ endif else begin
 ;
 ;  Open all ipz=0 processor directories.
 ;
-  filelun=indgen(n_elements(filename))+1
-  for ip=0,n_elements(filename)-1 do begin
-    close, filelun[ip]
-    openr, filelun[ip], filename[ip], /f77, swap_endian=swap_endian
+  luns = intarr(num_files)
+  for ip=0, num_files-1 do begin
+    openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
+    luns[ip] = lun
   endfor
 ;
 ;  Variables to put single time snapshot in.
 ;
-  array=fltarr(nxg,nyg,nvarall)*one
-  array_local=fltarr(nx,ny,nvarall)*one
-  tt_local=fltarr(n_elements(filename))*one
+  array=fltarr(nxg,nyg,nvar_all)*one
+  array_local=fltarr(nx,ny,nvar_all)*one
+  tt_local=fltarr(num_files)*one
 ;
 ;  Read z-averages and put in arrays if requested.
 ;
   it=0
   itimg=0
   lwindow_opened=0
-  while ( not eof(filelun[0]) and (nit eq 0 or it lt nit) ) do begin
+  while ( not eof(luns[0]) and ((nit eq 0) or (it lt nit)) ) do begin
 ;
 ;  Read time.
 ;
-    for ip=0,n_elements(filename)-1 do begin
+    for ip=0, num_files-1 do begin
       tt_tmp=zero
-      readu, filelun[ip], tt_tmp & tt_local[ip]=tt_tmp
+      readu, luns[ip], tt_tmp
+      tt_local[ip]=tt_tmp
       if (ip ge 1) then begin
         if (max(tt_local[ip]-tt_local[0:ip-1])) then begin
           print, 'Inconsistent times between processors!'
@@ -526,8 +557,8 @@ endif else begin
 ;  Read data one slice at a time.
 ;
     if ( (t ge tmin) and (it mod njump eq 0) ) then begin
-      for ip=0,n_elements(filename)-1 do begin
-        readu, filelun[ip], array_local
+      for ip=0, num_files-1 do begin
+        readu, luns[ip], array_local
         ipx=ipxarray[ip]
         ipy=ipyarray[ip]
         array[ipx*nx:(ipx+1)*nx-1,ipy*ny:(ipy+1)*ny-1,*]=array_local
@@ -536,49 +567,49 @@ endif else begin
 ;  Shift plane in the radial direction.
 ;
       if (xshift ne 0) then $
-          shift_plane, nvarall, array, xshift, par, timefix, ts, t
+          pc_read_aver_shift_plane, nvar_all, array, xshift, par, timefix, ts, t
 ;
 ;  Interpolate position of stalked particles to time of snapshot.
 ;
-     if (stalk) then begin
-       ist=where( abs(pst.t-t) eq min(abs(pst.t-t)))
-       ist=ist[0]
-       if (max(tag_names(pst) eq 'APS') eq 1) then begin
-         if (n_elements(pst.ipar) eq 1) then begin
-           if (pst.aps[ist] eq 0.0) then nstalk=0 else nstalk=-1 
-         endif else begin
-           ipar=where(pst.aps[*,ist] ne 0.0)
-           if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
-         endelse
-       endif else begin
-         ipar=indgen(nstalk)
-       endelse
-       if (nstalk eq -1) then begin
-         xxstalk=pst.xp[ist]
-         yystalk=pst.yp[ist]
-       endif else if (nstalk ne 0) then begin
-         xxstalk=pst.xp[ipar,ist]
-         yystalk=pst.yp[ipar,ist]
-       endif
-     endif
+      if (stalk) then begin
+        ist=where( abs(pst.t-t) eq min(abs(pst.t-t)))
+        ist=ist[0]
+        if (max(tag_names(pst) eq 'APS') eq 1) then begin
+          if (n_elements(pst.ipar) eq 1) then begin
+            if (pst.aps[ist] eq 0.0) then nstalk=0 else nstalk=-1
+          endif else begin
+            ipar=where(pst.aps[*,ist] ne 0.0)
+            if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
+          endelse
+        endif else begin
+          ipar=indgen(nstalk)
+        endelse
+        if (nstalk eq -1) then begin
+          xxstalk=pst.xp[ist]
+          yystalk=pst.yp[ist]
+        endif else if (nstalk ne 0) then begin
+          xxstalk=pst.xp[ipar,ist]
+          yystalk=pst.yp[ipar,ist]
+        endif
+      endif
 ;
 ;  Plot requested variable (plotting is turned off by default).
 ;
-     plot_plane, array_plot=array[*,*,ivarpos[iplot]], nxg=nxg, nyg=nyg, $
-         min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
-         xtitle=xtitle, ytitle=ytitle, title=title, $
-         subbox=subbox, subcen=subcen, $
-         subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
-         submin=submin, submax=submax, sublog=sublog, $
-         noaxes=noaxes, thick=thick, charsize=charsize, $
-         loge=loge, log10=log10, $
-         t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
-         ceiling=ceiling, position=position, fillwindow=fillwindow, $
-         tformat=tformat, xxstalk=xxstalk, yystalk=yystalk, $
-         tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
-         xsize=xsize, ysize=ysize, lwindow_opened=lwindow_opened, $
-         colorbar=colorbar, bartitle=bartitle, quiet=quiet, $
-         x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=t, itimg=itimg
+      plot_plane, array_plot=array[*,*,ivarpos[iplot]], nxg=nxg, nyg=nyg, $
+          min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
+          xtitle=xtitle, ytitle=ytitle, title=title, $
+          subbox=subbox, subcen=subcen, $
+          subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
+          submin=submin, submax=submax, sublog=sublog, $
+          noaxes=noaxes, thick=thick, charsize=charsize, $
+          loge=loge, log10=log10, $
+          t_title=t_title, t_scale=t_scale, t_zero=t_zero, interp=interp, $
+          ceiling=ceiling, position=position, fillwindow=fillwindow, $
+          tformat=tformat, xxstalk=xxstalk, yystalk=yystalk, $
+          tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
+          xsize=xsize, ysize=ysize, lwindow_opened=lwindow_opened, $
+          colorbar=colorbar, bartitle=bartitle, quiet=quiet, $
+          x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=t, itimg=itimg
 ;
 ;  Diagnostics.
 ;
@@ -602,9 +633,9 @@ endif else begin
         endfor
       endif
     endif else begin
-      for ip=0,n_elements(filename)-1 do begin
+      for ip=0, num_files-1 do begin
         dummy=zero
-        readu, filelun[ip], dummy
+        readu, luns[ip], dummy
       endfor
     endelse
 ;
@@ -614,9 +645,9 @@ endif else begin
 ;
 ;  Close files and free luns.
 ;
-  for ip=0,n_elements(filename)-1 do begin
-    close, filelun[ip]
-    free_lun, filelun[ip]
+  for ip=0, num_files-1 do begin
+    close, luns[ip]
+    free_lun, luns[ip]
   endfor
 endelse
 ;
@@ -635,50 +666,4 @@ if (nit ne 0) then begin
 endif
 ;
 end
-;
-;  Script for shifting plane in the x-direction.
-;
-pro shift_plane, nvarall, array=array, xshift=xshift, par=par, ts=ts, $
-    timefix=timefix, t=t, t0=t0
-;
-for ivar=0,nvarall-1 do array[*,*,ivar]=shift(array[*,*,ivar],xshift,0)
-;
-;  With shear we need to displace part of the plane.
-;
-if (par.Sshear ne 0.0) then begin
-;
-;  Some z-averages are erroneously calculated together with time series
-;  diagnostics. The proper time is thus found in time_series.dat.
-;
-  if (timefix) then begin
-    ii=where( abs(ts.t-t) eq min(abs(ts.t-t)) ) & ii=ii[0]
-    if (ts.t[ii] ge (t-ts.dt[ii])) then ii=ii-1
-    if (debug) then print, 'it, t, t_ts, dt_ts=', $
-        it, t, ts.t[ii], ts.dt[ii]
-    deltay=(-par.Sshear*ts.t[ii]*par.Lxyz[0]) mod par.Lxyz[1]
-  endif else begin
-    deltay=(-par.Sshear*t*par.Lxyz[0]) mod par.Lxyz[1]
-  endelse
-  deltay_int=fix(deltay/grid.dy)
-  if (debug) then print, 'it, t, deltay, deltay_int, deltay_frac', $
-      it, t, deltay, deltay_int, deltay/grid.dy-deltay_int
-  for ivar=0,nvarall-1 do begin
-    array2=array[*,*,ivar]
-    for ix=0,xshift-1 do begin
-      array2[ix,*]=shift(reform(array2[ix,*]),deltay_int)
-      array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),grid.y,deltay-deltay_int*grid.dy)
-    endfor
-;
-;  Comove with central grid point.
-;
-   print, 'AJ/2010-05-26: the following appears to be wrong'
-   print, '               xax[0] should be xshift*dx'
-   stop
-   for ix=0,nxg-1 do begin
-     array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),yax,-par.Sshear*(t-t0)*xax[0])
-   endfor
-   array[*,*,ivar]=array2
-  endfor
-endif
-;
-end
+
