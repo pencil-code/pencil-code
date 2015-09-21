@@ -659,6 +659,11 @@ class Separatrix(object):
 
             tracing = True
             separatrices.append(null)
+            
+            # Only trace separatrices for x-point lilke nulls.
+            if abs(np.linalg.det(null.eigen_vectors)) < delta*1e-8:
+                continue
+            
             # Create the first ring of points.
             ring = []
             offset = len(separatrices)
