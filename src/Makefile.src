@@ -2098,7 +2098,8 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
-default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
+legacy_default: start_buildtime Makefile cparam.inc legacy_code stop_buildtime buildinfo
+default_to_be: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
 #
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
@@ -2314,7 +2315,7 @@ EXECUTABLES=start.x run.x \
 # delete already compiled .x files:
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-code: Makefile.inc Makefile-standard.inc cparam.inc
+legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2322,6 +2323,15 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
+	fi
+code: Makefile.inc Makefile-standard.inc cparam.inc
+	@# Realize error even when last command in pipe is FCCLEANER:
+	@echo "$(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 #
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x

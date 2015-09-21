@@ -227,7 +227,7 @@ map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
 
-make(@make_args);
+make(@make_args, 'default_to_be');
 
 
 # ---------------------------------------------------------------------- #
