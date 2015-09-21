@@ -344,6 +344,9 @@ program pc_meanfield_collect
 
         dim2stride  = data_stride*ndim1
         ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
+        if (ntimesteps > 20) then
+               ntimesteps  = 20
+        end if
         data_start  = t_start + tlen + 8
         tsteplen    = 16 + tlen + datalen
         averagelen  = datalen/naverages 
@@ -413,8 +416,9 @@ program pc_meanfield_collect
             if (analysisproc>=nprocs) then
               analysisproc = 1
             end if
-            call CloseH5Groups()
           end do
+          call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+          call CloseH5Groups()
         end if
 
         if (allocated(avgdims)) then
@@ -456,6 +460,8 @@ program pc_meanfield_collect
           call BCastInfo()
           call OpenH5Groups()
         else if (command == command_hdfclose) then
+          call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+          write(*,*) 'HDF close call', iproc
           call CloseH5Groups()
         else if (command == command_analyze) then
           ! MPI communication part
@@ -639,11 +645,13 @@ program pc_meanfield_collect
   end if
 
   write(*,*) 'Time taken: ', MPI_WTIME() - analysisstart
+  call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
   call fnames_clean_up()
   call vnames_clean_up()
   call CloseH5File()
   call H5close_F(hdferr)
   call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+  write(*,*) 'Everything works ', iproc
   call MPI_FINALIZE(mpierr)
 
   contains
@@ -733,12 +741,12 @@ program pc_meanfield_collect
         close(11, status='delete')
       end if
       call H5Fcreate_F(phdffile, H5F_ACC_TRUNC_F, phdf_fileid, hdferr, access_prp = hdf_file_plist)
+      call H5Pclose_F(hdf_file_plist,hdferr)
 
     end subroutine OpenH5File
 
     subroutine CloseH5File()
 
-      call H5Pclose_F(hdf_file_plist,hdferr)
       call H5Fclose_F(phdf_fileid, hdferr)
 
     end subroutine CloseH5File
