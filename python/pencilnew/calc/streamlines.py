@@ -6,7 +6,7 @@ Traces streamlines of a vector field from z0 to z1, similar to
 """
 
 import numpy as np
-from pencilnew.math.interpolation import vec_int
+from pencilnew.math.interpolation import vec_int_no_var
 
 
 class Stream(object):
@@ -96,22 +96,22 @@ class Stream(object):
         self.tracers[0, :] = xx
         outside = False
         stream_len = 0
-        length = 0
+        len = 0
 
         if integration == 'simple':
-            while ((length < len_max) and (stream_len < iter_max-1) and
+            while ((len < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
                 # (a) single step (midpoint method)
-                xMid = xx + 0.5*dh*vec_int(xx, field, params, interpolation)
-                xSingle = xx + dh*vec_int(xMid, field, params, interpolation)
+                xMid = xx + 0.5*dh*vec_int_no_var(xx, field, params, interpolation)
+                xSingle = xx + dh*vec_int_no_var(xMid, field, params, interpolation)
 
                 # (b) two steps with half stepsize
-                xMid = xx + 0.25*dh*vec_int(xx, field, params, interpolation)
-                xHalf = xx + 0.5*dh*vec_int(xMid, field, params, interpolation)
-                xMid = xHalf + 0.25*dh*vec_int(xHalf, field, params,
-                                               interpolation)
-                xDouble = xHalf + 0.5*dh*vec_int(xMid, field, params,
-                                                 interpolation)
+                xMid = xx + 0.25*dh*vec_int_no_var(xx, field, params, interpolation)
+                xHalf = xx + 0.5*dh*vec_int_no_var(xMid, field, params, interpolation)
+                xMid = xHalf + 0.25*dh*vec_int_no_var(xHalf, field, params,
+                                                      interpolation)
+                xDouble = xHalf + 0.5*dh*vec_int_no_var(xMid, field, params,
+                                                        interpolation)
 
                 # (c) Check error (difference between methods).
                 dist2 = np.sum((xSingle-xDouble)**2)
@@ -121,7 +121,7 @@ class Stream(object):
                         print "Error: stepsize underflow"
                         break
                 else:
-                    length += np.sqrt(np.sum((xx-xDouble)**2))
+                    len += np.sqrt(np.sum((xx-xDouble)**2))
                     xx = xDouble.copy()
                     if abs(dh) < h_min:
                         dh = 2*dh
@@ -138,23 +138,23 @@ class Stream(object):
                         outside = True
 
         if integration == 'RK6':
-            while ((length < len_max) and (stream_len < iter_max-1) and
+            while ((len < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
-                k[0, :] = dh*vec_int(xx, field, params, interpolation)
-                k[1, :] = dh*vec_int(xx + b[1, 0]*k[0, :], field, params,
-                                     interpolation)
-                k[2, :] = dh*vec_int(xx + b[2, 0]*k[0, :] + b[2, 1]*k[1, :],
-                                    field, params, interpolation)
-                k[3, :] = dh*vec_int(xx + b[3, 0]*k[0, :] + b[3, 1]*k[1, :] +
-                                     b[3, 2]*k[2, :], field, params,
-                                     interpolation)
-                k[4, :] = dh*vec_int(xx + b[4, 0]*k[0, :] + b[4, 1]*k[1, :] +
-                                     b[4, 2]*k[2, :] + b[4, 3]*k[3, :],
-                                     field, params, interpolation)
-                k[5, :] = dh*vec_int(xx + b[5, 0]*k[0, :] + b[5, 1]*k[1, :] +
-                                     b[5, 2]*k[2, :] + b[5, 3]*k[3, :] +
-                                     b[5, 4]*k[4, :], field, params,
-                                     interpolation)
+                k[0, :] = dh*vec_int_no_var(xx, field, params, interpolation)
+                k[1, :] = dh*vec_int_no_var(xx + b[1, 0]*k[0, :], field, params,
+                                            interpolation)
+                k[2, :] = dh*vec_int_no_var(xx + b[2, 0]*k[0, :] + b[2, 1]*k[1, :],
+                                            field, params, interpolation)
+                k[3, :] = dh*vec_int_no_var(xx + b[3, 0]*k[0, :] + b[3, 1]*k[1, :] +
+                                            b[3, 2]*k[2, :], field, params,
+                                            interpolation)
+                k[4, :] = dh*vec_int_no_var(xx + b[4, 0]*k[0, :] + b[4, 1]*k[1, :] +
+                                            b[4, 2]*k[2, :] + b[4, 3]*k[3, :],
+                                            field, params, interpolation)
+                k[5, :] = dh*vec_int_no_var(xx + b[5, 0]*k[0, :] + b[5, 1]*k[1, :] +
+                                            b[5, 2]*k[2, :] + b[5, 3]*k[3, :] +
+                                            b[5, 4]*k[4, :], field, params,
+                                            interpolation)
 
                 xNew = xx + c[0]*k[0, :]  + c[1]*k[1, :]  + c[2]*k[2, :]  + \
                        c[3]*k[3, :]  + c[4]*k[4, :]  + c[5]*k[5, :]
@@ -170,7 +170,7 @@ class Stream(object):
                         print "Error: step size underflow"
                         break
                 else:
-                    length += np.sqrt(np.sum((xx-xNew)**2))
+                    len += np.sqrt(np.sum((xx-xNew)**2))
                     xx = xNew
                     if abs(dh) < h_min:
                         dh = 2*dh
@@ -189,6 +189,6 @@ class Stream(object):
                     dh = h_max
 
         self.tracers = np.resize(self.tracers, (stream_len, 3))
-        self.length = length
+        self.len = len
         self.stream_len = stream_len
         self.params = params
