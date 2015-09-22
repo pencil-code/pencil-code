@@ -176,6 +176,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
+		rho_u_x:'impulse density x', $
+		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
 		Rn_viscous:'viscous Reynolds number', $
 		Rn_mag:'magnetic Reynolds number', $
@@ -341,6 +343,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
+		rho_u_x:['u', 'rho'], $
+		rho_u_y:['u', 'rho'], $
 		rho_u_z:['u', 'rho'], $
 		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $

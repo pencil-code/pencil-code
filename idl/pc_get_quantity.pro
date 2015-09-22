@@ -414,6 +414,16 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (grad_P_therm))
 	end
 
+	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
+		; Impulse density x-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_x')
+	end
+	if (strcmp (quantity, 'rho_u_y', /fold_case)) then begin
+		; Impulse density y-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_y')
+	end
 	if (strcmp (quantity, 'rho_u_z', /fold_case)) then begin
 		; Impulse density z-component
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
