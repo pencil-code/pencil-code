@@ -380,24 +380,31 @@ class NullPoint(object):
         for null in self.nulls:
             # Find the Jacobian grad(field).
             grad_field = self.__grad_field(null, var, field, delta)
-            # Find the eigenvalues of the Jacobian.
-            eigen_values = np.array(np.linalg.eig(grad_field)[0])
-            # Find the eigenvectors of the Jacobian.
-            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
-            # Determine which way to trace the streamlines.
-            if np.linalg.det(np.real(grad_field)) < 0:
-                sign_trace = 1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
-            if np.linalg.det(grad_field) > 0:
-                sign_trace = -1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
-            if np.linalg.det(grad_field) == 0:
-                print("error: Null point is not of x-type.")
-                continue
-            fan_vectors = np.array(fan_vectors)
-            # Compute the normal to the fan-plane.
-            normal = np.cross(fan_vectors[0], fan_vectors[1])
-            normal = normal/np.sqrt(np.sum(normal**2))
+            if np.linalg.det(grad_field) > 1e-8*np.min([var.dx, var.dy, var.dz]):
+                # Find the eigenvalues of the Jacobian.
+                eigen_values = np.array(np.linalg.eig(grad_field)[0])
+                # Find the eigenvectors of the Jacobian.
+                eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
+                # Determine which way to trace the streamlines.
+                if np.linalg.det(np.real(grad_field)) < 0:
+                    sign_trace = 1
+                    fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
+                if np.linalg.det(grad_field) > 0:
+                    sign_trace = -1
+                    fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
+                if np.linalg.det(grad_field) == 0:
+                    print("error: Null point is not of x-type.")
+                    continue
+                fan_vectors = np.array(fan_vectors)
+                # Compute the normal to the fan-plane.
+                normal = np.cross(fan_vectors[0], fan_vectors[1])
+                normal = normal/np.sqrt(np.sum(normal**2))
+            else:
+                eigen_values = np.zeros(3)
+                eigen_vectors = np.zeros((3, 3))
+                sign_trace = 0
+                fan_vectors = np.zeros((2, 3))
+                normal = np.zeros(3)
 
             self.eigen_values.append(eigen_values)
             self.eigen_vectors.append(eigen_vectors)
