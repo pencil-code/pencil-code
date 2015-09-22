@@ -195,7 +195,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		collision_frequency_e:'electron collision frequency', $
 		WKB_conductivity:'WKB electric conductivity', $
 		WKB_mag_diffusivity:'WKB magnetic diffusivity', $
-		rho_c:'minimum density (Alfven < c)', $
+		c_Alfven:'Alfven velocity', $
+		rho_c:'minimum density (Alfven speed < c)', $
 		rho_c_ratio:'density/min. Alfven density', $
 		rho:'density', $
 		ln_rho:'ln density', $
@@ -363,6 +364,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		collision_frequency_e:['B'], $
 		WKB_conductivity:['n_rho', 'collision_frequency_e'], $
 		WKB_mag_diffusivity:'WKB_conductivity', $
+		c_Alfven:['rho', 'B'], $
 		rho_c:['rho', 'B'], $
 		rho_c_ratio:['rho', 'rho_c'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
