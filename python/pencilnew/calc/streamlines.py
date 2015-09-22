@@ -1,8 +1,7 @@
 # streamlines.py
 # Written by Simon Candelaresi (iomsn1@gmail.com)
-
 """
-# Traces streamlines of a vector field from z0 to z1, similar to
+Traces streamlines of a vector field from z0 to z1, similar to
 'streamlines.f90'.
 """
 
@@ -19,15 +18,13 @@ class Stream(object):
                  integration='simple', h_min=2e-3, h_max=2e4, len_max=500,
                  tol=1e-2, iter_max=1e3, xx=np.array([0, 0, 0])):
         """
-        Creates, and returns the traced streamline.
+        Creates the traced streamline for a specified vector field field.
 
         call signature:
 
           Stream(field, p, interpolation='weighted',
                  integration='simple', h_min=2e-3, h_max=2e4, len_max=500,
                  tol=1e-2, iter_max=1e3, xx=np.array([0,0,0])):
-
-        Trace streamlines for a specified vector field field.
 
         Keyword arguments:
 
@@ -98,11 +95,11 @@ class Stream(object):
         # Do the streamline tracing.
         self.tracers[0, :] = xx
         outside = False
-        strem_len = 0
+        stream_len = 0
         length = 0
 
         if integration == 'simple':
-            while ((length < len_max) and (strem_len < iter_max-1) and
+            while ((length < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
                 # (a) single step (midpoint method)
                 xMid = xx + 0.5*dh*vec_int(xx, field, params, interpolation)
@@ -128,8 +125,8 @@ class Stream(object):
                     xx = xDouble.copy()
                     if abs(dh) < h_min:
                         dh = 2*dh
-                    strem_len += 1
-                    self.tracers[strem_len, :] = xx.copy()
+                    stream_len += 1
+                    self.tracers[stream_len, :] = xx.copy()
                     if (dh > h_max) or (np.isnan(dh)):
                         dh = h_max
                     # Check if this point lies outside the domain.
@@ -141,7 +138,7 @@ class Stream(object):
                         outside = True
 
         if integration == 'RK6':
-            while ((length < len_max) and (strem_len < iter_max-1) and
+            while ((length < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
                 k[0, :] = dh*vec_int(xx, field, params, interpolation)
                 k[1, :] = dh*vec_int(xx + b[1, 0]*k[0, :], field, params,
@@ -177,8 +174,8 @@ class Stream(object):
                     xx = xNew
                     if abs(dh) < h_min:
                         dh = 2*dh
-                    strem_len += 1
-                    self.tracers[strem_len, :] = xx
+                    stream_len += 1
+                    self.tracers[stream_len, :] = xx
                     if (dh > h_max) or (np.isnan(dh)):
                         dh = h_max
                     # Check if this point lies outside the domain.
@@ -191,7 +188,7 @@ class Stream(object):
                 if (dh > h_max) or (delta == 0) or (np.isnan(dh)):
                     dh = h_max
 
-        self.tracers = np.resize(self.tracers, (strem_len, 3))
+        self.tracers = np.resize(self.tracers, (stream_len, 3))
         self.length = length
-        self.strem_len = strem_len
+        self.stream_len = stream_len
         self.params = params
