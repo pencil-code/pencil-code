@@ -437,6 +437,10 @@ function pc_compute_quantity, vars, index, quantity
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		return, B_abs / sqrt (mu0_SI * rho)
 	end
+	if (strcmp (quantity, 'c_Alfven_inv', /fold_case)) then begin
+		; Inverse of the Alfvén velocity
+		return, 1.0 / pc_compute_quantity (vars, index, 'c_Alfven')
+	end
 	if (strcmp (quantity, 'rho_c', /fold_case)) then begin
 		; Minimum density for an Alfvén speed below the speed of light
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
