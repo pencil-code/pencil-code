@@ -9,9 +9,11 @@ import pencil as pc
 import math as m
 import threading
 from pencilnew.diag.tracers import TracersParameterClass
+from pencilnew.diag.tracers import Tracers
+from pencilnew.calc.streamlines import Stream
 
 
-class fixed_points(object):
+class FixedPoint(object):
     """
     fixed_points -- Holds the fixed points and additional integrated quantities.
     """
@@ -24,6 +26,8 @@ class fixed_points(object):
         self.params = TracersParameterClass()
         self.t = []
         self.fidx = []
+        self.fixed_points = []
+        self.poincare = []
 
 
     def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
@@ -99,57 +103,63 @@ class fixed_points(object):
 
 
         # Return the fixed points for a subset of the domain.
-        def __sub_fixed(ix0, iy0, field, tracers, var, iProc):
+        def __sub_fixed(ix0, iy0, field, tracers, var, fixed, i_proc):
             diff = np.zeros((4, 2))
 
-            for ix in ix0[iProc::self.params.n_proc]:
+            for ix in ix0[i_proc::self.params.n_proc]:
                 for iy in iy0:
                     # Compute Poincare index around this cell (!= 0 for potential fixed point).
-                    diff[0, :] = np.array([tracers.xf[ix, iy, 0] - tracers.xi[iy, ix, 0],
-                                           tracers.yf[ix, iy, 0] - tracers.yi[iy, ix, 0]])
-                    diff[1, :] = np.array([tracers.xf[ix+1, iy, 0] - tracers.xi[iy+1, ix, 0],
-                                           tracers.yf[ix+1, iy, 0] - tracers.yi[iy+1, ix, 0]])
-                    diff[2, :] = np.array([tracers.xf[ix, iy+1, 0] - tracers.xi[iy, ix+1, 0],
-                                           tracers.yf[ix, iy+1, 0] - tracers.yi[iy, ix+1, 0]])
-                    diff[3, :] = np.array([tracers.xf[ix+1, iy+1, 0] - tracers.xi[iy+1, ix+1, 0],
-                                           tracers.yf[ix+1, iy+1, 0] - tracers.yi[iy+1, ix+1, 0]])
+                    diff[0, :] = np.array([tracers.x1[ix, iy, 0] - tracers.x0[iy, ix, 0],
+                                           tracers.y1[ix, iy, 0] - tracers.y0[iy, ix, 0]])
+                    diff[1, :] = np.array([tracers.x1[ix+1, iy, 0] - tracers.x0[iy+1, ix, 0],
+                                           tracers.y1[ix+1, iy, 0] - tracers.y0[iy+1, ix, 0]])
+                    diff[2, :] = np.array([tracers.x1[ix, iy+1, 0] - tracers.x0[iy, ix+1, 0],
+                                           tracers.y1[ix, iy+1, 0] - tracers.y0[iy, ix+1, 0]])
+                    diff[3, :] = np.array([tracers.x1[ix+1, iy+1, 0] - tracers.x0[iy+1, ix+1, 0],
+                                           tracers.y1[ix+1, iy+1, 0] - tracers.y0[iy+1, ix+1, 0]])
+                    self.diff[ix, iy, :, :] = diff
                     if sum(np.sum(diff**2, axis=1) != 0):
                         diff = np.swapaxes(np.swapaxes(diff, 0, 1) /
                                np.sqrt(np.sum(diff**2, axis=1)), 0, 1)
-                    poincare = __p_index(field, tracers.xi[ix:ix+2, iy, 0, 0],
-                                        tracers.yi[ix, iy:iy+2, 0], diff, np.pi)
+                    poincare = __poincare_index(field, tracers.x0[ix:ix+2, iy, 0],
+                                                tracers.y0[ix, iy:iy+2, 0], diff)
+                    self.poincare[ix, iy] = poincare
 
                     if abs(poincare) > 5: # Use 5 instead of 2*pi to account for rounding errors.
                         # Subsample to get starting point for iteration.
                         nt = 4
-                        xmin = tracers.xi[iy, ix, 0]
-                        ymin = tracers.yi[iy, ix, 0]
-                        xmax = tracers.xi[iy, ix+1, 0]
-                        ymax = tracers.yi[iy+1, ix, 0]
+                        xmin = tracers.x0[iy, ix, 0]
+                        ymin = tracers.y0[iy, ix, 0]
+                        xmax = tracers.x0[iy, ix+1, 0]
+                        ymax = tracers.y0[iy+1, ix, 0]
                         xx = np.zeros((nt**2, 3))
-                        tracersSub = np.zeros((nt**2, 5))
+                        tracers_sub = np.zeros((nt**2, 5))
                         i1 = 0
                         for j1 in range(nt):
                             for k1 in range(nt):
-                                xx[i1, 0] = xmin + j1/(nt-1.)*(xmax - xmin)
-                                xx[i1, 1] = ymin + k1/(nt-1.)*(ymax - ymin)
+                                xx[i1, 0] = xmin + j1/(nt-1.)*(xmax-xmin)
+                                xx[i1, 1] = ymin + k1/(nt-1.)*(ymax-ymin)
                                 xx[i1, 2] = self.params.Oz
                                 i1 += 1
                         for it1 in range(nt**2):
-                            s = pc.Stream(field, self.params, h_min=self.params.h_min, h_max=self.params.h_max,
-                                          len_max=self.params.len_max, tol=self.params.tol,
-                                          interpolation=self.params.interpolation,
-                                          integration=self.params.integration, xx=xx[it1, :])
-                            tracersSub[it1, 0:2] = xx[it1, 0:2]
-                            tracersSub[it1, 2:] = s.tracers[s.sl-1, :]
+                            stream = Stream(field, self.params,
+                                            h_min=self.params.h_min,
+                                            h_max=self.params.h_max,
+                                            len_max=self.params.len_max,
+                                            tol=self.params.tol,
+                                            interpolation=self.params.interpolation,
+                                            integration=self.params.integration,
+                                            xx=xx[it1, :])
+                            tracers_sub[it1, 0:2] = xx[it1, 0:2]
+                            tracers_sub[it1, 2:] = stream.tracers[stream.stream_len-1, :]
                         min2 = 1e6
                         minx = xmin
                         miny = ymin
                         i1 = 0
                         for j1 in range(nt):
                             for k1 in range(nt):
-                                diff2 = (tracersSub[i1+k1*nt, 2] - tracersSub[i1+k1*nt, 0])**2 + \
-                                        (tracersSub[i1+k1*nt, 3] - tracersSub[i1+k1*nt, 1])**2
+                                diff2 = (tracers_sub[i1+k1*nt, 2] - tracers_sub[i1+k1*nt, 0])**2 + \
+                                        (tracers_sub[i1+k1*nt, 3] - tracers_sub[i1+k1*nt, 1])**2
                                 if diff2 < min2:
                                     min2 = diff2
                                     minx = xmin + j1/(nt-1.)*(xmax - xmin)
@@ -158,7 +168,17 @@ class fixed_points(object):
 
                         # Get fixed point from this starting position using Newton's method.
                         point = np.array([minx, miny])
-                        __null_point(point, var)
+                        fixed_point = __null_point(point, var)
+
+                        # Check if fixed point lies inside the cell.
+                        if ((fixed_point[0] < tracers.x0[iy, ix, 0]) or
+                            (fixed_point[0] > tracers.x0[iy, ix+1, 0]) or
+                            (fixed_point[1] < tracers.y0[iy, ix, 0]) or
+                            (fixed_point[1] > tracers.y0[iy+1, ix, 0])):
+                            print "warning: fixed point lies outside the cell"
+                        else:
+                            fixed.append(fixed_point)
+                            self.fidx += 1
 
 
         # Finds the null point of the mapping, i.e. fixed point, using Newton's method.
@@ -177,12 +197,12 @@ class fixed_points(object):
                 xx[3, :] = np.array([point[0], point[1]-dl, self.params.Oz])
                 xx[4, :] = np.array([point[0], point[1]+dl, self.params.Oz])
                 for it1 in range(5):
-                    s = pc.Stream(field, self.params, h_min=self.params.h_min,
-                                  h_max=self.params.h_max, len_max=self.params.len_max,
-                                  tol=self.params.tol, interpolation=self.params.interpolation,
-                                  integration=self.params.integration, xx=xx[it1, :])
+                    stream = Stream(field, self.params, h_min=self.params.h_min,
+                                    h_max=self.params.h_max, len_max=self.params.len_max,
+                                    tol=self.params.tol, interpolation=self.params.interpolation,
+                                    integration=self.params.integration, xx=xx[it1, :])
                     tracers_null[it1, :2] = xx[it1, :2]
-                    tracers_null[it1, 2:] = s.tracers[s.sl-1, 0:2]
+                    tracers_null[it1, 2:] = stream.tracers[stream.stream_len-1, 0:2]
 
                 # Check function convergence.
                 ff = np.zeros(2)
@@ -192,7 +212,7 @@ class fixed_points(object):
                     fixed_point = np.array([point[0], point[1]])
                     break
 
-                # compute the Jacobian
+                # Compute the Jacobian.
                 fjac = np.zeros((2, 2))
                 fjac[0, 0] = ((tracers_null[2, 2] - tracers_null[2, 0]) -
                               (tracers_null[1, 2] - tracers_null[1, 0]))/2./dl
@@ -230,17 +250,18 @@ class fixed_points(object):
                     break
 
                 it += 1
+                
+            return fixed_point
 
-            # Check if fixed point lies inside the cell.
-            if ((fixed_point[0] < tracers[iy, ix, 0, 0]) or
-                (fixed_point[0] > tracers[iy, ix+1, 0, 0]) or
-                (fixed_point[1] < tracers[iy, ix, 0, 1]) or
-                (fixed_point[1] > tracers[iy+1, ix, 0, 1])):
-                print "warning: fixed point lies outside the cell"
-            else:
-                x.append(fixed_point[0])
-                y.append(fixed_point[1])
-                fidx += 1
+
+        # Finds the Poincare index of this grid cell.
+        def __poincare_index(field, sx, sy, diff):
+            poincare = 0
+            poincare += __edge(field, [sx[0], sx[1]], [sy[0], sy[0]], diff[0, :], diff[1, :], 0)
+            poincare += __edge(field, [sx[1], sx[1]], [sy[0], sy[1]], diff[1, :], diff[2, :], 0)
+            poincare += __edge(field, [sx[1], sx[0]], [sy[1], sy[1]], diff[2, :], diff[3, :], 0)
+            poincare += __edge(field, [sx[0], sx[0]], [sy[1], sy[0]], diff[3, :], diff[0, :], 0)
+            return poincare
 
 
         # Compute rotation along one edge.
@@ -253,33 +274,27 @@ class fixed_points(object):
                 ym = 0.5*(sy[0]+sy[1])
 
                 # Trace the intermediate field line.
-                s = pc.Stream(field, self.params, h_min=self.params.h_min, h_max=self.params.h_max,
-                              len_max=self.params.len_max, tol=self.params.tol,
-                              interpolation=self.params.pinterpolation,
-                              integration=self.params.integration, xx=np.array([xm, ym, self.params.Oz]))
-                tracer = np.concatenate((s.tracers.xi, s.tracers.yi[0, 0:2],
-                                         s.tracers[s.sl-1, :], np.reshape(s.l, (1))))
+                stream = Stream(field, self.params, h_min=self.params.h_min, h_max=self.params.h_max,
+                                len_max=self.params.len_max, tol=self.params.tol,
+                                interpolation=self.params.interpolation,
+                                integration=self.params.integration, xx=np.array([xm, ym, self.params.Oz]))
+                stream_x0 = stream.tracers[0, 0]
+                stream_y0 = stream.tracers[0, 1]
+                stream_x1 = stream.tracers[stream.stream_len-1, 0]
+                stream_y1 = stream.tracers[stream.stream_len-1, 1]
+                stream_z1 = stream.tracers[stream.stream_len-1, 2]
 
                 # Discard any streamline which does not converge or hits the boundary.
-                if ((tracer[5] >= len_max) or
-                (tracer[4] < self.params.Oz+self.params.Lz-self.params.dz)):
+                if ((stream.len >= len_max) or
+                (stream_z1 < self.params.Oz+self.params.Lz-self.params.dz)):
                     dtot = 0.
                 else:
-                    diffm = np.array([tracer.xf - tracer.xi, tracer.yf - tracer.yi])
+                    diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
                     if sum(diffm**2) != 0:
                         diffm = diffm/np.sqrt(sum(diffm**2))
                     dtot = __edge(field, [sx[0], xm], [sy[0], ym], diff1, diffm, rec+1) + \
                            __edge(field, [xm, sx[1]], [ym, sy[1]], diffm, diff2, rec+1)
             return dtot
-
-        # Finds the Poincare index of this grid cell.
-        def __p_index(field, sx, sy, diff):
-            poincare = 0
-            poincare += __edge(field, [sx[0], sx[1]], [sy[0], sy[0]], diff[0, :], diff[1, :], 0)
-            poincare += __edge(field, [sx[1], sx[1]], [sy[0], sy[1]], diff[1, :], diff[2, :], 0)
-            poincare += __edge(field, [sx[1], sx[0]], [sy[1], sy[1]], diff[2, :], diff[3, :], 0)
-            poincare += __edge(field, [sx[0], sx[0]], [sy[1], sy[0]], diff[3, :], diff[0, :], 0)
-            return poincare
 
 
         # Convert int_q string into list.
@@ -320,7 +335,7 @@ class fixed_points(object):
         if any(np.array(int_q) == 'ee'):
             magic.append('bb')
             magic.append('jj')
-        dim = pc.read_dim(data_dir=data_dir)
+        dim = pc.read_dim(datadir=data_dir)
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -330,28 +345,40 @@ class fixed_points(object):
         else:
             series = False
             n_times = 1
+        self.t = np.zeros(n_times)
 
         # Read the initial field.
-        var = pc.read_var(varfile=varfile, data_dir=data_dir, magic=magic,
+        var = pc.read_var(varfile=varfile, datadir=data_dir, magic=magic,
                           quiet=True, trimall=True)
-        grid = pc.read_grid(data_dir=data_dir, quiet=True, trim=True)
+        self.t[0] = var.t
+        grid = pc.read_grid(datadir=data_dir, quiet=True, trim=True)
         field = getattr(var, trace_field)
 
         # Get the simulation parameters.
-        self.params.dx = var.dx; self.params.dy = var.dy; self.params.dz = var.dz
-        self.params.Ox = var.x[0]; self.params.Oy = var.y[0]; self.params.Oz = var.z[0]
-        self.params.Lx = grid.Lx; self.params.Ly = grid.Ly; self.params.Lz = grid.Lz
-        self.params.nx = dim.nx; self.params.ny = dim.ny; self.params.nz = dim.nz
+        self.params.dx = var.dx
+        self.params.dy = var.dy
+        self.params.dz = var.dz
+        self.params.Ox = var.x[0]
+        self.params.Oy = var.y[0]
+        self.params.Oz = var.z[0]
+        self.params.Lx = grid.Lx
+        self.params.Ly = grid.Ly
+        self.params.Lz = grid.Lz
+        self.params.nx = dim.nx
+        self.params.ny = dim.ny
+        self.params.nz = dim.nz
 
         # Create the initial mapping.
-        tracers = pc.Tracers(trace_field='bb', h_min=h_min, h_max=h_max,
+        tracers = Tracers()
+        tracers.find_tracers(trace_field='bb', h_min=h_min, h_max=h_max,
                              len_max=len_max, tol=tol,
                              interpolation=interpolation,
                              trace_sub=trace_sub, varfile=varfile,
                              integration=integration, data_dir=data_dir,
                              int_q=int_q, n_proc=n_proc)
+        self.tracers = tracers
 
-        # Find the fixed points.
+        # Set some default values.
         self.t = np.zeros((tf-ti+1)*series + (1-series))
         self.fidx = np.zeros((tf-ti+1)*series + (1-series))
         if any(np.array(int_q) == 'curlyA'):
@@ -360,18 +387,24 @@ class fixed_points(object):
         if any(np.array(int_q) == 'ee'):
             self.ee = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny),
                                 n_times])
-        ix0 = range(0, self.params.nx*trace_sub-1)
-        iy0 = range(0, self.params.ny*trace_sub-1)
+        self.poincare = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny)])
+        self.diff = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), 4, 2])
+        ix0 = range(0, int(self.params.nx*trace_sub)-1)
+        iy0 = range(0, int(self.params.ny*trace_sub)-1)
 
         # Start the parallelized fixed point finding for the initial time.
         threads = []
-        for iProc in range(n_proc):
+        fixed = []
+        for i_proc in range(n_proc):
             threads.append(threading.Thread(target=__sub_fixed,
-                                            args=(ix0, iy0, field, tracers, var, iProc)))
+                                            args=(ix0, iy0, field, tracers,
+                                                  var, fixed, i_proc)))
             threads[-1].start()
-        for iProc in range(n_proc):
-            threads[iProc].join()
+        for i_proc in range(n_proc):
+            threads[i_proc].join()
+        self.fixed_points.append(np.array(fixed))
 
+        # Find the fixed points for the remaining times.
 #        for t_idx in range(ti+1, tf+1):
 #            varfile = 'VAR' + str(t_idx)
 #            # Read the data.
