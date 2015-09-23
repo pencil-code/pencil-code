@@ -30,7 +30,7 @@ end else begin
   message, 'ERROR: unknown direction "'+dir+'"!'
 end
 
-Default, in_file, avdirs+'aver.in'
+default, in_file, avdirs+'aver.in'
 default, varfile, avdirs+'averages.dat'
 default, monotone, 0
 default, quiet, 0
