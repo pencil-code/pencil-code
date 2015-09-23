@@ -100,6 +100,7 @@ module Sub
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
+  public :: slope_limiter, diff_flux
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -1360,7 +1361,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g)
+    subroutine div(f,k,g,iorder)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1373,11 +1374,14 @@ module Sub
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g, tmp
       integer :: k,k1
+      integer, optional :: iorder
 !
       intent(in)  :: f,k
       intent(out) :: g
 !
       k1=k-1
+!
+!     if (present(iorder)) ...
 !
       call der(f,k1+1,tmp,1)
       g=tmp
@@ -6916,5 +6920,23 @@ nameloop: do
       endif
 !
     endsubroutine read_namelist
+!***********************************************************************
+    elemental function slope_limiter(diff_left, diff_right)
+
+      real :: slope_limiter
+      real, intent(IN) :: diff_left, diff_right
+
+      slope_limiter=0.
+    
+    endfunction slope_limiter
+!***********************************************************************
+    elemental function diff_flux(h, diff_right, diff_lr)
+    
+      real :: diff_flux
+      real, intent(IN) :: h, diff_lr, diff_right
+
+      diff_flux=0.
+
+    endfunction diff_flux
 !***********************************************************************
 endmodule Sub

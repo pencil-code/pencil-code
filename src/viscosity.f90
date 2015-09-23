@@ -93,6 +93,7 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
+  logical :: lvisc_slope_limited=.false.
   logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
@@ -101,6 +102,8 @@ module Viscosity
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   real :: damp_sound=0.
+  real :: h_slope_limited=0.
+  character (LEN=labellen) :: slope_limiter=''
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
@@ -112,7 +115,8 @@ module Viscosity
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof
+      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
+      lvisc_slope_limited, h_slope_limited, slope_limiter 
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -174,7 +178,9 @@ module Viscosity
 !
   contains
 !***********************************************************************
-    subroutine register_viscosity()
+    subroutine register_viscosity
+    
+    use FArrayManager, only: farray_register_auxiliary
 !
 !  19-nov-02/tony: coded
 !
@@ -182,6 +188,8 @@ module Viscosity
 !
       if (lroot) call svn_id( &
           "$Id$")
+      if (lvisc_slope_limited) &
+        call farray_register_auxiliary('Flux_diff',iFF_diff,vector=9)
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -1785,6 +1793,13 @@ module Viscosity
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
+
+      if (lvisc_slope_limited) then
+        do j=1,3
+          call div(f,iFF_diff+3*(j-1),tmp3)
+          p%fvisc(:,iuu+j-1)=p%fvisc(:,iuu+j-1)+tmp3
+        enddo
+      endif
 !
 !  Calculate Lambda effect
 !
@@ -1813,6 +1828,62 @@ module Viscosity
       endif
 !
     endsubroutine calc_pencils_viscosity
+!***********************************************************************
+    subroutine viscosity_after_boundary(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      integer :: ll,mm,nn,j,iff
+
+      if (lvisc_slope_limited) then
+
+        do j=1,3
+
+          iff=iFF_diff+3*(j-1)
+          do nn=1,mz; do mm=1,my
+
+            call calc_diffusive_flux(f(2:,mm,nn,iuu+j-1)-f( :mx-1,mm,nn,iuu+j-1), &
+                                     f(3:,mm,nn,iuu+j-1)-f(2:mx-1,mm,nn,iuu+j-1), &
+                                     f(2:mx-1,mm,nn,iff))
+          enddo; enddo
+
+          do nn=1,mz; do ll=1,mx
+
+            call calc_diffusive_flux(f(ll,2:,nn,iuu+j-1)-f(ll, :my-1,nn,iuu+j-1), &
+                                     f(ll,3:,nn,iuu+j-1)-f(ll,2:my-1,nn,iuu+j-1), &
+                                     f(ll,2:my-1,nn,iff))
+          enddo; enddo
+
+          do mm=1,my; do ll=1,mx
+
+            call calc_diffusive_flux(f(ll,mm,2:,iuu+j-1)-f(ll,mm, :mz-1,iuu+j-1), &
+                                     f(ll,mm,3:,iuu+j-1)-f(ll,mm,2:mz-1,iuu+j-1), &
+                                     f(ll,mm,2:mz-1,iff))
+          enddo; enddo
+        enddo
+      endif
+
+    endsubroutine viscosity_after_boundary
+!***********************************************************************
+    subroutine calc_diffusive_flux(diff_left, diff_right,flux)
+
+      use Sub, only: slope_limiter, diff_flux
+
+      real, dimension(:) :: diff_left, diff_right,flux
+      real, dimension(size(diff_left)+1) :: slope
+      
+      integer :: len
+      real :: c_char
+
+      len=size(diff_left)+1
+      c_char = 0.
+
+      slope(2:len-1) = slope_limiter(diff_left, diff_right)
+
+      flux = - diff_left + 0.5 * slope(2:len-1) - 0.5 * slope(3:)
+      flux = c_char*diff_flux(h_slope_limited, diff_right, flux)*flux
+
+    endsubroutine calc_diffusive_flux
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !
