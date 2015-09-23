@@ -111,7 +111,7 @@ class Tracers(object):
         """
 
         # Return the tracers for the specified starting locations.
-        def __subTracers(field, t_idx, iProc, n_proc):
+        def __sub_racers(field, t_idx, iProc, n_proc):
             xx = np.zeros([(self.x0.shape[0]+n_proc-1-iProc)/n_proc,
                             self.x0.shape[1], 3])
             xx[:, :, 0] = self.x0[iProc:self.x0.shape[0]:n_proc, :, t_idx].copy()
@@ -254,20 +254,20 @@ class Tracers(object):
             # Start the parallelized stream line tracing.
             threads = []
             for iProc in range(n_proc):
-                threads.append(threading.Thread(target=__subTracers,
+                threads.append(threading.Thread(target=__sub_racers,
                                                 args=(field, t_idx, iProc, n_proc)))
                 threads[-1].start()
             for iProc in range(n_proc):
                 threads[iProc].join()
 
 
-    def write(self, data_dir='./data', destination='tracers.hf5'):
+    def write(self, data_dir='./data', destination='tracers.hdf5'):
         """
         Write the tracers into a file.
 
         call signature::
 
-        write(self, data_dir='./data', destination='tracers.hf5')
+        write(self, data_dir='./data', destination='tracers.hdf5')
 
         Keyword arguments:
 
@@ -316,13 +316,13 @@ class Tracers(object):
             f.close()
 
 
-    def read(self, data_dir='./data', file_name='tracers.hf5'):
+    def read(self, data_dir='./data', file_name='tracers.hdf5'):
         """
         Read the tracers from a file.
 
         call signature::
 
-        read(self, data_dir='./data', file_name='tracers.hf5')
+        read(self, data_dir='./data', file_name='tracers.hdf5')
 
         Keyword arguments:
 
