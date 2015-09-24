@@ -297,7 +297,7 @@ module Cdata
   integer :: iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
-  integer :: iFF_diff=0
+  integer :: iFF_diff=0, iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
