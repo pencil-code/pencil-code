@@ -22,7 +22,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   common pc_precision, zero, one
 ;
-  if ((dir ne 'y') and (dir ne 'z')) message, 'ERROR: direction "'+dir+'" unknown.'
+  if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: direction "'+dir+'" unknown.'
 ;
 ;  Default values.
 ;
