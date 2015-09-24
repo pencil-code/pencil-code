@@ -1885,7 +1885,9 @@ module Viscosity
     endsubroutine viscosity_after_boundary
 !***********************************************************************
     subroutine calc_diffusive_flux(diff_right, diff_left,flux)
-
+!
+!  23-sep-15/MRheinhard,joern,fred,petri :: coded
+!
       use Sub, only: slope_limiter, diff_flux
 
       real, dimension(:) :: diff_left, diff_right,flux
