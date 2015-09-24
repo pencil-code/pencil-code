@@ -380,7 +380,7 @@ class NullPoint(object):
         for null in self.nulls:
             # Find the Jacobian grad(field).
             grad_field = self.__grad_field(null, var, field, delta)
-            if np.linalg.det(grad_field) > 1e-8*np.min([var.dx, var.dy, var.dz]):
+            if abs(np.real(np.linalg.det(grad_field))) > 1e-8*np.min([var.dx, var.dy, var.dz]):
                 # Find the eigenvalues of the Jacobian.
                 eigen_values = np.array(np.linalg.eig(grad_field)[0])
                 # Find the eigenvectors of the Jacobian.
@@ -400,6 +400,7 @@ class NullPoint(object):
                 normal = np.cross(fan_vectors[0], fan_vectors[1])
                 normal = normal/np.sqrt(np.sum(normal**2))
             else:
+                print "Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field
                 eigen_values = np.zeros(3)
                 eigen_vectors = np.zeros((3, 3))
                 sign_trace = 0
@@ -921,7 +922,7 @@ class Spine(object):
 
         spines = []
         for null_idx in range(len(null_point.nulls)):
-            field_sgn = field*null_point.sign_trace[null_idx]
+            field_sgn = -field*null_point.sign_trace[null_idx]
             null = null_point.nulls[null_idx]
             spine_up = []
             spine_down = []
