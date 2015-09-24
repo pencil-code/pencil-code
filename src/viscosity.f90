@@ -188,6 +188,9 @@ module Viscosity
 !
       if (lroot) call svn_id( &
           "$Id$")
+!
+!  Needed for flux limited diffusion
+!
       if (lvisc_slope_limited) &
         call farray_register_auxiliary('Flux_diff',iFF_diff,vector=9)
 !
@@ -1793,7 +1796,11 @@ module Viscosity
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
-
+!
+!  Calculate viscouse force form a slope limited diffusion
+!  following Rempel (2014).
+!  Here calculating the divergence of the flux.
+!
       if (lvisc_slope_limited) then
         do j=1,3
           call div(f,iFF_diff+3*(j-1),tmp3)
@@ -1834,7 +1841,12 @@ module Viscosity
       real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: ll,mm,nn,j,iff
-
+!
+!  Slope/Flux limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the 
+!  auxilaries variables in the f array (done above).
+!
       if (lvisc_slope_limited) then
 
         do j=1,3
