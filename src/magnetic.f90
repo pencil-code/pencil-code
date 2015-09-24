@@ -260,6 +260,7 @@ module Magnetic
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
+  logical :: lvisc_slope_limited=.false.
   real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
@@ -301,7 +302,7 @@ module Magnetic
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield
+      ladd_efield,ampl_efield,lvisc_slope_limited
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -828,6 +829,12 @@ module Magnetic
 !
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) &
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
       endif
 !
 !  register the mean-field module

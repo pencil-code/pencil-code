@@ -125,6 +125,7 @@ module Energy
   logical :: lchromospheric_cooling=.false., &
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
+  logical :: lvisc_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -189,7 +190,7 @@ module Energy
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw
+      cool_type,ichit,xchit,pclaw, lvisc_slope_limited
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -347,7 +348,7 @@ module Energy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -362,6 +363,12 @@ module Energy
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='register_energy')
 !
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) &
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
+      endif
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
