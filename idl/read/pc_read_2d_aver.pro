@@ -186,7 +186,7 @@ COMPILE_OPT IDL2,HIDDEN
       stop
     endif
     if (dir eq 'y') then begin
-      iproc = ipxarray+ipyarray*nprocx*nprocy
+      iproc = ipxread+ipyread*nprocx*nprocy
     end else begin
       iproc = ipxread+ipyread*nprocx
     end
