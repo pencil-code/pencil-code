@@ -7,6 +7,7 @@
   public :: read_viscosity_run_pars,  write_viscosity_run_pars
   public :: pencil_criteria_viscosity, pencil_interdep_viscosity
   public :: calc_pencils_viscosity
+  public :: viscosity_after_boundary
   public :: calc_visc_heat_ppd, getnu
   public :: dynamical_viscosity
   public :: split_update_viscosity

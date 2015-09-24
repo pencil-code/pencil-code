@@ -76,7 +76,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, viscosity_after_boundary
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
@@ -323,6 +323,7 @@ module Equ
 !AB: yes, we should rename these step by step
 !AB: so calc_polymer_after_boundary -> polymer_after_boundary
       if (lhydro)                 call calc_lhydro_pars(f)
+      if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
       if (lenergy)                call calc_lenergy_pars(f)

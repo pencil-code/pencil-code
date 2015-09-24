@@ -1370,6 +1370,7 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
+      use General, only: ioptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g, tmp
@@ -1381,24 +1382,60 @@ module Sub
 !
       k1=k-1
 !
-!     if (present(iorder)) ...
+      if (ioptest(iorder,6)==2) then
+        call der_2nd(f,k1+1,tmp,1)
+        g=tmp
+        call der_2nd(f,k1+2,tmp,2)
+        g=g+tmp
+        call der_2nd(f,k1+3,tmp,3)
+        g=g+tmp
+      else
+        call der(f,k1+1,tmp,1)
+        g=tmp
+        call der(f,k1+2,tmp,2)
+        g=g+tmp
+        call der(f,k1+3,tmp,3)
+        g=g+tmp
+      endif
 !
-      call der(f,k1+1,tmp,1)
-      g=tmp
-      call der(f,k1+2,tmp,2)
-      g=g+tmp
-      call der(f,k1+3,tmp,3)
-      g=g+tmp
-!
-      if (lspherical_coords) then
+      if (lspherical_coords) &
         g=g+2.*r1_mn*f(l1:l2,m,n,k1+1)+r1_mn*cotth(m)*f(l1:l2,m,n,k1+2)
-      endif
 !
-      if (lcylindrical_coords) then
+      if (lcylindrical_coords) &
         g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
-      endif
 !
     endsubroutine div
+!***********************************************************************
+    subroutine der_2nd(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+        endif
+      endif
+
+    endsubroutine der_2nd
 !***********************************************************************
     subroutine div_other(f,g)
 !
@@ -6921,22 +6958,36 @@ nameloop: do
 !
     endsubroutine read_namelist
 !***********************************************************************
-    elemental function slope_limiter(diff_left, diff_right)
+    elemental subroutine slope_limiter(diff_right, diff_left,limited,type)
 
-      real :: slope_limiter
-      real, intent(IN) :: diff_left, diff_right
+      real, intent(OUT) :: limited
+      real, intent(IN ) :: diff_left, diff_right
 
-      slope_limiter=0.
+      character(LEN=*), intent(IN) :: type
+
+      select case (type)
+      case ('minmod') 
+        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
+                    0.5*abs(diff_right+diff_left))
+
+      case ('superbee')
+
+      case default
+      end select
     
-    endfunction slope_limiter
+    endsubroutine slope_limiter
 !***********************************************************************
-    elemental function diff_flux(h, diff_right, diff_lr)
+    elemental subroutine diff_flux(h, diff_right, diff_lr,phi)
     
-      real :: diff_flux
+      real, intent(OUT):: phi
       real, intent(IN) :: h, diff_lr, diff_right
 
-      diff_flux=0.
+      if (diff_right*diff_lr>0.) then
+        phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 
+      else
+        phi=0.
+      endif
 
-    endfunction diff_flux
+    endsubroutine diff_flux
 !***********************************************************************
 endmodule Sub

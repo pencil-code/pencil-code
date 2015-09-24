@@ -103,7 +103,7 @@ module Viscosity
   logical :: lKit_Olem
   real :: damp_sound=0.
   real :: h_slope_limited=0.
-  character (LEN=labellen) :: slope_limiter=''
+  character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
@@ -116,7 +116,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, slope_limiter 
+      lvisc_slope_limited, h_slope_limited, islope_limiter 
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -1838,45 +1838,47 @@ module Viscosity
     subroutine viscosity_after_boundary(f)
 
       use Sub, only: div
+      use Sub, only: notanumber
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: ll,mm,nn,j,iff
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
 !
 !  Slope/Flux limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
 !  using a slope limiting procedure then storing in the 
 !  auxilaries variables in the f array (done above).
 !
-      return
       if (lvisc_slope_limited) then
 
         do j=1,3
 
-          iff=iFF_diff+3*(j-1)
           do nn=1,mz; do mm=1,my
-
-            call calc_diffusive_flux(f(3:    ,mm,nn,iuu+j-1)-f(2:mx-1,mm,nn,iuu+j-1), &
-                                     f(2:mx-1,mm,nn,iuu+j-1)-f( :mx-2,mm,nn,iuu+j-1), &
-                                     f(2:mx-1,mm,nn,iff))
+            tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
+            call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iFF_diff))
+!if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
           enddo; enddo
 
           do nn=1,mz; do ll=1,mx
+            tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
+            call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff+1))
+!if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
 
-            call calc_diffusive_flux(f(ll,3:    ,nn,iuu+j-1)-f(ll,2:my-1,nn,iuu+j-1), &
-                                     f(ll,2:my-1,nn,iuu+j-1)-f(ll, :my-2,nn,iuu+j-1), &
-                                     f(ll,2:my-1,nn,iff+1))
           enddo; enddo
 
           do mm=1,my; do ll=1,mx
-
-            call calc_diffusive_flux(f(ll,mm,3:    ,iuu+j-1)-f(ll,mm,2:mz-1,iuu+j-1), &
-                                     f(ll,mm,2:mz-1,iuu+j-1)-f(ll,mm, :mz-2,iuu+j-1), &
-                                     f(ll,mm,2:mz-1,iff+2))
+            tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
+!if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+            call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iFF_diff+2))
+!if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
           enddo; enddo
 
           do nn=1,mz; do mm=1,my
-            call div(f,iff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
+            call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=2)
+!if (j==1.and.mm==10 .and. nn==10) print*, maxval(f(l1:l2,mm,nn,iFF_div_uu+j-1))
           enddo; enddo
 
         enddo
@@ -1895,14 +1897,17 @@ module Viscosity
       
       integer :: len
       real :: c_char
+      real, dimension(size(diff_left)) :: phi
 
       len=size(diff_left)+1
-      c_char = 0.
+      c_char = 1.e-2
 
-      slope(2:len-1) = slope_limiter(diff_right, diff_left)
+      call slope_limiter(diff_right, diff_left,slope(2:len-1),islope_limiter)
 
-      flux = - diff_right + 0.5 * slope(3:) - 0.5 * slope(2:len-1)
-      flux = c_char*diff_flux(h_slope_limited, diff_right, flux)*flux
+      flux =  diff_right + 0.5 * slope(3:) - 0.5 * slope(2:len-1)
+
+      call diff_flux(h_slope_limited, diff_right, flux, phi)
+      flux = -0.5*c_char*phi*flux
 
     endsubroutine calc_diffusive_flux
 !***********************************************************************
