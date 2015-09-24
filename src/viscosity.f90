@@ -1842,22 +1842,22 @@ module Viscosity
           iff=iFF_diff+3*(j-1)
           do nn=1,mz; do mm=1,my
 
-            call calc_diffusive_flux(f(2:,mm,nn,iuu+j-1)-f( :mx-1,mm,nn,iuu+j-1), &
-                                     f(3:,mm,nn,iuu+j-1)-f(2:mx-1,mm,nn,iuu+j-1), &
+            call calc_diffusive_flux(f(3:    ,mm,nn,iuu+j-1)-f(2:mx-1,mm,nn,iuu+j-1), &
+                                     f(2:mx-1,mm,nn,iuu+j-1)-f( :mx-2,mm,nn,iuu+j-1), &
                                      f(2:mx-1,mm,nn,iff))
           enddo; enddo
 
           do nn=1,mz; do ll=1,mx
 
-            call calc_diffusive_flux(f(ll,2:,nn,iuu+j-1)-f(ll, :my-1,nn,iuu+j-1), &
-                                     f(ll,3:,nn,iuu+j-1)-f(ll,2:my-1,nn,iuu+j-1), &
+            call calc_diffusive_flux(f(ll,3:    ,nn,iuu+j-1)-f(ll,2:my-1,nn,iuu+j-1), &
+                                     f(ll,2:my-1,nn,iuu+j-1)-f(ll, :my-2,nn,iuu+j-1), &
                                      f(ll,2:my-1,nn,iff))
           enddo; enddo
 
           do mm=1,my; do ll=1,mx
 
-            call calc_diffusive_flux(f(ll,mm,2:,iuu+j-1)-f(ll,mm, :mz-1,iuu+j-1), &
-                                     f(ll,mm,3:,iuu+j-1)-f(ll,mm,2:mz-1,iuu+j-1), &
+            call calc_diffusive_flux(f(ll,mm,3:    ,iuu+j-1)-f(ll,mm,2:mz-1,iuu+j-1), &
+                                     f(ll,mm,2:mz-1,iuu+j-1)-f(ll,mm, :mz-2,iuu+j-1), &
                                      f(ll,mm,2:mz-1,iff))
           enddo; enddo
         enddo
@@ -1865,7 +1865,7 @@ module Viscosity
 
     endsubroutine viscosity_after_boundary
 !***********************************************************************
-    subroutine calc_diffusive_flux(diff_left, diff_right,flux)
+    subroutine calc_diffusive_flux(diff_right, diff_left,flux)
 
       use Sub, only: slope_limiter, diff_flux
 
@@ -1878,9 +1878,9 @@ module Viscosity
       len=size(diff_left)+1
       c_char = 0.
 
-      slope(2:len-1) = slope_limiter(diff_left, diff_right)
+      slope(2:len-1) = slope_limiter(diff_right, diff_left)
 
-      flux = - diff_left + 0.5 * slope(2:len-1) - 0.5 * slope(3:)
+      flux = - diff_right + 0.5 * slope(3:) - 0.5 * slope(2:len-1)
       flux = c_char*diff_flux(h_slope_limited, diff_right, flux)*flux
 
     endsubroutine calc_diffusive_flux
