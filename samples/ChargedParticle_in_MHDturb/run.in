@@ -5,16 +5,10 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2013-06-09 06:51:02 dhruba Exp $',
   !nt=20000, it1=50, cdt=0.4, cdtv=0.3, isave=200, itorder=3 !(longer run)
-  nt=100, it1=20, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
-  dsnap=50, dvid=1.0,  !(for longer run)
+!  nt=100, it1=20, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
+  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
   dsnap=50, dvid=0.2,  !(for sample run)
-  dspec=5., ou_spec=T, ab_spec=T !(for energy spectra)
-  random_gen='system'
-  random_gen='min_std'
   random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
-!  lpencil_check=T      !(checks for redundany of pencils)
- !comment_char='%'     !(useful when using matlab for visualization)
-  lequatorz=T          !(to indicate that north/south diagnostics in in z)
 /
 &eos_run_pars
 /
@@ -34,5 +28,12 @@
 &viscosity_run_pars
   nu=5e-3
 /
+&power_spectrum_run_pars
+/
 &particles_run_pars
+ lstokes_drag=F
+  dust_charge=1.
+  rhodust=1e3
+/
+&particles_radius_run_pars
 /
