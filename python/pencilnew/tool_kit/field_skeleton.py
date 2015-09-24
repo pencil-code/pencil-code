@@ -386,10 +386,10 @@ class NullPoint(object):
                 # Find the eigenvectors of the Jacobian.
                 eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
                 # Determine which way to trace the streamlines.
-                if np.linalg.det(np.real(grad_field)) < 0:
+                if np.real(np.linalg.det(grad_field)) < 0:
                     sign_trace = 1
                     fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
-                if np.linalg.det(grad_field) > 0:
+                if np.real(np.linalg.det(grad_field)) > 0:
                     sign_trace = -1
                     fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
                 if np.linalg.det(grad_field) == 0:
@@ -453,38 +453,39 @@ class NullPoint(object):
         for null in self.nulls:
             points.InsertNextPoint(null)
 
-        eigen_values_vtk = []
-        eigen_values = []
-        eigen_vectors_vtk = []
-        eigen_vectors = []
-        fan_vectors_vtk = []
-        fan_vectors = []
-        for dim in range(self.eigen_values.shape[1]):
-            # Write out the eigen values.
-            eigen_values.append(self.eigen_values[:, dim].copy())
-            eigen_values_vtk.append(VN.numpy_to_vtk(eigen_values[-1]))
-            eigen_values_vtk[-1].SetName('eigen_value_{0}'.format(dim))
-            grid_data.GetPointData().AddArray(eigen_values_vtk[-1])
-            # Write out the eigen vectors.
-            eigen_vectors.append(self.eigen_vectors[:, dim, :].copy())
-            eigen_vectors_vtk.append(VN.numpy_to_vtk(eigen_vectors[-1]))
-            eigen_vectors_vtk[-1].SetName('eigen_vector_{0}'.format(dim))
-            grid_data.GetPointData().AddArray(eigen_vectors_vtk[-1])
-            # Write out the fan vectors..
-            if dim < self.eigen_values.shape[1]-1:
-                fan_vectors.append(self.fan_vectors[:, dim, :].copy())
-                fan_vectors_vtk.append(VN.numpy_to_vtk(fan_vectors[-1]))
-                fan_vectors_vtk[-1].SetName('fan_vector_{0}'.format(dim))
-                grid_data.GetPointData().AddArray(fan_vectors_vtk[-1])
-        # Write out the sign for the vector field tracing.
-        sign_trace_vtk = VN.numpy_to_vtk(self.sign_trace)
-        sign_trace_vtk.SetName('sign_trace')
-        grid_data.GetPointData().AddArray(sign_trace_vtk)
-        # Write out the fan plane normal.
-        normals_vtk = VN.numpy_to_vtk(self.normals)
-        normals_vtk.SetName('normal')
-        grid_data.GetPointData().AddArray(normals_vtk)
-        grid_data.SetPoints(points)
+        if len(self.nulls) != 0:
+            eigen_values_vtk = []
+            eigen_values = []
+            eigen_vectors_vtk = []
+            eigen_vectors = []
+            fan_vectors_vtk = []
+            fan_vectors = []
+            for dim in range(self.eigen_values.shape[1]):
+                # Write out the eigen values.
+                eigen_values.append(self.eigen_values[:, dim].copy())
+                eigen_values_vtk.append(VN.numpy_to_vtk(eigen_values[-1]))
+                eigen_values_vtk[-1].SetName('eigen_value_{0}'.format(dim))
+                grid_data.GetPointData().AddArray(eigen_values_vtk[-1])
+                # Write out the eigen vectors.
+                eigen_vectors.append(self.eigen_vectors[:, dim, :].copy())
+                eigen_vectors_vtk.append(VN.numpy_to_vtk(eigen_vectors[-1]))
+                eigen_vectors_vtk[-1].SetName('eigen_vector_{0}'.format(dim))
+                grid_data.GetPointData().AddArray(eigen_vectors_vtk[-1])
+                # Write out the fan vectors..
+                if dim < self.eigen_values.shape[1]-1:
+                    fan_vectors.append(self.fan_vectors[:, dim, :].copy())
+                    fan_vectors_vtk.append(VN.numpy_to_vtk(fan_vectors[-1]))
+                    fan_vectors_vtk[-1].SetName('fan_vector_{0}'.format(dim))
+                    grid_data.GetPointData().AddArray(fan_vectors_vtk[-1])
+            # Write out the sign for the vector field tracing.
+            sign_trace_vtk = VN.numpy_to_vtk(self.sign_trace)
+            sign_trace_vtk.SetName('sign_trace')
+            grid_data.GetPointData().AddArray(sign_trace_vtk)
+            # Write out the fan plane normal.
+            normals_vtk = VN.numpy_to_vtk(self.normals)
+            normals_vtk.SetName('normal')
+            grid_data.GetPointData().AddArray(normals_vtk)
+            grid_data.SetPoints(points)
 
         # Insure compatability between vtk 5 and 6.
         try:
@@ -920,6 +921,7 @@ class Spine(object):
 
         spines = []
         for null_idx in range(len(null_point.nulls)):
+            field_sgn = field*null_point.sign_trace[null_idx]
             null = null_point.nulls[null_idx]
             spine_up = []
             spine_down = []
@@ -933,7 +935,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_up.append(point)
-                field_norm = vec_int(point, var, field)
+                field_norm = vec_int(point, var, field_sgn)
                 field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                 point = point + field_norm*delta
                 if not self.__inside_domain(point, var):
@@ -948,7 +950,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_down.append(point)
-                field_norm = vec_int(point, var, field)
+                field_norm = vec_int(point, var, field_sgn)
                 field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                 point = point + field_norm*delta
                 if not self.__inside_domain(point, var):
