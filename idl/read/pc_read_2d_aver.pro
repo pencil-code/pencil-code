@@ -114,10 +114,10 @@ COMPILE_OPT IDL2,HIDDEN
   nygrid=dim.ny
   nprocx=dim.nprocx
   nprocy=dim.nprocy
+  nprocz=dim.nprocz
   if (dir eq 'y') then begin
     ny=locdim.nz
     nygrid=dim.nz
-    nprocy=dim.nprocz
   endif
 ;
 ;  Read variables from '*aver.in' file
@@ -162,10 +162,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;  from all of them.
 ;
   if ((ipxread eq -1) and (ipyread eq -1)) then begin
-    ipxarray = indgen(nprocx*nprocy) mod nprocx
-    ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
-    iproc = ipxarray+ipyarray*nprocx
-    if (dir eq 'y') then iproc = ipxarray+ipyarray*nprocx*nprocy
+    if (dir eq 'y') then begin
+      ipxarray = indgen(nprocx*nprocz) mod nprocx
+      ipyarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
+      iproc = ipxarray+ipyarray*nprocx*nprocy
+    end else begin
+      ipxarray = indgen(nprocx*nprocy) mod nprocx
+      ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
+      iproc = ipxarray+ipyarray*nprocx
+    end
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
     nxg = nxgrid
     nyg = nygrid
