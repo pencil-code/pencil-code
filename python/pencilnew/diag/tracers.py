@@ -8,7 +8,10 @@ import numpy as np
 import os
 import pencil as pc
 import pylab as plt
-import h5py
+try:
+    import h5py
+except:
+    print("Warning: no h5py library found.")
 import threading
 from pencilnew.calc.streamlines import Stream
 
