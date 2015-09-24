@@ -185,8 +185,11 @@ COMPILE_OPT IDL2,HIDDEN
       print, '       ip'+dir+', nproc'+dir, ipyread, nprocy
       stop
     endif
-    iproc = ipxread+ipyread*nprocx
-    if (dir eq 'y') then iproc = ipxarray+ipyarray*nprocx*nprocy
+    if (dir eq 'y') then begin
+      iproc = ipxarray+ipyarray*nprocx*nprocy
+    end else begin
+      iproc = ipxread+ipyread*nprocx
+    end
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
     ipxarray = intarr(1)
     ipyarray = intarr(1)
