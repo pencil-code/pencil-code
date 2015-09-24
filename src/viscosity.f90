@@ -191,8 +191,11 @@ module Viscosity
 !
 !  Needed for flux limited diffusion
 !
-      if (lvisc_slope_limited) &
-        call farray_register_auxiliary('Flux_diff',iFF_diff,vector=9)
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) &
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
+      endif
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -1801,12 +1804,8 @@ module Viscosity
 !  following Rempel (2014).
 !  Here calculating the divergence of the flux.
 !
-      if (lvisc_slope_limited) then
-        do j=1,3
-          call div(f,iFF_diff+3*(j-1),tmp3)
-          p%fvisc(:,iuu+j-1)=p%fvisc(:,iuu+j-1)+tmp3
-        enddo
-      endif
+      if (lvisc_slope_limited) &
+        p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
 !
 !  Calculate Lambda effect
 !
@@ -1838,6 +1837,8 @@ module Viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
 
+      use Sub, only: div
+
       real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: ll,mm,nn,j,iff
@@ -1847,6 +1848,7 @@ module Viscosity
 !  using a slope limiting procedure then storing in the 
 !  auxilaries variables in the f array (done above).
 !
+      return
       if (lvisc_slope_limited) then
 
         do j=1,3
@@ -1863,15 +1865,20 @@ module Viscosity
 
             call calc_diffusive_flux(f(ll,3:    ,nn,iuu+j-1)-f(ll,2:my-1,nn,iuu+j-1), &
                                      f(ll,2:my-1,nn,iuu+j-1)-f(ll, :my-2,nn,iuu+j-1), &
-                                     f(ll,2:my-1,nn,iff))
+                                     f(ll,2:my-1,nn,iff+1))
           enddo; enddo
 
           do mm=1,my; do ll=1,mx
 
             call calc_diffusive_flux(f(ll,mm,3:    ,iuu+j-1)-f(ll,mm,2:mz-1,iuu+j-1), &
                                      f(ll,mm,2:mz-1,iuu+j-1)-f(ll,mm, :mz-2,iuu+j-1), &
-                                     f(ll,mm,2:mz-1,iff))
+                                     f(ll,mm,2:mz-1,iff+2))
           enddo; enddo
+
+          do nn=1,mz; do mm=1,my
+            call div(f,iff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
+          enddo; enddo
+
         enddo
       endif
 
