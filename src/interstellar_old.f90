@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  This modules contains the routines for SNe-driven ISM simulations.
-!  Still in development.
+!  This modules contains the old routines for SNe-driven ISM simulations.
+!  It may be necessary to select this for using old simulation data
 !
 !***************** AUTOMATIC CPARAM.INC GENERATION ***************************
 ! Declare (for generation of cparam.inc) the number of f array
