@@ -11,7 +11,6 @@
   public :: calc_visc_heat_ppd, getnu
   public :: dynamical_viscosity
   public :: split_update_viscosity
-  public :: update_char_vel_viscosity
 !
 !ajwm SHOULDN'T BE SHARED
   public :: lvisc_first
