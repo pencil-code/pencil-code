@@ -21,7 +21,12 @@ module DensityMethods
     module procedure getlnrho_2d
   endinterface
 
-  real, pointer :: rho0, lnrho0
+  interface putlnrho
+    module procedure putlnrho_s
+    module procedure putlnrho_v
+  endinterface
+
+ real, pointer :: rho0, lnrho0
 
   contains
 !***********************************************************************
@@ -158,7 +163,7 @@ module DensityMethods
 !
     endsubroutine putrho
 !***********************************************************************
-    subroutine putlnrho(f,lnrho)
+    subroutine putlnrho_v(f,lnrho)
 
       real, dimension(mx), intent(out):: f
       real, dimension(nx), intent(in) :: lnrho
@@ -167,6 +172,17 @@ module DensityMethods
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lnrho)
 !
-    endsubroutine putlnrho
+    endsubroutine putlnrho_v
+!***********************************************************************
+    subroutine putlnrho_s(f,lnrho)
+
+      real, dimension(mx), intent(out):: f
+      real,                intent(in ):: lnrho
+
+      call fatal_error('putlnrho', 'not implemented in nodensity.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho)
+!
+    endsubroutine putlnrho_s
 !***********************************************************************
 endmodule DensityMethods
