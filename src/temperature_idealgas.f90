@@ -195,7 +195,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly.
@@ -627,7 +627,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -2357,7 +2357,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Expands shorthand labels of temperature diagnostics.
 !
@@ -2372,5 +2372,20 @@ module Energy
       endif
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for temperature_idealgas')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

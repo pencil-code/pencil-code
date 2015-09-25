@@ -58,7 +58,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  initialise variables which should know that we solve an energy
 !  equation: iss, etc; increase nvar accordingly
@@ -74,7 +74,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy()
+    subroutine initialize_energy
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -303,11 +303,26 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for entropy_const')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy
 

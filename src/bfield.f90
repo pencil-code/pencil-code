@@ -983,6 +983,20 @@ module Magnetic
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+!   Add the vector potential to the characteristic velocity
+!   for slope limited diffusion.
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      if (lslope_limit_diff) &
+        f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,ibx:ibz)**2,4)
+      
+    endsubroutine update_char_vel_magnetic
+!***********************************************************************
 !***********************************************************************
 !
 !  LOCAL ROUTINES GO BELOW HERE.
