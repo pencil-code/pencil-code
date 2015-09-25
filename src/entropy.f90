@@ -125,7 +125,7 @@ module Energy
   logical :: lchromospheric_cooling=.false., &
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
-  logical :: lvisc_slope_limited=.false.
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -190,7 +190,7 @@ module Energy
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw, lvisc_slope_limited
+      cool_type,ichit,xchit,pclaw, lenergy_slope_limited
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -363,9 +363,11 @@ module Energy
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='register_energy')
 !
-      if (lvisc_slope_limited) then
-        if (iFF_diff==0) &
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+      if (lenergy_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
         call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
       endif
 
@@ -975,6 +977,8 @@ module Energy
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
 !
+      lslope_limit_diff=lslope_limit_diff .or. lenergy_slope_limited
+
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine rescale_TT_in_ss(f)
@@ -3436,6 +3440,20 @@ module Energy
       endif
 !
     endsubroutine calc_lenergy_pars
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!
+!  25-sep-15/MR+joern: coded, not yet correct
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2) + cs20
+!
+    endsubroutine update_char_vel_energy
 !***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !

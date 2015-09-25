@@ -137,24 +137,19 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine entropy_before_boundary(f)
+    subroutine update_char_vel_energy(f)
 !
-!  Conduct pre-processing required before boundary conditions and pencil
-!  calculations.
+!  Updates characteristic veelocity for slope-limited diffusion.
 !
-!  25-sep-15/MR+joern: dummy+slope diffusion
+!  25-sep-15/MR+joern: coded
 !
       use EquationOfState, only: cs20
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) then
-        f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) + cs20
-      endif
+      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2) + cs20
 !
-      call keep_compiler_quiet(f)
-!
-    endsubroutine entropy_before_boundary
+    endsubroutine update_char_vel_energy
 !***********************************************************************
     subroutine init_energy(f)
 !

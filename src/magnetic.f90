@@ -831,9 +831,11 @@ module Magnetic
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
 !
-      if (lvisc_slope_limited) then
-        if (iFF_diff==0) &
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+      if (lmagnetic_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
         call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
       endif
 !
@@ -1399,6 +1401,9 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
+!
+      lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
