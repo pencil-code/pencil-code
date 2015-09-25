@@ -192,8 +192,10 @@ module Viscosity
 !  Needed for flux limited diffusion
 !
       if (lvisc_slope_limited) then
-        if (iFF_diff==0) &
-          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
         call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
       endif
 !
@@ -591,6 +593,8 @@ module Viscosity
 !  Get background energy stratification, if any.
 !
       if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
+
+      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
 !
 !  debug output
 !
@@ -1856,25 +1860,35 @@ module Viscosity
 
         do j=1,3
 
-          do nn=1,mz; do mm=1,my
-            tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
-            call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iFF_diff))
-!if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
-          enddo; enddo
+          iff=iFF_diff
 
-          do nn=1,mz; do ll=1,mx
-            tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-            call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff+1))
+          if (nxgrid>1) then
+            do nn=1,mz; do mm=1,my
+              tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
+              call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iff))
+!if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nygrid>1) then
+            do nn=1,mz; do ll=1,mx
+              tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
+              call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
 
-          enddo; enddo
+            enddo; enddo
+            iff=iff+1
+          endif
 
-          do mm=1,my; do ll=1,mx
-            tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
+          if (nzgrid>1) then
+            do mm=1,my; do ll=1,mx
+              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
 !if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iFF_diff+2))
+              call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iff))
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-          enddo; enddo
+            enddo; enddo
+          endif
 
           do nn=1,mz; do mm=1,my
             call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
