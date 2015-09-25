@@ -792,7 +792,7 @@ module Hydro
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
-    logical function output_persistent_hydro
+    logical function output_persistent_hydro()
 !
       output_persistent_hydro = .false.
 !
