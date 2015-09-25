@@ -116,7 +116,7 @@ module Hydro
 !
   contains
 !***********************************************************************
-    subroutine register_hydro()
+    subroutine register_hydro
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -301,7 +301,7 @@ module Hydro
 !
     endsubroutine init_uu
 !***********************************************************************
-    subroutine pencil_criteria_hydro()
+    subroutine pencil_criteria_hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
@@ -2588,10 +2588,38 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
-    subroutine expand_shands_hydro()
+    subroutine expand_shands_hydro
 !
 !  Presently dummy, for later use
 !
     endsubroutine expand_shands_hydro
+!***********************************************************************
+    subroutine update_char_vel_hydro(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   calculation of characteristic velocity
+!   for slope limited diffusion
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, parameter :: i64_1=1/64.
+!
+      if (lslope_limit_diff) then
+        if (lkinflow_as_aux)
+           f( :mx-1, :my-1, :mz-1,iFF_diff2)=f( :mx-1, :my-1, :mz-1,iFF_diff2) &
+           +i64_1 *sum((f( :mx-1, :my-1, :mz-1,iux:iuz) &
+                       +f( :mx-1, :my-1,2:mz,  iux:iuz) &
+                       +f( :mx-1,2:my ,  :mz-1,iux:iuz) &
+                       +f( :mx-1,2:my , 2:mz  ,iux:iuz) &
+                       +f(2:mx  , :my-1, :mz-1,iux:iuz) &
+                       +f(2:mx  , :my-1,2:mz  ,iux:iuz) &
+                       +f(2:mx  ,2:my  , :mz-1,iux:iuz) &
+                       +f(2:mx  ,2:my  ,2:mz  ,iux:iuz))**2,4)
+        else
+          call warning('update_char_vel_hydro','characteristic velocity not implemented for hydro_kinematic')
+        endif
+      endif
+
+    endsubroutine update_char_vel_hydro
 !***********************************************************************
 endmodule Hydro
