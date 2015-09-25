@@ -423,6 +423,7 @@ module Io
         if (lfirst_proc_xy) then
 !
           read (lun_input) t_sp
+          t_test = t_sp
 !
           if (lroot) then
             allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
@@ -438,7 +439,6 @@ module Io
           call distribute_grid (x, y, z)
         endif
 !
-        t_test = t_sp
         call mpibcast_real (t_sp)
         if (.not. lfirst_proc_xy) t_test = t_sp
         if (t_test /= t_sp) &
