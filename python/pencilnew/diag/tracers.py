@@ -12,7 +12,7 @@ try:
     import h5py
 except:
     print("Warning: no h5py library found.")
-import threading
+import multiprocessing as mp
 from pencilnew.calc.streamlines import Stream
 
 
@@ -114,48 +114,59 @@ class Tracers(object):
         """
 
         # Return the tracers for the specified starting locations.
-        def __sub_racers(field, t_idx, iProc, n_proc):
-            xx = np.zeros([(self.x0.shape[0]+n_proc-1-iProc)/n_proc,
+        def __sub_tracers(queue, field, t_idx, i_proc, n_proc):
+            xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)/n_proc,
                             self.x0.shape[1], 3])
-            xx[:, :, 0] = self.x0[iProc:self.x0.shape[0]:n_proc, :, t_idx].copy()
-            xx[:, :, 1] = self.y0[iProc:self.x0.shape[0]:n_proc, :, t_idx].copy()
-            xx[:, :, 2] = self.z1[iProc:self.x0.shape[0]:n_proc, :, t_idx].copy()
-            for ix in range(iProc, self.x0.shape[0], n_proc):
+            xx[:, :, 0] = self.x0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
+            xx[:, :, 1] = self.y0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
+            xx[:, :, 2] = self.z1[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
+            # Initialize the local arrays for this core.
+            sub_x1 = np.zeros(xx[:, :, 0].shape)
+            sub_y1 = np.zeros(xx[:, :, 0].shape)
+            sub_z1 = np.zeros(xx[:, :, 0].shape)
+            sub_len = np.zeros(xx[:, :, 0].shape)
+            sub_curlyA = np.zeros(xx[:, :, 0].shape)
+            sub_ee = np.zeros(xx[:, :, 0].shape)
+            sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
+            for ix in range(i_proc, self.x0.shape[0], n_proc):
                 for iy in range(self.x0.shape[1]):
                     stream = Stream(field, self.params, interpolation=interpolation,
                                     h_min=h_min, h_max=h_max, len_max=len_max, tol=tol,
-                                    iter_max=iter_max, xx=xx[ix/n_proc, iy, :])
-                    self.x1[ix, iy, t_idx] = stream.tracers[stream.stream_len-1, 0]
-                    self.y1[ix, iy, t_idx] = stream.tracers[stream.stream_len-1, 1]
-                    self.z1[ix, iy, t_idx] = stream.tracers[stream.stream_len-1, 2]
-                    self.len[ix, iy, t_idx] = stream.len
+                                    iter_max=iter_max, xx=xx[int(ix/n_proc), iy, :])
+                    sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 0]
+                    sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 1]
+                    sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 2]
+                    sub_len[int(ix/n_proc), iy] = stream.len
                     if any(np.array(self.params.int_q) == 'curlyA'):
                         for l in range(stream.stream_len-1):
                             aaInt = pc.vecInt((stream.tracers[l+1] + stream.tracers[l])/2,
                                               aa, self.p, self.interpolation)
-                            self.curlyA[ix, iy, t_idx] += \
+                            sub_curlyA[int(ix/n_proc), iy] += \
                                 np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                     if any(np.array(self.params.int_q) == 'ee'):
                         for l in range(stream.stream_len-1):
                             eeInt = pc.vecInt((stream.tracers[l+1] + stream.tracers[l])/2,
                                               ee, self.params, self.interpolation)
-                            self.ee[ix, iy, t_idx] += \
+                            sub_ee[int(ix/n_proc), iy] += \
                                 np.dot(eeInt, (stream.tracers[l+1] - stream.tracers[l]))
 
                     # Create the color mapping.
-                    if (self.z1[ix, iy, t_idx] > grid.z[-4]):
-                        if (self.x0[ix, iy, t_idx] - self.x1[ix, iy, t_idx]) > 0:
-                            if (self.y0[ix, iy, t_idx] - self.y1[ix, iy, t_idx]) > 0:
-                                self.mapping[ix, iy, t_idx, :] = [0, 1, 0]
+                    if (sub_z1[int(ix/n_proc), iy] > self.params.Oz+self.params.Lz-self.params.dz*4):
+                        if (self.x0[ix, iy, t_idx] - sub_x1[int(ix/n_proc), iy]) > 0:
+                            if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
+                                sub_mapping[int(ix/n_proc), iy, :] = [0, 1, 0]
                             else:
-                                self.mapping[ix, iy, t_idx, :] = [1, 1, 0]
+                                sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 0]
                         else:
-                            if (self.y0[ix, iy, t_idx] - self.y1[ix, iy, t_idx]) > 0:
-                                self.mapping[ix, iy, t_idx, :] = [0, 0, 1]
+                            if (self.y0[ix, iy, t_idx] - sub_y1[int(ix/n_proc), iy]) > 0:
+                                sub_mapping[int(ix/n_proc), iy, :] = [0, 0, 1]
                             else:
-                                self.mapping[ix, iy, t_idx, :] = [1, 0, 0]
+                                sub_mapping[int(ix/n_proc), iy, :] = [1, 0, 0]
                     else:
-                        self.mapping[ix, iy, t_idx, :] = [1, 1, 1]
+                        sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
+
+            queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_len, sub_mapping,
+                       sub_curlyA, sub_ee))
 
 
         # Write the tracing parameters.
@@ -178,6 +189,7 @@ class Tracers(object):
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
             print "error: invalid processor number"
             return -1
+        queue = mp.Queue()
 
         # Convert int_q string into list.
         if not isinstance(int_q, list):
@@ -240,10 +252,18 @@ class Tracers(object):
                 ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
 
             # Get the simulation parameters.
-            self.params.dx = var.dx; self.params.dy = var.dy; self.params.dz = var.dz
-            self.params.Ox = var.x[0]; self.params.Oy = var.y[0]; self.params.Oz = var.z[0]
-            self.params.Lx = grid.Lx; self.params.Ly = grid.Ly; self.params.Lz = grid.Lz
-            self.params.nx = dim.nx; self.params.ny = dim.ny; self.params.nz = dim.nz
+            self.params.dx = var.dx
+            self.params.dy = var.dy
+            self.params.dz = var.dz
+            self.params.Ox = var.x[0]
+            self.params.Oy = var.y[0]
+            self.params.Oz = var.z[0]
+            self.params.Lx = grid.Lx
+            self.params.Ly = grid.Ly
+            self.params.Lz = grid.Lz
+            self.params.nx = dim.nx
+            self.params.ny = dim.ny
+            self.params.nz = dim.nz
 
             # Initialize the tracers.
             for ix in range(int(trace_sub*dim.nx)):
@@ -254,14 +274,39 @@ class Tracers(object):
                     self.y1[ix, iy, t_idx] = self.y0[ix, iy, t_idx].copy()
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
-            # Start the parallelized stream line tracing.
-            threads = []
-            for iProc in range(n_proc):
-                threads.append(threading.Thread(target=__sub_racers,
-                                                args=(field, t_idx, iProc, n_proc)))
-                threads[-1].start()
-            for iProc in range(n_proc):
-                threads[iProc].join()
+#            # Start the parallelized stream line tracing.
+#            threads = []
+#            for i_proc in range(n_proc):
+#                threads.append(threading.Thread(target=__sub_tracers,
+#                                                args=(field, t_idx, i_proc, n_proc)))
+#                threads[i_proc].start()
+#            for i_proc in range(n_proc):
+#                threads[i_proc].join()
+
+            proc = []
+            sub_data = []
+            for i_proc in range(n_proc):
+                proc.append(mp.Process(target=__sub_tracers, args=(queue, field, t_idx, i_proc, n_proc)))
+            for i_proc in range(n_proc):
+                proc[i_proc].start()
+            for i_proc in range(n_proc):
+                sub_data.append(queue.get())
+            for i_proc in range(n_proc):
+                proc[i_proc].join()
+            for i_proc in range(n_proc):
+                # Extract the data from the single cores. Mind the order.
+                sub_proc = sub_data[i_proc][0]
+                self.x1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][1]
+                self.y1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][2]
+                self.z1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][3]
+                self.len[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
+                self.mapping[sub_proc::n_proc, :, t_idx, :] = sub_data[i_proc][5]
+                if any(np.array(int_q) == 'curlyA'):
+                    self.curlyA[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
+                if any(np.array(int_q) == 'ee'):
+                    self.ee[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][7]
+            for i_proc in range(n_proc):
+                proc[i_proc].terminate()
 
 
     def write(self, data_dir='./data', destination='tracers.hdf5'):
