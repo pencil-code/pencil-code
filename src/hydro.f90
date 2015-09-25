@@ -2386,9 +2386,18 @@ module Hydro
 !   for slope limited diffusion
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, parameter :: i64_1=1/64.
 !
       if (lslope_limit_diff) then
-         f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,iux:iuz)**2,4)
+         f( :mx-1, :my-1, :mz-1,iFF_diff2)=f( :mx-1, :my-1, :mz-1,iFF_diff2) &
+         +i64_1 *sum((f( :mx-1, :my-1, :mz-1,iux:iuz) &
+                     +f( :mx-1, :my-1,2:mz,  iux:iuz) &
+                     +f( :mx-1,2:my ,  :mz-1,iux:iuz) &
+                     +f( :mx-1,2:my , 2:mz  ,iux:iuz) &
+                     +f(2:mx  , :my-1, :mz-1,iux:iuz) &
+                     +f(2:mx  , :my-1,2:mz  ,iux:iuz) &
+                     +f(2:mx  ,2:my  , :mz-1,iux:iuz) &
+                     +f(2:mx  ,2:my  ,2:mz  ,iux:iuz))**2,4)
       endif
     endsubroutine update_char_vel_hydro
 !***********************************************************************
