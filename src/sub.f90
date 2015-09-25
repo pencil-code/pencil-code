@@ -1373,21 +1373,32 @@ module Sub
       use General, only: ioptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: g, tmp
-      integer :: k,k1
+      real, dimension (nx) :: g
+      integer :: k
       integer, optional :: iorder
 !
-      intent(in)  :: f,k
+      intent(in)  :: f,k,iorder
       intent(out) :: g
+!
+      integer :: k1,iord
+      real, dimension (nx) :: tmp
 !
       k1=k-1
 !
-      if (ioptest(iorder,6)==2) then
+      iord=ioptest(iorder,6)
+      if (iord==2) then
         call der_2nd(f,k1+1,tmp,1)
         g=tmp
         call der_2nd(f,k1+2,tmp,2)
         g=g+tmp
         call der_2nd(f,k1+3,tmp,3)
+        g=g+tmp
+      elseif (iord==4) then
+        call der_4th_stag(f,k1+1,tmp,1)
+        g=tmp
+        call der_4th_stag(f,k1+2,tmp,2)
+        g=g+tmp
+        call der_4th_stag(f,k1+3,tmp,3)
         g=g+tmp
       else
         call der(f,k1+1,tmp,1)
@@ -1417,25 +1428,59 @@ module Sub
           df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
         else
           df=0.
-          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
         else
           df=0.
-          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
         else
           df=0.
-          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
         endif
       endif
 
     endsubroutine der_2nd
+!***********************************************************************
+    subroutine der_4th_stag(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=( -     f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)     &
+               +27.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=( -     f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)     &
+               +27.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=( -     f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)     &
+               +27.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+        endif
+      endif
+
+    endsubroutine der_4th_stag
 !***********************************************************************
     subroutine div_other(f,g)
 !
@@ -6977,10 +7022,10 @@ nameloop: do
     
     endsubroutine slope_limiter
 !***********************************************************************
-    elemental subroutine diff_flux(h, diff_right, diff_lr,phi)
+    elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
     
-      real, intent(OUT):: phi
-      real, intent(IN) :: h, diff_lr, diff_right
+      real, intent(IN ) :: h, diff_lr, diff_right
+      real, intent(OUT) :: phi
 
       if (diff_right*diff_lr>0.) then
         phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 

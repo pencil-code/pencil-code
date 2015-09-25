@@ -1877,7 +1877,7 @@ module Viscosity
           enddo; enddo
 
           do nn=1,mz; do mm=1,my
-            call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=2)
+            call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
 !if (j==1.and.mm==10 .and. nn==10) print*, maxval(f(l1:l2,mm,nn,iFF_div_uu+j-1))
           enddo; enddo
 
