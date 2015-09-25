@@ -1468,7 +1468,7 @@ module Sub
                +27.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
         else
           df=0.
-          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
@@ -1476,7 +1476,7 @@ module Sub
                +27.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
         else
           df=0.
-          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in z-direction'
         endif
       endif
 
@@ -7006,7 +7006,7 @@ nameloop: do
     elemental subroutine slope_limiter(diff_right, diff_left,limited,type)
 
       real, intent(OUT) :: limited
-      real, intent(IN ) :: diff_left, diff_right
+      real, intent(IN)  :: diff_left, diff_right
 
       character(LEN=*), intent(IN) :: type
 
@@ -7024,7 +7024,7 @@ nameloop: do
 !***********************************************************************
     elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
     
-      real, intent(IN ) :: h, diff_lr, diff_right
+      real, intent(IN)  :: h, diff_lr, diff_right
       real, intent(OUT) :: phi
 
       if (diff_right*diff_lr>0.) then
