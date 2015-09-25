@@ -137,6 +137,25 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
+    subroutine entropy_before_boundary(f)
+!
+!  Conduct pre-processing required before boundary conditions and pencil
+!  calculations.
+!
+!  25-sep-15/MR+joern: dummy+slope diffusion
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
+!
+      if (lslope_limit_diff) then
+        f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) + cs20
+      endif
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine entropy_before_boundary
+!***********************************************************************
     subroutine init_energy(f)
 !
 !  Initialise energy; called from start.f90.

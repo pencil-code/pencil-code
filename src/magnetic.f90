@@ -2440,6 +2440,13 @@ module Magnetic
         enddo mn_loop
       endif getbb
 !
+!  Add the vectorpotential to the characteritic velocity
+!
+      if (lslope_limit_diff) then
+         f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) &
+                                       +sum(f(l1:l2,m1:m2,n1:n2,iax:iaz)**2,4)
+      endif
+
     endsubroutine magnetic_before_boundary
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)

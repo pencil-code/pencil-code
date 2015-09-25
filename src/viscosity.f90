@@ -1865,7 +1865,7 @@ module Viscosity
           if (nxgrid>1) then
             do nn=1,mz; do mm=1,my
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iff))
+              call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iFF_diff2),f(2:mx-1,mm,nn,iff))
 !if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
             enddo; enddo
             iff=iff+1
@@ -1874,7 +1874,7 @@ module Viscosity
           if (nygrid>1) then
             do nn=1,mz; do ll=1,mx
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iff))
+              call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff2),f(ll,2:my-1,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
 
             enddo; enddo
@@ -1885,7 +1885,7 @@ module Viscosity
             do mm=1,my; do ll=1,mx
               tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
 !if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-              call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iff))
+            call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iFF_diff2),f(ll,mm,2:mz-1,iff))
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
@@ -1900,21 +1900,19 @@ module Viscosity
 
     endsubroutine viscosity_after_boundary
 !***********************************************************************
-    subroutine calc_diffusive_flux(diff_right, diff_left,flux)
+    subroutine calc_diffusive_flux(diff_right, diff_left,c_char,flux)
 !
 !  23-sep-15/MRheinhard,joern,fred,petri :: coded
 !
       use Sub, only: slope_limiter, diff_flux
 
-      real, dimension(:) :: diff_left, diff_right,flux
+      real, dimension(:)                 :: diff_left, diff_right,c_char,flux
       real, dimension(size(diff_left)+1) :: slope
-      
+      real, dimension(size(diff_left))   :: phi
       integer :: len
-      real :: c_char
-      real, dimension(size(diff_left)) :: phi
+
 
       len=size(diff_left)+1
-      c_char = 1.e-2
 
       call slope_limiter(diff_right, diff_left,slope(2:len-1),islope_limiter)
 

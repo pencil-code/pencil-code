@@ -2376,6 +2376,14 @@ module Hydro
         if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
 !
+!   calculation of characteristic velocity
+!   for slope limited diffusion
+!
+      if (lslope_limit_diff) then
+         f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) &
+                                       +sum(f(l1:l2,m1:m2,n1:n2,iux:iuz)**2,4)
+      endif
+
     endsubroutine hydro_before_boundary
 !***********************************************************************
     subroutine duu_dt(f,df,p)
