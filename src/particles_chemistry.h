@@ -41,7 +41,8 @@
   public :: sort_compounds
   public :: count_reactions, count_max_elements
   public :: particles_chemistry_clean_up
-
+  public :: calc_pencils_par_chem
+  public :: pencil_criteria_par_chem
 !
 !  Obligatory routines for reading in of the start and run namelists
 !

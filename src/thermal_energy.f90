@@ -17,7 +17,7 @@
 ! MAUX CONTRIBUTION 0
 ! COMMUNICATED AUXILIARIES 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth
+! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -439,6 +439,10 @@ module Energy
 !
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for thermal_energy')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -598,10 +602,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -617,10 +620,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -871,17 +873,17 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
+    subroutine dynamical_thermal_diffusion(urms)
 !
 !  Dynamically set thermal diffusion coefficient given fixed mesh Reynolds number.
 !
 !  02-aug-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-diffusion coefficient
 !
-      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************

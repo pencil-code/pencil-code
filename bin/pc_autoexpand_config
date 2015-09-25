@@ -1,0 +1,98 @@
+#!/usr/bin/perl -W
+use strict;
+use Getopt::Long;
+
+# Settings
+my @files = ( "start.in", "run.in", "data/param.nml" );
+my $makefile = "src/Makefile.local";
+my $configtest = "pc_configtest";
+
+my %expansion = (
+	# special/solar_corona
+	SPECIAL => {
+		# 2012:
+		"special/solar_corona" => { special_init_pars => { } },
+		"special/solar_corona" => { special_run_pars => { K_iso => 0.01234, K_spitzer => -1.234 } },
+	},
+	# please extend here...
+);
+
+# Command-line options
+my (%opts);
+
+eval { Getopt::Long::config("bundling"); };
+
+GetOptions(\%opts,
+           qw( -t   --test
+               -b   --backup
+               -d   --debug
+               -v   --version
+               )) or die "Aborting.\n";
+if ($opts{'v'} || $opts{'version'}) {
+	die '$Id$'."\n";
+}
+my $debug = 0;
+if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
+my $test = 0;
+if ($opts{'t'} || $opts{'test'}) { $test = 1; }
+my $backup = 0;
+if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
+
+if (! -e $makefile) { die ('ERROR: There is no "'.$makefile.'" available!\n'); }
+open (IN, "< ".$makefile);
+my %modules = ();
+while (my $line = <IN>) {
+	if ($line =~ /^\s*REAL_PRECISION\s*=.*$/is) { next; }
+	if ($line =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) { $modules{$2} = $1; }
+}
+close (IN);
+
+
+my $autoexpand = 0;
+foreach my $file (@files) {
+	if (! -e $file) { next; }
+	open (IN, "< ".$file);
+	my @lines = <IN>;
+	close (IN);
+	my $num_lines = @lines;
+	my $change = 0;
+	my $namelist = '';
+	foreach my $module (keys (%expansion)) {
+		my %hash = %{$expansion{$module}};
+		foreach my $source (keys (%hash)) {
+			my $target = $modules{$source};
+			my $expand = $hash{$source};
+###
+			for (my $pos = 0; $pos < $num_lines; $pos++) {
+				if ($lines[$pos] =~ /(?:^|[\s\/])&([a-zA-Z][a-zA-Z0-9_]*)(?:\s+|$)/s) { $namelist = $1; }
+				if ($namelist ne $target) { next; }
+				my $search = "";
+				my $replace = "";
+				while ($lines[$pos] =~ s/(^|[\s,])${search}(\s*=)/${1}${replace}${2}/im) {
+					$change = 1;
+					if ($debug) { print "$file | $namelist : $search => $replace\n"; }
+				}
+			}
+		}
+	}
+	if ($change && $test) {
+		print "Needs autoexpansion: '$file'\n";
+		$autoexpand = 1;
+	} elsif ($change) {
+		print "Expanding: '$file'\n";
+		if ($backup) {
+			my $result = `mv "$file" "$file.old"`;
+			if ($result) { die ("AUTOEXPANDER: cannot backup the old file '$file'.\n>$result<\n"); }
+		}
+		open (OUT, "> ".$file);
+		print OUT @lines;
+		close (OUT);
+	}
+}
+
+if ($autoexpand && $test) {
+	print "Please execute: 'pc_autoexpand_config -b'.\n";
+}
+
+exit (0);
+

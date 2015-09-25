@@ -8,6 +8,8 @@ module General
 !
   implicit none
 !
+  external file_size_c
+!
   private
 !
   public :: safe_character_assign,safe_character_append,safe_character_prepend
@@ -19,6 +21,7 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index
+  public :: find_proc
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: cspline
@@ -38,7 +41,7 @@ module General
   public :: operator(.in.)
   public :: loptest, ioptest, roptest, doptest, coptest
   public :: indgen
-  public :: delete_file
+  public :: file_exists, file_size, delete_file, count_lines
   public :: backskip_to_time
 !
   include 'record_types.h'
@@ -124,6 +127,24 @@ module General
   character (len=labellen) :: random_gen='min_std'
 !
   contains
+!***********************************************************************
+    pure integer function find_proc(ipx, ipy, ipz)
+!
+!  Returns the rank of a process given its position in (ipx,ipy,ipz).
+!
+!  16-sep-15/ccyang: coded.
+!
+      use Cdata, only: lprocz_slowest
+!
+      integer, intent(in) :: ipx, ipy, ipz
+!
+      if (lprocz_slowest) then
+        find_proc = ipz * nprocxy + ipy * nprocx + ipx
+      else
+        find_proc = ipy * nprocxz + ipz * nprocx + ipx
+      endif
+!
+    endfunction find_proc
 !***********************************************************************
     subroutine setup_mm_nn()
 !
@@ -3452,29 +3473,129 @@ module General
 !  Skips over possible persistent data blocks from end of snapshot to time record.
 !
 !  9-mar-15/MR: coded
+!  8-sep-15/MR: excluded false detection of id_block_PERSISTENT for double precision version.
+!               (in single precision false detection is impossible as id_block_PERSISTENT=2000
+!                corresponds to the non-normalized real 2.80259693E-42)
 !
       integer,           intent(in) :: lun
       logical, optional, intent(in) :: lroot
 
-      integer :: i,id
+      integer :: i,id,ios
+      real :: x
 
       backspace(lun)
       read(lun) id
 
+      ios=1
       if (id==id_block_PERSISTENT) then
-        backspace(lun)
 
-        do
-          do i=1,3; backspace(lun); enddo
-          read(lun) id
-          if (id==id_block_PERSISTENT) exit
-        enddo
         backspace(lun)
+        if (kind(x)==rkind8) then      ! if PC is in double precision version
+          read(lun,iostat=ios) x       ! try to read a double precision number from the same position as id
+          backspace(lun)
+        endif
+
+        if (ios/=0) then               ! if read try not done or unsuccessful: id_block_PERSISTENT was properly found
+          do
+            do i=1,3; backspace(lun); enddo
+            read(lun) id
+            if (id==id_block_PERSISTENT) exit
+          enddo
+          backspace(lun)
+        endif
       endif
 
-      backspace(lun)
+      if (ios/=0) backspace(lun)         ! if read try successful (ios==0), i.e., id_block_PERSISTENT was falsely detected,
+                                         ! one backspace already done
       if (loptest(lroot)) backspace(lun)
 
     endsubroutine backskip_to_time
+!****************************************************************************
+    function file_exists(file, delete)
+!
+!  Determines if a file exists.
+!  If delete is true, deletes the file.
+!
+!  Returns:
+!  * Logical containing the existence of a given file
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      logical :: file_exists
+      character(len=*) :: file
+      logical, optional :: delete
+!
+      integer, parameter :: unit = 1
+!
+      inquire (file=file, exist=file_exists)
+!
+      if (file_exists .and. loptest(delete)) then
+        if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
+        open (unit, file=file)
+        close (unit, status='delete')
+      endif
+!
+    endfunction file_exists
+!***********************************************************************
+    function file_size(file)
+!
+!  Determines the size of a given file.
+!
+!  Returns:
+!  * positive integer containing the file size of a given file
+!  * -2 if the file could not be found or opened
+!  * -1 if retrieving the file size failed
+!
+!  23-may-2015/Bourdin.KIS: coded
+!
+      integer :: file_size
+      character (len=*) :: file
+!
+      file_size = -2
+      if (file_exists(file)) then
+        file_size = -1
+        call file_size_c(trim(file)//char(0), file_size)
+      endif
+!
+    endfunction file_size
+!***********************************************************************
+    function count_lines(file,ignore_comments)
+!
+!  Determines the number of lines in a file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter ignore_comments added
+!  28-May-2015/Bourdin.KIS: reworked
+!
+      use Cdata, only: comment_char
+
+      integer :: count_lines
+      character (len=*), intent(in) :: file
+      logical, optional, intent(in) :: ignore_comments
+!
+      integer :: ierr
+      integer, parameter :: unit = 1
+      character :: ch
+!
+      count_lines = -1
+      if (.not. file_exists(file)) return
+!
+      open (unit, file=file, status='old', iostat=ierr)
+      if (ierr /= 0) return
+      count_lines = 0
+      do while (ierr == 0)
+        read (unit,'(a)',iostat=ierr) ch
+        if (ierr == 0) then
+          if (loptest(ignore_comments) .and. (ch .in. (/ '!', comment_char /))) cycle
+          count_lines = count_lines + 1
+        endif
+      enddo
+      close (unit)
+!
+    endfunction count_lines
 !****************************************************************************
 endmodule General

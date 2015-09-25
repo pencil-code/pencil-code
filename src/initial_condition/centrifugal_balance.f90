@@ -601,8 +601,8 @@ module InitialCondition
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
-      intent(in)  :: temperature_power_law
-      intent(out) :: f
+      intent(in)    :: temperature_power_law
+      intent(inout) :: f
 !
 !  Break if llocal_iso is used with entropy or temperature
 !
@@ -1496,10 +1496,9 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !

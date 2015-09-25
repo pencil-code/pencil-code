@@ -4568,7 +4568,7 @@ module Initcond
 !
 !  08-sep-14/axel: adapted from power_randomphase
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fft_xyz_parallel
 !
       logical, intent(in), optional :: lscale_tobox
       logical :: lvectorpotential, lscale_tobox1
@@ -4791,7 +4791,7 @@ module Initcond
 !  back to real space
 !
         do i=1,3
-          call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         enddo !i
         f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
 !

@@ -30,6 +30,7 @@
 ;   Spitzer_q        absolute value of Spitzer heat flux vector
 ;   HR_ohm           volumetric Ohmic heating rate
 ;   j_abs            current density
+;   species_5        number density of 5th chemical species
 ;   [...]            more are listed in "pc_check_quantities.pro":
 ;                    IDL> help, pc_check_quantities (/all), /str
 ;
@@ -413,12 +414,33 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (grad_P_therm))
 	end
 
+	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
+		; Impulse density x-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_x')
+	end
+	if (strcmp (quantity, 'rho_u_y', /fold_case)) then begin
+		; Impulse density y-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_y')
+	end
 	if (strcmp (quantity, 'rho_u_z', /fold_case)) then begin
 		; Impulse density z-component
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		return, rho * pc_compute_quantity (vars, index, 'u_z')
 	end
 
+	if (strcmp (quantity, 'c_Alfven', /fold_case)) then begin
+		; Alfvén velocity
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		B_abs = pc_compute_quantity (vars, index, 'B_abs')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, B_abs / sqrt (mu0_SI * rho)
+	end
+	if (strcmp (quantity, 'c_Alfven_inv', /fold_case)) then begin
+		; Inverse of the Alfvén velocity
+		return, 1.0 / pc_compute_quantity (vars, index, 'c_Alfven')
+	end
 	if (strcmp (quantity, 'rho_c', /fold_case)) then begin
 		; Minimum density for an Alfvén speed below the speed of light
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
@@ -553,6 +575,29 @@ function pc_compute_quantity, vars, index, quantity
 		; Electric field strengh [V/m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')))
 	end
+	if (strcmp (quantity, 'EMF', /fold_case)) then begin
+		; Electro motive force [V/m]
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		E = -cross (uu, bb)
+		return, E
+	end
+	if (strcmp (quantity, 'EMF_abs', /fold_case)) then begin
+		; Electro motive force strength [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'EMF')))
+	end
+	if (strcmp (quantity, 'E_j', /fold_case)) then begin
+		; Current electric field [V/m]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
+		E = jj
+		for pa = 0, 2 do E[*,*,*,pa] *= sigma_SI_inv
+		return, E
+	end
+	if (strcmp (quantity, 'E_j_abs', /fold_case)) then begin
+		; Current electric field strength [V/m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E_j')))
+	end
 	if (strcmp (quantity, 'E_x', /fold_case)) then begin
 		; Electric field x-component [V/m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
@@ -671,6 +716,16 @@ function pc_compute_quantity, vars, index, quantity
 		aa = pc_compute_quantity (vars, index, 'A')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
+	end
+	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
+		; Magnetic field helicity (positive part)
+		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
+		return, H_mag_pos
+	end
+	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
+		; Magnetic field helicity (negative part)
+		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
+		return, H_mag_neg
 	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
 		; Electric current helicity
@@ -830,15 +885,15 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (Poynting))
 	end
 
-	if (strcmp (quantity, 'species_1', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy1] * 100
-	if (strcmp (quantity, 'species_2', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy2] * 100
-	if (strcmp (quantity, 'species_3', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy3] * 100
-	if (strcmp (quantity, 'species_4', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy4] * 100
-	if (strcmp (quantity, 'species_5', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy5] * 100
-	if (strcmp (quantity, 'species_6', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy6] * 100
-	if (strcmp (quantity, 'species_7', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy7] * 100
-	if (strcmp (quantity, 'species_8', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy8] * 100
-	if (strcmp (quantity, 'species_9', /fold_case)) then return, vars[l1:l2,m1:m2,n1:n2,index.yy9] * 100
+	species = (stregex (quantity, '^species_([0-9]+)$', /subexpr, /extract, /fold_case))[1]
+	if (species ne '') then begin
+		result = execute ('species_index = index.yy'+species)
+		if (not result) then begin
+			print, "ERROR: Unknown species 'yy"+species+"'"
+			return, !Values.D_NaN
+		end
+		return, vars[l1:l2,m1:m2,n1:n2,species_index] * 100
+	end
 
 	; Check for Pencil Code alias names
 	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)

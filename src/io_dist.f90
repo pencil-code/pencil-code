@@ -26,10 +26,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface output_form
-    module procedure output_form_int_0D
-  endinterface
-!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -209,32 +205,6 @@ module Io
       if (lserial_io) call end_serialize
 !
     endsubroutine output_snap_finalize
-!***********************************************************************
-    subroutine output_form_int_0D(file,data,lappend)
-!
-!  Write formatted integer data to a file.
-!  Set lappend to false to overwrite the file, default is to append the data.
-!
-!  19-Feb-2012/Bourdin.KIS: coded
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: data
-      logical, intent(in), optional :: lappend
-!
-      logical :: lappend_opt
-!
-      lappend_opt = .false.
-      if (present(lappend)) lappend_opt = lappend
-!
-      if (lappend_opt) then
-        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', position='append', status='old')
-      else
-        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', status='replace')
-      endif
-      write (lun_output,*) data
-      close (lun_output)
-!
-    endsubroutine output_form_int_0D
 !***********************************************************************
     subroutine fseek_pos(unit, rec_len, num_rec, reference)
 !
@@ -747,7 +717,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_logical
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !
@@ -1177,7 +1147,7 @@ module Io
 !                  three neighbouring points from the boundary point
 !  15-apr-15/MR  : automatic detection of precision added
 !
-      use File_io, only: file_size
+      use General, only: file_size
 !
       character (len=*) :: file
 !

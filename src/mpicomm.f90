@@ -475,8 +475,8 @@ module Mpicomm
         ipz = iproc/nprocxy
       else
         ipx = modulo(iproc, nprocx)
-        ipy = iproc/nprocxy
-        ipz = modulo(iproc/nprocx, nprocy)
+        ipy = iproc/nprocxz
+        ipz = modulo(iproc/nprocx, nprocz)
       endif
 !
 !  Set up flags for leading processors in each possible direction and plane
@@ -2336,8 +2336,6 @@ module Mpicomm
                      ibcast_proc,MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_arr
-!***********************************************************************
-    include "parallel_unit_broadcast.h"
 !***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
@@ -5008,7 +5006,6 @@ module Mpicomm
 !
       real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
@@ -5031,7 +5028,7 @@ module Mpicomm
         if ((gnx == size (in, 1)) .and. (gny == size (in, 2))) then
           ! add outer ghost layers
           allocate (extended(rnx,rny,bnz,bna), stat=alloc_err)
-          if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for outer ghost cells extension!', .true.)
+          if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for outer ghost cells extension!', .true.)
           extended(nghost+1:nghost+gnx,nghost+1:nghost+gnx,:,:) = in
           if (lperi(1)) then
             extended(1:nghost,:,:,:) = in(gnx-nghost+1:gnx,:,:,:)
@@ -5064,12 +5061,12 @@ module Mpicomm
 !
       if (ipz == pz) then
         allocate (y_row(bnx,rny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for y_row!', .true.)
+        if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for y_row!', .true.)
       endif
 !
       if (iproc == broadcaster) then
         allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
+        if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for buffer!', .true.)
         ! distribute the y-rows
         do px = 0, nprocx-1
           partner = px + pz*nprocxy
@@ -5092,7 +5089,7 @@ module Mpicomm
         endif
 !
         allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
+        if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for buffer!', .true.)
         ! distribute the data along the y-direction
         do py = 0, nprocy-1
           partner = ipx + py*nprocx + pz*nprocxy

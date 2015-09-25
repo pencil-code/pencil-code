@@ -259,6 +259,9 @@ module Magnetic
   logical :: lpropagate_borderaa=.true.
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
+  logical :: ladd_efield=.false.
+  logical :: lvisc_slope_limited=.false.
+  real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -298,7 +301,8 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z
+      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
+      ladd_efield,ampl_efield,lvisc_slope_limited
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -825,6 +829,12 @@ module Magnetic
 !
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) &
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
       endif
 !
 !  register the mean-field module
@@ -1535,6 +1545,24 @@ module Magnetic
         case ('Bphi_cosy')
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=amplaa(j)*(cos(2*pi*ky_aa(j)*(y(m)-y0)/Lxyz(2)))/Lxyz(2)
+          enddo; enddo
+        case ('Az_cosh2x1')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)/(cosh(x(l1:l2))*cosh(x(l1:l2))) 
+          enddo; enddo
+        case ('By_sinx')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)*( cos(x(l1:l2))  )
+          enddo; enddo
+        case ('By_step')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa) - amplaa(j)
           enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
@@ -2939,6 +2967,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
+      real, dimension (nx) :: del2aa_ini, tanhx2  
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3003,6 +3032,14 @@ module Magnetic
             fres = fres - eta * mu0 * p%jj
           else
             fres = fres + eta * p%del2a
+          endif
+!
+! whatever the gauge is add an external space-varying electric field
+!
+          if (ladd_efield) then
+             tanhx2 = tanh( x(l1:l2) )*tanh( x(l1:l2) )
+             del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 ) 
+             fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
         end if exp_const
@@ -3553,7 +3590,9 @@ module Magnetic
 !AB: corrected by Patrick Adams
         dAdt = dAdt-battery_term*p%fpres
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
-            battery_term*maxval(baroclinic)
+!MR; corrected for the time being to fix the auto-test
+!            battery_term*maxval(baroclinic)
+            battery_term*maxval(p%fpres)
       endif
 !
 ! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
@@ -4957,10 +4996,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
@@ -4984,10 +5022,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
@@ -7724,18 +7761,18 @@ module Magnetic
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(umax)
+    subroutine dynamical_resistivity(urms)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-resistivity coefficient
 !
-      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
+      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

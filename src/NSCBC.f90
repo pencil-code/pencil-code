@@ -70,7 +70,7 @@ include 'NSCBC.h'
   real :: Lx_in
   real :: Ly_in
   real :: Lz_in
-  real :: inlet_zz1, inlet_zz2
+  real :: inlet_zz1=0., inlet_zz2=0.
   real :: smooth_time=0.
 !
 !  Variables for inlet profiles
@@ -825,10 +825,9 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine read_NSCBC_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=NSCBC_init_pars, IOSTAT=iostat)
 !
@@ -846,14 +845,13 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine read_NSCBC_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
       use Sub, only : rdim
 !
       integer, intent(out) :: iostat
       integer :: stat
       logical :: exist
       character (len=fnlen) :: file
-      include "parallel_unit.h"
 !
 ! Define default for the inlet_profile for backward compatibility
 !

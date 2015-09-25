@@ -484,10 +484,9 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=chiral_init_pars, IOSTAT=iostat)
 !
@@ -503,10 +502,9 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=chiral_run_pars, IOSTAT=iostat)
 !

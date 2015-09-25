@@ -204,7 +204,7 @@ module Particles_coagulation
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-!  Special treatment for kernel tets.
+!  Special treatment for kernel tests.
 !
                 if (lkernel_test) then
                   if (lconstant_kernel_test) then
@@ -982,10 +982,9 @@ module Particles_coagulation
 !***********************************************************************
     subroutine read_particles_coag_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_coag_run_pars, IOSTAT=iostat)
 !

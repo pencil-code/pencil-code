@@ -7,7 +7,6 @@
 import os.path
 import re
 import numpy as np
-import pylab as plt
 
 
 def read_ts(*args, **kwargs):
@@ -95,6 +94,9 @@ class TimeSeries(object):
             three is not available or zero, fill the list with the first two
             variables other than `it' and `dt*'
         """
+
+	import pylab as plt
+
         plt.ioff() # speed up graphics (in connection with an ending plt.show())
         listargs = self.keys    # all data columns of the TimeSeries object
         elim = re.compile(r'^(it|dt.*)')  # columns to drop
@@ -133,7 +135,7 @@ class TimeSeries(object):
                 plt.xlabel('Time')
                 plt.ylabel(listargs[i])
                 i += 1
-        plt.show()
+        plt.show(block=False)
         plt.ion()
 
 

@@ -184,7 +184,6 @@ module Gravity
 !
       real, dimension (mz) :: prof
       real :: ztop
-      integer :: ierr
 !
 !  Sanity check.
 !
@@ -208,14 +207,9 @@ module Gravity
           if (zref==impossible) then
             call fatal_error('initialize_gravity','zref=impossible')
           else
-            call get_shared_variable('cs20',cs20,ierr)
-            if (ierr/=0) call fatal_error('initialize_gravity','getting cs20')
-!
-            call get_shared_variable('mpoly',mpoly,ierr)
-            if (ierr/=0) call fatal_error('initialize_gravity','getting mpoly')
-!
-            call get_shared_variable('gamma',gamma,ierr)
-            if (ierr/=0) call fatal_error('initialize_gravity','getting gamma')
+            call get_shared_variable('cs20',cs20,caller='initialize_gravity')
+            call get_shared_variable('mpoly',mpoly)
+            call get_shared_variable('gamma',gamma)
 !
             zinfty=zref+cs20*(mpoly+1)/(-gamma*gravz)
             if (lroot) print*,'initialize_gravity: computed zinfty=',zinfty
@@ -241,31 +235,23 @@ module Gravity
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx_xpencil')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
       case ('const_tilt')
         gravx=grav_amp*sin(grav_tilt*pi/180.)
         if (lroot) print*,'initialize_gravity: constant gravx=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
 !
 ! Linear gravity profile in x for planetary core dynamos
 !
- case ('linear_x')
+      case ('linear_x')
         if (lroot) print*,'initialize_gravity: linear x-grav, gravx=', gravx
         gravx_xpencil = -gravx*x
         potx_xpencil  = 0.5*gravx*(x**2-xinfty**2)
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
 !
 !  Linear gravity potential with additional z dependence.
 !  Calculate zdep here, but don't multiply it onto gravx_xpencil
@@ -310,12 +296,8 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx_xpencil')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
 !  Convection zone model, normalized to the bottom of the domain
 !
@@ -324,12 +306,8 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx*(1./x-1./xyz0(1)) + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx_xpencil')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
 !  Convection zone model, normalized to the middle of the domain
 !
@@ -338,12 +316,8 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx*(1./x-2./(xyz0(1)+xyz1(1))) + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx_xpencil')
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
@@ -547,24 +521,16 @@ module Gravity
 !
 !  Sanity check.
 !
-      if (notanumber(gravx_xpencil)) then
+      if (notanumber(gravx_xpencil)) &
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravx_xpencil')
-      endif
-      if (notanumber(gravy_ypencil)) then
+      if (notanumber(gravy_ypencil)) &
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravy_ypencil')
-      endif
-      if (notanumber(gravz_zpencil)) then
+      if (notanumber(gravz_zpencil)) &
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
-      endif
 !
-      call put_shared_variable('nu_epicycle',nu_epicycle)
+      call put_shared_variable('nu_epicycle',nu_epicycle,caller='initialize_gravity')
       call put_shared_variable('gravz_zpencil',gravz_zpencil)
-
-      if (lreference_state) then
-        call put_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call fatal_error('initialize_gravity', &
-             'there was a problem when putting gravx')
-      endif
+      if (lreference_state) call put_shared_variable('gravx', gravx)
 !
       if (n_adjust_sphersym>0 .and. lspherical_coords) then
 
@@ -1108,10 +1074,9 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=grav_init_pars, IOSTAT=iostat)
 !
@@ -1127,10 +1092,9 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=grav_run_pars, IOSTAT=iostat)
 !

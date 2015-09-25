@@ -434,11 +434,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (scaling)) then scaling = 1
 
 	; Load needed objects
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir ()
-	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, reduced=reduced, /quiet
-	if (not keyword_set (start_param)) then pc_read_param, obj=start_param, datadir=datadir, dim=dim, /quiet
+	pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, f77=f77, start_param=start_param
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=start_param, /quiet)
-	all_quant = pc_check_quantities (sources=varcontent, /available)
+	sources = varcontent
+	all_quant = pc_check_quantities (sources=sources, /available)
 	quant = all_quant
 	if (keyword_set (quantities)) then begin
 		quant = quantities
@@ -453,10 +452,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			end
 		end
 	end
-	all_over = pc_check_quantities (sources=varcontent, /vectorfields)
+	all_over = pc_check_quantities (sources=sources, /vectorfields)
 	if (keyword_set (overplots)) then over = overplots else over = all_over
-	sources = varcontent.idlvar
-	sources = sources[where (sources ne "dummy")]
 
 	; Fill common blocks
 	if (datadir eq "") then datadir = "."
@@ -477,35 +474,6 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	f_comp = !VALUES.D_NAN
 	c_quant = !VALUES.D_NAN
 	c_over = !VALUES.D_NAN
-
-	; Determine procdir
-	if (keyword_set (reduced)) then begin
-		if (n_elements (allprocs) gt 0) then begin
-			if (allprocs ne 1) then begin
-				print, "ERROR: if 'reduced' is set, 'allprocs=1' must be chosen."
-				print, "Type '.c' to continue..."
-				stop
-			end
-		end
-		allprocs = 1
-	end
-	if (n_elements (allprocs) eq 0) then begin
-		allprocs = 1
-		procdir = datadir+'/allprocs/'
-		if (not file_test (procdir+varfile) and not file_test (procdir+'VAR*')) then begin
-			if (file_test (datadir+'/proc0/'+varfile) or file_test (datadir+'/proc0/VAR*')) then begin
-				allprocs = 0
-				procdir = datadir+'/proc0/'
-				if (file_test (datadir+'/proc1/')) then begin
-					if (not file_test (datadir+'/proc1/'+varfile) and file_test (datadir+'/proc1/VAR*')) then allprocs = 2
-				endif
-			endif
-		endif
-	end else begin
-		procdir = datadir+"/proc0/"
-		if (allprocs eq 1) then procdir = datadir+"/allprocs/"
-	end
-	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+"/reduced/"
 
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
@@ -530,7 +498,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	file_struct = file_info (procdir+somefile)
 	multiplier = dim.nprocx * dim.nprocy * dim.nprocz
 	if (allprocs eq 1) then multiplier = 1
-	if (allprocs eq 2) then multiplier = dim.nprocz
+	if (allprocs ge 2) then multiplier = dim.nprocz
 	gb_per_file = (file_struct.size * multiplier) / 1024.0^3
 
 	; Preselected snapshots and additional snapshots to be loaded

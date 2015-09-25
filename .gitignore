@@ -2,6 +2,7 @@
 *.pyc
 *~
 ./python/pencilnew
+doc/www
 # left-over files from auto-test and samples
 .pc_build_history 
 .run_directories.log
@@ -13,8 +14,10 @@ samples/*/*.log
 samples/*/Makefile
 samples/*/.pc_build_history
 samples/*/COMPLETED
+samples/*/ERROR
 samples/*/runtime
 samples/*/fort.*
+samples/*/data
 # second directory level
 samples/*/*/src/*
 !samples/*/*/src/*.local
@@ -23,8 +26,10 @@ samples/*/*/*.log
 samples/*/*/Makefile
 samples/*/*/.pc_build_history
 samples/*/*/COMPLETED
+samples/*/*/ERROR
 samples/*/*/runtime
 samples/*/*/fort.*
+samples/*/*/data
 # third directory level
 samples/*/*/*/src/*
 !samples/*/*/*/src/*.local
@@ -33,10 +38,12 @@ samples/*/*/*/*.log
 samples/*/*/*/Makefile
 samples/*/*/*/.pc_build_history
 samples/*/*/*/COMPLETED
+samples/*/*/*/ERROR
 samples/*/*/*/runtime
 samples/*/*/*/fort.*
+samples/*/*/*/data
 # exceptions for indivudual samples
-samples/backwards-compatible/data/*
+samples/corona/driver
 !samples/backwards-compatible/data/param.nml
 !samples/backwards-compatible/data/proc0/var.dat
 !samples/backwards-compatible/data/proc0/dim.dat

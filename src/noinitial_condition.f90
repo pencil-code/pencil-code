@@ -373,10 +373,7 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
-      use File_io, only: get_unit
-!
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       iostat = 0
 !

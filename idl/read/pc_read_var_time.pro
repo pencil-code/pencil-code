@@ -48,59 +48,27 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings.
 ;
-  default, allprocs, 0
   default, reduced, 0
   default, quiet, 0
-  if (keyword_set(reduced)) then allprocs=1
+;
   if (arg_present(exit_status)) then exit_status=0
-;
-; Set f77 keyword according to allprocs.
-;
-  if (keyword_set (allprocs)) then default, f77, 0
-  default, f77, 1
-;
-; Default data directory.
-;
-  if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 ; Name and path of varfile to read.
 ;
   if (n_elements(ivar) eq 1) then begin
     default, varfile_, 'VAR'
-    varfile=varfile_+strcompress(string(ivar),/remove_all)
+    varfile = varfile_ + strcompress(string(ivar),/remove_all)
   endif else begin
     default, varfile_, 'var.dat'
-    varfile=varfile_
+    varfile = varfile_
   endelse
 ;
-; Get necessary dimensions quietly.
+; find varfile and set configuration parameters accordingly
 ;
-  if (n_elements(dim) eq 0) then begin
-    if (allprocs eq 1) then begin
-      pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
-    endif else if (allprocs eq 2) then begin
-      pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
-      dim.nx = dim.nxgrid
-      dim.ny = dim.nygrid
-      dim.mx = dim.mxgrid
-      dim.my = dim.mygrid
-      dim.mw = dim.mx * dim.my * dim.mz
-    endif else begin
-      pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
-    endelse
-  endif
-  if (n_elements(param) eq 0) then $
-      pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-;
-; ... and check pc_precision is set for all Pencil Code tools.
-;
-  pc_set_precision, dim=dim, quiet=quiet
+  pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
 ;
 ; Local shorthand for some parameters.
 ;
-  mvar = dim.mvar
-  mvar_io = mvar
-  if (param.lwrite_aux) then mvar_io += dim.maux
   precision = dim.precision
   if (precision eq 'D') then bytes = 8 else bytes = 4
 ;
@@ -115,18 +83,9 @@ COMPILE_OPT IDL2,HIDDEN
   dz=zero
   deltay=zero
 ;
-; Get a free unit number.
-;
-  get_lun, file
-;
 ; Build the full path and filename.
 ;
-  if (allprocs eq 1) then begin
-    if (keyword_set (reduced)) then dirname='/reduced/' else dirname='/allprocs/'
-  end else begin
-    dirname='/proc0/'
-  end
-  filename=datadir+dirname+varfile
+  filename = procdir + varfile
 ;
 ; Check for existence and read the data.
 ;
@@ -143,15 +102,16 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Open a varfile and read some data!
 ;
-  openr, file, filename, /f77, swap_endian=swap_endian
-  if (precision eq 'D') then bytes=8 else bytes=4
-  if (f77 eq 0) then markers=0 else markers=2
-  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)+long64(markers*4)
+  openr, file, filename, f77=f77, swap_endian=swap_endian, /get_lun
+  point_lun, file, additional
   if (allprocs eq 1) then begin
     ; collectively written files
     readu, file, t, x, y, z, dx, dy, dz
   endif else if (allprocs eq 2) then begin
     ; xy-collectively written files for each ipz-layer
+    readu, file, t
+  endif else if (allprocs eq 3) then begin
+    ; xy-collectively written files for each ipz-layer in F2003 stream access format
     readu, file, t
   endif else begin
     ; distributed files
@@ -162,8 +122,8 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endelse
 ;
-  close,file
-  free_lun,file
+  close, file
+  free_lun, file
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;

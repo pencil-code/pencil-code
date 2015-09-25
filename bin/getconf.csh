@@ -429,15 +429,19 @@ else if ($hn =~ norlx51*) then
   echo "******************************"
   echo "NORDITA cluster"
   echo " ******************************"
-  source ${HOME}/.cshrc
-  set $mpirun=mpirun
+  if (-r ${HOME}/.cshrc) then
+    source ${HOME}/.cshrc
+    set $mpirun=mpirun
+  endif
 #------------------------------------------------
 else if ($hn =~ norlx5*) then
   echo "******************************"
   echo "NORDITA cluster"
   echo " ******************************"
-  source ${HOME}/.cshrc
-  set $mpirun=${HOME}/Library/bin/mpirun
+  if (-r ${HOME}/.cshrc) then
+    source ${HOME}/.cshrc
+    set $mpirun=${HOME}/Library/bin/mpirun
+  endif
 #------------------------------------------------
 else if ($hn =~ lakshmi) then
   echo "******************************"
@@ -695,7 +699,7 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
-else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche)) then
+else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ pekkila)) then
   echo "Sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"

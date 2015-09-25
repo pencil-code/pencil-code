@@ -7,13 +7,6 @@
 #
 
 import numpy as np
-import pylab as plt
-import time
-import os # for making the movie
-import thread # for GUI
-import mtTkinter as tk  # makes tkinter thread save
-from matplotlib.colors import LightSource
-
 
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
@@ -138,6 +131,11 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
        Remaining arguments are identical to those of pylab.imshow. Refer to that help.
     """
 
+    import pylab as plt
+    import time
+    import os # for making the movie
+    import thread # for GUI
+    from matplotlib.colors import LightSource
 
     global tStep, sliderTime, pause
     
@@ -266,7 +264,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         print 'error: length of time array doesn\'t match length of data array'
         return -1
         if plotArrows:
-            if (nT != len(arrowX[:,0,0]) or nT != len(arrowX[:,0,0])):
+            if (nT != len(arrowsX[:,0,0]) or nT != len(arrowsX[:,0,0])):
                 print 'error: length of time array doesn\'t match length of arrows array'
                 return -1
     
@@ -287,8 +285,6 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
     # setup the plot
     if movieFile:
-        width = figsize[0]
-        height = figsize[1]
         plt.rc("figure.subplot", bottom=0.15)
         plt.rc("figure.subplot", top=0.95)
         plt.rc("figure.subplot", right=0.95)
@@ -296,8 +292,6 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         fig = plt.figure(figsize = figsize)
         ax = plt.axes([0.1, 0.1, .90, .85])
     else:
-        width = figsize[0]
-        height = figsize[1]
         plt.rc("figure.subplot", bottom=0.05)
         plt.rc("figure.subplot", top=0.95)
         plt.rc("figure.subplot", right=0.95)

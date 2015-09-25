@@ -1,0 +1,62 @@
+
+
+               $$$$$$$\  $$$$$$$$\ $$\   $$\ 
+               $$  __$$\ $$  _____|$$$\  $$ |
+               $$ |  $$ |$$ |      $$$$\ $$ |
+               $$$$$$$  |$$$$$\    $$ $$\$$ |
+               $$  ____/ $$  __|   $$ \$$$$ |
+               $$ |      $$ |      $$ |\$$$ |
+               $$ |      $$$$$$$$\ $$ | \$$ |
+               \__|      \________|\__|  \__|
+
+
+#############################
+## DESCRIPTION
+##
+This python package contains a set of subroutines for postprocessing your Pencil Code data.
+Pen will do all imports and diagnostics on your pencil code data in the best and easiest way possible. Therefore pen will store all calcuated data in separate files and reload if necessary. Type 'pen.help()' to start.
+
+#############################
+## EASY START
+##
+1. Add $PENCIL_HOME/python to your $PYTHONPATH or enshure this is already done by using 'echo $PYTHONPATH' in your bash shell.
+
+2. Start Python (or better ipython) from your simulation main folder (where the data directory is located) and try:
+  import pen
+
+3. Try to read your time series:
+
+  ts = pen.read.ts()
+
+this reads in the time_series.dat with all its data. Check out whats available:
+  
+  ts.keys
+
+4. Try to read in the latest var.dat file:
+
+  var = pen.read_var()
+  
+  Check out whats available again with:
+  
+  var.keys
+
+  var should have stored the whole latest f array snapshot from the var.dat file. 
+  
+5. Try to read in an earlier snapshot. First check which snapshots are available:
+
+  vars = pen.read.avail_vars()
+  print vars
+  
+  then read the second snapshot:
+  
+  var_2nd = pen.read.var(varfile=vars[1])
+ 
+Now you can do investigate further your data.
+  
+Note that because python is C-indexed instead of fortran-indexed, and
+matplotlib assumes [y,x] ordering for 2D plotting, the f array returned is in
+the opposite order from how it is in pencil: var.f.shape will return
+(nvar,nz,ny,nx).
+
+
+

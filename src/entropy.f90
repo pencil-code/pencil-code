@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos !,dsdr
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
 ! PENCILS PROVIDED initss; initlnrho
 !
 !***************************************************************
@@ -83,6 +83,7 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
+  real :: chimax_kramers=0., chimin_kramers=0.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -124,6 +125,7 @@ module Energy
   logical :: lchromospheric_cooling=.false., &
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
+  logical :: lvisc_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -182,12 +184,13 @@ module Energy
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
-      hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
+      hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
+      xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw
+      cool_type,ichit,xchit,pclaw, lvisc_slope_limited
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -243,6 +246,7 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
+  integer :: idiag_Kkramersm=0   ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -344,7 +348,7 @@ module Energy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -359,6 +363,12 @@ module Energy
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='register_energy')
 !
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) &
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=3)
+        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
+      endif
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -939,7 +949,7 @@ module Energy
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
         call put_shared_variable('nkramers',nkramers)
       else
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
       star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
       call put_shared_variable('star_params',star_params)
@@ -1002,10 +1012,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -1021,10 +1030,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -2752,6 +2760,10 @@ module Energy
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
+      if (lpencil_in(i_sglnTT)) then
+        lpencil_in(i_sij)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
@@ -2782,7 +2794,7 @@ module Energy
 !  15-mar-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad, grad
+      use Sub, only: u_dot_grad, grad, multmv
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2793,6 +2805,7 @@ module Energy
 !
       real, dimension(nx,3) :: gradS
       integer :: j
+!
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
@@ -2804,6 +2817,8 @@ module Energy
 ! for pretend_lnTT
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
+! sglnTT
+      if (lpencil(i_sglnTT)) call multmv(p%sij,p%glnTT,p%sglnTT)
 ! dsdr
      !if (lpencil(i_dsdr)) then
      !    call grad(f,iss,gradS)
@@ -4281,6 +4296,7 @@ module Energy
 !  Heat conduction using Kramers' opacity law
 !
 !  23-feb-11/pete: coded
+!  24-aug-15/MR: bounds for chi introduced
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
@@ -4304,6 +4320,8 @@ module Energy
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      if (chimax_kramers>0.d0) &
+        Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
 !
@@ -4327,7 +4345,9 @@ module Energy
 !
       chix = p%cp1*Krho1
     
-      if (l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+      if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+
+      if (ldiagnos) call sum_mn_name(Krho1,idiag_Kkramersm)
 !
 !  Write radiative flux array.
 !
@@ -4567,7 +4587,7 @@ module Energy
 !  "Turbulent" entropy diffusion.
 !
 !  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not curently being checked.
+!  But this is not currently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -5638,7 +5658,7 @@ module Energy
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5677,6 +5697,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+        call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.

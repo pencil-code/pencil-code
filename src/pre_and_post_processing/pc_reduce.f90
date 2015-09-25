@@ -93,14 +93,13 @@ program pc_reduce
 !
   call initialize_messages()
 !
-!  Read parameters from start.x (default values; may be overwritten by
-!  read_runpars).
+!  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_all_run_pars()
 !
   if (.not. lperi(1) .and. (reduce /= 1)) call fatal_error ('run', 'reduction impossible in X: not periodic')
   if (.not. lperi(2) .and. (reduce /= 1)) call fatal_error ('run', 'reduction impossible in Y: not periodic')
@@ -108,8 +107,7 @@ program pc_reduce
   if (mod (ny, reduce) /= 0) call fatal_error ('run', 'NY not dividable by reduce factor')
 !
 !  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly even in read_startpars
-!  or read_runpars]
+!  [might better be put into another routine, possibly in 'read_all_run_pars']
 !
   x0 = xyz0(1)
   y0 = xyz0(2)
