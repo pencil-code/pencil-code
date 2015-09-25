@@ -253,6 +253,7 @@ free_lun,file
 ;
 ;  Trim ghost zones of coordinate arrays.
 ;
+help, y
 if (keyword_set(trimxyz)) then begin
   x=x[l1:l2]
   y=y[m1:m2]
@@ -268,9 +269,15 @@ endif
 ;  Build structure of all the variables
 ;
 if (found_Lxyz and found_grid_der) then begin
-  Ox = x[nghostx] - lperi[0] * 0.5 / dx_1[nghostx]
-  Oy = y[nghosty] - lperi[1] * 0.5 / dy_1[nghosty]
-  Oz = z[nghostz] - lperi[2] * 0.5 / dz_1[nghostz]
+  if (keyword_set(trimxyz)) then begin
+    Ox = x[0] - lperi[0] * 0.5 / dx_1[0]
+    Oy = y[0] - lperi[1] * 0.5 / dy_1[0]
+    Oz = z[0] - lperi[2] * 0.5 / dz_1[0]
+  endif else begin
+    Ox = x[nghostx] - lperi[0] * 0.5 / dx_1[nghostx]
+    Oy = y[nghosty] - lperi[1] * 0.5 / dy_1[nghosty]
+    Oz = z[nghostz] - lperi[2] * 0.5 / dz_1[nghostz]
+  endelse
   object = create_struct(name="pc_read_grid_" + $
       str((size(x))[1]) + '_' + $
       str((size(y))[1]) + '_' + $
