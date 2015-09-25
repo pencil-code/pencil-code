@@ -176,8 +176,8 @@ module DensityMethods
 !***********************************************************************
     subroutine putlnrho_s(f,lnrho)
 
-      real, dimension(mx), intent(out):: f
-      real,                intent(in ):: lnrho
+      real, dimension(mx,my), intent(out):: f
+      real,                   intent(in ):: lnrho
 
       call fatal_error('putlnrho', 'not implemented in nodensity.')
       call keep_compiler_quiet(f)
