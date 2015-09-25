@@ -253,7 +253,6 @@ free_lun,file
 ;
 ;  Trim ghost zones of coordinate arrays.
 ;
-help, y
 if (keyword_set(trimxyz)) then begin
   x=x[l1:l2]
   y=y[m1:m2]
