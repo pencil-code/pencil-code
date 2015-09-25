@@ -1850,6 +1850,7 @@ module Viscosity
       real, dimension(mx-1) :: tmpx
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
+     
 !
 !  Slope/Flux limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -1857,8 +1858,12 @@ module Viscosity
 !  auxilaries variables in the f array (done above).
 !
       if (lvisc_slope_limited) then
-
-        do j=1,3
+!
+!  to avoid taking the sqrt three times
+!        
+        f(:,:,:,iFF_diff2)=sqrt(f(:,:,:,iFF_diff2))
+! 
+       do j=1,3
 
           iff=iFF_diff
 
@@ -1876,7 +1881,6 @@ module Viscosity
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
               call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff2),f(ll,2:my-1,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
-
             enddo; enddo
             iff=iff+1
           endif

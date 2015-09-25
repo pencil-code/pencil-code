@@ -260,7 +260,7 @@ module Magnetic
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
-  logical :: lvisc_slope_limited=.false.
+  logical :: lmagnetic_slope_limited=.false.
   real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
@@ -302,7 +302,7 @@ module Magnetic
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield,lvisc_slope_limited
+      ladd_efield,ampl_efield,lmagnetic_slope_limited
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2445,14 +2445,21 @@ module Magnetic
         enddo mn_loop
       endif getbb
 !
-!  Add the vectorpotential to the characteritic velocity
+    endsubroutine magnetic_before_boundary
+!***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   Add the vectorpotential to the characteritic velocity
+!   for slope limited diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
       if (lslope_limit_diff) then
-         f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) &
-                                       +sum(f(l1:l2,m1:m2,n1:n2,iax:iaz)**2,4)
+         f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,iax:iaz)**2,4)
       endif
-
-    endsubroutine magnetic_before_boundary
+    endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !

@@ -210,7 +210,6 @@ module Equ
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
-      if (lentropy)      call entropy_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
@@ -283,6 +282,16 @@ module Equ
         uc = find_rms_fvec(f, iuu)
         call set_dyndiff_coeff(uc)
       endif dyndiff
+!
+!  Calculte the characteristic velocity
+!  for slope limited diffusion
+!
+   if (lslope_limit_diff) then
+     call update_char_vel_energy(f)
+     call update_char_vel_magnetic(f)
+     call update_char_vel_hydro(f)
+   endif
+   
 !
 !  For calculating the pressure gradient directly from the pressure (which is
 !  derived from the basic thermodynamical variables), we need to fill in the

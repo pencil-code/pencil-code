@@ -147,7 +147,7 @@ module Energy
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2) + cs20
+      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2) + 0.01*cs20
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************

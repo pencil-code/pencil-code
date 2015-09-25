@@ -2375,17 +2375,24 @@ module Hydro
         if (lremove_mean_flow) call remove_mean_flow(f,iux)
         if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
+
+    endsubroutine hydro_before_boundary
+!***********************************************************************
+    subroutine update_char_vel_hydro(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
 !
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
       if (lslope_limit_diff) then
-         f(l1:l2,m1:m2,n1:n2,iFF_diff2)=f(l1:l2,m1:m2,n1:n2,iFF_diff2) &
-                                       +sum(f(l1:l2,m1:m2,n1:n2,iux:iuz)**2,4)
+         f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,iux:iuz)**2,4)
       endif
-
-    endsubroutine hydro_before_boundary
+    endsubroutine update_char_vel_hydro
 !***********************************************************************
+
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
