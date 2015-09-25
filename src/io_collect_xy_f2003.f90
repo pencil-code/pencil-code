@@ -348,7 +348,10 @@ module Io
 !
       ! read additional data
       if (lread_add) then
-        if (lfirst_proc_xy) read (lun_input) record_marker, t_sp
+        if (lfirst_proc_xy) then
+          read (lun_input) record_marker, t_sp
+          t_test = t_sp
+        endif
 !
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
@@ -366,7 +369,6 @@ module Io
           call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
         endif
 !
-        t_test = t_sp
         call mpibcast_real (t_sp)
         if (.not. lfirst_proc_xy) t_test = t_sp
         if (t_test /= t_sp) &
