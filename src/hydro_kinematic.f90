@@ -2605,7 +2605,7 @@ module Hydro
       real, parameter :: i64_1=1/64.
 !
       if (lslope_limit_diff) then
-        if (lkinflow_as_aux)
+        if (lkinflow_as_aux) then
            f( :mx-1, :my-1, :mz-1,iFF_diff2)=f( :mx-1, :my-1, :mz-1,iFF_diff2) &
            +i64_1 *sum((f( :mx-1, :my-1, :mz-1,iux:iuz) &
                        +f( :mx-1, :my-1,2:mz,  iux:iuz) &
