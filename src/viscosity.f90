@@ -1810,6 +1810,7 @@ module Viscosity
 !
       if (lvisc_slope_limited) &
         p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
 !
 !  Calculate Lambda effect
 !
@@ -1850,9 +1851,9 @@ module Viscosity
       real, dimension(mx-1) :: tmpx
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
-     
+      real, dimension(nx)   :: tmp
 !
-!  Slope/Flux limited diffusion following Rempel (2014)
+!  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
 !  using a slope limiting procedure then storing in the 
 !  auxilaries variables in the f array (done above).
@@ -1868,16 +1869,17 @@ module Viscosity
           iff=iFF_diff
 
           if (nxgrid>1) then
-            do nn=1,mz; do mm=1,my
+            do nn=n1,n2; do mm=m1,m2
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
               call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iFF_diff2),f(2:mx-1,mm,nn,iff))
 !if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+!            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
             enddo; enddo
             iff=iff+1
           endif
 
           if (nygrid>1) then
-            do nn=1,mz; do ll=1,mx
+            do nn=n1,n2; do ll=l1,l2
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
               call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff2),f(ll,2:my-1,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
@@ -1886,17 +1888,19 @@ module Viscosity
           endif
 
           if (nzgrid>1) then
-            do mm=1,my; do ll=1,mx
-              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
+            do mm=m1,m2; do ll=l1,l2
+!              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
 !if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iFF_diff2),f(ll,mm,2:mz-1,iff))
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
 
-          do nn=1,mz; do mm=1,my
+          do nn=n1,n2; do mm=m1,m2
+!             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
             call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
-!if (j==1.and.mm==10 .and. nn==10) print*, maxval(f(l1:l2,mm,nn,iFF_div_uu+j-1))
+!            call div(f,iFF_diff,tmp,iorder=4)
+!if (j==1.and.lfirst.and.ldiagnos) print*, tmp(473:533)
           enddo; enddo
 
         enddo
