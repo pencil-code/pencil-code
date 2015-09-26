@@ -181,7 +181,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lee_as_aux=.false.
+  logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -202,7 +202,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       kgaussian_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
