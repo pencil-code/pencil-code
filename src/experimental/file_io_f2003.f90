@@ -11,28 +11,32 @@ module File_io
 !
   implicit none
 !
-  character (len=:), allocatable :: parallel_unit
+  character (len=:), allocatable, protected :: parallel_unit
+!
+  include 'file_io.h'
+!
+  private
 !
   contains
 !
 !***********************************************************************
-    function get_unit()
+    function get_parallel_unit()
 !
-!  Returns the buffer for parallel reading.
+!  Returns the internal file buffer for parallel reading.
 !
-!  29-May-2015/Bourdin.KIS: implemented
+!  27-Sep-2015/PABourdin: implemented
 !
-      character (len=:), allocatable :: get_unit
+      character (len=:), allocatable :: parallel_unit
 !
-      get_unit = parallel_unit
+      get_parallel_unit = parallel_unit
 !
-    endfunction get_unit
+    endfunction parallel_unit
 !***********************************************************************
     function parallel_read(file,buffer,remove_comments)
 !
 !  Returns a buffer with the content of a global file read in parallel.
 !
-!  28-May-2015/Bourdin.KIS: implemented
+!  28-May-2015/PABourdin: implemented
 !
       integer :: parallel_read
       character (len=:), allocatable :: buffer
@@ -98,61 +102,55 @@ module File_io
 !
     endfunction parallel_read
 !***********************************************************************
-    subroutine parallel_open(buffer,file,form,remove_comments)
+    subroutine parallel_open(file,form,remove_comments,nitems)
 !
 !  Open a global file in parallel.
 !
-!  17-mar-10/Bourdin.KIS: implemented
-!  28-May-2015/Bourdin.KIS: reworked
+!  17-mar-10/PABourdin: implemented
+!  28-May-2015/PABourdin: reworked
 !
       use Cparam, only: fnlen
 !
-      character (len=:), allocatable, intent(out) :: buffer
       character (len=*) :: file
       character (len=*), optional, intent(in) :: form
       logical, optional, intent(in) :: remove_comments
+      integer, optional, intent(out) :: nitems
 !
       integer :: bytes
 !
  write (*,*) 'POA: ', iproc
  flush (6)
       bytes = parallel_read(file, parallel_unit, remove_comments)
+      if (present (nitems)) nitems = 1
  write (*,*) 'POB: ', iproc
  flush (6)
-      buffer = parallel_unit
-      ! unit is now reading from an internal file (from RAM)
+      ! parallel_unit is now reading from an internal file (from RAM)
       ! and is ready to be used on all ranks in parallel.
 !
     endsubroutine parallel_open
 !***********************************************************************
-    subroutine parallel_rewind(buffer)
+    subroutine parallel_rewind()
 !
-!  Rewind a file unit opened by parallel_open.
+!  Rewind a parallel file unit.
 !
-!  23-May-2014/Bourdin.KIS: implemented
-!
-      use General, only: keep_compiler_quiet
-!
-      character (len=:), allocatable, intent(in) :: buffer
-!
-      call keep_compiler_quiet(buffer)
+!  26-Sep-2015/PABourdin: implemented
 !
     endsubroutine parallel_rewind
 !***********************************************************************
-    subroutine parallel_close(buffer)
+    subroutine parallel_close()
 !
-!  Close a file unit opened by parallel_open and remove temporary file.
+!  Close a parallel file unit.
 !
-!  17-mar-10/Bourdin.KIS: implemented
+!  17-mar-10/PABourdin: implemented
 !
       character (len=:), allocatable :: buffer
 !
  write (*,*) 'PCA: ', iproc
  flush (6)
-      parallel_unit(1:) = char(0)
+      parallel_buffer(1:) = char(0)
  write (*,*) 'PCB: ', iproc
  flush (6)
-      deallocate (parallel_unit)
+      deallocate (parallel_buffer)
  write (*,*) 'PCC: ', iproc
  flush (6)
 !      if (allocated (buffer)) then
@@ -173,9 +171,9 @@ module File_io
 !  * Integer containing the number of lines in a given file
 !  * -1 on error
 !
-!  23-mar-10/Bourdin.KIS: implemented
+!  23-mar-10/PABourdin: implemented
 !  26-aug-13/MR: optional parameter ignore_comments added
-!  28-May-2015/Bourdin.KIS: reworked
+!  28-May-2015/PABourdin: reworked
 !
       integer :: parallel_count_lines
       character(len=*), intent(in) :: file
@@ -195,7 +193,7 @@ module File_io
 !  * Integer containing the number of lines in a given file
 !  * -1 on error
 !
-!  23-mar-10/Bourdin.KIS: implemented
+!  23-mar-10/PABourdin: implemented
 !
       character(len=*) :: file
       logical :: parallel_file_exists
@@ -224,7 +222,7 @@ module File_io
 !  Returns:
 !  * Logical containing the existence of a given file
 !
-!  23-mar-10/Bourdin.KIS: implemented
+!  23-mar-10/PABourdin: implemented
 !
       use Cparam, only: ip
 !
@@ -255,7 +253,7 @@ module File_io
 !  * -2 if the file could not be found or opened
 !  * -1 if retrieving the file size failed
 !
-!  23-may-2015/Bourdin.KIS: coded
+!  23-may-2015/PABourdin: coded
 !
       integer :: file_size
       character(len=*) :: file
@@ -276,9 +274,9 @@ module File_io
 !  * Integer containing the number of lines in a given file
 !  * -1 on error
 !
-!  23-mar-10/Bourdin.KIS: implemented
+!  23-mar-10/PABourdin: implemented
 !  26-aug-13/MR: optional parameter ignore_comments added
-!  28-May-2015/Bourdin.KIS: reworked
+!  28-May-2015/PABourdin: reworked
 !
       use General, only: operator(.in.)
 !
@@ -312,7 +310,7 @@ module File_io
 !
 !  Strip comments from a *.in-file
 !
-!  28-May-2015/Bourdin.KIS: inspired by MR's read_infile
+!  28-May-2015/PABourdin: inspired by MR's read_infile
 !
       use Cdata, only: comment_char
 !
@@ -336,4 +334,54 @@ module File_io
 !
     endsubroutine strip_comments
 !**************************************************************************
+    function find_namelist(name)
+!
+!  Tests if the namelist is present and reports a missing namelist.
+!
+!  26-Sep-2015/PABourdin: coded
+!
+      use Cdata, only: iproc, comment_char
+      use General, only: operator(.in.)
+      use Messages, only: warning
+      use Mpicomm, only: lroot, mpibcast
+!
+      logical :: find_namelist
+      character(len=*), intent(in) :: name
+!
+      integer :: ierr, state, pos, len, max_len
+      character :: ch
+!
+      find_namelist = .false.
+!
+      if (lroot) then
+        state = 0
+        len = len_trim (name)
+ write (10+iproc,*) 'FIND: ', '&'//name
+ write (10+iproc,*) 'MAX: ', len_trim (parallel_unit)
+ flush (10+iproc)
+        ! need to substract one begin (&) and one end marker (/) chars
+        max_len = len_trim (parallel_unit) - len + 1 - 2
+        do pos = 1, max_len
+          ch = parallel_unit(pos:pos)
+          if (ch .eq. char(10)) state = 0
+          if (ch .eq. '!') state = -2
+          if ((ch .eq. ' ') .or. (ch .eq. char(9)) .or. (state < 0)) cycle
+          if (ch .ne. '&') then
+            state = -1
+            cycle
+          endif
+          if (trim (name) == parallel_unit(pos+1:pos+len)) then
+ write (10+iproc,*) 'FOUND POS: ', pos
+ flush (10+iproc)
+            find_namelist = .true.
+            exit
+          endif
+        enddo
+        if (.not. find_namelist) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+      endif
+!
+      call mpibcast (find_namelist)
+!
+    endfunction find_namelist
+!***********************************************************************
 endmodule File_io
