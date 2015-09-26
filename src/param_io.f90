@@ -284,7 +284,7 @@ module Param_IO
       call read_namelist(read_initial_condition_pars   ,'initial_condition_pars',linitial_condition)
       call read_namelist(read_streamlines_init_pars    ,'streamlines')
       call read_namelist(read_eos_init_pars            ,'eos'            ,leos)
-      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro.or.lhydro_kinematic)
+      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro .or. lhydro_kinematic)
       call read_namelist(read_density_init_pars        ,'density'        ,ldensity)
       call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav)
       call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,lselfgravity)
@@ -317,13 +317,13 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
         call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
 !
       if (lrun) lstart=.false.
-
+!
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
