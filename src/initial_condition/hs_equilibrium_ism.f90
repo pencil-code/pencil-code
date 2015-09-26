@@ -283,7 +283,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer :: i ,icpu
+      integer :: icpu
       real :: tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
@@ -323,9 +323,7 @@ module InitialCondition
       print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
       if (amplaa==0) then
         f(:,:,:,iaa:iaa+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set B field to zero; i=',i
       else
-        print*,'ferriere_uniform_y: uniform y-field approx rho; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_y: amplaa=',amplaa
         do n=n1,n2
         do m=m1,m2
