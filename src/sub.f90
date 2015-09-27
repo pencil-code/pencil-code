@@ -6939,7 +6939,7 @@ nameloop: do
 !***********************************************************************
     subroutine read_namelist(reader,name,lactive)
 !
-!  encapsulates reading of pars + error handling
+!  Encapsulates reading of pars + error handling.
 !
 !  31-oct-13/MR: coded
 !  16-dec-13/MR: handling of optional ierr corrected
@@ -6949,9 +6949,9 @@ nameloop: do
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
+      use File_io, only: parallel_rewind, find_namelist
       use General, only: loptest, itoa
       use Messages, only: warning
-      use File_io, only: parallel_rewind
 !
       interface
         subroutine reader(iostat)
@@ -6965,41 +6965,37 @@ nameloop: do
       integer :: ierr
       character(len=5) :: type, suffix
 !
-      if (loptest(lactive,.true.)) then
+      if (.not. loptest (lactive, .true.)) return
 !
-        call reader(ierr)
-!
-        if (ierr /= 0) then
-
-          if (lroot) then
-
-            if (lstart) then
-              type = 'init'
-            else
-              type = 'run'
-            endif
-            if (name /= '') type = '_'//type
-            suffix = '_pars'
-            if (name == 'initial_condition_pars') then
-              type = ''
-              suffix = ''
-            endif
-!
-            if (ierr == -1) then
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
-            else
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" has an error ('// &
-                                             trim(itoa(ierr))//')!')
-            endif
-          endif
-
-          lnamelist_error = .true.
-
-        endif
-!
-        call parallel_rewind
-
+      if (lstart) then
+        type = 'init'
+      else
+        type = 'run'
       endif
+      if (name /= '') type = '_'//type
+      suffix = '_pars'
+      if (name == 'initial_condition_pars') then
+        type = ''
+        suffix = ''
+      endif
+!
+      if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+        lnamelist_error = .true.
+        return
+      endif
+!
+      call reader(ierr)
+      if (ierr /= 0) then
+        lnamelist_error = .true.
+        if (lroot .and. (ierr == -1)) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
+        elseif (lroot) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
+              '" has an error ('//trim(itoa(ierr))//')!')
+        endif
+      endif
+!
+      call parallel_rewind
 !
     endsubroutine read_namelist
 !***********************************************************************

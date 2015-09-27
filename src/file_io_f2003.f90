@@ -17,8 +17,8 @@ module File_io
 ! Fixed string length necessary as gfortran is compiling incorrectly otherwise.
 ! For future debugged gfortran versions the commented lines should be used.
 !
-  !character(LEN=:), dimension(:), allocatable, protected :: parallel_unit
-  character(LEN=36000), dimension(:), allocatable, protected :: parallel_unit
+  !character(len=:), allocatable, protected :: parallel_unit
+  character(len=36000), dimension(:), allocatable, protected :: parallel_unit
 !
   include 'file_io.h'
 
@@ -48,8 +48,8 @@ module File_io
 !
       integer :: bytes, ios, ind, indc, inda, inda2, lenbuf, indmax, ni
       integer, parameter :: unit = 11
-      character(LEN=14000) :: linebuf             ! string length overdimensioned, but needed so for some compilers.
-      character(LEN=:), allocatable :: buffer
+      character(len=14000) :: linebuf             ! string length overdimensioned, but needed so for some compilers.
+      character(len=:), allocatable :: buffer
       character :: sepchar
       logical :: l0
 !
@@ -63,7 +63,7 @@ module File_io
             'parallel_read', 'file "'//trim(file)//'" is empty', force=.true.)
 
         ! Allocate temporary memory.
-        !allocate(character(len=bytes) :: parallel_unit(1))
+        !allocate(character(len=bytes) :: parallel_unit)
         allocate(parallel_unit(1))
 !
         ! Read file content into buffer.
@@ -213,5 +213,49 @@ module File_io
       deallocate(parallel_unit)
 !
     endsubroutine parallel_close
+!***********************************************************************
+    function find_namelist(name)
+!
+!  Tests if the namelist is present and reports a missing namelist.
+!
+!  26-Sep-2015/PABourdin: coded
+!
+      use Cdata, only: iproc, comment_char
+      use General, only: lower_case, operator(.in.)
+      use Messages, only: warning
+      use Mpicomm, only: lroot, mpibcast
+!
+      logical :: find_namelist
+      character(len=*), intent(in) :: name
+!
+      integer :: ierr, state, pos, len, max_len
+      character :: ch
+!
+      find_namelist = .false.
+!
+      if (lroot) then
+        state = -1
+        len = len_trim (name) + 1
+        ! need to subtract two chars for the end marker of an empty namelist
+        max_len = len_trim (parallel_unit(1)) - len + 1 - 2
+        do pos = 1, max_len
+          if ('&'//trim (name) == lower_case (parallel_unit(1)(pos:pos+len-1))) then
+            if (parallel_unit(1)(pos+len:pos+len) .in. (/ ' ', '!', comment_char /)) then
+              if (pos == 1) then
+                find_namelist = .true.
+                exit
+              elseif (parallel_unit(1)(pos-1:pos-1) .eq. ' ') then
+                find_namelist = .true.
+                exit
+              endif
+            endif
+          endif
+        enddo
+        if (.not. find_namelist) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+      endif
+!
+      call mpibcast (find_namelist)
+!
+    endfunction find_namelist
 !***********************************************************************
 endmodule File_io
