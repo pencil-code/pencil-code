@@ -12,7 +12,7 @@ module General
 !
   private
 !
-  public :: safe_character_assign,safe_character_append,safe_character_prepend
+  public :: safe_character_assign, safe_character_append, safe_character_prepend
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
@@ -23,12 +23,12 @@ module General
   public :: find_index_range, find_index
   public :: find_proc
 !
-  public :: spline,tridag,pendag,complex_phase,erfcc
+  public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
   public :: polynomial_interpolation
   public :: arcsinh
-  public :: besselj_nu_int,calc_complete_ellints
-  public :: bessj,cyclic
+  public :: besselj_nu_int, calc_complete_ellints
+  public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
