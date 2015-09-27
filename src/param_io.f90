@@ -277,6 +277,7 @@ module Param_IO
       else
         file=trim(datadir)//'/param.nml'
         call parallel_open(file)
+        ltolerate_namelist_errors = .true.
         lstart=.true.                      ! necessary to create correct error messages in read_namelist
       endif
 !
