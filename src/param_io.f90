@@ -282,7 +282,7 @@ module Param_IO
 !
       call read_namelist(read_init_pars                ,'')
       call read_namelist(read_initial_condition_pars   ,'initial_condition_pars',linitial_condition)
-      call read_namelist(read_streamlines_init_pars    ,'streamlines')
+      call read_namelist(read_streamlines_init_pars    ,'streamlines'    ,lstreamlines)
       call read_namelist(read_eos_init_pars            ,'eos'            ,leos)
       call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro .or. lhydro_kinematic)
       call read_namelist(read_density_init_pars        ,'density'        ,ldensity)
@@ -319,7 +319,7 @@ module Param_IO
 !
       if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
-        call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for file "'//trim(file)//'"')
+        if (lroot) call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for file "'//trim(file)//'"', .true.)
       endif
 !
       if (lrun) lstart=.false.
@@ -395,7 +395,7 @@ module Param_IO
 !  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
       call read_namelist(read_run_pars                ,'')
-      call read_namelist(read_streamlines_run_pars    ,'streamlines')
+      call read_namelist(read_streamlines_run_pars    ,'streamlines'       ,lstreamlines)
       call read_namelist(read_eos_run_pars            ,'eos'               ,leos)
       call read_namelist(read_hydro_run_pars          ,'hydro'             ,lhydro.or.lhydro_kinematic)
       call read_namelist(read_density_run_pars        ,'density'           ,ldensity)
@@ -439,9 +439,9 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
-        call fatal_error ('read_all_run_pars', 'Please fix all above WARNINGs for file "run.in"')
+        if (lroot) call fatal_error ('read_all_run_pars', 'Please fix all above WARNINGs for file "run.in"', .true.)
       endif
 !
 !  Print SVN id from first line.
