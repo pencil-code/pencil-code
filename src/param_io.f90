@@ -263,7 +263,6 @@ module Param_IO
       logical, optional, intent(IN) :: print
 !
       character(len=fnlen) :: file
-      logical :: lparam_nml = .false.
 !
       lnamelist_error = .false.
 !
@@ -278,9 +277,8 @@ module Param_IO
         call parallel_open(file, remove_comments=.true.)
       else
         file = trim(datadir)//'/param.nml'
-        call parallel_open(file)
         lparam_nml = .true.
-        lstart = .true.   ! necessary to create correct error messages in read_namelist
+        call parallel_open(file)
       endif
 !
       call read_namelist(read_init_pars                ,'')
@@ -325,8 +323,7 @@ module Param_IO
         call stop_it_if_any (.true., 'read_all_init_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
       call stop_it_if_any (.false., '')
-!
-      if (lrun) lstart=.false.
+      lparam_nml = .false.
 !
 !  Print SVN id from first line.
 !

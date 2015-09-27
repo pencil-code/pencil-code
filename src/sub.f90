@@ -6967,7 +6967,7 @@ nameloop: do
 !
       if (.not. loptest (lactive, .true.)) return
 !
-      if (lstart) then
+      if (lstart .or. lparam_nml) then
         type = 'init'
       else
         type = 'run'
