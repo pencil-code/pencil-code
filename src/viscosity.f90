@@ -1860,7 +1860,7 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
 !
-!  to avoid taking the sqrt three times
+!  to avoid taking the sqrt several times
 !        
         f(:,:,:,iFF_diff2)=sqrt(f(:,:,:,iFF_diff2))
 ! 
@@ -1871,7 +1871,9 @@ module Viscosity
           if (nxgrid>1) then
             do nn=n1,n2; do mm=m1,m2
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpx(2:),tmpx(:mx-2),f(2:mx-1,mm,nn,iFF_diff2),f(2:mx-1,mm,nn,iff))
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_diff2),f(2:mx-2,mm,nn,iff))
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff) 
 !if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
 !            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
             enddo; enddo
@@ -1881,7 +1883,7 @@ module Viscosity
           if (nygrid>1) then
             do nn=n1,n2; do ll=l1,l2
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpy(2:),tmpy(:my-2),f(ll,2:my-1,nn,iFF_diff2),f(ll,2:my-1,nn,iff))
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_diff2),f(ll,2:my-2,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
             enddo; enddo
             iff=iff+1
@@ -1889,9 +1891,9 @@ module Viscosity
 
           if (nzgrid>1) then
             do mm=m1,m2; do ll=l1,l2
-!              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
+              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
 !if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz(2:),tmpz(:mz-2),f(ll,mm,2:mz-1,iFF_diff2),f(ll,mm,2:mz-1,iff))
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_diff2),f(ll,mm,2:mz-2,iff))
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
@@ -1899,8 +1901,9 @@ module Viscosity
           do nn=n1,n2; do mm=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
             call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
+!if (lroot.and.nn==6.and.mm==6.and.lfirst.and.ldiagnos) print*,'DIVflux=',f(l1:l2,mm,nn,iFF_div_uu+j-1) 
 !            call div(f,iFF_diff,tmp,iorder=4)
-!if (j==1.and.lfirst.and.ldiagnos) print*, tmp(473:533)
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo
 
         enddo
@@ -1908,25 +1911,26 @@ module Viscosity
 
     endsubroutine viscosity_after_boundary
 !***********************************************************************
-    subroutine calc_diffusive_flux(diff_right, diff_left,c_char,flux)
+    subroutine calc_diffusive_flux(diffs,c_char,flux)
 !
-!  23-sep-15/MRheinhard,joern,fred,petri :: coded
+!  23-sep-15/MR,joern,fred,petri: coded
 !
       use Sub, only: slope_limiter, diff_flux
 
-      real, dimension(:)                 :: diff_left, diff_right,c_char,flux
-      real, dimension(size(diff_left)+1) :: slope
-      real, dimension(size(diff_left))   :: phi
+      real, dimension(:),intent(in) :: diffs,c_char
+      real, dimension(:),intent(out):: flux
+
+      real, dimension(size(diffs)-1) :: slope
+      real, dimension(size(diffs)-2) :: phi
       integer :: len
 
+      len=size(diffs)
 
-      len=size(diff_left)+1
+      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
 
-      call slope_limiter(diff_right, diff_left,slope(2:len-1),islope_limiter)
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
 
-      flux =  diff_right + 0.5 * slope(3:) - 0.5 * slope(2:len-1)
-
-      call diff_flux(h_slope_limited, diff_right, flux, phi)
+      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
       flux = -0.5*c_char*phi*flux
 
     endsubroutine calc_diffusive_flux
