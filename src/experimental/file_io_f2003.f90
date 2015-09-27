@@ -363,9 +363,9 @@ module File_io
         max_len = len_trim (parallel_unit) - len + 1 - 2
         do pos = 1, max_len
           ch = parallel_unit(pos:pos)
-          if (ch .eq. char(10)) state = 0
-          if (ch .eq. '!') state = -2
-          if ((ch .eq. ' ') .or. (ch .eq. char(9)) .or. (state < 0)) cycle
+          if (ch == char(10)) state = 0
+          if (ch == '!') state = -2
+          if ((ch == ' ') .or. (ch == char(9)) .or. (state < 0)) cycle
           if (ch .ne. '&') then
             state = -1
             cycle
