@@ -279,7 +279,7 @@ module File_io
       character(len=*), intent(in) :: name
 !
       integer :: ierr, pos, state, max_len, line_len
-      character(len=linelen) :: line
+      character(len=36000) :: line
       character :: ch
 !
       find_namelist = .false.
