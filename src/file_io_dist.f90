@@ -109,7 +109,7 @@ module File_io
               cycle
             endif
             if (state >= 1) then
-              if (ch == name(state:state)) then
+              if (ch == lower_case (name(state:state))) then
                 if (state == max_len) then
                   if (pos == line_len) then
                     find_namelist = .true.

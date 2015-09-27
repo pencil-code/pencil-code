@@ -239,7 +239,7 @@ module File_io
         ! need to subtract two chars for the end marker of an empty namelist
         max_len = len_trim (parallel_unit(1)) - len + 1 - 2
         do pos = 1, max_len
-          if ('&'//trim (name) == lower_case (parallel_unit(1)(pos:pos+len-1))) then
+          if ('&'//lower_case (trim (name)) == lower_case (parallel_unit(1)(pos:pos+len-1))) then
             if (parallel_unit(1)(pos+len:pos+len) .in. (/ ' ', '!', comment_char /)) then
               if (pos == 1) then
                 find_namelist = .true.
