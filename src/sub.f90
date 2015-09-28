@@ -3274,6 +3274,7 @@ module Sub
       logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
+      double precision :: t0
 !
       if (lroot) then
 !
@@ -3293,7 +3294,8 @@ module Sub
             tout = log10(t)
           elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
-            tout = (t - dt) + (dble(dtout) - modulo(t - dt, dble(dtout)))
+            t0 = max(t - dt, 0.0D0)
+            tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
           else settout
             call warning("read_snaptime", "Writing snapshot every time step. ")
             tout = 0.0
