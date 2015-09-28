@@ -1812,7 +1812,7 @@ module Viscosity
 !
       if (lvisc_slope_limited) &
         p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
-      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
+!      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
 !
 !  Calculate Lambda effect
 !
@@ -1908,7 +1908,7 @@ module Viscosity
           do n=n1,n2; do m=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),iorder=4)
-if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
+!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
 !            call div(f,iFF_diff,tmp,iorder=4)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo
