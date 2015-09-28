@@ -1846,7 +1846,7 @@ module Viscosity
 
       use Sub, only: div
       use Sub, only: notanumber
-      use Boundcond, only: update_ghosts
+!      use Boundcond, only: update_ghosts
 
       real, dimension (mx,my,mz,mfarray) :: f
 
