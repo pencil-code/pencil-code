@@ -1812,7 +1812,7 @@ module Viscosity
 !
       if (lvisc_slope_limited) &
         p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
-!      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
+      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
 !
 !  Calculate Lambda effect
 !
@@ -1866,6 +1866,7 @@ module Viscosity
 !  to avoid taking the sqrt several times
 !        
         f(:,:,:,iFF_char_c)=sqrt(f(:,:,:,iFF_char_c))
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
 ! 
        do j=1,3
 
@@ -1904,10 +1905,10 @@ module Viscosity
 ! not yet operational, so not correct for parallel runs!
           !!!call update_ghosts(f,iFF_diff1,iFF_diff2)   !,lnoboundconds=.true.)     ! not all ghost zones really needed
 
-          do nn=n1,n2; do mm=m1,m2
+          do n=n1,n2; do m=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
-            call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
-!if (lroot.and.nn==6.and.mm==6.and.lfirst.and.ldiagnos) print*,'DIVflux=',f(l1:l2,mm,nn,iFF_div_uu+j-1) 
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),iorder=4)
+if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
 !            call div(f,iFF_diff,tmp,iorder=4)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo
