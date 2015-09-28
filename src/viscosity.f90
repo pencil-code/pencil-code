@@ -197,6 +197,8 @@ module Viscosity
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
+        iFF_char_c=max(iFF_div_uu+2,iFF_div_ss)
+        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
       endif
 !
     endsubroutine register_viscosity
@@ -1844,6 +1846,7 @@ module Viscosity
 
       use Sub, only: div
       use Sub, only: notanumber
+!      use Boundcond, only: update_ghosts
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -1862,7 +1865,8 @@ module Viscosity
 !
 !  to avoid taking the sqrt several times
 !        
-        f(:,:,:,iFF_diff2)=sqrt(f(:,:,:,iFF_diff2))
+        f(:,:,:,iFF_char_c)=sqrt(f(:,:,:,iFF_char_c))
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
 ! 
        do j=1,3
 
@@ -1872,7 +1876,7 @@ module Viscosity
             do nn=n1,n2; do mm=m1,m2
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
-              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_diff2),f(2:mx-2,mm,nn,iff))
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),f(2:mx-2,mm,nn,iff))
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff) 
 !if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
 !            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
@@ -1883,7 +1887,7 @@ module Viscosity
           if (nygrid>1) then
             do nn=n1,n2; do ll=l1,l2
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_diff2),f(ll,2:my-2,nn,iff))
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),f(ll,2:my-2,nn,iff))
 !if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
             enddo; enddo
             iff=iff+1
@@ -1893,15 +1897,18 @@ module Viscosity
             do mm=m1,m2; do ll=l1,l2
               tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
 !if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_diff2),f(ll,mm,2:mz-2,iff))
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),f(ll,mm,2:mz-2,iff))
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
 
-          do nn=n1,n2; do mm=m1,m2
+! not yet operational, so not correct for parallel runs!
+          !!!call update_ghosts(f,iFF_diff1,iFF_diff2)   !,lnoboundconds=.true.)     ! not all ghost zones really needed
+
+          do n=n1,n2; do m=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
-            call div(f,iFF_diff,f(l1:l2,mm,nn,iFF_div_uu+j-1),iorder=4)
-!if (lroot.and.nn==6.and.mm==6.and.lfirst.and.ldiagnos) print*,'DIVflux=',f(l1:l2,mm,nn,iFF_div_uu+j-1) 
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),iorder=4)
+!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
 !            call div(f,iFF_diff,tmp,iorder=4)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo

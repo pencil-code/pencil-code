@@ -837,6 +837,8 @@ module Magnetic
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
+        iFF_char_c=max(iFF_div_aa+2,iFF_div_ss)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
       endif
 !
 !  register the mean-field module
@@ -2456,9 +2458,9 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
-      if (lslope_limit_diff) then
-         f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,iax:iaz)**2,4)
-      endif
+      if (lslope_limit_diff) &
+         f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c)+sum(f(:,:,:,iax:iaz)**2,4)
+
     endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)

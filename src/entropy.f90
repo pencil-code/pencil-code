@@ -369,6 +369,9 @@ module Energy
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
+        iFF_char_c=iFF_div_ss
+        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
       endif
 
     endsubroutine register_energy
@@ -3451,7 +3454,7 @@ module Energy
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2) + 0.01*cs20
+      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
