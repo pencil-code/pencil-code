@@ -1456,24 +1456,24 @@ module Sub
 !
       if (j==1) then
         if (nxgrid/=1) then
-          df=( -     f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)     &
-               +27.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
+          df=( -     f(l1+1:l2+1,m,n,k)+f(l1-2:l2-2,m,n,k)     &
+               +27.*(f(l1  :l2  ,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
         else
           df=0.
           if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          df=( -     f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)     &
-               +27.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
+          df=( -     f(l1:l2,m+1,n,k)+f(l1:l2,m-2,n,k)     &
+               +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
         else
           df=0.
           if (ip<=5) print*, 'der_4th_stag: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          df=( -     f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)     &
-               +27.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
+          df=( -     f(l1:l2,m,n+1,k)+f(l1:l2,m,n-2,k)     &
+               +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
         else
           df=0.
           if (ip<=5) print*, 'der_4th_stag: Degenerate case in z-direction'
@@ -6999,10 +6999,10 @@ nameloop: do
 !
     endsubroutine read_namelist
 !***********************************************************************
-    elemental subroutine slope_limiter(diff_right, diff_left,limited,type)
+    elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
 
-      real, intent(OUT) :: limited
-      real, intent(IN)  :: diff_left, diff_right
+      real, intent(OUT):: limited
+      real, intent(IN) :: diff_left, diff_right
 
       character(LEN=*), intent(IN) :: type
 
@@ -7012,7 +7012,7 @@ nameloop: do
                     0.5*abs(diff_right+diff_left))
 
       case ('superbee')
-
+      case ('')
       case default
       end select
     
