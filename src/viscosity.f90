@@ -116,7 +116,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, islope_limiter 
+      lvisc_slope_limited, h_slope_limited, islope_limiter
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -174,12 +174,11 @@ module Viscosity
 ! Module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
-  real :: nu_jump1, nu_jump21, nu_shock_jump1
 !
   contains
 !***********************************************************************
     subroutine register_viscosity
-    
+
     use FArrayManager, only: farray_register_auxiliary
 !
 !  19-nov-02/tony: coded
@@ -474,15 +473,12 @@ module Viscosity
       endif
 
       if (lvisc_nu_prof) then
-        nu_jump1=nu*(nu_jump-1.)
 !
 !  Write out viscosity z-profile.
 !  At present only correct for Cartesian geometry
 !
-        call write_zprof('visc', nu + nu_jump1*step(z(n1:n2),znu,-widthnu))
+        call write_zprof('visc', nu + (nu*(nu_jump-1.))*step(z(n1:n2),znu,-widthnu))
       endif
-
-      if (lvisc_nu_profr_twosteps) nu_jump21=nu*(nu_jump2-1.)
 
       if (lvisc_nu_shock_profz .or. lvisc_nu_shock_profr) then
         nu_shock_jump1=nu_shock*(nu_jump_shock-1.)
@@ -493,7 +489,7 @@ module Viscosity
         if (lvisc_nu_shock_profz) &
           call write_zprof('visc_shock', &
                            nu_shock+nu_shock_jump1*step(z(n1:n2),znu_shock,-widthnu_shock))
-                                     
+
 !
 !  Write out shock viscosity r-profile.
 !  At present only correct for spherical and cylindrical geometry.
@@ -1270,7 +1266,7 @@ module Viscosity
 !
 !  Viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
-!        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
+!        pnu = nu + (nu*(nu_jump-1.))*step(abs(p%x_mn),xnu,widthnu)
 !
       if (lvisc_nu_profx.or.lvisc_nu_profr) then
         if (lvisc_nu_profx) tmp3=p%x_mn
@@ -1287,8 +1283,8 @@ module Viscosity
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("calc_pencils_viscosity","")
         endif
-        pnu = nu + nu_jump1*(step(tmp3,xnu ,widthnu) - step(tmp3,xnu2,widthnu))
-        tmp4=nu_jump1*(der_step(tmp3,xnu ,widthnu)-der_step(tmp3,xnu2,widthnu)) 
+        pnu = nu + (nu*(nu_jump-1.))*(step(tmp3,xnu ,widthnu) - step(tmp3,xnu2,widthnu))
+        tmp4 = (nu*(nu_jump-1.))*(der_step(tmp3,xnu ,widthnu)-der_step(tmp3,xnu2,widthnu))
 !
 !  Initialize gradnu before calculating it, otherwise gfortran complains.
 !
@@ -1297,7 +1293,7 @@ module Viscosity
                              lvisc_nu_profr,p,gradnu)
 !  A routine for write_xprof should be written here
 !       call write_xprof('visc',pnu)
-        !gradnu(:,1) = nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
+        !gradnu(:,1) = (nu*(nu_jump-1.))*der_step(tmp3,xnu,widthnu)
         !gradnu(:,2) = 0.
         !gradnu(:,3) = 0.
         call multmv(p%sij,gradnu,sgradnu)
@@ -1378,8 +1374,8 @@ module Viscosity
         derprof2 = der_step(tmp3,xnu2,widthnu2)
         derprof  = der_step(tmp3,xnu,widthnu)-derprof2
 !
-        pnu  = nu + nu_jump1*prof+nu_jump21*prof2
-        tmp4 = nu + nu_jump1*derprof+nu_jump21*derprof2
+        pnu  = nu + (nu*(nu_jump-1.))*prof+(nu*(nu_jump2-1.))*prof2
+        tmp4 = nu + (nu*(nu_jump-1.))*derprof+(nu*(nu_jump2-1.))*derprof2
 !
 !  Initialize gradnu before calculating it, otherwise gfortran complains.
 !
@@ -1412,14 +1408,14 @@ module Viscosity
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
 !
       if (lvisc_nu_prof) then
-        pnu = nu + nu_jump1*step(p%z_mn,znu,-widthnu)
+        pnu = nu + (nu*(nu_jump-1.))*step(p%z_mn,znu,-widthnu)
 !
 !  This indicates that the profile is meant to be applied in Cartesian
 !  coordinates only. Why then z taken from pencil?
 !
         gradnu(:,1) = 0.
         gradnu(:,2) = 0.
-        gradnu(:,3) = nu_jump1*der_step(p%z_mn,znu,-widthnu)
+        gradnu(:,3) = (nu*(nu_jump-1.))*der_step(p%z_mn,znu,-widthnu)
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         !tobi: The following only works with operator overloading for pencils
@@ -1453,7 +1449,7 @@ module Viscosity
 !
       if (lvisc_nu_shock_profz) then
         if (ldensity) then
-          pnu_shock = nu_shock + nu_shock_jump1*step(p%z_mn,znu_shock,-widthnu_shock) 
+          pnu_shock = nu_shock + nu_shock_jump1*step(p%z_mn,znu_shock,-widthnu_shock)
 !
 !  This indicates that the profile is meant to be applied in Cartesian
 !  coordinates only. Why then z taken from pencil?
@@ -1639,7 +1635,7 @@ module Viscosity
 !  your Makefile.local.
 !
       if (lvisc_hyper3_mu_const_strict) then
-        do i=1,3 
+        do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*p%rho1*f(l1:l2,m,n,ihypvis-1+i)
         enddo
         if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
@@ -1817,14 +1813,14 @@ module Viscosity
         p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
         if (lfirst.and.ldt) then
           tmp=0.
-          where (p%del2u /=0.) 
+          where (p%del2u /=0.)
 !            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u
             tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%uu*dx**2
-          endwhere  
+          endwhere
           nu_sld=maxval(abs(tmp),2)
 !          print*,maxval(nu_sld)
-          p%diffus_total=p%diffus_total+nu_sld        
-        endif  
+          p%diffus_total=p%diffus_total+nu_sld
+        endif
       endif
 !
 !  Calculate Lambda effect
@@ -1870,16 +1866,16 @@ module Viscosity
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
-!  using a slope limiting procedure then storing in the 
+!  using a slope limiting procedure then storing in the
 !  auxilaries variables in the f array (done above).
 !
       if (lvisc_slope_limited) then
 !
 !  to avoid taking the sqrt several times
-!        
+!
         f(:,:,:,iFF_char_c)=sqrt(f(:,:,:,iFF_char_c))
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
-! 
+!
        do j=1,3
 
           iff=iFF_diff
@@ -1889,7 +1885,7 @@ module Viscosity
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
               call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),f(2:mx-2,mm,nn,iff))
-!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff) 
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff)
 !if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
 !            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
             enddo; enddo
@@ -1917,7 +1913,7 @@ module Viscosity
           do n=n1,n2; do m=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),iorder=4)
-!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
+!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1)
 !            call div(f,iFF_diff,tmp,iorder=4)
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo
