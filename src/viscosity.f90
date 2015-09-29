@@ -213,6 +213,7 @@ module Viscosity
       use Sub, only: write_zprof, step
 !
       integer :: i
+      real :: nu_shock_jump1
 !
 !  Default viscosity.
 !
@@ -1032,6 +1033,7 @@ module Viscosity
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
+      real :: nu_shock_jump1
 !
       intent(inout) :: f,p
 !
